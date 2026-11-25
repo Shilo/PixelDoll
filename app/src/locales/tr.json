@@ -349,7 +349,8 @@
 		"miColor": "{mi} rengi",
 		"titleSavedColor": "Kayıtlı renk",
 		"titleOriginal": "Özgün",
-		"titlePickAnyColor": "Bir renk seçin"
+		"titlePickAnyColor": "Bir renk seçin",
+		"noMatchingColors": "Eşleşen renk yok"
 	},
 	"colorSections": {
 		"randomLowerColors": "{lower} için rastgele renkler",
@@ -630,7 +631,8 @@
 		"outfits": "Kıyafetler",
 		"saveALookToSwitchBetweenOutfits": "Oyununuzda farklı kıyafetler arasında geçiş yapmak için bir görünüm kaydedin.",
 		"outfitName": "Kıyafet adı",
-		"saveCurrentLook": "Mevcut görünümü kaydedin"
+		"saveCurrentLook": "Mevcut görünümü kaydedin",
+		"noMatchingOutfits": "Eşleşen kıyafet yok"
 	},
 	"pwaNotice": {
 		"readyToUpdateReloading": "Güncelleme hazır. Yeniden yükleniyor…",
@@ -832,6 +834,7 @@
 		"notShownInMoveNote": "Eşya takılı ancak bu hareketin hiçbir görünümünde kareleri olmadığı için görünmüyor.",
 		"randomLowerItem": "{lower} için rastgele eşya",
 		"newLowerItem": "{lower} için yeni eşya",
+		"noMatchingItems": "Eşleşen eşya yok",
 		"labelItems": "{label} eşyaları",
 		"emptyLower": "{lower}: Boş",
 		"empty": "Boş",
@@ -2196,6 +2199,8 @@
 	},
 	"moves": {
 		"preview": "{move} önizlemesi",
+		"noMatchingMoves": "Eşleşen animasyon yok",
+		"noMatchingStates": "Eşleşen durum yok",
 		"frames": {
 			"one": "{count} kare",
 			"other": "{count} kare"
@@ -3313,7 +3318,10 @@
 				"one": "Karakter: {n}",
 				"other": "Karakter: {n}"
 			},
-			"plan": { "one": "{n} yeni karakter için tahmin", "other": "{n} yeni karakter için tahmin" },
+			"plan": {
+				"one": "{n} yeni karakter için tahmin",
+				"other": "{n} yeni karakter için tahmin"
+			},
 			"demo": "Demo görselleri ücretsizdir"
 		},
 		"tierOneRates": "{basis} · Tier 1 fiyatları",
@@ -3380,7 +3388,9 @@
 			"other": "Fiyatı bilinmeyen çağrı: {n}"
 		}
 	},
-	"shortcut": { "control": "Ctrl" },
+	"shortcut": {
+		"control": "Ctrl"
+	},
 	"report": {
 		"action": "Bildir",
 		"actionLabel": "Bu sorunu bildir",
@@ -3559,5 +3569,14 @@
 		"hintTouch": "Hareket için sürükleyin · Saldırıp nişan almak için kılıcı basılı tutup sürükleyin · Düğmeler zıplatır, hızlı koşturur ve bindirir",
 		"stageTopDown": "Karakter test dünyası. Hareket etmek için WASD, ok tuşları, tıklama veya sürükleme kullanın; Shift hızlı koşturur. Sağ tık veya E saldırır, Boşluk zıplar, F biner veya iner. 1, 2, 3 tuşları görünümü değiştirir.",
 		"stageSide": "Yandan kaydırmalı test dünyası. Hareket etmek için A/D, sol ve sağ ok tuşları, tıklama veya sürükleme kullanın; Shift hızlı koşturur. Sağ tık veya E saldırır, Boşluk zıplar, F biner veya iner. 1, 2, 3 tuşları görünümü değiştirir."
+	},
+	"search": {
+		"wardrobe": "Gardıropta ara",
+		"outfits": "Kıyafetlerde ara",
+		"moves": "Animasyonlarda ara",
+		"states": "Durumlarda ara",
+		"colors": "Renklerde ara",
+		"clear": "Aramayı temizle",
+		"results": "{total} içinden {count}"
 	}
 }

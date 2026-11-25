@@ -1281,8 +1281,12 @@ test('wheel, keys, middle click and native controls only change zoom where the s
 	expect(await wheel(host, { deltaY: -240, altKey: true }), 'Alt wheel stays native').toBe(false);
 	await expectAtFit(host, 'Alt wheel does not zoom');
 
-	// Native fields do not receive scene keys.
+	// Native fields do not receive scene keys; a short fixture makes the character list scroll to reveal its search.
 	const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
+	await page.locator('.character-rows').evaluate((list) => {
+		(list as HTMLElement).style.maxHeight = '40px';
+	});
+	await expect(search).toBeVisible();
 	await search.click();
 	await page.keyboard.type('+-0');
 	await expect(search).toHaveValue('+-0');

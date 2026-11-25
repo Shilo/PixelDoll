@@ -349,7 +349,8 @@
 		"miColor": "Cor: {mi}",
 		"titleSavedColor": "Cor salva",
 		"titleOriginal": "Original",
-		"titlePickAnyColor": "Escolher qualquer cor"
+		"titlePickAnyColor": "Escolher qualquer cor",
+		"noMatchingColors": "Nenhuma cor correspondente"
 	},
 	"colorSections": {
 		"randomLowerColors": "Sortear cores: {lower}",
@@ -630,7 +631,8 @@
 		"outfits": "Trajes",
 		"saveALookToSwitchBetweenOutfits": "Salve um visual para alternar entre trajes no seu jogo.",
 		"outfitName": "Nome do traje",
-		"saveCurrentLook": "Salvar visual atual"
+		"saveCurrentLook": "Salvar visual atual",
+		"noMatchingOutfits": "Nenhum traje correspondente"
 	},
 	"pwaNotice": {
 		"readyToUpdateReloading": "Atualização pronta. Recarregando…",
@@ -834,6 +836,7 @@
 		"notShownInMoveNote": "O item está equipado, mas não aparece porque faltam quadros em todas as vistas desta animação.",
 		"randomLowerItem": "Sortear item: {lower}",
 		"newLowerItem": "Novo item: {lower}",
+		"noMatchingItems": "Nenhum item correspondente",
 		"labelItems": "Itens de {label}",
 		"emptyLower": "Espaço vazio: {lower}",
 		"empty": "Vazio",
@@ -2205,6 +2208,8 @@
 	},
 	"moves": {
 		"preview": "Prévia de {move}",
+		"noMatchingMoves": "Nenhuma animação correspondente",
+		"noMatchingStates": "Nenhum estado correspondente",
 		"frames": {
 			"one": "{count} quadro",
 			"other": "{count} quadros"
@@ -3392,7 +3397,9 @@
 			"other": "{n} chamadas sem preço"
 		}
 	},
-	"shortcut": { "control": "Ctrl" },
+	"shortcut": {
+		"control": "Ctrl"
+	},
 	"report": {
 		"action": "Relatar",
 		"actionLabel": "Relatar este problema",
@@ -3571,5 +3578,14 @@
 		"hintTouch": "Arraste para mover · Segure e arraste a espada para atacar e mirar · Os botões pulam, disparam e montam",
 		"stageTopDown": "Mundo de teste do personagem. WASD, setas, clique ou arraste para mover; Shift dispara. Botão direito ou E ataca, Espaço pula, F monta. As teclas 1, 2 e 3 trocam a visualização.",
 		"stageSide": "Mundo de teste em rolagem lateral. A/D, setas esquerda e direita, clique ou arraste para mover; Shift dispara. Botão direito ou E ataca, Espaço pula, F monta. As teclas 1, 2 e 3 trocam a visualização."
+	},
+	"search": {
+		"wardrobe": "Buscar no guarda-roupa",
+		"outfits": "Buscar trajes",
+		"moves": "Buscar animações",
+		"states": "Buscar estados",
+		"colors": "Buscar cores",
+		"clear": "Limpar busca",
+		"results": "{count} de {total}"
 	}
 }

@@ -343,7 +343,8 @@
 		"miColor": "{mi} 색상",
 		"titleSavedColor": "저장된 색상",
 		"titleOriginal": "원본",
-		"titlePickAnyColor": "원하는 색상 선택"
+		"titlePickAnyColor": "원하는 색상 선택",
+		"noMatchingColors": "일치하는 색상이 없어요"
 	},
 	"colorSections": {
 		"randomLowerColors": "{lower} 색상 무작위 지정",
@@ -608,7 +609,8 @@
 		"outfits": "코디",
 		"saveALookToSwitchBetweenOutfits": "게임에서 코디를 바꿀 수 있도록 룩을 저장해 보세요.",
 		"outfitName": "코디 이름",
-		"saveCurrentLook": "현재 룩 저장"
+		"saveCurrentLook": "현재 룩 저장",
+		"noMatchingOutfits": "일치하는 코디가 없어요"
 	},
 	"pwaNotice": {
 		"readyToUpdateReloading": "업데이트 준비 완료. 다시 불러오는 중…",
@@ -807,6 +809,7 @@
 		"notShownInMoveNote": "착용 중이지만 이 동작의 모든 방향에 프레임이 없어 표시되지 않습니다.",
 		"randomLowerItem": "무작위 {lower} 아이템",
 		"newLowerItem": "새 {lower} 아이템",
+		"noMatchingItems": "일치하는 아이템이 없어요",
 		"labelItems": "{label} 아이템",
 		"emptyLower": "{lower} 비어 있음",
 		"empty": "비어 있음",
@@ -2128,6 +2131,8 @@
 	},
 	"moves": {
 		"preview": "{move} 미리보기",
+		"noMatchingMoves": "일치하는 동작이 없어요",
+		"noMatchingStates": "일치하는 상태가 없어요",
 		"frames": {
 			"other": "프레임 {count}개"
 		},
@@ -3220,7 +3225,9 @@
 			"all": {
 				"other": "캐릭터 {n}개"
 			},
-			"plan": { "other": "새 캐릭터 {n}명 예상" },
+			"plan": {
+				"other": "새 캐릭터 {n}명 예상"
+			},
 			"demo": "데모 아트는 무료"
 		},
 		"tierOneRates": "{basis} · Tier 1 요금",
@@ -3281,7 +3288,9 @@
 			"other": "요금 정보 없는 호출 {n}건"
 		}
 	},
-	"shortcut": { "control": "Ctrl" },
+	"shortcut": {
+		"control": "Ctrl"
+	},
 	"report": {
 		"action": "신고",
 		"actionLabel": "이 문제 신고",
@@ -3458,5 +3467,14 @@
 		"hintTouch": "드래그로 이동 · 검을 누른 채 드래그해 공격하고 조준 · 버튼으로 점프, 질주, 타기",
 		"stageTopDown": "캐릭터 테스트 월드예요. WASD, 화살표 키, 클릭 또는 드래그로 이동하고 Shift로 질주해요. 오른쪽 클릭이나 E로 공격하고, 스페이스로 점프하고, F로 타거나 내려요. 1, 2, 3 키로 보기를 바꿔요.",
 		"stageSide": "사이드 스크롤러 테스트 월드예요. A/D, 좌우 화살표 키, 클릭 또는 드래그로 이동하고 Shift로 질주해요. 오른쪽 클릭이나 E로 공격하고, 스페이스로 점프하고, F로 타거나 내려요. 1, 2, 3 키로 보기를 바꿔요."
+	},
+	"search": {
+		"wardrobe": "옷장 검색",
+		"outfits": "코디 검색",
+		"moves": "동작 검색",
+		"states": "상태 검색",
+		"colors": "색상 검색",
+		"clear": "검색 지우기",
+		"results": "{total}개 중 {count}개"
 	}
 }

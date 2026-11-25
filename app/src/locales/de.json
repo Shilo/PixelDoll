@@ -349,7 +349,8 @@
 		"miColor": "Farbe: {mi}",
 		"titleSavedColor": "Gespeicherte Farbe",
 		"titleOriginal": "Original",
-		"titlePickAnyColor": "Beliebige Farbe wählen"
+		"titlePickAnyColor": "Beliebige Farbe wählen",
+		"noMatchingColors": "Keine passenden Farben"
 	},
 	"colorSections": {
 		"randomLowerColors": "Zufallsfarben: {lower}",
@@ -630,7 +631,8 @@
 		"outfits": "Outfits",
 		"saveALookToSwitchBetweenOutfits": "Speichere einen Look, um in deinem Spiel zwischen Outfits zu wechseln.",
 		"outfitName": "Outfitname",
-		"saveCurrentLook": "Aktuellen Look speichern"
+		"saveCurrentLook": "Aktuellen Look speichern",
+		"noMatchingOutfits": "Keine passenden Outfits"
 	},
 	"pwaNotice": {
 		"readyToUpdateReloading": "Update bereit. Seite wird neu geladen…",
@@ -832,6 +834,7 @@
 		"notShownInMoveNote": "Der Gegenstand wird getragen, hat aber in keiner Ansicht dieser Bewegung Bilder und bleibt deshalb unsichtbar.",
 		"randomLowerItem": "Zufälliger Gegenstand: {lower}",
 		"newLowerItem": "Neuer Gegenstand: {lower}",
+		"noMatchingItems": "Keine passenden Gegenstände",
 		"labelItems": "Gegenstände: {label}",
 		"emptyLower": "Nicht belegt: {lower}",
 		"empty": "Leer",
@@ -2196,6 +2199,8 @@
 	},
 	"moves": {
 		"preview": "Vorschau für {move}",
+		"noMatchingMoves": "Keine passenden Animationen",
+		"noMatchingStates": "Keine passenden Zustände",
 		"frames": {
 			"one": "{count} Frame",
 			"other": "{count} Frames"
@@ -3313,7 +3318,10 @@
 				"one": "{n} Figur",
 				"other": "{n} Figuren"
 			},
-			"plan": { "one": "Schätzung für {n} neue Figur", "other": "Schätzung für {n} neue Figuren" },
+			"plan": {
+				"one": "Schätzung für {n} neue Figur",
+				"other": "Schätzung für {n} neue Figuren"
+			},
 			"demo": "Demo-Grafiken sind kostenlos"
 		},
 		"tierOneRates": "{basis} · Preise von Tier 1",
@@ -3380,7 +3388,9 @@
 			"other": "{n} Aufrufe ohne Preis"
 		}
 	},
-	"shortcut": { "control": "Strg" },
+	"shortcut": {
+		"control": "Strg"
+	},
 	"report": {
 		"action": "Melden",
 		"actionLabel": "Dieses Problem melden",
@@ -3559,5 +3569,14 @@
 		"hintTouch": "Ziehen bewegt · Schwert halten und ziehen greift an und zielt · Tasten springen, sprinten und sitzen auf",
 		"stageTopDown": "Figuren-Testwelt. Bewege dich mit WASD, den Pfeiltasten, per Klick oder durch Ziehen; Umschalt sprintet. Rechtsklick oder E greift an, die Leertaste springt, F sitzt auf oder ab. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
 		"stageSide": "Testwelt in Seitenansicht. Bewege dich mit A/D, den Pfeiltasten links/rechts, per Klick oder durch Ziehen; Umschalt sprintet. Rechtsklick oder E greift an, die Leertaste springt, F sitzt auf oder ab. Die Tasten 1, 2 und 3 wechseln die Ansicht."
+	},
+	"search": {
+		"wardrobe": "Garderobe durchsuchen",
+		"outfits": "Outfits durchsuchen",
+		"moves": "Animationen durchsuchen",
+		"states": "Zustände durchsuchen",
+		"colors": "Farben durchsuchen",
+		"clear": "Suche leeren",
+		"results": "{count} von {total}"
 	}
 }

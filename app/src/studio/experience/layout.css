@@ -563,9 +563,23 @@
 	overflow: auto;
 	padding: 4px 4px var(--panel-bottom) 0;
 }
+/* A panel tab's search field, then its list, which keeps its own scroll. Shared by Outfits, Moves and Colors. */
+.panel-stack {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+}
 
 /* Wardrobe: one continuous list, the slot column on the right. */
 .wardrobe {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+}
+/* Below the search field, which leaves the list when it is not worth showing. */
+.wardrobe-panes {
 	display: flex;
 	gap: 12px;
 	flex: 1;

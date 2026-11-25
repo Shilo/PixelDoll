@@ -2,11 +2,12 @@
 	import { t } from 'svelte-whisper';
 	import { onDestroy } from 'svelte';
 	// Material swatches: each option is the REAL variant ramp (lib/dress exact index swap), drawn as its color steps.
-	import { SWATCHES, materialNames, variantOf, variantRampOf } from '../lib/dress/dress.ts';
+	import { SWATCHES, variantOf, variantRampOf } from '../lib/dress/dress.ts';
 	import type { Hex, Material } from '../lib/store/manifest.ts';
 	import { doc, store, setVariant, previewVariant, clearVariantPreview } from './state.svelte.ts';
 	import { displaySwatch } from './displaySwatch.ts';
 	import { Plus } from './icons.ts';
+	import { itemMaterialNames } from './materialNames.ts';
 	// One item's materials; ColorSections gives each worn item its own section and header.
 	let { only }: { only: string } = $props();
 
@@ -14,21 +15,11 @@
 	const it = $derived(m?.items.find((i) => i.id === only));
 	const matsOf = (id: string) => (m ? m.materials.filter((x) => x.owner === id) : []);
 	const chosen = (mat: Material) => (m ? variantOf(m, doc.variants, mat.id) : undefined);
-	// names from the item's description/slot ("Metal", "Leather"), also for projects saved with the old hue labels
-	// B15: a region-split base names its own materials (Shirt, Shorts, then Skin)
-	const namesOf = (it: NonNullable<typeof m>['items'][number], mats: Material[]) =>
-		it.regions
-			? mats.map((x) => x.label)
-			: materialNames(
-					it,
-					mats.map((x) => x.ramp),
-					m ?? []
-				);
 	const nameOf = (id?: string) => {
 		const mat = m?.materials.find((x) => x.id === id),
 			it = m?.items.find((i) => i.id === mat?.owner);
 		return mat && it
-			? `${it.name} ${namesOf(it, matsOf(it.id))[matsOf(it.id).indexOf(mat)].toLowerCase()}`
+			? `${it.name} ${itemMaterialNames(it, matsOf(it.id), m ?? [])[matsOf(it.id).indexOf(mat)].toLowerCase()}`
 			: mat?.label;
 	};
 	// the picker opens on the color in use (T1 P3), not a fixed gray
@@ -68,7 +59,7 @@
 <div class="colors">
 	{#if it}
 		{@const mats = matsOf(it.id)}
-		{@const names = namesOf(it, mats)}
+		{@const names = itemMaterialNames(it, mats, m ?? [])}
 		{#each mats as mat, mi (mat.id)}
 			<div class="mat">
 				<span class="muted small">{names[mi]}</span>

@@ -343,7 +343,8 @@
 		"miColor": "{mi}の色",
 		"titleSavedColor": "保存した色",
 		"titleOriginal": "元の色",
-		"titlePickAnyColor": "好きな色を選ぶ"
+		"titlePickAnyColor": "好きな色を選ぶ",
+		"noMatchingColors": "一致するカラーはありません"
 	},
 	"colorSections": {
 		"randomLowerColors": "{lower}の色をランダムに",
@@ -608,7 +609,8 @@
 		"outfits": "コーディネート",
 		"saveALookToSwitchBetweenOutfits": "見た目を保存すると、ゲーム内でコーディネートを切り替えられます。",
 		"outfitName": "コーディネート名",
-		"saveCurrentLook": "今の見た目を保存"
+		"saveCurrentLook": "今の見た目を保存",
+		"noMatchingOutfits": "一致するコーデはありません"
 	},
 	"pwaNotice": {
 		"readyToUpdateReloading": "更新の準備ができました。再読み込みしています…",
@@ -807,6 +809,7 @@
 		"notShownInMoveNote": "装備中ですが、この動作ではどの向きにもフレームがないため表示されません。",
 		"randomLowerItem": "ランダムな{lower}",
 		"newLowerItem": "新しい{lower}",
+		"noMatchingItems": "一致するアイテムはありません",
 		"labelItems": "{label}のアイテム",
 		"emptyLower": "{lower}なし",
 		"empty": "なし",
@@ -2128,6 +2131,8 @@
 	},
 	"moves": {
 		"preview": "{move}のプレビュー",
+		"noMatchingMoves": "一致するモーションはありません",
+		"noMatchingStates": "一致するステートはありません",
 		"frames": {
 			"other": "{count}フレーム"
 		},
@@ -3220,7 +3225,9 @@
 			"all": {
 				"other": "キャラクター{n}体"
 			},
-			"plan": { "other": "新しいキャラクター{n}体の見積もり" },
+			"plan": {
+				"other": "新しいキャラクター{n}体の見積もり"
+			},
 			"demo": "デモのアートは無料"
 		},
 		"tierOneRates": "{basis}・Tier 1 の料金",
@@ -3281,7 +3288,9 @@
 			"other": "料金不明の呼び出し{n}件"
 		}
 	},
-	"shortcut": { "control": "Ctrl" },
+	"shortcut": {
+		"control": "Ctrl"
+	},
 	"report": {
 		"action": "報告",
 		"actionLabel": "この問題を報告",
@@ -3458,5 +3467,14 @@
 		"hintTouch": "ドラッグで移動 · 剣を押したままドラッグで攻撃と狙い · ボタンでジャンプ、ダッシュ、乗り降り",
 		"stageTopDown": "キャラクターのテストワールド。WASD、矢印キー、クリック、またはドラッグで移動し、Shift でダッシュします。右クリックまたは E で攻撃、スペースでジャンプ、F で乗り降りします。1、2、3キーでビューを切り替えます。",
 		"stageSide": "横スクロールのテストワールド。A/D、左右の矢印キー、クリック、またはドラッグで移動し、Shift でダッシュします。右クリックまたは E で攻撃、スペースでジャンプ、F で乗り降りします。1、2、3キーでビューを切り替えます。"
+	},
+	"search": {
+		"wardrobe": "装備を検索",
+		"outfits": "コーデを検索",
+		"moves": "モーションを検索",
+		"states": "ステートを検索",
+		"colors": "カラーを検索",
+		"clear": "検索をクリア",
+		"results": "{total} 件中 {count} 件"
 	}
 }

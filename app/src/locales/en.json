@@ -349,7 +349,8 @@
 		"miColor": "{mi} color",
 		"titleSavedColor": "Saved color",
 		"titleOriginal": "Original",
-		"titlePickAnyColor": "Pick any color"
+		"titlePickAnyColor": "Pick any color",
+		"noMatchingColors": "No matching colors"
 	},
 	"colorSections": {
 		"randomLowerColors": "Random {lower} colors",
@@ -630,7 +631,8 @@
 		"outfits": "Outfits",
 		"saveALookToSwitchBetweenOutfits": "Save a look to switch between outfits in your game.",
 		"outfitName": "Outfit name",
-		"saveCurrentLook": "Save current look"
+		"saveCurrentLook": "Save current look",
+		"noMatchingOutfits": "No matching outfits"
 	},
 	"pwaNotice": {
 		"readyToUpdateReloading": "Ready to update. Reloading...",
@@ -832,6 +834,7 @@
 		"notShownInMoveNote": "Wearing it, but it is missing frames for this move in every view, so it is not shown.",
 		"randomLowerItem": "Random {lower} item",
 		"newLowerItem": "New {lower} item",
+		"noMatchingItems": "No matching items",
 		"labelItems": "{label} items",
 		"emptyLower": "Empty {lower}",
 		"empty": "Empty",
@@ -2196,6 +2199,8 @@
 	},
 	"moves": {
 		"preview": "{move} preview",
+		"noMatchingMoves": "No matching moves",
+		"noMatchingStates": "No matching states",
 		"frames": {
 			"one": "{count} frame",
 			"other": "{count} frames"
@@ -3562,5 +3567,14 @@
 		"hintTouch": "Drag to move · Hold and drag the sword to attack and aim · Buttons jump, sprint and mount",
 		"stageTopDown": "Character test world. WASD, arrows, click or drag to move; Shift sprints. Right-click or E attacks, Space jumps, F mounts. Keys 1, 2, 3 switch views.",
 		"stageSide": "Side-scroller test world. A/D, left and right arrows, click or drag to move; Shift sprints. Right-click or E attacks, Space jumps, F mounts. Keys 1, 2, 3 switch views."
+	},
+	"search": {
+		"wardrobe": "Search wardrobe",
+		"outfits": "Search outfits",
+		"moves": "Search moves",
+		"states": "Search states",
+		"colors": "Search colors",
+		"clear": "Clear search",
+		"results": "{count} of {total}"
 	}
 }

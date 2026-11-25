@@ -1506,6 +1506,86 @@ async function openDemo(page: Page) {
 
 const step = (s: string) => console.log('ok', s);
 
+test('studio demo: list search appears only when a panel overflows and filters without reordering', async ({
+	context,
+	page
+}) => {
+	const finish = await demoGuard(context);
+	await openDemo(page);
+
+	// Wardrobe already has more rows than a glance, so its field shows without help.
+	const wardrobe = page.getByRole('searchbox', { name: 'Search wardrobe', exact: true });
+	await expect(wardrobe).toBeVisible();
+	await wardrobe.fill('wizard');
+	await expect(page.getByRole('button', { name: /^Wizard hat(,|$)/ })).toHaveCount(1);
+	await expect(page.getByRole('button', { name: /^Steel helmet(,|$)/ })).toHaveCount(0);
+	await expect(section(page, 'Head')).toBeVisible();
+	// A category word keeps every item in that category.
+	await wardrobe.fill('head');
+	await expect(page.getByRole('button', { name: /^Wizard hat(,|$)/ })).toHaveCount(1);
+	await expect(page.getByRole('button', { name: /^Steel helmet(,|$)/ })).toHaveCount(1);
+	await wardrobe.fill('nothing matches this');
+	await expect(page.getByText('No matching items', { exact: true })).toBeVisible();
+	await page.getByRole('button', { name: 'Clear search', exact: true }).click();
+	await expect(wardrobe).toHaveValue('');
+	await expect(page.getByRole('button', { name: /^Wizard hat(,|$)/ })).toHaveCount(1);
+	await expect(page.getByRole('button', { name: /^Steel helmet(,|$)/ })).toHaveCount(1);
+	// Filtering narrows the list in place; it never reorders the categories that remain.
+	const groupKeys = () =>
+		page
+			.locator('#wardrobe-list section[data-group]')
+			.evaluateAll((sections) => sections.map((section) => section.getAttribute('data-group')));
+	const fullOrder = await groupKeys();
+	await wardrobe.fill('e');
+	const shownOrder = await groupKeys();
+	const positions = shownOrder.map((key) => fullOrder.indexOf(key!));
+	expect(positions).toEqual([...positions].sort((a, b) => a - b));
+	await page.getByRole('button', { name: 'Clear search', exact: true }).click();
+
+	// Short panels stay uncluttered until their content scrolls.
+	for (const [tab, label, query, kept, hidden] of [
+		['Outfits', 'Search outfits', 'base', '^Base only', '^Adventurer'],
+		['Moves', 'Search moves', 'walk', '^Walk', '^Cross punch']
+	] as const) {
+		await equipmentMode(page, tab);
+		const search = page.getByRole('searchbox', { name: label, exact: true });
+		await expect(search).toHaveCount(0);
+		const list = page.locator('.panel-stack > .panel-list');
+		await list.evaluate((element) => {
+			(element as HTMLElement).style.maxHeight = '40px';
+		});
+		await expect(search).toBeVisible();
+		await search.fill(query);
+		await expect(list.getByRole('button', { name: new RegExp(kept) })).toHaveCount(1);
+		await expect(list.getByRole('button', { name: new RegExp(hidden) })).toHaveCount(0);
+		await search.press('Escape');
+		await expect(search).toHaveValue('');
+	}
+
+	await equipmentMode(page, 'Colors');
+	const colors = page.getByRole('searchbox', { name: 'Search colors', exact: true });
+	await page.locator('.panel-stack > .section-list').evaluate((list) => {
+		(list as HTMLElement).style.maxHeight = '80px';
+	});
+	await expect(colors).toBeVisible();
+	await colors.fill('helmet');
+	await expect(page.getByRole('heading', { name: 'Steel helmet', exact: true })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Leather vest', exact: true })).toHaveCount(0);
+	// A material label finds the item whose colors can change that material.
+	await colors.fill('metal');
+	await expect(page.getByRole('heading', { name: 'Steel helmet', exact: true })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Red cape', exact: true })).toHaveCount(0);
+	await colors.fill('nothing matches this');
+	await expect(page.getByText('No matching colors', { exact: true })).toBeVisible();
+	await colors.fill('');
+
+	// An empty States list has nothing to search.
+	await equipmentMode(page, 'States');
+	await expect(page.getByRole('searchbox', { name: 'Search states', exact: true })).toHaveCount(0);
+
+	await finish();
+});
+
 test('dev server: a saved item moves between slots by mouse, keyboard menu and touch', async ({
 	context,
 	page

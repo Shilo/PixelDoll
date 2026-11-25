@@ -349,7 +349,8 @@
 		"miColor": "Couleur : {mi}",
 		"titleSavedColor": "Couleur enregistrée",
 		"titleOriginal": "Originale",
-		"titlePickAnyColor": "Choisir n’importe quelle couleur"
+		"titlePickAnyColor": "Choisir n’importe quelle couleur",
+		"noMatchingColors": "Aucune couleur correspondante"
 	},
 	"colorSections": {
 		"randomLowerColors": "Choisir des couleurs au hasard : {lower}",
@@ -630,7 +631,8 @@
 		"outfits": "Tenues",
 		"saveALookToSwitchBetweenOutfits": "Enregistrez un look pour passer d’une tenue à l’autre dans votre jeu.",
 		"outfitName": "Nom de la tenue",
-		"saveCurrentLook": "Enregistrer le look actuel"
+		"saveCurrentLook": "Enregistrer le look actuel",
+		"noMatchingOutfits": "Aucune tenue correspondante"
 	},
 	"pwaNotice": {
 		"readyToUpdateReloading": "Prêt pour la mise à jour. Rechargement…",
@@ -832,6 +834,7 @@
 		"notShownInMoveNote": "L’objet est porté, mais il reste invisible car il manque des images dans toutes les vues de ce mouvement.",
 		"randomLowerItem": "Choisir un objet au hasard : {lower}",
 		"newLowerItem": "Nouvel objet : {lower}",
+		"noMatchingItems": "Aucun objet correspondant",
 		"labelItems": "Objets : {label}",
 		"emptyLower": "Ne rien porter : {lower}",
 		"empty": "Vide",
@@ -2196,6 +2199,8 @@
 	},
 	"moves": {
 		"preview": "Aperçu de {move}",
+		"noMatchingMoves": "Aucune animation correspondante",
+		"noMatchingStates": "Aucun état correspondant",
 		"frames": {
 			"one": "{count} image",
 			"other": "{count} images"
@@ -3383,7 +3388,9 @@
 			"other": "{n} appels sans prix"
 		}
 	},
-	"shortcut": { "control": "Ctrl" },
+	"shortcut": {
+		"control": "Ctrl"
+	},
 	"report": {
 		"action": "Signaler",
 		"actionLabel": "Signaler ce problème",
@@ -3562,5 +3569,14 @@
 		"hintTouch": "Glissez pour vous déplacer · Maintenez et glissez l’épée pour attaquer et viser · Les boutons sautent, sprintent et montent",
 		"stageTopDown": "Monde de test du personnage. WASD, les flèches, un clic ou un glissement pour se déplacer ; Maj sprinte. Clic droit ou E attaque, Espace saute, F monte ou descend. Les touches 1, 2, 3 changent de vue.",
 		"stageSide": "Monde de test à défilement horizontal. A/D, les flèches gauche/droite, un clic ou un glissement pour se déplacer ; Maj sprinte. Clic droit ou E attaque, Espace saute, F monte ou descend. Les touches 1, 2, 3 changent de vue."
+	},
+	"search": {
+		"wardrobe": "Rechercher dans la garde-robe",
+		"outfits": "Rechercher des tenues",
+		"moves": "Rechercher des animations",
+		"states": "Rechercher des états",
+		"colors": "Rechercher des couleurs",
+		"clear": "Effacer la recherche",
+		"results": "{count} sur {total}"
 	}
 }

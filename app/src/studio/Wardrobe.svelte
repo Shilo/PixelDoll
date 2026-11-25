@@ -27,6 +27,7 @@
 		unfitText
 	} from './model.ts';
 	import { itemKey } from '../lib/equipment/copy.ts';
+	import { matchesSearch } from '../lib/search/match.ts';
 	import type { SharedItem } from '../lib/equipment/shared.ts';
 	import TileMarks, { sortMarks, type Mark } from './TileMarks.svelte';
 	import type { CellKey, Item, Manifest } from '../lib/store/manifest.ts';
@@ -41,6 +42,7 @@
 	import { slotDrag } from './slotDrag.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { sharedItemsHidden } from './wardrobeVisibility.svelte.ts';
+	import { createSearchVisibility } from './searchVisibility.svelte.ts';
 	import {
 		ui,
 		doc,
@@ -87,6 +89,7 @@
 	import ItemMenu from './ItemMenu.svelte';
 	import ItemChoiceMenu from './ItemChoiceMenu.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
+	import ListSearch from './ListSearch.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import {
 		ArrowDown,
@@ -111,6 +114,7 @@
 		new Intl.ListFormat(getLocale(), { type: 'unit' }).format(parts);
 	let list = $state<HTMLElement>();
 	let rail = $state<HTMLElement>();
+	let query = $state('');
 	let spacer = $state(0);
 	let notShownCurrent = $state(false);
 	// The group the list itself last reported; any other change to ui.group came from elsewhere and scrolls to it.
@@ -367,6 +371,45 @@
 					.map((c) => ({ ...c, label: displayMessage(slotLabelMessage(m, c.key)) }))
 			: []
 	);
+	/** A query narrows what the list and the rail show; an empty one leaves every section exactly as built. */
+	const searching = $derived(query.trim() !== '');
+	const filteredSections = $derived.by(() => {
+		if (!searching) return sections;
+		return sections
+			.map((s) => {
+				// A category's own name keeps all of it, so typing "shirt" shows the whole Shirt category.
+				if (matchesSearch([s.label], query)) return s;
+				return {
+					...s,
+					items: s.items.filter((it) => matchesSearch([it.name, s.label], query)),
+					pending: s.pending.filter((x) => matchesSearch([x.input.name, s.label], query)),
+					others: s.others.filter((x) => matchesSearch([x.item.name, s.label, x.sourceName], query))
+				};
+			})
+			.filter((s) => s.items.length + s.pending.length + s.others.length > 0);
+	});
+	const filteredNotShown = $derived(
+		searching ? notShown.filter((c) => matchesSearch([c.label], query)) : notShown
+	);
+	const searchTotal = $derived(
+		sections.reduce((n, s) => n + s.items.length + s.pending.length + s.others.length, 0) +
+			(notShown.length ? 1 : 0)
+	);
+	const searchShown = $derived(
+		filteredSections.reduce((n, s) => n + s.items.length + s.pending.length + s.others.length, 0) +
+			(filteredNotShown.length ? 1 : 0)
+	);
+	const searchVisibility = createSearchVisibility({
+		element: () => list,
+		total: () => searchTotal,
+		query: () => query,
+		reserve: () => spacer
+	});
+	// A query belongs to the character whose items it filters.
+	$effect(() => {
+		void doc.id;
+		query = '';
+	});
 	/** Every corner icon another character's item shows here, each with the words its tooltip and ⋮ menu give. */
 	function sharedMarks(x: SharedItem): Mark[] {
 		if (!m) return [];
@@ -538,7 +581,10 @@
 	});
 	$effect(() => {
 		void sections;
+		// The list's last element changes with a query too, so the spacer follows the rows on screen.
+		void filteredSections;
 		void notShown.length;
+		void filteredNotShown.length;
 		void notShownOpen;
 		if (list && !untrack(() => sections.some((slot) => slot.key === ui.group))) {
 			if (suppressSpy) list.scrollTo({ top: list.scrollTop, behavior: 'instant' });
@@ -793,6 +839,9 @@
 	}
 	/** Where a drop at the pointer would land: the shown index, and the drop line's offset in the list. */
 	function dropTarget(source: DragSource): { to: number; line: number } | null {
+		// A filtered list shows a subset of the slots, so the gap under the pointer no longer names a place in the whole
+		// list: no reordering while searching. Not shown still takes a drop, since hiding needs no index.
+		if (searching) return null;
 		if (source.rail) {
 			if (!rail) return null;
 			const box = rail.getBoundingClientRect();
@@ -958,680 +1007,731 @@
 		};
 	}
 	onMount(() => () => cancelAnimationFrame(dragFrame));
+	// A query swaps the rows under anything anchored to them: close the slot and item menus, drop an armed tile and
+	// cancel a drag (the same reset its own end(false) does). A category filtered out of the list would leave the rail
+	// on nothing, so the rail moves to the first one still shown. That is only the grouping state: show() and reveal()
+	// need a section or tile that a query may have removed, and scrolling while typing would move the field's list.
+	let searched = untrack(() => query);
+	$effect(() => {
+		if (query === searched) return;
+		searched = query;
+		closeSlotMenu();
+		document.getElementById('item-menu')?.hidePopover();
+		armed = '';
+		armedItem = '';
+		if (untrack(() => drag)) {
+			cancelAnimationFrame(dragFrame);
+			dragPreview?.hidePopover();
+			drag = null;
+			itemDrop = '';
+			announce = message('wardrobe.dragCanceled');
+		}
+		const shown = untrack(() => filteredSections);
+		const group = untrack(() => ui.group);
+		// The Not shown section leaves with the rows that matched it, so the rail (and its only current tab) must not
+		// keep pointing there.
+		const notShownHere =
+			untrack(() => notShownCurrent) && untrack(() => filteredNotShown.length) > 0;
+		if (!notShownHere) notShownCurrent = false;
+		const first = shown[0]?.key;
+		if (first && !notShownHere && !shown.some((s) => s.key === group)) {
+			reported = first;
+			ui.group = first;
+		}
+	});
 </script>
 
 {#if m && view.project}
 	<div class="wardrobe">
-		<div
-			class="section-list equipment-scroll"
-			id="wardrobe-list"
-			bind:this={list}
-			onscroll={scrolled}
-			{@attach stickyFade({ inside: 10, outside: 10 })}
-		>
-			{#each sections as s (s.key)}
-				{@const lower = getLocale() === 'en' ? s.label.toLowerCase() : s.label}
-				{@const count = s.fromOthers ? s.others.length : s.items.length + s.pending.length}
-				<section
-					class="slot-section"
-					data-group={s.key}
-					data-own={!s.fromOthers || undefined}
-					id={sectionId(s.key)}
-					aria-labelledby="{sectionId(s.key)}-title"
-				>
-					<div
-						class="bu-section-head"
-						data-current={(drag?.source.item
-							? itemDrop === s.key
-							: !notShownCurrent && ui.group === s.key) || undefined}
-						data-slot-head={!s.fromOthers || undefined}
-						data-armed={armed === s.key || undefined}
-						data-dragged={(!drag?.source.item && drag?.source.key === s.key) || undefined}
+		<ListSearch
+			bind:value={query}
+			label={t('search.wardrobe')}
+			clearLabel={t('search.clear')}
+			summary={t('search.results', { count: searchShown, total: searchTotal })}
+			shown={searchVisibility.visible}
+		/>
+		<div class="wardrobe-panes">
+			<div
+				class="section-list equipment-scroll"
+				id="wardrobe-list"
+				bind:this={list}
+				onscroll={scrolled}
+				{@attach stickyFade({ inside: 10, outside: 10 })}
+			>
+				{#each filteredSections as s (s.key)}
+					{@const lower = getLocale() === 'en' ? s.label.toLowerCase() : s.label}
+					{@const count = s.fromOthers ? s.others.length : s.items.length + s.pending.length}
+					<section
+						class="slot-section"
+						data-group={s.key}
+						data-own={!s.fromOthers || undefined}
+						id={sectionId(s.key)}
+						aria-labelledby="{sectionId(s.key)}-title"
 					>
-						{#if s.fromOthers}<GroupIcon group={s.key} size={16} />{/if}
-						<h3 class="bu-section-title" id="{sectionId(s.key)}-title" aria-label={s.label}>
-							{#if s.fromOthers}{s.label}{:else}<button
-									class="bu-action section-menu"
-									aria-label={s.label}
-									aria-describedby={`${sectionId(s.key)}-count`}
-									data-slot-button={s.key}
-									popovertarget="slot-menu"
-									aria-haspopup="menu"
-									aria-expanded={slotMenuOpen && slotFor === s.key}
-									onclick={() => {
-										// The same header toggles the menu closed; another header reopens it for its slot.
-										if (slotMenuOpen && slotFor !== s.key) closeSlotMenu();
-										slotFor = s.key;
-									}}
-									oncontextmenu={(e) => {
-										e.preventDefault();
-										if (!armed && !drag && !(slotMenuOpen && slotFor === s.key))
-											e.currentTarget.click();
-									}}
-									{@attach (node) =>
-										untrack(() =>
-											slotDrag(node, dragOptions({ key: s.key, label: s.label, hidden: false }))
-										)}
-									><span class="slot-drag-icon"
-										><GroupIcon group={s.key} size={16} /><GripVertical
-											class="slot-grip"
-											size={16}
-										/></span
-									><span class="section-menu-name">{s.label}</span><span
-										class="bu-section-count"
-										id={`${sectionId(s.key)}-count`}
-										><span aria-hidden="true">{formatNumber(count)}</span><span class="sr"
-											>{t('wardrobe.itemCount', { count, n: formatNumber(count) })}</span
-										></span
-									></button
-								>{/if}
-						</h3>
-						{#if s.fromOthers}<span class="bu-section-count"
-								><span aria-hidden="true">{formatNumber(count)}</span><span class="sr"
-									>{t('wardrobe.itemCount', { count, n: formatNumber(count) })}</span
-								></span
-							>{/if}
-						{#if !s.fromOthers}
-							<button
-								class="bu-action section-action"
-								data-variant="quiet"
-								aria-label={t('wardrobe.randomLowerItem', { lower })}
-								title={t('wardrobe.randomLowerItem', { lower })}
-								disabled={!s.choices}
-								onclick={() => randomizeGroup(s.key)}><Shuffle size={16} /></button
-							>
-							<button
-								class="bu-action section-action"
-								data-variant="quiet"
-								aria-label={t('wardrobe.newLowerItem', { lower })}
-								title={t('wardrobe.newLowerItem', { lower })}
-								onclick={() => openNewItem(s.key)}><Plus size={18} /></button
-							>
-						{/if}
-					</div>
-					<div class="section-body">
-						{#if s.fromOthers}<p class="section-note faint small">{s.fromOthers}</p>{/if}
-						{#if s.holder}<p class="section-note faint small">
-								{t('wardrobe.heldBy', { name: s.holder.name })}
-							</p>{/if}
 						<div
-							class="slot-tiles"
-							role="group"
-							aria-label={t('wardrobe.labelItems', { label: s.label })}
+							class="bu-section-head"
+							data-current={(drag?.source.item
+								? itemDrop === s.key
+								: !notShownCurrent && ui.group === s.key) || undefined}
+							data-slot-head={!s.fromOthers || undefined}
+							data-armed={armed === s.key || undefined}
+							data-dragged={(!drag?.source.item && drag?.source.key === s.key) || undefined}
 						>
+							{#if s.fromOthers}<GroupIcon group={s.key} size={16} />{/if}
+							<h3 class="bu-section-title" id="{sectionId(s.key)}-title" aria-label={s.label}>
+								{#if s.fromOthers}{s.label}{:else}<button
+										class="bu-action section-menu"
+										aria-label={s.label}
+										aria-describedby={`${sectionId(s.key)}-count`}
+										data-slot-button={s.key}
+										popovertarget="slot-menu"
+										aria-haspopup="menu"
+										aria-expanded={slotMenuOpen && slotFor === s.key}
+										onclick={() => {
+											// The same header toggles the menu closed; another header reopens it for its slot.
+											if (slotMenuOpen && slotFor !== s.key) closeSlotMenu();
+											slotFor = s.key;
+										}}
+										oncontextmenu={(e) => {
+											e.preventDefault();
+											if (!armed && !drag && !(slotMenuOpen && slotFor === s.key))
+												e.currentTarget.click();
+										}}
+										{@attach (node) =>
+											untrack(() =>
+												slotDrag(node, dragOptions({ key: s.key, label: s.label, hidden: false }))
+											)}
+										><span class="slot-drag-icon"
+											><GroupIcon group={s.key} size={16} /><GripVertical
+												class="slot-grip"
+												size={16}
+											/></span
+										><span class="section-menu-name">{s.label}</span><span
+											class="bu-section-count"
+											id={`${sectionId(s.key)}-count`}
+											><span aria-hidden="true">{formatNumber(count)}</span><span class="sr"
+												>{t('wardrobe.itemCount', { count, n: formatNumber(count) })}</span
+											></span
+										></button
+									>{/if}
+							</h3>
+							{#if s.fromOthers}<span class="bu-section-count"
+									><span aria-hidden="true">{formatNumber(count)}</span><span class="sr"
+										>{t('wardrobe.itemCount', { count, n: formatNumber(count) })}</span
+									></span
+								>{/if}
 							{#if !s.fromOthers}
 								<button
-									class="bu-tile item-tile"
-									data-variant="empty"
-									aria-pressed={!s.worn}
-									aria-label={t('wardrobe.emptyLower', { lower })}
-									onclick={() => clearSlots([s.key])}
-									><span class="bu-tile-art tile-art" aria-hidden="true"><Ban size={26} /></span
-									><span class="bu-tile-label">{t('wardrobe.empty')}</span>{#if !s.worn}<span
-											class="tile-marks"
-											aria-hidden="true"
-											><span class="bu-tile-check" title={t('wardrobe.titleNothingWornHere')}
-												><Check /></span
-											></span
-										>{/if}</button
+									class="bu-action section-action"
+									data-variant="quiet"
+									aria-label={t('wardrobe.randomLowerItem', { lower })}
+									title={t('wardrobe.randomLowerItem', { lower })}
+									disabled={!s.choices}
+									onclick={() => randomizeGroup(s.key)}><Shuffle size={16} /></button
 								>
-							{/if}
-							{#each s.items as it (it.id)}
-								{@const on = doc.items[it.slot] === it.id && !doc.drafts[it.slot]}
-								{@const marks = marksOf(it)}
-								{@const shownHidden = marks.some((x) => x.kind === 'hidden')}
-								{@const away = !shownHidden && offMove(it)}
-								{@const chooses = offMove(it) && choosable(it)}
-								{@const job = jobOf(it.id)}
-								{@const jobMove = job && displayMove(job.clip, m?.rig.animations ?? [])}
-								<!-- The ⋮ is a sibling of the tile, never nested in it; right-click and Shift+F10 open the same menu. -->
-								<div
-									class="tile-wrap hover-actions"
-									role="none"
-									{@attach (node) =>
-										untrack(() =>
-											slotDrag(node, {
-												...dragOptions({ key: s.key, label: it.name, hidden: false, item: it }),
-												menu: openMenu,
-												allowStart: (target) =>
-													target instanceof Element &&
-													!!target.closest('.item-tile') &&
-													!!m &&
-													itemSlotTargets(m, it).length > 0
-											})
-										)}
-								>
-									<button
-										class="bu-tile item-tile"
-										data-selected={ui.selected === it.id || armedItem === it.id || undefined}
-										data-item-armed={armedItem === it.id || undefined}
-										data-tile={it.id}
-										data-dim={shownHidden || away || undefined}
-										aria-pressed={on}
-										aria-haspopup={chooses ? 'menu' : undefined}
-										aria-expanded={chooses ? choiceOpen && choiceFor === it.id : undefined}
-										aria-label={tileName(
-											it.name,
-											marks,
-											away ? t('wardrobe.notShownInMove') : undefined,
-											job?.status === 'drawing'
-												? t('wardrobe.itemDrawing', {
-														move: jobMove!,
-														percent: formatPercent(job.percent / 100)
-													})
-												: job
-													? t('wardrobe.itemQueued', { move: jobMove! })
-													: undefined
-										)}
-										onclick={(event) =>
-											chooses ? tapDimmed(it, event.currentTarget) : wear(it.id)}
-									>
-										<span class="bu-tile-art tile-art" aria-hidden="true" {@attach lazyArt(it.id)}
-											>{#if seen.has(it.id)}<Thumb
-													project={view.project}
-													item={it}
-													box={64}
-												/>{/if}{#if job}<span
-													class="bu-ring ring generation-ring"
-													style:--p={job.status === 'drawing' ? job.percent : undefined}
-												></span>{/if}</span
-										>{#if job}<span class="generation-caption"
-												><span class="generation-time bu-muted small num" aria-hidden="true"
-													>{job.status === 'drawing'
-														? formatPercent(job.percent / 100)
-														: t('generation.status.queued')} · {jobMove}</span
-												><span class="bu-tile-label tile-name">{it.name}</span></span
-											>{:else}<span class="bu-tile-label tile-name">{it.name}</span>{/if}
-										<TileMarks {marks} />
-									</button>
-									<button
-										class="bu-tile-more tile-more hover-actions-button"
-										popovertarget="item-menu"
-										aria-haspopup="menu"
-										aria-expanded={menuOpen && menuFor === it.id}
-										aria-label={t('wardrobe.moreOptionsForName', { name: it.name })}
-										title={t('wardrobe.titleOptions')}
-										onclick={() => {
-											// The same ⋮ toggles the menu closed; another tile's ⋮ reopens it for that tile.
-											if (menuOpen && menuFor !== it.id)
-												document.getElementById('item-menu')?.hidePopover();
-											menuFor = it.id;
-										}}><EllipsisVertical size={18} /></button
-									>
-								</div>
-							{/each}
-							{#each s.pending as x (x.draft.spec.id)}
-								{@const p = genProgress(x, $queue.jobs)}
-								{@const info = generationStatus(
-									x,
-									$queue.jobs,
-									now,
-									!!app.key,
-									$queue.paused,
-									outcomeFormatters
-								)}
-								{@const status = displayMessage(info.text)}
-								{@const on = doc.drafts[x.draft.spec.slot] === x.draft.spec.id}
-								{@const preview = store.results[x.draft.spec.id]?.preview}
-								{@const previewItem = preview?.manifest.items.find(
-									(it) => it.id === x.draft.spec.id
-								)}
-								{@const firstFrame = store.results[x.draft.spec.id]?.thumbnail}
-								{@const thumbnail = firstFrame ? crop(firstFrame) : null}
-								<!-- a draft tile wears the draft like a saved item (display only, while it loads or awaits review) -->
-								<div
-									class="tile-wrap hover-actions"
-									role="none"
-									oncontextmenu={(event) => {
-										event.preventDefault();
-										openMenu(event.currentTarget);
-									}}
-								>
-									<button
-										class="bu-tile item-tile"
-										data-selected={ui.selected === `gen:${x.draft.spec.id}` || undefined}
-										data-tile="gen:{x.draft.spec.id}"
-										aria-label={x.phase === 'running'
-											? t('wardrobe.generationTileRunning', {
-													name: x.input.name,
-													percent: formatPercent(p.pct / 100),
-													status
-												})
-											: on
-												? t('wardrobe.generationTileWearing', { name: x.input.name, status })
-												: t('wardrobe.generationTile', { name: x.input.name, status })}
-										aria-pressed={x.phase === 'running' ? on : undefined}
-										aria-haspopup={x.phase !== 'running' ? 'dialog' : undefined}
-										onclick={() =>
-											x.phase !== 'running'
-												? void openGenerationReview(x.draft.spec.id)
-												: wearDraft(x.draft.spec.id)}
-										onkeydown={(event) => {
-											if (event.key === 'F10' && event.shiftKey) {
-												event.preventDefault();
-												openMenu(event.currentTarget.parentElement!);
-											}
-										}}
-									>
-										<span class="bu-tile-art tile-art" aria-hidden="true">
-											<span class="generation-artwork" class:generating={x.phase === 'running'}>
-												{#if thumbnail}<Sprite
-														img={thumbnail}
-														k={1}
-														w={thumbnail.w}
-														h={thumbnail.h}
-														fitToBox
-														label={x.input.name}
-													/>
-												{:else if preview && previewItem}<Thumb
-														project={preview}
-														item={previewItem}
-														box={x.phase === 'running' ? 12 : 40}
-													/>
-												{:else if x.phase === 'failed'}<CircleAlert size={24} />
-												{:else if x.phase !== 'running'}<GroupIcon group={s.key} size={24} />{/if}
-											</span>
-											{#if x.phase === 'running'}<span
-													class="bu-ring ring generation-ring"
-													style:--p={p.pct}
-												></span>{/if}
-										</span>
-										{#if x.phase === 'running'}<span
-												class="generation-percent bu-muted small num"
-												aria-hidden="true">{formatPercent(p.pct / 100)}</span
-											>{/if}
-										<span class="generation-caption">
-											<span class="generation-time bu-muted small num" aria-hidden="true"
-												>{status}</span
-											>
-											<span class="bu-tile-label tile-name">{x.input.name}</span>
-										</span>
-										<TileMarks
-											marks={sortMarks([
-												on && wornMark,
-												info.attention && { kind: 'check', label: status, text: status }
-											])}
-										/>
-									</button>
-									{#if x.phase === 'running'}<span
-											class="sr"
-											role="progressbar"
-											aria-label={t('wardrobe.nameProgress', { name: x.input.name })}
-											aria-valuenow={p.pct}
-											aria-valuemin={0}
-											aria-valuemax={100}
-											aria-valuetext={t('wardrobe.generationProgress', {
-												percent: formatPercent(p.pct / 100),
-												status
-											})}
-										></span>{/if}
-									<button
-										class="bu-tile-more tile-more hover-actions-button"
-										popovertarget="item-menu"
-										aria-haspopup="menu"
-										aria-expanded={menuOpen && menuFor === 'gen:' + x.draft.spec.id}
-										title={t('wardrobe.titleOptions')}
-										aria-label={t('wardrobe.moreOptionsForName', { name: x.input.name })}
-										onclick={() => {
-											if (menuOpen && menuFor !== 'gen:' + x.draft.spec.id)
-												document.getElementById('item-menu')?.hidePopover();
-											menuFor = 'gen:' + x.draft.spec.id;
-										}}><EllipsisVertical size={18} /></button
-									>
-								</div>
-							{/each}
-							{#each s.others as x (sharedKey(x))}
-								{@const key = sharedKey(x)}
-								{@const adding = shared.adding === key}
-								{@const remake = x.fit === 'remake'}
-								{@const marks = sharedMarks(x)}
-								<!-- Like an own tile: the tile wears it (on the demo, in a saved copy), the ⋮ explains how it fits. -->
-								<div class="tile-wrap hover-actions" role="none" {@attach contextMenu(openMenu)}>
-									<button
-										class="bu-tile item-tile shared-tile"
-										data-selected={ui.selected === key || undefined}
-										data-tile={key}
-										data-dim={remake || adding || undefined}
-										aria-label={tileName(x.item.name, marks)}
-										aria-busy={adding}
-										aria-disabled={!!shared.adding || undefined}
-										aria-haspopup={remake ? 'menu' : undefined}
-										aria-expanded={remake ? menuOpen && menuFor === key : undefined}
-										onclick={(e) =>
-											remake ? openMenu(e.currentTarget.parentElement!) : addShared(x)}
-									>
-										<span class="bu-tile-art tile-art" aria-hidden="true" {@attach lazyArt(key)}
-											>{#if seen.has(key)}<SharedThumb entry={x} />{/if}</span
-										><span class="bu-tile-label tile-name">{x.item.name}</span>
-										<TileMarks {marks} />
-									</button>
-									<button
-										class="bu-tile-more tile-more hover-actions-button"
-										popovertarget="item-menu"
-										aria-haspopup="menu"
-										aria-expanded={menuOpen && menuFor === key}
-										aria-label={t('wardrobe.moreOptionsForName', { name: x.item.name })}
-										title={t('wardrobe.titleOptions')}
-										onclick={() => {
-											if (menuOpen && menuFor !== key)
-												document.getElementById('item-menu')?.hidePopover();
-											menuFor = key;
-										}}><EllipsisVertical size={18} /></button
-									>
-								</div>
-							{/each}
-							{#if !count && !s.fromOthers}
 								<button
-									class="bu-tile item-tile"
-									data-variant="add"
+									class="bu-action section-action"
+									data-variant="quiet"
 									aria-label={t('wardrobe.newLowerItem', { lower })}
-									onclick={() => openNewItem(s.key)}
-									><span class="bu-tile-art tile-art" aria-hidden="true"><Plus size={26} /></span
-									><span class="bu-tile-label">{t('common.new')}</span></button
+									title={t('wardrobe.newLowerItem', { lower })}
+									onclick={() => openNewItem(s.key)}><Plus size={18} /></button
 								>
 							{/if}
 						</div>
-					</div>
-				</section>
-			{/each}
-			{#if !own.length}<p class="faint small no-slots">
-					{t('wardrobe.noSlotsAreShownShowOneBelow')}
-				</p>{/if}
-			{#if notShown.length}
-				<div class="not-shown">
-					<button
-						class="bu-action bu-section-head not-shown-toggle"
-						data-current={(drag ? drag.overHide : notShownCurrent) || undefined}
-						data-variant="quiet"
-						aria-expanded={notShownOpen}
-						aria-controls="wardrobe-not-shown"
-						onclick={() => void toggleNotShown()}
-						><EyeOff size={16} aria-hidden="true" /><span class="bu-section-title"
-							>{t('wardrobe.notShown')}</span
-						><span class="bu-section-count not-shown-count">{formatNumber(notShown.length)}</span
-						><ChevronRight class="not-shown-chevron" size={16} aria-hidden="true" /></button
-					>
-					<div id="wardrobe-not-shown" hidden={!notShownOpen}>
-						<p class="faint small not-shown-note" id="wardrobe-not-shown-note">
-							{t('wardrobe.dragASlotOrTapItsEye')}
-						</p>
-						<ul class="not-shown-list" aria-describedby="wardrobe-not-shown-note">
-							{#each notShown as c (c.key)}
-								<li
-									class="not-shown-row"
-									data-armed={armed === c.key || undefined}
-									data-dragged={drag?.source.key === c.key || undefined}
-									{@attach (node) =>
-										untrack(() =>
-											slotDrag(node, {
-												...dragOptions({ key: c.key, label: c.label, hidden: true }),
-												menu: (element) =>
-													openSlotMenu(
-														c.key,
-														element.querySelector<HTMLButtonElement>('[data-show-slot]')!
-													)
-											})
-										)}
-								>
+						<div class="section-body">
+							{#if s.fromOthers}<p class="section-note faint small">{s.fromOthers}</p>{/if}
+							{#if s.holder}<p class="section-note faint small">
+									{t('wardrobe.heldBy', { name: s.holder.name })}
+								</p>{/if}
+							<div
+								class="slot-tiles"
+								role="group"
+								aria-label={t('wardrobe.labelItems', { label: s.label })}
+							>
+								{#if !s.fromOthers}
 									<button
-										class="bu-action not-shown-slot"
-										aria-label={t('slotsSheet.showLabel', { label: c.label })}
-										data-show-slot={c.key}
-										popovertarget="slot-menu"
-										aria-haspopup="menu"
-										aria-expanded={slotMenuOpen && slotFor === c.key}
-										onclick={(event) => {
-											event.preventDefault();
-											void showHidden(c.key);
-										}}
-										><span class="slot-drag-icon"
-											><GroupIcon group={c.key} size={18} /><GripVertical
-												class="slot-grip"
-												size={18}
-											/></span
-										>
-										<span class="not-shown-name">{c.label}</span><Eye
-											size={18}
-											aria-hidden="true"
-										/></button
+										class="bu-tile item-tile"
+										data-variant="empty"
+										aria-pressed={!s.worn}
+										aria-label={t('wardrobe.emptyLower', { lower })}
+										onclick={() => clearSlots([s.key])}
+										><span class="bu-tile-art tile-art" aria-hidden="true"><Ban size={26} /></span
+										><span class="bu-tile-label">{t('wardrobe.empty')}</span>{#if !s.worn}<span
+												class="tile-marks"
+												aria-hidden="true"
+												><span class="bu-tile-check" title={t('wardrobe.titleNothingWornHere')}
+													><Check /></span
+												></span
+											>{/if}</button
 									>
-								</li>
-							{/each}
-						</ul>
-					</div>
-				</div>
-			{/if}
-			{#if shared.framesError}<p class="notice warn small" role="alert">
-					{displayNestedMessage(shared.framesError)}
-				</p>{/if}
-			{#if !sharedHidden && shared.error}<p class="notice warn small" role="alert">
-					{displayNestedMessage(shared.error)}
-				</p>{/if}
-			{#if !sharedHidden && shared.skipped}<p class="faint small">
-					{t('wardrobe.someItemsFromOtherCharactersCouldnT')}
-				</p>{/if}
-			<div class="list-spacer" style:height="{spacer}px" aria-hidden="true"></div>
-			{#if drag?.line != null && !drag.source.rail}<div
-					class="bu-separator slot-drop-line"
-					style:top="{drag.line}px"
-					aria-hidden="true"
-				></div>{/if}
-		</div>
-		<div
-			class="bu-popover-anchor slot-drag-preview"
-			data-positioned
-			popover="manual"
-			bind:this={dragPreview}
-			style:left="{pointer.x + 16}px"
-			style:--drag-x="{pointer.x + 16}px"
-			style:top="{Math.max(8, pointer.y - (drag?.source.item ? 84 : 64))}px"
-			aria-hidden="true"
-		>
-			<div class="bu-popover-surface bu-floating slot-drag-label">
-				{#if drag?.source.item}
-					<span class="drag-item-art"
-						><Thumb project={view.project} item={drag.source.item} box={48} /></span
-					>
-					<span class="drag-item-caption">
-						<span class="bu-tile-label">{drag.source.label}</span>
-						{#if itemDrop}<small>{displayMessage(slotLabelMessage(m, itemDrop))}</small>{/if}
-					</span>
-				{:else}
-					<GripVertical size={18} />{drag?.source.label}
-				{/if}
-			</div>
-		</div>
-		<!-- One shared slot menu, anchored to the header that opened it (like the item menu). -->
-		<div
-			id="slot-menu"
-			class="menu bu-popover-anchor"
-			data-placement="bottom-start"
-			popover
-			role="menu"
-			aria-label={slotEntry
-				? t('wardrobe.slotLabel', { label: slotEntry.label })
-				: t('wardrobe.slot')}
-			bind:this={slotMenu}
-			ontoggle={(e) => {
-				slotMenuOpen = e.newState === 'open';
-				popoverFocus(e);
-			}}
-		>
-			<PopoverArrow />
-			<div class="menu-surface bu-popover-surface bu-floating">
-				{#if slotEntry}
-					{@const s = slotEntry}
-					{#if slotAt < 0}
-						<button
-							class="row"
-							data-variant="quiet"
-							role="menuitem"
-							onclick={() => {
-								closeSlotMenu();
-								void showHidden(s.key);
-							}}><Eye size={16} aria-hidden="true" />{t('wardrobe.showSlot')}</button
-						>
-					{:else}
-						<button
-							class="row"
-							data-variant="quiet"
-							role="menuitem"
-							aria-disabled={slotAt === 0 || undefined}
-							onclick={() => {
-								if (slotAt === 0) return;
-								closeSlotMenu();
-								moveTo(s.key, slotAt - 1);
-							}}><ArrowUp size={16} aria-hidden="true" />{t('wardrobe.moveUp')}</button
-						>
-						<button
-							class="row"
-							data-variant="quiet"
-							role="menuitem"
-							aria-disabled={slotAt === own.length - 1 || undefined}
-							onclick={() => {
-								if (slotAt === own.length - 1) return;
-								closeSlotMenu();
-								moveTo(s.key, slotAt + 1);
-							}}><ArrowDown size={16} aria-hidden="true" />{t('wardrobe.moveDown')}</button
-						>
-						<button
-							class="row"
-							data-variant="quiet"
-							role="menuitem"
-							aria-disabled={!!slotHideBlock || undefined}
-							onclick={() => void hide(s.key)}
-							><EyeOff size={16} aria-hidden="true" /><span class="row-name"
-								>{t('wardrobe.hideSlot')}{#if slotHideBlock}<small class="row-reason"
-										>{slotHideBlock}</small
-									>{/if}</span
-							></button
-						>
-						<hr />
-					{/if}
-					<button
-						class="row"
-						data-variant="quiet"
-						role="menuitem"
-						onclick={() => openSlotSettings(s.key)}
-						>{#if slotCustom}<Pencil size={16} aria-hidden="true" />{openerLabel(
-								t('wardrobe.editSlot')
-							)}{:else}<CopyPlus size={16} aria-hidden="true" />{openerLabel(
-								t('wardrobe.makeACustomCopy')
-							)}{/if}<SurfaceChevron /></button
-					>
-				{/if}
-			</div>
-		</div>
-		<p class="sr" aria-live="polite">{announcement}</p>
-		<!-- Always mounted: a ⋮ click opens it in the same task, before the chosen item renders into it. -->
-		<ItemMenu
-			id={menuFor}
-			entry={menuShared}
-			marks={menuShared ? sharedMarks(menuShared) : menuItem ? marksOf(menuItem) : []}
-			generation={menuGeneration}
-			generationInfo={menuGeneration
-				? generationStatus(
-						menuGeneration,
-						$queue.jobs,
-						now,
-						!!app.key,
-						$queue.paused,
-						outcomeFormatters
-					)
-				: undefined}
-			onremove={(id) => void remove(id)}
-			onmove={(id, target) => void moveTileFromMenu(id, target)}
-			bind:open={menuOpen}
-		/>
-		<ItemChoiceMenu bind:this={choice} bind:itemId={choiceFor} bind:open={choiceOpen} />
-		<!-- Navigation over the list's sections (not tabs): arrows move along it like the other rails (Studio.svelte). -->
-		<div class="slot-rail-column">
-			<nav
-				class="slot-rail bu-scroll-hidden bu-edge-fade"
-				aria-label={t('wardrobe.equipmentSlots')}
-				bind:this={rail}
-				{@attach edgeFade({ axis: 'y', size: 24 })}
-			>
-				<ul class="slot-rail-list" data-arrows>
-					{#each sections as s (s.key)}
-						<li>
-							<button
-								class="bu-action slot-tab"
-								data-variant="rail"
-								data-rail={s.key}
-								popovertarget={!s.fromOthers ? 'slot-menu' : undefined}
-								data-sortable={!s.fromOthers || undefined}
-								data-armed={armed === s.key || undefined}
-								data-dragged={(!drag?.source.item && drag?.source.key === s.key) || undefined}
-								data-filled={s.worn || undefined}
-								aria-current={!notShownCurrent && ui.group === s.key ? 'true' : undefined}
-								aria-label={s.worn ? t('wardrobe.equipped', { label: s.label }) : s.label}
-								aria-haspopup={!s.fromOthers ? 'menu' : undefined}
-								aria-expanded={!s.fromOthers ? slotMenuOpen && slotFor === s.key : undefined}
-								tabindex={!notShownCurrent && ui.group === s.key ? 0 : -1}
-								onclick={(event) => {
-									event.preventDefault();
-									show(s.key);
-								}}
-								{@attach (node) =>
-									s.fromOthers
-										? undefined
-										: untrack(() =>
+								{/if}
+								{#each s.items as it (it.id)}
+									{@const on = doc.items[it.slot] === it.id && !doc.drafts[it.slot]}
+									{@const marks = marksOf(it)}
+									{@const shownHidden = marks.some((x) => x.kind === 'hidden')}
+									{@const away = !shownHidden && offMove(it)}
+									{@const chooses = offMove(it) && choosable(it)}
+									{@const job = jobOf(it.id)}
+									{@const jobMove = job && displayMove(job.clip, m?.rig.animations ?? [])}
+									<!-- The ⋮ is a sibling of the tile, never nested in it; right-click and Shift+F10 open the same menu. -->
+									<div
+										class="tile-wrap hover-actions"
+										role="none"
+										{@attach (node) =>
+											untrack(() =>
 												slotDrag(node, {
-													...dragOptions({ key: s.key, label: s.label, hidden: false, rail: true }),
-													menu: (element) => openSlotMenu(s.key, element)
+													...dragOptions({ key: s.key, label: it.name, hidden: false, item: it }),
+													menu: openMenu,
+													allowStart: (target) =>
+														target instanceof Element &&
+														!!target.closest('.item-tile') &&
+														!!m &&
+														itemSlotTargets(m, it).length > 0
 												})
 											)}
-								><span class="slot-drag-icon"
-									><GroupIcon group={s.key} size={22} /><GripVertical
-										class="slot-grip"
-										size={22}
-									/></span
-								><span class="bu-rail-label">{s.label}</span><i
-									class="bu-rail-dot"
-									aria-hidden="true"
-								></i></button
-							>
-						</li>
-					{/each}
-					{#if notShown.length}<li>
-							<button
-								class="bu-action slot-tab"
-								data-variant="rail"
-								data-not-shown
-								aria-current={notShownCurrent ? 'true' : undefined}
-								tabindex={notShownCurrent || !sections.some((slot) => slot.key === ui.group)
-									? 0
-									: -1}
-								aria-label={t('wardrobe.notShownLengthSlots', {
-									length: formatNumber(notShown.length)
-								})}
-								onclick={() => void showNotShown()}
-								><EyeOff size={22} aria-hidden="true" /><span class="bu-rail-label"
-									>{t('wardrobe.notShown')}</span
-								></button
-							>
-						</li>{/if}
-				</ul>
-				{#if drag?.source.rail && drag.line != null}<div
+									>
+										<button
+											class="bu-tile item-tile"
+											data-selected={ui.selected === it.id || armedItem === it.id || undefined}
+											data-item-armed={armedItem === it.id || undefined}
+											data-tile={it.id}
+											data-dim={shownHidden || away || undefined}
+											aria-pressed={on}
+											aria-haspopup={chooses ? 'menu' : undefined}
+											aria-expanded={chooses ? choiceOpen && choiceFor === it.id : undefined}
+											aria-label={tileName(
+												it.name,
+												marks,
+												away ? t('wardrobe.notShownInMove') : undefined,
+												job?.status === 'drawing'
+													? t('wardrobe.itemDrawing', {
+															move: jobMove!,
+															percent: formatPercent(job.percent / 100)
+														})
+													: job
+														? t('wardrobe.itemQueued', { move: jobMove! })
+														: undefined
+											)}
+											onclick={(event) =>
+												chooses ? tapDimmed(it, event.currentTarget) : wear(it.id)}
+										>
+											<span class="bu-tile-art tile-art" aria-hidden="true" {@attach lazyArt(it.id)}
+												>{#if seen.has(it.id)}<Thumb
+														project={view.project}
+														item={it}
+														box={64}
+													/>{/if}{#if job}<span
+														class="bu-ring ring generation-ring"
+														style:--p={job.status === 'drawing' ? job.percent : undefined}
+													></span>{/if}</span
+											>{#if job}<span class="generation-caption"
+													><span class="generation-time bu-muted small num" aria-hidden="true"
+														>{job.status === 'drawing'
+															? formatPercent(job.percent / 100)
+															: t('generation.status.queued')} · {jobMove}</span
+													><span class="bu-tile-label tile-name">{it.name}</span></span
+												>{:else}<span class="bu-tile-label tile-name">{it.name}</span>{/if}
+											<TileMarks {marks} />
+										</button>
+										<button
+											class="bu-tile-more tile-more hover-actions-button"
+											popovertarget="item-menu"
+											aria-haspopup="menu"
+											aria-expanded={menuOpen && menuFor === it.id}
+											aria-label={t('wardrobe.moreOptionsForName', { name: it.name })}
+											title={t('wardrobe.titleOptions')}
+											onclick={() => {
+												// The same ⋮ toggles the menu closed; another tile's ⋮ reopens it for that tile.
+												if (menuOpen && menuFor !== it.id)
+													document.getElementById('item-menu')?.hidePopover();
+												menuFor = it.id;
+											}}><EllipsisVertical size={18} /></button
+										>
+									</div>
+								{/each}
+								{#each s.pending as x (x.draft.spec.id)}
+									{@const p = genProgress(x, $queue.jobs)}
+									{@const info = generationStatus(
+										x,
+										$queue.jobs,
+										now,
+										!!app.key,
+										$queue.paused,
+										outcomeFormatters
+									)}
+									{@const status = displayMessage(info.text)}
+									{@const on = doc.drafts[x.draft.spec.slot] === x.draft.spec.id}
+									{@const preview = store.results[x.draft.spec.id]?.preview}
+									{@const previewItem = preview?.manifest.items.find(
+										(it) => it.id === x.draft.spec.id
+									)}
+									{@const firstFrame = store.results[x.draft.spec.id]?.thumbnail}
+									{@const thumbnail = firstFrame ? crop(firstFrame) : null}
+									<!-- a draft tile wears the draft like a saved item (display only, while it loads or awaits review) -->
+									<div
+										class="tile-wrap hover-actions"
+										role="none"
+										oncontextmenu={(event) => {
+											event.preventDefault();
+											openMenu(event.currentTarget);
+										}}
+									>
+										<button
+											class="bu-tile item-tile"
+											data-selected={ui.selected === `gen:${x.draft.spec.id}` || undefined}
+											data-tile="gen:{x.draft.spec.id}"
+											aria-label={x.phase === 'running'
+												? t('wardrobe.generationTileRunning', {
+														name: x.input.name,
+														percent: formatPercent(p.pct / 100),
+														status
+													})
+												: on
+													? t('wardrobe.generationTileWearing', { name: x.input.name, status })
+													: t('wardrobe.generationTile', { name: x.input.name, status })}
+											aria-pressed={x.phase === 'running' ? on : undefined}
+											aria-haspopup={x.phase !== 'running' ? 'dialog' : undefined}
+											onclick={() =>
+												x.phase !== 'running'
+													? void openGenerationReview(x.draft.spec.id)
+													: wearDraft(x.draft.spec.id)}
+											onkeydown={(event) => {
+												if (event.key === 'F10' && event.shiftKey) {
+													event.preventDefault();
+													openMenu(event.currentTarget.parentElement!);
+												}
+											}}
+										>
+											<span class="bu-tile-art tile-art" aria-hidden="true">
+												<span class="generation-artwork" class:generating={x.phase === 'running'}>
+													{#if thumbnail}<Sprite
+															img={thumbnail}
+															k={1}
+															w={thumbnail.w}
+															h={thumbnail.h}
+															fitToBox
+															label={x.input.name}
+														/>
+													{:else if preview && previewItem}<Thumb
+															project={preview}
+															item={previewItem}
+															box={x.phase === 'running' ? 12 : 40}
+														/>
+													{:else if x.phase === 'failed'}<CircleAlert size={24} />
+													{:else if x.phase !== 'running'}<GroupIcon group={s.key} size={24} />{/if}
+												</span>
+												{#if x.phase === 'running'}<span
+														class="bu-ring ring generation-ring"
+														style:--p={p.pct}
+													></span>{/if}
+											</span>
+											{#if x.phase === 'running'}<span
+													class="generation-percent bu-muted small num"
+													aria-hidden="true">{formatPercent(p.pct / 100)}</span
+												>{/if}
+											<span class="generation-caption">
+												<span class="generation-time bu-muted small num" aria-hidden="true"
+													>{status}</span
+												>
+												<span class="bu-tile-label tile-name">{x.input.name}</span>
+											</span>
+											<TileMarks
+												marks={sortMarks([
+													on && wornMark,
+													info.attention && { kind: 'check', label: status, text: status }
+												])}
+											/>
+										</button>
+										{#if x.phase === 'running'}<span
+												class="sr"
+												role="progressbar"
+												aria-label={t('wardrobe.nameProgress', { name: x.input.name })}
+												aria-valuenow={p.pct}
+												aria-valuemin={0}
+												aria-valuemax={100}
+												aria-valuetext={t('wardrobe.generationProgress', {
+													percent: formatPercent(p.pct / 100),
+													status
+												})}
+											></span>{/if}
+										<button
+											class="bu-tile-more tile-more hover-actions-button"
+											popovertarget="item-menu"
+											aria-haspopup="menu"
+											aria-expanded={menuOpen && menuFor === 'gen:' + x.draft.spec.id}
+											title={t('wardrobe.titleOptions')}
+											aria-label={t('wardrobe.moreOptionsForName', { name: x.input.name })}
+											onclick={() => {
+												if (menuOpen && menuFor !== 'gen:' + x.draft.spec.id)
+													document.getElementById('item-menu')?.hidePopover();
+												menuFor = 'gen:' + x.draft.spec.id;
+											}}><EllipsisVertical size={18} /></button
+										>
+									</div>
+								{/each}
+								{#each s.others as x (sharedKey(x))}
+									{@const key = sharedKey(x)}
+									{@const adding = shared.adding === key}
+									{@const remake = x.fit === 'remake'}
+									{@const marks = sharedMarks(x)}
+									<!-- Like an own tile: the tile wears it (on the demo, in a saved copy), the ⋮ explains how it fits. -->
+									<div class="tile-wrap hover-actions" role="none" {@attach contextMenu(openMenu)}>
+										<button
+											class="bu-tile item-tile shared-tile"
+											data-selected={ui.selected === key || undefined}
+											data-tile={key}
+											data-dim={remake || adding || undefined}
+											aria-label={tileName(x.item.name, marks)}
+											aria-busy={adding}
+											aria-disabled={!!shared.adding || undefined}
+											aria-haspopup={remake ? 'menu' : undefined}
+											aria-expanded={remake ? menuOpen && menuFor === key : undefined}
+											onclick={(e) =>
+												remake ? openMenu(e.currentTarget.parentElement!) : addShared(x)}
+										>
+											<span class="bu-tile-art tile-art" aria-hidden="true" {@attach lazyArt(key)}
+												>{#if seen.has(key)}<SharedThumb entry={x} />{/if}</span
+											><span class="bu-tile-label tile-name">{x.item.name}</span>
+											<TileMarks {marks} />
+										</button>
+										<button
+											class="bu-tile-more tile-more hover-actions-button"
+											popovertarget="item-menu"
+											aria-haspopup="menu"
+											aria-expanded={menuOpen && menuFor === key}
+											aria-label={t('wardrobe.moreOptionsForName', { name: x.item.name })}
+											title={t('wardrobe.titleOptions')}
+											onclick={() => {
+												if (menuOpen && menuFor !== key)
+													document.getElementById('item-menu')?.hidePopover();
+												menuFor = key;
+											}}><EllipsisVertical size={18} /></button
+										>
+									</div>
+								{/each}
+								{#if !count && !s.fromOthers}
+									<button
+										class="bu-tile item-tile"
+										data-variant="add"
+										aria-label={t('wardrobe.newLowerItem', { lower })}
+										onclick={() => openNewItem(s.key)}
+										><span class="bu-tile-art tile-art" aria-hidden="true"><Plus size={26} /></span
+										><span class="bu-tile-label">{t('common.new')}</span></button
+									>
+								{/if}
+							</div>
+						</div>
+					</section>
+				{/each}
+				{#if searching && !filteredSections.length && !filteredNotShown.length}
+					<p class="muted">{t('wardrobe.noMatchingItems')}</p>
+				{/if}
+				{#if !own.length}<p class="faint small no-slots">
+						{t('wardrobe.noSlotsAreShownShowOneBelow')}
+					</p>{/if}
+				{#if filteredNotShown.length}
+					<div class="not-shown">
+						<button
+							class="bu-action bu-section-head not-shown-toggle"
+							data-current={(drag ? drag.overHide : notShownCurrent) || undefined}
+							data-variant="quiet"
+							aria-expanded={notShownOpen}
+							aria-controls="wardrobe-not-shown"
+							onclick={() => void toggleNotShown()}
+							><EyeOff size={16} aria-hidden="true" /><span class="bu-section-title"
+								>{t('wardrobe.notShown')}</span
+							><span class="bu-section-count not-shown-count"
+								>{formatNumber(filteredNotShown.length)}</span
+							><ChevronRight class="not-shown-chevron" size={16} aria-hidden="true" /></button
+						>
+						<div id="wardrobe-not-shown" hidden={!notShownOpen}>
+							<p class="faint small not-shown-note" id="wardrobe-not-shown-note">
+								{t('wardrobe.dragASlotOrTapItsEye')}
+							</p>
+							<ul class="not-shown-list" aria-describedby="wardrobe-not-shown-note">
+								{#each filteredNotShown as c (c.key)}
+									<li
+										class="not-shown-row"
+										data-armed={armed === c.key || undefined}
+										data-dragged={drag?.source.key === c.key || undefined}
+										{@attach (node) =>
+											untrack(() =>
+												slotDrag(node, {
+													...dragOptions({ key: c.key, label: c.label, hidden: true }),
+													menu: (element) =>
+														openSlotMenu(
+															c.key,
+															element.querySelector<HTMLButtonElement>('[data-show-slot]')!
+														)
+												})
+											)}
+									>
+										<button
+											class="bu-action not-shown-slot"
+											aria-label={t('slotsSheet.showLabel', { label: c.label })}
+											data-show-slot={c.key}
+											popovertarget="slot-menu"
+											aria-haspopup="menu"
+											aria-expanded={slotMenuOpen && slotFor === c.key}
+											onclick={(event) => {
+												event.preventDefault();
+												void showHidden(c.key);
+											}}
+											><span class="slot-drag-icon"
+												><GroupIcon group={c.key} size={18} /><GripVertical
+													class="slot-grip"
+													size={18}
+												/></span
+											>
+											<span class="not-shown-name">{c.label}</span><Eye
+												size={18}
+												aria-hidden="true"
+											/></button
+										>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					</div>
+				{/if}
+				{#if shared.framesError}<p class="notice warn small" role="alert">
+						{displayNestedMessage(shared.framesError)}
+					</p>{/if}
+				{#if !sharedHidden && shared.error}<p class="notice warn small" role="alert">
+						{displayNestedMessage(shared.error)}
+					</p>{/if}
+				{#if !sharedHidden && shared.skipped}<p class="faint small">
+						{t('wardrobe.someItemsFromOtherCharactersCouldnT')}
+					</p>{/if}
+				<div class="list-spacer" style:height="{spacer}px" aria-hidden="true"></div>
+				{#if drag?.line != null && !drag.source.rail}<div
 						class="bu-separator slot-drop-line"
 						style:top="{drag.line}px"
 						aria-hidden="true"
 					></div>{/if}
-			</nav>
-			<!-- Outside the scrolling tabs, so it never scrolls away. -->
-			<div class="slot-rail-footer">
-				<button
-					class="bu-action slot-tab slot-add"
-					data-variant="rail"
-					aria-label={t('slotsSheet.titleAddSlot')}
-					aria-haspopup="dialog"
-					title={t('slotsSheet.titleAddSlot')}
-					onclick={addSlot}
-					><Plus size={22} aria-hidden="true" /><span class="bu-rail-label"
-						>{t('wardrobe.addSlot')}</span
-					></button
+			</div>
+			<div
+				class="bu-popover-anchor slot-drag-preview"
+				data-positioned
+				popover="manual"
+				bind:this={dragPreview}
+				style:left="{pointer.x + 16}px"
+				style:--drag-x="{pointer.x + 16}px"
+				style:top="{Math.max(8, pointer.y - (drag?.source.item ? 84 : 64))}px"
+				aria-hidden="true"
+			>
+				<div class="bu-popover-surface bu-floating slot-drag-label">
+					{#if drag?.source.item}
+						<span class="drag-item-art"
+							><Thumb project={view.project} item={drag.source.item} box={48} /></span
+						>
+						<span class="drag-item-caption">
+							<span class="bu-tile-label">{drag.source.label}</span>
+							{#if itemDrop}<small>{displayMessage(slotLabelMessage(m, itemDrop))}</small>{/if}
+						</span>
+					{:else}
+						<GripVertical size={18} />{drag?.source.label}
+					{/if}
+				</div>
+			</div>
+			<!-- One shared slot menu, anchored to the header that opened it (like the item menu). -->
+			<div
+				id="slot-menu"
+				class="menu bu-popover-anchor"
+				data-placement="bottom-start"
+				popover
+				role="menu"
+				aria-label={slotEntry
+					? t('wardrobe.slotLabel', { label: slotEntry.label })
+					: t('wardrobe.slot')}
+				bind:this={slotMenu}
+				ontoggle={(e) => {
+					slotMenuOpen = e.newState === 'open';
+					popoverFocus(e);
+				}}
+			>
+				<PopoverArrow />
+				<div class="menu-surface bu-popover-surface bu-floating">
+					{#if slotEntry}
+						{@const s = slotEntry}
+						{#if slotAt < 0}
+							<button
+								class="row"
+								data-variant="quiet"
+								role="menuitem"
+								onclick={() => {
+									closeSlotMenu();
+									void showHidden(s.key);
+								}}><Eye size={16} aria-hidden="true" />{t('wardrobe.showSlot')}</button
+							>
+						{:else}
+							<button
+								class="row"
+								data-variant="quiet"
+								role="menuitem"
+								aria-disabled={slotAt === 0 || undefined}
+								onclick={() => {
+									if (slotAt === 0) return;
+									closeSlotMenu();
+									moveTo(s.key, slotAt - 1);
+								}}><ArrowUp size={16} aria-hidden="true" />{t('wardrobe.moveUp')}</button
+							>
+							<button
+								class="row"
+								data-variant="quiet"
+								role="menuitem"
+								aria-disabled={slotAt === own.length - 1 || undefined}
+								onclick={() => {
+									if (slotAt === own.length - 1) return;
+									closeSlotMenu();
+									moveTo(s.key, slotAt + 1);
+								}}><ArrowDown size={16} aria-hidden="true" />{t('wardrobe.moveDown')}</button
+							>
+							<button
+								class="row"
+								data-variant="quiet"
+								role="menuitem"
+								aria-disabled={!!slotHideBlock || undefined}
+								onclick={() => void hide(s.key)}
+								><EyeOff size={16} aria-hidden="true" /><span class="row-name"
+									>{t('wardrobe.hideSlot')}{#if slotHideBlock}<small class="row-reason"
+											>{slotHideBlock}</small
+										>{/if}</span
+								></button
+							>
+							<hr />
+						{/if}
+						<button
+							class="row"
+							data-variant="quiet"
+							role="menuitem"
+							onclick={() => openSlotSettings(s.key)}
+							>{#if slotCustom}<Pencil size={16} aria-hidden="true" />{openerLabel(
+									t('wardrobe.editSlot')
+								)}{:else}<CopyPlus size={16} aria-hidden="true" />{openerLabel(
+									t('wardrobe.makeACustomCopy')
+								)}{/if}<SurfaceChevron /></button
+						>
+					{/if}
+				</div>
+			</div>
+			<p class="sr" aria-live="polite">{announcement}</p>
+			<!-- Always mounted: a ⋮ click opens it in the same task, before the chosen item renders into it. -->
+			<ItemMenu
+				id={menuFor}
+				entry={menuShared}
+				marks={menuShared ? sharedMarks(menuShared) : menuItem ? marksOf(menuItem) : []}
+				generation={menuGeneration}
+				generationInfo={menuGeneration
+					? generationStatus(
+							menuGeneration,
+							$queue.jobs,
+							now,
+							!!app.key,
+							$queue.paused,
+							outcomeFormatters
+						)
+					: undefined}
+				onremove={(id) => void remove(id)}
+				onmove={(id, target) => void moveTileFromMenu(id, target)}
+				bind:open={menuOpen}
+			/>
+			<ItemChoiceMenu bind:this={choice} bind:itemId={choiceFor} bind:open={choiceOpen} />
+			<!-- Navigation over the list's sections (not tabs): arrows move along it like the other rails (Studio.svelte). -->
+			<div class="slot-rail-column">
+				<nav
+					class="slot-rail bu-scroll-hidden bu-edge-fade"
+					aria-label={t('wardrobe.equipmentSlots')}
+					bind:this={rail}
+					{@attach edgeFade({ axis: 'y', size: 24 })}
 				>
+					<ul class="slot-rail-list" data-arrows>
+						{#each filteredSections as s (s.key)}
+							<li>
+								<button
+									class="bu-action slot-tab"
+									data-variant="rail"
+									data-rail={s.key}
+									popovertarget={!s.fromOthers ? 'slot-menu' : undefined}
+									data-sortable={!s.fromOthers || undefined}
+									data-armed={armed === s.key || undefined}
+									data-dragged={(!drag?.source.item && drag?.source.key === s.key) || undefined}
+									data-filled={s.worn || undefined}
+									aria-current={!notShownCurrent && ui.group === s.key ? 'true' : undefined}
+									aria-label={s.worn ? t('wardrobe.equipped', { label: s.label }) : s.label}
+									aria-haspopup={!s.fromOthers ? 'menu' : undefined}
+									aria-expanded={!s.fromOthers ? slotMenuOpen && slotFor === s.key : undefined}
+									tabindex={!notShownCurrent && ui.group === s.key ? 0 : -1}
+									onclick={(event) => {
+										event.preventDefault();
+										show(s.key);
+									}}
+									{@attach (node) =>
+										s.fromOthers
+											? undefined
+											: untrack(() =>
+													slotDrag(node, {
+														...dragOptions({
+															key: s.key,
+															label: s.label,
+															hidden: false,
+															rail: true
+														}),
+														menu: (element) => openSlotMenu(s.key, element)
+													})
+												)}
+									><span class="slot-drag-icon"
+										><GroupIcon group={s.key} size={22} /><GripVertical
+											class="slot-grip"
+											size={22}
+										/></span
+									><span class="bu-rail-label">{s.label}</span><i
+										class="bu-rail-dot"
+										aria-hidden="true"
+									></i></button
+								>
+							</li>
+						{/each}
+						{#if filteredNotShown.length}<li>
+								<button
+									class="bu-action slot-tab"
+									data-variant="rail"
+									data-not-shown
+									aria-current={notShownCurrent ? 'true' : undefined}
+									tabindex={notShownCurrent ||
+									!filteredSections.some((slot) => slot.key === ui.group)
+										? 0
+										: -1}
+									aria-label={t('wardrobe.notShownLengthSlots', {
+										length: formatNumber(filteredNotShown.length)
+									})}
+									onclick={() => void showNotShown()}
+									><EyeOff size={22} aria-hidden="true" /><span class="bu-rail-label"
+										>{t('wardrobe.notShown')}</span
+									></button
+								>
+							</li>{/if}
+					</ul>
+					{#if drag?.source.rail && drag.line != null}<div
+							class="bu-separator slot-drop-line"
+							style:top="{drag.line}px"
+							aria-hidden="true"
+						></div>{/if}
+				</nav>
+				<!-- Outside the scrolling tabs, so it never scrolls away. -->
+				<div class="slot-rail-footer">
+					<button
+						class="bu-action slot-tab slot-add"
+						data-variant="rail"
+						aria-label={t('slotsSheet.titleAddSlot')}
+						aria-haspopup="dialog"
+						title={t('slotsSheet.titleAddSlot')}
+						onclick={addSlot}
+						><Plus size={22} aria-hidden="true" /><span class="bu-rail-label"
+							>{t('wardrobe.addSlot')}</span
+						></button
+					>
+				</div>
 			</div>
 		</div>
 	</div>

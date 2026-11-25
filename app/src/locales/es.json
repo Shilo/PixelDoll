@@ -349,7 +349,8 @@
 		"miColor": "Color de {mi}",
 		"titleSavedColor": "Color guardado",
 		"titleOriginal": "Original",
-		"titlePickAnyColor": "Elegir cualquier color"
+		"titlePickAnyColor": "Elegir cualquier color",
+		"noMatchingColors": "No hay colores que coincidan"
 	},
 	"colorSections": {
 		"randomLowerColors": "Colores aleatorios de {lower}",
@@ -630,7 +631,8 @@
 		"outfits": "Atuendos",
 		"saveALookToSwitchBetweenOutfits": "Guarda un look para cambiar entre atuendos en tu juego.",
 		"outfitName": "Nombre del atuendo",
-		"saveCurrentLook": "Guardar el look actual"
+		"saveCurrentLook": "Guardar el look actual",
+		"noMatchingOutfits": "No hay atuendos que coincidan"
 	},
 	"pwaNotice": {
 		"readyToUpdateReloading": "Listo para actualizar. Recargando...",
@@ -832,6 +834,7 @@
 		"notShownInMoveNote": "El objeto está equipado, pero no se muestra porque le faltan fotogramas en todas las vistas de este movimiento.",
 		"randomLowerItem": "Objeto aleatorio de {lower}",
 		"newLowerItem": "Nuevo objeto de {lower}",
+		"noMatchingItems": "No hay objetos que coincidan",
 		"labelItems": "Objetos de {label}",
 		"emptyLower": "{lower}: vacío",
 		"empty": "Vacío",
@@ -2196,6 +2199,8 @@
 	},
 	"moves": {
 		"preview": "Vista previa de {move}",
+		"noMatchingMoves": "No hay animaciones que coincidan",
+		"noMatchingStates": "No hay estados que coincidan",
 		"frames": {
 			"one": "{count} fotograma",
 			"other": "{count} fotogramas"
@@ -3383,7 +3388,9 @@
 			"other": "{n} llamadas sin precio"
 		}
 	},
-	"shortcut": { "control": "Ctrl" },
+	"shortcut": {
+		"control": "Ctrl"
+	},
 	"report": {
 		"action": "Informar",
 		"actionLabel": "Informar de este problema",
@@ -3562,5 +3569,14 @@
 		"hintTouch": "Arrastra para moverte · Mantén y arrastra la espada para atacar y apuntar · Los botones saltan, esprintan y montan",
 		"stageTopDown": "Mundo de prueba del personaje. WASD, flechas, clic o arrastre para moverte; Mayús esprinta. Clic derecho o E ataca, Espacio salta, F monta. Las teclas 1, 2 y 3 cambian de vista.",
 		"stageSide": "Mundo de prueba en vista lateral. A/D, flechas izquierda y derecha, clic o arrastre para moverte; Mayús esprinta. Clic derecho o E ataca, Espacio salta, F monta. Las teclas 1, 2 y 3 cambian de vista."
+	},
+	"search": {
+		"wardrobe": "Buscar en el armario",
+		"outfits": "Buscar atuendos",
+		"moves": "Buscar animaciones",
+		"states": "Buscar estados",
+		"colors": "Buscar colores",
+		"clear": "Borrar búsqueda",
+		"results": "{count} de {total}"
 	}
 }

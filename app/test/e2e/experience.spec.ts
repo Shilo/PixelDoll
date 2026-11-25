@@ -119,13 +119,21 @@ for (const theme of ['dark', 'light'] as const)
 			);
 			await landing(page);
 			if (size === 'phone') {
+				// A one-character library fits without scrolling, so the search waits until the list needs it.
 				const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
+				await expect(search).toHaveCount(0);
+				await page.locator('.character-rows').evaluate((list) => {
+					(list as HTMLElement).style.maxHeight = '40px';
+				});
 				await expect(search).toBeVisible();
 				await expect(search).toBeEditable();
 				await search.fill('Adventurer');
 				await expect(search).toBeFocused();
 				await expect(page.locator('.character-row')).toHaveCount(1);
 				await search.clear();
+				await page.locator('.character-rows').evaluate((list) => {
+					(list as HTMLElement).style.maxHeight = '';
+				});
 			}
 			if (theme === 'light') {
 				await page.getByRole('button', { name: 'More options', exact: true }).click();

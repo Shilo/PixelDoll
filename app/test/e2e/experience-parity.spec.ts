@@ -161,6 +161,17 @@ async function landing(page: Page, url = '/') {
 	await expect(page.locator('.customize-action')).toBeEnabled();
 }
 
+/** The character search shows once the list overflows or holds six or more characters; short fixtures make it scroll. */
+async function revealCharacterSearch(page: Page) {
+	const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
+	if (!(await search.count()))
+		await page.locator('.character-rows').evaluate((list) => {
+			(list as HTMLElement).style.maxHeight = '40px';
+		});
+	await expect(search).toBeVisible();
+	return search;
+}
+
 test('rapid clicks operate controls without selecting their labels', async ({ page }) => {
 	await landing(page);
 	await page.locator('.customize-action').click();
@@ -1828,7 +1839,16 @@ test('character carousel retargets real animations, keeps canvases, and settles 
 	await expect(chosen).toHaveAttribute('data-character-id', ids[5]);
 	await settled();
 	await page.emulateMedia({ reducedMotion: 'no-preference' });
-	const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
+	// Six characters fit on this screen, so the count alone, not overflow, must show the field.
+	const characterRows = page.locator('.character-rows');
+	expect(
+		await characterRows.evaluate((list) => list.scrollHeight > list.clientHeight + 1),
+		'the six-character list fits without scrolling'
+	).toBe(false);
+	await expect(
+		page.getByRole('searchbox', { name: 'Search characters', exact: true })
+	).toBeVisible();
+	const search = await revealCharacterSearch(page);
 	await search.fill('Carousel trio');
 	await expect(page.locator('.character-row')).toHaveCount(3);
 	await settled();
@@ -2186,7 +2206,7 @@ test('fast wheel input skips intermediate loads and keeps the latest selection w
 		await send([200], 2110);
 		await customizeButton.click();
 		await expect(page.locator('.experience')).toHaveClass(/selection/);
-		const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
+		const search = await revealCharacterSearch(page);
 		if (cancel === 'popover')
 			await page.getByRole('button', { name: 'More options', exact: true }).click();
 		if (cancel === 'filter') await search.fill('Wheel test 3');
@@ -2548,6 +2568,7 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 	expect(await reads()).toBeLessThanOrEqual(3);
 	expect(await frameReads()).toBe(0);
 	const currentName = await page.locator('.selected-caption h2').textContent();
+	await revealCharacterSearch(page);
 	await page.getByRole('searchbox', { name: 'Search characters', exact: true }).fill(currentName!);
 	await expect(rows).toHaveCount(1);
 	const beforeSingleResult = await reads();
@@ -2622,7 +2643,7 @@ test('selection search shows an honest zero-result state and preserves native ed
 	page
 }) => {
 	await landing(page);
-	const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
+	const search = await revealCharacterSearch(page);
 	await search.fill('There is no such saved character');
 	await expect(page.locator('.character-row')).toHaveCount(0);
 	await expect(page.locator('.cast-character')).toHaveCount(0);
@@ -2635,6 +2656,30 @@ test('selection search shows an honest zero-result state and preserves native ed
 	await search.fill('Adventurer');
 	await expect(page.locator('.character-row')).toHaveCount(1);
 	await expect(page.locator('.customize-action')).toBeEnabled();
+});
+
+test('selection search follows the whole library, not the filtered rows', async ({ page }) => {
+	await landing(page);
+	const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
+	await expect(search).toHaveCount(0);
+	const rows = page.locator('.character-rows');
+	await rows.evaluate((list) => {
+		(list as HTMLElement).style.maxHeight = '40px';
+	});
+	await expect(search).toBeVisible();
+	await search.fill('There is no such saved character');
+	await expect(page.locator('.empty-cast')).toHaveText('No matching characters');
+	// Losing focus or narrowing to nothing never takes the field away from a query.
+	await search.blur();
+	await expect(search).toBeVisible();
+	await expect(search).toHaveValue('There is no such saved character');
+	await search.fill('');
+	// Back to the whole library: the list still scrolls, so the field stays.
+	await expect(search).toBeVisible();
+	await rows.evaluate((list) => {
+		(list as HTMLElement).style.maxHeight = '';
+	});
+	await expect(search).toHaveCount(0);
 });
 
 test.describe('selected cast centering', () => {
@@ -2707,7 +2752,7 @@ test.describe('selected cast centering', () => {
 					state.ui.theme = theme;
 					await state.refreshProjects();
 				}, theme);
-				const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
+				const search = await revealCharacterSearch(page);
 				for (const [query, count] of [
 					['Adventurer', 1],
 					['Center pair', 2],

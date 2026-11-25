@@ -54,21 +54,19 @@
 	{#if ui.tab === 'wardrobe'}
 		<Wardrobe />
 	{:else if ui.tab === 'outfits'}
-		<div class="equipment-scroll panel-list"><Outfits /></div>
+		<Outfits />
 	{:else if ui.tab === 'colors'}
 		<ColorSections />
 	{:else}
-		<div class="equipment-scroll panel-list">
-			<Moves
-				kind={ui.tab === 'states' ? 'state' : 'move'}
-				onaddstate={isDemo()
-					? undefined
-					: () => {
-							ui.stateCaptureMove = '';
-							ui.sheet = 'stateCapture';
-						}}
-			/>
-		</div>
+		<Moves
+			kind={ui.tab === 'states' ? 'state' : 'move'}
+			onaddstate={isDemo()
+				? undefined
+				: () => {
+						ui.stateCaptureMove = '';
+						ui.sheet = 'stateCapture';
+					}}
+		/>
 	{/if}
 	{#if dragging && kind}<div class="drop-hint" role="status">
 			<FileArchive size={28} aria-hidden="true" /><strong>{t(HINTS[kind])}</strong>

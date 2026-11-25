@@ -17,7 +17,23 @@
 	import { Plus, X } from './icons.ts';
 	import SavedActions from './SavedActions.svelte';
 	import { downloadOutfitZip } from './download.svelte.ts';
+	import ListSearch from './ListSearch.svelte';
+	import { createSearchVisibility } from './searchVisibility.svelte.ts';
+	import { matchesSearch } from '../lib/search/match.ts';
 	const m = $derived(store.project?.manifest);
+	let query = $state('');
+	let list = $state<HTMLElement>();
+	const matched = $derived((m?.presets ?? []).filter((p) => matchesSearch([p.name], query)));
+	const visibility = createSearchVisibility({
+		element: () => list,
+		total: () => m?.presets.length ?? 0,
+		query: () => query
+	});
+	// A query belongs to the character whose looks it filters.
+	$effect(() => {
+		void doc.id;
+		query = '';
+	});
 	const preview = $derived.by(() => {
 		void doc.rev;
 		if (!store.project) return null;
@@ -56,71 +72,84 @@
 </script>
 
 {#if m}
-	<section class="group outfits" aria-label={t('outfits.outfits')}>
-		<ul class="rows">
-			{#each m.presets as p (p.id)}
-				<li>
-					<SavedActions
-						name={p.name}
-						kind="outfit"
-						onrename={() => openRename(doc.id, { outfitId: p.id })}
-						ondownload={() => downloadOutfitZip(p.id)}
-						ondelete={() => deletePreset(p.id)}
+	<div class="panel-stack">
+		<ListSearch
+			bind:value={query}
+			label={t('search.outfits')}
+			clearLabel={t('search.clear')}
+			summary={t('search.results', { count: matched.length, total: m.presets.length })}
+			shown={visibility.visible}
+		/>
+		<div class="equipment-scroll panel-list" bind:this={list}>
+			<section class="group outfits" aria-label={t('outfits.outfits')}>
+				<ul class="rows">
+					{#each matched as p (p.id)}
+						<li>
+							<SavedActions
+								name={p.name}
+								kind="outfit"
+								onrename={() => openRename(doc.id, { outfitId: p.id })}
+								ondownload={() => downloadOutfitZip(p.id)}
+								ondelete={() => deletePreset(p.id)}
+							>
+								<button
+									class="row bu-action"
+									data-variant="tile"
+									aria-pressed={sameOutfit(p)}
+									onclick={() => applyPreset(p)}
+									>{#if preview}<OutfitThumb {preview} preset={p} />{/if}<span class="row-name"
+										>{p.name}</span
+									></button
+								>
+							</SavedActions>
+						</li>
+					{:else}
+						<li class="faint small" style="padding:4px 8px">
+							{query
+								? t('outfits.noMatchingOutfits')
+								: t('outfits.saveALookToSwitchBetweenOutfits')}
+						</li>
+					{/each}
+				</ul>
+				{#if naming}
+					<form
+						class="inline-form"
+						data-update-draft
+						onsubmit={(e) => {
+							e.preventDefault();
+							saveOutfit();
+						}}
 					>
-						<button
-							class="row bu-action"
-							data-variant="tile"
-							aria-pressed={sameOutfit(p)}
-							onclick={() => applyPreset(p)}
-							>{#if preview}<OutfitThumb {preview} preset={p} />{/if}<span class="row-name"
-								>{p.name}</span
-							></button
+						<!-- svelte-ignore a11y_autofocus -->
+						<input
+							class="bu-input input"
+							bind:value={outfitName}
+							placeholder={t('outfits.outfitName')}
+							aria-label={t('outfits.outfitName')}
+							autofocus
+						/>
+						<button class="bu-action btn primary" data-variant="primary" type="submit"
+							>{t('common.save')}</button
 						>
-					</SavedActions>
-				</li>
-			{:else}
-				<li class="faint small" style="padding:4px 8px">
-					{t('outfits.saveALookToSwitchBetweenOutfits')}
-				</li>
-			{/each}
-		</ul>
-		{#if naming}
-			<form
-				class="inline-form"
-				data-update-draft
-				onsubmit={(e) => {
-					e.preventDefault();
-					saveOutfit();
-				}}
-			>
-				<!-- svelte-ignore a11y_autofocus -->
-				<input
-					class="bu-input input"
-					bind:value={outfitName}
-					placeholder={t('outfits.outfitName')}
-					aria-label={t('outfits.outfitName')}
-					autofocus
-				/>
-				<button class="bu-action btn primary" data-variant="primary" type="submit"
-					>{t('common.save')}</button
-				>
-				<button
-					class="bu-action btn icon plain"
-					data-variant="quiet"
-					type="button"
-					aria-label={t('common.cancel')}
-					onclick={closeForm}><X size={14} /></button
-				>
-			</form>
-		{:else}
-			<button
-				class="bu-action add-row"
-				data-variant="outline"
-				bind:this={addButton}
-				onclick={() => (naming = true)}><Plus size={16} />{t('outfits.saveCurrentLook')}</button
-			>
-		{/if}
-	</section>
+						<button
+							class="bu-action btn icon plain"
+							data-variant="quiet"
+							type="button"
+							aria-label={t('common.cancel')}
+							onclick={closeForm}><X size={14} /></button
+						>
+					</form>
+				{:else}
+					<button
+						class="bu-action add-row"
+						data-variant="outline"
+						bind:this={addButton}
+						onclick={() => (naming = true)}><Plus size={16} />{t('outfits.saveCurrentLook')}</button
+					>
+				{/if}
+			</section>
+		</div>
+	</div>
 {/if}
 
 <style>

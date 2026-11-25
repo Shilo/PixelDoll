@@ -34,6 +34,9 @@
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
 	import SavedActions from './SavedActions.svelte';
 	import { downloadMoveZip } from './download.svelte.ts';
+	import ListSearch from './ListSearch.svelte';
+	import { createSearchVisibility } from './searchVisibility.svelte.ts';
+	import { matchesSearch } from '../lib/search/match.ts';
 	import { moveDeletionBlocked, removeMove } from './moveActions.svelte.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
@@ -114,6 +117,56 @@
 				}))
 			: []
 	);
+	let query = $state('');
+	let list = $state<HTMLElement>();
+	const reviewRows = $derived(kind === 'move' ? Object.values(store.moveReviews) : []);
+	// Every named row's own label is its search field; the semantic order stays the same.
+	const matchedClips = $derived(clips.filter(({ clip }) => matchesSearch([nice(clip.id)], query)));
+	const matchedPending = $derived(
+		pendingStates.filter(({ attempt }) => matchesSearch([moveLabel(attempt.id)], query))
+	);
+	const matchedReviews = $derived(
+		reviewRows.filter((candidate) => matchesSearch([nice(candidate.spec.id)], query))
+	);
+	const matchedMine = $derived(
+		mine && moving.spec ? matchesSearch([jobName(moving.spec)], query) : false
+	);
+	const matchedQueued = $derived(queued.filter((q) => matchesSearch([jobName(q.spec)], query)));
+	const matchedElsewhereRunning = $derived(
+		!!elsewhereRunning && matchesSearch([jobName(elsewhereRunning)], query)
+	);
+	const matchedElsewhereQueued = $derived(
+		elsewhereQueued.filter((q) => matchesSearch([jobName(q.spec)], query))
+	);
+	const rowTotal = $derived(
+		clips.length +
+			pendingStates.length +
+			reviewRows.length +
+			(mine && moving.spec ? 1 : 0) +
+			queued.length +
+			(elsewhereRunning ? 1 : 0) +
+			elsewhereQueued.length
+	);
+	const rowMatches = $derived(
+		matchedClips.length +
+			matchedPending.length +
+			matchedReviews.length +
+			(matchedMine ? 1 : 0) +
+			matchedQueued.length +
+			(matchedElsewhereRunning ? 1 : 0) +
+			matchedElsewhereQueued.length
+	);
+	const visibility = createSearchVisibility({
+		element: () => list,
+		total: () => rowTotal,
+		query: () => query
+	});
+	// A query belongs to the character and tab whose rows it filters.
+	$effect(() => {
+		void doc.id;
+		void kind;
+		query = '';
+	});
 </script>
 
 {#snippet stateRow(attempt: StateAttempt, progress: StateProgress)}
@@ -135,268 +188,293 @@
 	</button>
 {/snippet}
 
-<div class="colors">
-	{#if m && view.project && thumbnails}
-		<div class="move-list">
-			{#each pendingStates.filter(({ progress }) => progress.status !== 'generating') as { attempt, progress } (attempt.token)}
-				{@render stateRow(attempt, progress)}
-			{/each}
-			{#each kind === 'move' ? Object.values(store.moveReviews) : [] as candidate (candidate.spec.id)}
-				<button
-					class="move-row bu-action"
-					data-variant="tile"
-					onclick={() => openMoveReview(candidate.spec.id)}
-				>
-					<span class="move-text"
-						><b>{nice(candidate.spec.id)}</b><span class="muted small"
-							>{t('moveSheet.checkpoint.review')}</span
-						></span
-					>
-					<ChevronRight size={16} />
-				</button>
-			{/each}
-			{#each clips as { clip: a } (a.id)}
-				{@const image = thumbnails(a.id, ui.dir, ui.frame)}
-				{@const base = m.items.find((i) => i.id === m.rig.baseItem)}
-				{@const dirs = m.rig.directions.filter(
-					(d) => !d.mirrorOf && base?.layers[0].cells?.[a.id]?.[d.id]?.some(Boolean)
-				)}
-				{@const nDirs =
-					dirs.length +
-					m.rig.directions.filter((d) => d.mirrorOf && dirs.some((x) => x.id === d.mirrorOf))
-						.length}
-				{@const lock = moveDeletionBlocked(a.id)}
-				{@const items = clipItemCoverage(m, a.id)}
-				{@const jobs = drawing.filter((job) => job.clip === a.id)}
-				{@const now = jobs.find((job) => job.status === 'drawing')}
-				<SavedActions
-					name={nice(a.id)}
-					{kind}
-					locked={displayError(lock)}
-					onlocked={blockedByWork(lock)
-						? () =>
-								void openPendingWork({
-									projectId: doc.id,
-									flows: !!lock && lock.translation.key !== 'moveRemoval.resolveDrafts'
-								})
-						: undefined}
-					onrename={isDemo() ? undefined : () => openRename(doc.id, { moveId: a.id })}
-					ondownload={() => downloadMoveZip(a.id)}
-					onredraw={kind === 'move' && !isDemo()
-						? () => {
-								ui.redrawMove = a.id;
-								ui.sheet = 'move';
-							}
-						: undefined}
-					onfixframes={() => openFrames('', a.id)}
-					oncapture={!isDemo()
-						? () => {
-								ui.stateCaptureMove = a.id;
-								ui.sheet = 'stateCapture';
-							}
-						: undefined}
-					ongenerateitems={!isDemo() &&
-					a.id !== DEFAULT_MOVE &&
-					!redo.includes(a.id) &&
-					items &&
-					items.drawn < items.total
-						? () => {
-								ui.itemGeneration = a.id;
-								ui.sheet = 'itemGeneration';
-							}
-						: undefined}
-					ondelete={() => removeMove(a.id)}
-				>
-					<button
-						class="move-row bu-action"
-						data-variant="tile"
-						aria-pressed={ui.anim === a.id}
-						onclick={() => {
-							ui.anim = a.id;
-							ui.frame = 0;
-						}}
-					>
-						<span class="move-thumb"
-							><Sprite
-								img={image}
-								k={image ? croppedBacking(56, image, ui.dpr) : 1}
-								fitToBox={!!image && (image.w > 56 || image.h > 56)}
-								label={t('moves.preview', { move: nice(a.id) })}
-							/></span
-						>
-						<span class="move-text"
-							><b>{nice(a.id)}</b><span class="muted small"
-								>{t('moves.frames', { count: a.cells })} · {nDirs === 1
-									? dirs[0]
-										? t('moves.onlyDirection', {
-												direction: displayDirectionInSentence(dirs[0].id)
-											})
-										: t('moves.oneDirection')
-									: t('export.count.directions', { count: nDirs })}</span
-							>{#if now}<span class="muted small item-jobs"
-									><span class="bu-ring ring spin" aria-hidden="true"></span><span
-										>{[
-											formatPercent(now.percent / 100),
-											t('moves.drawingItem', { item: itemName(now.item) }),
-											jobs.length > 1 &&
-												t('moves.moreQueued', {
-													count: jobs.length - 1,
-													n: formatNumber(jobs.length - 1)
-												})
-										]
-											.filter(Boolean)
-											.join(' · ')}</span
-									></span
-								>{:else if jobs.length}<span class="muted small item-jobs"
-									><span class="bu-ring ring" aria-hidden="true"></span><span
-										>{moving.repairReview
-											? t('moves.waitingForRepairReview')
-											: moving.error
-												? t('moves.waitingForFailed')
-												: t('moves.itemsQueued', {
-														count: jobs.length,
-														n: formatNumber(jobs.length)
-													})}</span
-									></span
-								>{:else if items?.total}<span class="muted small"
-									>{t('moves.itemsDrawn', {
-										count: items.total,
-										drawn: formatNumber(items.drawn),
-										n: formatNumber(items.total)
-									})}</span
-								>{/if}{#if needsRedo(a)}<span class="small redo">{t('moves.needsRedo')}</span
-								>{/if}</span
-						>
-					</button>
-				</SavedActions>
-			{/each}
-			<!-- Running States sit below the saved ones, like a Move being added. -->
-			{#each pendingStates.filter(({ progress }) => progress.status === 'generating') as { attempt, progress } (attempt.token)}
-				{@render stateRow(attempt, progress)}
-			{/each}
-			{#if mine && moving.spec}
-				<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
-					><span class="move-thumb"
-						><span
-							class="bu-ring ring"
-							class:spin={!moving.error && !moving.repairReview}
-							aria-hidden="true"
-						></span></span
-					><span class="move-text"
-						><b>{jobName(moving.spec)}</b><span class="muted small"
-							>{moving.repairReview
-								? moving.spec?.redrawItem
-									? t('moveSheet.review.redrawTitle')
-									: t('moveSheet.review.repairTitle')
-								: moving.error
-									? t('moves.failed')
-									: t('moves.adding', {
-											done: moving.progress?.done ?? 0,
-											total: moving.progress?.total ?? '?'
-										})}</span
-						>{#if !moving.error && !moving.repairReview && moving.progress}<span
-								class="muted small num">{formatPercent(movePercent / 100)}</span
-							>{/if}</span
-					></button
-				>
-			{/if}
-			{#each queued as q, i (i)}
-				<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
-					><span class="move-thumb"><span class="bu-ring ring" aria-hidden="true"></span></span
-					><span class="move-text"
-						><b>{jobName(q.spec)}</b><span class="muted small"
-							>{moving.repairReview
-								? t('moves.waitingForRepairReview')
-								: moving.error
-									? t('moves.waitingForFailed')
-									: t('generation.status.queued')}</span
-						>{#if !moving.error && !moving.repairReview}<span class="muted small num"
-								>{formatPercent(0)}</span
-							>{/if}</span
-					></button
-				>
-			{/each}
-			<!-- Another tab's move and its queue: the same rows, informative and never clickable here. -->
-			{#if elsewhereRunning}
-				<div class="move-row bu-action elsewhere" data-variant="tile">
-					<span class="move-thumb"><span class="bu-ring ring spin" aria-hidden="true"></span></span>
-					<span class="move-text"
-						><b>{jobName(elsewhereRunning)}</b><span class="muted small"
-							>{t('moves.inAnotherTab')}</span
-						></span
-					>
-				</div>
-			{/if}
-			{#each elsewhereQueued as q, i (i)}
-				<div class="move-row bu-action elsewhere" data-variant="tile">
-					<span class="move-thumb"><span class="bu-ring ring" aria-hidden="true"></span></span>
-					<span class="move-text"
-						><b>{jobName(q.spec)}</b><span class="muted small">{t('moves.queuedInAnotherTab')}</span
-						></span
-					>
-				</div>
-			{/each}
-		</div>
-		{#if kind === 'move' && !isDemo()}<button
-				class="bu-action add-row cta"
-				data-variant="outline"
-				onclick={() => (ui.sheet = 'move')}
-				><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
-			>{:else if kind === 'state' && onaddstate}<button
-				class="bu-action add-row cta"
-				data-variant="outline"
-				onclick={onaddstate}
-				><Plus size={16} />{openerLabel(t('moves.addState'))}<SurfaceChevron /></button
-			>{/if}
-		<details class="disclosure">
-			<summary><ChevronRight size={14} />{t('common.details')}</summary>
-			<div>
-				<dl class="kv">
-					{#if bodySize}
-						<dt>{t('generationDetails.settings.body')}</dt>
-						<dd>{t('moves.bodySize', { w: bodySize.w, h: bodySize.h })}</dd>
+<div class="panel-stack">
+	<ListSearch
+		bind:value={query}
+		label={t(kind === 'state' ? 'search.states' : 'search.moves')}
+		clearLabel={t('search.clear')}
+		summary={t('search.results', { count: rowMatches, total: rowTotal })}
+		shown={visibility.visible}
+	/>
+	<div class="equipment-scroll panel-list" bind:this={list}>
+		<div class="colors">
+			{#if m && view.project && thumbnails}
+				<div class="move-list">
+					{#if query && rowMatches === 0}
+						<p class="faint small no-match">
+							{t(kind === 'state' ? 'moves.noMatchingStates' : 'moves.noMatchingMoves')}
+						</p>
 					{/if}
-					<dt>{t('generationDetails.settings.frame')}</dt>
-					<dd>
-						{t('moves.frameSize', {
-							w: m.rig.cell.w,
-							h: m.rig.cell.h,
-							x: m.rig.pivot.x,
-							y: m.rig.pivot.y
-						})}
-					</dd>
-					{#each clips as { clip: a } (a.id)}
-						{@const src = Object.values(a.sources ?? {})[0]}
-						{@const sourceDetails =
-							a.source?.mode === STATE_CAPTURE_MODE
-								? ''
-								: src
-									? ` · ${src.route}, ${src.motion}`
-									: a.source?.mode
-										? ` · ${a.source.mode}`
-										: ''}
-						<dt>{nice(a.id)}</dt>
-						<dd>
-							{a.frames.map((f) => `${f.cell}:${f.ms}ms`).join(' ')}{sourceDetails}
-						</dd>
+					{#each matchedPending.filter(({ progress }) => progress.status !== 'generating') as { attempt, progress } (attempt.token)}
+						{@render stateRow(attempt, progress)}
 					{/each}
-					<dt>{t('common.directions')}</dt>
-					<dd>
-						{m.rig.directions
-							.map((d) =>
-								d.mirrorOf
-									? t('moves.mirrorOf', {
-											direction: displayDirectionInSentence(d.id),
-											source: displayDirectionInSentence(d.mirrorOf)
+					{#each matchedReviews as candidate (candidate.spec.id)}
+						<button
+							class="move-row bu-action"
+							data-variant="tile"
+							onclick={() => openMoveReview(candidate.spec.id)}
+						>
+							<span class="move-text"
+								><b>{nice(candidate.spec.id)}</b><span class="muted small"
+									>{t('moveSheet.checkpoint.review')}</span
+								></span
+							>
+							<ChevronRight size={16} />
+						</button>
+					{/each}
+					{#each matchedClips as { clip: a } (a.id)}
+						{@const image = thumbnails(a.id, ui.dir, ui.frame)}
+						{@const base = m.items.find((i) => i.id === m.rig.baseItem)}
+						{@const dirs = m.rig.directions.filter(
+							(d) => !d.mirrorOf && base?.layers[0].cells?.[a.id]?.[d.id]?.some(Boolean)
+						)}
+						{@const nDirs =
+							dirs.length +
+							m.rig.directions.filter((d) => d.mirrorOf && dirs.some((x) => x.id === d.mirrorOf))
+								.length}
+						{@const lock = moveDeletionBlocked(a.id)}
+						{@const items = clipItemCoverage(m, a.id)}
+						{@const jobs = drawing.filter((job) => job.clip === a.id)}
+						{@const now = jobs.find((job) => job.status === 'drawing')}
+						<SavedActions
+							name={nice(a.id)}
+							{kind}
+							locked={displayError(lock)}
+							onlocked={blockedByWork(lock)
+								? () =>
+										void openPendingWork({
+											projectId: doc.id,
+											flows: !!lock && lock.translation.key !== 'moveRemoval.resolveDrafts'
 										})
-									: displayDirectionInSentence(d.id)
-							)
-							.join(', ')}
-					</dd>
-				</dl>
-			</div>
-		</details>
-	{/if}
+								: undefined}
+							onrename={isDemo() ? undefined : () => openRename(doc.id, { moveId: a.id })}
+							ondownload={() => downloadMoveZip(a.id)}
+							onredraw={kind === 'move' && !isDemo()
+								? () => {
+										ui.redrawMove = a.id;
+										ui.sheet = 'move';
+									}
+								: undefined}
+							onfixframes={() => openFrames('', a.id)}
+							oncapture={!isDemo()
+								? () => {
+										ui.stateCaptureMove = a.id;
+										ui.sheet = 'stateCapture';
+									}
+								: undefined}
+							ongenerateitems={!isDemo() &&
+							a.id !== DEFAULT_MOVE &&
+							!redo.includes(a.id) &&
+							items &&
+							items.drawn < items.total
+								? () => {
+										ui.itemGeneration = a.id;
+										ui.sheet = 'itemGeneration';
+									}
+								: undefined}
+							ondelete={() => removeMove(a.id)}
+						>
+							<button
+								class="move-row bu-action"
+								data-variant="tile"
+								aria-pressed={ui.anim === a.id}
+								onclick={() => {
+									ui.anim = a.id;
+									ui.frame = 0;
+								}}
+							>
+								<span class="move-thumb"
+									><Sprite
+										img={image}
+										k={image ? croppedBacking(56, image, ui.dpr) : 1}
+										fitToBox={!!image && (image.w > 56 || image.h > 56)}
+										label={t('moves.preview', { move: nice(a.id) })}
+									/></span
+								>
+								<span class="move-text"
+									><b>{nice(a.id)}</b><span class="muted small"
+										>{t('moves.frames', { count: a.cells })} · {nDirs === 1
+											? dirs[0]
+												? t('moves.onlyDirection', {
+														direction: displayDirectionInSentence(dirs[0].id)
+													})
+												: t('moves.oneDirection')
+											: t('export.count.directions', { count: nDirs })}</span
+									>{#if now}<span class="muted small item-jobs"
+											><span class="bu-ring ring spin" aria-hidden="true"></span><span
+												>{[
+													formatPercent(now.percent / 100),
+													t('moves.drawingItem', { item: itemName(now.item) }),
+													jobs.length > 1 &&
+														t('moves.moreQueued', {
+															count: jobs.length - 1,
+															n: formatNumber(jobs.length - 1)
+														})
+												]
+													.filter(Boolean)
+													.join(' · ')}</span
+											></span
+										>{:else if jobs.length}<span class="muted small item-jobs"
+											><span class="bu-ring ring" aria-hidden="true"></span><span
+												>{moving.repairReview
+													? t('moves.waitingForRepairReview')
+													: moving.error
+														? t('moves.waitingForFailed')
+														: t('moves.itemsQueued', {
+																count: jobs.length,
+																n: formatNumber(jobs.length)
+															})}</span
+											></span
+										>{:else if items?.total}<span class="muted small"
+											>{t('moves.itemsDrawn', {
+												count: items.total,
+												drawn: formatNumber(items.drawn),
+												n: formatNumber(items.total)
+											})}</span
+										>{/if}{#if needsRedo(a)}<span class="small redo">{t('moves.needsRedo')}</span
+										>{/if}</span
+								>
+							</button>
+						</SavedActions>
+					{/each}
+					<!-- Running States sit below the saved ones, like a Move being added. -->
+					{#each matchedPending.filter(({ progress }) => progress.status === 'generating') as { attempt, progress } (attempt.token)}
+						{@render stateRow(attempt, progress)}
+					{/each}
+					{#if matchedMine && moving.spec}
+						<button
+							class="move-row bu-action"
+							data-variant="tile"
+							onclick={() => (ui.sheet = 'move')}
+							><span class="move-thumb"
+								><span
+									class="bu-ring ring"
+									class:spin={!moving.error && !moving.repairReview}
+									aria-hidden="true"
+								></span></span
+							><span class="move-text"
+								><b>{jobName(moving.spec)}</b><span class="muted small"
+									>{moving.repairReview
+										? moving.spec?.redrawItem
+											? t('moveSheet.review.redrawTitle')
+											: t('moveSheet.review.repairTitle')
+										: moving.error
+											? t('moves.failed')
+											: t('moves.adding', {
+													done: moving.progress?.done ?? 0,
+													total: moving.progress?.total ?? '?'
+												})}</span
+								>{#if !moving.error && !moving.repairReview && moving.progress}<span
+										class="muted small num">{formatPercent(movePercent / 100)}</span
+									>{/if}</span
+							></button
+						>
+					{/if}
+					{#each matchedQueued as q, i (i)}
+						<button
+							class="move-row bu-action"
+							data-variant="tile"
+							onclick={() => (ui.sheet = 'move')}
+							><span class="move-thumb"><span class="bu-ring ring" aria-hidden="true"></span></span
+							><span class="move-text"
+								><b>{jobName(q.spec)}</b><span class="muted small"
+									>{moving.repairReview
+										? t('moves.waitingForRepairReview')
+										: moving.error
+											? t('moves.waitingForFailed')
+											: t('generation.status.queued')}</span
+								>{#if !moving.error && !moving.repairReview}<span class="muted small num"
+										>{formatPercent(0)}</span
+									>{/if}</span
+							></button
+						>
+					{/each}
+					<!-- Another tab's move and its queue: the same rows, informative and never clickable here. -->
+					{#if elsewhereRunning && matchedElsewhereRunning}
+						<div class="move-row bu-action elsewhere" data-variant="tile">
+							<span class="move-thumb"
+								><span class="bu-ring ring spin" aria-hidden="true"></span></span
+							>
+							<span class="move-text"
+								><b>{jobName(elsewhereRunning)}</b><span class="muted small"
+									>{t('moves.inAnotherTab')}</span
+								></span
+							>
+						</div>
+					{/if}
+					{#each matchedElsewhereQueued as q, i (i)}
+						<div class="move-row bu-action elsewhere" data-variant="tile">
+							<span class="move-thumb"><span class="bu-ring ring" aria-hidden="true"></span></span>
+							<span class="move-text"
+								><b>{jobName(q.spec)}</b><span class="muted small"
+									>{t('moves.queuedInAnotherTab')}</span
+								></span
+							>
+						</div>
+					{/each}
+				</div>
+				{#if kind === 'move' && !isDemo()}<button
+						class="bu-action add-row cta"
+						data-variant="outline"
+						onclick={() => (ui.sheet = 'move')}
+						><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
+					>{:else if kind === 'state' && onaddstate}<button
+						class="bu-action add-row cta"
+						data-variant="outline"
+						onclick={onaddstate}
+						><Plus size={16} />{openerLabel(t('moves.addState'))}<SurfaceChevron /></button
+					>{/if}
+				<details class="disclosure">
+					<summary><ChevronRight size={14} />{t('common.details')}</summary>
+					<div>
+						<dl class="kv">
+							{#if bodySize}
+								<dt>{t('generationDetails.settings.body')}</dt>
+								<dd>{t('moves.bodySize', { w: bodySize.w, h: bodySize.h })}</dd>
+							{/if}
+							<dt>{t('generationDetails.settings.frame')}</dt>
+							<dd>
+								{t('moves.frameSize', {
+									w: m.rig.cell.w,
+									h: m.rig.cell.h,
+									x: m.rig.pivot.x,
+									y: m.rig.pivot.y
+								})}
+							</dd>
+							{#each clips as { clip: a } (a.id)}
+								{@const src = Object.values(a.sources ?? {})[0]}
+								{@const sourceDetails =
+									a.source?.mode === STATE_CAPTURE_MODE
+										? ''
+										: src
+											? ` · ${src.route}, ${src.motion}`
+											: a.source?.mode
+												? ` · ${a.source.mode}`
+												: ''}
+								<dt>{nice(a.id)}</dt>
+								<dd>
+									{a.frames.map((f) => `${f.cell}:${f.ms}ms`).join(' ')}{sourceDetails}
+								</dd>
+							{/each}
+							<dt>{t('common.directions')}</dt>
+							<dd>
+								{m.rig.directions
+									.map((d) =>
+										d.mirrorOf
+											? t('moves.mirrorOf', {
+													direction: displayDirectionInSentence(d.id),
+													source: displayDirectionInSentence(d.mirrorOf)
+												})
+											: displayDirectionInSentence(d.id)
+									)
+									.join(', ')}
+							</dd>
+						</dl>
+					</div>
+				</details>
+			{/if}
+		</div>
+	</div>
 </div>
 
 <style>
@@ -429,5 +507,10 @@
 	/* Another tab's rows are informative: no hover, click or pointer, so they cannot start or queue anything here. */
 	.elsewhere {
 		pointer-events: none;
+	}
+
+	.no-match {
+		padding: 4px 8px;
+		margin: 0;
 	}
 </style>

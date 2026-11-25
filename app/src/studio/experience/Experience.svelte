@@ -16,6 +16,9 @@
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import CharacterThumb from './CharacterThumb.svelte';
+	import ListSearch from '../ListSearch.svelte';
+	import { createSearchVisibility } from '../searchVisibility.svelte.ts';
+	import { matchesSearch } from '../../lib/search/match.ts';
 	import Sprite from '../Sprite.svelte';
 	import { CREATE_STEPS } from '../characterConfig.ts';
 	import CastCarousel from './CastCarousel.svelte';
@@ -76,6 +79,7 @@
 	import { workspaceCopy } from '../../lib/store/workspace-mode.ts';
 	import { app } from '../../lib/app.svelte.ts';
 	let search = $state('');
+	let rows = $state<HTMLDivElement>();
 	let castDirection = $state(1);
 	let selection = $state<HTMLDivElement>();
 	let missing = $state.raw<{ clip: string; direction: DirectionName; items: Item[] } | null>(null);
@@ -106,18 +110,22 @@
 			experience.testMount
 	);
 	const name = $derived(characterName());
-	const query = $derived(search.toLowerCase());
-	const list = $derived(
-		store.projects.filter((p) => !p.dev && p.name.toLowerCase().includes(query))
-	);
-	const pending = $derived(
+	const query = $derived(search);
+	const saved = $derived(store.projects.filter((p) => !p.dev));
+	const allPending = $derived(
 		creates.filter(
 			(run) =>
-				!run.projectId &&
-				!store.projects.some((project) => project.id === run.spec.projectId) &&
-				run.spec.name.toLowerCase().includes(query)
+				!run.projectId && !store.projects.some((project) => project.id === run.spec.projectId)
 		)
 	);
+	const list = $derived(saved.filter((p) => matchesSearch([p.name], query)));
+	const pending = $derived(allPending.filter((run) => matchesSearch([run.spec.name], query)));
+	const searchTotal = $derived(saved.length + allPending.length);
+	const searchVisibility = createSearchVisibility({
+		element: () => rows,
+		total: () => searchTotal,
+		query: () => query
+	});
 	$effect(() => {
 		if (search && list.length && !doc.loading && !list.some((p) => p.id === doc.id))
 			void openProject(list[0].id);
@@ -690,18 +698,23 @@
 		{/if}
 		<aside class="cast-library" aria-label={t('experience.yourCharacters')}>
 			<div class="cast-search">
-				<input
-					class="bu-input"
-					type="search"
-					aria-label={t('experience.searchCharacters')}
+				<ListSearch
+					flush
+					bind:value={search}
+					label={t('experience.searchCharacters')}
 					placeholder={g.sheet
 						? t('experience.placeholderSearch')
 						: t('experience.searchCharacters')}
-					bind:value={search}
+					clearLabel={t('search.clear')}
+					summary={t('search.results', {
+						count: list.length + pending.length,
+						total: searchTotal
+					})}
+					shown={searchVisibility.visible}
 				/>
 				{#if g.sheet}<NewCharacterButton compact />{/if}
 			</div>
-			<div class="character-rows">
+			<div class="character-rows" bind:this={rows}>
 				{#each pending as run (run.id)}
 					{@const spec = run.spec}
 					{@const step = CREATE_STEPS.findIndex((stage) => stage.id === run.progress?.step)}

@@ -343,7 +343,8 @@
 		"miColor": "Warna {mi}",
 		"titleSavedColor": "Warna tersimpan",
 		"titleOriginal": "Asli",
-		"titlePickAnyColor": "Pilih warna bebas"
+		"titlePickAnyColor": "Pilih warna bebas",
+		"noMatchingColors": "Tidak ada warna yang cocok"
 	},
 	"colorSections": {
 		"randomLowerColors": "Acak warna {lower}",
@@ -608,7 +609,8 @@
 		"outfits": "Setelan",
 		"saveALookToSwitchBetweenOutfits": "Simpan penampilan agar Anda dapat berganti setelan di game.",
 		"outfitName": "Nama setelan",
-		"saveCurrentLook": "Simpan penampilan ini"
+		"saveCurrentLook": "Simpan penampilan ini",
+		"noMatchingOutfits": "Tidak ada setelan yang cocok"
 	},
 	"pwaNotice": {
 		"readyToUpdateReloading": "Siap diperbarui. Memuat ulang…",
@@ -807,6 +809,7 @@
 		"notShownInMoveNote": "Item sedang dipakai, tetapi tidak terlihat karena tidak memiliki bingkai di semua tampilan gerakan ini.",
 		"randomLowerItem": "Acak item {lower}",
 		"newLowerItem": "Item {lower} baru",
+		"noMatchingItems": "Tidak ada item yang cocok",
 		"labelItems": "Item {label}",
 		"emptyLower": "{lower} kosong",
 		"empty": "Kosong",
@@ -2128,6 +2131,8 @@
 	},
 	"moves": {
 		"preview": "Pratinjau {move}",
+		"noMatchingMoves": "Tidak ada animasi yang cocok",
+		"noMatchingStates": "Tidak ada keadaan yang cocok",
 		"frames": {
 			"other": "{count} frame"
 		},
@@ -3220,7 +3225,9 @@
 			"all": {
 				"other": "{n} karakter"
 			},
-			"plan": { "other": "Perkiraan untuk {n} karakter baru" },
+			"plan": {
+				"other": "Perkiraan untuk {n} karakter baru"
+			},
 			"demo": "Gambar demo gratis"
 		},
 		"tierOneRates": "{basis} · tarif Tier 1",
@@ -3281,7 +3288,9 @@
 			"other": "{n} panggilan tanpa harga"
 		}
 	},
-	"shortcut": { "control": "Ctrl" },
+	"shortcut": {
+		"control": "Ctrl"
+	},
 	"report": {
 		"action": "Laporkan",
 		"actionLabel": "Laporkan masalah ini",
@@ -3458,5 +3467,14 @@
 		"hintTouch": "Seret untuk bergerak · Tahan dan seret pedang untuk menyerang dan membidik · Tombol untuk melompat, lari cepat, dan menunggang",
 		"stageTopDown": "Dunia uji karakter. Gunakan WASD, tombol panah, klik, atau seret untuk bergerak; Shift untuk lari cepat. Klik kanan atau E menyerang, Spasi melompat, F naik atau turun. Tombol 1, 2, 3 mengganti tampilan.",
 		"stageSide": "Dunia uji gulir samping. Gunakan A/D, panah kiri dan kanan, klik, atau seret untuk bergerak; Shift untuk lari cepat. Klik kanan atau E menyerang, Spasi melompat, F naik atau turun. Tombol 1, 2, 3 mengganti tampilan."
+	},
+	"search": {
+		"wardrobe": "Cari di lemari",
+		"outfits": "Cari setelan",
+		"moves": "Cari animasi",
+		"states": "Cari keadaan",
+		"colors": "Cari warna",
+		"clear": "Hapus pencarian",
+		"results": "{count} dari {total}"
 	}
 }
