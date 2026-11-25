@@ -1,8 +1,8 @@
 <script lang="ts">
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
-	import { onDestroy, untrack } from 'svelte';
-	import CloseButton from './CloseButton.svelte';
+	import { onDestroy } from 'svelte';
+	import SettingsItemToggle from './SettingsItemToggle.svelte';
 	import Sheet from './Sheet.svelte';
 	import { fileDrop, preventFileNavigation } from './fileDrop.ts';
 	import DirectionCompass from './DirectionCompass.svelte';
@@ -45,9 +45,7 @@
 		ui,
 		doc,
 		store,
-		dismissImportAppearanceTip,
 		dismissWelcome,
-		importAppearanceTipDismissed,
 		openAppearance,
 		refreshProjects,
 		openProject,
@@ -60,6 +58,7 @@
 		ChevronRight,
 		Download,
 		FileArchive,
+		Info,
 		KeyRound,
 		TriangleAlert
 	} from './icons.ts';
@@ -73,8 +72,7 @@
 	let previewValid = $state(false),
 		nameInitialized = false;
 	let setupNext = $state(true);
-	let showAppearanceTip = $state(untrack(() => !importAppearanceTipDismissed()));
-	let nameInput = $state<HTMLInputElement>();
+	const setupHint = $props.id();
 	let directionChoices = $state.raw<RigDirection[] | null>(null);
 	let facing = $state<DirectionName>('south');
 	const originalDirections = $derived(prepared?.project.manifest.rig.directions ?? []);
@@ -413,7 +411,7 @@
 			else
 				toast(
 					message('import.imported', { name: name.trim() }),
-					showAppearanceTip && !ui.sheet
+					!ui.sheet
 						? {
 								duration: 8000,
 								actionLabel: message('appearance.action'),
@@ -747,26 +745,17 @@
 					})}
 				</p>{/if}
 		</div>
-		{#if showAppearanceTip && preview && previewValid}
-			<div class="import-appearance-tip">
-				<p class="muted small">{t('import.appearanceTip')}</p>
-				<CloseButton
-					label={t('import.dismissAppearanceTip')}
-					disabled={busy}
-					onclick={() => {
-						dismissImportAppearanceTip();
-						showAppearanceTip = false;
-						nameInput?.focus({ preventScroll: true });
-					}}
-				/>
-			</div>
+		{#if preview && previewValid}
+			<p class="notice small">
+				<Info size={16} aria-hidden="true" />
+				<span>{t('import.appearanceTip', { action: t('appearance.title') })}</span>
+			</p>
 		{/if}
 		{#if busy && !saving}<p class="muted" role="status">{t('import.updatingPreview')}</p>{/if}
 		<label class="field"
 			><span class="label">{t('import.characterName')}</span><input
 				class="bu-input input"
 				type="text"
-				bind:this={nameInput}
 				bind:value={name}
 				maxlength="60"
 				disabled={busy}
@@ -831,14 +820,20 @@
 					>{displayMessage(prepared.warningKeys?.[index] ?? warning)}</span
 				>
 			</p>{/each}
-		{#if needsSetup}<label class="check"
-				><input type="checkbox" bind:checked={setupNext} disabled={busy} />{t(
-					'import.setupNext'
-				)}</label
+		{#if needsSetup}
+			<SettingsItemToggle
+				setting="setup-after-import"
+				checked={setupNext}
+				disabled={busy}
+				aria-describedby={setupHint}
+				onchange={(event) => (setupNext = event.currentTarget.checked)}
 			>
-			<p class="faint small">
+				<span class="row-name">{t('import.setupNext')}</span>
+			</SettingsItemToggle>
+			<p class="faint small" id={setupHint}>
 				{t('import.setupNextHint')}
-			</p>{/if}
+			</p>
+		{/if}
 	{/if}
 	{#if busy && (!prepared || saving)}<p class="muted" role="status">
 			{saving ? t('import.saving') : t('import.preparing')}
@@ -956,15 +951,6 @@
 		padding: 12px;
 		border-radius: var(--r-ctl);
 		background: var(--bg-hover);
-	}
-	.import-appearance-tip {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-	}
-	.import-appearance-tip p {
-		margin: 0;
 	}
 	.import-drop {
 		display: grid;

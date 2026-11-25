@@ -1257,7 +1257,7 @@ test('imported move names remain readable, distinct and contained in Preview and
 		importing.getByRole('img', { name: 'Character import preview', exact: true })
 	).toBeVisible();
 	await importing
-		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+		.getByRole('switch', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await importing.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(importing).toBeHidden();
@@ -2432,7 +2432,7 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 		).toBeVisible();
 		await dialog.getByLabel('Character name', { exact: true }).fill(`Wheel character ${copy + 1}`);
 		await dialog
-			.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+			.getByRole('switch', { name: 'Set up the pose rig next (recommended)', exact: true })
 			.uncheck();
 		await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
 		await expect(page.locator('.name-menu .name-text')).toHaveText(`Wheel character ${copy + 1}`, {

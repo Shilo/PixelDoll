@@ -127,7 +127,7 @@ test('Edit appearance makes reviewed character and equipment copies from saved p
 		buffer: Buffer.from(archive)
 	});
 	await page.getByLabel('Character name', { exact: true }).fill('Appearance source');
-	await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck();
+	await page.getByRole('switch', { name: 'Set up the pose rig next (recommended)' }).uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(nameMenu).toContainText('Appearance source');
 
@@ -888,7 +888,7 @@ test('experimental native attack imports with warnings and exact frame stepping 
 		page.getByRole('img', { name: 'Character import preview', exact: true })
 	).toBeVisible();
 	await page
-		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+		.getByRole('switch', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(
@@ -1292,7 +1292,7 @@ test('device import includes sibling moves and preserves explicit selections whe
 	await expect(punch).toBeEnabled();
 	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await dialog
-		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+		.getByRole('switch', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveText([
@@ -1393,9 +1393,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 		.getByRole('button', { name: 'Mirror South east from South west', exact: true })
 		.click();
 	await expect(importer.locator('.import-preview')).toContainText('7 directions');
-	await importer
-		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' })
-		.uncheck();
+	await importer.getByRole('switch', { name: 'Set up the pose rig next (recommended)' }).uncheck();
 	await importer.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(importer).toBeHidden();
 	const openDirections = async () => {
@@ -1602,7 +1600,7 @@ test('browser Back respects an atomic import and closes sheets after it finishes
 	});
 	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
 	await dialog
-		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+		.getByRole('switch', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	// Pause the real content-hash work that opening the saved copy performs, without mocking the sheet's busy state.
 	await page.evaluate(() => {
@@ -1726,7 +1724,7 @@ test('standing state updates retain the preview, optional moves, edited names an
 	await expect(dialog.locator('.import-preview')).toContainText('0 moves');
 	await name.fill('Static rotations only');
 	await dialog
-		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+		.getByRole('switch', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveText([
@@ -2439,15 +2437,14 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 			.getByLabel('Character ZIP', { exact: true })
 			.setInputFiles({ name: 'saved-character.zip', mimeType: 'application/zip', buffer: bytes });
 		await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
-		const tip = page.getByRole('button', { name: 'Dismiss appearance tip' });
-		await expect(tip).toBeVisible();
-		if (name === 'Imported two') {
-			await tip.click();
-			await expect(tip).toBeHidden();
-			await expect(page.getByLabel('Character name', { exact: true })).toBeFocused();
-		}
+		await expect(
+			page.locator('.notice').filter({ hasText: 'Clothes drawn on the character' })
+		).toContainText('finish importing, click the character’s name, and choose Edit appearance');
 		await page.getByLabel('Character name', { exact: true }).fill(name);
-		await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck();
+		const setup = page.getByRole('switch', { name: 'Set up the pose rig next (recommended)' });
+		await expect(setup).toBeChecked();
+		await page.getByText('Set up the pose rig next (recommended)', { exact: true }).click();
+		await expect(setup).not.toBeChecked();
 		await page.getByRole('button', { name: 'Import character', exact: true }).click();
 		// Saving then reopening a full character decodes every frame; parallel workers can stretch it past 10s.
 		await expect(page.locator('.project-btn')).toContainText(name, { timeout: 30_000 });
@@ -2526,7 +2523,7 @@ test('Import pages bring moves and items back free from the character ZIP, by br
 		.getByLabel('Character ZIP', { exact: true })
 		.setInputFiles({ name: 'hero.pixeldoll.zip', mimeType: 'application/zip', buffer: bytes });
 	await page.getByLabel('Character name', { exact: true }).fill('Move owner');
-	await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck();
+	await page.getByRole('switch', { name: 'Set up the pose rig next (recommended)' }).uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Move owner', { timeout: 30_000 });
 	await equipmentMode(page, 'Moves');
@@ -2825,7 +2822,9 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await page.getByRole('button', { name: 'Next page', exact: true }).click();
 	await page.getByRole('button', { name: /Page two hero/ }).click();
 	await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
-	await expect(dialog.getByRole('button', { name: 'Dismiss appearance tip' })).toBeVisible();
+	await expect(
+		dialog.locator('.notice').filter({ hasText: 'Clothes drawn on the character' })
+	).toBeVisible();
 	// Back drops the staged review, so it asks first.
 	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
 	await page
@@ -2844,7 +2843,7 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await page.keyboard.press('Escape');
 	await page.getByRole('button', { name: /Page two hero/ }).click();
 	await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
-	await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck();
+	await page.getByRole('switch', { name: 'Set up the pose rig next (recommended)' }).uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Library hero');
 	await expect(page.locator('.world-loading')).toBeHidden();

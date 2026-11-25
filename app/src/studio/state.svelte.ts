@@ -255,14 +255,6 @@ const lsSet = (k: string, v: string | null) => {
 		return false;
 	}
 };
-const importAppearanceTipKey = 'pixeldoll.importAppearanceTipDismissed';
-let importAppearanceTipDismissedInTab = false;
-export const importAppearanceTipDismissed = () =>
-	importAppearanceTipDismissedInTab || lsGet(importAppearanceTipKey) === '1';
-export function dismissImportAppearanceTip() {
-	importAppearanceTipDismissedInTab = true;
-	lsSet(importAppearanceTipKey, '1');
-}
 export const DEMO = 'fixture:s2';
 const DEMO_NAME = 'Adventurer';
 

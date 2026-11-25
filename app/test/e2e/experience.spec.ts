@@ -741,7 +741,7 @@ test('offline export and device import remain accessible production actions', as
 		.getByLabel('Character name', { exact: true })
 		.fill('Offline imported character');
 	await importSheet
-		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+		.getByRole('switch', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await importSheet.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Offline imported character');
