@@ -374,7 +374,8 @@
 		"titleSavedColor": "Saved color",
 		"titleOriginal": "Original",
 		"titlePickAnyColor": "Pick any color",
-		"noMatchingColors": "No matching colors"
+		"noMatchingColors": "No matching colors",
+		"categories": "Color categories"
 	},
 	"colorSections": {
 		"randomLowerColors": "Random {lower} colors",

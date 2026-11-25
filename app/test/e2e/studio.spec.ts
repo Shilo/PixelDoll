@@ -2763,6 +2763,56 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 
 	const before = await stage();
 	await equipmentMode(page, 'Colors');
+	// The Colors rail lists exactly the worn sections, in Wardrobe's order, and both follows and drives the list.
+	const colorsList = page.locator('.color-sections');
+	const colorsRail = page.getByRole('navigation', { name: 'Color categories', exact: true });
+	const colorTabs = colorsRail.getByRole('button');
+	const colorTab = (name: string) => colorsRail.getByRole('button', { name, exact: true });
+	const sectionTop = async (name: string) => {
+		const [section, box] = await Promise.all([
+			page
+				.locator('.color-sections section')
+				.filter({ has: page.getByRole('heading', { name, exact: true }) })
+				.boundingBox(),
+			colorsList.boundingBox()
+		]);
+		return Math.round(section!.y - box!.y);
+	};
+	expect(
+		await colorTabs.evaluateAll((tabs) => tabs.map((tab) => tab.getAttribute('aria-label')))
+	).toEqual([
+		'Character',
+		'Wizard hat',
+		'Messy brown hair',
+		'Leather vest',
+		'Red cape',
+		'Steel longsword'
+	]);
+	await expect(colorsRail.locator('[tabindex="0"]')).toHaveCount(1);
+	await colorTab('Leather vest').click();
+	await expect(colorTab('Leather vest')).toHaveAttribute('aria-current', 'true');
+	await expect.poll(() => sectionTop('Leather vest')).toBeLessThanOrEqual(1);
+	await colorsList.evaluate((list) => {
+		(list as HTMLElement).scrollTop = (list as HTMLElement).scrollHeight;
+	});
+	await expect(colorTab('Steel longsword')).toHaveAttribute('aria-current', 'true');
+	await colorTab('Steel longsword').focus();
+	await page.keyboard.press('Home');
+	await expect(colorTabs.first()).toBeFocused();
+	await expect(colorTabs.first()).toHaveAttribute('aria-current', 'true');
+	await expect
+		.poll(() => colorsList.evaluate((list) => (list as HTMLElement).scrollTop))
+		.toBeLessThanOrEqual(1);
+	await page.keyboard.press('End');
+	await expect(colorTabs.last()).toBeFocused();
+	await expect(colorTabs.last()).toHaveAttribute('aria-current', 'true');
+	await page.keyboard.press('ArrowUp');
+	await expect(colorTabs.nth(4)).toBeFocused();
+	await expect(colorTabs.nth(4)).toHaveAttribute('aria-current', 'true');
+	await expect(colorsRail.locator('[tabindex="0"]')).toHaveCount(1);
+	step(
+		'colors rail lists worn categories in Wardrobe order and jumps, follows and keys through them'
+	);
 	await page.locator('.colors .swatch[aria-label="azure"]').first().click();
 	await expect.poll(stage).not.toBe(before);
 	assert.equal(

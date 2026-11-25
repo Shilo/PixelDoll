@@ -17,7 +17,8 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { equipped, handSide, hiddenSlots, twoHanded } from '../lib/compose/compose.ts';
 	import { experience } from './experience/state.svelte.ts';
-	import { edgeFade, scrollToTop, stickyFade } from '@shilo/bronze-ui/svelte';
+	import { edgeFade, stickyFade } from '@shilo/bronze-ui/svelte';
+	import { scrollToSection, sectionInView, stickyTopOf } from './sectionScroll.ts';
 	import {
 		crop,
 		HEALTH_LABEL,
@@ -464,13 +465,15 @@
 		spyFrame = 0;
 		if (!list || suppressSpy) return;
 		// A category is current once its section reaches the bottom of the sticky header.
-		const head = list.querySelector<HTMLElement>('.bu-section-head');
-		const top = list.getBoundingClientRect().top + (head?.offsetHeight ?? 0);
-		let current = sections[0]?.key ?? ui.group;
-		for (const el of list.querySelectorAll<HTMLElement>('[data-group]'))
-			if (el.getBoundingClientRect().top <= top) current = el.dataset.group!;
+		const current = sectionInView(
+			list,
+			list.querySelectorAll<HTMLElement>('[data-group]'),
+			(section) => section.dataset.group,
+			sections[0]?.key ?? ui.group
+		);
 		const notShownSection = list.querySelector<HTMLElement>('.not-shown');
-		notShownCurrent = !!notShownSection && notShownSection.getBoundingClientRect().top <= top;
+		notShownCurrent =
+			!!notShownSection && notShownSection.getBoundingClientRect().top <= stickyTopOf(list);
 		if (current !== ui.group) {
 			reported = current;
 			ui.group = current;
@@ -511,20 +514,17 @@
 		reported = id;
 		ui.group = id;
 		if (instant) {
-			list.scrollTop =
-				id === sections[0]?.key
-					? 0
-					: list.scrollTop +
-						section.getBoundingClientRect().top -
-						list.getBoundingClientRect().top +
-						1;
+			void scrollToSection(list, section, {
+				first: id === sections[0]?.key,
+				instant: true
+			});
 			remember();
 			return;
 		}
 		// The spy stays off until the smooth scroll really ends, so passing categories never re-select the rail.
 		suppressSpy = true;
 		try {
-			await scrollToTop(list, section, 1);
+			await scrollToSection(list, section);
 		} finally {
 			suppressSpy = false;
 			remember();

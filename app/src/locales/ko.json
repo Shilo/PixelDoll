@@ -368,7 +368,8 @@
 		"titleSavedColor": "저장된 색상",
 		"titleOriginal": "원본",
 		"titlePickAnyColor": "원하는 색상 선택",
-		"noMatchingColors": "일치하는 색상이 없어요"
+		"noMatchingColors": "일치하는 색상이 없어요",
+		"categories": "색상 카테고리"
 	},
 	"colorSections": {
 		"randomLowerColors": "{lower} 색상 무작위 지정",
