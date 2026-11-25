@@ -723,6 +723,8 @@
 		"freeNeverRegeneratesItemsAlreadyMade": "Free: never regenerates items already made.",
 		"drawsAbove": "Draws above",
 		"worksLike": "Works like",
+		"icon": "Icon",
+		"iconNote": "Shown in the Wardrobe and slot lists. Only changes how this category looks.",
 		"hand": "Hand",
 		"placeholderEGSmallAndShinyPinned": "e.g. small and shiny, pinned to the chest",
 		"deleteSlot": "Move to Trash…",
@@ -1746,6 +1748,11 @@
 			"shoulders": "Shoulders",
 			"accessory": "Accessory"
 		},
+		"icons": {
+			"tag": "Tag",
+			"star": "Star",
+			"gem": "Gem"
+		},
 		"ideas": {
 			"head": ["wizard hat", "iron knight helmet", "golden crown", "hood"],
 			"hair": ["long braided hair", "short spiky hair", "ponytail"],
@@ -1779,6 +1786,7 @@
 			"fixedName": "Built-in names stay fixed.",
 			"fixedHint": "Only custom categories take a creative hint.",
 			"fixedBehavior": "Built-in behavior stays fixed; add a custom copy.",
+			"fixedIcon": "Built-in icons stay fixed; add a custom copy.",
 			"fixedHand": "Only held custom categories choose a hand.",
 			"fixedDrawOrder": "Built-in drawing order stays fixed.",
 			"fixedSettings": "Built-in categories can only be shown, hidden or moved.",

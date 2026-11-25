@@ -2,7 +2,7 @@
 // Organization (label, Wardrobe order, Not shown) lives on the character's own Slot definitions in manifest.slots; a built-in
 // without one uses its catalog default. Wardrobe order never changes drawing: manifest.slots array order and z stay the
 // render contract (docs/design/2026-11-16-slot-system/plan.md §6).
-import type { Manifest, Slot, SlotProfile, ZOverride } from '../lib/store/manifest.ts';
+import type { Manifest, Slot, SlotIcon, SlotProfile, ZOverride } from '../lib/store/manifest.ts';
 import { createSlot, DEFAULT_WARDROBE_ORDER, SLOTS, slotLadder } from '../lib/items/slots.ts';
 import { reservedPathSegment } from '../lib/export/paths.ts';
 import { BASE_CLOTHES, UNDERWEAR_CLOTHES } from './model.ts';
@@ -25,26 +25,6 @@ export interface Category {
 	hidden: boolean;
 	order: number;
 }
-
-const PROFILE_ICONS: Record<Exclude<SlotProfile, 'body'>, string> = {
-	head: 'head',
-	hair: 'hair',
-	face_acc: 'face',
-	torso_inner: 'body',
-	arms: 'hands',
-	legs: 'legs',
-	feet: 'feet',
-	back: 'back',
-	main_hand: 'main_hand',
-	off_hand: 'off_hand',
-	facial_hair: 'hair',
-	torso_outer: 'body',
-	underwear: 'legs',
-	waist: 'legs',
-	neck: 'body',
-	shoulders: 'body',
-	accessory: 'accessory'
-};
 
 const BUILTIN = new Map(SLOTS.map((s) => [s.id, s]));
 export const isBuiltin = (key: string) => key !== BASE_KEY && BUILTIN.has(key);
@@ -93,10 +73,41 @@ export function slotLabelMessage(
 		return message(slotProfileLabelKeys[key as SlotProfile]);
 	return label;
 }
-export const iconOf = (m: Pick<Manifest, 'slots'> | undefined, key: string) => {
-	const p = profileOf(m, key);
-	return p === 'body' ? 'body' : PROFILE_ICONS[p];
+/** Icons a custom category may choose, in Wardrobe order then the generic ones. Base is not a category, so it is left out. */
+export const ICON_CHOICES = [
+	'head',
+	'hair',
+	'face_acc',
+	'torso_inner',
+	'arms',
+	'legs',
+	'feet',
+	'back',
+	'main_hand',
+	'off_hand',
+	'facial_hair',
+	'torso_outer',
+	'underwear',
+	'waist',
+	'neck',
+	'shoulders',
+	'accessory',
+	'tag',
+	'star',
+	'gem'
+] as const satisfies readonly SlotIcon[];
+
+const ICON_LABEL_KEYS: Record<SlotIcon, WhisperKey> = {
+	...slotProfileLabelKeys,
+	tag: 'studioSlots.icons.tag',
+	star: 'studioSlots.icons.star',
+	gem: 'studioSlots.icons.gem'
 };
+export const iconLabelMessage = (icon: SlotIcon): Message => message(ICON_LABEL_KEYS[icon]);
+
+/** A slot's drawing: its own custom choice, else its behavior's icon (old custom slots, built-ins). */
+export const iconOf = (m: Pick<Manifest, 'slots'> | undefined, key: string): SlotIcon =>
+	slotDef(m, key)?.icon ?? profileOf(m, key);
 
 const defaultOrder = (key: string) => {
 	const i = (DEFAULT_WARDROBE_ORDER as readonly string[]).indexOf(key);
@@ -395,7 +406,7 @@ export function behaviorLabelMessage(profile: Exclude<SlotProfile, 'body'>, slot
 		? message('slotsSheet.overBasicClothing')
 		: message('studioSlots.likeSlot', { slot });
 }
-/** Replace a custom category's attachment settings with `src`'s, keeping its name, organization and hint. */
+/** Replace a custom category's attachment settings with `src`'s, keeping its name, organization, icon and hint. */
 function rebuild(
 	m: Editable,
 	key: string,
@@ -412,6 +423,8 @@ function rebuild(
 	}
 	next.wardrobeHidden = cur.wardrobeHidden;
 	next.wardrobeOrder = cur.wardrobeOrder;
+	if (cur.icon) next.icon = cur.icon;
+	else delete next.icon;
 	if (cur.promptTemplate) next.promptTemplate = cur.promptTemplate;
 	else delete next.promptTemplate;
 	m.slots.splice(at, 1);
@@ -504,6 +517,7 @@ export function setDrawsAbove(m: Editable, key: string, above: string) {
 export interface SlotSettings {
 	label: string;
 	profile: Exclude<SlotProfile, 'body'>;
+	icon: SlotIcon;
 	hand?: 'left' | 'right';
 	above?: string;
 	hint: string;
@@ -532,7 +546,18 @@ export function applySettings(m: Editable, key: string, o: SlotSettings) {
 	const now = m.slots.find((x) => x.id === key)!;
 	if (now.class === 'held' && o.hand) setHand(m, key, o.hand);
 	if (o.above && o.above !== drawsAbove(m, key)) setDrawsAbove(m, key, o.above);
+	setIcon(m, key, o.icon);
 	setHint(m, key, o.hint);
+}
+/** Only a custom category's drawing changes: built-ins always show their behavior's icon. */
+export function setIcon(m: Pick<Manifest, 'slots'>, key: string, icon: SlotIcon) {
+	const s = m.slots.find((x) => x.id === key);
+	if (!s || isBuiltin(key) || key === BASE_KEY)
+		throw new LocalizedError(
+			'Built-in icons stay fixed; add a custom copy.',
+			'studioSlots.errors.fixedIcon'
+		);
+	s.icon = icon;
 }
 /** Remove an empty custom category and outfit entries naming it. Callers check it is empty first. */
 export function deleteCustom(m: Editable, key: string) {

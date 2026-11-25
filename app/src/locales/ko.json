@@ -701,6 +701,8 @@
 		"freeNeverRegeneratesItemsAlreadyMade": "무료: 이미 만든 아이템은 다시 생성하지 않아요.",
 		"drawsAbove": "위에 그리기",
 		"worksLike": "작동 방식",
+		"icon": "아이콘",
+		"iconNote": "옷장과 슬롯 목록에 표시돼요. 이 카테고리의 모양만 바뀝니다.",
 		"hand": "손",
 		"placeholderEGSmallAndShinyPinned": "예: 작고 반짝이며 가슴에 고정",
 		"deleteSlot": "휴지통으로 이동…",
@@ -1691,6 +1693,11 @@
 			"shoulders": "어깨",
 			"accessory": "액세서리"
 		},
+		"icons": {
+			"tag": "태그",
+			"star": "별",
+			"gem": "보석"
+		},
 		"ideas": {
 			"head": ["마법사 모자", "철 기사 투구", "황금 왕관", "후드"],
 			"hair": ["긴 땋은 머리", "짧은 뾰족 머리", "포니테일"],
@@ -1724,6 +1731,7 @@
 			"fixedName": "기본 제공 이름은 바꿀 수 없어요.",
 			"fixedHint": "사용자 카테고리만 창작 힌트를 받아요.",
 			"fixedBehavior": "기본 제공 작동 방식은 바꿀 수 없어요. 사용자 사본을 추가하세요.",
+			"fixedIcon": "기본 카테고리의 아이콘은 바꿀 수 없어요. 사용자 복사본을 추가하세요.",
 			"fixedHand": "들고 있는 사용자 카테고리만 손을 선택해요.",
 			"fixedDrawOrder": "기본 제공 그리기 순서는 바꿀 수 없어요.",
 			"fixedSettings": "기본 제공 카테고리는 표시, 숨기기, 이동만 할 수 있어요.",

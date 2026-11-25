@@ -723,6 +723,8 @@
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratuit : ne régénère jamais les objets déjà créés.",
 		"drawsAbove": "Dessiné au-dessus de",
 		"worksLike": "Fonctionne comme",
+		"icon": "Icône",
+		"iconNote": "Affichée dans la garde-robe et les listes d’emplacements. Change seulement l’apparence de cette catégorie.",
 		"hand": "Main",
 		"placeholderEGSmallAndShinyPinned": "p. ex. petit et brillant, épinglé sur la poitrine",
 		"deleteSlot": "Vers la corbeille…",
@@ -1746,6 +1748,11 @@
 			"shoulders": "Épaules",
 			"accessory": "Accessoire"
 		},
+		"icons": {
+			"tag": "Étiquette",
+			"star": "Étoile",
+			"gem": "Gemme"
+		},
 		"ideas": {
 			"head": ["chapeau de sorcier", "casque de chevalier en fer", "couronne dorée", "capuche"],
 			"hair": ["longs cheveux tressés", "cheveux courts en pointes", "queue de cheval"],
@@ -1779,6 +1786,7 @@
 			"fixedName": "Les noms intégrés ne peuvent pas être modifiés.",
 			"fixedHint": "Seules les catégories personnalisées acceptent une indication créative.",
 			"fixedBehavior": "Le comportement intégré ne peut pas être modifié ; ajoutez une copie personnalisée.",
+			"fixedIcon": "Les icônes des catégories intégrées restent fixes ; ajoutez une copie personnalisée.",
 			"fixedHand": "Vous ne pouvez choisir la main que pour un emplacement personnalisé destiné aux objets tenus en main.",
 			"fixedDrawOrder": "L’ordre de dessin intégré ne peut pas être modifié.",
 			"fixedSettings": "Les catégories intégrées peuvent seulement être affichées, masquées ou déplacées.",

@@ -255,6 +255,8 @@ export function validate(p: Project): string[] {
 			e.push(`${slot.id}: wardrobeHidden must be true or false`);
 		if (slot.promptTemplate !== undefined && typeof slot.promptTemplate !== 'string')
 			e.push(`${slot.id}: promptTemplate must be text`);
+		if (slot.icon !== undefined && typeof slot.icon !== 'string')
+			e.push(`${slot.id}: icon must be text`);
 	}
 	const seen = new Map<string, string>(),
 		ids = new Set<string>();

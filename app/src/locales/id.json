@@ -701,6 +701,8 @@
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratis: item yang sudah dibuat tidak akan dibuat ulang.",
 		"drawsAbove": "Digambar di atas",
 		"worksLike": "Berfungsi seperti",
+		"icon": "Ikon",
+		"iconNote": "Tampil di Lemari dan daftar slot. Hanya mengubah tampilan kategori ini.",
 		"hand": "Tangan",
 		"placeholderEGSmallAndShinyPinned": "misalnya kecil dan berkilau, disematkan di dada",
 		"deleteSlot": "Pindahkan ke tempat sampah…",
@@ -1691,6 +1693,11 @@
 			"shoulders": "Bahu",
 			"accessory": "Aksesori"
 		},
+		"icons": {
+			"tag": "Label",
+			"star": "Bintang",
+			"gem": "Permata"
+		},
 		"ideas": {
 			"head": ["topi penyihir", "helm kesatria dari besi", "mahkota emas", "tudung"],
 			"hair": ["rambut panjang dikepang", "rambut pendek runcing", "rambut ekor kuda"],
@@ -1724,6 +1731,7 @@
 			"fixedName": "Nama bawaan tidak dapat diubah.",
 			"fixedHint": "Hanya kategori khusus yang bisa diberi petunjuk kreatif.",
 			"fixedBehavior": "Perilaku bawaan tidak dapat diubah. Buat salinan khusus.",
+			"fixedIcon": "Ikon kategori bawaan tetap; tambahkan salinan khusus.",
 			"fixedHand": "Pemilihan tangan hanya tersedia untuk kategori khusus yang itemnya dipegang.",
 			"fixedDrawOrder": "Urutan gambar bawaan tidak dapat diubah.",
 			"fixedSettings": "Kategori bawaan hanya dapat ditampilkan, disembunyikan, atau dipindahkan.",

@@ -68,11 +68,15 @@ export type SlotProfile =
 	| 'underwear'
 	| 'accessory';
 
+export type SlotIcon = SlotProfile | 'tag' | 'star' | 'gem';
+
 export interface Slot {
 	id: string;
 	label?: string;
 	origin?: Exclude<SlotProfile, 'accessory'>;
 	profile?: SlotProfile;
+	/** Custom categories only; a built-in or a slot without one draws its profile's icon. */
+	icon?: SlotIcon;
 	wardrobeOrder?: number;
 	wardrobeHidden?: boolean;
 	promptTemplate?: string;

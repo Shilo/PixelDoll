@@ -2320,6 +2320,46 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	finish();
 });
 
+test('studio demo: a custom slot chooses its own Wardrobe icon', async ({ context, page }) => {
+	const finish = await demoGuard(context);
+	await openDemo(page);
+	await page.getByRole('button', { name: 'Pause', exact: true }).click();
+	await page.getByRole('button', { name: 'Add slot', exact: true }).click();
+	const addSheet = page.getByRole('dialog', { name: 'Add slot', exact: true });
+	await addSheet.getByRole('textbox', { name: 'Slot name', exact: true }).fill('Wings');
+	await addSheet.getByRole('combobox', { name: 'Works like' }).selectOption('back');
+	await addSheet.getByRole('button', { name: 'Create slot', exact: true }).click();
+	const header = page.locator('[data-slot-button="wings"]');
+	await expect(header).toHaveAccessibleName('Wings');
+	const iconPath = () => header.locator('svg.group-icon path').getAttribute('d');
+	// A new custom category owns the generic tag, not the cape its behavior copies.
+	const tag = await iconPath();
+	await header.click();
+	await page
+		.locator('#slot-menu')
+		.getByRole('menuitem', { name: 'Edit slot...', exact: true })
+		.click();
+	const editor = page.getByRole('dialog', { name: 'Wings', exact: true });
+	const icons = editor.getByRole('radiogroup', { name: 'Icon', exact: true });
+	await expect(icons.getByRole('radio', { name: 'Tag', exact: true })).toBeChecked();
+	const star = icons.getByRole('radio', { name: 'Star', exact: true });
+	await star.focus();
+	await page.keyboard.press('Space');
+	await expect(star).toBeChecked();
+	await editor.getByRole('button', { name: 'Save', exact: true }).click();
+	const chosen = (await iconPath())!;
+	expect(chosen).not.toBe(tag);
+	// The category keeps its choice across a reload, and Back still draws its own cape.
+	await reloadStudio(page, { waitUntil: 'networkidle' });
+	await equipmentGroup(page, 'Wings');
+	await expect.poll(iconPath).toBe(chosen);
+	await expect(page.locator('[data-slot-button="back"] svg.group-icon path')).not.toHaveAttribute(
+		'd',
+		chosen
+	);
+	finish();
+});
+
 test('studio demo: slot header dragging and not-shown restoration are tolerant and undoable', async ({
 	context,
 	page

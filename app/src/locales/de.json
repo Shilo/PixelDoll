@@ -723,6 +723,8 @@
 		"freeNeverRegeneratesItemsAlreadyMade": "Kostenlos: Bereits erstellte Gegenstände werden nie neu generiert.",
 		"drawsAbove": "Liegt über",
 		"worksLike": "Funktioniert wie",
+		"icon": "Symbol",
+		"iconNote": "Erscheint in der Garderobe und in Slot-Listen. Ändert nur, wie diese Kategorie aussieht.",
 		"hand": "Hand",
 		"placeholderEGSmallAndShinyPinned": "z. B. klein und glänzend, an die Brust geheftet",
 		"deleteSlot": "In den Papierkorb…",
@@ -1746,6 +1748,11 @@
 			"shoulders": "Schultern",
 			"accessory": "Accessoire"
 		},
+		"icons": {
+			"tag": "Etikett",
+			"star": "Stern",
+			"gem": "Edelstein"
+		},
 		"ideas": {
 			"head": ["Zauberhut", "Ritterhelm aus Eisen", "Goldkrone", "Kapuze"],
 			"hair": ["Lange geflochtene Haare", "Kurze stachelige Haare", "Pferdeschwanz"],
@@ -1779,6 +1786,7 @@
 			"fixedName": "Vorgegebene Namen bleiben unverändert.",
 			"fixedHint": "Nur eigene Kategorien können einen Gestaltungshinweis haben.",
 			"fixedBehavior": "Das Verhalten vorgegebener Kategorien ist fest. Erstelle eine eigene Kopie.",
+			"fixedIcon": "Symbole eingebauter Kategorien bleiben fest; füge eine eigene Kopie hinzu.",
 			"fixedHand": "Nur bei eigenen Kategorien für gehaltene Gegenstände lässt sich eine Hand wählen.",
 			"fixedDrawOrder": "Die Ebenenreihenfolge vorgegebener Kategorien ist fest.",
 			"fixedSettings": "Vorgegebene Kategorien lassen sich nur einblenden, ausblenden oder verschieben.",

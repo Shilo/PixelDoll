@@ -12,6 +12,9 @@ import {
 	deleteCustom,
 	drawsAbove,
 	hintProblem,
+	ICON_CHOICES,
+	iconLabelMessage,
+	iconOf,
 	keyFor,
 	labelProblem,
 	moveCategory,
@@ -19,11 +22,13 @@ import {
 	setDrawsAbove,
 	setHand,
 	setHidden,
+	setIcon,
 	shownCategories,
 	slotLabel,
 	slotLabelMessage,
 	slotUse
 } from '../../src/studio/slots.ts';
+import { SLOT_ICON_PATHS } from '../../src/studio/slotIcons.ts';
 
 const item = (id: string, slot: string) =>
 	({ id, name: id, slot, layers: [], materials: [] }) as unknown as Item;
@@ -65,6 +70,32 @@ test('every built-in is its own category: ten shown, six not shown, Base exclude
 	expect(slotLabel(m, 'body')).toBe('Base');
 	expect(slotLabelMessage(m, 'torso_inner')).toMatchObject({ key: 'studioSlots.labels.body' });
 	expect(slotLabelMessage(m, 'body')).toMatchObject({ key: 'studioSlots.labels.base' });
+});
+
+test('every slot has its own drawing: built-ins their profile, custom slots a saved choice', () => {
+	const m = character();
+	// The default ladder covers all 18 profiles, Base included, and no two draw the same shape.
+	for (const slot of SLOTS) expect(iconOf(m, slot.id)).toBe(slot.id);
+	const shapes = Object.values(SLOT_ICON_PATHS);
+	expect(new Set(shapes).size).toBe(shapes.length);
+	expect(ICON_CHOICES).toEqual(
+		expect.arrayContaining(SLOTS.filter((s) => s.id !== 'body').map((s) => s.id))
+	);
+	expect(ICON_CHOICES).toEqual(expect.arrayContaining(['tag', 'star', 'gem']));
+	for (const icon of ICON_CHOICES)
+		expect(iconLabelMessage(icon)).toMatchObject({ key: expect.any(String) });
+
+	const key = addCustom(m, { label: 'Wings', like: 'back' }, none);
+	expect(iconOf(m, key)).toBe('tag'); // a new custom slot never borrows Back's cape
+	setIcon(m, key, 'star');
+	expect(iconOf(m, key)).toBe('star');
+	// A manifest saved before icons existed still draws its behavior's icon.
+	delete m.slots.find((s) => s.id === key)!.icon;
+	expect(iconOf(m, key)).toBe('back');
+	// Changing behavior keeps the chosen icon; built-ins cannot be redrawn.
+	applySettings(m, key, { label: 'Wings', profile: 'back', icon: 'gem', hint: '' });
+	expect(iconOf(m, key)).toBe('gem');
+	expect(() => setIcon(m, 'back', 'star')).toThrow();
 });
 
 test('a hidden category holding items or attempts stays in Wardrobe', () => {
@@ -289,7 +320,12 @@ test('switching a held custom category to the other hand rebuilds its whole atta
 test('saving settings applies a picked drawing order, but a new behavior keeps its own depth when order was not picked', () => {
 	const m = character();
 	const key = addCustom(m, { label: 'Charm' }, none);
-	const form = { label: 'Lucky charm', profile: 'back' as const, hint: 'small and shiny' };
+	const form = {
+		label: 'Lucky charm',
+		profile: 'back' as const,
+		icon: 'back' as const,
+		hint: 'small and shiny'
+	};
 	expect(changesAttachment(m, key, form)).toBe(true);
 	applySettings(m, key, form);
 	const back = SLOTS.find((s) => s.id === 'back')!;
