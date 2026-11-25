@@ -665,7 +665,7 @@
 			grid-template-columns: minmax(0, 1fr);
 		}
 	}
-	@container appearance-form (max-width: 280px) {
+	@container appearance-form (max-width: 320px) {
 		.appearance-options :global(.bu-segmented) {
 			grid-template-columns: minmax(0, 1.24fr) repeat(2, minmax(0, 1fr));
 		}
