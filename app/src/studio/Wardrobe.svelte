@@ -14,6 +14,7 @@
 	import { contextMenu } from '../lib/input/contextMenu.ts';
 	// One continuous list of every equipment category with sticky headers, and a slot rail that follows and drives it.
 	import { onMount, tick, untrack } from 'svelte';
+	import type { Snippet } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { equipped, handSide, hiddenSlots, twoHanded } from '../lib/compose/compose.ts';
 	import { experience } from './experience/state.svelte.ts';
@@ -450,7 +451,7 @@
 	const sharedMissing = (x: SharedItem) =>
 		m ? displayMessage(missingFramesNote(m, { ...x.item, coverage: x.cells as CellKey[] })) : '';
 	const sectionId = (id: string) => `wardrobe-${id.replace(/\s+/g, '-').toLowerCase()}`;
-	let { initialScroll }: { initialScroll?: number } = $props();
+	let { initialScroll, guide }: { initialScroll?: number; guide?: Snippet } = $props();
 
 	function remember() {
 		if (list)
@@ -1065,6 +1066,7 @@
 				onscroll={scrolled}
 				{@attach stickyFade({ inside: 10, outside: 10 })}
 			>
+				{@render guide?.()}
 				{#each filteredSections as s (s.key)}
 					{@const lower = getLocale() === 'en' ? s.label.toLowerCase() : s.label}
 					{@const count = s.fromOthers ? s.others.length : s.items.length + s.pending.length}

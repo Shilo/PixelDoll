@@ -930,25 +930,19 @@
 		"itemQueued": "wartet darauf, für {move} gezeichnet zu werden"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "Für die Demo brauchst du kein Konto. Beim Erstellen verbrauchst du Generierungen von {pixelLab}.",
-		"steps": {
-			"create": "Erstellen",
-			"describeBody": "Grundkörper beschreiben",
-			"addItems": "Gegenstände hinzufügen",
-			"examples": "Hüte, Oberteile, Waffen",
-			"dressUp": "Ausstatten",
-			"wearRecolorPlay": "Anlegen, umfärben, abspielen",
-			"export": "Exportieren",
-			"anyEngine": "Für jede Game-Engine"
-		},
-		"switchToLightMode": "Zum hellen Modus wechseln",
-		"switchToDarkMode": "Zum dunklen Modus wechseln",
-		"labelDemoCharacterWalking": "Gehende Demofigur",
-		"dressUpYour2DGameCharactersWith": "Mach deine 2D-Spielfiguren zu pixelgenauen Anziehfiguren",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "Generiere mit der KI von PixelLab austauschbare Ausrüstungsebenen, die in jedem Frame passen. Exportiere sie für jede Game-Engine.",
-		"createYourCharacter": "Erstelle deine Figur",
+		"demoIntro": "Wechsle die Ausrüstung, probiere eine Animation aus und exportiere die Demo. Du brauchst keinen PixelLab-Schlüssel.",
+		"quickstart": "Schnellstart",
+		"gear": "Ausrüstung wechseln",
+		"gearHint": "Wähle ein Teil zum An- oder Ablegen.",
+		"motion": "Vorschau der Ausrüstung",
+		"motionHint": "Sieh, wie die Ausrüstungsebenen der Figur in einer Animation folgen.",
+		"layers": "Übernimm die Figur in dein Spiel",
+		"layersHint": "Exportiere Spritesheets für Körper und Ausrüstung, damit du Gegenstände im Spiel wechseln kannst.",
+		"playMove": "{move} abspielen",
+		"dismissQuickstart": "Schnellstart ausblenden",
 		"tryTheDemo": "Demo ausprobieren",
-		"importAnExistingCharacter": "Vorhandene Figur importieren"
+		"exportDemo": "Demo exportieren",
+		"createYourCharacter": "Erstelle deine Figur"
 	},
 	"experience": {
 		"movesOffMounted": "Wähle Animationen in der Vorschau. Beim Reiten gilt die Reitpose aus den Reittier-Einstellungen.",

@@ -13,6 +13,7 @@
 	import CharacterActions from '../CharacterActions.svelte';
 	import CharacterName from '../CharacterName.svelte';
 	import PhonePanel from '../PhonePanel.svelte';
+	import Quickstart from '../Quickstart.svelte';
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import CharacterThumb from './CharacterThumb.svelte';
@@ -35,6 +36,8 @@
 	import {
 		ui,
 		doc,
+		DEMO,
+		dismissWelcome,
 		store,
 		creates,
 		openProject,
@@ -48,6 +51,7 @@
 		matchStateColors
 	} from '../state.svelte.ts';
 	import { stateColorDrift } from '../../lib/dress/stateColors.ts';
+	import { missingFrames, moveDirs } from '../../lib/dress/dress.ts';
 	import {
 		experience,
 		customize as enterCustomize,
@@ -149,6 +153,103 @@
 		)
 	);
 	const list = $derived(saved.filter((p) => matchesSearch([p.name], query)));
+	const showDemoIntro = $derived(
+		!workspaceCopy &&
+			ui.welcome &&
+			doc.id === DEMO &&
+			!!m &&
+			saved.length === 1 &&
+			!allPending.length
+	);
+	const introId = $props.id();
+	let quickstart = $state.raw<
+		{ step: 'gear'; items: string } | { step: 'move'; clip: string } | { step: 'export' } | null
+	>(null);
+	let quickstartHeading = $state<HTMLHeadingElement>();
+	let focusQuickstartOnEntry = false;
+	const gear = () =>
+		JSON.stringify(
+			Object.entries(doc.items)
+				.filter(([, item]) => item)
+				.sort()
+		);
+	const nextPreview = $derived.by(() => {
+		const manifest = m;
+		if (quickstart?.step !== 'move' || !manifest) return;
+		const worn = manifest.items.filter((item) => doc.items[item.slot] === item.id);
+		const moves = clips
+			.filter(({ kind }) => kind === 'move')
+			.sort((a, b) => Number(a.key === ui.anim) - Number(b.key === ui.anim));
+		for (const { key } of moves) {
+			const direction = moveDirs(manifest, key)
+				.sort((a, b) => Number(b === ui.dir) - Number(a === ui.dir))
+				.find((dir) => worn.every((item) => !missingFrames(manifest, item, key, dir).length));
+			if (direction) return { key, direction };
+		}
+	});
+	$effect(() => {
+		if (!quickstart || doc.loading) return;
+		if (doc.id !== DEMO || experience.screen !== 'studio') quickstart = null;
+		else if (ui.sheet === 'export') finishQuickstart();
+		else if (quickstart.step === 'gear' && quickstart.items !== gear()) {
+			quickstart = { step: 'move', clip: ui.anim };
+		} else if (
+			quickstart.step === 'move' &&
+			(ui.anim !== quickstart.clip || experience.mode !== 'preview' || !nextPreview)
+		)
+			quickstart = { step: 'export' };
+	});
+	function finishQuickstart() {
+		dismissWelcome();
+		quickstart = null;
+	}
+	async function skipQuickstart() {
+		finishQuickstart();
+		await tick();
+		document.getElementById('customization-tab-wardrobe')?.focus({ preventScroll: true });
+	}
+	function selectClip(clip: string) {
+		ui.anim = clip;
+		ui.frame = 0;
+	}
+	function quickstartAction() {
+		if (quickstart?.step === 'move' && nextPreview) {
+			selectClip(nextPreview.key);
+			ui.dir = nextPreview.direction;
+			ui.playing = true;
+			quickstart = { step: 'export' };
+		} else ui.sheet = 'export';
+	}
+	function enterSelectedCustomize(startGuide: boolean) {
+		// Customize opens on the standing move, also for the character already shown, or mounted on its Riding pose.
+		showStanding();
+		applyRiderPose();
+		enterCustomize();
+		if (startGuide) {
+			panel('wardrobe');
+			setPanelOpen(true);
+			quickstart = { step: 'gear', items: gear() };
+		}
+	}
+	async function replayQuickstart() {
+		if (openingProjectId()) return;
+		const screen = experience.screen;
+		if (doc.id !== DEMO || doc.error) await openProject(DEMO);
+		if (
+			doc.id !== DEMO ||
+			doc.error ||
+			openingProjectId() ||
+			experience.screen !== screen ||
+			ui.sheet
+		)
+			return;
+		focusQuickstartOnEntry = screen === 'characters';
+		enterSelectedCustomize(true);
+		if (screen === 'studio') {
+			await tick();
+			quickstartHeading?.focus();
+		}
+	}
 	const pending = $derived(allPending.filter((run) => matchesSearch([run.spec.name], query)));
 	const searchTotal = $derived(saved.length + allPending.length);
 	const searchVisibility = createSearchVisibility({
@@ -497,10 +598,7 @@
 					experience.screen === 'characters' &&
 					!ui.sheet
 				) {
-					// Customize opens on the standing move, also for the character already shown, or mounted on its Riding pose.
-					showStanding();
-					applyRiderPose();
-					enterCustomize();
+					enterSelectedCustomize(showDemoIntro);
 				}
 			}
 			return;
@@ -737,13 +835,17 @@
 	});
 	$effect(() => {
 		const screen = experience.screen;
+		const focusGuide = screen === 'studio' && focusQuickstartOnEntry;
+		focusQuickstartOnEntry = false;
 		if (screen === 'characters') {
 			experience.livePanelOpen = null;
 			previewContext = undefined;
 			hiddenScroll = undefined;
 		}
 		void tick().then(() => {
-			if (!ui.sheet)
+			if (ui.sheet) return;
+			if (focusGuide && quickstartHeading) quickstartHeading.focus();
+			else
 				(screen === 'characters'
 					? selection
 					: document.querySelector<HTMLElement>('.world-stage')
@@ -808,7 +910,13 @@
 >
 	<div class="scene-backdrop" aria-hidden="true"></div>
 	<div class="scene-reading" aria-hidden="true"></div>
-	<Toolbar {panelOpen} panelSide={dockEdge} onpanel={togglePanel} onmode={changeMode} />
+	<Toolbar
+		{panelOpen}
+		panelSide={dockEdge}
+		onpanel={togglePanel}
+		onmode={changeMode}
+		onquickstart={workspaceCopy ? undefined : replayQuickstart}
+	/>
 	{#if workspaceCopy}<div class="workspace-banner bu-floating" role="status">
 			{t(
 				app.key && !app.keyRejected
@@ -994,10 +1102,14 @@
 					</CharacterActions>
 				{/each}
 			</div>
+			{#if showDemoIntro}<p class="demo-intro bu-muted" id={introId}>
+					{t('welcome.demoIntro')}
+				</p>{/if}
 			<button
 				class="bu-action customize-action"
 				data-variant="primary"
 				onclick={customize}
+				aria-describedby={showDemoIntro ? introId : undefined}
 				aria-label={t('experience.customizeName', { name })}
 				title={t('experience.customizeName', { name })}
 				aria-busy={doc.loading || !!openingProjectId() || !!wheelTarget}
@@ -1042,10 +1154,7 @@
 						compact={g.compactPlayback}
 						thumbnail={(key) =>
 							view.project && lookClipThumbnail(view.project, view.items, key, ui.dir)}
-						onselect={(clip) => {
-							ui.anim = clip;
-							ui.frame = 0;
-						}}
+						onselect={selectClip}
 					/>
 					{#if experience.presentation !== 'animation'}<span class="small muted playback-still"
 							>{experience.presentation === 'unavailable'
@@ -1209,7 +1318,19 @@
 			<span class="sr" id="moves-tab-note">{displayMessage(movesOff)}</span>
 			<span hidden id="tab-work-busy">{t('experience.tabWorkRunning')}</span>
 			<span hidden id="tab-work-stopped">{t('experience.tabWorkAttention')}</span>
-			<PhonePanel {wardrobeScroll} />
+			<PhonePanel {wardrobeScroll} pinGuide={quickstart?.step !== 'gear'}>
+				{#snippet guide()}
+					{#if quickstart && doc.id === DEMO}
+						<Quickstart
+							step={quickstart.step}
+							move={nextPreview ? displayMove(nextPreview.key, moveRefs) : ''}
+							bind:heading={quickstartHeading}
+							onskip={skipQuickstart}
+							onaction={quickstartAction}
+						/>
+					{/if}
+				{/snippet}
+			</PhonePanel>
 		</aside>
 	{/if}
 	{#if doc.error && experience.screen !== 'studio'}
@@ -1218,6 +1339,12 @@
 </div>
 
 <style>
+	.demo-intro {
+		margin: 0;
+		font-size: var(--fs-sm);
+		line-height: 1.4;
+		text-wrap: pretty;
+	}
 	.pending-character > .character-thumbnail {
 		width: 64px;
 		flex: none;

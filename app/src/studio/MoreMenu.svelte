@@ -49,7 +49,10 @@
 	} from './icons.ts';
 
 	/** `creator`: the New character screen, which has no character actions to move here. */
-	let { context = 'screen' }: { context?: 'screen' | 'creator' } = $props();
+	let {
+		context = 'screen',
+		onquickstart
+	}: { context?: 'screen' | 'creator'; onquickstart?: () => void } = $props();
 	const studio = $derived(experience.screen === 'studio' && context === 'screen');
 	const m = $derived(store.project?.manifest);
 	const undoText = $derived(historyText('undo'));
@@ -267,6 +270,19 @@
 		>
 			<PopoverArrow />
 			<div class="menu-surface bu-popover-surface bu-floating">
+				{#if onquickstart}
+					<button
+						class="row bu-action"
+						data-variant="quiet"
+						onclick={() => {
+							closeOptions();
+							onquickstart?.();
+						}}
+						><Shirt size={18} aria-hidden="true" /><span class="row-name"
+							>{t('welcome.tryTheDemo')}</span
+						></button
+					>
+				{/if}
 				<a
 					class="row bu-action"
 					data-variant="quiet"

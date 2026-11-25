@@ -34,8 +34,26 @@ keyboard-focus feedback, an external-link indicator and a 44px minimum touch tar
 tone and title/body content for plan notices without nested controls.
 Connect relies on its form gap rather than extra notice padding; More has no extra bottom padding. In Connect it appears immediately
 above the Get Secret API Key / Connect action row; in More it follows the app actions. The same wording stays on one line in the
-README, website metadata and GitHub description. No notice is overlaid on the character scene, and onboarding remains a
-separate task.
+README, website metadata and GitHub description. No notice is overlaid on the character scene.
+
+### Demo quickstart
+
+The first useful moment is seeing a real item change on the Adventurer. Characters explains what the demo can do and
+that it needs no key. Opening Customize shows a small, dismissible hint in the Wardrobe. A gear change reveals the next
+hint about playback. The quickstart suggests a move and facing with frames for the equipped gear. Playing it or trying
+the Studio's playback or live views reveals the link to the usual Export sheet. These controls
+use the real project, so the look is saved and the exported ZIP is usable. Help > Try the demo brings back the hints.
+
+We compared a welcome wizard, a persistent checklist, and hints alongside the actual work. A wizard delays the first
+edit and a checklist adds a second interface to learn. The demo keeps the character in view and reveals each hint when
+the previous concept is visible. The first hint scrolls with the Wardrobe so it cannot crowd the item tiles. After the
+first gear change, the preview and export choices stay in view even when the user has scrolled to a later item. Colors,
+Outfits, and paid creation stay in their normal locations. We have no first-use study
+showing how quickly newcomers find the hints or export on their own.
+
+- Let people start immediately with bundled content and optional help tied to the task. [Apple Onboarding](https://developer.apple.com/design/human-interface-guidelines/onboarding) · [Apple Offering help](https://developer.apple.com/design/human-interface-guidelines/offering-help)
+- Give users real sample content to change, as Pages does with editable templates, Linear does with its demo workspace, and Figma Sites does with its practice file. [Pages templates](https://support.apple.com/guide/pages/use-templates-tan5c52a733c/mac) · [Linear Start Guide](https://linear.app/docs/start-guide) · [Figma Sites playground](https://help.figma.com/hc/en-us/articles/35898387859607-Figma-Sites-collection-Figma-Sites-playground-file-hands-on-exercises)
+- Keep the instruction next to the work and reveal the next concept after a meaningful action. [NN/g contextual help](https://www.nngroup.com/articles/onboarding-tutorials/) · [IBM's Minimal Manual study](https://research.ibm.com/publications/the-minimal-manual)
 
 Context-menu gestures share the typed attachment in `app/src/lib/input/contextMenu.ts`. Apply `{@attach contextMenu(open)}` to a row or tile wrapper; the callback receives that element, while the caller owns the actual menu. The attachment owns gesture detection, release-click suppression and listener/timer cleanup. Character rows and item tiles use this same API without their own gesture handlers.
 

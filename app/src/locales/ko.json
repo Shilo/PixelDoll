@@ -904,25 +904,19 @@
 		"itemQueued": "{move}용으로 대기 중"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "데모는 계정이 필요 없어요. 캐릭터를 만들 때는 {pixelLab} 계정의 생성 횟수를 사용해요.",
-		"steps": {
-			"create": "만들기",
-			"describeBody": "몸체 설명",
-			"addItems": "아이템 추가",
-			"examples": "모자, 상의, 무기",
-			"dressUp": "꾸미기",
-			"wearRecolorPlay": "착용, 색상 변경, 플레이",
-			"export": "내보내기",
-			"anyEngine": "모든 게임 엔진"
-		},
-		"switchToLightMode": "라이트 모드로 전환",
-		"switchToDarkMode": "다크 모드로 전환",
-		"labelDemoCharacterWalking": "걷는 데모 캐릭터",
-		"dressUpYour2DGameCharactersWith": "픽셀 단위로 정확한 종이 인형으로 2D 게임 캐릭터를 꾸며 보세요",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "PixelLab AI로 교체 가능한 프레임 정렬 장비 레이어를 생성하고 모든 게임 엔진으로 내보내세요.",
-		"createYourCharacter": "캐릭터 만들기",
+		"demoIntro": "장비를 바꾸고 동작을 재생한 뒤 데모를 내보내 보세요. PixelLab 키는 필요 없어요.",
+		"quickstart": "빠른 시작",
+		"gear": "장비를 바꿔 보세요",
+		"gearHint": "아이템을 선택해 입거나 벗어 보세요.",
+		"motion": "장비를 미리 보세요",
+		"motionHint": "장비 레이어가 캐릭터의 동작을 어떻게 따라가는지 확인해 보세요.",
+		"layers": "게임으로 가져가 보세요",
+		"layersHint": "몸체와 장비의 스프라이트 시트를 내보내면 게임에서 아이템을 바꿀 수 있어요.",
+		"playMove": "{move} 재생",
+		"dismissQuickstart": "빠른 시작 닫기",
 		"tryTheDemo": "데모 사용해 보기",
-		"importAnExistingCharacter": "기존 캐릭터 가져오기"
+		"exportDemo": "데모 내보내기",
+		"createYourCharacter": "캐릭터 만들기"
 	},
 	"experience": {
 		"movesOffMounted": "동작은 미리보기에서 선택해요. 탑승 이동은 탈것 설정의 탑승 포즈를 따라요.",

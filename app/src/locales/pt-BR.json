@@ -933,25 +933,19 @@
 		"itemQueued": "na fila para {move}"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "A demo não precisa de conta. Para criar, você usa suas gerações do {pixelLab}.",
-		"steps": {
-			"create": "Criar",
-			"describeBody": "Descreva o corpo",
-			"addItems": "Adicionar itens",
-			"examples": "Chapéus, blusas, armas",
-			"dressUp": "Vestir",
-			"wearRecolorPlay": "Equipe, mude as cores e teste as animações",
-			"export": "Exportar",
-			"anyEngine": "Para qualquer engine de jogos"
-		},
-		"switchToLightMode": "Mudar para o modo claro",
-		"switchToDarkMode": "Mudar para o modo escuro",
-		"labelDemoCharacterWalking": "Personagem da demo andando",
-		"dressUpYour2DGameCharactersWith": "Vista seus personagens de jogos 2D como bonecos de papel, com encaixe pixel a pixel",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "Gere camadas de equipamento intercambiáveis e alinhadas quadro a quadro com a IA do PixelLab e exporte para qualquer engine de jogos.",
-		"createYourCharacter": "Criar seu personagem",
+		"demoIntro": "Troque o equipamento, experimente uma animação e exporte a demonstração. Você não precisa de uma chave do PixelLab.",
+		"quickstart": "Início rápido",
+		"gear": "Troque o equipamento",
+		"gearHint": "Escolha um item para equipar ou remover.",
+		"motion": "Veja o equipamento em ação",
+		"motionHint": "Veja como as camadas de equipamento acompanham o personagem durante uma animação.",
+		"layers": "Leve o personagem para o seu jogo",
+		"layersHint": "Exporte as folhas de sprites do corpo e do equipamento para trocar itens no seu jogo.",
+		"playMove": "Reproduzir {move}",
+		"dismissQuickstart": "Fechar o início rápido",
 		"tryTheDemo": "Experimentar a demo",
-		"importAnExistingCharacter": "Importar um personagem existente"
+		"exportDemo": "Exportar a demonstração",
+		"createYourCharacter": "Criar seu personagem"
 	},
 	"experience": {
 		"movesOffMounted": "Escolha as animações na Prévia. Ao se mover montado, o personagem segue a pose de montaria das configurações da montaria.",

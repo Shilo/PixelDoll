@@ -64,12 +64,14 @@
 		panelOpen,
 		panelSide,
 		onpanel,
-		onmode
+		onmode,
+		onquickstart
 	}: {
 		panelOpen: boolean;
 		panelSide: PanelSide | 'bottom';
 		onpanel: () => void;
 		onmode: (mode: WorldMode, pointer: string) => void;
+		onquickstart?: () => void;
 	} = $props();
 	// The icon shows what a press does: open toward the dock edge, or close into it.
 	const PANEL_ICONS = {
@@ -436,7 +438,7 @@
 	</div>
 </header>
 <SharePopover />
-{#if ui.sheet !== 'create'}<MoreMenu />{/if}
+{#if ui.sheet !== 'create'}<MoreMenu {onquickstart} />{/if}
 
 <div
 	id="project-menu"

@@ -930,25 +930,19 @@
 		"itemQueued": "{move} için sırada"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "Demo için hesap gerekmez. Üretim, {pixelLab} hesabınızdaki üretim haklarını kullanır.",
-		"steps": {
-			"create": "Oluşturun",
-			"describeBody": "Gövdeyi tarif edin",
-			"addItems": "Eşya ekleyin",
-			"examples": "Şapkalar, üst giysiler, silahlar",
-			"dressUp": "Karakteri giydirin",
-			"wearRecolorPlay": "Giydirin, renklendirin, oynayın",
-			"export": "Dışa aktarın",
-			"anyEngine": "Herhangi bir oyun motoru"
-		},
-		"switchToLightMode": "Açık moda geçin",
-		"switchToDarkMode": "Koyu moda geçin",
-		"labelDemoCharacterWalking": "Yürüyen demo karakteri",
-		"dressUpYour2DGameCharactersWith": "2B oyun karakterlerinizi piksel piksel hizalanmış kâğıt bebek katmanlarıyla giydirin",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "PixelLab yapay zekâsıyla karelere hizalanmış, değiştirilebilir ekipman katmanları üretin ve dilediğiniz oyun motoruna aktarın.",
-		"createYourCharacter": "Karakterinizi oluşturun",
+		"demoIntro": "Ekipmanı değiştir, bir animasyon dene ve demoyu dışa aktar. PixelLab anahtarı gerekmez.",
+		"quickstart": "Hızlı başlangıç",
+		"gear": "Ekipmanı değiştir",
+		"gearHint": "Takmak veya çıkarmak için bir eşya seç.",
+		"motion": "Ekipmanı önizle",
+		"motionHint": "Bir animasyon boyunca ekipman katmanlarının karakteri nasıl takip ettiğini gör.",
+		"layers": "Karakteri oyununa taşı",
+		"layersHint": "Oyunda eşyaları değiştirebilmek için gövde ve ekipmanın sprite sayfalarını dışa aktar.",
+		"playMove": "Oynat: {move}",
+		"dismissQuickstart": "Hızlı başlangıcı kapat",
 		"tryTheDemo": "Demoyu deneyin",
-		"importAnExistingCharacter": "Mevcut bir karakteri içe aktarın"
+		"exportDemo": "Demoyu dışa aktar",
+		"createYourCharacter": "Karakterinizi oluşturun"
 	},
 	"experience": {
 		"movesOffMounted": "Animasyonlar Önizleme'de seçilir. Binek üzerinde hareket, binek ayarlarındaki Binici pozunu izler.",
