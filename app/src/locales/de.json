@@ -971,21 +971,21 @@
 				"one": "{count} Gegenstand ausgeblendet: Bilder für {move} fehlen",
 				"other": "{count} Gegenstände ausgeblendet: Bilder für {move} fehlen"
 			},
-			"noMoveNothing": "Noch keine Animation {move}, daher gibt es nichts anzuzeigen",
-			"noMoveStill": "Noch keine Animation {move}, daher steht die Figur still",
-			"noMovePlays": "Noch keine Animation {move}, daher wird {fallback} abgespielt",
-			"noFramesNothing": "{move} hat noch keine Frames in Richtung {direction}, daher gibt es nichts anzuzeigen",
-			"noFramesStill": "{move} hat noch keine Frames in Richtung {direction}, daher steht die Figur still",
-			"noFramesPlays": "{move} hat noch keine Frames in Richtung {direction}, daher wird {fallback} abgespielt",
-			"noFramesFaces": "{move} hat noch keine Frames in Richtung {direction}, daher blickt die Figur in Richtung {fallback}",
+			"noMoveNothing": "Bewegung {move} fehlt.",
+			"noMoveStill": "{move} fehlt. Standpose wird gezeigt.",
+			"noMovePlays": "{move} fehlt. {fallback} läuft.",
+			"noFramesNothing": "Keine {direction}-Frames für {move}.",
+			"noFramesStill": "Keine {direction}-Frames für {move}. Standpose wird gezeigt.",
+			"noFramesPlays": "Keine {direction}-Frames für {move}. {fallback} läuft.",
+			"noFramesFaces": "Keine {direction}-Frames für {move}. Blick nach {fallback}.",
 			"undeclaredDirection": "Diese Blickrichtung ist für die Figur nicht festgelegt",
 			"hiddenItems": {
 				"one": "{count} Gegenstand ausgeblendet: Frames für {move} / {direction} fehlen",
 				"other": "{count} Gegenstände ausgeblendet: Frames für {move} / {direction} fehlen"
 			},
 			"equippedHidden": {
-				"one": "{count} angelegter Gegenstand in dieser Ansicht ausgeblendet",
-				"other": "{count} angelegte Gegenstände in dieser Ansicht ausgeblendet"
+				"one": "{count} Gegenstand ausgeblendet (fehlende Frames)",
+				"other": "{count} Gegenstände ausgeblendet (fehlende Frames)"
 			},
 			"itemLoading": "{item} lädt: {directions}",
 			"legsAxial": "In der Vorder- und Rückansicht bleiben beide Beine sichtbar.",
@@ -3567,11 +3567,11 @@
 		"actions": "Spielaktionen",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Leertaste",
-		"noAttack": "Für Angriff ist noch nichts festgelegt. Wähle in den Einstellungen der Live-Ansichten eine Animation oder einen Zustand.",
-		"noAttackDirection": "{move} hat keine Frames in Richtung {direction}, daher ist dort kein Angriff möglich.",
-		"hintTopDown": "WASD oder Klick halten zum Bewegen · Umschalt zum Sprinten · Rechtsklick oder E zum Angreifen · Leertaste zum Springen · F zum Auf- und Absitzen",
-		"hintSide": "A/D oder Klick halten zum Bewegen · Umschalt zum Sprinten · Rechtsklick oder E zum Angreifen · Leertaste zum Springen · F zum Auf- und Absitzen",
-		"hintTouch": "Ziehen bewegt · Schwert halten und ziehen greift an und zielt · Tasten springen, sprinten und sitzen auf",
+		"noAttack": "Kein Angriff gewählt. Öffne die Live-Ansicht-Einstellungen.",
+		"noAttackDirection": "Keine {direction}-Frames für {move}.",
+		"hintTopDown": "Bewegen mit WASD oder gehaltener Maustaste",
+		"hintSide": "Bewegen mit A/D oder gehaltener Maustaste",
+		"hintTouch": "Zum Bewegen ziehen",
 		"stageTopDown": "Figuren-Testwelt. Bewege dich mit WASD, den Pfeiltasten, per Klick oder durch Ziehen; Umschalt sprintet. Rechtsklick oder E greift an, die Leertaste springt, F sitzt auf oder ab. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
 		"stageSide": "Testwelt in Seitenansicht. Bewege dich mit A/D, den Pfeiltasten links/rechts, per Klick oder durch Ziehen; Umschalt sprintet. Rechtsklick oder E greift an, die Leertaste springt, F sitzt auf oder ab. Die Tasten 1, 2 und 3 wechseln die Ansicht."
 	},

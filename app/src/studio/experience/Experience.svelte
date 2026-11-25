@@ -86,7 +86,6 @@
 	let missing = $state.raw<{ clip: string; direction: DirectionName; items: Item[] } | null>(null);
 	let coveragePopover = $state<HTMLElement>();
 	let playbackHeight = $state(0);
-	let stageNote = $state('');
 	let selectionCaptionHeight = $state(0);
 	const previewHeight = $derived(experience.mode === 'preview' ? playbackHeight : 0);
 	let viewportWidth = $state(1280),
@@ -816,7 +815,11 @@
 		</aside>
 	{:else}
 		<div class="experience-stage">
-			<WorldStage playbackHeight={previewHeight} bind:missing bind:note={stageNote} />
+			<WorldStage
+				playbackHeight={previewHeight}
+				stageRoom={g.stage.r - g.stage.l - 2 * g.edge}
+				bind:missing
+			/>
 		</div>
 		{#if experience.zoomFits.studio && experience.sceneZoom !== null}
 			<div class="scene-zoom-controls">
@@ -965,7 +968,6 @@
 						</div>
 					{/if}
 				</div>
-				{#if stageNote}<p class="world-coverage preview-note">{stageNote}</p>{/if}
 			</div>
 		{/if}
 		<aside class="equipment-rail" aria-label={t('experience.customization')}>
@@ -1001,7 +1003,9 @@
 			<PhonePanel />
 		</aside>
 	{/if}
-	{#if doc.error}<p class="experience-error" role="alert">{displayNestedMessage(doc.error)}</p>{/if}
+	{#if doc.error && experience.screen !== 'studio'}
+		<p class="experience-error" role="alert">{displayNestedMessage(doc.error)}</p>
+	{/if}
 </div>
 
 <style>

@@ -942,19 +942,19 @@
 			"hiddenItemsInMove": {
 				"other": "아이템 {count}개 숨김: {move} 프레임 부족"
 			},
-			"noMoveNothing": "아직 {move} 동작이 없어서 표시할 내용이 없어요",
-			"noMoveStill": "아직 {move} 동작이 없어서 캐릭터가 가만히 서 있어요",
-			"noMovePlays": "아직 {move} 동작이 없어서 대신 {fallback} 동작을 재생해요",
-			"noFramesNothing": "{move} 동작에 {direction} 방향 프레임이 아직 없어서 표시할 내용이 없어요",
-			"noFramesStill": "{move} 동작에 {direction} 방향 프레임이 아직 없어서 캐릭터가 가만히 서 있어요",
-			"noFramesPlays": "{move} 동작에 {direction} 방향 프레임이 아직 없어서 대신 {fallback} 동작을 재생해요",
-			"noFramesFaces": "{move} 동작에 {direction} 방향 프레임이 아직 없어서 대신 {fallback} 방향을 바라봐요",
+			"noMoveNothing": "{move} 동작이 없어요.",
+			"noMoveStill": "{move} 동작이 없어 정지 자세를 표시해요.",
+			"noMovePlays": "{move} 동작이 없어 {fallback}을 재생해요.",
+			"noFramesNothing": "{move}에 {direction} 프레임이 없어요.",
+			"noFramesStill": "{move}에 {direction} 프레임이 없어 정지 자세를 표시해요.",
+			"noFramesPlays": "{move}에 {direction} 프레임이 없어 {fallback}을 재생해요.",
+			"noFramesFaces": "{move}에 {direction} 프레임이 없어 {fallback} 방향을 표시해요.",
 			"undeclaredDirection": "캐릭터에 선언되지 않은 방향이에요",
 			"hiddenItems": {
 				"other": "아이템 {count}개 숨김: {move} / {direction} 프레임이 없어요"
 			},
 			"equippedHidden": {
-				"other": "이 뷰에서는 착용 중인 아이템 {count}개가 가려져요"
+				"other": "아이템 {count}개 숨김 (프레임 부족)"
 			},
 			"itemLoading": "{item} 불러오는 중: {directions}",
 			"legsAxial": "앞모습과 뒷모습에서는 두 다리가 모두 보여요.",
@@ -3465,11 +3465,11 @@
 		"actions": "게임 동작",
 		"withShortcut": "{action}({key})",
 		"spaceKey": "스페이스",
-		"noAttack": "아직 공격으로 재생할 것이 없어요. 라이브 뷰 설정에서 동작이나 상태를 골라 주세요.",
-		"noAttackDirection": "{move}에는 {direction} 방향 프레임이 없어서 그쪽으로는 공격할 수 없어요.",
-		"hintTopDown": "WASD 또는 클릭을 누른 채로 이동 · Shift로 질주 · 오른쪽 클릭 또는 E로 공격 · 스페이스로 점프 · F로 타기/내리기",
-		"hintSide": "A/D 또는 클릭을 누른 채로 이동 · Shift로 질주 · 오른쪽 클릭 또는 E로 공격 · 스페이스로 점프 · F로 타기/내리기",
-		"hintTouch": "드래그로 이동 · 검을 누른 채 드래그해 공격하고 조준 · 버튼으로 점프, 질주, 타기",
+		"noAttack": "공격이 설정되지 않았어요. 라이브 뷰 설정을 여세요.",
+		"noAttackDirection": "{move}에 {direction} 프레임이 없어요.",
+		"hintTopDown": "WASD 또는 클릭을 길게 눌러 이동",
+		"hintSide": "A/D 또는 클릭을 길게 눌러 이동",
+		"hintTouch": "드래그해서 이동",
 		"stageTopDown": "캐릭터 테스트 월드예요. WASD, 화살표 키, 클릭 또는 드래그로 이동하고 Shift로 질주해요. 오른쪽 클릭이나 E로 공격하고, 스페이스로 점프하고, F로 타거나 내려요. 1, 2, 3 키로 보기를 바꿔요.",
 		"stageSide": "사이드 스크롤러 테스트 월드예요. A/D, 좌우 화살표 키, 클릭 또는 드래그로 이동하고 Shift로 질주해요. 오른쪽 클릭이나 E로 공격하고, 스페이스로 점프하고, F로 타거나 내려요. 1, 2, 3 키로 보기를 바꿔요."
 	},

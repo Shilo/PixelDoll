@@ -2155,7 +2155,7 @@ test.describe('renderer failure on short screens', () => {
 			warningBox = (await warning.boundingBox())!;
 		expect(hintBox.y + hintBox.height).toBeLessThanOrEqual(warningBox.y);
 		// The fixture has no Idle art, so the live fallback already reports a routine coverage note.
-		await expect(routine).toContainText('No Idle move yet');
+		await expect(routine).toContainText('No Idle move. Showing a still pose.');
 		await expect(routine).toBeVisible();
 		// Desktop and portrait keep both notes; short landscape keeps only the failure warning, clear of the touch
 		// controls and inside the viewport.

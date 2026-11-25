@@ -971,21 +971,21 @@
 				"one": "{count} eşya gizli: {move} kareleri eksik",
 				"other": "{count} eşya gizli: {move} kareleri eksik"
 			},
-			"noMoveNothing": "Henüz {move} animasyonu yok, bu nedenle gösterilecek bir şey yok",
-			"noMoveStill": "Henüz {move} animasyonu yok, bu nedenle karakter hareketsiz duruyor",
-			"noMovePlays": "Henüz {move} animasyonu yok, bu nedenle yerine şu animasyon oynatılıyor: {fallback}",
-			"noFramesNothing": "{move} animasyonunda henüz şu yön için kare yok: {direction}. Bu nedenle gösterilecek bir şey yok",
-			"noFramesStill": "{move} animasyonunda henüz şu yön için kare yok: {direction}. Bu nedenle karakter hareketsiz duruyor",
-			"noFramesPlays": "{move} animasyonunda henüz şu yön için kare yok: {direction}. Bu nedenle yerine şu animasyon oynatılıyor: {fallback}",
-			"noFramesFaces": "{move} animasyonunda henüz şu yön için kare yok: {direction}. Bu nedenle karakter şu yöne bakıyor: {fallback}",
+			"noMoveNothing": "{move} hareketi yok.",
+			"noMoveStill": "{move} yok. Sabit poz gösteriliyor.",
+			"noMovePlays": "{move} yok. {fallback} oynatılıyor.",
+			"noFramesNothing": "{move} için {direction} karesi yok.",
+			"noFramesStill": "{move} için {direction} karesi yok. Sabit poz gösteriliyor.",
+			"noFramesPlays": "{move} için {direction} karesi yok. {fallback} oynatılıyor.",
+			"noFramesFaces": "{move} için {direction} karesi yok. Yön {fallback}.",
 			"undeclaredDirection": "Bu yön karakter için tanımlanmamış",
 			"hiddenItems": {
 				"one": "{count} eşya gizlendi. Eksik kareler: {move} / {direction}",
 				"other": "{count} eşya gizlendi. Eksik kareler: {move} / {direction}"
 			},
 			"equippedHidden": {
-				"one": "Bu görünümde takılı {count} eşya gizlendi",
-				"other": "Bu görünümde takılı {count} eşya gizlendi"
+				"one": "{count} eşya gizli (eksik kareler)",
+				"other": "{count} eşya gizli (eksik kareler)"
 			},
 			"itemLoading": "Yükleniyor: {item} ({directions})",
 			"legsAxial": "Önden ve arkadan görünümlerde iki bacak da görünür kalır.",
@@ -3567,11 +3567,11 @@
 		"actions": "Oyun eylemleri",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Boşluk",
-		"noAttack": "Henüz Saldırı için bir şey seçilmedi. Canlı görünüm ayarlarından bir animasyon veya durum seçin.",
-		"noAttackDirection": "Bu animasyonda ({move}) {direction} yönüne bakan kare yok, bu yüzden o yöne saldıramaz.",
-		"hintTopDown": "Hareket için WASD veya basılı tıklama · Hızlı koşu için Shift · Saldırı için sağ tık veya E · Zıplama için Boşluk · Binmek için F",
-		"hintSide": "Hareket için A/D veya basılı tıklama · Hızlı koşu için Shift · Saldırı için sağ tık veya E · Zıplama için Boşluk · Binmek için F",
-		"hintTouch": "Hareket için sürükleyin · Saldırıp nişan almak için kılıcı basılı tutup sürükleyin · Düğmeler zıplatır, hızlı koşturur ve bindirir",
+		"noAttack": "Saldırı seçilmedi. Canlı görünüm ayarlarını açın.",
+		"noAttackDirection": "{move} için {direction} karesi yok.",
+		"hintTopDown": "WASD ile veya tıklamayı basılı tutarak hareket edin",
+		"hintSide": "A/D ile veya tıklamayı basılı tutarak hareket edin",
+		"hintTouch": "Hareket etmek için sürükleyin",
 		"stageTopDown": "Karakter test dünyası. Hareket etmek için WASD, ok tuşları, tıklama veya sürükleme kullanın; Shift hızlı koşturur. Sağ tık veya E saldırır, Boşluk zıplar, F biner veya iner. 1, 2, 3 tuşları görünümü değiştirir.",
 		"stageSide": "Yandan kaydırmalı test dünyası. Hareket etmek için A/D, sol ve sağ ok tuşları, tıklama veya sürükleme kullanın; Shift hızlı koşturur. Sağ tık veya E saldırır, Boşluk zıplar, F biner veya iner. 1, 2, 3 tuşları görünümü değiştirir."
 	},

@@ -543,42 +543,59 @@ test('PWA fullscreen launch hides an unusable toggle while standalone permits it
 	await expect(page.getByRole('button', { name: 'Enter full screen', exact: true })).toBeEnabled();
 });
 
-test('movement warnings are combined and remain eligible while an error takes priority', async ({
+test('live coverage stays in the world notes while movement diagnostics respect error priority', async ({
 	page
 }, info) => {
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
 	await page.goto(dev);
 	await expect(page.locator('.customize-action')).toBeEnabled();
 	await page.locator('.customize-action').click();
-	await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
 		const manifest = s.store.project.manifest;
-		manifest.rig.directions.push({ id: 'notification-fixture' });
 		const head = manifest.items.find((item: { slot: string }) => item.slot === 'head');
 		head.coverage = [];
 		s.doc.items[head.slot] = head.id;
 		s.doc.rev++;
-		s.toast('Could not save your work.', { tone: 'danger' });
 	});
 	const notice = page.locator('.toast');
-	await world(page).focus();
-	await page.keyboard.down('ArrowRight');
-	try {
-		await expect
-			.poll(() => world(page).evaluate((el) => Number(el.dataset.position!.split(',')[0])))
-			.toBeGreaterThan(0);
-		await expect(notice.getByRole('alert')).toContainText('Could not save your work.');
-	} finally {
-		await page.keyboard.up('ArrowRight');
+	const coverageNote = page
+		.locator('.world-live-note')
+		.filter({ hasText: '1 item hidden (missing frames)' });
+	const desktop = page.viewportSize()!;
+	for (const mode of ['Side-scroller', 'Top-down']) {
+		await page.setViewportSize(mode === 'Side-scroller' ? { width: 568, height: 320 } : desktop);
+		await modes(page).getByRole('button', { name: mode, exact: true }).click();
+		await world(page).focus();
+		await page.keyboard.down('ArrowRight');
+		try {
+			await expect
+				.poll(() => world(page).evaluate((el) => Number(el.dataset.position!.split(',')[0])))
+				.toBeGreaterThan(0);
+			await expect(coverageNote).toBeVisible();
+			await expect(notice).toHaveCount(0);
+		} finally {
+			await page.keyboard.up('ArrowRight');
+		}
 	}
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.store.project.manifest.rig.directions.push({ id: 'notification-fixture' });
+		s.doc.rev++;
+		s.toast('Could not save your work.', { tone: 'danger' });
+	});
+	await expect(notice.getByRole('alert')).toContainText('Could not save your work.');
 	// The demo has no Idle or stored rest image, so stopping uses a still pose.
 	await expect(world(page)).toHaveAttribute('data-presentation', 'still');
 	await notice.getByRole('button', { name: 'Dismiss notification' }).click();
 	await expect(notice.locator('[data-tone]')).toHaveAttribute('data-tone', 'warning');
 	await expect(notice).toContainText('Unknown direction: notification-fixture');
-	await expect(notice).toContainText('1 item hidden');
+	await expect(
+		notice.getByRole('button', { name: 'Report this problem', exact: true })
+	).toBeVisible();
+	await expect(notice).not.toContainText('item hidden');
 	await notice.getByRole('button', { name: 'Dismiss notification' }).click();
 	await page.evaluate(
 		() =>
@@ -587,6 +604,38 @@ test('movement warnings are combined and remain eligible while an error takes pr
 			)
 	);
 	await expect(notice).toHaveCount(0);
+});
+
+test('live view notices stay above the phone panel without moving it', async ({ page }, info) => {
+	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.goto(dev);
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	await page.locator('.customize-action').click();
+	const panel = page.locator('.sheet-layout .equipment-rail');
+	const error = page.getByRole('alert').filter({ hasText: 'Could not open this character.' });
+	for (const mode of ['Top-down', 'Side-scroller']) {
+		await modes(page).getByRole('button', { name: mode, exact: true }).click();
+		const before = await panel.boundingBox();
+		expect(before).not.toBeNull();
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts';
+			const { doc } = await import(path);
+			doc.error = 'Could not open this character. '.repeat(8);
+		});
+		await expect(error).toBeVisible();
+		const box = (await error.boundingBox())!;
+		expect(box.x).toBe(16);
+		expect(box.y + box.height).toBeLessThan(before!.y);
+		expect(await panel.boundingBox()).toEqual(before);
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts';
+			const { doc } = await import(path);
+			doc.error = '';
+		});
+		await expect(error).toHaveCount(0);
+		expect(await panel.boundingBox()).toEqual(before);
+	}
 });
 
 test('screen transitions preserve world keyboard focus while creator fields remain native', async ({
@@ -3763,6 +3812,25 @@ test.describe('Preview facing lineup', () => {
 				)
 				.toBe(expected);
 		}
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await expect(page.locator('.world-actors')).toHaveJSProperty('width', 1280);
+		const toolbar = page.getByRole('toolbar', { name: 'Preview controls' });
+		const baseline = (await toolbar.boundingBox())!;
+		const notice = page.locator('.preview-note');
+		for (const mirrorOf of ['missing-facing-' + 'layout-fixture-'.repeat(16), undefined]) {
+			await page.evaluate(async (mirrorOf) => {
+				const path = '/src/studio/state.svelte.ts';
+				const { doc, store } = await import(path);
+				store.project.manifest.rig.directions[0].mirrorOf = mirrorOf;
+				doc.rev++;
+			}, mirrorOf);
+			if (mirrorOf) {
+				await expect(notice).toContainText('Missing mirror source');
+				const box = (await notice.boundingBox())!;
+				expect(box.y + box.height).toBeLessThan(baseline.y);
+			} else await expect(notice).toHaveCount(0);
+			expect(await toolbar.boundingBox()).toEqual(baseline);
+		}
 	});
 
 	for (const density of [1, 2])
@@ -4084,7 +4152,7 @@ test.describe('Preview facing lineup', () => {
 			s.doc.rev++;
 		});
 		await expect(world(page)).toHaveAttribute('data-facing', 'south');
-		const note = page.locator('.world-coverage');
+		const note = page.locator('.preview-note');
 		await expect(note).toContainText('missing Walk / North frames');
 		await expect(note).toContainText('missing Walk / East frames');
 		await expect
@@ -4093,7 +4161,7 @@ test.describe('Preview facing lineup', () => {
 				const playback = await page
 					.getByRole('toolbar', { name: 'Preview controls' })
 					.boundingBox();
-				return notice !== null && playback !== null && notice.y >= playback.y + playback.height;
+				return notice !== null && playback !== null && notice.y + notice.height <= playback.y;
 			})
 			.toBe(true);
 		await page.evaluate(async () => {
@@ -4104,9 +4172,7 @@ test.describe('Preview facing lineup', () => {
 		});
 		await expect(page.locator('.world-loading-items')).toContainText('Lineup hat loading');
 		await expect(page.locator('.world-loading-items')).toContainText('North, East');
-		await expect(page.locator('.world-coverage').filter({ hasText: 'missing Walk' })).toHaveCount(
-			0
-		);
+		await expect(note.filter({ hasText: 'missing Walk' })).toHaveCount(0);
 	});
 
 	type Rig = [DirectionName, DirectionName?][];
@@ -4338,9 +4404,7 @@ test.describe('live views actions', () => {
 		await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
 		const host = world(page);
 		await expect(host).toBeFocused();
-		await expect(page.locator('.world-hint')).toHaveText(
-			'WASD or hold click to move · Shift to sprint · Right-click or E to attack · Space to jump · F to mount'
-		);
+		await expect(page.locator('.world-hint')).toHaveText('WASD or hold click to move');
 		const bar = page.getByRole('group', { name: 'Game actions', exact: true });
 		const jump = bar.getByRole('button', { name: 'Jump', exact: true });
 		const mount = bar.getByRole('button', { name: 'Mount', exact: true });
@@ -4457,6 +4521,10 @@ test.describe('live views actions', () => {
 		);
 		// Above and west of the body: no south art within 90°, and never the walk's east facing.
 		await expect(host).toHaveAttribute('data-attack', /^missing (west|north-west)$/);
+		await expect(page.locator('.world-notes')).toContainText(
+			/No (west|northwest|north-west) frames for Cross punch\./i
+		);
+		await expect(page.locator('.toast')).toHaveCount(0);
 		// Chorded buttons: walking to a left-press point continues while the right button aims and attacks.
 		await page.mouse.move(ax + 300, ay - 20);
 		await page.mouse.down();
