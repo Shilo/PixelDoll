@@ -1206,13 +1206,16 @@ touchTest(
 			await page.locator('.mobile-mount').click();
 		};
 		await openCompactMount();
+		const seatRow = mountMenu.locator('[data-setting="rider-seat"]');
+		await expect(seatRow).toContainText('Turn on Show mount to adjust the seat.');
 		await mountMenu.getByRole('switch', { name: 'Show mount', exact: true }).check();
+		await expect(seatRow).toContainText('Choose a saved one-frame Riding pose to adjust the seat.');
 		await riderPose.click();
 		await page.getByRole('menuitemradio', { name: 'Riding', exact: true }).click();
-		const facing = mountMenu.getByRole('combobox', { name: 'Facing', exact: true });
+		const facing = mountMenu.getByRole('combobox', { name: 'Preview direction', exact: true });
 		const adjustSeat = mountMenu.getByRole('button', { name: 'Adjust seat', exact: true });
 		const left = mountMenu.getByRole('button', { name: 'Move rider left', exact: true });
-		const seat = mountMenu.locator('[data-setting="rider-seat"] output');
+		const seat = seatRow.locator('output');
 		const marker = mountMenu.locator('.seat-marker');
 		const saveSeat = mountMenu.getByRole('button', { name: 'Save', exact: true });
 		await facing.selectOption('east');

@@ -128,6 +128,15 @@
 			saved: reviewedSeatPoint(authored, selected, shown)
 		};
 	});
+	const seatHint = $derived(
+		!doc.id || doc.id.startsWith('fixture:')
+			? 'settings.seatNeedsCharacter'
+			: !riding
+				? 'settings.seatNeedsMount'
+				: !seatPose(selected)
+					? 'settings.seatNeedsPose'
+					: 'settings.seatNeedsFrame'
+	);
 
 	type Point = Pick<RiderSeatPoint, 'x' | 'y'>;
 	let draft = $state.raw<{ id: string; target: RiderSeatEdit; point: Point | null } | null>(null);
@@ -432,8 +441,8 @@
 	</span>
 </button>
 <div class="mount-caption">
-	<span>{t('settings.testMount')}</span>
 	{#if editing}
+		<span>{t('settings.seatFacing')}</span>
 		<span id="mount-preview-facing">{displayDirection(shown)}</span>
 	{:else}
 		<label for="mount-preview-facing">{t('settings.seatFacing')}</label>
@@ -454,32 +463,36 @@
 		</select>
 	{/if}
 </div>
+<hr class="bu-separator preview-divider" />
 
 {#if !editing}{@render controls()}{/if}
 
-{#if target}
-	<div class="seat-row" data-setting="rider-seat">
+<div data-setting="rider-seat">
+	<div class="seat-row">
 		<Armchair size={18} aria-hidden="true" />
 		<span>{t('settings.seatPosition')}</span>
-		<output
-			class="seat-value"
-			title={t('settings.seatOffsetHelp')}
-			aria-live={editing ? 'polite' : 'off'}
-			>{offset ? t('settings.seatOffset', offset) : t('creationSettings.automatic')}</output
-		>
-		{#if !editing}
-			<button
-				type="button"
-				class="bu-action"
-				data-variant="field"
-				aria-label={t('settings.adjustSeat')}
-				title={t('settings.adjustSeat')}
-				bind:this={adjustButton}
-				onclick={beginEdit}><Pencil size={16} aria-hidden="true" /></button
+		{#if target}
+			<output
+				class="seat-value"
+				title={t('settings.seatOffsetHelp')}
+				aria-live={editing ? 'polite' : 'off'}
+				>{offset ? t('settings.seatOffset', offset) : t('creationSettings.automatic')}</output
 			>
+			{#if !editing}
+				<button
+					type="button"
+					class="bu-action"
+					data-variant="field"
+					aria-label={t('settings.adjustSeat')}
+					title={t('settings.adjustSeat')}
+					bind:this={adjustButton}
+					onclick={beginEdit}><Pencil size={16} aria-hidden="true" /></button
+				>
+			{/if}
 		{/if}
 	</div>
-{/if}
+	{#if !target}<p class="seat-help">{t(seatHint)}</p>{/if}
+</div>
 
 {#if editing}
 	<p class="seat-help">{t('settings.seatMarkerHelp')}</p>
@@ -584,15 +597,16 @@
 	}
 	.mount-caption {
 		flex-wrap: wrap;
+		justify-content: space-between;
 		margin-block: 4px 8px;
 		font-size: 12px;
 		color: var(--bu-muted);
 	}
-	.mount-caption > :first-child {
-		margin-inline-end: auto;
-	}
 	.mount-caption select {
 		max-inline-size: 100%;
+	}
+	.preview-divider {
+		margin-block: 4px 8px;
 	}
 	.seat-row {
 		flex-wrap: wrap;
