@@ -161,7 +161,12 @@
 				: []
 		) ?? []
 	);
-	let expanded = $state.raw<{ image: Img; title: string; note: string } | null>(null);
+	let expanded = $state.raw<{
+		images: Img[];
+		notes: string[];
+		title: string;
+		index: number;
+	} | null>(null);
 	const k = $derived(
 		strip.length
 			? Math.max(1, Math.floor(Math.min(60 / strip[0].w, 72 / strip[0].h, 6) * ui.dpr))
@@ -210,6 +215,25 @@
 			count: number(previews.length || 1)
 		})
 	);
+	// The viewer steps through this direction's frames without starting the stage playback.
+	function openPreview(frame: Img, title: string, direction: number) {
+		const images = previews.map((row) => row[direction]).filter((image): image is Img => !!image);
+		if (!images.length) return;
+		const count = images.length,
+			start = Math.max(0, images.indexOf(frame));
+		expanded = {
+			images,
+			index: Math.min(start, count - 1),
+			title,
+			notes: images.map((_, index) =>
+				t('itemPane.previewContext', {
+					move: moveName,
+					frame: number(index + 1),
+					count: number(count)
+				})
+			)
+		};
+	}
 	const sourceDir = $derived(m?.rig.directions.find((d) => d.id === ui.dir)?.mirrorOf ?? ui.dir);
 	const repairSpec = $derived(
 		it &&
@@ -301,6 +325,14 @@
 		m && selectedSpecs.length ? itemMoveOffer(m, selectedSpecs, redo) : null
 	);
 	const missingTier = $derived(offerTier(missingOffer));
+	// One way out of a missing-frame warning: the whole move, the current view, or the local frame editor.
+	const missingAction = $derived(
+		availableMoves.length || pendingMoveIds.length
+			? { kind: 'moves' as const, label: t('itemPane.reviewMissingMoves') }
+			: repairSpec
+				? { kind: 'repair' as const, label: t('itemPane.repairView') }
+				: { kind: 'frames' as const, label: openerLabel(t('fixFrames.open')) }
+	);
 	function selectMove(id: string, checked: boolean) {
 		chosenMoves = checked ? [...selectedMoves, id] : selectedMoves.filter((move) => move !== id);
 	}
@@ -323,6 +355,26 @@
 			void queueMoves(projectId, specs);
 			ui.sheet = 'move';
 		}, missingTier);
+	}
+	async function reviewMoves() {
+		movesOpen = true;
+		await tick();
+		movesSection?.scrollIntoView({ block: 'start' });
+		movesSection?.querySelector<HTMLElement>('summary')?.focus({ preventScroll: true });
+	}
+	async function reviewMissing() {
+		if (!it) return;
+		if (missingAction.kind === 'moves') {
+			await reviewMoves();
+		} else if (missingAction.kind === 'repair') {
+			artworkOpen = true;
+			replaceOpen = true;
+			await tick();
+			replaceSection?.scrollIntoView({ block: 'start' });
+			replaceSection?.querySelector<HTMLElement>('summary')?.focus({ preventScroll: true });
+		} else {
+			openFrames(it.id);
+		}
 	}
 	let colorPlan = $state<ItemPaletteRepairPlan | null>(null);
 	// The pending-work notice explains a disabled action, so it shows only while one it covers is actually waiting.
@@ -423,6 +475,9 @@
 	}
 	let confirmRemove = $state(false);
 	let onlyDir = $state(false);
+	let movesSection = $state<HTMLDetailsElement>();
+	let replaceSection = $state<HTMLDetailsElement>();
+	let replaceOpen = $state(false);
 	let acceptingIssues = $state(false);
 	let acceptanceError = $state<Message | string>('');
 	// The moves an item with checks to accept is missing frames in: it can be kept without them, never with partial frames.
@@ -472,7 +527,7 @@
 {#snippet sectionTitle(label: string, note?: string)}
 	<summary>
 		<ChevronRight size={16} aria-hidden="true" />
-		<span>{label}</span>
+		<h3 class="section-name">{label}</h3>
 		{#if note}<span class="section-note muted">{note}</span>{/if}
 	</summary>
 {/snippet}
@@ -490,6 +545,19 @@
 					<span class="badge {health}">{displayMessage(HEALTH_LABEL[health])}</span>
 				{/if}
 			</div>
+		{/if}
+	{/snippet}
+	{#snippet footer()}
+		{#if it}
+			<button
+				bind:this={wearButton}
+				class="bu-action btn item-wear"
+				data-variant={on ? 'outline' : 'primary'}
+				data-item-wear-toggle
+				onclick={() => wear(it!.id)}
+			>
+				{on ? t('common.takeOff') : t('common.wear')}
+			</button>
 		{/if}
 	{/snippet}
 	{#snippet developer()}
@@ -528,23 +596,14 @@
 	{#if m && it && view.project}
 		<div class="item-workbench">
 			<div class="preview-toolbar">
-				<span class="preview-move">{moveName}</span>
-				<button
-					bind:this={wearButton}
-					class="bu-action btn"
-					data-variant={on ? 'outline' : 'primary'}
-					data-item-wear-toggle
-					onclick={() => wear(it.id)}
-				>
-					{on ? t('common.takeOff') : t('common.wear')}
-				</button>
+				<span class="preview-move">{previewNote}</span>
 			</div>
 			{#if strip.length && previewDirections.length}
 				<div
 					class="item-views"
 					style:--cols={Math.min(4, previewDirections.length)}
 					role="group"
-					aria-label={t('itemPane.nameInEveryDirection', { name: it.name })}
+					aria-label={t('itemPane.availableDirectionsFor', { name: it.name })}
 				>
 					{#each previewDirections as { direction: d, index } (d.id)}
 						{@const frame = strip[index]}
@@ -556,13 +615,14 @@
 							<button
 								class="bu-action item-view"
 								data-variant="quiet"
+								title={t('itemPane.openSprite', { title })}
 								aria-haspopup="dialog"
 								aria-label={t('itemPane.openSprite', { title })}
-								onclick={() => (expanded = { image: frame, title, note: previewNote })}
+								onclick={() => openPreview(frame, title, index)}
 							>
 								<span class="view-art" aria-hidden="true">
 									<Sprite img={frame} {k} limit={52} label={title} />
-									<span class="view-expand"><Maximize size={12} /></span>
+									<span class="view-expand"><Maximize size={14} /></span>
 								</span>
 								<span class="view-caption">{displayDirection(d.id)}</span>
 							</button>
@@ -570,7 +630,14 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="muted small">{t('itemPane.previewUnavailable')}</p>
+				<p class="muted small">
+					{t('itemPane.previewUnavailable')}
+					<button
+						class="bu-action btn plain notice-action"
+						data-variant="quiet"
+						onclick={reviewMissing}>{missingAction.label}</button
+					>
+				</p>
 			{/if}
 			{#if hiddenNow}
 				<div class="hidden-row">
@@ -605,6 +672,11 @@
 							getLocale() === 'en' ? moveGaps.join(', ') : formatList(moveGaps.map(directionName))
 					})}{#if remakeOnly && !isDemo() && !freeFrames}
 						{t('itemPane.remakeAllMoves', { name: m.name })}{/if}
+					<button
+						class="bu-action btn plain notice-action"
+						data-variant="quiet"
+						onclick={reviewMissing}>{missingAction.label}</button
+					>
 				</p>{/if}
 
 			{#if !isDemo() && pendingBlocks}
@@ -672,7 +744,14 @@
 										</p>{/if}
 									{#if gaps.length && keepRefusal}
 										<!-- Says why it cannot be kept as it is: the missing frames are the way on, offered below. -->
-										<p class="small">{displayMessage(errorMessage(keepRefusal))}</p>
+										<p class="small">
+											{displayMessage(errorMessage(keepRefusal))}
+											<button
+												class="bu-action btn plain notice-action"
+												data-variant="quiet"
+												onclick={reviewMoves}>{t('itemPane.reviewMissingMoves')}</button
+											>
+										</p>
 									{:else if gaps.length}<button
 											class="bu-action btn"
 											data-variant="outline"
@@ -724,7 +803,7 @@
 						</div>
 						{#if !isDemo() && (it.prompt || canEditItemAppearance(m, it))}
 							<div class="item-creation">
-								<h3>{t('itemPane.makeAnother')}</h3>
+								<h4>{t('itemPane.makeAnother')}</h4>
 								<div class="editor-actions">
 									{#if !isDemo() && canEditItemAppearance(m, it)}
 										<button
@@ -829,7 +908,11 @@
 								})}
 							</p>{/if}
 						{#if !isDemo() && repairSpec}
-							<details class="bu-details item-disclosure replace-frames">
+							<details
+								class="bu-details item-disclosure replace-frames"
+								bind:this={replaceSection}
+								bind:open={replaceOpen}
+							>
 								{@render sectionTitle(t('itemPane.replaceFrames'))}
 								<div class="stack">
 									<p class="faint small">
@@ -906,7 +989,11 @@
 				</details>
 
 				{#if coverage.length || missingMoves.length || unposedMoves.length || (freeFrames && it.copiedFrom && !isDemo())}
-					<details class="bu-details item-disclosure" bind:open={movesOpen}>
+					<details
+						class="bu-details item-disclosure"
+						bind:this={movesSection}
+						bind:open={movesOpen}
+					>
 						{@render sectionTitle(
 							t('itemPane.movesSection'),
 							coverageMissing
@@ -1056,7 +1143,7 @@
 					<div class="stack outfit-settings">
 						<section class="stack" aria-label={t('itemPane.layerOrder')}>
 							<div class="layer-heading">
-								<h3><Layers2 size={16} aria-hidden="true" />{t('itemPane.layerOrder')}</h3>
+								<h4><Layers2 size={16} aria-hidden="true" />{t('itemPane.layerOrder')}</h4>
 								{#if customOrder}
 									<button class="bu-action btn sm plain" data-variant="quiet" onclick={resetOrder}
 										>{t('itemPane.reset')}</button
@@ -1109,7 +1196,7 @@
 						</section>
 						{#if hideChoices.length}
 							<section class="stack visibility-settings" aria-label={t('itemPane.whenWornHide')}>
-								<h3><EyeOff size={16} aria-hidden="true" />{t('itemPane.whenWornHide')}</h3>
+								<h4><EyeOff size={16} aria-hidden="true" />{t('itemPane.whenWornHide')}</h4>
 								<div class="visibility-list" role="group" aria-label={t('itemPane.whenWornHide')}>
 									{#each hideChoices as slot (slot)}
 										{@const isOtherHand = slot === otherHand}
@@ -1278,7 +1365,6 @@
 		gap: 8px;
 		justify-content: space-between;
 	}
-	.preview-toolbar .btn,
 	.layer-actions .btn,
 	.paid-action .btn {
 		min-height: 44px;
@@ -1288,8 +1374,34 @@
 		overflow-wrap: anywhere;
 		font-weight: 600;
 	}
-	.preview-toolbar .btn {
-		flex: none;
+	.item-wear {
+		min-width: 140px;
+	}
+	.notice-action {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		margin-inline-start: 8px;
+		padding-inline: 8px;
+	}
+	.item-disclosure :global(summary .section-name) {
+		margin: 0;
+		font: inherit;
+	}
+	:global(dialog.sheet.bottom.item-detail) {
+		box-sizing: border-box;
+		height: 100dvh;
+		max-height: 100dvh;
+		margin: 0;
+		padding-top: env(safe-area-inset-top);
+		border-radius: 0;
+	}
+	:global(dialog.item-detail.bottom .sheet-title) {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		overflow: hidden;
 	}
 	.item-views {
 		display: grid;
@@ -1310,6 +1422,7 @@
 		padding: 8px 4px 6px;
 		font-size: var(--fs-sm);
 		color: var(--text-2);
+		cursor: zoom-in;
 	}
 	.view-art {
 		position: relative;
@@ -1324,10 +1437,10 @@
 		inset-inline-end: 0;
 		display: grid;
 		place-items: center;
-		width: 20px;
-		height: 20px;
+		width: 22px;
+		height: 22px;
 		color: var(--text-3);
-		opacity: 0.7;
+		opacity: 0.85;
 		transition:
 			opacity var(--dur),
 			color var(--dur);
@@ -1336,6 +1449,11 @@
 	.item-view:focus-visible .view-expand {
 		color: var(--text);
 		opacity: 1;
+	}
+	@media (hover: none) {
+		.item-view .view-expand {
+			opacity: 1;
+		}
 	}
 	.view-caption {
 		max-width: 100%;
@@ -1385,8 +1503,13 @@
 	.editor-actions,
 	.visibility-list {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(184px, 100%), 1fr));
 		gap: 4px 12px;
+	}
+	.editor-actions {
+		grid-template-columns: repeat(auto-fit, minmax(min(184px, 100%), 1fr));
+	}
+	.visibility-list {
+		grid-template-columns: minmax(0, 1fr);
 	}
 	.editor-actions .btn {
 		justify-content: start;
@@ -1401,8 +1524,8 @@
 		margin: 0;
 	}
 	.move-picker legend,
-	.item-creation h3,
-	.outfit-settings h3 {
+	.item-creation h4,
+	.outfit-settings h4 {
 		font-size: var(--fs-sm);
 		font-weight: 600;
 	}
@@ -1436,10 +1559,10 @@
 	.paid-action .btn {
 		margin-inline-start: auto;
 	}
-	.item-creation h3 {
+	.item-creation h4 {
 		margin: 0 0 4px;
 	}
-	.outfit-settings h3 {
+	.outfit-settings h4 {
 		display: flex;
 		gap: 8px;
 		align-items: center;
