@@ -3068,7 +3068,13 @@
 		"description": "Dress up your 2D game characters with pixel-perfect paper dolling. Generate swappable, frame-aligned equipment layers and export them to any game engine.",
 		"viewCommit": "View commit",
 		"copyDetails": "Copy details",
-		"copyFailed": "Could not copy app details."
+		"copyFailed": "Could not copy app details.",
+		"checkForUpdates": "Check for updates",
+		"checkingForUpdates": "Checking for updates...",
+		"upToDate": "You're up to date.",
+		"preparingUpdate": "Getting version {version} ready...",
+		"updateStuck": "The update isn't ready yet.",
+		"updateFailed": "Couldn't check for updates."
 	},
 	"repairReview": {
 		"finishFirst": "Open Moves to decide whether to use the finished repair first.",

@@ -3077,7 +3077,13 @@
 		"description": "Vista seus personagens de jogos 2D com camadas de boneca de papel precisas até o pixel. Gere camadas de equipamentos intercambiáveis e alinhadas quadro a quadro e exporte-as para qualquer motor de jogos.",
 		"viewCommit": "Ver commit",
 		"copyDetails": "Copiar detalhes",
-		"copyFailed": "Não foi possível copiar os detalhes do aplicativo."
+		"copyFailed": "Não foi possível copiar os detalhes do aplicativo.",
+		"checkForUpdates": "Verificar atualizações",
+		"checkingForUpdates": "Verificando atualizações...",
+		"upToDate": "Você está em dia.",
+		"preparingUpdate": "Preparando a versão {version}...",
+		"updateStuck": "A atualização ainda não está pronta.",
+		"updateFailed": "Não foi possível verificar atualizações."
 	},
 	"repairReview": {
 		"finishFirst": "Abra Animações para decidir primeiro se deseja usar o reparo concluído.",

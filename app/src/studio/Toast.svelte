@@ -9,14 +9,16 @@
 	import { restoreTrigger } from './experience/focus.ts';
 	import { updateNotice } from './updateNotice.svelte.ts';
 	import PwaNotice from './PwaNotice.svelte';
+	import { pwa } from '../lib/pwa.ts';
 	import PendingIndicator from './PendingIndicator.svelte';
 	import ReportButton from './ReportButton.svelte';
 	import { areaOf } from './report.svelte.ts';
 
 	let host = $state<HTMLDivElement>();
+	const showUpdate = $derived(updateNotice.visible && !updateNotice.aboutOpen);
 	$effect(() => {
 		void ui.toast;
-		void updateNotice.visible;
+		void showUpdate;
 		const label = t('toast.dismiss');
 		for (const button of host?.querySelectorAll('.bu-notice-dismiss') ?? [])
 			button.setAttribute('aria-label', label);
@@ -42,6 +44,17 @@
 	let hovered = $state(false),
 		focused = $state(false),
 		hidden = $state(document.hidden);
+	$effect(() => {
+		const phase = updateNotice.phase;
+		if (!updateNotice.visible || $pwa.reloading) return;
+		if (updateNotice.aboutOpen || hovered || focused || hidden) {
+			updateNotice.pause(phase);
+			return;
+		}
+		// The clock survives sheet remounts. Only readiness or a new release starts a fresh window.
+		const timer = setTimeout(() => updateNotice.expire(phase), updateNotice.delay(phase));
+		return () => clearTimeout(timer);
+	});
 	function restoreNoticeFocus() {
 		if (host?.contains(document.activeElement)) restoreTrigger(focusFrom);
 	}
@@ -132,10 +145,10 @@
 
 <svelte:document onvisibilitychange={() => (hidden = document.hidden)} />
 <svelte:window bind:innerWidth={viewportWidth} bind:innerHeight={viewportHeight} />
-{#if updateNotice.visible || (ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet))}
+{#if showUpdate || (ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet))}
 	<div
 		class="toast bu-toast-region"
-		class:toast-controls-only={typeof ui.toast === 'function' && !updateNotice.visible}
+		class:toast-controls-only={typeof ui.toast === 'function' && !showUpdate}
 		data-placement="top"
 		style:--bu-toast-top="{place.top}px"
 		style:--bu-toast-center="{place.center}px"
@@ -188,7 +201,7 @@
 					>{:else if ui.toastProblem}
 					<ReportButton {...ui.toastProblem} area={areaOf(ui.toastSheet)} />{/if}
 			</Notice>{/if}
-		<PwaNotice paused={hovered || focused || hidden} ondismiss={restoreNoticeFocus} />
+		{#if showUpdate}<PwaNotice ondismiss={restoreNoticeFocus} />{/if}
 	</div>
 {/if}
 

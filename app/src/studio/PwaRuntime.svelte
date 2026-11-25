@@ -16,7 +16,10 @@
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { message, type Message } from '../lib/message.ts';
 	import { prepareForUpdate, updateBlocked } from './state.svelte.ts';
-	import { restoreTrigger } from './experience/focus.ts';
+	import { updateNotice } from './updateNotice.svelte.ts';
+	import { settingsNavigation } from './settingsNavigation.svelte.ts';
+	import { claimSheetExit } from './sheetExit.ts';
+	import { openingTrigger, restoreTrigger } from './experience/focus.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import {
 		openStartupUpdateWindow,
@@ -36,9 +39,9 @@
 	const ios =
 		/iPad|iPhone|iPod/.test(navigator.userAgent) ||
 		(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-	async function show(next: 'update' | 'install') {
+	async function show(next: 'update' | 'install', source?: 'about') {
 		if (busy || mode) return;
-		from = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		from = next === 'update' ? openingTrigger() : (document.activeElement as HTMLElement | null);
 		if (next === 'install' && from?.closest('#experience-options'))
 			from = document.querySelector('[popovertarget="experience-options"]');
 		document
@@ -53,7 +56,9 @@
 		// Like every sheet, start on the title rather than the X.
 		dialog.querySelector<HTMLElement>('.sheet-title')?.focus({ preventScroll: true });
 		if (next === 'update') {
-			const reason = updateBlocked();
+			const allowAbout = () =>
+				source === 'about' && updateNotice.aboutOpen && !settingsNavigation.fromExport;
+			const reason = updateBlocked(allowAbout);
 			if (reason) {
 				error = reason;
 				return;
@@ -64,7 +69,7 @@
 			}
 			busy = true;
 			try {
-				await applyUpdate(prepareForUpdate);
+				await applyUpdate(() => prepareForUpdate(allowAbout));
 			} catch (e) {
 				error = errorMessage(e);
 				busy = false;
@@ -77,6 +82,7 @@
 		mode = null;
 		restoreTrigger(from);
 	}
+	$effect(() => (mode ? claimSheetExit({ alert: true, close }) : undefined));
 	async function updateInNewTab() {
 		if (busy || !$pwa.ready) return;
 		busy = true;
@@ -145,8 +151,8 @@
 		if (import.meta.env.PROD) openStartupUpdateWindow();
 		const stop = startPwa();
 		const off = setPwaActions(
-			() => {
-				void show('update');
+			(source) => {
+				void show('update', source);
 			},
 			() => {
 				void show('install');

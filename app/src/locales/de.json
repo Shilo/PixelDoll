@@ -3068,7 +3068,13 @@
 		"description": "Kleide deine 2D-Spielfiguren mit pixelgenauen Papierpuppen-Ebenen ein. Erstelle austauschbare, an den Einzelbildern ausgerichtete Ausrüstungsebenen und exportiere sie in jede Spiel-Engine.",
 		"viewCommit": "Commit ansehen",
 		"copyDetails": "Details kopieren",
-		"copyFailed": "App-Details konnten nicht kopiert werden."
+		"copyFailed": "App-Details konnten nicht kopiert werden.",
+		"checkForUpdates": "Nach Updates suchen",
+		"checkingForUpdates": "Suche nach Updates...",
+		"upToDate": "Du bist auf dem neuesten Stand.",
+		"preparingUpdate": "Version {version} wird vorbereitet...",
+		"updateStuck": "Das Update ist noch nicht bereit.",
+		"updateFailed": "Die Suche nach Updates ist fehlgeschlagen."
 	},
 	"repairReview": {
 		"finishFirst": "Öffne zuerst die Bewegungen und entscheide, ob du die fertige Reparatur verwenden möchtest.",

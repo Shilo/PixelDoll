@@ -226,7 +226,7 @@
 				class="row bu-action"
 				data-variant="quiet"
 				disabled={!$pwa.ready}
-				onclick={requestUpdate}
+				onclick={() => requestUpdate()}
 				><RefreshCw size={18} /><span class="row-name"
 					>{t('toolbar.updateToVVersion', { version: $pwa.available.version })}</span
 				></button

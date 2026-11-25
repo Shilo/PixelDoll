@@ -3068,7 +3068,13 @@
 		"description": "Viste a tus personajes de videojuegos 2D con capas de papel recortable precisas al píxel. Genera capas de equipamiento intercambiables y alineadas fotograma a fotograma y expórtalas a cualquier motor de videojuegos.",
 		"viewCommit": "Ver commit",
 		"copyDetails": "Copiar detalles",
-		"copyFailed": "No se pudieron copiar los detalles de la aplicación."
+		"copyFailed": "No se pudieron copiar los detalles de la aplicación.",
+		"checkForUpdates": "Buscar actualizaciones",
+		"checkingForUpdates": "Buscando actualizaciones...",
+		"upToDate": "Estás al día.",
+		"preparingUpdate": "Preparando la versión {version}...",
+		"updateStuck": "La actualización aún no está lista.",
+		"updateFailed": "No se pudieron buscar actualizaciones."
 	},
 	"repairReview": {
 		"finishFirst": "Abre Animaciones para decidir primero si quieres usar la reparación terminada.",

@@ -1971,7 +1971,7 @@ queue.canYield = workIdle;
 
 /** Why an update cannot reload this tab now, with English for logs and a translation for display. An idle queue alone
  *  says nothing about unsaved forms or local writes. */
-function updateBlocker(): LocalizedError | undefined {
+function updateBlocker(allowAbout?: () => boolean): LocalizedError | undefined {
 	if (studioStartup === 'failed')
 		return new LocalizedError(
 			'PixelDoll could not finish loading your saved work.',
@@ -1982,7 +1982,11 @@ function updateBlocker(): LocalizedError | undefined {
 			'Wait for your character and saved work to finish loading.',
 			'state.update.loading'
 		);
-	if (ui.sheet || ui.sheetBusy)
+	// Standalone About has no editable form. Export and a suspended creator still own their work.
+	if (
+		ui.sheetBusy ||
+		(ui.sheet && !(allowAbout?.() && ui.sheet === 'settings' && !canReturnToCreator()))
+	)
 		return new LocalizedError(
 			'Finish and close the open panel before updating.',
 			'state.update.openPanel'
@@ -2010,8 +2014,8 @@ function updateBlocker(): LocalizedError | undefined {
 			'state.update.processing'
 		);
 }
-export function updateBlocked(): Message | '' {
-	return updateBlocker()?.translation ?? '';
+export function updateBlocked(allowAbout?: () => boolean): Message | '' {
+	return updateBlocker(allowAbout)?.translation ?? '';
 }
 
 /** A halted flow can survive a reload only if the current failure and any queued moves actually reached storage. */
@@ -2086,8 +2090,8 @@ async function verifyHaltedFlows() {
 		);
 	}
 }
-export async function prepareForUpdate(): Promise<void> {
-	const blocker = updateBlocker();
+export async function prepareForUpdate(allowAbout?: () => boolean): Promise<void> {
+	const blocker = updateBlocker(allowAbout);
 	if (blocker) throw blocker;
 	// Retry a previously failed outfit save, rather than trusting flushSave(), which reports errors in a toast.
 	if (edits !== savedEdits && !pendingSave) save();
@@ -2098,7 +2102,7 @@ export async function prepareForUpdate(): Promise<void> {
 			'state.yourOutfitCouldNotBeSavedResolve'
 		);
 	await verifyHaltedFlows();
-	const changed = updateBlocker();
+	const changed = updateBlocker(allowAbout);
 	if (changed) throw changed;
 }
 

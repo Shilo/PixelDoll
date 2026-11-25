@@ -2987,7 +2987,13 @@
 		"description": "像装扮纸娃娃一样，为 2D 游戏角色进行像素级换装。生成逐帧对齐、可替换的装备图层，并导出到任意游戏引擎。",
 		"viewCommit": "查看提交",
 		"copyDetails": "复制详细信息",
-		"copyFailed": "无法复制应用详情。"
+		"copyFailed": "无法复制应用详情。",
+		"checkForUpdates": "检查更新",
+		"checkingForUpdates": "正在检查更新…",
+		"upToDate": "已是最新版本。",
+		"preparingUpdate": "正在准备 {version} 版本…",
+		"updateStuck": "更新尚未就绪。",
+		"updateFailed": "无法检查更新。"
 	},
 	"repairReview": {
 		"finishFirst": "请先打开“动作”，决定是否使用已完成的修复。",

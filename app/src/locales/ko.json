@@ -2987,7 +2987,13 @@
 		"description": "픽셀 단위로 맞는 종이 인형 방식으로 2D 게임 캐릭터를 꾸미세요. 프레임마다 정렬된 교체 가능한 장비 레이어를 생성하고 원하는 게임 엔진으로 내보낼 수 있습니다.",
 		"viewCommit": "커밋 보기",
 		"copyDetails": "세부 정보 복사",
-		"copyFailed": "앱 세부 정보를 복사할 수 없습니다."
+		"copyFailed": "앱 세부 정보를 복사할 수 없습니다.",
+		"checkForUpdates": "업데이트 확인",
+		"checkingForUpdates": "업데이트 확인 중...",
+		"upToDate": "최신 상태입니다.",
+		"preparingUpdate": "버전 {version} 준비 중...",
+		"updateStuck": "업데이트가 아직 준비되지 않았습니다.",
+		"updateFailed": "업데이트를 확인할 수 없습니다."
 	},
 	"repairReview": {
 		"finishFirst": "동작을 열고 완료된 수정을 사용할지 먼저 결정해 주세요.",

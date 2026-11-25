@@ -2987,7 +2987,13 @@
 		"description": "Dandani karakter game 2D dengan lapisan boneka kertas yang presisi hingga ke piksel. Buat lapisan perlengkapan yang dapat ditukar dan selaras di setiap bingkai, lalu ekspor ke mesin game apa pun.",
 		"viewCommit": "Lihat commit",
 		"copyDetails": "Salin detail",
-		"copyFailed": "Detail aplikasi tidak dapat disalin."
+		"copyFailed": "Detail aplikasi tidak dapat disalin.",
+		"checkForUpdates": "Periksa pembaruan",
+		"checkingForUpdates": "Memeriksa pembaruan...",
+		"upToDate": "Versi Anda sudah terbaru.",
+		"preparingUpdate": "Menyiapkan versi {version}...",
+		"updateStuck": "Pembaruan belum siap.",
+		"updateFailed": "Tidak dapat memeriksa pembaruan."
 	},
 	"repairReview": {
 		"finishFirst": "Buka Animasi untuk memutuskan dulu apakah akan menggunakan hasil perbaikan.",

@@ -256,6 +256,11 @@ test('Settings About opens a page with build details and copies them', async ({ 
 	await about.click();
 	await expect(settings.getByText(/^Version \d+\.\d+\.\d+-dev$/)).toBeVisible();
 	await expect(settings.getByText('Development', { exact: true })).toBeVisible();
+	await expect(settings.getByRole('button', { name: 'Check for updates' })).toHaveCount(0);
+	await settings
+		.getByRole('searchbox', { name: 'Search settings', exact: true })
+		.fill('check for updates');
+	await expect(settings.getByRole('status')).toHaveText('No settings match your search.');
 });
 
 test('notifications support optional titles, keyboard dismissal and visible errors inside dialogs', async ({

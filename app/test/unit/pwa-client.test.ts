@@ -72,6 +72,7 @@ async function setup() {
 		state: 'activated',
 		postMessage: (message: { type: string; build?: string }, ports: Port[]) => {
 			messages.push(message.type);
+			if (message.type === 'CACHE_LOCALE') return;
 			const value = release;
 			if (message.type === 'ACTIVATE') activate();
 			const send = () =>
@@ -258,6 +259,92 @@ describe('PWA update schedule', () => {
 });
 
 describe('PWA deployment discovery remains independent of browser worker stalls', () => {
+	it('distinguishes a failed deployment check from a checked current build with missing offline files', async () => {
+		const app = await setup();
+		app.publish(current);
+		app.registration.waiting = null;
+		app.fetch.mockRejectedValueOnce(new TypeError('Offline'));
+		app.start();
+		expect(get(app.client.pwa)).toMatchObject({ enabled: true, checking: true });
+		await settle();
+		expect(get(app.client.pwa)).toMatchObject({ checking: false, discovery: 'failed' });
+
+		app.holdMessage('VERIFY', never(), current.build);
+		const retry = app.client.checkForUpdate();
+		await vi.advanceTimersByTimeAsync(15_000);
+		await retry;
+		expect(get(app.client.pwa)).toMatchObject({
+			checking: false,
+			discovery: 'checked',
+			available: null,
+			offlineReady: false,
+			stagingFailed: false
+		});
+	});
+
+	it('reports a new worker identification failure and coalesces simultaneous inspections', async () => {
+		const app = await setup();
+		let finish!: () => void;
+		app.holdMessage(
+			'GET_RELEASE',
+			new Promise<void>((resolve) => {
+				finish = resolve;
+			}),
+			next.build
+		);
+		app.start();
+		await settle();
+		app.wake('controllerchange');
+		await settle();
+		expect(app.messages.filter((type) => type === 'GET_RELEASE')).toHaveLength(1);
+
+		await vi.advanceTimersByTimeAsync(15_000);
+		expect(get(app.client.pwa)).toMatchObject({
+			available: next,
+			discovery: 'checked',
+			checking: false,
+			ready: false,
+			stagingFailed: true
+		});
+		finish();
+		await app.client.checkForUpdate();
+		expect(get(app.client.pwa)).toMatchObject({ ready: true, stagingFailed: false });
+	});
+
+	it('keeps a verified same-version deployment on network failure but revokes it when its worker is replaced', async () => {
+		const app = await setup();
+		const rebuilt = { ...next, version: current.version };
+		app.publish(rebuilt);
+		app.stage(rebuilt);
+		app.start();
+		await settle();
+		expect(get(app.client.pwa)).toMatchObject({
+			available: rebuilt,
+			discovery: 'checked',
+			ready: true
+		});
+
+		app.fetch.mockResolvedValueOnce(new Response(null, { status: 503 }));
+		await app.client.checkForUpdate();
+		expect(get(app.client.pwa)).toMatchObject({
+			available: rebuilt,
+			discovery: 'failed',
+			ready: true
+		});
+
+		app.stage(later);
+		app.wake('controllerchange');
+		await settle();
+		expect(get(app.client.pwa)).toMatchObject({ available: rebuilt, ready: false });
+		app.publish(later);
+		await app.client.checkForUpdate();
+		expect(get(app.client.pwa)).toMatchObject({
+			available: later,
+			discovery: 'checked',
+			ready: true
+		});
+	});
+
 	it.each(['GET_RELEASE', 'VERIFY'])(
 		'ignores a replaced worker’s late successful %s before metadata catches up',
 		async (type) => {
@@ -319,7 +406,11 @@ describe('PWA deployment discovery remains independent of browser worker stalls'
 		app.wake('controllerchange');
 		await settle();
 		await vi.advanceTimersByTimeAsync(15_000);
-		expect(get(app.client.pwa)).toMatchObject({ available: next, ready: false });
+		expect(get(app.client.pwa)).toMatchObject({
+			available: next,
+			ready: false,
+			stagingFailed: true
+		});
 		expect([get(app.client.pwa).error].flat()).toContainEqual({ key: 'pwa.noResponse' });
 		release();
 		app.wake('online');
@@ -363,9 +454,10 @@ describe('PWA deployment discovery remains independent of browser worker stalls'
 			app.holdMessage(type, never(), next.build);
 			app.wake('controllerchange');
 			await settle();
-			const before = get(app.client.pwa);
 			stop?.();
 			stop = undefined;
+			const before = get(app.client.pwa);
+			expect(before).toMatchObject({ enabled: false, checking: false });
 			await vi.advanceTimersByTimeAsync(15_000);
 			expect(get(app.client.pwa)).toEqual(before);
 		}

@@ -2987,7 +2987,13 @@
 		"description": "ピクセル単位でぴったり合う着せ替えで、2Dゲームのキャラクターを装飾できます。フレームごとに位置を合わせた交換可能な装備レイヤーを生成し、任意のゲームエンジンに書き出せます。",
 		"viewCommit": "コミットを表示",
 		"copyDetails": "詳細をコピー",
-		"copyFailed": "アプリの詳細をコピーできませんでした。"
+		"copyFailed": "アプリの詳細をコピーできませんでした。",
+		"checkForUpdates": "アップデートを確認",
+		"checkingForUpdates": "アップデートを確認中...",
+		"upToDate": "最新の状態です。",
+		"preparingUpdate": "バージョン {version} を準備中...",
+		"updateStuck": "アップデートの準備ができていません。",
+		"updateFailed": "アップデートを確認できませんでした。"
 	},
 	"repairReview": {
 		"finishFirst": "モーションを開き、完了した修正を適用するか先に決めてください。",

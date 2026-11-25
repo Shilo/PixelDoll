@@ -3068,7 +3068,13 @@
 		"description": "2B oyun karakterlerinizi piksel hassasiyetinde bir kâğıt bebek gibi giydirin. Karelerle hizalanmış, değiştirilebilir ekipman katmanları oluşturun ve bunları istediğiniz oyun motoruna aktarın.",
 		"viewCommit": "Commit’i görüntüle",
 		"copyDetails": "Ayrıntıları kopyala",
-		"copyFailed": "Uygulama ayrıntıları kopyalanamadı."
+		"copyFailed": "Uygulama ayrıntıları kopyalanamadı.",
+		"checkForUpdates": "Güncellemeleri kontrol et",
+		"checkingForUpdates": "Güncellemeler kontrol ediliyor...",
+		"upToDate": "En güncel sürümü kullanıyorsunuz.",
+		"preparingUpdate": "{version} sürümü hazırlanıyor...",
+		"updateStuck": "Güncelleme henüz hazır değil.",
+		"updateFailed": "Güncellemeler kontrol edilemedi."
 	},
 	"repairReview": {
 		"finishFirst": "Tamamlanan onarımı kullanıp kullanmayacağınıza önce Hareketler bölümünde karar verin.",

@@ -130,6 +130,10 @@ declare global {
 	}
 }
 export const pwa = writable({
+	enabled: false,
+	checking: false,
+	discovery: 'idle' as 'idle' | 'checked' | 'failed',
+	stagingFailed: false,
 	available: null as Release | null,
 	ready: false,
 	reloading: false,
@@ -142,7 +146,11 @@ export const pwa = writable({
 });
 let registration: ServiceWorkerRegistration | undefined;
 let latest: Release | null = null;
-let updateAction: (() => void) | undefined;
+let verifiedWorker: ServiceWorker | undefined;
+let inspection:
+	{ worker: ServiceWorker; build: string | undefined; result: Promise<void> } | undefined;
+type UpdateSource = 'about';
+let updateAction: ((source?: UpdateSource) => void) | undefined;
 let installHelp: (() => void) | undefined;
 let checking: Promise<void> | undefined;
 let checkAgain = false;
@@ -178,23 +186,53 @@ function cacheActiveLocale() {
 	cacheLocale(registration?.waiting ?? registration?.installing);
 }
 
-async function inspectWorker() {
-	if (!registration || stopped) return;
-	const preferred = () => registration?.waiting ?? registration?.active;
-	const worker = preferred();
-	if (!worker) return;
+const preferredWorker = () => registration?.waiting ?? registration?.active;
+
+function forgetVerifiedWorker() {
+	verifiedWorker?.removeEventListener('statechange', invalidateVerifiedWorker);
+	verifiedWorker = undefined;
+}
+
+function invalidateVerifiedWorker() {
+	if (verifiedWorker === preferredWorker() && verifiedWorker?.state !== 'redundant') return;
+	forgetVerifiedWorker();
+	pwa.update((s) => ({ ...s, ready: false }));
+}
+
+function inspectWorker(): Promise<void> {
+	if (stopped) return Promise.resolve();
+	if (verifiedWorker) invalidateVerifiedWorker();
+	const worker = preferredWorker();
+	if (!worker || worker.state === 'redundant') return Promise.resolve();
+	const build = latest?.build;
+	// A wake and a lifecycle event can land together. Only one reads the same worker for this deployment.
+	if (inspection?.worker === worker && inspection.build === build) return inspection.result;
+	const result = inspectRelease(worker, build).finally(() => {
+		if (inspection?.result === result) inspection = undefined;
+	});
+	inspection = { worker, build, result };
+	return result;
+}
+
+async function inspectRelease(worker: ServiceWorker, build: string | undefined) {
+	const targetStillPreferred = () =>
+		!stopped && worker === preferredWorker() && worker.state !== 'redundant';
 	let release: Release;
 	try {
 		release = readRelease(await workerMessage(worker, 'GET_RELEASE'));
 	} catch (error) {
 		// A replaced worker can stop responding while a newer worker has already passed verification.
-		if (stopped || worker !== preferred()) return;
+		if (!targetStillPreferred() || latest?.build !== build) return;
+		if (build && build === get(pwa).available?.build) {
+			if (worker === verifiedWorker) forgetVerifiedWorker();
+			pwa.update((s) => ({ ...s, ready: false, stagingFailed: true }));
+		}
 		throw error;
 	}
 	const relevant = () =>
 		!stopped &&
 		(release.build === __APP_BUILD__ ||
-			(release.build === latest?.build && worker === preferred()));
+			(release.build === build && build === latest?.build && targetStillPreferred()));
 	if (!relevant()) return;
 	try {
 		const check = await workerMessage(worker, 'VERIFY', release.build);
@@ -202,18 +240,24 @@ async function inspectWorker() {
 		if (check.ready !== true)
 			throw new LocalizedError('The downloaded app is incomplete.', 'pwa.downloadIncomplete');
 		if (release.build === __APP_BUILD__) pwa.update((s) => ({ ...s, offlineReady: true }));
-		if (worker === preferred()) cacheLocale(worker);
+		if (worker === preferredWorker()) cacheLocale(worker);
 	} catch (e) {
 		if (!relevant()) return;
+		if (worker === verifiedWorker) forgetVerifiedWorker();
 		pwa.update((s) => ({
 			...s,
-			...(release.build === __APP_BUILD__ ? { offlineReady: false } : { ready: false }),
+			...(release.build === __APP_BUILD__
+				? { offlineReady: false }
+				: { ready: false, stagingFailed: true }),
 			error: errorMessage(e)
 		}));
 		throw e;
 	}
 	if (latest && release.build === latest.build && release.build !== __APP_BUILD__) {
-		pwa.update((s) => ({ ...s, available: release, ready: true, error: '' }));
+		forgetVerifiedWorker();
+		verifiedWorker = worker;
+		worker.addEventListener('statechange', invalidateVerifiedWorker);
+		pwa.update((s) => ({ ...s, available: release, ready: true, stagingFailed: false, error: '' }));
 	}
 }
 
@@ -225,8 +269,10 @@ export function checkForUpdate(): Promise<void> {
 		return checking;
 	}
 	checking = (async () => {
+		pwa.update((s) => ({ ...s, checking: true }));
 		do {
 			checkAgain = false;
+			let stagingFailed = false;
 			const failures: (Message | string)[] = [];
 			// Discover first: stalled browser operations and cache/quota failures cannot hide newer deployments.
 			try {
@@ -235,13 +281,18 @@ export function checkForUpdate(): Promise<void> {
 				const available = latest.build === __APP_BUILD__ ? null : latest;
 				pwa.update((s) => ({
 					...s,
+					discovery: 'checked',
 					available,
 					ready: available?.build === s.available?.build && s.ready,
+					stagingFailed: available?.build === s.available?.build && s.stagingFailed,
 					error: ''
 				}));
 			} catch (e) {
+				if (stopped) return;
+				pwa.update((s) => ({ ...s, discovery: 'failed' }));
 				failures.push(errorMessage(e));
 			}
+			const target = latest;
 			try {
 				if (
 					!registration?.active &&
@@ -254,6 +305,7 @@ export function checkForUpdate(): Promise<void> {
 						new LocalizedError('Offline setup did not respond.', 'pwa.setupNoResponse')
 					);
 			} catch (e) {
+				stagingFailed = true;
 				failures.push(message('pwa.setupFailed', { reason: errorMessage(e) }));
 			}
 			const inspect = () =>
@@ -272,6 +324,7 @@ export function checkForUpdate(): Promise<void> {
 						)
 					);
 				} catch (e) {
+					stagingFailed = true;
 					failures.push(errorMessage(e));
 				}
 				await inspect();
@@ -280,16 +333,20 @@ export function checkForUpdate(): Promise<void> {
 			if (!stopped && failures.length)
 				pwa.update((s) => ({
 					...s,
+					stagingFailed:
+						s.stagingFailed ||
+						(stagingFailed && !!target && s.available?.build === target.build && !s.ready),
 					error: [...new Map(failures.map((f) => [JSON.stringify(f), f])).values()]
 				}));
 		} while (checkAgain && !stopped);
 	})().finally(() => {
 		checking = undefined;
+		if (!stopped) pwa.update((s) => ({ ...s, checking: false }));
 	});
 	return checking;
 }
 
-export function setPwaActions(update: () => void, help: () => void) {
+export function setPwaActions(update: (source?: UpdateSource) => void, help: () => void) {
 	updateAction = update;
 	installHelp = help;
 	return () => {
@@ -297,8 +354,8 @@ export function setPwaActions(update: () => void, help: () => void) {
 		installHelp = undefined;
 	};
 }
-export function requestUpdate() {
-	updateAction?.();
+export function requestUpdate(source?: UpdateSource) {
+	updateAction?.(source);
 }
 export function requestInstallHelp() {
 	installHelp?.();
@@ -355,18 +412,26 @@ export function startPwa() {
 	const onController = () => {
 		void inspectWorker().catch((e) => pwa.update((s) => ({ ...s, error: errorMessage(e) })));
 	};
+	let stopWatchingWorker: (() => void) | undefined;
 	const watch = () => {
 		const worker = registration?.installing;
+		if (!worker) return;
+		stopWatchingWorker?.();
+		if (get(pwa).stagingFailed) pwa.update((s) => ({ ...s, stagingFailed: false }));
 		cacheLocale(worker);
-		worker?.addEventListener('statechange', () => {
+		const changed = () => {
 			if (worker.state === 'installed' || worker.state === 'activated') onController();
-			if (worker.state === 'redundant')
+			if (worker.state === 'redundant' && !stopped)
 				pwa.update((s) => ({
 					...s,
+					stagingFailed: !!s.available && !s.ready,
 					error: message('pwa.saveFailed')
 				}));
-		});
+		};
+		worker.addEventListener('statechange', changed);
+		stopWatchingWorker = () => worker.removeEventListener('statechange', changed);
 	};
+	pwa.update((s) => ({ ...s, enabled: true }));
 	syncInstalled();
 	const stopInstall = capture?.subscribe(syncInstalled);
 	if (!capture)
@@ -404,6 +469,9 @@ export function startPwa() {
 	const interval = setInterval(wake, 60 * 60_000);
 	return () => {
 		stopped = true;
+		stopWatchingWorker?.();
+		forgetVerifiedWorker();
+		pwa.update((s) => ({ ...s, enabled: false, checking: false }));
 		registerWorker = undefined;
 		clearInterval(interval);
 		registration?.removeEventListener('updatefound', watch);
@@ -477,13 +545,21 @@ async function activateUpdate(
 	if (!worker || readRelease(await workerMessage(worker, 'GET_RELEASE')).build !== target.build)
 		throw new LocalizedError('The update changed. Try again.', 'pwa.changed');
 	validate();
-	const verified = await workerMessage(worker, 'VERIFY', target.build);
+	try {
+		const verified = await workerMessage(worker, 'VERIFY', target.build);
+		if (verified.ready !== true)
+			throw new LocalizedError(
+				'The update is incomplete. Reconnect and try again.',
+				'pwa.incomplete'
+			);
+	} catch (error) {
+		if (worker === preferredWorker() && get(pwa).available?.build === target.build) {
+			forgetVerifiedWorker();
+			pwa.update((s) => ({ ...s, ready: false, stagingFailed: true, error: errorMessage(error) }));
+		}
+		throw error;
+	}
 	validate();
-	if (verified.ready !== true)
-		throw new LocalizedError(
-			'The update is incomplete. Reconnect and try again.',
-			'pwa.incomplete'
-		);
 	await prepareToReload();
 	validate();
 	if (worker === registration.waiting) {
