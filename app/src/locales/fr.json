@@ -968,21 +968,21 @@
 				"one": "{count} objet masqué : images manquantes pour {move}",
 				"other": "{count} objets masqués : images manquantes pour {move}"
 			},
-			"noMoveNothing": "Pas encore d’animation {move}, il n’y a donc rien à afficher",
-			"noMoveStill": "Pas encore d’animation {move}, le personnage reste donc immobile",
-			"noMovePlays": "Pas encore d’animation {move}, l’animation « {fallback} » est donc jouée à la place",
-			"noFramesNothing": "{move} n’a pas encore d’images pour la direction « {direction} », il n’y a donc rien à afficher",
-			"noFramesStill": "{move} n’a pas encore d’images pour la direction « {direction} », le personnage reste donc immobile",
-			"noFramesPlays": "{move} n’a pas encore d’images pour la direction « {direction} », l’animation « {fallback} » est donc jouée à la place",
-			"noFramesFaces": "{move} n’a pas encore d’images pour la direction « {direction} », le personnage est donc tourné vers la direction « {fallback} »",
+			"noMoveNothing": "Le mouvement {move} manque.",
+			"noMoveStill": "{move} manque. Pose fixe affichée.",
+			"noMovePlays": "{move} manque. Lecture de {fallback}.",
+			"noFramesNothing": "{move} manque d’images vers {direction}.",
+			"noFramesStill": "{move} manque d’images vers {direction}. Pose fixe affichée.",
+			"noFramesPlays": "{move} manque d’images vers {direction}. Lecture de {fallback}.",
+			"noFramesFaces": "{move} manque d’images vers {direction}. Personnage tourné vers {fallback}.",
 			"undeclaredDirection": "Cette direction n’est pas déclarée pour le personnage",
 			"hiddenItems": {
 				"one": "{count} objet masqué : images {move} / {direction} manquantes",
 				"other": "{count} objets masqués : images {move} / {direction} manquantes"
 			},
 			"equippedHidden": {
-				"one": "{count} objet porté masqué dans cette vue",
-				"other": "{count} objets portés masqués dans cette vue"
+				"one": "{count} objet masqué (images manquantes)",
+				"other": "{count} objets masqués (images manquantes)"
 			},
 			"itemLoading": "{item} en cours de chargement : {directions}",
 			"legsAxial": "Les vues de face et de dos gardent les deux jambes visibles.",
@@ -3554,11 +3554,11 @@
 		"actions": "Actions de jeu",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Espace",
-		"noAttack": "Rien n’est encore associé à Attaque. Choisissez une animation ou un état dans les réglages des vues en direct.",
-		"noAttackDirection": "{move} n’a pas d’images vers {direction}, il ne peut donc pas attaquer dans cette direction.",
-		"hintTopDown": "WASD ou clic maintenu pour se déplacer · Maj pour sprinter · Clic droit ou E pour attaquer · Espace pour sauter · F pour monter ou descendre",
-		"hintSide": "A/D ou clic maintenu pour se déplacer · Maj pour sprinter · Clic droit ou E pour attaquer · Espace pour sauter · F pour monter ou descendre",
-		"hintTouch": "Glissez pour vous déplacer · Maintenez et glissez l’épée pour attaquer et viser · Les boutons sautent, sprintent et montent",
+		"noAttack": "Aucune attaque définie. Ouvrez les réglages des vues en direct.",
+		"noAttackDirection": "{move} manque d’images vers {direction}.",
+		"hintTopDown": "Déplacez-vous avec WASD ou un clic maintenu",
+		"hintSide": "Déplacez-vous avec A/D ou un clic maintenu",
+		"hintTouch": "Glissez pour vous déplacer",
 		"stageTopDown": "Monde de test du personnage. WASD, les flèches, un clic ou un glissement pour se déplacer ; Maj sprinte. Clic droit ou E attaque, Espace saute, F monte ou descend. Les touches 1, 2, 3 changent de vue.",
 		"stageSide": "Monde de test à défilement horizontal. A/D, les flèches gauche/droite, un clic ou un glissement pour se déplacer ; Maj sprinte. Clic droit ou E attaque, Espace saute, F monte ou descend. Les touches 1, 2, 3 changent de vue."
 	}

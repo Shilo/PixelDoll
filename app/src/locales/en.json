@@ -968,21 +968,21 @@
 				"one": "{count} item hidden: missing {move} frames",
 				"other": "{count} items hidden: missing {move} frames"
 			},
-			"noMoveNothing": "No {move} move yet, so there is nothing to show",
-			"noMoveStill": "No {move} move yet, so the character stands still",
-			"noMovePlays": "No {move} move yet, so it plays {fallback}",
-			"noFramesNothing": "{move} has no {direction} frames yet, so there is nothing to show",
-			"noFramesStill": "{move} has no {direction} frames yet, so the character stands still",
-			"noFramesPlays": "{move} has no {direction} frames yet, so it plays {fallback}",
-			"noFramesFaces": "{move} has no {direction} frames yet, so it faces {fallback}",
+			"noMoveNothing": "No {move} move.",
+			"noMoveStill": "No {move} move. Showing a still pose.",
+			"noMovePlays": "No {move} move. Playing {fallback}.",
+			"noFramesNothing": "No {direction} frames for {move}.",
+			"noFramesStill": "No {direction} frames for {move}. Showing a still pose.",
+			"noFramesPlays": "No {direction} frames for {move}. Playing {fallback}.",
+			"noFramesFaces": "No {direction} frames for {move}. Facing {fallback}.",
 			"undeclaredDirection": "This facing is not declared by the character",
 			"hiddenItems": {
 				"one": "{count} item hidden: missing {move} / {direction} frames",
 				"other": "{count} items hidden: missing {move} / {direction} frames"
 			},
 			"equippedHidden": {
-				"one": "{count} equipped item hidden for this view",
-				"other": "{count} equipped items hidden for this view"
+				"one": "{count} item hidden (missing frames)",
+				"other": "{count} items hidden (missing frames)"
 			},
 			"itemLoading": "{item} loading: {directions}",
 			"legsAxial": "Front and back views keep both legs visible.",
@@ -3554,11 +3554,11 @@
 		"actions": "Game actions",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Space",
-		"noAttack": "Nothing plays as Attack yet. Choose a move or state in Live views settings.",
-		"noAttackDirection": "{move} has no {direction} frames, so it can’t attack that way.",
-		"hintTopDown": "WASD or hold click to move · Shift to sprint · Right-click or E to attack · Space to jump · F to mount",
-		"hintSide": "A/D or hold click to move · Shift to sprint · Right-click or E to attack · Space to jump · F to mount",
-		"hintTouch": "Drag to move · Hold and drag the sword to attack and aim · Buttons jump, sprint and mount",
+		"noAttack": "No attack set. Open Live views settings.",
+		"noAttackDirection": "No {direction} frames for {move}.",
+		"hintTopDown": "WASD or hold click to move",
+		"hintSide": "A/D or hold click to move",
+		"hintTouch": "Drag to move",
 		"stageTopDown": "Character test world. WASD, arrows, click or drag to move; Shift sprints. Right-click or E attacks, Space jumps, F mounts. Keys 1, 2, 3 switch views.",
 		"stageSide": "Side-scroller test world. A/D, left and right arrows, click or drag to move; Shift sprints. Right-click or E attacks, Space jumps, F mounts. Keys 1, 2, 3 switch views."
 	}

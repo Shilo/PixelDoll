@@ -551,7 +551,7 @@ test('live coverage stays in the world notes while movement diagnostics respect 
 	const notice = page.locator('.toast');
 	const coverageNote = page
 		.locator('.world-live-note')
-		.filter({ hasText: /1 equipped item hidden/ });
+		.filter({ hasText: '1 item hidden (missing frames)' });
 	const desktop = page.viewportSize()!;
 	for (const mode of ['Side-scroller', 'Top-down']) {
 		await page.setViewportSize(mode === 'Side-scroller' ? { width: 568, height: 320 } : desktop);
@@ -562,7 +562,6 @@ test('live coverage stays in the world notes while movement diagnostics respect 
 			await expect
 				.poll(() => world(page).evaluate((el) => Number(el.dataset.position!.split(',')[0])))
 				.toBeGreaterThan(0);
-			await expect(coverageNote).toHaveText(/1 equipped item hidden/);
 			await expect(coverageNote).toBeVisible();
 			await expect(notice).toHaveCount(0);
 		} finally {
@@ -3766,6 +3765,25 @@ test.describe('Preview facing lineup', () => {
 				)
 				.toBe(expected);
 		}
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await expect(page.locator('.world-actors')).toHaveJSProperty('width', 1280);
+		const toolbar = page.getByRole('toolbar', { name: 'Preview controls' });
+		const baseline = (await toolbar.boundingBox())!;
+		const notice = page.locator('.preview-note');
+		for (const mirrorOf of ['missing-facing-' + 'layout-fixture-'.repeat(16), undefined]) {
+			await page.evaluate(async (mirrorOf) => {
+				const path = '/src/studio/state.svelte.ts';
+				const { doc, store } = await import(path);
+				store.project.manifest.rig.directions[0].mirrorOf = mirrorOf;
+				doc.rev++;
+			}, mirrorOf);
+			if (mirrorOf) {
+				await expect(notice).toContainText('Missing mirror source');
+				const box = (await notice.boundingBox())!;
+				expect(box.y + box.height).toBeLessThan(baseline.y);
+			} else await expect(notice).toHaveCount(0);
+			expect(await toolbar.boundingBox()).toEqual(baseline);
+		}
 	});
 
 	for (const density of [1, 2])
@@ -4341,9 +4359,7 @@ test.describe('live views actions', () => {
 		await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
 		const host = world(page);
 		await expect(host).toBeFocused();
-		await expect(page.locator('.world-hint')).toHaveText(
-			'WASD or hold click to move · Shift to sprint · Right-click or E to attack · Space to jump · F to mount'
-		);
+		await expect(page.locator('.world-hint')).toHaveText('WASD or hold click to move');
 		const bar = page.getByRole('group', { name: 'Game actions', exact: true });
 		const jump = bar.getByRole('button', { name: 'Jump', exact: true });
 		const mount = bar.getByRole('button', { name: 'Mount', exact: true });
@@ -4460,7 +4476,9 @@ test.describe('live views actions', () => {
 		);
 		// Above and west of the body: no south art within 90°, and never the walk's east facing.
 		await expect(host).toHaveAttribute('data-attack', /^missing (west|north-west)$/);
-		await expect(page.locator('.world-notes')).toContainText('so it can’t attack that way.');
+		await expect(page.locator('.world-notes')).toContainText(
+			/No (west|northwest|north-west) frames for Cross punch\./i
+		);
 		await expect(page.locator('.toast')).toHaveCount(0);
 		// Chorded buttons: walking to a left-press point continues while the right button aims and attacks.
 		await page.mouse.move(ax + 300, ay - 20);

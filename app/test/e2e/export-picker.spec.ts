@@ -716,7 +716,7 @@ test('a backup opened as a copy isolates the library and PixelLab connection', a
 	).toBeVisible();
 	const warning = copy
 		.locator('.world-coverage')
-		.filter({ hasText: '1 equipped item hidden for this view' });
+		.filter({ hasText: '1 item hidden (missing frames)' });
 	await copy.locator('.world-stage').focus();
 	await copy.keyboard.down('s');
 	try {

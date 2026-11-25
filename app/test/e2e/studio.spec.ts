@@ -9802,7 +9802,7 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await page.getByRole('button', { name: 'Face north', exact: true }).click();
 	await expect(coverage).toBeVisible();
 	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
-	await expect(page.locator('.world-coverage')).toContainText('hidden for this view');
+	await expect(page.locator('.world-coverage')).toContainText('hidden (missing frames)');
 	await page.getByRole('button', { name: 'Preview', exact: true }).click();
 	await expect(coverage).toBeVisible();
 	await page.setViewportSize({ width: 844, height: 390 });

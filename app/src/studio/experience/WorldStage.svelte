@@ -99,15 +99,14 @@
 	} from './movement.ts';
 	let {
 		missing = $bindable(null),
-		note = $bindable(''),
 		playbackHeight = 0,
 		stageRoom
 	}: {
 		missing: { clip: string; direction: DirectionName; items: Item[] } | null;
-		note?: string;
 		playbackHeight?: number;
 		stageRoom: number;
 	} = $props();
+	let note = $state('');
 	let host: HTMLDivElement,
 		canvas: HTMLCanvasElement,
 		floor: HTMLCanvasElement,
@@ -1785,7 +1784,7 @@
 						: '';
 					host.dataset.lineup = facings.join(' ');
 				}
-				note = [...new Set(notes)].join(' · '); // each facing of the lineup can report the same thing
+				note = [...new Set(notes)].join('\n'); // each facing of the lineup can report the same thing
 				loadingNote = [...loadings].join(' · ');
 				previous = loco ?? p;
 			}
@@ -1883,7 +1882,7 @@
 </div>
 <!-- One bottom-anchored stack: the movement hint always sits above the fallback note, whatever the note wraps to.
      In Preview it also clears the playback bar, whose top is --playback-top. -->
-{#if mountIssue || hint || liveView || loadingNote || rendererWarning}<div
+{#if mountIssue || hint || liveView || loadingNote || rendererWarning || note || doc.error}<div
 		class={['world-notes', { 'live-world-notes': liveView }]}
 		style:bottom={!liveView && playbackHeight
 			? 'max(calc(var(--stage-bottom) + 16px), calc(100% - var(--playback-top) + 8px))'
@@ -1913,14 +1912,21 @@
 			<p class={attackNote ? 'world-coverage world-live-note' : 'sr'} role="status">
 				{attackNote}
 			</p>
-			{#if note}<p class={['world-coverage', { 'world-live-note': !rendererWarning }]}>
-					{note}
-				</p>{/if}
-			{#if doc.error}
-				<p class="world-live-note world-document-error" role="alert">
-					{displayNestedMessage(doc.error)}
-				</p>
-			{/if}
+		{/if}
+		{#if note}
+			<p
+				class={[
+					'world-coverage world-stage-note',
+					{ 'world-live-note': liveView && !rendererWarning, 'preview-note': !liveView }
+				]}
+			>
+				{note}
+			</p>
+		{/if}
+		{#if doc.error}
+			<p class="world-live-note world-document-error" role="alert">
+				{displayNestedMessage(doc.error)}
+			</p>
 		{/if}
 	</div>{/if}
 <JoystickView
@@ -1953,6 +1959,10 @@
 	}
 	.world-document-error {
 		color: var(--bu-danger);
+	}
+	.world-stage-note {
+		white-space: pre-line;
+		overflow-wrap: anywhere;
 	}
 	/* A held right button aims at the cursor. */
 	:global(.world-stage.live.aiming) .world-input {
