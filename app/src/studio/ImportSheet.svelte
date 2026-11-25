@@ -748,7 +748,10 @@
 		{#if preview && previewValid}
 			<p class="notice small">
 				<Info size={16} aria-hidden="true" />
-				<span>{t('import.appearanceTip', { action: t('appearance.title') })}</span>
+				<span>
+					{t('import.appearanceTip')}<br />
+					{t('import.appearanceTipPath', { action: t('appearance.action') })}
+				</span>
 			</p>
 		{/if}
 		{#if busy && !saving}<p class="muted" role="status">{t('import.updatingPreview')}</p>{/if}

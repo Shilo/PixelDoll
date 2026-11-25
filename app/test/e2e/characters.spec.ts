@@ -2439,7 +2439,9 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 		await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
 		await expect(
 			page.locator('.notice').filter({ hasText: 'Clothes drawn on the character' })
-		).toContainText('finish importing, click the character’s name, and choose Edit appearance');
+		).toContainText(
+			'To remove or change them after import: click the character name at the top left, then click Edit appearance…'
+		);
 		await page.getByLabel('Character name', { exact: true }).fill(name);
 		const setup = page.getByRole('switch', { name: 'Set up the pose rig next (recommended)' });
 		await expect(setup).toBeChecked();
