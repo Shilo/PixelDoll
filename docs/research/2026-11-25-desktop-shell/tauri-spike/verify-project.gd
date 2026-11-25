@@ -4,6 +4,17 @@ func _initialize() -> void:
 	call_deferred("_verify")
 
 func _verify() -> void:
+	var pixel := OS.get_cmdline_user_args()
+	var image := Image.new()
+	var source := FileAccess.get_file_as_bytes("res://assets/pixeldoll/adventurer/layers/body/base/main/walk.png")
+	if pixel.size() != 3 or image.load_png_from_buffer(source) != OK:
+		push_error("Godot could not read the revised walk sheet or expected pixel")
+		quit(1)
+		return
+	if image.get_pixel(int(pixel[0]), int(pixel[1])).r8 != int(pixel[2]):
+		push_error("Godot read the wrong pixel from the revised walk sheet")
+		quit(1)
+		return
 	var scene = load("res://assets/pixeldoll/adventurer/godot/Paperdoll.tscn") as PackedScene
 	if scene == null:
 		push_error("Godot could not load the published scene at its project path")

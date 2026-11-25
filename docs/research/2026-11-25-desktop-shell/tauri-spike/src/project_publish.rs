@@ -3,11 +3,12 @@ use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::{self, File},
-    io::{self, Read},
+    io::{self, Cursor, Read, Write},
     path::Path,
 };
 
 const MAX_BYTES: u64 = 128 * 1024 * 1024;
+const WALK_SHEET: &str = "layers/body/base/main/walk.png";
 type Files = BTreeMap<String, Vec<u8>>;
 type Hashes = BTreeMap<String, String>;
 
@@ -67,6 +68,12 @@ fn hash(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
+fn stage_file(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    let mut file = File::create_new(path)?;
+    file.write_all(bytes)?;
+    file.sync_all()
+}
+
 fn publish(root: &Path, files: &Files) -> Result<usize, Box<dyn std::error::Error>> {
     let target = root.join("game/assets/pixeldoll/adventurer");
     let index = root.join("managed-export.json");
@@ -75,10 +82,8 @@ fn publish(root: &Path, files: &Files) -> Result<usize, Box<dyn std::error::Erro
         Err(error) if error.kind() == io::ErrorKind::NotFound => Hashes::new(),
         Err(error) => return Err(error.into()),
     };
-    if previous.keys().any(|name| !files.contains_key(name)) {
-        return Err("export removed managed paths; review required".into());
-    }
-    let mut current = Hashes::new();
+    // Keep ownership history for omitted files without removing them from the game.
+    let mut current = previous.clone();
     let mut changes = Vec::new();
     for (name, bytes) in files {
         let expected = hash(bytes);
@@ -109,14 +114,15 @@ fn publish(root: &Path, files: &Files) -> Result<usize, Box<dyn std::error::Erro
     // Fixed scratch destination, same-volume staging. Per-file replacement is atomic;
     // this experiment has no crash journal or protection against simultaneous external writes.
     let staging = root.join("export-stage");
-    fs::create_dir(&staging)?;
+    fs::create_dir(&staging)
+        .map_err(|error| format!("could not start fresh export staging: {error}"))?;
     for (name, bytes) in &changes {
         let path = staging.join("files").join(name);
         fs::create_dir_all(path.parent().ok_or("missing staging parent")?)?;
-        fs::write(path, bytes)?;
+        stage_file(&path, bytes)?;
     }
     let index_stage = staging.join("ownership.json");
-    fs::write(&index_stage, serde_json::to_vec(&current)?)?;
+    stage_file(&index_stage, &serde_json::to_vec(&current)?)?;
     for (name, _) in &changes {
         let path = target.join(name);
         fs::create_dir_all(path.parent().ok_or("missing target parent")?)?;
@@ -135,10 +141,42 @@ pub fn run(root: &Path, archive: &Path) -> Result<Value, String> {
     run_scenario(root, archive).map_err(|error| error.to_string())
 }
 
+fn revised_walk_sheet(source: &[u8]) -> Result<(Vec<u8>, [usize; 3]), Box<dyn std::error::Error>> {
+    let mut decoder = png::Decoder::new(Cursor::new(source));
+    decoder.set_transformations(png::Transformations::normalize_to_color8());
+    let mut reader = decoder.read_info()?;
+    let mut pixels = vec![
+        0;
+        reader
+            .output_buffer_size()
+            .ok_or("invalid walk sheet size")?
+    ];
+    let info = reader.next_frame(&mut pixels)?;
+    if info.color_type != png::ColorType::Rgba {
+        return Err("expected an RGBA walk sheet".into());
+    }
+    let pixels = &mut pixels[..info.buffer_size()];
+    let (index, pixel) = pixels
+        .chunks_exact_mut(4)
+        .enumerate()
+        .find(|(_, pixel)| pixel[3] == 255)
+        .ok_or("walk sheet has no opaque pixel")?;
+    pixel[0] ^= 255;
+    let width = info.width as usize;
+    let sample = [index % width, index / width, pixel[0] as usize];
+    let mut output = Vec::new();
+    let mut encoder = png::Encoder::new(&mut output, info.width, info.height);
+    encoder.set_color(png::ColorType::Rgba);
+    encoder.write_header()?.write_image_data(pixels)?;
+    Ok((output, sample))
+}
+
 fn run_scenario(root: &Path, archive: &Path) -> Result<Value, Box<dyn std::error::Error>> {
     let mut files = read_export(archive)?;
-    let first = publish(root, &files)?;
     let project = root.join("game");
+    fs::create_dir(&project)
+        .map_err(|error| format!("expected a fresh scratch game project: {error}"))?;
+    let first = publish(root, &files)?;
     let target = project.join("assets/pixeldoll/adventurer");
     fs::write(
         project.join("project.godot"),
@@ -153,7 +191,13 @@ fn run_scenario(root: &Path, archive: &Path) -> Result<Value, Box<dyn std::error
     let mut manifest: Value = serde_json::from_slice(&files["manifest.json"])?;
     manifest["export"]["exportedAt"] = json!("2026-11-25T00:00:00.000Z");
     files.insert("manifest.json".to_string(), serde_json::to_vec(&manifest)?);
+    let (art, sample) = revised_walk_sheet(files.get(WALK_SHEET).ok_or("missing walk sheet")?)?;
+    files.insert(WALK_SHEET.to_string(), art);
+    let omitted = files.remove("README.txt").ok_or("missing export README")?;
     let updated = publish(root, &files)?;
+    let repeat_revision = publish(root, &files)?;
+    let omitted_preserved = fs::read(target.join("README.txt"))? == omitted;
+    let art_written = fs::read(target.join(WALK_SHEET))? == files[WALK_SHEET];
     let changed = target.join("godot/Paperdoll.tscn");
     let scene = fs::read(&changed)?;
     fs::write(&changed, b"user-owned edit")?;
@@ -173,12 +217,22 @@ fn run_scenario(root: &Path, archive: &Path) -> Result<Value, Box<dyn std::error
         && fs::read(&outside)? == b"game-owned"
         && fs::read(&sidecar)? == b"import-sidecar substitute";
     fs::write(changed, scene)?;
-    if first != files.len() || no_change != 0 || updated != 1 || !refused || !preserved {
+    if first != files.len() + 1
+        || no_change != 0
+        || updated != 2
+        || repeat_revision != 0
+        || !omitted_preserved
+        || !art_written
+        || !refused
+        || !preserved
+    {
         return Err(
             "project publication scenario did not preserve the owned and unrelated files".into(),
         );
     }
     Ok(
-        json!({ "created": first, "identicalWritten": no_change, "updated": updated, "conflictRefused": refused }),
+        json!({ "created": first, "identicalWritten": no_change, "updated": updated,
+            "repeatRevisionWritten": repeat_revision, "omittedPreserved": omitted_preserved,
+            "conflictRefused": refused, "artPixel": sample }),
     )
 }

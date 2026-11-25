@@ -4,7 +4,7 @@
 
 The follow-up [game-project workflow study](project-workflow.md) tests native publishing and compares it with Chromium folder access and ZIP export.
 
-Tauri 2 is the best candidate tested for an optional Windows edition. Its installer is small enough to justify a local pilot, and the framework supports a narrowly scoped native file bridge. Keep the web app and PWA as the primary distribution. Hold the desktop release until native folder selection, export, backup, and recovery pass on Windows. Defer macOS and Linux builds until the real Studio passes on their WebKit runtimes.
+Tauri 2 is the best candidate tested if PixelDoll needs an optional Windows edition. Its installer is small and the framework supports a narrowly scoped native file bridge. Keep the web app and PWA as the primary distribution. Qualify the shared publishing workflow first. Hold a desktop release until it addresses a real gap and native folder selection, export, backup, and recovery pass on Windows. Defer macOS and Linux builds until the real Studio passes on their WebKit runtimes.
 
 The main performance gain is download and installed footprint. Electron had the fastest repeat launches and lowest sampled idle private memory, but the slowest first launch with a fresh profile. Wails and Tauri had similar repeat launches in the original series. These samples do not establish an editing performance advantage.
 

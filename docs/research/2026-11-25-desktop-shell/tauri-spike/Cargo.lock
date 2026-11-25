@@ -2420,6 +2420,7 @@ checksum = "c938015719552d665fd0553b90d96cd7ff58e83e4c061ca99e6bb78865a72752"
 name = "pixeldoll-tauri-spike"
 version = "0.1.0"
 dependencies = [
+ "png",
  "serde_json",
  "sha2 0.10.9",
  "tauri",
