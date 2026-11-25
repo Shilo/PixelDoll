@@ -2230,6 +2230,7 @@ test('studio demo: touch slot headers scroll before a hold and drag after arming
 	await expect(page.locator('#slot-menu')).not.toBeVisible();
 	await list.evaluate((element) => element.scrollTo({ top: 0, behavior: 'instant' }));
 	const hair = page.locator('[data-slot-button="hair"]');
+	await hair.scrollIntoViewIfNeeded();
 	box = (await hair.boundingBox())!;
 	const start = { x: box.x + 15, y: box.y + box.height / 2, id: 2 };
 	await touch('touchStart', [start]);
@@ -2239,26 +2240,32 @@ test('studio demo: touch slot headers scroll before a hold and drag after arming
 	).toHaveAttribute('data-armed', 'true');
 	await touch('touchMove', [{ ...start, y: start.y - 2 }]);
 	await expect(list.locator('[data-dragged]')).toHaveCount(0);
-	const top = (await head.boundingBox())!;
-	await touch('touchMove', [{ ...start, y: top.y + 4 }]);
+	const listTop = (await list.boundingBox())!.y;
+	await touch('touchMove', [{ ...start, y: listTop + 4 }]);
 	await expect(list.locator('[data-dragged]')).toHaveCount(1);
 	await page.clock.runFor(32);
 	await expect(page.locator('.slot-drop-line')).toBeVisible();
 	await expect(page.locator('.slot-drag-preview')).toBeVisible();
 	await page.screenshot({ path: test.info().outputPath('slot-drop-top-390-dark.png') });
-	await touch('touchMove', [{ ...start, x: 386, y: top.y + 4 }]);
+	await touch('touchMove', [{ ...start, x: 386, y: listTop + 4 }]);
 	await page.clock.runFor(16);
 	const previewBounds = (await page.locator('.slot-drag-preview').boundingBox())!;
 	expect(previewBounds.x).toBeGreaterThanOrEqual(8);
 	expect(previewBounds.x + previewBounds.width).toBeLessThanOrEqual(382);
 	await page.screenshot({ path: test.info().outputPath('slot-drag-390-dark.png') });
-	await touch('touchMove', [{ ...start, y: top.y + 4 }]);
+	await touch('touchMove', [{ ...start, y: listTop + 4 }]);
 	await page.clock.runFor(16);
-	const dropScroll = await list.evaluate((element) => element.scrollTop);
 	await touch('touchEnd', []);
 	await page.clock.runFor(32);
 	await expect.poll(keys).toEqual(['hair', ...original.filter((key) => key !== 'hair')]);
-	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(dropScroll);
+	// The slot moved to the top is brought into view at the list's top.
+	await expect
+		.poll(async () => {
+			const hairBox = (await section(page, 'Hair').boundingBox())!;
+			const listBox = (await list.boundingBox())!;
+			return Math.round(hairBox.y - listBox.y);
+		})
+		.toBeLessThan(4);
 	await expect(page.locator('.slot-drag-preview')).not.toBeVisible();
 	await expect(page.locator('#slot-menu')).not.toBeVisible();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();

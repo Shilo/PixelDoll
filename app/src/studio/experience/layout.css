@@ -1258,6 +1258,13 @@
 	min-height: 48px;
 }
 
+/* A very short sheet has no room for Wardrobe's search above the slot rail: the rail and its Add slot must stay usable. */
+@media (max-height: 620px) {
+	.sheet-layout .wardrobe .list-search {
+		display: none;
+	}
+}
+
 /* ---------- Inspect, menus, notes ---------- */
 .inspection-stage {
 	position: relative;
