@@ -2135,7 +2135,7 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 		page.getByRole('img', { name: 'Character import preview', exact: true })
 	).toBeVisible();
 	await page
-		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+		.getByRole('switch', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(

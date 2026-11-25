@@ -3745,7 +3745,7 @@ test('Share resets to Standing when switching characters', async ({ page, contex
 		.getByLabel('Character ZIP', { exact: true })
 		.setInputFiles({ name: 'share-memory.zip', mimeType: 'application/zip', buffer: bytes });
 	await page.getByLabel('Character name', { exact: true }).fill('Share memory copy');
-	await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck();
+	await page.getByRole('switch', { name: 'Set up the pose rig next (recommended)' }).uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Share memory copy', {
 		timeout: 30_000

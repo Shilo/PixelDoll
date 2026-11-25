@@ -1392,6 +1392,9 @@
 		"previewZip": "Pratinjau ZIP karakter",
 		"previewCharacter": "Pratinjau karakter",
 		"preview": "Pratinjau",
+		"appearanceTip": "Pakaian yang digambar bisa terlihat di balik perlengkapan.",
+		"appearanceTipPath": "Untuk melepas atau mengubahnya setelah impor:",
+		"appearanceTipSteps": "Tekan {name} di bilah atas → tekan {action}",
 		"previewArtwork": "Pratinjau impor karakter",
 		"stalePreview": "Menampilkan pratinjau terakhir. Perbarui pilihan Anda untuk melanjutkan.",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",
@@ -1415,7 +1418,7 @@
 		"untitledState": "Varian tanpa nama",
 		"warning": {
 			"noRoom": "Ruang untuk animasi tidak ditambahkan karena karakter ini memiliki terlalu banyak piksel gambar. Gunakan Sesuaikan frame setelah mengimpor untuk menambahkannya.",
-			"fixedBase": "Gambar yang diimpor menjadi dasar tetap: pakaian dan rambut yang sudah ada tidak dapat dihapus. Siapkan rig pose untuk memakai perlengkapan yang mengikuti pose kerangka dan menambahkan animasi baru.",
+			"fixedBase": "Siapkan rig pose untuk menyesuaikan item dan menambahkan gerakan baru.",
 			"frameCounts": "Jumlah frame “{move}” berbeda di setiap arah. Setiap arah diimpor sebagai animasi terpisah agar semua frame asli dan durasi tiap arah tetap utuh.",
 			"skippedMove": "“{move}” tidak disertakan: frame animasinya tidak bisa dibaca. Ekspor lagi dengan frame bernomor satu per satu.",
 			"skippedDirection": "“{move}” yang menghadap {direction} tidak disertakan: frame-nya kosong, hilang, atau tidak berurutan.",

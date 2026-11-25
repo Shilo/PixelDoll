@@ -1441,6 +1441,9 @@
 		"previewZip": "Preview character ZIP",
 		"previewCharacter": "Preview character",
 		"preview": "Preview",
+		"appearanceTip": "Clothes drawn on the character can show under gear.",
+		"appearanceTipPath": "To remove or change them after import:",
+		"appearanceTipSteps": "Press {name} in top bar → press {action}",
 		"previewArtwork": "Character import preview",
 		"stalePreview": "Showing the last preview. Update your selections to continue.",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",
@@ -1464,7 +1467,7 @@
 		"untitledState": "Untitled state",
 		"warning": {
 			"noRoom": "Room for moves was not added because this character has too many image pixels. Use Adjust frame after importing to add it.",
-			"fixedBase": "Imported artwork is the fixed base: existing clothes and hair cannot be removed. Set up its pose rig to use skeleton-posed equipment and add new moves.",
+			"fixedBase": "Set up the pose rig to fit items and add new moves.",
 			"frameCounts": "“{move}” has different frame counts by direction. Its directions were imported as separate moves to keep every original frame and direction length.",
 			"skippedMove": "“{move}” was left out: its animation frames could not be read. Export it again with individual numbered frames.",
 			"skippedDirection": "“{move}” facing {direction} was left out: its frames are empty, missing or out of order.",

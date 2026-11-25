@@ -3385,7 +3385,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 		buffer: Buffer.from(bytes)
 	});
 	await page.getByRole('img', { name: 'Character import preview' }).waitFor();
-	const setup = page.getByRole('checkbox', { name: /Set up the pose rig next/ });
+	const setup = page.getByRole('switch', { name: /Set up the pose rig next/ });
 	if (await setup.count()) await setup.uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(playbackPicker(page)).toHaveAttribute('value', 'default'); // a new character, standing again

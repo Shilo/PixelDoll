@@ -1392,6 +1392,9 @@
 		"previewZip": "预览角色 ZIP",
 		"previewCharacter": "预览角色",
 		"preview": "预览",
+		"appearanceTip": "画在角色身上的衣服可能会从装备下露出来。",
+		"appearanceTipPath": "导入后若要移除或更换衣服：",
+		"appearanceTipSteps": "点击顶部栏中的{name} → 点击{action}",
 		"previewArtwork": "角色导入预览",
 		"stalePreview": "正在显示上一次预览。请更新选择以继续。",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",
@@ -1415,7 +1418,7 @@
 		"untitledState": "未命名状态",
 		"warning": {
 			"noRoom": "由于此角色的图像像素过多，未添加动作空间。导入后可使用“调整帧”添加。",
-			"fixedBase": "导入的图像是固定基础身体：现有衣服和头发无法移除。设置其姿势绑定结构，以使用骨架姿态装备并添加新动作。",
+			"fixedBase": "设置姿势骨骼后，即可为角色适配物品并添加新动作。",
 			"frameCounts": "“{move}”各朝向的帧数不同。其朝向已作为独立动作导入，以保留每个原始帧和朝向长度。",
 			"skippedMove": "已略过“{move}”：无法读取其动画帧。请使用逐帧编号的帧重新导出。",
 			"skippedDirection": "已略过朝向{direction}的“{move}”：其帧为空、缺失或顺序不对。",
