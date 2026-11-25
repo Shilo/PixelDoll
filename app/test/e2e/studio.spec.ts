@@ -8651,8 +8651,8 @@ test('targeted move replacement names mirrored effects without offering a separa
 	await expect(directions).not.toHaveAccessibleDescription(/Mirrored views also change/);
 });
 
-async function openFrameReplacement(page: Page) {
-	const details = await selectedItemDetails(page);
+async function openFrameReplacement(details: Locator) {
+	await expect(details).toBeVisible();
 	await openItemSection(details, 'Artwork');
 	await openItemSection(details, 'Replace frames for this view');
 }
@@ -8783,7 +8783,7 @@ test('stage makes all missing item views while explicit repair stays on the curr
 	// The stopped repair's footer Discard leaves it, as Cancel did.
 	await sheet.getByRole('button', { name: 'Discard', exact: true }).click();
 	await expect(sheet).toBeHidden();
-	await openFrameReplacement(page);
+	await openFrameReplacement(await selectedItemDetails(page));
 	const repair = page.getByRole('button', { name: /^Repair this view/ });
 	const redraw = page.getByRole('button', { name: /^Redraw this view/ });
 	const simulateRepairPlan = (tier: number) =>
@@ -8828,7 +8828,7 @@ test('stage makes all missing item views while explicit repair stays on the curr
 	};
 	await expectRepairTiers(10, 10, 10);
 	await oversizedItemFixture(page, fixture.itemId);
-	await openFrameReplacement(page);
+	await openFrameReplacement(page.locator('dialog.item-detail[open]'));
 	await expectRepairTiers(30, 15, 15);
 	await repair.click();
 	sheet = page.getByRole('dialog', { name: 'Repair item frames', exact: true });
@@ -8972,7 +8972,7 @@ test('a repair whose later batch fails offers its finished repairs for free and 
 		state.ui.all = false;
 		state.pick(id);
 	}, itemId);
-	await openFrameReplacement(page);
+	await openFrameReplacement(await selectedItemDetails(page));
 	await page.getByRole('button', { name: /^Repair this view/ }).click();
 	const review = page.getByRole('dialog', { name: 'Review item repair' });
 	// The note names what is kept and why the later batch stopped.
@@ -9066,7 +9066,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 			state.ui.all = false;
 			state.pick(id);
 		}, itemId);
-		await openFrameReplacement(page);
+		await openFrameReplacement(await selectedItemDetails(page));
 		await page.getByRole('button', { name: action }).click();
 	};
 	const saved = () =>
@@ -9436,7 +9436,7 @@ test('deferred item repair refuses changed artwork and price after Connect', asy
 		s.ui.dir = 'west';
 		s.pick(id);
 	}, fixture.itemId);
-	await openFrameReplacement(page);
+	await openFrameReplacement(await selectedItemDetails(page));
 	const repair = page.getByRole('button', { name: /^Repair this view/ });
 	await expect(repair).toContainText('~10 gens');
 	await repair.click();
@@ -11171,6 +11171,7 @@ for (const changed of ['item', 'rig'] as const)
 		);
 		const fixture = await freePaletteFixture(page),
 			pane = await selectedItemDetails(page);
+		await openItemSection(pane, 'Artwork');
 		await page.evaluate(async () => {
 			const path = '/src/lib/i18n.ts',
 				i18n = await import(path);
@@ -12243,16 +12244,6 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await expect(sword).toHaveAttribute('aria-pressed', 'true');
 	await expect(off).toContainText('Held by Steel longsword (two-handed).');
 
-	const details = await openItemDetails(page, 'Steel longsword');
-	await openItemSection(details, 'Outfit behavior');
-	const oppositeHand = details.getByRole('switch', { name: 'Off hand', exact: true });
-	await expect(details.getByRole('switch', { name: 'Spare shield', exact: true })).toHaveCount(0);
-	await expect(oppositeHand).toBeChecked();
-	await oppositeHand.uncheck();
-	await expect(oppositeHand).not.toBeChecked();
-	await oppositeHand.check();
-	await details.getByRole('button', { name: 'Close', exact: true }).click();
-
 	// Putting something in the other hand takes the two-handed item off.
 	await shield.click();
 	await expect(shield).toHaveAttribute('aria-pressed', 'true');
@@ -12331,6 +12322,16 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await page.getByRole('button', { name: 'Undo Wear Round shield', exact: true }).click();
 	await expect(sword).toHaveAttribute('aria-pressed', 'true');
 	await expect(shield).toHaveAttribute('aria-pressed', 'false');
+
+	const details = await openItemDetails(page, 'Steel longsword');
+	await openItemSection(details, 'Outfit behavior');
+	const oppositeHand = details.getByRole('switch', { name: 'Off hand', exact: true });
+	await expect(details.getByRole('switch', { name: 'Spare shield', exact: true })).toHaveCount(0);
+	await expect(oppositeHand).toBeChecked();
+	await oppositeHand.uncheck();
+	await expect(oppositeHand).not.toBeChecked();
+	await oppositeHand.check();
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	expect(posts).toEqual([]);
 });
 
