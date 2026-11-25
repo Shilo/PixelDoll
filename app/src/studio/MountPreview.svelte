@@ -1,5 +1,5 @@
 <script lang="ts">
-	// The Mount settings preview: the test mount always walks in place and turns through its facings. With Show mount on,
+	// The Mount settings preview walks in place and turns while the seat editor is closed. With Show mount on,
 	// the open character (or the demo, when none is open) rides it exactly as on stage, following every mount setting.
 	// Clicking pauses and plays. Its loop and image caches live only while Settings shows this page.
 	import { onDestroy, tick, type Snippet } from 'svelte';
@@ -7,7 +7,6 @@
 	import Armchair from '@lucide/svelte/icons/armchair';
 	import Crosshair from '@lucide/svelte/icons/crosshair';
 	import LocateFixed from '@lucide/svelte/icons/locate-fixed';
-	import RotateCw from '@lucide/svelte/icons/rotate-cw';
 	import { bakedFrame } from '../lib/compose/compose.ts';
 	import { openFixture } from '../lib/dress/project.ts';
 	import { displayNestedMessage } from '../lib/i18n.ts';
@@ -25,7 +24,6 @@
 	import { hideMountedLegs, mountLegGeometry } from './experience/mountLegs.ts';
 	import { imageCanvas } from './experience/imageCanvas.ts';
 	import { mountPlacement, offsetMountSeat } from './experience/mountPlacement.ts';
-	import { directionInfo, nearestDirection } from './experience/movement.ts';
 	import {
 		mountedFrame,
 		mountView,
@@ -62,8 +60,7 @@
 	let canvas = $state<HTMLCanvasElement>();
 	let marker = $state<HTMLSpanElement>();
 	let playing = $state(!matchMedia('(prefers-reduced-motion: reduce)').matches);
-	let pinned = $state(false);
-	let facing = $state<DirectionName>('south-east');
+	let chosenFacing = $state<DirectionName>('south');
 
 	// The open character, else the demo with its saved outfit, read once while this page is shown.
 	let demo = $state.raw<{ project: Project; items: Preset['items'] } | null>(null);
@@ -82,6 +79,8 @@
 			: demo && { id: DEMO, ...demo }
 	);
 	const availability = $derived(rider && buildPresentation(rider.project));
+	const facings = $derived(availability?.directions.length ? availability.directions : DIRECTIONS);
+	const facing = $derived(facings.includes(chosenFacing) ? chosenFacing : facings[0]);
 	const grounding = $derived(rider ? previewBounds(rider.project) : null);
 	const pose = $derived(rider ? activeRiderPose(rider.id, rider.project.manifest) : undefined);
 	const riding = $derived(experience.testMount && !!rider);
@@ -96,8 +95,7 @@
 					riding: true,
 					riderPose: pose,
 					items: rider.items,
-					defaultDirection:
-						nearestDirection(availability.directions, directionInfo(facing)!.vector) ?? facing,
+					defaultDirection: facing,
 					clips: currentLiveClips(rider.id, rider.project.manifest.rig.animations)
 				})
 			: null
@@ -148,6 +146,7 @@
 
 	async function beginEdit() {
 		if (!editable || editing || opening) return;
+		chosenFacing = facing;
 		turned = 0;
 		failure = '';
 		draft = {
@@ -161,6 +160,8 @@
 		nudgeControls?.querySelector<HTMLButtonElement>('[data-nudge="left"]')?.focus();
 	}
 	async function endEdit() {
+		stopRepeat();
+		heldPointer = null;
 		draft = null;
 		turned = 0;
 		await tick();
@@ -261,7 +262,8 @@
 			legs = experience.mountLegs,
 			height = standingHeight,
 			running = playing,
-			autoTurn = !pinned,
+			turning = facings,
+			autoTurn = !editing && turning.length > 1,
 			seatOffset = offset;
 		if (!target) return;
 		// Fit the full gait envelope, not a single bob frame. A stationary edit keeps its saved framing
@@ -296,7 +298,7 @@
 			if (autoTurn) turned += dt;
 			if (autoTurn && turned >= TURN_MS) {
 				turned = 0;
-				facing = DIRECTIONS[(DIRECTIONS.indexOf(direction) + 1) % DIRECTIONS.length];
+				chosenFacing = turning[(turning.indexOf(direction) + 1) % turning.length];
 				return;
 			}
 			const layers: { image: Img | HTMLCanvasElement; x: number; y: number }[] = [];
@@ -438,72 +440,58 @@
 		{#if playing}<Pause size={18} />{:else}<Play size={18} />{/if}
 	</span>
 </button>
-<div class="mount-caption">
-	<label for="mount-preview-facing">{t('settings.seatFacing')}</label>
-	<div class="direction-row">
-		<button
-			type="button"
-			class="bu-action auto-turn"
-			data-variant="outline"
-			aria-label={t('settings.seatAutoTurn')}
-			title={t('settings.seatAutoTurn')}
-			aria-pressed={!pinned}
-			onclick={() => {
-				pinned = false;
-				turned = 0;
-				playing = true;
-			}}><RotateCw size={18} aria-hidden="true" /></button
-		>
-		<div class="direction-select">
-			{#each DIRECTIONS as direction (direction)}
-				<span class="direction-measure" aria-hidden="true">{displayDirection(direction)}</span>
-			{/each}
-			<select
-				id="mount-preview-facing"
-				class="bu-select select"
-				value={facing}
-				disabled={busy}
-				onfocus={() => {
-					pinned = true;
-					turned = 0;
-				}}
-				onchange={(event) => {
-					pinned = true;
-					turned = 0;
-					facing = event.currentTarget.value as DirectionName;
-				}}
-			>
-				{#each DIRECTIONS as direction (direction)}
-					<option value={direction}>{displayDirection(direction)}</option>
-				{/each}
-			</select>
-		</div>
-	</div>
-</div>
 <hr class="bu-separator preview-divider" />
 
 {@render visibility()}
 
 <div class="seat-setting" class:editing={!!editing} data-setting="rider-seat">
-	<SettingsItemButton
-		aria-label={t('settings.seatPosition')}
-		title={t('settings.adjustSeat')}
-		aria-expanded={!!editing}
-		aria-controls={editing ? controlsId : undefined}
-		aria-describedby={editable ? `${controlsId}-value` : `${controlsId}-help`}
-		disabled={!editable || busy || (opening && !editing)}
-		bind:element={adjustButton}
-		onclick={() => void (editing ? endEdit() : beginEdit())}
-	>
-		<Armchair size={18} aria-hidden="true" />
-		<span class="row-name">{t('settings.seatPosition')}</span>
-		{#if editable}
-			<output class="seat-value" id={`${controlsId}-value`} aria-live={editing ? 'polite' : 'off'}>
-				{t('settings.seatOffset', offset)}
-			</output>
+	<div class="seat-header">
+		<SettingsItemButton
+			aria-label={t('settings.seatPosition')}
+			title={t('settings.adjustSeat')}
+			aria-expanded={!!editing}
+			aria-controls={editing ? controlsId : undefined}
+			aria-describedby={editable ? `${controlsId}-value` : `${controlsId}-help`}
+			disabled={!editable || busy || (opening && !editing)}
+			bind:element={adjustButton}
+			onclick={() => void (editing ? endEdit() : beginEdit())}
+		>
+			<Armchair size={18} aria-hidden="true" />
+			<span class="seat-summary">
+				<span>{t('settings.seatPosition')}</span>
+				{#if editable}
+					<span class="seat-detail" id={`${controlsId}-value`}>
+						{#if !editing}<span>{displayDirection(facing)} · </span>{/if}
+						<output class="seat-value" aria-live={editing ? 'polite' : 'off'}>
+							{t('settings.seatOffset', offset)}
+						</output>
+					</span>
+				{/if}
+			</span>
+			<Pencil size={16} aria-hidden="true" />
+		</SettingsItemButton>
+		{#if editing}
+			<div class="direction-select">
+				{#each facings as direction (direction)}
+					<span class="direction-measure" aria-hidden="true">{displayDirection(direction)}</span>
+				{/each}
+				<select
+					class="bu-select select"
+					aria-label={t('settings.seatFacing')}
+					value={facing}
+					disabled={busy}
+					onchange={(event) => {
+						stopRepeat();
+						chosenFacing = event.currentTarget.value as DirectionName;
+					}}
+				>
+					{#each facings as direction (direction)}
+						<option value={direction}>{displayDirection(direction)}</option>
+					{/each}
+				</select>
+			</div>
 		{/if}
-		<Pencil size={16} aria-hidden="true" />
-	</SettingsItemButton>
+	</div>
 	{#if !editable}
 		<p class="seat-help" id={`${controlsId}-help`}>
 			{t('settings.seatNeedsCharacter')}
@@ -513,7 +501,6 @@
 
 {#if editing}
 	<div class="seat-editor" id={controlsId}>
-		<p class="seat-help">{t('settings.seatMarkerHelp')}</p>
 		<div class="seat-nudges" dir="ltr" bind:this={nudgeControls}>
 			{#each nudges as step, index (step.area)}
 				{#if index === 2}
@@ -553,19 +540,26 @@
 			{/each}
 		</div>
 		{#if failure}<p class="notice bad small" role="alert">{displayNestedMessage(failure)}</p>{/if}
-		<div class="seat-actions">
-			<button type="button" class="bu-action" data-variant="quiet" disabled={busy} onclick={endEdit}
-				>{t('common.cancel')}</button
-			>
-			<button
-				type="button"
-				class="bu-action"
-				data-variant="primary"
-				disabled={!changes.length || busy || opening}
-				onclick={saveSeat}
-			>
-				{t(busy ? 'directionsSheet.saving' : 'common.save')}
-			</button>
+		<div class="seat-footer">
+			<p class="seat-help">{t('settings.seatMarkerHelp')}</p>
+			<div class="seat-actions">
+				<button
+					type="button"
+					class="bu-action"
+					data-variant="quiet"
+					disabled={busy}
+					onclick={endEdit}>{t('common.cancel')}</button
+				>
+				<button
+					type="button"
+					class="bu-action"
+					data-variant="primary"
+					disabled={!changes.length || busy || opening}
+					onclick={saveSeat}
+				>
+					{t(busy ? 'directionsSheet.saving' : 'common.save')}
+				</button>
+			</div>
 		</div>
 	</div>
 {/if}
@@ -589,7 +583,7 @@
 	@media (max-height: 700px) {
 		:global(.sheet-body):has(.mount-preview.editing) {
 			--compact-stage: clamp(88px, 22dvh, 140px);
-			scroll-padding-block-start: calc(var(--compact-stage) + 48px);
+			scroll-padding-block-start: calc(var(--compact-stage) + 68px);
 		}
 		.mount-preview.editing,
 		.seat-setting.editing {
@@ -630,43 +624,36 @@
 		color: var(--bu-text);
 		filter: drop-shadow(0 0 1px var(--bu-canvas)) drop-shadow(0 0 1px var(--bu-canvas));
 	}
-	.mount-caption,
-	.seat-actions {
+	.seat-header {
 		display: flex;
-		align-items: center;
+		align-items: stretch;
 		gap: 8px;
 	}
-	.mount-caption {
-		flex-wrap: wrap;
-		justify-content: space-between;
-		margin-block: 4px 8px;
+	.seat-header :global(.settings-action) {
+		flex: 1;
+		min-inline-size: 0;
+	}
+	.seat-summary {
+		flex: 1;
+		min-inline-size: 0;
+		display: grid;
+	}
+	.seat-detail {
 		font-size: 12px;
 		color: var(--bu-muted);
-	}
-	.direction-row {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		min-inline-size: 0;
-		max-inline-size: 100%;
-	}
-	.auto-turn {
-		flex: none;
-		inline-size: 44px;
-		block-size: 44px;
-		min-inline-size: 0;
-		justify-content: center;
 	}
 	.direction-select {
 		display: grid;
 		min-inline-size: 0;
-		max-inline-size: 100%;
+		max-inline-size: 46%;
+		align-items: center;
 	}
 	.direction-select > * {
 		grid-area: 1 / 1;
 	}
 	.direction-select select {
 		inline-size: 100%;
+		min-inline-size: 0;
 	}
 	/* The customizable select sizes to the selected label. Reserve room for every translated label and the arrow. */
 	.direction-measure {
@@ -678,9 +665,7 @@
 		margin-block: 4px 8px;
 	}
 	.seat-value {
-		margin-inline-start: auto;
 		font-variant-numeric: tabular-nums;
-		color: var(--bu-muted);
 	}
 	.seat-setting .seat-help {
 		margin-block: 6px 0;
@@ -708,10 +693,20 @@
 		user-select: none;
 		-webkit-touch-callout: none;
 	}
-	.seat-actions {
-		justify-content: flex-end;
-		flex-wrap: wrap;
+	.seat-footer {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 8px;
 		margin-block: 8px 12px;
+	}
+	.seat-footer .seat-help {
+		margin: 0;
+		overflow-wrap: anywhere;
+	}
+	.seat-actions {
+		display: flex;
+		gap: 4px;
 	}
 	.seat-actions button {
 		min-block-size: 44px;

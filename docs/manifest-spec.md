@@ -338,8 +338,9 @@ Studio allows whole-pixel corrections from −32 to 32 on each axis. Applying Au
 that facing’s entry. A missing entry is equivalent to `{x: 0, y: 0}`, and both keep automatic
 placement: the correction is relative to the contact, not a body coordinate.
 These values are character settings shared across clips and are included in the editor copy and
-engine manifest. All eight mount facings are available, independent of how many directions the
-rider has. The host adds the correction to its saddle point before aligning the rider:
+engine manifest. The Mount settings editor offers the character’s declared directions.
+The manifest can hold offsets for all eight mount facings. The host adds the correction
+to its saddle point before aligning the rider:
 `riderPivot = saddlePoint + mountSeatOffsets[facing] - riderContactFromPivot`. Apply the same
 correction when the rider looks in a different direction than the mount. Game integrations
 choose their own scale and can opt into these values. Use `riderSeat` for the rider contact

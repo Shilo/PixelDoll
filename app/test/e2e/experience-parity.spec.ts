@@ -1156,11 +1156,11 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic');
 	expect(await savedMount()).toEqual({ show: false, legs: 'far', poses: {} });
 	// The bundled demo keeps its own seat edit even though its source artwork is read-only.
-	const facing = mountMenu.getByRole('combobox', { name: 'Preview direction', exact: true });
+	const facing = mountMenu.getByRole('combobox', { name: 'Seat direction', exact: true });
 	const adjust = mountMenu.getByRole('button', { name: 'Seat position', exact: true });
 	const seat = mountMenu.locator('[data-setting="rider-seat"] output');
-	await facing.selectOption('east');
 	await adjust.click();
+	await facing.selectOption('east');
 	await mountMenu.getByRole('button', { name: 'Move seat right', exact: true }).click();
 	await mountMenu.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(adjust).toHaveAttribute('aria-expanded', 'false');
@@ -1170,6 +1170,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await landing(page);
 	await page.keyboard.press('Enter');
 	await toggle.click();
+	await adjust.click();
 	await facing.selectOption('east');
 	await expect(seat).toHaveText('x 1, y 0');
 });
@@ -1222,21 +1223,7 @@ touchTest(
 		};
 		await openCompactMount();
 		const seatRow = mountMenu.locator('[data-setting="rider-seat"]');
-		const facing = mountMenu.getByRole('combobox', { name: 'Preview direction', exact: true });
-		const autoTurn = mountMenu.getByRole('button', {
-			name: 'Rotate preview automatically',
-			exact: true
-		});
-		await expect(autoTurn).toHaveAttribute('aria-pressed', 'true');
-		await facing.selectOption('south-east');
-		const wide = (await facing.boundingBox())!.width;
-		await facing.selectOption('east');
-		await expect.poll(async () => (await facing.boundingBox())!.width).toBe(wide);
-		await expect(autoTurn).toHaveAttribute('aria-pressed', 'false');
-		await autoTurn.click();
-		await expect(autoTurn).toHaveAttribute('aria-pressed', 'true');
-		await facing.selectOption('east');
-		await expect(autoTurn).toHaveAttribute('aria-pressed', 'false');
+		const facing = mountMenu.getByRole('combobox', { name: 'Seat direction', exact: true });
 		const adjustSeat = mountMenu.getByRole('button', { name: 'Seat position', exact: true });
 		const shown = mountMenu.getByRole('switch', { name: 'Show character mounted', exact: true });
 		await expect(shown).not.toBeChecked();
@@ -1257,25 +1244,32 @@ touchTest(
 			exact: true
 		});
 		await expect(seat).toHaveText('x 0, y 0');
+		await expect(facing).toBeHidden();
+		const initialFacing = await canvas.getAttribute('data-facing');
+		await expect(canvas).not.toHaveAttribute('data-facing', initialFacing!);
 		await adjustSeat.click();
 		await expect(left).toBeFocused();
 		await expect(marker).toBeVisible();
-		await expect(facing).toBeEnabled();
+		await expect(facing.locator('option')).toHaveText(['South', 'East', 'North', 'West']);
+		await facing.selectOption('north');
+		const wide = (await facing.boundingBox())!.width;
+		await facing.selectOption('east');
+		await expect.poll(async () => (await facing.boundingBox())!.width).toBe(wide);
+		await expect(canvas).toHaveAttribute('data-facing', 'east');
 		await expect(pausePreview).toBeVisible();
 		await expect(auto).toHaveAttribute('aria-pressed', 'true');
-		// The open row closes like Cancel and discards its draft; the preview keeps turning while editing.
 		await right.tap();
+		await expect(seat).toHaveText('x 1, y 0');
+		// Hold the editing direction for longer than a full turn interval without pausing playback.
+		await page.waitForTimeout(1500);
+		await expect(canvas).toHaveAttribute('data-facing', 'east');
 		await expect(seat).toHaveText('x 1, y 0');
 		await adjustSeat.click();
 		await expect(left).toBeHidden();
 		await expect(seat).toHaveText('x 0, y 0');
+		await expect(canvas).not.toHaveAttribute('data-facing', 'east');
 		await adjustSeat.click();
-		await expect(left).toBeVisible();
-		await autoTurn.click();
-		await expect(autoTurn).toHaveAttribute('aria-pressed', 'true');
-		await expect.poll(() => canvas.getAttribute('data-facing'), { timeout: 5000 }).not.toBe('east');
 		await facing.selectOption('east');
-		await expect(autoTurn).toHaveAttribute('aria-pressed', 'false');
 		const pad = await mountMenu.locator('.seat-nudges button').evaluateAll((buttons) =>
 			buttons.map((button) => {
 				const { x, y, width, height } = button.getBoundingClientRect();
@@ -1319,9 +1313,10 @@ touchTest(
 		await expect(adjustSeat).toBeFocused();
 		await expect(seat).toHaveText('x 0, y 0');
 		await adjustSeat.press('Enter');
+		await facing.selectOption('east');
 		await left.press('ArrowLeft');
 		await expect(seat).toHaveText('x -1, y 0');
-		await facing.selectOption('south-east');
+		await facing.selectOption('west');
 		await expect(seat).toHaveText('x 0, y 0');
 		await right.press('ArrowDown');
 		await expect(seat).toHaveText('x 0, y 1');
@@ -1339,22 +1334,26 @@ touchTest(
 		await expect(mountMenu.getByRole('alert')).toContainText('Seat storage refused');
 		await saveSeat.click();
 		await expect(adjustSeat).toHaveAttribute('aria-expanded', 'false');
-		await expect(seat).toHaveText('x 0, y 1');
-		await facing.selectOption('east');
-		await expect(seat).toHaveText('x -1, y 0');
 		await mountMenu.getByRole('button', { name: 'Close', exact: true }).click();
 
 		await page.reload();
 		await customize.click();
 		await page.setViewportSize({ width: 320, height: 568 });
 		await openCompactMount();
-		await facing.selectOption('south-east');
+		await adjustSeat.click();
+		await facing.selectOption('west');
 		await expect(seat).toHaveText('x 0, y 1');
 		await facing.selectOption('east');
 		await expect(seat).toHaveText('x -1, y 0');
-		await adjustSeat.click();
 		expect(await mountMenu.evaluate((sheet) => sheet.scrollWidth)).toBeLessThanOrEqual(320);
 		await auto.click();
+		const helpBounds = (await mountMenu
+			.getByText('Pixels from Automatic', { exact: true })
+			.boundingBox())!;
+		const saveBounds = (await saveSeat.boundingBox())!;
+		expect(helpBounds.x + helpBounds.width).toBeLessThan(saveBounds.x);
+		expect(helpBounds.y).toBeLessThan(saveBounds.y + saveBounds.height);
+		expect(saveBounds.y).toBeLessThan(helpBounds.y + helpBounds.height);
 		await expect(marker).toBeInViewport();
 		await expect(seat).toBeInViewport();
 		await expect(auto).toHaveAttribute('aria-pressed', 'true');
@@ -1365,6 +1364,7 @@ touchTest(
 
 		// Holding an arrow keeps nudging on pointer and touch input.
 		await adjustSeat.click();
+		await facing.selectOption('east');
 		await right.scrollIntoViewIfNeeded();
 		const held = (await right.boundingBox())!;
 		await page.mouse.move(held.x + held.width / 2, held.y + held.height / 2);
