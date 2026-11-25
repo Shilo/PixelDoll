@@ -448,7 +448,7 @@
 			<form id={form} class="appearance-edit-form" onsubmit={generate}>
 				<div class="appearance-form">
 					{@render sprite(originalFrame, t('appearance.original'))}
-					<div class="appearance-options">
+					<div class="appearance-options compact-segments">
 						{#if !item}
 							<span class="label">{t('appearance.choose')}</span>
 							<SegmentedControl
@@ -612,6 +612,7 @@
 	}
 	.appearance-options {
 		min-inline-size: 0;
+		align-content: start;
 	}
 	.appearance-worn {
 		display: flex;
@@ -666,10 +667,8 @@
 	}
 	@container appearance-form (max-width: 280px) {
 		.appearance-options :global(.bu-segment-face) {
-			display: grid;
-			grid-template-rows: 14px 1fr;
-			justify-items: center;
-			gap: 2px;
+			column-gap: 1px;
+			padding-inline: 1px;
 		}
 	}
 	@media (orientation: landscape) and (max-height: 440px) {

@@ -177,7 +177,8 @@ test('Edit appearance makes reviewed character and equipment copies from saved p
 						control.right <= sheet.right + 1 &&
 						control.bottom <= sheet.bottom + 1 &&
 						group.scrollWidth <= group.clientWidth + 1 &&
-						label.getClientRects().length === 1
+						label.getClientRects().length === 1 &&
+						Math.abs(control.height - 44) <= 1
 					);
 				})
 			)

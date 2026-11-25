@@ -333,7 +333,7 @@
 						>
 					</div>
 				{/each}
-				<div class="base-clothing">
+				<div class="base-clothing compact-segments">
 					<Help title={t('create.form.baseClothing')} text={t('create.form.baseClothingHelp')} />
 					<SegmentedControl
 						label={t('create.form.baseClothing')}
