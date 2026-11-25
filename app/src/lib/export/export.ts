@@ -10,6 +10,7 @@ import {
 	MAX_BODY_CUT_VARIANTS,
 	withTuckVariants
 } from '../compose/compose.ts';
+import { agentFiles } from './agent-docs.ts';
 import { asepriteFiles } from './aseprite.ts';
 import { coreFiles, exportManifest, genericFiles, validate, type OutFile } from './generic.ts';
 import { godotFiles } from './godot.ts';
@@ -260,6 +261,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 			};
 		}
 	}
+	files.push(...agentFiles(o.engines));
 	const projectFiles = await projectEntries(src, o.projectData);
 	const names = new Set<string>();
 	for (const { name } of [...files, ...projectFiles]) {

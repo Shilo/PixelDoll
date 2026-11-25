@@ -517,7 +517,7 @@ test.each(['vx', 'xp'] as const)(
 	}
 );
 
-test('the zip holds only the sheets, README, credits and the editable copy, built from the exported manifest', async () => {
+test('the zip holds only the sheets, README, agent docs and the editable copy, built from the exported manifest', async () => {
 	const p = await project({ size: 32 });
 	for (const [engine, sheetName] of [
 		['rpgmaker', '$Hero_Knight.png'],
@@ -533,6 +533,9 @@ test('the zip holds only the sheets, README, credits and the editable copy, buil
 				sheetName.replace('Hero_Knight', 'Hero_Knight_Night'),
 				sheetName.replace('Hero_Knight', 'Hero_Knight_night_2'),
 				'README.txt',
+				'AGENTS.md',
+				'CLAUDE.md',
+				`docs/${engine}.md`,
 				'project.json'
 			].sort()
 		);

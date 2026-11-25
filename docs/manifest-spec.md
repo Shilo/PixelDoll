@@ -884,6 +884,7 @@ using this rule (`bakedSheetPath` in `app/src/lib/export/paths.ts`).
 <name>.pixeldoll.zip
   manifest.json                                   # authoritative; everything below is derived from it
   README.txt                                      # what is inside + quick start per engine
+  AGENTS.md, CLAUDE.md, docs/<engine>.md         # static agent map + one reference per exported engine (no character data)
   layers/<slot>/<item>/<layer>/<anim>.png         # ONE untrimmed PNG per layer per animation
                                                   #   rows = rig.directions (mirrored rows baked), cols = cells
   baked/<preset>/<anim>.png                       # optional composites, same grid on export.bakedCell (crowds, engines without layering)
@@ -897,7 +898,12 @@ using this rule (`bakedSheetPath` in `app/src/lib/export/paths.ts`).
 ```
 
 RPG Maker zips (§6.8) instead hold only `$<name>.png` (MZ, MV, VX layout) or `<name>.png` (XP layout) per outfit at the
-root, `README.txt` and the editable copy (§7): no layer sheets, `manifest.json` or baked sheets.
+root, `README.txt`, the agent map (`AGENTS.md`, `CLAUDE.md`, `docs/<engine>.md`) and the editable copy (§7): no layer
+sheets, `manifest.json` or baked sheets.
+
+The agent files are static text from `app/src/lib/export/agent-docs.ts`: they never include the character's name,
+prompts, keys or artwork, so every export ships the same map and a fresh agent can integrate the ZIP without PixelDoll's
+source. `docs/<engine>.md` names that engine's entry file and points at its `README.txt` for the full API.
 
 Why per-animation sheets: an all-animation sheet passes 4096 px quickly (8 dirs × 12 anims × 64 px [R3]); per-animation sheets are
 at most 16 × 64 = 1024 px wide and 8 × 64 = 512 px tall at the v1 limits. Frame names everywhere: **`<anim>_<dir>_<cell>`**
