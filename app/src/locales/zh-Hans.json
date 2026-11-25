@@ -148,7 +148,7 @@
 		"audio": {
 			"title": "音频",
 			"open": "音频设置",
-			"play": "播放音频",
+			"play": "播放全部音频",
 			"mute": "将所有声音静音",
 			"music": "音乐",
 			"musicVolume": "音乐音量",

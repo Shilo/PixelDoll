@@ -148,7 +148,7 @@
 		"audio": {
 			"title": "오디오",
 			"open": "오디오 설정",
-			"play": "오디오 재생",
+			"play": "모든 오디오 재생",
 			"mute": "모든 소리 끄기",
 			"music": "음악",
 			"musicVolume": "음악 음량",

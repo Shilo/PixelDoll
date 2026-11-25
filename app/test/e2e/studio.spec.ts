@@ -102,12 +102,26 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	});
 	const calls = () => page.evaluate(() => Reflect.get(window, 'audioTestCalls'));
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
-	const master = settings.getByRole('switch', { name: 'Play audio', exact: true });
+	const master = settings.getByRole('switch', { name: 'Play all audio', exact: true });
 	const musicSwitch = settings.getByRole('switch', { name: 'Music', exact: true });
 	const effectsSwitch = settings.getByRole('switch', { name: 'Sound effects', exact: true });
 	const music = settings.getByRole('slider', { name: 'Music volume', exact: true });
 	const effects = settings.getByRole('slider', { name: 'Sound effects volume', exact: true });
 	const shortcut = page.locator('.header-audio');
+	const expectAlignedAudioRows = async () => {
+		const [masterBox, musicBox, effectsBox, musicToggle, effectsToggle] = await Promise.all(
+			[master, music, effects, musicSwitch, effectsSwitch].map((control) => control.boundingBox())
+		);
+		for (const [slider, toggle] of [
+			[musicBox!, musicToggle!],
+			[effectsBox!, effectsToggle!]
+		]) {
+			expect(slider.y + slider.height / 2).toBeCloseTo(toggle.y + toggle.height / 2, 0);
+			expect(toggle.x + toggle.width).toBeCloseTo(masterBox!.x + masterBox!.width, 0);
+			expect(toggle.x).toBeGreaterThan(slider.x + slider.width);
+			expect(slider.width).toBeGreaterThanOrEqual(44);
+		}
+	};
 	await page.goto(baseURL!);
 	const customize = page.locator('.customize-action');
 	await expect(customize).toBeVisible();
@@ -131,11 +145,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await settings.getByRole('button', { name: 'Audio', exact: true }).click();
 	await expect(master).toBeChecked();
 	expect(await calls()).toMatchObject({ loops: 1, musicStarts: 1 });
-	const rightEdges = await settings
-		.getByRole('switch')
-		.evaluateAll((switches) => switches.map((element) => element.getBoundingClientRect().right));
-	const sliderRight = await music.evaluate((element) => element.getBoundingClientRect().right);
-	for (const right of rightEdges) expect(right).toBeCloseTo(sliderRight, 0);
+	await expectAlignedAudioRows();
 	await effects.press('End');
 	await expect(effects).toHaveValue('100');
 	await expect(music).toHaveValue('20');
@@ -167,6 +177,9 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await expect(effectsSwitch).not.toBeChecked();
 	await expect(effects).toHaveValue('99');
 	await expect(music).toHaveValue('20');
+	await page.setViewportSize({ width: 320, height: 568 });
+	await expectAlignedAudioRows();
+	await page.setViewportSize({ width: 390, height: 844 });
 	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1 });
 	await effectsSwitch.check();
 	await settings.getByRole('button', { name: 'Close', exact: true }).click();

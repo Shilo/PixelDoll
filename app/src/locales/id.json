@@ -148,7 +148,7 @@
 		"audio": {
 			"title": "Audio",
 			"open": "Pengaturan audio",
-			"play": "Putar audio",
+			"play": "Putar semua audio",
 			"mute": "Bisukan semua audio",
 			"music": "Musik",
 			"musicVolume": "Volume musik",

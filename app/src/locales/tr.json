@@ -154,7 +154,7 @@
 		"audio": {
 			"title": "Ses",
 			"open": "Ses ayarları",
-			"play": "Sesi oynat",
+			"play": "Tüm sesleri oynat",
 			"mute": "Tüm sesleri kapat",
 			"music": "Müzik",
 			"musicVolume": "Müzik ses düzeyi",

@@ -154,7 +154,7 @@
 		"audio": {
 			"title": "Audio",
 			"open": "Audio settings",
-			"play": "Play audio",
+			"play": "Play all audio",
 			"mute": "Mute all audio",
 			"music": "Music",
 			"musicVolume": "Music volume",

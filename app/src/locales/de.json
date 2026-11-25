@@ -154,7 +154,7 @@
 		"audio": {
 			"title": "Audio",
 			"open": "Audioeinstellungen",
-			"play": "Audio abspielen",
+			"play": "Gesamten Ton wiedergeben",
 			"mute": "Alle Töne stummschalten",
 			"music": "Musik",
 			"musicVolume": "Musiklautstärke",
