@@ -8,17 +8,21 @@ import { workspaceCopy } from './workspace-mode.ts';
 export interface ExportSettings {
 	engine: Engine;
 	dressedCharacterSheets: boolean;
+	/** Include pre-cut upper/lower body fragments for moving attacks when the target supports them. */
+	actionLayers: boolean;
 	playOnce: string[];
 }
 export type ExportSettingChange =
 	| { engine: Engine }
 	| { dressedCharacterSheets: boolean }
+	| { actionLayers: boolean }
 	| { animation: string; playOnce: boolean };
 export const EXPORT_SETTINGS_KEY = 'studio-export-settings';
 export const DEFAULT_EXPORT_ENGINE = 'generic' satisfies Engine;
 export const defaultExportSettings = (): ExportSettings => ({
 	engine: DEFAULT_EXPORT_ENGINE,
 	dressedCharacterSheets: true,
+	actionLayers: false,
 	playOnce: []
 });
 const CHANNEL = 'pixeldoll-export-settings';
@@ -67,10 +71,11 @@ export function checkedSettings(value: unknown): ExportSettings {
 		throw new InvalidExportSettings('Saved export settings are invalid.');
 	const stored = value as Partial<ExportSettings>;
 	const invalid =
-		'Saved export settings must contain a supported format, a dressed sheets choice and unique lowercase animation names.';
+		'Saved export settings must contain a supported format, a dressed sheets choice, a valid moving attack layers choice and unique lowercase animation names.';
 	if (
 		!EXPORT_ENGINES.some((engine) => engine === stored.engine) ||
 		typeof stored.dressedCharacterSheets !== 'boolean' ||
+		(stored.actionLayers !== undefined && typeof stored.actionLayers !== 'boolean') ||
 		!Array.isArray(stored.playOnce)
 	)
 		throw new InvalidExportSettings(invalid);
@@ -84,6 +89,7 @@ export function checkedSettings(value: unknown): ExportSettings {
 	return {
 		engine: stored.engine!,
 		dressedCharacterSheets: stored.dressedCharacterSheets,
+		actionLayers: stored.actionLayers === true,
 		playOnce: [...names].sort()
 	};
 }
@@ -129,6 +135,10 @@ export async function saveExportSetting(change: ExportSettingChange): Promise<Ex
 			if (!EXPORT_ENGINES.includes(change.engine))
 				throw new Error('Choose a supported export format.');
 			settings.engine = change.engine;
+		} else if ('actionLayers' in change) {
+			if (typeof change.actionLayers !== 'boolean')
+				throw new Error('Include moving attack layers must be true or false.');
+			settings.actionLayers = change.actionLayers;
 		} else {
 			if (typeof change.dressedCharacterSheets !== 'boolean')
 				throw new Error('Include dressed character sheets must be true or false.');

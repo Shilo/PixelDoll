@@ -6,6 +6,7 @@ import { readAseprite } from '../../src/lib/export/aseprite.ts';
 import {
 	animationNames,
 	applyExportSettings,
+	checkedSettings,
 	defaultExportSettings,
 	exportAnimationCatalog,
 	EXPORT_SETTINGS_KEY,
@@ -112,6 +113,7 @@ for (const engine of [
 				const settings: ExportSettings = {
 					engine,
 					dressedCharacterSheets: baked,
+					actionLayers: false,
 					playOnce: ['walk']
 				};
 				const project = { ...source, manifest: structuredClone(source.manifest) };
@@ -159,7 +161,12 @@ for (const engine of [
 					const file = [...files].find(([name]) => name.endsWith('.aseprite'))!;
 					expect((await readAseprite(file[1])).tags.map((tag) => tag.repeat)).toEqual([1, 0]);
 				}
-				expect(settings).toEqual({ engine, dressedCharacterSheets: baked, playOnce: ['walk'] });
+				expect(settings).toEqual({
+					engine,
+					dressedCharacterSheets: baked,
+					actionLayers: false,
+					playOnce: ['walk']
+				});
 				expect(source.manifest).toEqual(original);
 			}
 		}
@@ -169,9 +176,16 @@ for (const engine of [
 test('global writes atomically patch latest settings, normalize case and persist independent tab choices', async () => {
 	const database = storedSettings();
 	expect(await readExportSettings()).toEqual(defaultExportSettings());
+	expect(checkedSettings({ engine: 'godot', dressedCharacterSheets: true, playOnce: [] })).toEqual({
+		engine: 'godot',
+		dressedCharacterSheets: true,
+		actionLayers: false,
+		playOnce: []
+	});
 	await Promise.all([
 		saveExportSetting({ engine: 'unity' }),
 		saveExportSetting({ dressedCharacterSheets: false }),
+		saveExportSetting({ actionLayers: true }),
 		saveExportSetting({ animation: ' Jump ', playOnce: true })
 	]);
 	await saveExportSetting({ animation: 'JUMP', playOnce: true });
@@ -180,6 +194,7 @@ test('global writes atomically patch latest settings, normalize case and persist
 	expect(committed).toEqual({
 		engine: 'unity',
 		dressedCharacterSheets: false,
+		actionLayers: true,
 		playOnce: ['jump-loop']
 	});
 	expect(await readExportSettings()).toEqual(committed);
@@ -197,6 +212,7 @@ test('exact canonical name rules cover existing and future characters without to
 	const settings: ExportSettings = {
 		engine: 'godot',
 		dressedCharacterSheets: true,
+		actionLayers: false,
 		playOnce: ['jump']
 	};
 	const first = (await fixture()).manifest,
@@ -256,6 +272,7 @@ test('explicit move choices take priority over global defaults for renamed expor
 	applyExportSettings(manifest, {
 		engine: 'godot',
 		dressedCharacterSheets: true,
+		actionLayers: false,
 		playOnce: ['hop', 'lunge']
 	});
 	expect(manifest.rig.animations.map(({ loop }) => loop)).toEqual([true, false, false]);
@@ -281,6 +298,7 @@ test('canonical rig names reject case-only duplicates and native imports do not 
 	expect(await readExportSettings()).toEqual({
 		engine: 'phaser',
 		dressedCharacterSheets: false,
+		actionLayers: false,
 		playOnce: ['walk']
 	});
 	expect(database.update).not.toHaveBeenCalled();
@@ -295,6 +313,7 @@ test('invalid saved preferences and failed writes surface errors instead of sile
 		{},
 		{ engine: 'missing', dressedCharacterSheets: true, playOnce: [] },
 		{ engine: 'godot', dressedCharacterSheets: 'false', playOnce: [] },
+		{ engine: 'godot', dressedCharacterSheets: true, actionLayers: 'true', playOnce: [] },
 		{ engine: 'godot', dressedCharacterSheets: true, playOnce: ['Jump'] },
 		{ engine: 'godot', dressedCharacterSheets: true, playOnce: ['jump', 'jump'] },
 		{ engine: 'godot', dressedCharacterSheets: true, playOnce: ['jump/../walk'] },
@@ -341,7 +360,12 @@ test('explicit invalid-preference reset is scoped, atomic, failure-visible and p
 		expect(await readExportSettings()).toEqual(defaultExportSettings());
 	}
 	expect(database.records.get('rig-character')).toBe(character);
-	const repaired = { engine: 'unity', dressedCharacterSheets: false, playOnce: ['jump'] };
+	const repaired = {
+		engine: 'unity',
+		dressedCharacterSheets: false,
+		actionLayers: false,
+		playOnce: ['jump']
+	};
 	database.records.set(EXPORT_SETTINGS_KEY, repaired);
 	const result = await resetInvalidExportSettings();
 	expect(result).toEqual(repaired);

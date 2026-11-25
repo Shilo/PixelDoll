@@ -26,6 +26,9 @@ import { projectExportIdentity } from './identity.ts';
 
 import { actionSheets, type ActionSheetOptions } from './sheets.ts';
 
+/** Engines whose runtime consumes the pre-cut moving-attack fragments. */
+export const ACTION_LAYER_ENGINES: readonly Engine[] = ['phaser', 'gdevelop', 'godot', 'unity'];
+
 export interface ExportOptions {
 	actionLayering?: ActionSheetOptions;
 	engines: Engine[];
@@ -169,11 +172,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 	delete m.actionLayers;
 	for (const item of m.items) for (const layer of item.layers) delete layer.actionSheets;
 	const fragments =
-		opts &&
-		o.engines.some(
-			(engine) =>
-				engine === 'phaser' || engine === 'gdevelop' || engine === 'godot' || engine === 'unity'
-		)
+		opts && o.engines.some((engine) => ACTION_LAYER_ENGINES.includes(engine))
 			? actionSheets(p, m, {
 					waist: opts.waist,
 					walk: opts.walk.flatMap((id) => identities.get(id) ?? []),

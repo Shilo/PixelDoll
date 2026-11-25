@@ -1,7 +1,7 @@
 # Moving-attack implementation report
 
 Date: 2026-11-24
-Status: implemented, reviewed, accepted by the independent Opus review, then revised after the Flash High real-data review. The gear rule, hip silhouette validation, scale-aware limits and fallback help are included and tested.
+Status: implemented, reviewed, accepted by the independent Opus review, then revised after the Flash High real-data review. The gear rule, hip silhouette validation, scale-aware limits and fallback help are included and tested. The export option was later moved from the Export sheet to Settings > Export as a global persisted preference, with a read-only On / Off disclosure in the Export sheet's Current settings.
 Commits: `2cfc0b63` (feature), `c2d8f504` (fix plan), `23281e1af` (fix round and review), `92630302` (hip lock and justified seam rule), the shared-shift guard, and the real-data fixes.
 
 ## What shipped
@@ -10,7 +10,7 @@ Commits: `2cfc0b63` (feature), `c2d8f504` (fix plan), `23281e1af` (fix round and
 - **Live view**: "Walk while attacking" per character, on by default, with a conditional Waist stepper and accessible help tooltips. Layering is latched for the whole action; gait changes cannot flip it. Grounded, unmounted, same-facing only.
 - **Slowdown**: 0.8 travel speed for grounded attacks on foot, in both layered and full-body modes; attack timing untouched; mounts keep 1.0 and their own gait.
 - **Mounted facing**: the mount follows travel; only the rider turns to the attack aim. Integer seat placement retained.
-- **Exports**: per-frame upper/lower fragments and integer hip anchors, included only when the export option is enabled (default off), and the four controller operations:
+- **Exports**: per-frame upper/lower fragments and integer hip anchors, included only when "Moving attack layers" is enabled in Settings > Export (global, default off; the Export sheet's Current settings shows On or Off for supporting targets), and the four controller operations:
   - `setActionLayering` / `set_action_layering` / `SetActionLayering`
   - `playAction` / `play_action` / `PlayAction`
   - `canLayerAction` / `can_layer_action` / `CanLayerAction`
@@ -70,6 +70,14 @@ Trousers and bg-cape z-order are covered by fixtures and rendered evidence: [24-
 - Mounted east mount with south rider: [12](evidence/live/12-desktop-mount-east-rider-south.png).
 - Missing east attack art fallback notice: [17](evidence/live/17-full-body-fallback.png).
 - Restored Bonequin in Studio with all six requested items equipped: [South](evidence/live/bonequin-dressed-south.png), [North](evidence/live/bonequin-dressed-north.png). Both layered with the five-item notice and visible knife. See [real-data verification](REAL-DATA.md).
+
+## Settings-location follow-up
+
+The export option moved from the Export sheet into Settings > Export as a persisted global preference (`actionLayers`, default off). Existing settings records without the field read it as `false` rather than becoming invalid, Reset clears it, and the Export sheet's Current settings shows `On` or `Off` for Phaser, GDevelop, Godot and Unity. The hint names those four formats, and Settings search reaches the checkbox. `On`/`Off` is deliberately a preference state, not a claim that a given character produced fragment files; fragment eligibility remains data-gated and omissions stay in the export notes.
+
+An Opus 5.5 review returned "ship with fixes". It found the `studio` reset expectations missing the new field, the ambiguous `Included` label, the missing format list in the hint, and the duplicated supported-engine list. Those were fixed, and the settings-search E2E now opens the checkbox. A ZIP-fragment assertion was tried and dropped because the trimmed settings fixture has no eligible hips, matching the earlier decision to leave fragment generation to the pipeline unit tests.
+
+Checks on the final tree: `npm run check`, `npm test -- export-settings` (17 passed), `export-picker` restart persistence, demo reload, two-tab merge, invalid-preference reset, settings search and reset recovery, `crash-recovery`, and `studio -g "Settings resets"`. Browser checks confirmed the Settings control persists and the Export summary reflects it in both light and dark themes.
 
 ## Review history
 

@@ -48,7 +48,7 @@
 	import type { WhisperKey } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
-	import type { NoteTerm } from '../lib/export/export.ts';
+	import { ACTION_LAYER_ENGINES, type NoteTerm } from '../lib/export/export.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { slotLabelMessage } from './slots.ts';
 	import RichMessage from './RichMessage.svelte';
@@ -156,9 +156,9 @@
 	let preferences = $state.raw<ExportSettings | null>(null);
 	let savedProjects = $state.raw<StoredProject[]>([]);
 	let formatChoice = $state<Engine | null>(null);
-	let includeActionLayers = $state(false);
 	const engine = $derived(formatChoice ?? preferences?.engine ?? DEFAULT_EXPORT_ENGINE);
-	const supportsActionLayers = $derived(['phaser', 'gdevelop', 'godot', 'unity'].includes(engine));
+	const supportsActionLayers = $derived(ACTION_LAYER_ENGINES.includes(engine));
+	const actionLayers = $derived(preferences?.actionLayers ?? false);
 	const selected = $derived(
 		engine === 'rpgmakerxp' ? RPG_XP : ENGINES.find((target) => target.id === engine)
 	);
@@ -281,6 +281,7 @@
 	);
 	const PLAY_ONCE = $derived(t('export.settings.playOnce'));
 	const DRESSED_SHEETS = $derived(t('export.settings.dressed'));
+	const ACTION_LAYERS = $derived(t('export.settings.actionLayers'));
 	function animationLabel(id: string): string {
 		return displayMove(id, names);
 	}
@@ -535,7 +536,7 @@
 		const layering = currentLiveLayering(doc.id);
 		const clips = currentLiveClips(doc.id, snapshot.manifest.rig.animations);
 		const actionLayering =
-			includeActionLayers && supportsActionLayers
+			actionLayers && supportsActionLayers
 				? {
 						waist: layering.waist,
 						walk: clips.walk.slice(0, 1),
@@ -763,6 +764,23 @@
 			</p>
 		</div>
 		<hr class="bu-separator export-divider" />
+		<div class="export-dressed" data-setting="action-layers" tabindex="-1">
+			<label class="check">
+				<input
+					type="checkbox"
+					checked={actionLayers}
+					disabled={saving || !ready}
+					aria-describedby="export-action-layers-description"
+					onchange={(e) =>
+						changeSetting(e.currentTarget, { actionLayers: e.currentTarget.checked })}
+				/>
+				<span class="settings-label">{ACTION_LAYERS}</span>
+			</label>
+			<p class="bu-muted settings-description" id="export-action-layers-description">
+				{t('export.settings.actionLayersHint')}
+			</p>
+		</div>
+		<hr class="bu-separator export-divider" />
 		<div class="export-format" data-setting="format" tabindex="-1">
 			<label class="settings-label" for="default-export-target"
 				>{t('export.settings.defaultTarget')}</label
@@ -942,22 +960,6 @@
 								slots={{ name: engineName }}
 							/>
 						</p>{/if}
-					{#if supportsActionLayers}
-						<div class="export-dressed">
-							<label class="check">
-								<input
-									type="checkbox"
-									bind:checked={includeActionLayers}
-									disabled={saving || !ready}
-									aria-describedby="export-action-layers-description"
-								/>
-								<span class="settings-label">{t('export.settings.actionLayers')}</span>
-							</label>
-							<p class="bu-muted settings-description" id="export-action-layers-description">
-								{t('export.settings.actionLayersHint')}
-							</p>
-						</div>
-					{/if}
 					{#if walks.length > 1}<label class="field"
 							><span class="label small">{t('export.settings.walkMove')}</span><select
 								class="bu-input input"
@@ -1084,6 +1086,18 @@
 											? t('common.loading')
 											: t('common.unavailable')}
 								</dd>
+								{#if supportsActionLayers}
+									<dt>{ACTION_LAYERS}</dt>
+									<dd>
+										{!ready
+											? refreshing
+												? t('common.loading')
+												: t('common.unavailable')
+											: actionLayers
+												? t('export.settings.actionLayersOn')
+												: t('export.settings.actionLayersOff')}
+									</dd>
+								{/if}
 							</dl>
 						</section>{/if}
 					{#if result?.zip}<details class="disclosure">

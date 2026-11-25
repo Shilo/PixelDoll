@@ -1034,6 +1034,12 @@ test('global Export choices survive a browser restart, character changes and dyn
 		await expect(dressed).toBeEnabled();
 		await dressed.uncheck();
 		await expect(dressed).toBeEnabled();
+		const actionLayers = dialog.getByRole('checkbox', {
+			name: 'Moving attack layers',
+			exact: true
+		});
+		await actionLayers.check();
+		await expect(actionLayers).toBeEnabled();
 		await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 		const identities = await page.evaluate(async () => {
 			const statePath = '/src/studio/state.svelte.ts',
@@ -1055,11 +1061,14 @@ test('global Export choices survive a browser restart, character changes and dyn
 		});
 		await page.getByRole('button', { name: 'Export', exact: true }).click();
 		await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked();
-		await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None']);
+		await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None', 'On']);
 		await dialog.getByRole('radio', { name: 'Phaser', exact: true }).check();
 		await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
 		await expect(dialog.getByRole('checkbox', { name: 'Walk', exact: true })).toHaveCount(1);
 		await expect(dialog.getByRole('checkbox', { name: 'Walk', exact: true })).toBeChecked();
+		await expect(
+			dialog.getByRole('checkbox', { name: 'Moving attack layers', exact: true })
+		).toBeChecked();
 		await expect(
 			dialog.getByRole('checkbox', { name: 'Cross punch', exact: true })
 		).not.toBeChecked();
@@ -1100,7 +1109,8 @@ test('global Export choices survive a browser restart, character changes and dyn
 		await expect(dialog.getByRole('radio', { name: 'Phaser', exact: true })).toBeChecked();
 		await expect(dialog.locator('.export-summary dd')).toHaveText([
 			'Walk',
-			'Current look + saved outfits'
+			'Current look + saved outfits',
+			'On'
 		]);
 		await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 		await context.close(); // Close the actual browser process, retaining only its on-disk profile.
@@ -1112,6 +1122,9 @@ test('global Export choices survive a browser restart, character changes and dyn
 		await expect(dialog.getByRole('radio', { name: 'Phaser', exact: true })).toBeChecked();
 		await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
 		await expect(dialog.getByRole('checkbox', { name: 'Walk', exact: true })).toBeChecked();
+		await expect(
+			dialog.getByRole('checkbox', { name: 'Moving attack layers', exact: true })
+		).toBeChecked();
 		await expect(
 			dialog.getByRole('checkbox', { name: 'Renamed walk', exact: true })
 		).not.toBeChecked();
@@ -1253,7 +1266,7 @@ test('global Export choices persist through demo reload, editable copying and ch
 	await enterStudio(page);
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	await expect(dialog.getByRole('radio', { name: 'Phaser', exact: true })).toBeChecked();
-	await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None']);
+	await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None', 'Off']);
 	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 	const copy = await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
@@ -1267,7 +1280,7 @@ test('global Export choices persist through demo reload, editable copying and ch
 	});
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	await expect(dialog.getByRole('radio', { name: 'Phaser', exact: true })).toBeChecked();
-	await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None']);
+	await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None', 'Off']);
 	await dialog.getByRole('radio', { name: 'Unity', exact: true }).check();
 	await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toBeEnabled();
 	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
@@ -1299,7 +1312,7 @@ test('global Export choices persist through demo reload, editable copying and ch
 	});
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked();
-	await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None']);
+	await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None', 'Off']);
 });
 
 test('two tabs merge independent Export saves and refresh on reactivation without losing keyboard focus', async ({
@@ -2068,6 +2081,13 @@ test('Settings search opens the shared Export settings from the Studio menu', as
 	const search = settings.getByRole('searchbox', { name: 'Search settings' });
 	await search.fill('no such preference');
 	await expect(settings.getByRole('status')).toHaveText('No settings match your search.');
+	await search.fill('moving attack layers');
+	await settings.getByRole('button', { name: /Moving attack layers/ }).click();
+	const actionLayers = settings.getByRole('checkbox', { name: 'Moving attack layers' });
+	await expect(actionLayers).toBeFocused();
+	await page.setViewportSize({ width: 320, height: 640 });
+	await page.goBack();
+	await expect(search).toBeFocused();
 	await search.fill('png json');
 	await settings.getByRole('button', { name: /Default export target/ }).click();
 	const target = settings.getByRole('combobox', { name: 'Default export target' });
@@ -2423,7 +2443,7 @@ test('reset preserves preferences already repaired elsewhere and waits for its c
 	await expect(reset).toHaveCount(0);
 	await expect(dialog.getByRole('button', { name: 'Settings', exact: true })).toBeFocused();
 	await expect(dialog.getByRole('radio', { name: 'Phaser', exact: true })).toBeChecked();
-	await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None']);
+	await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None', 'Off']);
 	await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeEnabled();
 });
 
