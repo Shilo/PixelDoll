@@ -368,7 +368,8 @@
 		"titleSavedColor": "已保存的颜色",
 		"titleOriginal": "原始颜色",
 		"titlePickAnyColor": "选择任意颜色",
-		"noMatchingColors": "没有匹配的颜色"
+		"noMatchingColors": "没有匹配的颜色",
+		"categories": "颜色分类"
 	},
 	"colorSections": {
 		"randomLowerColors": "随机{lower}颜色",

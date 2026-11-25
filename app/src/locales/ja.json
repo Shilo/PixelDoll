@@ -368,7 +368,8 @@
 		"titleSavedColor": "保存した色",
 		"titleOriginal": "元の色",
 		"titlePickAnyColor": "好きな色を選ぶ",
-		"noMatchingColors": "一致するカラーはありません"
+		"noMatchingColors": "一致するカラーはありません",
+		"categories": "色のカテゴリ"
 	},
 	"colorSections": {
 		"randomLowerColors": "{lower}の色をランダムに",

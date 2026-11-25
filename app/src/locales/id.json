@@ -368,7 +368,8 @@
 		"titleSavedColor": "Warna tersimpan",
 		"titleOriginal": "Asli",
 		"titlePickAnyColor": "Pilih warna bebas",
-		"noMatchingColors": "Tidak ada warna yang cocok"
+		"noMatchingColors": "Tidak ada warna yang cocok",
+		"categories": "Kategori warna"
 	},
 	"colorSections": {
 		"randomLowerColors": "Acak warna {lower}",

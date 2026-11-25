@@ -522,10 +522,10 @@
 	right: auto;
 }
 /* The slot rail sits on the panel's outer edge, so the icons are always against the window edge nearest the panel. */
-.panel-left .wardrobe-panes {
+.panel-left :is(.wardrobe-panes, .color-panes) {
 	flex-direction: row-reverse;
 }
-.panel-left .wardrobe-panes .section-list {
+.panel-left :is(.wardrobe-panes, .color-panes) .section-list {
 	padding: 0 5px var(--panel-bottom) 6px;
 }
 :is(.sheet-layout, .panel-only) .equipment-rail {
@@ -646,8 +646,8 @@
 	flex: 1;
 	min-height: 0;
 }
-/* Below the search field, which leaves the list when it is not worth showing. */
-.wardrobe-panes {
+/* Below the search field, which leaves the list when it is not worth showing. Wardrobe and Colors share the panes. */
+:is(.wardrobe-panes, .color-panes) {
 	display: flex;
 	gap: 12px;
 	flex: 1;

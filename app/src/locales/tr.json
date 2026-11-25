@@ -374,7 +374,8 @@
 		"titleSavedColor": "Kayıtlı renk",
 		"titleOriginal": "Özgün",
 		"titlePickAnyColor": "Bir renk seçin",
-		"noMatchingColors": "Eşleşen renk yok"
+		"noMatchingColors": "Eşleşen renk yok",
+		"categories": "Renk kategorileri"
 	},
 	"colorSections": {
 		"randomLowerColors": "{lower} için rastgele renkler",
