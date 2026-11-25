@@ -178,27 +178,38 @@
 							? ui.toast.map(displayNestedMessage).join(' ')
 							: displayNestedMessage(ui.toast)}</span
 					>{/if}
-				{#if ui.toastActionLabel}<span class="toast-actions"
-						><button class="bu-action btn sm" data-variant="outline" onclick={activate}
-							>{displayNestedMessage(ui.toastActionLabel)}</button
-						>{#if ui.toastProblem}<ReportButton
+				{#if ui.toastActionLabel || ui.toastProblem}
+					<div class="toast-actions">
+						{#if ui.toastActionLabel}
+							<button
+								type="button"
+								class="bu-action btn sm"
+								data-variant="outline"
+								onclick={activate}>{displayNestedMessage(ui.toastActionLabel)}</button
+							>
+						{/if}
+						{#if ui.toastProblem}<ReportButton
 								{...ui.toastProblem}
 								area={areaOf(ui.toastSheet)}
-							/>{/if}</span
-					>{:else if ui.toastProblem}
-					<ReportButton {...ui.toastProblem} area={areaOf(ui.toastSheet)} />{/if}
+								outlined
+							/>{/if}
+					</div>
+				{/if}
 			</Notice>{/if}
 		<PwaNotice paused={hovered || focused || hidden} ondismiss={restoreNoticeFocus} />
 	</div>
 {/if}
 
 <style>
-	.toast-actions {
+	.toast :global(.toast-actions) {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 8px;
-		margin-top: 6px;
+		margin-block-start: 6px;
+	}
+	.toast :global(.toast-actions > .compact-backup) {
+		margin-block-start: 0;
 	}
 	@media (pointer: coarse) {
 		.toast-controls-only {
