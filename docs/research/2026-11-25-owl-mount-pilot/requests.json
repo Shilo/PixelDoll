@@ -1,0 +1,221 @@
+{
+  "authorizedGenerations": 300,
+  "billedGenerations": 114,
+  "requests": [
+    {
+      "name": "east-mount",
+      "endpoint": "inpaint-v3",
+      "image": "east-mount-guide.png",
+      "mask": "east-mount-mask.png",
+      "seed": 6251,
+      "status": "rejected",
+      "http": 422
+    },
+    {
+      "name": "east-mount-finished",
+      "endpoint": "inpaint-v3",
+      "image": "east-mount-guide.png",
+      "mask": "east-mount-mask.png",
+      "seed": 6251,
+      "status": "completed",
+      "http": 202,
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "images": 1
+    },
+    {
+      "name": "east-combined",
+      "endpoint": "inpaint-v3",
+      "image": "east-combined-guide.png",
+      "mask": "east-combined-mask.png",
+      "seed": 6252,
+      "status": "completed",
+      "http": 202,
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "images": 1
+    },
+    {
+      "name": "east-combined-b",
+      "endpoint": "inpaint-v3",
+      "image": "east-combined-b-guide.png",
+      "mask": "east-combined-b-mask.png",
+      "seed": 6253,
+      "status": "completed",
+      "http": 202,
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "images": 1
+    },
+    {
+      "name": "east-combined-trot",
+      "endpoint": "animate-pixminimax",
+      "image": "east-combined-0.png",
+      "mask": "none",
+      "seed": 6254,
+      "status": "completed",
+      "http": 200,
+      "usage": {
+        "type": "generations",
+        "generations": 1
+      },
+      "images": 9
+    },
+    {
+      "name": "east-mount-trot",
+      "endpoint": "animate-pixminimax",
+      "image": "east-mount-finished-0.png",
+      "mask": "none",
+      "seed": 6254,
+      "status": "completed",
+      "http": 200,
+      "usage": {
+        "type": "generations",
+        "generations": 1
+      },
+      "images": 9
+    },
+    {
+      "name": "east-combined-b-locked",
+      "endpoint": "inpaint-v3",
+      "image": "east-combined-b-locked-guide.png",
+      "mask": "east-combined-b-locked-mask.png",
+      "seed": 6255,
+      "status": "completed",
+      "http": 202,
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "images": 1
+    },
+    {
+      "name": "south-mount",
+      "endpoint": "inpaint-v3",
+      "image": "south-mount-guide.png",
+      "mask": "south-mount-mask.png",
+      "seed": 6256,
+      "status": "completed",
+      "http": 202,
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "images": 1
+    },
+    {
+      "name": "axial-rider",
+      "endpoint": "inpaint-v3",
+      "image": "axial-rider-guide.png",
+      "mask": "axial-rider-mask.png",
+      "seed": 6257,
+      "status": "completed",
+      "http": 202,
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "images": 1
+    },
+    {
+      "name": "axial-rider-open",
+      "endpoint": "inpaint-v3",
+      "image": "axial-rider-open-guide.png",
+      "mask": "axial-rider-open-mask.png",
+      "seed": 6258,
+      "status": "completed",
+      "http": 202,
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "images": 1
+    },
+    {
+      "name": "north-mount",
+      "endpoint": "inpaint-v3",
+      "image": "north-mount-guide.png",
+      "mask": "north-mount-mask.png",
+      "seed": 6259,
+      "status": "completed",
+      "http": 202,
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "images": 1
+    },
+    {
+      "name": "diagonal-mount",
+      "endpoint": "inpaint-v3",
+      "image": "diagonal-mount-guide.png",
+      "mask": "diagonal-mount-mask.png",
+      "seed": 6260,
+      "status": "completed",
+      "http": 202,
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "images": 1
+    },
+    {
+      "name": "rotation",
+      "endpoint": "create-character-v3",
+      "image": "south-mount-cell.png",
+      "mask": "east-mount-finished-0.png",
+      "seed": 6261,
+      "status": "completed",
+      "http": 200,
+      "usage": {
+        "type": "generations",
+        "generations": 2
+      },
+      "images": 0,
+      "directions": [
+        "east",
+        "west",
+        "north",
+        "south",
+        "north-east",
+        "north-west",
+        "south-east",
+        "south-west"
+      ]
+    },
+    {
+      "name": "rear-rider",
+      "endpoint": "inpaint-v3",
+      "image": "rear-rider-guide.png",
+      "mask": "rear-rider-mask.png",
+      "seed": 6262,
+      "status": "completed",
+      "http": 202,
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "images": 1
+    },
+    {
+      "name": "diagonal-rider",
+      "endpoint": "inpaint-v3",
+      "image": "diagonal-rider-guide.png",
+      "mask": "diagonal-rider-mask.png",
+      "seed": 6263,
+      "status": "completed",
+      "http": 202,
+      "usage": {
+        "type": "generations",
+        "generations": 10
+      },
+      "images": 1
+    }
+  ]
+}
