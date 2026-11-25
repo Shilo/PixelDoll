@@ -81,7 +81,7 @@ export const promptSuggestionDefaults: Record<SuggestionListKey, readonly Sugges
 			titleKey: 'stateCapture.poses.riding',
 			action: 'riding',
 			prompt:
-				"Change only the pose. Keep the same view and facing. The character sits upright astride an invisible horse: torso vertical, legs apart around the horse's sides, the near leg hangs almost straight down with the knee only slightly bent and the foot directly below the hip, toes forward. Elbows bent, empty hands forward at waist height as if holding reins. Preserve the character's design, proportions and pixel-art style. Draw only the character, no horse, saddle or reins."
+				'Hold a still riding pose. Preserve the direction, camera, clothing and proportions. Sit upright astride an invisible seat, with knees bent apart and the lower legs hanging at the sides, feet under the hips. Keep hands forward at waist height. Draw only the character on transparency.'
 		}
 	],
 	// Ride stays out: the Move sheet never offers it as a template.
