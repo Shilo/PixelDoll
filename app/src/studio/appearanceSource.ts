@@ -14,6 +14,7 @@ import {
 	cellHash,
 	playlist,
 	storedCellHashes,
+	type DirectionName,
 	type Rig,
 	type Sha256
 } from '../lib/rig/rig.ts';
@@ -36,6 +37,14 @@ export interface AppearanceSource extends StateGenerationSource {
 }
 
 export type AppearanceChoice = 'underwear' | 'bare' | 'custom';
+
+export function appearanceCopyViews(
+	source: AppearanceSource,
+	edited: AppearanceSource['views']
+): AppearanceSource['views'] {
+	const byDirection = new Map(edited.map((view) => [view.direction, view]));
+	return source.views.map((view) => byDirection.get(view.direction) ?? view);
+}
 
 export const appearanceReviewHold = () =>
 	new LocalizedError(
@@ -99,6 +108,7 @@ export async function appearanceSource(
 		const cell = clip?.frames[0]?.cell;
 		if (!clip || cell === undefined) continue;
 		const views: AppearanceSource['views'] = [];
+		const bodyHashes: Partial<Record<DirectionName, Sha256>> = {};
 		for (const { id: direction, mirrorOf } of rig.directions) {
 			if (mirrorOf && !item?.layers.some((layer) => layer.cells?.[clip.id]?.[direction])) continue;
 			const image = itemOnly
@@ -106,6 +116,10 @@ export async function appearanceSource(
 				: cellImg(project, base.layers[0], clip.id, direction, cell);
 			if (!image || !opaqueBox(image)) continue;
 			views.push({ direction, image, hash: await cellHash(image) });
+			if (item) {
+				const body = cellImg(project, base.layers[0], clip.id, direction, cell);
+				if (body) bodyHashes[direction] = await cellHash(body);
+			}
 		}
 		if (
 			!views.length ||
@@ -129,7 +143,7 @@ export async function appearanceSource(
 					pivot: rig.pivot,
 					view: rig.view,
 					directions: rig.directions,
-					...(item && { baseHash: rig.baseHash })
+					...(item && { bodyHashes })
 				},
 				item: item && {
 					slot: item.slot,
@@ -207,6 +221,7 @@ export async function editedItem(
 	const baseLayer = project.manifest.items.find(({ id }) => id === rig.baseItem)!.layers[0];
 	const coverage: CellKey[] = [];
 	const images = new Map<Sha256, Img>();
+	const baseCut: NonNullable<Item['baseCut']> = {};
 	const layers: Layer[] = original.layers.map(({ id, role, z, cell, pivot }) => ({
 		id,
 		role,
@@ -216,6 +231,18 @@ export async function editedItem(
 		cells: { [source.clip]: {} }
 	}));
 	for (const { direction, image } of views) {
+		const previous = source.views.find((view) => view.direction === direction)?.image;
+		const cut = original.baseCut?.[source.clip]?.[direction]?.[source.cell];
+		// A recolor can keep an existing cut. A changed outline may expose the same base pixels.
+		if (
+			cut?.length &&
+			previous?.data.length === image.data.length &&
+			image.data.every((value, i) => i % 4 !== 3 || value >= 128 === previous.data[i] >= 128)
+		) {
+			const row = Array.from({ length: source.cell + 1 }, () => null as number[] | null);
+			row[source.cell] = cut.slice();
+			(baseCut[source.clip] ??= {})[direction] = row;
+		}
 		const compatibleBase = makeImg(image.w, image.h);
 		const base = cellImg(project, baseLayer, source.clip, direction, source.cell);
 		const frame = layerFrame(rig, layers[0]);
@@ -254,6 +281,7 @@ export async function editedItem(
 		layers,
 		coverage,
 		hides: original.hides,
+		...(Object.keys(baseCut).length && { baseCut }),
 		provenance
 	};
 	// A standing edit can seed the ordinary fitting workflow once the saved artwork has a collision-free mannequin key.
@@ -289,13 +317,21 @@ export async function editedItem(
 				images.set(hash, reference);
 				dressed[direction] = hash;
 			}
-		if (Object.keys(dressed).length)
+		if (Object.keys(dressed).length) {
 			Object.assign(item, {
 				key,
 				dressed,
 				standing: source.clip,
 				route: padded ? 'skeleton-pose' : 'ea2-anchor'
 			});
+			if (
+				!padded &&
+				original.anchorCell &&
+				coverage.includes(original.anchorCell) &&
+				dressed[original.anchorCell.split('/')[1] as DirectionName]
+			)
+				item.anchorCell = original.anchorCell;
+		}
 	}
 	return { item, images };
 }

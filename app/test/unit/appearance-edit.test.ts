@@ -112,6 +112,46 @@ test('edits an imported padded item using its pixels and keeps the reviewed move
 	).toBe(96);
 });
 
+test('a standing item recolor keeps its alignment and survives unrelated body frames', async () => {
+	const project = await fixture();
+	const { rig, items } = project.manifest;
+	const body = items.find(({ id }) => id === rig.baseItem)!;
+	const hat = items.find(({ id }) => id === 'hat_wizard')!;
+	rig.animations.push({ id: DEFAULT_MOVE, cells: 1, frames: playlist(1, 150), loop: true });
+	for (const item of [body, hat])
+		for (const layer of item.layers)
+			layer.cells![DEFAULT_MOVE] = { south: [layer.cells!.walk!.south![0]] };
+	hat.baseCut = { [DEFAULT_MOVE]: { south: [[11]] } };
+	hat.anchorCell = 'default/south/0';
+
+	const target = { projectId: 'rig-source', itemId: hat.id };
+	const source = (await appearanceSource(project, target))!;
+	rig.baseHash = hat.baseHash = 'sha256:with-another-move';
+	expect((await appearanceSource(project, target))?.version).toBe(source.version);
+
+	const recolor = structuredClone(source.views[0].image);
+	const pixel = recolor.data.findIndex((value, i) => i % 4 === 3 && value > 0);
+	recolor.data[pixel - 3] ^= 1;
+	const variant = async (image: typeof recolor) =>
+		editedItem(
+			project,
+			source,
+			[{ direction: 'south', image, hash: await cellHash(image) }],
+			'edited-hat',
+			'Red hat',
+			'Red hat',
+			[]
+		);
+	const edited = await variant(recolor);
+	expect(edited.item.baseCut).toEqual(hat.baseCut);
+	expect(edited.item.anchorCell).toBe(hat.anchorCell);
+	recolor.data[pixel] = 0;
+	expect((await variant(recolor)).item.baseCut).toBeUndefined();
+
+	body.layers[0].cells![DEFAULT_MOVE].south = [body.layers[0].cells!.walk!.south![1]];
+	expect((await appearanceSource(project, target))?.version).not.toBe(source.version);
+});
+
 test('character presets change clothing without asking for a new pose or hairstyle', () => {
 	expect(appearancePrompt('underwear', '', false)).toContain('plain white underwear');
 	expect(appearancePrompt('bare', '', false)).toContain('nothing worn');

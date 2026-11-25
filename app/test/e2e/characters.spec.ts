@@ -83,10 +83,11 @@ test('Edit appearance makes reviewed character and equipment copies from saved p
 			pngs.set(
 				id,
 				await Promise.all(
-					payload.edit_images.map(async ({ image }) => {
+					payload.edit_images.map(async ({ image }, index) => {
 						const png = await decodePngBytes(Buffer.from(image.base64, 'base64'));
 						const pixel = png.data.findIndex((a, i) => i % 4 === 3 && a === 255);
-						png.data[pixel - 3] ^= 1;
+						if (id === 'appearance-1' && index === 1) png.data.fill(0);
+						else png.data[pixel - 3] ^= 1;
 						return {
 							type: 'base64',
 							base64: Buffer.from(await encodePngBytes(png)).toString('base64')
@@ -199,6 +200,7 @@ test('Edit appearance makes reviewed character and equipment copies from saved p
 	await characterEditor();
 	const saveCharacter = edit.getByRole('button', { name: 'Save as new character', exact: true });
 	await expect(saveCharacter).toBeEnabled();
+	await expect(edit.getByText(/Saving this copy keeps the original artwork/)).toContainText('East');
 	await expect(
 		edit.locator('header').getByRole('button', { name: 'Download paid results' })
 	).toBeVisible();
@@ -216,6 +218,13 @@ test('Edit appearance makes reviewed character and equipment copies from saved p
 	expect((await read()).find(({ id }) => id === source.id)!.manifest.rig.baseHash).toBe(
 		source.manifest.rig.baseHash
 	);
+	const editedBody = (await read()).find(
+		({ manifest }) => manifest.name === 'Appearance source (edited)'
+	)!.manifest.items[0].layers[0].cells![DEFAULT_MOVE];
+	const originalBody = source.manifest.items.find(({ id }) => id === source.manifest.rig.baseItem)!
+		.layers[0].cells![DEFAULT_MOVE];
+	expect(editedBody.east).toEqual(originalBody.east);
+	expect(editedBody.south).not.toEqual(originalBody.south);
 	await nameMenu.click();
 	await page
 		.locator('#project-menu')

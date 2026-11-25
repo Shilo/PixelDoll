@@ -2966,6 +2966,7 @@
 		"unsupported": "Este modelo não pode editar vistas com esse tamanho. Escolha outro modelo.",
 		"unavailable": "Não há imagens compatíveis para editar.",
 		"changed": "A imagem ou o orçamento mudou. Revise a edição novamente.",
+		"keptDirections": "A cópia mantém a arte original nestas direções: {directions}.",
 		"incomplete": "Algumas vistas editadas estão indisponíveis. Abra Atividade para ver os detalhes ou baixe os resultados recebidos.",
 		"reviewPending": "Salve ou descarte a prévia da aparência antes de alterar a origem.",
 		"discardNotice": "Descartar a prévia? As cobranças do PixelLab continuam valendo."

@@ -2876,6 +2876,7 @@
 		"unsupported": "Model ini tidak dapat mengedit tampilan sebesar ini. Pilih model lain.",
 		"unavailable": "Tidak ada gambar yang kompatibel untuk diedit.",
 		"changed": "Gambar atau perkiraan biaya berubah. Tinjau lagi perubahan ini.",
+		"keptDirections": "Salinan ini menyimpan gambar asli untuk arah berikut: {directions}.",
 		"incomplete": "Beberapa tampilan hasil edit tidak tersedia. Buka Aktivitas untuk melihat detail atau unduh hasil yang diterima.",
 		"reviewPending": "Simpan atau buang pratinjau tampilan sebelum mengubah sumbernya.",
 		"discardNotice": "Buang pratinjau? Biaya PixelLab tetap berlaku."

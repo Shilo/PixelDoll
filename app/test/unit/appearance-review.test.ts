@@ -4,7 +4,7 @@ import { loadFixture } from '../../src/lib/compose/fixture.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { type Img } from '../../src/lib/image/png.ts';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
-import { DEFAULT_MOVE, cellHash, playlist } from '../../src/lib/rig/rig.ts';
+import { DEFAULT_MOVE, DIRECTIONS, cellHash, playlist } from '../../src/lib/rig/rig.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
 import {
 	type AppearanceAttempt,
@@ -52,6 +52,24 @@ afterEach(() => {
 	mock.account.balanceError = '';
 	vi.unstubAllGlobals();
 	vi.resetAllMocks();
+});
+
+test('a reference edit of large item views stays on the image edit route', async () => {
+	const image = makeImg(192, 192);
+	const quote = await quoteAppearance(
+		{
+			name: 'Item',
+			version: 'source',
+			clip: DEFAULT_MOVE,
+			cell: 0,
+			size: { width: 192, height: 192 },
+			views: DIRECTIONS.map((direction) => ({ direction, image, hash: 'sha256:item' }))
+		},
+		'pro',
+		{ width: 64, height: 64, base64: '' }
+	);
+	expect(quote?.endpoint).toBe('/edit-images-v2');
+	expect(quote?.batches.flatMap(({ facingIds }) => facingIds)).toEqual(DIRECTIONS);
 });
 
 test.each(['wrong size', 'blank', 'opaque', 'wrong route', 'duplicate receipt'] as const)(

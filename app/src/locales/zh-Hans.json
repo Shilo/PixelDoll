@@ -2876,6 +2876,7 @@
 		"unsupported": "此模型无法编辑当前尺寸的视图。请选择其他模型。",
 		"unavailable": "没有可编辑的兼容图像。",
 		"changed": "图像或报价已更改。请重新检查编辑。",
+		"keptDirections": "此副本会在以下方向保留原始图像：{directions}。",
 		"incomplete": "部分编辑后的视图不可用。请打开活动查看详情，或下载已收到的结果。",
 		"reviewPending": "更改来源前，请先保存或丢弃外观预览。",
 		"discardNotice": "要丢弃预览吗？PixelLab 的费用仍然适用。"

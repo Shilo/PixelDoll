@@ -2957,6 +2957,7 @@
 		"unsupported": "Ce modèle ne peut pas modifier des vues de cette taille. Choisissez un autre modèle.",
 		"unavailable": "Aucun graphisme compatible à modifier.",
 		"changed": "Le graphisme ou l’estimation a changé. Vérifiez à nouveau la modification.",
+		"keptDirections": "La copie conserve le dessin original pour ces directions : {directions}.",
 		"incomplete": "Certaines vues modifiées sont indisponibles. Ouvrez Activité pour voir les détails ou téléchargez les résultats reçus.",
 		"reviewPending": "Enregistrez ou abandonnez l’aperçu avant de modifier sa source.",
 		"discardNotice": "Abandonner l’aperçu ? Les frais PixelLab restent dus."

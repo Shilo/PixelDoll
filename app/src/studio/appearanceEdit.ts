@@ -16,6 +16,7 @@ import { loadProject, pngBlobs, saveItem, type StoredProject } from '../lib/stor
 import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import {
 	appearanceSource,
+	appearanceCopyViews,
 	editedCharacter,
 	editedItem,
 	type AppearanceChoice,
@@ -75,6 +76,7 @@ export async function quoteAppearance(
 		cellSize: source.size,
 		facingIds: source.views.map(({ direction }) => direction),
 		referenceSize: reference && { width: reference.width, height: reference.height },
+		allowOutfitTransfer: false,
 		flashNativeShapes: shapes
 	});
 	if (plan.kind !== 'ready' || plan.endpoint === '/create-character-state') return null;
@@ -266,11 +268,13 @@ export async function saveAppearance(
 			throw changed();
 		const review = await readAppearance(attempt, source);
 		if (
-			!review.complete ||
+			review.running ||
+			!review.views.length ||
 			stableStringify(review.views.map(({ hash }) => hash)) !==
 				stableStringify(comparison.views.map(({ hash }) => hash))
 		)
 			throw changed();
+		const views = appearanceCopyViews(source, review.views);
 		const provenance = review.records.map((record) => provOf(record));
 		const name = `${source.name.slice(0, Math.max(1, 59 - editedSuffix.length)).trimEnd()} ${editedSuffix}`;
 		const publishedId = `rig-${attempt.id}`;
@@ -280,7 +284,7 @@ export async function saveAppearance(
 			const copy = await editedItem(
 				loaded.project,
 				source,
-				review.views,
+				views,
 				attempt.id,
 				freeItemName(name, loaded.project.manifest.items),
 				attempt.description,
@@ -317,12 +321,7 @@ export async function saveAppearance(
 		const alreadySaved = await db.get<StoredProject>('projects', publishedId);
 		if (alreadySaved && alreadySaved.creationSpec !== receipt) throw changed();
 		if (!alreadySaved) {
-			const copy = await editedCharacter(
-				loaded.project,
-				review.views,
-				attempt.description,
-				provenance
-			);
+			const copy = await editedCharacter(loaded.project, views, attempt.description, provenance);
 			copy.manifest.name = name;
 			copy.manifest.items[0].name = name;
 			const record: StoredProject = {

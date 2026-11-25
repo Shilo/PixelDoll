@@ -2957,6 +2957,7 @@
 		"unsupported": "Dieses Modell kann Ansichten dieser Größe nicht bearbeiten. Wähle ein anderes Modell.",
 		"unavailable": "Es sind keine geeigneten Grafiken zum Bearbeiten vorhanden.",
 		"changed": "Die Grafik oder der Kostenvoranschlag hat sich geändert. Prüfe die Änderung erneut.",
+		"keptDirections": "Die Kopie behält das Original für diese Richtungen: {directions}.",
 		"incomplete": "Einige bearbeitete Ansichten fehlen. Öffne die Aktivität für Details oder lade die vorhandenen Ergebnisse herunter.",
 		"reviewPending": "Speichere oder verwirf die Änderungsvorschau, bevor du die Quelle änderst.",
 		"discardNotice": "Vorschau verwerfen? Die PixelLab-Kosten bleiben bestehen."

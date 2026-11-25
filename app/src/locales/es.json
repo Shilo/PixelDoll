@@ -2957,6 +2957,7 @@
 		"unsupported": "Este modelo no puede editar vistas de este tamaño. Elige otro modelo.",
 		"unavailable": "No hay gráficos compatibles para editar.",
 		"changed": "Los gráficos o el presupuesto han cambiado. Revisa la edición de nuevo.",
+		"keptDirections": "Al guardar la copia se conserva la imagen original en estas direcciones: {directions}.",
 		"incomplete": "Faltan algunas vistas editadas. Abre Actividad para ver los detalles o descarga los resultados recibidos.",
 		"reviewPending": "Guarda o descarta la vista previa antes de cambiar su origen.",
 		"discardNotice": "¿Descartar la vista previa? Los cargos de PixelLab se mantienen."

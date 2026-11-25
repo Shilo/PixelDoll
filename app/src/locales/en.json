@@ -2957,6 +2957,7 @@
 		"unsupported": "This model cannot edit these views at their current size. Choose another model.",
 		"unavailable": "No supported artwork is available to edit.",
 		"changed": "The artwork or quote changed. Review the edit again.",
+		"keptDirections": "Saving this copy keeps the original artwork for these directions: {directions}.",
 		"incomplete": "Some edited views are unavailable. Open Activity for details or download the results you received.",
 		"reviewPending": "Save or discard the appearance preview before changing its source.",
 		"discardNotice": "Discard the preview? PixelLab charges still apply."

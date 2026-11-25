@@ -9,7 +9,7 @@
 	import { requestTier, tierDecision } from '../lib/pixellab/plans.ts';
 	import { flipH } from '../lib/rig/mirror.ts';
 	import { DEFAULT_MOVE, type DirectionName } from '../lib/rig/rig.ts';
-	import { appearancePrompt, editedItem } from './appearanceSource.ts';
+	import { appearanceCopyViews, appearancePrompt, editedItem } from './appearanceSource.ts';
 	import {
 		discardAppearance,
 		generateAppearance,
@@ -21,6 +21,7 @@
 		type AppearanceReview
 	} from './appearanceEdit.ts';
 	import { displayDirection } from './displayDirection.ts';
+	import { displayDirectionList } from './displayDirectionProblem.ts';
 	import { displayMove } from './displayMove.ts';
 	import { customize } from './experience/state.svelte.ts';
 	import { downloadPaidResults } from './download.svelte.ts';
@@ -127,6 +128,21 @@
 	);
 	const blocked = $derived(!!attempt && source?.version !== attempt.sourceVersion);
 	const running = $derived(generating || review?.running);
+	const canSave = $derived(!!review?.views.length && !blocked && !running);
+	const copyViews = $derived(
+		source && review?.views.length && !blocked
+			? appearanceCopyViews(source, review.views)
+			: review?.views
+	);
+	const keptDirections = $derived(
+		canSave && !review?.complete
+			? directions
+					.filter(({ id, mirrorOf }) =>
+						review?.views.every(({ direction }) => direction !== id && direction !== mirrorOf)
+					)
+					.map(({ id }) => id)
+			: []
+	);
 	const canDownload = $derived(
 		!running && review?.records.some(({ jobs }) => jobs.some(({ results }) => results.length))
 	);
@@ -232,13 +248,13 @@
 		};
 	});
 	$effect(() => {
-		const value = review,
+		const views = copyViews,
 			current = source,
 			project = loaded?.project;
 		let active = true;
 		candidate = undefined;
-		if (value?.views.length && current?.item && project && !blocked) {
-			void editedItem(project, current, value.views, 'appearance-preview', current.name, '', [])
+		if (views?.length && current?.item && project && !blocked) {
+			void editedItem(project, current, views, 'appearance-preview', current.name, '', [])
 				.then((copy) => {
 					if (active) candidate = copy;
 				})
@@ -292,7 +308,7 @@
 	const connect = () => withKey(() => (ui.sheet = 'appearance'));
 
 	async function save() {
-		if (!attempt || !review?.complete || running || saving) return;
+		if (!attempt || !review || !canSave || saving) return;
 		saving = true;
 		failure = '';
 		try {
@@ -410,12 +426,15 @@
 				{/if}
 				<div class="appearance-images">
 					{@render sprite(originalFrame, t('appearance.original'))}
-					{@render sprite(worn ? resultFrame : imageFor(review.views), t('appearance.edited'))}
+					{@render sprite(worn ? resultFrame : imageFor(copyViews), t('appearance.edited'))}
 				</div>
 			{/if}
 			{#if running || !review}<p role="status">{t('appearance.running')}</p>
 				<p id={`${form}-running`} class="faint">{t('common.keepsRunning')}</p>
 			{:else if blocked}<p class="notice">{t('appearance.changed')}</p>
+			{:else if keptDirections.length}<p class="notice warn" role="status">
+					{t('appearance.keptDirections', { directions: displayDirectionList(keptDirections) })}
+				</p>
 			{:else if !review.complete}<p class="notice">{t('appearance.incomplete')}</p>{/if}
 			{#if !running && review && !review.complete}
 				<button class="bu-action" data-variant="quiet" onclick={() => (ui.sheet = 'activity')}
@@ -490,6 +509,9 @@
 				</div>
 			</form>
 			<TierNotice {minimumTier} feature={t('appearance.title')} />
+			{#if quote?.warnings.includes('sheet-quality-unverified')}<p class="faint">
+					{t('stateGeneration.sheetWarning')}
+				</p>{/if}
 			{#if quoteFailure}<ProblemNotice error={quoteFailure} />
 			{:else if !quote && !quoting && (connected || draft.model !== 'pro-flash')}<p class="notice">
 					{t('appearance.unsupported')}
@@ -500,7 +522,7 @@
 		{#if attempt}
 			{#if review && !running}
 				<div class="appearance-review-footer">
-					{#if review.complete && !blocked}
+					{#if canSave}
 						<span class="foot-note">{t('appearance.checkViews')}</span>
 					{/if}
 					<div class="appearance-review-actions">
@@ -512,7 +534,7 @@
 							onclick={() => (confirmDiscard ? void discard() : (confirmDiscard = true))}
 							>{t(confirmDiscard ? 'stateGeneration.confirmDiscard' : 'common.discard')}</button
 						>
-						{#if review.complete && !blocked}
+						{#if canSave}
 							<button
 								type="button"
 								class="bu-action"

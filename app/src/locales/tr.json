@@ -2957,6 +2957,7 @@
 		"unsupported": "Bu model, görünümleri mevcut boyutlarında düzenleyemiyor. Başka bir model seçin.",
 		"unavailable": "Düzenlenebilecek uyumlu çizim bulunamadı.",
 		"changed": "Çizim veya tahmini ücret değişti. Düzenlemeyi yeniden inceleyin.",
+		"keptDirections": "Bu kopya şu yönlerde özgün çizimi korur: {directions}.",
 		"incomplete": "Düzenlenmiş görünümlerin bir kısmı kullanılamıyor. Ayrıntılar için Etkinlik bölümünü açın veya alınan sonuçları indirin.",
 		"reviewPending": "Kaynağı değiştirmeden önce görünüm önizlemesini kaydedin veya atın.",
 		"discardNotice": "Önizleme atılsın mı? PixelLab ücretleri geçerliliğini korur."

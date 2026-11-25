@@ -15,6 +15,7 @@ export interface StateGenerationInput {
 	readonly cellSize: Readonly<Size>;
 	readonly facingIds: readonly DirectionName[];
 	readonly referenceSize?: Readonly<Size>;
+	readonly allowOutfitTransfer?: boolean;
 	readonly managedParent?: VerifiedStateParent;
 	readonly flashNativeShapes?: readonly Readonly<Size>[];
 }
@@ -289,7 +290,10 @@ export function planStateGeneration(input: StateGenerationInput): StateGeneratio
 	const animationRoute =
 		!referenceSize && shortest(cellSize) >= 16
 			? ({ endpoint: '/edit-animation-v2', method: 'text' } as const)
-			: referenceSize && nativePro && longest(referenceSize) <= 256
+			: referenceSize &&
+				  input.allowOutfitTransfer !== false &&
+				  nativePro &&
+				  longest(referenceSize) <= 256
 				? ({ endpoint: '/transfer-outfit-v2', method: 'reference' } as const)
 				: undefined;
 	if (animationRoute && side <= 256 && (side >= 129 || !nativePro)) {
