@@ -1,4 +1,5 @@
 import { on } from 'svelte/events';
+import { SWIPE } from './swipe.ts';
 import { settleZoom, zoomStep, type SceneZoom } from './zoom.ts';
 
 export interface SceneZoomOptions {
@@ -34,9 +35,6 @@ export function modifiedWheel(event: WheelEvent): boolean {
 
 /** One wheel step: a mouse notch (about 100 px) steps once, however large; small trackpad scrolls add up to one. */
 const WHEEL_STEP = 50;
-
-/** A swipe travels this far horizontally, mostly sideways, to count. */
-const SWIPE = { distance: 48, ratio: 1.5 };
 
 export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => void {
 	const touches = new Map<number, { x: number; y: number }>();

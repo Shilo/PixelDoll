@@ -60,6 +60,7 @@
 		type WorldMode
 	} from './state.svelte.ts';
 	import { panelSettings, watchPanelSettings } from './panelSettings.svelte.ts';
+	import { panelSwipe } from './panelSwipe.ts';
 	import { WORLDS, worldArt } from './config.ts';
 	import { heroScale, placeWorld } from './geometry.ts';
 	import {
@@ -683,6 +684,16 @@
 		slidePanel(next);
 		if (next) restorePanelScroll();
 	}
+	/** The sheet's grabber and the panel's tab row both drag the panel into its dock edge. */
+	const panelSwipeOptions = {
+		get edge() {
+			return dockEdge;
+		},
+		get enabled() {
+			return panelOpen;
+		},
+		onclose: togglePanel
+	};
 	function changeMode(mode: WorldMode, pointer = '') {
 		if (experience.mode === mode) return;
 		stopPanelMotion();
@@ -1160,8 +1171,17 @@
 			inert={!panelOpen}
 			bind:this={rail}
 		>
-			{#if g.sheet}<span class="sheet-handle" aria-hidden="true"></span>{/if}
-			<div class="equipment-modes" role="tablist" aria-label={t('experience.customizationPanels')}>
+			{#if g.sheet}<span
+					class="sheet-handle"
+					aria-hidden="true"
+					{@attach (node) => panelSwipe(node, panelSwipeOptions)}
+				></span>{/if}
+			<div
+				class="equipment-modes"
+				role="tablist"
+				aria-label={t('experience.customizationPanels')}
+				{@attach (node) => panelSwipe(node, panelSwipeOptions)}
+			>
 				<!-- Moves stays in place in the live views, aria-disabled: there movement picks idle or walk. It stays in the Tab
 				     order so keyboard and screen reader users reach its reason (arrows step past it, Studio.svelte). -->
 				{#each tabs as [id, label] (id)}{@const off =

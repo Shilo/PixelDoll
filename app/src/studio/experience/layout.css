@@ -529,11 +529,23 @@
 	border-radius: var(--bu-radius-dialog) var(--bu-radius-dialog) 0 0;
 	box-shadow: var(--bu-shadow);
 }
+/* A 20 px band around the 4 px bar, so a finger can drag the sheet by its grabber. */
 .sheet-handle {
+	position: relative;
 	flex: none;
+	width: 100%;
+	height: 20px;
+	cursor: grab;
+	touch-action: none;
+}
+.sheet-handle::before {
+	content: '';
+	position: absolute;
+	left: 50%;
+	top: 8px;
 	width: 36px;
 	height: 4px;
-	margin: 8px auto 0;
+	margin-left: -18px;
 	border-radius: 2px;
 	background: var(--bu-muted);
 	opacity: 0.5;
@@ -547,7 +559,15 @@
 	flex-wrap: wrap;
 	flex: none;
 	container: equipment-tabs / inline-size;
+	/* The tab row is the panel's other drag surface: a pull toward the dock edge closes the panel. */
+	touch-action: none;
 }
+.sheet-handle[data-panel-drag],
+.equipment-modes[data-panel-drag] {
+	cursor: grabbing;
+	user-select: none;
+}
+
 /* Equal-width tabs with centered labels, like Material fixed tabs and Apple segmented controls: they fill the row, so
    there is no dead space between targets, and the label carries the underline (Bronze .bu-tab-label). */
 .equipment-modes button {

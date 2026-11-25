@@ -3679,6 +3679,17 @@ test('customization panel docks on either side, gives the stage its width back a
 test.describe('customization panel on compact touch screens', () => {
 	test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 
+	test('the panel tabs still activate by tap and by click', async ({ page }) => {
+		await customize(page);
+		const rail = page.locator('#customization-rail');
+		const colors = rail.getByRole('tab', { name: 'Colors' });
+		await colors.tap();
+		await expect(colors).toHaveAttribute('aria-selected', 'true');
+		const wardrobe = rail.getByRole('tab', { name: 'Wardrobe' });
+		await wardrobe.click();
+		await expect(wardrobe).toHaveAttribute('aria-selected', 'true');
+	});
+
 	test('auto-hide is scoped to each visit and restores the Preview tab', async ({
 		page,
 		context
@@ -3761,6 +3772,165 @@ test.describe('customization panel on compact touch screens', () => {
 		await side.tap();
 		await expect(rail).toBeVisible();
 	});
+
+	test('a pull toward the dock closes the panel from the tab row or the grabber and never from the stage', async ({
+		page,
+		context
+	}) => {
+		await customize(page);
+		const rail = page.locator('#customization-rail');
+		const toggle = page.locator('#customization-toggle');
+		const stage = page.locator('.experience-stage');
+		const tabs = page.getByRole('tablist', { name: 'Customization panels' });
+		const modes = page.getByRole('group', { name: 'Character view', exact: true });
+		const before = (await stage.boundingBox())!;
+		await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+		const touch = await context.newCDPSession(page);
+		const settle = () =>
+			page.evaluate(() =>
+				Promise.all(
+					document
+						.getElementById('customization-rail')!
+						.getAnimations()
+						.map((animation) => animation.finished)
+				)
+			);
+		const point = (x: number, y: number, id = 1) => ({ x, y, id, radiusX: 1, radiusY: 1 });
+		const drag = async (from: { x: number; y: number }, to: { x: number; y: number }) => {
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [point(from.x, from.y)]
+			});
+			for (let step = 1; step <= 3; step++)
+				await touch.send('Input.dispatchTouchEvent', {
+					type: 'touchMove',
+					touchPoints: [
+						point(from.x + ((to.x - from.x) * step) / 3, from.y + ((to.y - from.y) * step) / 3)
+					]
+				});
+			await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+		};
+		try {
+			const row = (await tabs.boundingBox())!;
+			const x = row.x + 24,
+				y = row.y + row.height / 2;
+			// Upward, sideways and short pulls leave the panel where it is.
+			await drag({ x, y }, { x, y: y - 90 });
+			await expect(rail).toBeVisible();
+			await drag({ x, y }, { x: x + 90, y });
+			await expect(rail).toBeVisible();
+			await drag({ x, y }, { x, y: y + 24 });
+			await expect(rail).toBeVisible();
+			// A second finger is a pinch, not a pull.
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [point(x, y)]
+			});
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchMove',
+				touchPoints: [point(x, y + 20)]
+			});
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [point(x, y + 20), point(x + 40, y + 20, 2)]
+			});
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchMove',
+				touchPoints: [point(x, y + 90), point(x + 40, y + 90, 2)]
+			});
+			await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+			await expect(rail).toBeVisible();
+			// A cancelled touch lets go without closing.
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [point(x, y)]
+			});
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchMove',
+				touchPoints: [point(x, y + 40)]
+			});
+			await touch.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+			await expect(rail).toBeVisible();
+			// A downward pull from the tab row closes it and gives its height back to the stage.
+			await drag({ x, y }, { x, y: y + 90 });
+			await expect(rail).toBeHidden();
+			await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+			expect((await stage.boundingBox())!.height).toBeGreaterThan(before.height);
+			// The grabber is the sheet's other drag surface. A CDP touch tap after a CDP drag does not synthesize a
+			// click in this harness, so reopen through the button's own handler; the toolbar's touch tap is covered by
+			// the auto-hide test above.
+			const reopen = () => toggle.evaluate((button) => (button as HTMLButtonElement).click());
+			await reopen();
+			await expect(rail).toBeVisible();
+			await settle();
+			const grip = (await rail.locator('.sheet-handle').boundingBox())!;
+			await drag(
+				{ x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 },
+				{ x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 + 90 }
+			);
+			await expect(rail).toBeHidden();
+			// A finger on the live stage belongs to the joystick: dragging it never closes the panel.
+			await modes
+				.getByRole('button', { name: 'Top-down' })
+				.evaluate((button) => (button as HTMLButtonElement).click());
+			await expect(rail).toBeHidden();
+			await reopen();
+			await expect(rail).toBeVisible();
+			await settle();
+			const play = (await stage.boundingBox())!;
+			const start = { x: play.x + play.width / 3, y: play.y + play.height / 2 };
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [{ ...start, id: 1, radiusX: 1, radiusY: 1 }]
+			});
+			await expect(page.locator('.world-stick')).toBeVisible();
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchMove',
+				touchPoints: [{ ...start, x: start.x + 90, id: 1, radiusX: 1, radiusY: 1 }]
+			});
+			await expect(rail).toBeVisible();
+			await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+		} finally {
+			await touch.detach();
+		}
+	});
+});
+
+test('a mouse drag toward the dock closes the panel from its tab row', async ({ page }) => {
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await customize(page);
+	const toggle = page.locator('#customization-toggle');
+	const rail = page.locator('#customization-rail');
+	const tabs = page.getByRole('tablist', { name: 'Customization panels' });
+	const row = (await tabs.boundingBox())!;
+	const x = row.x + 24,
+		y = row.y + row.height / 2;
+	const pull = async (dx: number, dy: number) => {
+		await page.mouse.move(x, y);
+		await page.mouse.down();
+		await page.mouse.move(x + dx, y + dy, { steps: 4 });
+		await page.mouse.up();
+	};
+	// Away from the dock, and straight down, leave the panel open.
+	await pull(-90, 0);
+	await expect(rail).toBeVisible();
+	await pull(0, 90);
+	await expect(rail).toBeVisible();
+	// A pull right closes the right dock, and its own click never selects the tab under the release.
+	const colors = rail.getByRole('tab', { name: 'Colors' });
+	const colorsBox = (await colors.boundingBox())!;
+	await page.mouse.move(colorsBox.x + 8, y);
+	await page.mouse.down();
+	await page.mouse.move(colorsBox.x + 78, y, { steps: 4 });
+	await page.mouse.up();
+	await expect(rail).toBeHidden();
+	await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+	await toggle.click();
+	await expect(rail).toBeVisible();
+	await expect(rail.getByRole('tab', { name: 'Wardrobe' })).toHaveAttribute(
+		'aria-selected',
+		'true'
+	);
 });
 
 test('short tab labels, the character name and sheet Done buttons keep 44 px targets', async ({
