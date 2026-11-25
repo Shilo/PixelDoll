@@ -66,7 +66,9 @@ reconnect and reload to enable audio. The 1.42 MB FLAC decodes to about 31 MB at
 
 For effects, reduce how often cues fire and how loud they are first. Pointer movement alone is
 silent. Studio rate-limits control presses, caps overlap at four voices, and gives action cues
-priority over presses. Each play detunes the whole cue by up to ±10 cents for press or ±12 cents
+priority over presses. Random look, Wardrobe Random, and Colors Random use the recolor cue so
+randomized edits sound distinct from manually equipping an item.
+Each play detunes the whole cue by up to ±10 cents for press or ±12 cents
 for action cues. Gain can decrease by up to 14% or 6%, respectively. This preserves the cue's
 intervals without loud outliers. [Web Audio spec](https://www.w3.org/TR/webaudio/#AudioBufferSourceNode)
 · [Xbox audio accessibility guidance](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/105)

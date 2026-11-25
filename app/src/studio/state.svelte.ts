@@ -2542,8 +2542,7 @@ export function randomizeGroup(groupId: string) {
 		Object.assign(doc.variants, variants);
 	});
 	ui.selected = it.id;
-	if (wearing) playAudioCue('equip');
-	else if (recolored) playAudioCue('recolor');
+	if (wearing || recolored) playAudioCue('recolor');
 }
 /** Colors-only Random for the given item ids (the character or one worn item). Never changes what is worn. */
 export function randomizeColors(owners: string[], label: Message) {
@@ -2569,15 +2568,18 @@ export function characterName() {
 	);
 }
 export function randomize() {
-	const r = randomOutfit(store.project!.manifest);
+	const manifest = store.project?.manifest;
+	if (!manifest) return;
+	const r = randomOutfit(manifest);
 	commit(
 		message('common.randomLook'),
 		() => {
-			doc.items = { ...r.items, body: store.project!.manifest.rig.baseItem };
+			doc.items = { ...r.items, body: manifest.rig.baseItem };
 			doc.variants = r.variants;
 		},
 		{ keepHand: 'main_hand', quiet: true }
 	);
+	playAudioCue('recolor');
 }
 export function applyPreset(p: Preset) {
 	commit(

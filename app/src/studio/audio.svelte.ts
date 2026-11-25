@@ -146,6 +146,8 @@ function activateAudio(event: Event) {
 let cueRevision = 0;
 
 export function playAudioCue(cue: AudioCue): void {
+	// An action owns its feedback even if playback is still loading when it commits.
+	cueRevision++;
 	if (
 		effectsUnavailable ||
 		!playback ||
@@ -154,7 +156,6 @@ export function playAudioCue(cue: AudioCue): void {
 	)
 		return;
 	if (!visible()) return;
-	cueRevision++;
 	try {
 		playback.play(cue);
 	} catch (error) {
