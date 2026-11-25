@@ -266,8 +266,13 @@
 		background: none;
 	}
 }
-.sheet-layout :is(.selection-import, .selection-create) {
-	display: none;
+@media (max-width: 600px) {
+	.experience-header .selection-create {
+		padding-inline: 0;
+	}
+	.selection-create :is(.new-character-label, svg[data-surface-chevron]) {
+		display: none;
+	}
 }
 /* Phones keep Back, the name, Random look, Mount settings, Undo, Export, Full screen and More in the bar; Redo and Share move into More
    so the character name stays readable (Share's popover then points at More). Random look follows up to 430 px and
@@ -1085,16 +1090,6 @@
 	flex: 1;
 	min-height: 44px;
 	font-size: 16px;
-}
-.cast-action {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 6px;
-	min-width: 44px;
-	min-height: 44px;
-	padding: 0 12px;
-	font-size: 14px;
 }
 .character-rows {
 	min-height: 0;

@@ -6,7 +6,7 @@
 	import { Plus, Download, Sparkles } from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import { popoverFocus } from './experience/focus.ts';
-	let { row = false, compact = false }: { row?: boolean; compact?: boolean } = $props();
+	let { row = false }: { row?: boolean } = $props();
 	const id = $props.id();
 	let menu: HTMLElement;
 	function choose(sheet: 'create' | 'importZip' | 'importPixelLab') {
@@ -21,15 +21,14 @@
 <button
 	class="bu-action"
 	class:new-character-row={row}
-	class:selection-create={!row && !compact}
-	class:cast-action={compact}
+	class:selection-create={!row}
 	data-variant={row ? 'row' : 'outline'}
 	aria-label={t('newCharacterButton.newCharacter')}
 	aria-haspopup="menu"
 	popovertarget={id}
 >
 	<span class:new-character-icon={row}><Plus size={row ? 24 : 16} /></span><span
-		>{openerLabel(compact ? t('common.new') : t('newCharacterButton.newCharacter'))}</span
+		class="new-character-label">{openerLabel(t('newCharacterButton.newCharacter'))}</span
 	>
 	<SurfaceChevron /></button
 >
