@@ -1,4 +1,4 @@
-import musicUrl from './audio/studio-ambient.mp3?url&no-inline';
+import musicUrl from './audio/studio-ambient.flac?url&no-inline';
 import { renderCue, type AudioCue } from './audioCues.ts';
 import { channelAudible, type AudioPreferences } from './audioPreferences.ts';
 
@@ -140,6 +140,7 @@ export function createAudioPlayback(
 		const envelope = context.createGain();
 		const startedAt = context.currentTime;
 		source.buffer = musicBuffer;
+		// Repeat the exact decoded period on one source. The gain envelope is for playback entry.
 		source.loop = true;
 		source.connect(envelope);
 		envelope.connect(musicGain);

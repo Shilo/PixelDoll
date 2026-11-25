@@ -193,7 +193,7 @@ for (let frame = 0; frame < mix.length; frame++) {
 
 const outputDirectory = new URL('../src/studio/audio/', import.meta.url);
 mkdirSync(outputDirectory, { recursive: true });
-const outputPath = fileURLToPath(new URL('studio-ambient.mp3', outputDirectory));
+const outputPath = fileURLToPath(new URL('studio-ambient.flac', outputDirectory));
 const result = spawnSync(
 	'ffmpeg',
 	[
@@ -210,9 +210,9 @@ const result = spawnSync(
 		'-i',
 		'pipe:0',
 		'-c:a',
-		'libmp3lame',
-		'-b:a',
-		'48k',
+		'flac',
+		'-sample_fmt',
+		's16',
 		'-metadata',
 		'title=PixelDoll Studio Ambient',
 		'-metadata',

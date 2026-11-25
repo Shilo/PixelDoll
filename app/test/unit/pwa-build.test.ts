@@ -244,12 +244,12 @@ describe('PWA release construction', () => {
 		const directory = mkdtempSync(join(tmpdir(), 'pixeldoll-pwa-'));
 		try {
 			const chunk = 'assets/audioPlayback-abc.js';
-			const studioMusic = 'assets/studio-ambient-abc123.mp3';
+			const studioMusic = 'assets/studio-ambient-abc123.flac';
 			mkdirSync(join(directory, 'assets'));
 			writeFileSync(join(directory, 'index.html'), '<html>shell</html>');
 			writeFileSync(join(directory, 'assets/lazy-abc.js'), 'export default 42');
 			writeFileSync(join(directory, chunk), 'export default "audio"');
-			writeFileSync(join(directory, studioMusic), 'MP3 bytes');
+			writeFileSync(join(directory, studioMusic), 'FLAC bytes');
 			writeFileSync(
 				join(directory, 'manifest.webmanifest'),
 				JSON.stringify({ icons: [{ src: './icons/pwa/icon-192.png' }] })
@@ -271,7 +271,7 @@ describe('PWA release construction', () => {
 				},
 				{
 					path: studioMusic,
-					hash: createHash('sha256').update('MP3 bytes').digest('hex'),
+					hash: createHash('sha256').update('FLAC bytes').digest('hex'),
 					optional: true
 				}
 			]);
@@ -295,7 +295,7 @@ describe('PWA worker release safety', () => {
 	it('verifies the lazy playback chunk and content-hashed soundtrack only on demand', async () => {
 		const audio = new Map([
 			['assets/audioPlayback-abc123.js', 'export default "audio"'],
-			['assets/studio-ambient-abc123.mp3', 'MP3 bytes']
+			['assets/studio-ambient-abc123.flac', 'FLAC bytes']
 		]);
 		const app = worker(
 			undefined,

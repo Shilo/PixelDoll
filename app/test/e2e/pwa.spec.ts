@@ -321,7 +321,7 @@ test('an offline launch needs no optional languages and retains a language used 
 		expect(deferred.filter((file) => !file.locale).map((file) => file.path)).toEqual(
 			expect.arrayContaining([
 				expect.stringMatching(/audioPlayback-.*\.js$/),
-				expect.stringMatching(/studio-ambient-.*\.mp3$/)
+				expect.stringMatching(/studio-ambient-.*\.flac$/)
 			])
 		);
 		for (const file of deferred) expect(server.requests).not.toContain(server.scope + file.path);

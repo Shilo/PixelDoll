@@ -8,12 +8,12 @@ service. [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/)
 of the compositions and recordings, with no attribution required. The source code uses the repository's
 [MIT license](../../LICENSE).
 
-- [Studio Ambient](../../app/src/studio/audio/studio-ambient.mp3) comes from the original
+- [Studio Ambient](../../app/src/studio/audio/studio-ambient.flac) comes from the original
   [score and Node.js renderer](../../app/scripts/render-studio-music.mjs). The score specifies chord
   voicings, note timing, and strength. The renderer layers soft sine-based harmonics, slight drift,
   and delayed pluck reflections into mono PCM. [FFmpeg](https://ffmpeg.org/) encodes that PCM as a
-  24 kHz, 48 kbps MP3. To change the track, edit the score and run
-  `node scripts/render-studio-music.mjs` from `app/` with FFmpeg and its `libmp3lame` encoder on PATH.
+  24 kHz, 16-bit mono FLAC. To change the track, edit the score and run
+  `node scripts/render-studio-music.mjs` from `app/` with FFmpeg on PATH.
 - All eight effects come from [audioCues.ts](../../app/src/studio/audioCues.ts). Edit the cue's note
   tuples (start in seconds, MIDI pitch, duration in seconds, and strength) to change its contour.
   The browser synthesizes a 24 kHz mono buffer using sine harmonics, a smooth attack and release,
@@ -53,9 +53,9 @@ level in the foreground. Each cue is synthesized on first use and its buffer is 
 default to 50%, the reference listening position for each channel. At that position, music keeps
 its previous 20% setting's gain and effects keep their previous 35% setting's gain. Music has extra
 headroom above 50% for listeners who need it. Its maximum channel gain is 0.40, up from 0.16.
-The PWA verifies and caches the module and MP3
+The PWA verifies and caches the module and soundtrack
 on demand. If the first gesture happens offline before the module is cached,
-reconnect and reload to enable audio. The 0.96 MB MP3 decodes to about 31 MB at a 48 kHz device rate.
+reconnect and reload to enable audio. The 1.42 MB FLAC decodes to about 31 MB at a 48 kHz device rate.
 
 For effects, reduce how often cues fire and how loud they are first. Pointer movement alone is
 silent. Studio rate-limits control presses, caps overlap at four voices, and gives action cues
@@ -82,13 +82,19 @@ phrase, or the urge to mute. Sustained listening fatigue still needs validation 
 
 ## Looping and additional tracks
 
-Studio applies a 650 ms gain ramp when playback starts or resumes and a 50 ms release for a
-foreground mute. When the tab loses focus or visibility, audio stops immediately. Studio Ambient carries the
-closing pad into the opening phrase. The renderer wraps any notes and reflections that extend
-past the last sample into the start of the loop, so there is no baked fade between repetitions.
-The decoded 24 kHz asset has exactly 160 seconds of samples. The half-second on each side of the
-seam matches within 0.1 dB RMS, and the sample step at the seam is smaller than nearby steps.
-Check the decoded asset by ear for clicks, gaps, and obvious restarting phrases.
+**Apply playback fades in the app.** Use a 650 ms gain ramp when the listener starts or resumes
+music and a 50 ms release for a foreground mute. When the tab loses focus or visibility, audio
+stops immediately. Keep note attacks, releases, and overlapping musical tails in the asset.
+Leave whole-track entry and exit fades out of looping assets, so the gain ramp runs once per
+playback start and the music continues at its current level through every repeat.
+
+**Render one continuous musical period.** Studio Ambient carries the closing pad into the
+opening phrase. The renderer wraps notes and reflections that extend past the last sample into
+the start. FLAC preserves that exact period without the encoder delay or padding that MP3
+players may handle differently. Studio's Web Audio source repeats its decoded buffer directly.
+The browser regression renders across the boundary offline and checks sample continuity,
+duration, and level. A standalone player's repeat mode can still insert a pause if it reopens
+the file. Listen across a joined tail and head or use Studio itself to evaluate the transition.
 Keep fades or crossfades for track changes where they help, matching the
 tracks' perceived loudness. [Wwise music segment and transition guide](https://www.audiokinetic.com/download/documents/WwiseProjectAdventure_en.pdf)
 

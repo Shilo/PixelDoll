@@ -14,7 +14,7 @@ export interface PwaFile {
 	optional?: true;
 	locale?: string;
 }
-export const studioMusicAsset = /^assets\/studio-ambient-[^/]+\.mp3$/;
+export const studioMusicAsset = /^assets\/studio-ambient-[^/]+\.flac$/;
 const AUDIO_PLAYBACK_MODULE = /[\\/]src[\\/]studio[\\/]audioPlayback\.ts$/;
 
 /** Public URLs need a release identity too: unlike Vite chunks their names do not contain a content hash. */

@@ -36,7 +36,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 }) => {
 	const audioRequests: string[] = [];
 	page.on('request', (request) => {
-		if (/audioPlayback|studio-ambient-[^/]+\.mp3/.test(request.url()))
+		if (/audioPlayback|studio-ambient-[^/]+\.flac/.test(request.url()))
 			audioRequests.push(request.url());
 	});
 	await page.addInitScript(() => {
@@ -146,8 +146,54 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await expect(shortcut).toBeVisible();
 	expect(audioRequests).toEqual([
 		expect.stringMatching(/assets\/audioPlayback-.*\.js/),
-		expect.stringMatching(/assets\/studio-ambient-[^/]+\.mp3/)
+		expect.stringMatching(/assets\/studio-ambient-[^/]+\.flac/)
 	]);
+	const loop = await page.evaluate(async (url) => {
+		const rate = 48_000;
+		const halfSecond = rate / 2;
+		const offline = new OfflineAudioContext(1, rate, rate);
+		const response = await fetch(url);
+		const track = await offline.decodeAudioData(await response.arrayBuffer());
+		const source = offline.createBufferSource();
+		source.buffer = track;
+		source.loop = true;
+		source.connect(offline.destination);
+		source.start(0, track.duration - 0.5);
+		const rendered = (await offline.startRendering()).getChannelData(0);
+		const original = track.getChannelData(0);
+		let wrapError = 0;
+		let nearbyStep = 0;
+		let before = 0;
+		let after = 0;
+		for (let i = 0; i < halfSecond; i++) {
+			const tail = rendered[i]!;
+			const head = rendered[halfSecond + i]!;
+			wrapError = Math.max(
+				wrapError,
+				Math.abs(tail - original[original.length - halfSecond + i]!),
+				Math.abs(head - original[i]!)
+			);
+			before += tail * tail;
+			after += head * head;
+			if (i)
+				nearbyStep = Math.max(
+					nearbyStep,
+					Math.abs(tail - rendered[i - 1]!),
+					Math.abs(head - rendered[halfSecond + i - 1]!)
+				);
+		}
+		return {
+			frames: track.length,
+			wrapError,
+			levelDifference: Math.abs(10 * Math.log10(before / after)),
+			seamStep: Math.abs(rendered[halfSecond]! - rendered[halfSecond - 1]!),
+			nearbyStep
+		};
+	}, audioRequests[1]!);
+	expect(loop.frames).toBe(160 * 48_000);
+	expect(loop.wrapError).toBeLessThan(1e-5);
+	expect(loop.levelDifference).toBeLessThan(0.2);
+	expect(loop.seamStep).toBeLessThan(loop.nearbyStep);
 	await expect(page.locator('.header-audio + .header-random')).toBeVisible();
 	await shortcut.click();
 	await expect(master).toBeChecked();
