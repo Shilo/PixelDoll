@@ -638,6 +638,8 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
 		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
+		// A hovered Help tooltip would receive Escape before the sheet.
+		await page.mouse.move(0, 0);
 		await page.keyboard.press('Escape');
 		await page.clock.fastForward(8000);
 		await expect(notice).toBeVisible();
@@ -657,6 +659,7 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
 		await expect(notice).toHaveCount(0);
+		await page.mouse.move(0, 0);
 		await page.keyboard.press('Escape');
 		await expect(notice).toHaveCount(0);
 		server.deploy(c);
