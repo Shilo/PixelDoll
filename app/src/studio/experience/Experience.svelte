@@ -29,7 +29,7 @@
 	import { modifiedWheel, sceneZoom } from './sceneZoom.ts';
 	import { sceneArtFits, sceneCamera, zoomCeiling } from './zoom.ts';
 	import { castStill } from './castMount.ts';
-	import { watchSize } from './watchSize.ts';
+	import { watchSizes } from '../watchSizes.ts';
 	import { stills, groundedThumb, thumbScale } from './thumbnails.svelte.ts';
 	import { castPose } from './carousel.ts';
 	import { floorRing, RING_GAP } from './floorRing.ts';
@@ -90,9 +90,9 @@
 	let stageNote = $state('');
 	let selectionCaptionHeight = $state(0);
 	const watchCaption = (node: HTMLElement) =>
-		watchSize(node, () => (selectionCaptionHeight = node.offsetHeight));
+		watchSizes([node], () => (selectionCaptionHeight = node.offsetHeight));
 	const watchPlayback = (node: HTMLElement) =>
-		watchSize(node, () => (playbackHeight = node.offsetHeight));
+		watchSizes([node], () => (playbackHeight = node.offsetHeight));
 	const previewHeight = $derived(experience.mode === 'preview' ? playbackHeight : 0);
 	let viewportWidth = $state(1280),
 		viewportHeight = $state(720);
