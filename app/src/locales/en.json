@@ -153,9 +153,13 @@
 		"mountNotSaved": "Mount setting changed, but this browser could not save it.",
 		"audio": {
 			"title": "Audio",
+			"open": "Audio settings",
+			"play": "Play audio",
 			"mute": "Mute all audio",
 			"music": "Music",
+			"musicVolume": "Music volume",
 			"effects": "Sound effects",
+			"effectsVolume": "Sound effects volume",
 			"notSaved": "Audio changed, but this browser could not save it."
 		},
 		"reset": {

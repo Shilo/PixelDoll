@@ -118,9 +118,11 @@
 			label: settingsLabels.audio,
 			icon: Volume2,
 			entries: [
-				{ id: 'audio-mute', label: 'settings.audio.mute' },
+				{ id: 'audio-enabled', label: 'settings.audio.play', terms: ['settings.audio.mute'] },
 				{ id: 'audio-music', label: 'settings.audio.music' },
-				{ id: 'audio-effects', label: 'settings.audio.effects' }
+				{ id: 'audio-music-volume', label: 'settings.audio.musicVolume' },
+				{ id: 'audio-effects', label: 'settings.audio.effects' },
+				{ id: 'audio-effects-volume', label: 'settings.audio.effectsVolume' }
 			]
 		},
 		{

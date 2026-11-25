@@ -147,9 +147,13 @@
 		"mountNotSaved": "Pengaturan tunggangan berubah, tetapi browser ini tidak dapat menyimpannya.",
 		"audio": {
 			"title": "Audio",
+			"open": "Pengaturan audio",
+			"play": "Putar audio",
 			"mute": "Bisukan semua audio",
 			"music": "Musik",
+			"musicVolume": "Volume musik",
 			"effects": "Efek suara",
+			"effectsVolume": "Volume efek suara",
 			"notSaved": "Audio diubah, tetapi browser tidak dapat menyimpan perubahan."
 		},
 		"reset": {

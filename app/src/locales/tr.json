@@ -153,9 +153,13 @@
 		"mountNotSaved": "Binek ayarı değişti ancak bu tarayıcı kaydedemedi.",
 		"audio": {
 			"title": "Ses",
+			"open": "Ses ayarları",
+			"play": "Sesi oynat",
 			"mute": "Tüm sesleri kapat",
 			"music": "Müzik",
+			"musicVolume": "Müzik ses düzeyi",
 			"effects": "Ses efektleri",
+			"effectsVolume": "Ses efektlerinin düzeyi",
 			"notSaved": "Ses ayarı değişti ancak tarayıcı bu değişikliği kaydedemedi."
 		},
 		"reset": {

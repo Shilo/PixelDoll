@@ -30,7 +30,7 @@ test.beforeEach(async ({ context }) => {
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort()); // stay offline by default; a test's own route overrides this
 });
 
-test('Audio settings stay silent until enabled and preserve independent levels across reload', async ({
+test('Audio settings start after a gesture and preserve independent levels and mutes', async ({
 	page,
 	baseURL
 }) => {
@@ -90,30 +90,46 @@ test('Audio settings stay silent until enabled and preserve independent levels a
 	});
 	const calls = () => page.evaluate(() => Reflect.get(window, 'audioTestCalls'));
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
-	const mute = settings.getByRole('switch', { name: 'Mute all audio', exact: true });
-	const music = settings.getByRole('slider', { name: 'Music', exact: true });
-	const effects = settings.getByRole('slider', { name: 'Sound effects', exact: true });
-	const openAudio = async () => {
-		await page.getByRole('button', { name: 'More options', exact: true }).click();
-		await page.getByRole('button', { name: 'Settings...', exact: true }).click();
-		await settings.getByRole('searchbox', { name: 'Search settings' }).fill('sound effects');
-		await settings.getByRole('button', { name: /Sound effects/ }).click();
-		await expect(effects).toBeFocused();
-	};
-	await openStudio(page, baseURL!);
-	await openAudio();
-	await expect(mute).toBeChecked();
+	const master = settings.getByRole('switch', { name: 'Play audio', exact: true });
+	const musicSwitch = settings.getByRole('switch', { name: 'Music', exact: true });
+	const effectsSwitch = settings.getByRole('switch', { name: 'Sound effects', exact: true });
+	const music = settings.getByRole('slider', { name: 'Music volume', exact: true });
+	const effects = settings.getByRole('slider', { name: 'Sound effects volume', exact: true });
+	const shortcut = page.locator('.header-audio');
+	await page.goto(baseURL!);
+	const customize = page.locator('.customize-action');
+	await expect(customize).toBeVisible();
+	await customize.dispatchEvent('pointerdown', { pointerType: 'mouse' });
+	await expect(shortcut).toHaveCount(0);
+	expect(await calls()).toMatchObject({ opened: 0, loops: 0 });
+	await enterStudio(page);
+	await expect(shortcut).toBeVisible();
+	await expect(page.locator('.header-audio + .header-random')).toBeVisible();
+	await shortcut.click();
+	await expect(master).toBeChecked();
+	await expect(musicSwitch).toBeChecked();
+	await expect(effectsSwitch).toBeChecked();
+	const rightEdges = await settings
+		.getByRole('switch')
+		.evaluateAll((switches) => switches.map((element) => element.getBoundingClientRect().right));
+	const sliderRight = await music.evaluate((element) => element.getBoundingClientRect().right);
+	for (const right of rightEdges) expect(right).toBeCloseTo(sliderRight, 0);
 	await effects.press('End');
 	await expect(effects).toHaveValue('100');
 	await expect(music).toHaveValue('20');
-	await mute.evaluate((input: HTMLInputElement) => {
-		input.checked = false;
-		input.dispatchEvent(new Event('change', { bubbles: true }));
-	});
-	await expect(mute).not.toBeChecked();
-	expect(await calls()).toMatchObject({ opened: 0, loops: 0 });
 	await effects.press('ArrowLeft');
+	await effectsSwitch.uncheck();
 	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1 });
+	await musicSwitch.uncheck();
+	await expect(shortcut).toHaveCount(0);
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 0 });
+	await musicSwitch.check();
+	await expect(shortcut).toHaveCount(1);
+	await master.uncheck();
+	await expect(shortcut).toHaveCount(0);
+	await master.check();
+	await expect(shortcut).toHaveCount(1);
+	await expect(effectsSwitch).not.toBeChecked();
 	await page.evaluate(() => {
 		Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
 		document.dispatchEvent(new Event('visibilitychange'));
@@ -124,14 +140,13 @@ test('Audio settings stay silent until enabled and preserve independent levels a
 	await expect(page.locator('.customize-action, .experience-stage')).toBeVisible();
 	expect(await calls()).toMatchObject({ opened: 0, loops: 0 });
 	await enterStudio(page);
-	await openAudio();
-	await expect(mute).not.toBeChecked();
+	await shortcut.click();
+	await expect(master).toBeChecked();
+	await expect(effectsSwitch).not.toBeChecked();
 	await expect(effects).toHaveValue('99');
 	await expect(music).toHaveValue('20');
 	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1 });
-	await mute.check();
-	await expect.poll(calls).toMatchObject({ opened: 1, loops: 0 });
-	await mute.uncheck();
+	await effectsSwitch.check();
 	await settings.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(settings).toBeHidden();
 	const errors: string[] = [];

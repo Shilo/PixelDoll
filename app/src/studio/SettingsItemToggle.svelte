@@ -25,4 +25,7 @@
 		min-height: 44px;
 		padding-inline: 0;
 	}
+	.row > .bu-switch {
+		margin-inline-start: auto;
+	}
 </style>

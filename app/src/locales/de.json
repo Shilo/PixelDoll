@@ -153,9 +153,13 @@
 		"mountNotSaved": "Reittier-Einstellung geändert, aber dieser Browser konnte sie nicht speichern.",
 		"audio": {
 			"title": "Audio",
+			"open": "Audioeinstellungen",
+			"play": "Audio abspielen",
 			"mute": "Alle Töne stummschalten",
 			"music": "Musik",
+			"musicVolume": "Musiklautstärke",
 			"effects": "Soundeffekte",
+			"effectsVolume": "Lautstärke der Soundeffekte",
 			"notSaved": "Die Audioeinstellungen wurden geändert, konnten aber nicht gespeichert werden."
 		},
 		"reset": {

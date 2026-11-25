@@ -153,9 +153,13 @@
 		"mountNotSaved": "El ajuste de montura cambió, pero este navegador no pudo guardarlo.",
 		"audio": {
 			"title": "Audio",
+			"open": "Ajustes de audio",
+			"play": "Reproducir audio",
 			"mute": "Silenciar todo el audio",
 			"music": "Música",
+			"musicVolume": "Volumen de la música",
 			"effects": "Efectos de sonido",
+			"effectsVolume": "Volumen de los efectos de sonido",
 			"notSaved": "Se cambió el audio, pero el navegador no pudo guardar el cambio."
 		},
 		"reset": {

@@ -2,7 +2,9 @@
 
 PixelDoll synthesizes its Studio audio from the original note sequences and
 waveform settings in [audioPlayback.ts](../../app/src/studio/audioPlayback.ts).
-The source is covered by the repository's [MIT license](../../LICENSE).
+PixelDoll dedicates the original music and sound effects to the public domain
+under [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/).
+The synthesizer code is covered by the repository's [MIT license](../../LICENSE).
 The synthesizer uses Web Audio and loads as a lazy app module. It creates its
 own buffers without downloading samples or other audio assets.
 

@@ -17,6 +17,8 @@
 	import GlobalActions from './GlobalActions.svelte';
 	import MoreMenu from './MoreMenu.svelte';
 	import { historyText } from './historyText.ts';
+	import { isMusicPlaying } from './audio.svelte.ts';
+	import { openSettings } from './settingsNavigation.svelte.ts';
 	import { activityStatus } from './activityStatus.svelte.ts';
 	import { characterFacts } from './model.ts';
 	import {
@@ -48,7 +50,8 @@
 		Dices,
 		Eye,
 		Layers2,
-		Mountain
+		Mountain,
+		Volume2
 	} from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
@@ -267,6 +270,16 @@
 				bind:this={redoButton}
 				onclick={() => step(redo, undoButton)}><Redo2 size={18} /></button
 			>
+			{#if isMusicPlaying()}
+				<button
+					class="bu-action header-audio"
+					data-variant="quiet"
+					aria-label={t('settings.audio.open')}
+					aria-haspopup="dialog"
+					title={t('settings.audio.open')}
+					onclick={() => openSettings('audio')}><Volume2 size={18} aria-hidden="true" /></button
+				>
+			{/if}
 			<button
 				class="bu-action header-random"
 				data-variant="quiet"

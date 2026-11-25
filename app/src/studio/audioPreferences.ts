@@ -2,11 +2,24 @@ import { parseObject, preferenceStore } from './experience/preferenceStore.ts';
 
 export interface AudioPreferences {
 	muted: boolean;
+	musicMuted: boolean;
+	effectsMuted: boolean;
 	music: number;
 	effects: number;
 }
 
-export const defaultAudioPreferences: AudioPreferences = { muted: true, music: 20, effects: 35 };
+export type AudioChannel = 'music' | 'effects';
+
+export const defaultAudioPreferences: AudioPreferences = {
+	muted: false,
+	musicMuted: false,
+	effectsMuted: false,
+	music: 20,
+	effects: 35
+};
+
+export const channelAudible = (settings: AudioPreferences, channel: AudioChannel) =>
+	!settings.muted && !settings[`${channel}Muted`] && settings[channel] > 0;
 
 export function audioLevel(value: unknown, fallback: number): number {
 	return typeof value === 'number' && Number.isFinite(value)
@@ -15,9 +28,11 @@ export function audioLevel(value: unknown, fallback: number): number {
 }
 
 export function parseAudioPreferences(text: string | null): AudioPreferences {
-	const { muted, music, effects } = parseObject(text);
+	const { muted, musicMuted, effectsMuted, music, effects } = parseObject(text);
 	return {
 		muted: typeof muted === 'boolean' ? muted : defaultAudioPreferences.muted,
+		musicMuted: musicMuted === true,
+		effectsMuted: effectsMuted === true,
 		music: audioLevel(music, defaultAudioPreferences.music),
 		effects: audioLevel(effects, defaultAudioPreferences.effects)
 	};

@@ -1,11 +1,12 @@
+import { channelAudible, type AudioPreferences } from './audioPreferences.ts';
+
 export type AudioCue =
 	'hover' | 'press' | 'equip' | 'unequip' | 'recolor' | 'item' | 'success' | 'failure' | 'export';
 
 type World = 'dark' | 'light';
-type AudioSettings = { muted: boolean; music: number; effects: number };
-
 export interface AudioPlayback {
-	update(settings: AudioSettings, world: World, visible: boolean): void;
+	/** Reports whether the active tab has a running music source. */
+	update(settings: AudioPreferences, world: World, visible: boolean): boolean;
 	play(cue: AudioCue): void;
 	dispose(): void;
 }
@@ -23,6 +24,7 @@ const fadeSeconds = 0.035;
 const beatsPerBar = 4;
 const maxConcurrentCues = 4;
 
+// The original compositions and cues below are dedicated under CC0 1.0 Universal.
 const scores: Record<World, Score> = {
 	dark: {
 		secondsPerBeat: 0.78,
@@ -312,14 +314,16 @@ export function createAudioPlayback(context: AudioContext): AudioPlayback {
 
 	return {
 		update(settings, nextWorld, visible) {
-			if (disposed || context.state === 'closed') return;
+			if (disposed || context.state === 'closed') return false;
 			if (world !== nextWorld) {
 				world = nextWorld;
 				musicOffset = 0;
 			}
 			playingAllowed = visible && !settings.muted;
-			const nextMusicLevel = volume(settings.music, 0.19);
-			const nextEffectsLevel = volume(settings.effects, 0.18);
+			const nextMusicLevel = channelAudible(settings, 'music') ? volume(settings.music, 0.19) : 0;
+			const nextEffectsLevel = channelAudible(settings, 'effects')
+				? volume(settings.effects, 0.18)
+				: 0;
 			if (nextMusicLevel !== musicLevel) {
 				musicGain.gain.setTargetAtTime(nextMusicLevel, context.currentTime, 0.015);
 				musicLevel = nextMusicLevel;
@@ -330,6 +334,7 @@ export function createAudioPlayback(context: AudioContext): AudioPlayback {
 			}
 			if (!playingAllowed || effectsLevel === 0) stopCues();
 			syncMusic();
+			return !!music && context.state === 'running';
 		},
 		play(cue) {
 			if (disposed || !playingAllowed || effectsLevel === 0 || context.state !== 'running') return;

@@ -147,9 +147,13 @@
 		"mountNotSaved": "坐骑设置已更改，但此浏览器无法保存。",
 		"audio": {
 			"title": "音频",
+			"open": "音频设置",
+			"play": "播放音频",
 			"mute": "将所有声音静音",
 			"music": "音乐",
+			"musicVolume": "音乐音量",
 			"effects": "音效",
+			"effectsVolume": "音效音量",
 			"notSaved": "音频设置已更改，但浏览器无法保存。"
 		},
 		"reset": {

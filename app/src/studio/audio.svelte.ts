@@ -1,7 +1,9 @@
 import {
 	audioLevel,
 	audioPreferenceStore,
+	channelAudible,
 	defaultAudioPreferences,
+	type AudioChannel,
 	type AudioPreferences
 } from './audioPreferences.ts';
 import type { AudioCue, AudioPlayback } from './audioPlayback.ts';
@@ -15,16 +17,17 @@ let loading = false;
 let unavailable = false;
 let world: WorldTheme = 'dark';
 let pageOpen = true;
+let musicPlaying = $state(false);
 
 export const audioPreferences = () => preferences;
+export const isMusicPlaying = () => musicPlaying;
 
 export function audioAtDefaults(): boolean {
-	const { muted, music, effects } = preferences;
 	return (
 		!unsaved &&
-		muted === defaultAudioPreferences.muted &&
-		music === defaultAudioPreferences.music &&
-		effects === defaultAudioPreferences.effects
+		(Object.keys(defaultAudioPreferences) as (keyof AudioPreferences)[]).every(
+			(key) => preferences[key] === defaultAudioPreferences[key]
+		)
 	);
 }
 
@@ -35,13 +38,14 @@ function setPreferences(change: (current: AudioPreferences) => AudioPreferences)
 	return result.saved;
 }
 
-export function setAudioMuted(muted: boolean, event: Event): boolean {
-	const saved = setPreferences((current) => ({ ...current, muted }));
-	if (!muted) activateAudio(event);
+export function setAudioEnabled(enabled: boolean, event: Event, channel?: AudioChannel): boolean {
+	const key = channel ? (`${channel}Muted` as const) : 'muted';
+	const saved = setPreferences((current) => ({ ...current, [key]: !enabled }));
+	if (enabled) activateAudio(event);
 	return saved;
 }
 
-export function setAudioLevel(channel: 'music' | 'effects', value: number, event: Event): boolean {
+export function setAudioLevel(channel: AudioChannel, value: number, event: Event): boolean {
 	const saved = setPreferences((current) => ({
 		...current,
 		[channel]: audioLevel(value, current[channel])
@@ -58,7 +62,7 @@ function visible(): boolean {
 
 function updatePlayback() {
 	try {
-		playback?.update(preferences, world, visible());
+		musicPlaying = playback?.update(preferences, world, visible()) ?? false;
 	} catch (error) {
 		disableAudio(error);
 	}
@@ -71,7 +75,7 @@ export function syncAudio(theme: WorldTheme) {
 }
 
 function allowedAudio(): boolean {
-	return !preferences.muted && (preferences.music > 0 || preferences.effects > 0);
+	return channelAudible(preferences, 'music') || channelAudible(preferences, 'effects');
 }
 
 function closeAudio() {
@@ -79,6 +83,7 @@ function closeAudio() {
 	const player = playback;
 	context = undefined;
 	playback = undefined;
+	musicPlaying = false;
 	loading = false;
 	closing?.removeEventListener('statechange', updatePlayback);
 	try {
@@ -144,8 +149,7 @@ function activateAudio(event: Event) {
 let cueRevision = 0;
 
 export function playAudioCue(cue: AudioCue): void {
-	if (!playback || context?.state !== 'running' || preferences.muted || !preferences.effects)
-		return;
+	if (!playback || context?.state !== 'running' || !channelAudible(preferences, 'effects')) return;
 	if (!visible()) return;
 	cueRevision++;
 	try {
