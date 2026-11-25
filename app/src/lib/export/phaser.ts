@@ -334,14 +334,14 @@ export function phaserFiles(m: Manifest): OutFile[] {
        const doll = new Paperdoll(this, 200, 150, m)
        doll.play(${JSON.stringify(initial?.id ?? 'walk')}, ${JSON.stringify(initial?.directions?.[0] ?? m.rig.directions[0]?.id ?? 'south')})
      }
-Switch outfits with doll.applyPreset(m.presets[1]) or doll.applyPreset(outfitId); unknown outfit IDs throw without changing the doll.
-Call setActionLayering(true) to enable moving attacks when the ZIP contains precut fragments. canLayerAction(move, direction) checks the whole action set and equipped gear. Invalid playAction calls throw without changing playback. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read actionPlaying for completion. Calling play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action.
+Switch outfits with doll.applyPreset(outfitId) (an id from manifest.json's presets, or a preset object); it replaces the equipped items and the color selections, so call setVariants after it to keep custom colors. Unknown outfit IDs throw without changing the doll.
+Call setActionLayering(true) to enable moving attacks when the ZIP contains precut fragments (manifest.actionLayers). canLayerAction(move, direction) checks the whole action set and equipped gear. Invalid playAction calls throw without changing playback. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read actionPlaying for completion. Calling play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action.
 
 play(anim, dir) preserves an active clip's progress, starts changed moves/directions at the beginning and replays a completed once-only clip. Pass true as the third argument to restart explicitly.
 doll.setDirection(dir) turns the active move (e.g. an aimed attack) while keeping its frame, time, loop position and completion; it emits no start or complete events. The current direction is a no-op; an unavailable direction or no active move throws before changing state.
 Invalid move/direction, equipment and outfit IDs throw before changing state. Equip an item with doll.equip(slot, itemId); null empties a non-body slot.
 Recolor with doll.setVariants({ "<material-id>": "<variant-id>" }).
-setVariants replaces all explicit color selections. Omitted keys or null restore material defaults; an empty-string selection uses source colors. Linked materials follow their target's selection.
+setVariants replaces all explicit color selections. Omitted keys or null restore material defaults; an empty-string selection uses source colors. Linked materials follow their target's selection. Only variants listed in materials[].variants can be selected; an unknown material or variant id selects nothing.
 Palette swaps use exact source RGBs and stored material ramps in Canvas or WebGL.
 paletteMap returns only active source-RGB to target-RGB swaps; unselected colors are omitted.
 This module also exports the engine-neutral paper-doll API used inside PixelDoll itself, including composeCell, drawList, paletteMap and sampleTimeline.

@@ -3935,11 +3935,16 @@ test('export picker has accessible categories, local icons and a native GDevelop
 		const sheets = top.filter((entry) => entry.endsWith('.png'));
 		expect(sheets.length).toBeGreaterThan(0);
 		expect(sheets.every((entry) => name.test(entry))).toBe(true);
-		expect(top.filter((entry) => !entry.endsWith('.png')).sort()).toEqual([
-			'Export notes.txt',
-			'README.txt',
-			'project.json'
-		]);
+		expect(top.filter((entry) => !entry.endsWith('.png')).sort()).toEqual(
+			[
+				'Export notes.txt',
+				'README.txt',
+				'AGENTS.md',
+				'CLAUDE.md',
+				`docs/${engine}.md`,
+				'project.json'
+			].sort()
+		);
 		expect(new TextDecoder().decode(rpgEntries.get('Export notes.txt')!)).toContain(
 			'RPG Maker: cross-punch is left out'
 		);
