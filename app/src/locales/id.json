@@ -3480,6 +3480,14 @@
 			"changed": "Karakter ini berubah. Pilih ZIP lagi untuk meninjau versi terbaru."
 		}
 	},
+	"studioPanel": {
+		"side": "Sisi panel",
+		"left": "Kiri",
+		"right": "Kanan",
+		"autoHide": "Sembunyikan panel saat membuka tampilan langsung",
+		"autoHideHelp": "Untuk layar sentuh kecil. Buka lagi kapan saja dari bilah alat.",
+		"notSaved": "Pengaturan panel berubah, tetapi browser tidak bisa menyimpannya."
+	},
 	"liveViews": {
 		"walkWhileAttacking": "Berjalan saat menyerang",
 		"layeringHelp": "Berjalan dan menyerang harus menghadap ke arah yang sama, kaki perlu gambar untuk kedua gerakan, dan sambungan pinggang harus selaras. Jika tidak, serangan seluruh tubuh biasa akan diputar.",

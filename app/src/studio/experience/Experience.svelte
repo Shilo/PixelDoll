@@ -53,10 +53,16 @@
 		experience,
 		customize as enterCustomize,
 		characters,
-		sharedZoom
+		sharedZoom,
+		setMode,
+		setPanelOpen,
+		panelIsOpen,
+		experienceLayout,
+		type WorldMode
 	} from './state.svelte.ts';
+	import { panelSettings, watchPanelSettings } from './panelSettings.svelte.ts';
 	import { WORLDS, worldArt } from './config.ts';
-	import { heroScale, layout, placeWorld } from './geometry.ts';
+	import { heroScale, placeWorld } from './geometry.ts';
 	import {
 		ChevronDown,
 		ChevronLeft,
@@ -86,15 +92,29 @@
 	let selection = $state<HTMLDivElement>();
 	let missing = $state.raw<{ clip: string; direction: DirectionName; items: Item[] } | null>(null);
 	let coveragePopover = $state<HTMLElement>();
-	let playbackHeight = $state(0);
 	let selectionCaptionHeight = $state(0);
 	const watchCaption = (node: HTMLElement) =>
 		watchSizes([node], () => (selectionCaptionHeight = node.offsetHeight));
-	const watchPlayback = (node: HTMLElement) =>
-		watchSizes([node], () => (playbackHeight = node.offsetHeight));
-	const previewHeight = $derived(experience.mode === 'preview' ? playbackHeight : 0);
 	let viewportWidth = $state(1280),
 		viewportHeight = $state(720);
+	let rail = $state<HTMLElement>();
+	type ScrollPositions = {
+		project: string;
+		tab: typeof ui.tab;
+		offsets: { top: number; left: number }[];
+	};
+	let hiddenScroll = $state.raw<ScrollPositions>();
+	let previewContext:
+		{ project: string; tab: typeof ui.tab; scroll: ScrollPositions | undefined } | undefined;
+	const wardrobeScroll = $derived(
+		hiddenScroll?.project === doc.id && hiddenScroll?.tab === 'wardrobe'
+			? hiddenScroll.offsets[0]?.top
+			: undefined
+	);
+	const panelOpen = $derived(panelIsOpen());
+	/** Open, or still sliding out after a close. */
+	const panelShown = $derived(panelOpen || experience.panelClosing);
+	onMount(watchPanelSettings);
 	const m = $derived(store.project?.manifest);
 	// The F shortcut belongs to a keyboard, so only a hovering pointer (a desktop mouse) gets the hint.
 	const hoverPointer = new MediaQuery('(hover: hover) and (pointer: fine)');
@@ -166,7 +186,7 @@
 	// While a tab is on screen and usable, More's dot leaves its work to it: not without a panel, under a sheet or on
 	// another screen, and not Moves or States outside Preview, where they are disabled.
 	$effect(() => {
-		const shown = experience.screen === 'studio' && !(g.sheet && !g.sheetHeight) && !ui.sheet,
+		const shown = experience.screen === 'studio' && panelOpen && !ui.sheet,
 			clips = shown && experience.mode === 'preview';
 		Object.assign(workTabs, { wardrobe: shown, moves: clips, states: clips });
 		return () => Object.assign(workTabs, { wardrobe: false, moves: false, states: false });
@@ -178,7 +198,14 @@
 		['moves', 'experience.tabMoves'],
 		['states', 'experience.tabStates']
 	] as const;
-	const g = $derived(layout(viewportWidth, viewportHeight, experience.screen, previewHeight));
+	const g = $derived(experienceLayout(viewportWidth, viewportHeight));
+	$effect.pre(() => {
+		if (g.panelOnly && document.activeElement?.closest('.experience-stage')) {
+			void tick().then(() => {
+				document.getElementById('customization-toggle')?.focus({ preventScroll: true });
+			});
+		}
+	});
 	// The cast is drawn from 64 px frames whose bodies stand about 50 px tall and 48 px wide.
 	const castScale = $derived(heroScale(g, 50, 48));
 	const castSize = $derived(64 * castScale);
@@ -534,6 +561,152 @@
 			.querySelectorAll<HTMLElement>('[popover]:popover-open')
 			.forEach((el) => el.hidePopover());
 		ui.tab = id;
+		hiddenScroll = undefined;
+	}
+	const scrollers = () => rail?.querySelectorAll<HTMLElement>('.equipment-scroll, .slot-rail-list');
+	const readPanelScroll = () =>
+		panelOpen
+			? {
+					project: doc.id,
+					tab: ui.tab,
+					offsets: Array.from(scrollers() ?? [], (node) => ({
+						top: node.scrollTop,
+						left: node.scrollLeft
+					}))
+				}
+			: hiddenScroll;
+	function restorePanelScroll() {
+		void tick().then(() => {
+			const scroll = hiddenScroll;
+			if (!panelOpen || !scroll) return;
+			hiddenScroll = undefined;
+			if (scroll.project !== doc.id || scroll.tab !== ui.tab) return;
+			scrollers()?.forEach((node, i) => {
+				if (scroll.offsets[i]) node.scrollTo({ ...scroll.offsets[i], behavior: 'instant' });
+			});
+		});
+	}
+	function leavePanelFocus() {
+		const focused = document.activeElement;
+		rail?.querySelectorAll<HTMLElement>('[popover]:popover-open').forEach((el) => el.hidePopover());
+		if (rail?.contains(focused) || rail?.contains(document.activeElement))
+			document.getElementById('customization-toggle')?.focus({ preventScroll: true });
+	}
+	// The panel slides from its dock edge, clipped to its own space. An opening panel takes that space at once and a
+	// closing one gives it back only when it has gone, so the stage, camera, floor and controls move once per toggle
+	// and never chase the panel. A second press reverses the slide from where it is.
+	let panelMotion: Animation | undefined;
+	let panelSettle = 0;
+	const dockEdge = $derived(g.sheet ? 'bottom' : panelSettings.side);
+	const SLIDE = {
+		left: ['-100% 0', 'inset(0 0 0 100%)'],
+		right: ['100% 0', 'inset(0 100% 0 0)'],
+		bottom: ['0 100%', 'inset(0 0 100% 0)']
+	} as const;
+	/** A CSS time in ms: the built theme may write the token in seconds (`140ms` minifies to `.14s`). */
+	function timeMs(value: string) {
+		const match = value.trim().match(/^([\d.]+)(ms|s)$/i);
+		if (!match) return 0;
+		const time = Number(match[1]);
+		return match[2]?.toLowerCase() === 'ms' ? time : time * 1000;
+	}
+	function slidePanel(open: boolean) {
+		if (panelMotion) {
+			// A slide that ended without its finish event reaching us (a backgrounded tab or occluded window can pause
+			// or discard a Web Animation) is over: settle it, then start this press's own slide rather than reverse a
+			// dead one, which would leave the panel shown but inert.
+			if (panelMotion.playState === 'finished' || panelMotion.playState === 'idle')
+				stopPanelMotion();
+			else {
+				experience.panelClosing = !open;
+				panelMotion.reverse();
+				panelMotion.play();
+				armPanelSettle(panelMotion);
+				return;
+			}
+		}
+		// Bronze's duration, which is 0 under reduced motion.
+		const duration = rail ? timeMs(getComputedStyle(rail).getPropertyValue('--bu-duration')) : 0;
+		if (!rail || !(duration > 0)) return;
+		const [translate, clipPath] = SLIDE[dockEdge];
+		const motion = rail.animate(
+			[
+				{ translate, clipPath },
+				{ translate: '0 0', clipPath: 'inset(0)' }
+			],
+			{ duration, easing: 'ease-out' }
+		);
+		if (!open) motion.reverse();
+		experience.panelClosing = !open;
+		panelMotion = motion;
+		motion.onfinish = () => {
+			if (panelMotion === motion) stopPanelMotion();
+		};
+		armPanelSettle(motion);
+	}
+	/** Settles a slide whose finish event never arrives, so a paused or discarded animation cannot leave the panel
+	 *  shown and inert. The fallback is longer than any slide, including one reversed partway. */
+	function armPanelSettle(motion: Animation) {
+		clearTimeout(panelSettle);
+		const duration = Number(motion.effect?.getTiming().duration) || 0;
+		panelSettle = window.setTimeout(() => {
+			if (panelMotion !== motion) return;
+			// finish() can fail on a discarded animation; the panel must settle either way.
+			try {
+				motion.finish();
+			} finally {
+				stopPanelMotion();
+			}
+		}, duration + 100);
+	}
+	/** Ends a slide at once when the layout changes under it (a mode, dock or screen change) or the screen unmounts.
+	 *  Synchronous, so a press before the cancel event starts a new slide rather than reversing the canceled one. */
+	function stopPanelMotion() {
+		clearTimeout(panelSettle);
+		panelSettle = 0;
+		const motion = panelMotion;
+		panelMotion = undefined;
+		experience.panelClosing = false;
+		motion?.cancel();
+	}
+	$effect(() => {
+		void dockEdge;
+		void experience.screen;
+		return stopPanelMotion;
+	});
+	function togglePanel() {
+		const next = !panelOpen;
+		if (!next) {
+			hiddenScroll = readPanelScroll();
+			leavePanelFocus();
+		}
+		setPanelOpen(next);
+		slidePanel(next);
+		if (next) restorePanelScroll();
+	}
+	function changeMode(mode: WorldMode, pointer = '') {
+		if (experience.mode === mode) return;
+		stopPanelMotion();
+		if (experience.mode === 'preview') {
+			previewContext = { project: doc.id, tab: ui.tab, scroll: readPanelScroll() };
+			const touch = pointer ? pointer !== 'mouse' : matchMedia('(pointer: coarse)').matches;
+			experience.livePanelOpen =
+				panelSettings.autoHide && touch && (g.sheet || g.short) ? false : null;
+			if (experience.livePanelOpen === false) {
+				hiddenScroll = previewContext.scroll;
+				leavePanelFocus();
+			}
+			if (ui.tab === 'moves' || ui.tab === 'states') panel('wardrobe');
+		} else if (mode === 'preview') {
+			experience.livePanelOpen = null;
+			if (previewContext?.project === doc.id) {
+				ui.tab = previewContext.tab;
+				hiddenScroll = previewContext.scroll;
+			}
+			previewContext = undefined;
+		}
+		setMode(mode);
+		if (mode === 'preview') restorePanelScroll();
 	}
 	function showMissingItem(item: Item) {
 		if (!missing) return;
@@ -554,6 +727,11 @@
 	});
 	$effect(() => {
 		const screen = experience.screen;
+		if (screen === 'characters') {
+			experience.livePanelOpen = null;
+			previewContext = undefined;
+			hiddenScroll = undefined;
+		}
 		void tick().then(() => {
 			if (!ui.sheet)
 				(screen === 'characters'
@@ -612,13 +790,15 @@
 	class:short-layout={g.short}
 	class:phone-layout={g.phone}
 	class:compact-playback={g.compactPlayback}
-	class:no-panel={experience.screen === 'studio' && g.sheet && !g.sheetHeight}
+	class:panel-only={g.panelOnly}
+	class:panel-left={experience.screen === 'studio' && !g.sheet && panelSettings.side === 'left'}
+	class:panel-open={experience.screen === 'studio' && panelShown}
 	style:--world-image="url('{background}')"
 	style={vars}
 >
 	<div class="scene-backdrop" aria-hidden="true"></div>
 	<div class="scene-reading" aria-hidden="true"></div>
-	<Toolbar />
+	<Toolbar {panelOpen} panelSide={dockEdge} onpanel={togglePanel} onmode={changeMode} />
 	{#if workspaceCopy}<div class="workspace-banner bu-floating" role="status">
 			{t(
 				app.key && !app.keyRejected
@@ -819,10 +999,11 @@
 			>
 		</aside>
 	{:else}
-		<div class="experience-stage">
+		<div class="experience-stage" inert={g.panelOnly}>
 			<WorldStage
-				playbackHeight={previewHeight}
+				place={g}
 				stageRoom={g.stage.r - g.stage.l - 2 * g.edge}
+				onmode={changeMode}
 				bind:missing
 			/>
 		</div>
@@ -832,7 +1013,7 @@
 			</div>
 		{/if}
 		{#if experience.mode === 'preview' && m}
-			<div class="experience-playback" {@attach watchPlayback}>
+			<div class="experience-playback" bind:offsetHeight={experience.playbackHeight}>
 				<div
 					class="playback-bar bu-floating"
 					role="toolbar"
@@ -975,12 +1156,19 @@
 				</div>
 			</div>
 		{/if}
-		<aside class="equipment-rail" aria-label={t('experience.customization')}>
+		<aside
+			id="customization-rail"
+			class="equipment-rail"
+			aria-label={t('experience.customization')}
+			hidden={!panelShown}
+			inert={!panelOpen}
+			bind:this={rail}
+		>
 			{#if g.sheet}<span class="sheet-handle" aria-hidden="true"></span>{/if}
 			<div class="equipment-modes" role="tablist" aria-label={t('experience.customizationPanels')}>
 				<!-- Moves stays in place in the live views, aria-disabled: there movement picks idle or walk. It stays in the Tab
 				     order so keyboard and screen reader users reach its reason (arrows step past it, Studio.svelte). -->
-				{#each tabs as [id, label]}{@const off =
+				{#each tabs as [id, label] (id)}{@const off =
 						(id === 'moves' || id === 'states') && experience.mode !== 'preview'}{@const work =
 						!off && id in tabWork ? tabWork[id as keyof typeof tabWork] : undefined}<button
 						class="bu-action"
@@ -1005,7 +1193,7 @@
 			<span class="sr" id="moves-tab-note">{displayMessage(movesOff)}</span>
 			<span hidden id="tab-work-busy">{t('experience.tabWorkRunning')}</span>
 			<span hidden id="tab-work-stopped">{t('experience.tabWorkAttention')}</span>
-			<PhonePanel />
+			<PhonePanel {wardrobeScroll} />
 		</aside>
 	{/if}
 	{#if doc.error && experience.screen !== 'studio'}

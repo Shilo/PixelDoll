@@ -10793,9 +10793,13 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 		'data-activity',
 		'stopped'
 	);
-	await expect(
-		page.locator('.experience-header [popovertarget="experience-options"]')
-	).not.toHaveAttribute('data-activity');
+	const more = page.locator('.experience-header [popovertarget="experience-options"]');
+	await expect(more).not.toHaveAttribute('data-activity');
+	const disclosure = page.locator('#customization-toggle');
+	await disclosure.click();
+	await expect(more).toHaveAttribute('data-activity', 'stopped');
+	await disclosure.click();
+	await expect(more).not.toHaveAttribute('data-activity');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
 		.locator('#experience-options')

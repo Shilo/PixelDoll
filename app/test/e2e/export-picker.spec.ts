@@ -1938,7 +1938,16 @@ test('one-frame and hundred-animation characters keep exact summaries, readable 
 		}, count);
 		await page.setViewportSize({ width: 320, height: 568 });
 		await page.emulateMedia({ reducedMotion: 'reduce' });
-		await page.getByRole('button', { name: 'Export', exact: true }).click();
+		// Whether Export still fits beside this character's name at 320px is the bar's call (experience-parity).
+		await page.evaluate(
+			() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)))
+		);
+		const barExport = page.locator('.header-export');
+		if (await barExport.isVisible()) await barExport.click();
+		else {
+			await page.getByRole('button', { name: 'More options', exact: true }).click();
+			await page.locator('#experience-options .mobile-export').click();
+		}
 		const summary = dialog.locator('.export-summary dd').first();
 		await expect(summary).toHaveText(count === 1 ? 'None' : 'All');
 		await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
@@ -3631,7 +3640,9 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('south');
 	await page.setViewportSize({ width: 320, height: 390 });
 	await expect(page.getByRole('button', { name: 'Share character' })).toBeHidden();
+	// The demo's short name leaves Export, Full screen and the panel toggle room in the bar.
 	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Enter full screen', exact: true })).toBeVisible();
 	await headerFits();
 	expect(
 		(await popover.boundingBox())!.y + (await popover.boundingBox())!.height

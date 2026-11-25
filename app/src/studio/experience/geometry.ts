@@ -2,6 +2,7 @@
 // character's feet, the playback bar, the panel and the world's floor all agree on one set of numbers.
 // Approved in docs/design/2026-11-11-ui-refinement/ui-lab-5.html (its geo()).
 
+import type { PanelSide } from './panelSettings.svelte.ts';
 export type Screen = 'characters' | 'studio';
 export interface Box {
 	l: number;
@@ -17,6 +18,8 @@ export interface Layout {
 	short: boolean;
 	/** The panel is a bottom sheet (phones and portrait tablets). */
 	sheet: boolean;
+	/** The editor uses the space below the toolbar when a split cannot fit. */
+	panelOnly: boolean;
 	phone: boolean;
 	edge: number;
 	top: number;
@@ -24,7 +27,7 @@ export interface Layout {
 	row: number;
 	headerBottom: number;
 	rail: number;
-	/** Sheet height and top; 0 when the panel is a side rail, or hidden because no usable sheet fits. */
+	/** Bottom sheet height and top. A rail, a closed panel and the single-pane editor reserve no height. */
 	sheetHeight: number;
 	sheetTop: number;
 	/** Side rail top. */
@@ -90,7 +93,14 @@ const MIN_STAGE = 200;
 /** Room above the feet a phone keeps for the hero: a whole 64 px frame at 2 whole pixels per pixel. */
 const PHONE_HERO = 128;
 
-export function layout(w: number, h: number, screen: Screen, measuredPlaybackHeight = 0): Layout {
+export function layout(
+	w: number,
+	h: number,
+	screen: Screen,
+	measuredPlaybackHeight = 0,
+	panelOpen = true,
+	panelSide: PanelSide = 'right'
+): Layout {
 	const playbackHeight =
 		screen === 'studio' ? Math.max(PLAYBACK_HEIGHT, measuredPlaybackHeight) : PLAYBACK_HEIGHT;
 	const short = h <= 540,
@@ -103,8 +113,9 @@ export function layout(w: number, h: number, screen: Screen, measuredPlaybackHei
 	// 1440 (ui-lab-9); the hero's scale is set by the height, so it only shifts left.
 	const rail = w < 1100 ? (w < 900 ? 300 : 320) : Math.min(480, Math.max(340, w * 0.33));
 	const studio = screen === 'studio';
-	// Phone widths always use the sheet: a side rail would leave no stage (320×400 is short but too narrow).
-	let sheet = phone || (!short && (w <= 760 || (w < h && w <= 1024)));
+	const singlePane = studio && h - headerBottom < STAGE_FLOOR + PANEL_ROW;
+	// Keep small portrait displays and windows too short for side-by-side editing below the header.
+	let sheet = singlePane || phone || (!short && (w <= 760 || (w < h && w <= 1024)));
 	// Phone widths and sheets float the view tabs in a row under the bar.
 	const tabs = studio && (sheet || phone) ? VIEW_TABS : 0;
 	// Compact heights (320×568) give the stage enough room for a 2x hero above the playback bar before the sheet grows.
@@ -114,9 +125,8 @@ export function layout(w: number, h: number, screen: Screen, measuredPlaybackHei
 		: 0;
 	if (sheet && sheetHeight < MIN_SHEET) {
 		// Too short for a usable sheet (a phone in landscape, a squat window): the panel moves beside the stage when a
-		// stage still fits next to it; otherwise it keeps a usable height if the stage still fits above it, else it
-		// hides until the window grows (a sliver of a sheet shows nothing usable and covers the character).
-		if (w - edge - rail - GAP >= MIN_STAGE) {
+		// stage still fits next to it. Keep a usable sheet where the stage can fit above it, or use a single pane.
+		if (!singlePane && w - edge - rail - GAP >= MIN_STAGE) {
 			sheet = false;
 			sheetHeight = 0;
 		} else sheetHeight = h - headerBottom - tabs - STAGE_FLOOR >= MIN_SHEET ? MIN_SHEET : 0;
@@ -125,11 +135,13 @@ export function layout(w: number, h: number, screen: Screen, measuredPlaybackHei
 		const available = h - headerBottom - tabs - STAGE_FLOOR - (playbackHeight - PLAYBACK_HEIGHT);
 		sheetHeight = available >= MIN_SHEET ? Math.min(sheetHeight, available) : 0;
 	}
+	const panelOnly = studio && panelOpen && sheet && !sheetHeight;
+	if (studio && (!panelOpen || panelOnly)) sheetHeight = 0;
 	const sheetTop = h - sheetHeight;
 	const railTop = headerBottom + (short ? 4 : 12);
-	const stage: Box = sheet
-		? { l: 0, r: w, t: headerBottom + tabs, b: sheetTop }
-		: { l: 0, r: Math.max(0, w - edge - rail - GAP), t: headerBottom + tabs, b: h };
+	const reserved = !sheet && (!studio || panelOpen) ? edge + rail + GAP : 0;
+	const left = studio && panelSide === 'left' ? reserved : 0;
+	const stage: Box = { l: left, r: w - (reserved - left), t: headerBottom + tabs, b: sheetTop };
 	const stageWidth = stage.r - stage.l,
 		compactPlayback = stageWidth <= COMPACT_STAGE,
 		cycleFacing = stageWidth < CYCLE_STAGE;
@@ -154,6 +166,7 @@ export function layout(w: number, h: number, screen: Screen, measuredPlaybackHei
 		h,
 		short,
 		sheet,
+		panelOnly,
 		phone,
 		edge,
 		top,
@@ -175,8 +188,8 @@ export function layout(w: number, h: number, screen: Screen, measuredPlaybackHei
 		// Spanning the width beside a short rail, a toast on Customize starts under the panel tabs so it never covers
 		// them. Characters keeps it high: lower, it would hide the selected character, the screen's hero.
 		toastTop: Math.max(
-			headerBottom + 8 + tabs,
-			studio && !sheet && short ? railTop + PANEL_ROW + 8 : 0
+			headerBottom + 8 + tabs + (panelOnly ? PANEL_ROW : 0),
+			studio && panelOpen && !sheet && short ? railTop + PANEL_ROW + 8 : 0
 		)
 	};
 }
@@ -275,7 +288,7 @@ export function placeWorld(
 	characterHeight: number
 ): Placement {
 	// Only Customize shows a bottom sheet; the world reaches just under it. Characters' list sits on the world itself.
-	const coverBottom = g.sheet && g.screen === 'studio' ? g.sheetTop + 24 : g.h;
+	const coverBottom = g.sheetHeight && g.screen === 'studio' ? g.sheetTop + 24 : g.h;
 	const eye = feet.y - EYE * characterHeight,
 		above = art.horizon * art.height,
 		below = (1 - art.horizon) * art.height;

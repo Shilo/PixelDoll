@@ -38,6 +38,14 @@
 .sheet-layout .scene-reading {
 	background: linear-gradient(180deg, var(--bu-reading-start), transparent 30%);
 }
+.panel-left.panel-open .scene-reading {
+	background:
+		linear-gradient(180deg, var(--bu-reading-start), transparent 30%),
+		linear-gradient(90deg, var(--bu-reading-end), transparent 35%);
+}
+.experience:not(.selection, .panel-open) .scene-reading {
+	background: linear-gradient(180deg, var(--bu-reading-start), transparent 30%);
+}
 
 /* ---------- top bar: no solid bar, controls sit on the scene ---------- */
 .experience-header {
@@ -91,6 +99,9 @@
 .experience-header .bu-action[data-variant='quiet'] {
 	padding: 0;
 }
+.experience-header .panel-toggle {
+	flex: none;
+}
 /* Phones keep every header target 44 px but tighter, so the name keeps its room: the view tabs float below, so the
    bar has no middle column, and the actions take only their own width. */
 .phone-layout .experience-header {
@@ -106,6 +117,8 @@
 		.mobile-undo,
 		.mobile-redo,
 		.mobile-share,
+		.mobile-export,
+		.mobile-fullscreen,
 		.mobile-inspect,
 		.mobile-mount,
 		.mobile-sep
@@ -269,16 +282,26 @@
 .sheet-layout :is(.selection-import, .selection-create) {
 	display: none;
 }
-/* Phones keep Back, the name, Random look, Mount settings, Undo, Export, Full screen and More in the bar; Redo and Share move into More
-   so the character name stays readable (Share's popover then points at More). Random look follows up to 430 px and
-   Undo up to 430 px. Full screen always stays on the bar (production-experience.md). */
-.phone-layout:not(.selection) :is(.header-redo, .header-share) {
+/* Wherever the character name would get too narrow, the optional actions move into More one at a time from left to
+   right: Undo, Redo, Random look, Share, Export, and Full screen only as a last resort (Toolbar.svelte fitActions).
+   Share's popover then points at More. */
+.experience[data-overflow~='undo'] .header-undo,
+.experience[data-overflow~='redo'] .header-redo,
+.experience[data-overflow~='random'] .header-random,
+.experience[data-overflow~='share'] .header-share,
+.experience[data-overflow~='export'] .header-export,
+.experience[data-overflow~='fullscreen'] .experience-header .header-fullscreen {
 	display: none !important;
 }
-.phone-layout:not(.selection) :is(.mobile-redo, .mobile-share) {
+.experience[data-overflow~='undo'] .mobile-undo,
+.experience[data-overflow~='redo'] .mobile-redo,
+.experience[data-overflow~='random'] .mobile-random,
+.experience[data-overflow~='share'] .mobile-share,
+.experience[data-overflow~='export'] .mobile-export,
+.experience[data-overflow~='fullscreen'] .mobile-fullscreen {
 	display: flex !important;
 }
-.phone-layout:not(.selection) .mobile-sep {
+.experience[data-overflow] .mobile-sep {
 	display: block !important;
 }
 @media (max-width: 430px) {
@@ -293,17 +316,15 @@
 	.phone-layout .name-facts {
 		display: none;
 	}
-	.phone-layout .header-random {
+	/* Phone portrait widths always start with the first four of that order in More, so the bar never flashes them. */
+	.phone-layout :is(.header-undo, .header-redo, .header-random, .header-share) {
 		display: none !important;
 	}
-	.phone-layout:not(.selection) .mobile-random {
+	.phone-layout:not(.selection) :is(.mobile-undo, .mobile-redo, .mobile-random, .mobile-share) {
 		display: flex !important;
 	}
-	.phone-layout .header-undo {
-		display: none !important;
-	}
-	.phone-layout:not(.selection) .mobile-undo {
-		display: flex !important;
+	.phone-layout:not(.selection) .mobile-sep {
+		display: block !important;
 	}
 }
 @media (max-width: 360px) {
@@ -473,11 +494,14 @@
 .equipment-rail {
 	gap: 8px;
 }
-/* A window too short for a usable sheet hides the panel until it grows (geometry.ts). */
-.no-panel .equipment-rail {
+.equipment-rail[hidden] {
 	display: none;
 }
-.sheet-layout .equipment-rail {
+.panel-left .equipment-rail {
+	left: var(--edge);
+	right: auto;
+}
+:is(.sheet-layout, .panel-only) .equipment-rail {
 	/* The sheet already pads its bottom edge; the lists keep only room for a focus ring. */
 	--panel-bottom: 6px;
 	left: 0;
@@ -501,6 +525,10 @@
 	border-radius: 2px;
 	background: var(--bu-muted);
 	opacity: 0.5;
+}
+.panel-only .equipment-rail {
+	top: var(--stage-top);
+	height: auto;
 }
 .equipment-modes {
 	display: flex;
@@ -1415,7 +1443,7 @@
 	flex-direction: column;
 	align-items: flex-start;
 	gap: 6px;
-	max-width: min(420px, calc(100% - var(--stage-right) - 2 * var(--edge)));
+	max-width: min(420px, calc(100% - var(--stage-left) - var(--stage-right) - 2 * var(--edge)));
 	pointer-events: none;
 }
 .world-notes p {

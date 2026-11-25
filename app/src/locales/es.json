@@ -3582,6 +3582,14 @@
 			"changed": "Este personaje cambió. Elige el ZIP de nuevo para revisar la versión más reciente."
 		}
 	},
+	"studioPanel": {
+		"side": "Posición del panel",
+		"left": "Izquierda",
+		"right": "Derecha",
+		"autoHide": "Ocultar el panel al entrar en las vistas en vivo",
+		"autoHideHelp": "En pantallas táctiles compactas. Ábrelo cuando quieras desde la barra de herramientas.",
+		"notSaved": "Los ajustes del panel cambiaron, pero el navegador no pudo guardarlos."
+	},
 	"liveViews": {
 		"walkWhileAttacking": "Caminar mientras atacas",
 		"layeringHelp": "La caminata y el ataque deben mirar en la misma dirección, las piernas necesitan imágenes para ambos movimientos y la unión en la cintura debe encajar. Si no, se reproduce el ataque normal de cuerpo entero.",

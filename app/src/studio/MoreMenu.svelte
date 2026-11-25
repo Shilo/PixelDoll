@@ -14,6 +14,7 @@
 	import { experience } from './experience/state.svelte.ts';
 	import DemoCopyRow from './DemoCopyRow.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
+	import FullscreenButton from './FullscreenButton.svelte';
 	import MenuDisclosure from './MenuDisclosure.svelte';
 	import WardrobeVisibility from './WardrobeVisibility.svelte';
 	import AffiliationNotice from './AffiliationNotice.svelte';
@@ -41,6 +42,7 @@
 		Undo2,
 		Activity,
 		Dices,
+		Download,
 		Grid2x2,
 		PawPrint,
 		Shirt
@@ -126,6 +128,19 @@
 				><Share2 size={18} /><span class="row-name">{openerLabel(t('common.share'))}</span
 				><SurfaceChevron /></button
 			>{/if}
+		{#if studio}<button
+				class="row bu-action mobile-export"
+				data-variant="quiet"
+				aria-haspopup="dialog"
+				disabled={!m}
+				onclick={() => {
+					closeOptions();
+					ui.sheet = 'export';
+				}}
+				><Download size={18} /><span class="row-name">{openerLabel(t('toolbar.export'))}</span
+				><SurfaceChevron /></button
+			>{/if}
+		{#if studio}<FullscreenButton row onactivate={closeOptions} />{/if}
 		<!-- Narrow phones move Inspect here from the playback bar so its controls keep full-size targets. -->
 		{#if studio && experience.mode === 'preview'}<button
 				class="row bu-action mobile-inspect"

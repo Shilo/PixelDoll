@@ -11,6 +11,7 @@ import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import { developerModeEnabled } from './developerMode.svelte.ts';
 import { mountAtDefaults, ridingPosesSaved } from './experience/riderPose.ts';
 import { liveRolesSaved, liveViewsAtDefaults } from './experience/liveViews.ts';
+import { panelSettings } from './experience/panelSettings.svelte.ts';
 import {
 	creationDefaults,
 	creationSections,
@@ -135,12 +136,13 @@ export function watchExportDefaults() {
 
 const atDefaults = {
 	// An explicit language, even the detected one, is a saved choice that Reset clears.
-	general: () => ui.theme === 'dark' && language.current === undefined,
+	general: () =>
+		ui.theme === 'dark' && language.current === undefined && panelSettings.side === 'right',
 	audio: audioAtDefaults,
 	wardrobe: () =>
 		!sharedItemsHiddenForAll() && !demoItemsShown() && !sharedItemsHiddenForCharacter(doc.id),
 	mount: () => mountAtDefaults(doc.id),
-	live: () => liveViewsAtDefaults(doc.id),
+	live: () => panelSettings.autoHide && liveViewsAtDefaults(doc.id),
 	export: () => exportDefaults === true,
 	developer: () => !developerModeEnabled(),
 	characters: () => creationAtDefaults('characters'),

@@ -3,7 +3,7 @@
 	import { onMount, untrack } from 'svelte';
 	import { displayNestedMessage } from '../../lib/i18n.ts';
 	import { ui, doc, view, toast, stepPreviewFrame } from '../state.svelte.ts';
-	import { experience, characters, setMode, sharedZoom } from './state.svelte.ts';
+	import { experience, characters, sharedZoom, type WorldMode } from './state.svelte.ts';
 	import type { Ground, RenderOptions } from './ground.ts';
 	import { MOTION, WORLDS, worldArt } from './config.ts';
 	import {
@@ -16,7 +16,7 @@
 	import {
 		EYE,
 		heroRoom,
-		layout,
+		type Layout,
 		liveFeetY,
 		liveFrame,
 		liveRoom,
@@ -99,12 +99,14 @@
 	} from './movement.ts';
 	let {
 		missing = $bindable(null),
-		playbackHeight = 0,
-		stageRoom
+		place,
+		stageRoom,
+		onmode
 	}: {
 		missing: { clip: string; direction: DirectionName; items: Item[] } | null;
-		playbackHeight?: number;
+		place: Layout;
 		stageRoom: number;
+		onmode: (mode: WorldMode) => void;
 	} = $props();
 	let note = $state('');
 	let host: HTMLDivElement,
@@ -480,7 +482,7 @@
 			previewFacing();
 		} else if (!e.repeat && ['1', '2', '3'].includes(k)) {
 			e.preventDefault();
-			setMode((['preview', 'topdown', 'side'] as const)[Number(k) - 1]);
+			onmode((['preview', 'topdown', 'side'] as const)[Number(k) - 1]);
 		} else if (!e.repeat && (k === 'escape' || k === 'backspace')) {
 			e.preventDefault();
 			const popover = document.querySelector<HTMLElement>('[popover]:popover-open');
@@ -684,6 +686,9 @@
 		letGo();
 		clearHover();
 	}
+	const stageBounds = $derived(
+		`${place.stage.l},${place.stage.r},${place.stage.t},${place.stage.b},${place.panelOnly}`
+	);
 	// A walk held on the keyboard continues through a plain mouse click on a control outside the stage (a wardrobe tile,
 	// a tab). The click takes focus; while it does (`handoff`), movement keys stay the stage's, and one frame after the
 	// button is released the stage takes focus back, so the held keys and the next ones still move the character.
@@ -691,13 +696,24 @@
 	// dialog, another key, another mouse button (a native menu, autoscroll), a touch or pen press (a long press).
 	let handoff = false,
 		handback = 0;
+	// Let go of held presses before the stage moves under them (the panel opening or closing). A pre-effect runs
+	// synchronously while the component initializes, so the first run only records the bounds; the teardown drops a
+	// pending focus handback when the stage unmounts.
+	let seenBounds = '';
+	$effect.pre(() => {
+		const bounds = stageBounds;
+		if (seenBounds && bounds !== seenBounds) untrack(stop);
+		seenBounds = bounds;
+		return () => cancelAnimationFrame(handback);
+	});
 	const typing = (target: EventTarget | null) =>
 		target instanceof Element && !!target.closest('input, textarea, select, [contenteditable]');
 	function pressOutside(e: PointerEvent) {
 		cancelAnimationFrame(handback);
 		handoff = false;
-		// Any press, a game button's or a panel's, shows the controls for the hand in use (hybrid devices).
-		if (experience.mode !== 'preview') touchInput = e.pointerType !== 'mouse';
+		// A touch used to enter a live view should show the thumb controls before the first press on the stage.
+		if (experience.mode !== 'preview' || e.pointerType === 'touch' || e.pointerType === 'pen')
+			touchInput = e.pointerType !== 'mouse';
 		if (
 			experience.mode === 'preview' ||
 			!keys.size ||
@@ -1005,7 +1021,6 @@
 			g.clearRect(0, 0, width, height);
 			g.imageSmoothingEnabled = false;
 			// The feet sit just above the playback bar in every view; only a Preview lineup lifts them to clear its ring.
-			const place = layout(width, height, 'studio', playbackHeight);
 			const anchor = { x: place.feet.x, y: place.feet.y };
 			const room = heroRoom(place);
 			const live = experience.mode !== 'preview';
@@ -1825,6 +1840,7 @@
 <div
 	class="world-stage bu-focus"
 	{@attach (node) => {
+		void stageBounds;
 		const mode = experience.mode;
 		const enabled = !ui.sheet;
 		return sceneZoom(node, {
@@ -1884,7 +1900,7 @@
      In Preview it also clears the playback bar, whose top is --playback-top. -->
 {#if mountIssue || hint || liveView || loadingNote || rendererWarning || note || doc.error}<div
 		class={['world-notes', { 'live-world-notes': liveView }]}
-		style:bottom={!liveView && playbackHeight
+		style:bottom={!liveView && experience.playbackHeight
 			? 'max(calc(var(--stage-bottom) + 16px), calc(100% - var(--playback-top) + 8px))'
 			: undefined}
 		style:--live-notes-clearance={liveView && notesAboveControls
