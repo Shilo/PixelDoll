@@ -2,6 +2,7 @@
 // a single item on the base body. Pure; the Studio supplies the project, look and settings.
 import { CURRENT_OUTFIT_ID } from '../store/identity.ts';
 import { playbackClips } from '../runtime/timeline.js';
+import type { ActionSheetOptions } from './sheets.ts';
 import { exportZip, type ExportResult, type NoteTerm } from './export.ts';
 import { errorTranslation, message, type Message } from '../message.ts';
 import { storeVariants, variantOf } from '../dress/dress.ts';
@@ -69,6 +70,7 @@ async function requestedExport(
 		settings: ExportSettings;
 		projectData?: ImportedCharacter['extra'];
 		rpgWalk?: string;
+		actionLayering?: ActionSheetOptions;
 	}
 ): Promise<ExportResult & { zip: Uint8Array | null }> {
 	const current: Preset = {
@@ -202,7 +204,8 @@ async function requestedExport(
 			engines: [o.engine],
 			baked: o.baked,
 			projectData: o.projectData,
-			rpgWalk: o.rpgWalk
+			rpgWalk: o.rpgWalk,
+			actionLayering: o.actionLayering
 		},
 		[...warnings],
 		warningMessages

@@ -823,6 +823,7 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 		(await import(wardrobePath)).setSharedItemsHiddenForCharacter(state.doc.id, true);
 		await exports.saveExportSetting({ engine: 'unity' });
 		await exports.saveExportSetting({ dressedCharacterSheets: false });
+		await exports.saveExportSetting({ actionLayers: true });
 		await exports.saveExportSetting({ animation: 'walk', playOnce: true });
 		return state.doc.id as string;
 	});
@@ -851,13 +852,25 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 		hideCurrent: '1',
 		showDemo: '1',
 		developer: '1',
-		exports: { engine: 'unity', dressedCharacterSheets: false, playOnce: ['walk'] }
+		exports: {
+			engine: 'unity',
+			dressedCharacterSheets: false,
+			actionLayers: true,
+			playOnce: ['walk']
+		}
 	};
 	const defaults = {
 		general: { theme: 'dark', language: null },
 		wardrobe: { hideShared: null, hideCurrent: null, showDemo: null },
 		developer: { developer: null },
-		export: { exports: { engine: 'generic', dressedCharacterSheets: true, playOnce: [] } }
+		export: {
+			exports: {
+				engine: 'generic',
+				dressedCharacterSheets: true,
+				actionLayers: false,
+				playOnce: []
+			}
+		}
 	};
 	const allDefaults = {
 		...changed,
@@ -993,9 +1006,13 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 		const exportPath = '/src/lib/store/export-settings.ts';
 		await (await import(i18nPath)).selectLanguage();
 		await (await import(exportPath)).saveExportSetting({ engine: 'unity' });
+		await (await import(exportPath)).saveExportSetting({ actionLayers: true });
 	});
 	await expect(pageReset).toBeDisabled();
 	await expect(resetAll).toBeEnabled();
+	await nav.getByRole('button', { name: 'Export', exact: true }).click();
+	await expect(pageReset).toBeEnabled();
+	await nav.getByRole('button', { name: 'Appearance', exact: true }).click();
 	await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts';
 		const i18nPath = '/src/lib/i18n.ts';

@@ -117,6 +117,82 @@ test('generated controller preserves playlist boundaries, independent dolls, bod
 	d.play('stop', 'south', true);
 	expect(d.elapsed).toBe(0);
 	expect(d.cell).toBe(0);
+	d.play('walk', 'south');
+	expect(d.canLayerAction('stop', 'south')).toBe(false);
+	expect(d.playAction('stop', 'south')).toBe('full');
+	expect(d.actionPlaying).toBe(true);
+	d.update(160);
+	expect(d.actionPlaying).toBe(false);
+	expect(d.elapsed).toBe(160);
+	m.actionLayers = {
+		planes: [
+			{
+				clip: 'walk',
+				part: 'lower',
+				anchors: [
+					{
+						direction: 'south',
+						cells: [
+							[32, 32],
+							[32, 32]
+						]
+					}
+				]
+			},
+			{
+				clip: 'stop',
+				part: 'upper',
+				anchors: [
+					{
+						direction: 'south',
+						cells: [
+							[32, 32],
+							[32, 32]
+						]
+					}
+				]
+			}
+		],
+		pairs: [
+			{
+				walk: 'walk',
+				action: 'stop',
+				direction: 'south',
+				upperCells: 2,
+				blocked: ['hat'],
+				cells: Array.from({ length: 4 }, () => ({ x: 1, y: 0 }))
+			}
+		]
+	};
+	for (const item of m.items)
+		for (const layer of item.layers)
+			layer.actionSheets = { lower: { walk: 'lower.png' }, upper: { stop: 'upper.png' } };
+	d.setActionLayering(true);
+	expect(d.canLayerAction('stop', 'south')).toBe(true);
+	expect(d.playAction('stop', 'south')).toBe('layered');
+	expect([...d.nodes.keys()]).toContain('upper' + names.base.main);
+	expect(() => d.playAction('invalid', 'south')).toThrow('unavailable');
+	for (const delta of [50, 50, 19]) {
+		d.update(delta);
+		expect(d.nodes.get('lower' + names.base.main).hidden).toBe(false);
+		expect(d.nodes.get('upper' + names.base.main).hidden).toBe(false);
+	}
+	expect(d.cell).toBe(1);
+	expect(d.actionPlaying).toBe(true);
+	d.update(1);
+	expect(d.actionPlaying).toBe(false);
+	expect(d.playAction('stop', 'south')).toBe('layered');
+	const usesUpper = () => !d.nodes.get('upper' + names.base.main).hidden;
+	d.equip('head', 'hat');
+	expect(d.actionPlaying).toBe(true);
+	expect(usesUpper()).toBe(false);
+	d.equip('head', null);
+	expect(d.canLayerAction('stop', 'south')).toBe(true);
+	expect(d.actionPlaying).toBe(true);
+	expect(usesUpper()).toBe(false);
+	d.play('walk', 'south');
+	expect(d.actionPlaying).toBe(false);
+	expect(d.elapsed).toBe(280);
 	d.destroy();
 	expect(d.nodes.size).toBe(0);
 	expect(second.nodes.size).toBeGreaterThan(0);

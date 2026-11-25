@@ -2,6 +2,7 @@ import { clipKind, sampleTimeline, timelineDuration } from '../../lib/runtime/ti
 import {
 	bakedFrame,
 	composeCell,
+	composeLayeredAction,
 	equipped,
 	hiddenSlots,
 	shownItems,
@@ -459,20 +460,18 @@ export function resolveLive(
 		moving = !!(velocity.x || velocity.y),
 		previous = options.previous;
 	const saved = options.defaultDirection ?? defaultFacing(a);
+	// A riding pose may show fallback art. Retain travel intent independently from the rider's drawn facing.
+	const lastFacing = options.riding
+		? (previous?.intendedDirection ?? previous?.direction)
+		: previous?.direction;
 	const retained =
-		previous?.direction && a.directions.includes(previous.direction)
-			? previous.direction
+		lastFacing && a.directions.includes(lastFacing)
+			? lastFacing
 			: previous?.intendedDirection && a.directions.includes(previous.intendedDirection)
 				? previous.intendedDirection
 				: saved;
 	const intended = moving
-		? nearestDirection(
-				a.directions,
-				velocity,
-				previous?.direction,
-				previous?.intendedDirection,
-				saved
-			)
+		? nearestDirection(a.directions, velocity, lastFacing, previous?.intendedDirection, saved)
 		: (retained ?? nearestDirection(a.directions, { x: 0, y: -1 }));
 	// Riding order: the chosen Riding pose, the Ride Move, the Riding State, then Idle and Standing. The first three
 	// show only for the exact facing, so the rider never faces away from the mount.
@@ -676,14 +675,34 @@ export interface RenderedPresentation {
 	issueKey: string | null;
 	loading: string | null;
 	loadingItems: { name: string; directions: DirectionName[] }[];
+	attackLayered?: boolean;
+	attackFallback?: string;
 }
 /** Consume the production recolored project and current outfit map (DressState.current.items). */
+export function liveActionFallback(
+	enabled: boolean,
+	grounded: boolean,
+	mounted: boolean,
+	walk: Presentation,
+	action: Presentation,
+	walkClip: string
+) {
+	if (!enabled) return 'disabled';
+	if (mounted) return 'mounted';
+	if (!grounded) return 'airborne';
+	if (!walk.moving || !walk.clip || walk.clip !== walkClip || walk.kind !== 'animation')
+		return 'not-walking';
+	if (walk.direction !== action.direction) return 'direction';
+	return null;
+}
+
 export function renderPresentation(
 	a: PresentationAvailability,
 	items: Preset['items'],
 	presentation: Presentation,
 	cell = presentation.cell,
-	fitFrame?: (items: Preset['items'], cells: readonly number[]) => Frame
+	fitFrame?: (items: Preset['items'], cells: readonly number[]) => Frame,
+	lower?: { pose: Presentation; cell: number; waist: number }
 ): RenderedPresentation {
 	const p = a.project,
 		m = p.manifest,
@@ -732,14 +751,23 @@ export function renderPresentation(
 			.map((entry) => `${entry.name} loading — ${entry.directions.map(directionLabel).join(', ')}`)
 			.join(' · ') || null;
 	result.frame = fitFrame?.(filtered, cells) ?? frame;
-	result.image = composeCell(
-		p,
-		filtered,
-		clip,
-		direction,
-		cells.includes(cell) ? cell : cells[0],
-		result.frame
-	);
+	const actualCell = cells.includes(cell) ? cell : cells[0];
+	if (lower?.pose.direction && lower.pose.clip) {
+		const walk = { clip: lower.pose.clip, direction: lower.pose.direction, cell: lower.cell };
+		const layered = composeLayeredAction(
+			p,
+			filtered,
+			walk,
+			{ clip, direction, cell: actualCell },
+			lower.waist,
+			result.frame
+		);
+		result.image = layered.image;
+		result.frame = layered.frame;
+		result.attackLayered = !!layered.image;
+		result.attackFallback = layered.fallback ?? undefined;
+	}
+	result.image ??= composeCell(p, filtered, clip, direction, actualCell, result.frame);
 	if (result.hiddenItems.length && !a.loading) {
 		// Missing in every view: naming the facing shown would read as if turning brought the items back.
 		const everywhere = result.hiddenItems.every((item) =>

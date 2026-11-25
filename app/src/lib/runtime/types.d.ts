@@ -13,6 +13,28 @@ export interface Manifest {
 	items: Item[]; // includes the base (slot "body")
 	presets: Preset[]; // presets[0] = default
 	export?: ExportInfo;
+	/** Precut, source-color layers and frame-pair registration, present in enabled engine exports. */
+	actionLayers?: ActionLayers;
+}
+
+export interface ActionLayers {
+	planes: ActionPlane[];
+	omissions?: { clip: string; direction: DirectionName; items: string[] }[];
+	pairs: {
+		walk: string;
+		action: string;
+		direction: DirectionName;
+		upperCells: number;
+		blocked: string[];
+		/** Row-major by lower cell and then upper cell. A cell stores the fit correction after subtracting hip anchors. */
+		cells: ({ x: number; y: number } | null)[];
+	}[];
+}
+
+export interface ActionPlane {
+	clip: string;
+	part: 'lower' | 'upper';
+	anchors: { direction: DirectionName; cells: ([number, number] | null)[] }[];
 }
 
 export interface Material {
@@ -223,6 +245,8 @@ export interface CellQa {
 }
 
 export interface Layer {
+	/** Source-ramp fragments in the original layer grid and pivot. */
+	actionSheets?: Partial<Record<'lower' | 'upper', Record<string, string>>>;
 	id: 'main' | 'fg' | 'bg';
 	role: 'fg' | 'bg';
 	z: number;

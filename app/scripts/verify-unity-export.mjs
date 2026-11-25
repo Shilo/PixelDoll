@@ -110,7 +110,23 @@ async function fixtureArchive() {
 		baseHash: '',
 		// The mirrored view gives SetDirection a second direction with the same unequal, repeated-cell timelines.
 		directions: [{ id: 'south' }, { id: 'west', mirrorOf: 'south' }],
-		animations
+		animations,
+		anchors: {
+			hip: {
+				walk: {
+					south: [
+						[32, 32],
+						[32, 32]
+					]
+				},
+				jump: {
+					south: [
+						[31, 32],
+						[31, 32]
+					]
+				}
+			}
+		}
 	};
 	rig.baseHash = await baseHashOf(
 		rig,
@@ -129,6 +145,7 @@ async function fixtureArchive() {
 			{ id: 'body', z: 10, class: 'base', required: true },
 			{ id: 'hair', z: 20, class: 'rigid' },
 			{ id: 'head', z: 30, class: 'rigid' },
+			{ id: 'legs', z: 25, class: 'worn' },
 			{ id: 'weapon_extra', z: 150, class: 'held', anchor: 'hand_r', profile: 'main_hand' },
 			{ id: 'shield_extra', z: 110, class: 'held', anchor: 'hand_l', profile: 'off_hand' }
 		],
@@ -188,6 +205,17 @@ async function fixtureArchive() {
 		if (slot === 'weapon_extra') item.hides = ['off_hand'];
 		manifest.items.push(item);
 	}
+	const unsupported = structuredClone(manifest.items.find(({ id }) => id === 'hat_small'));
+	unsupported.id = 'walk_only_hat';
+	unsupported.name = 'Walk-only hat';
+	delete unsupported.layers[0].cells.jump;
+	manifest.items.push(unsupported);
+	const attackOnly = structuredClone(manifest.items.find(({ id }) => id === 'hat_small'));
+	attackOnly.id = 'attack_only_legs';
+	attackOnly.name = 'Attack-only legs';
+	attackOnly.slot = 'legs';
+	delete attackOnly.layers[0].cells.walk;
+	manifest.items.push(attackOnly);
 	const copy = structuredClone(manifest);
 	applyExportSettings(copy, {
 		engine: 'unity',
@@ -196,7 +224,12 @@ async function fixtureArchive() {
 	});
 	const result = await exportZip(
 		{ manifest: copy, images },
-		{ engines: ['unity'], baked: false, exportedAt: '2026-10-28T00:00:00.000Z' }
+		{
+			engines: ['unity'],
+			baked: false,
+			exportedAt: '2026-10-28T00:00:00.000Z',
+			actionLayering: { waist: 0, walk: ['walk'], attacks: ['jump'] }
+		}
 	);
 	assert.deepEqual(result.errors, []);
 	assert.deepEqual(

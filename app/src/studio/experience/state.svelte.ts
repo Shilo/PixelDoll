@@ -18,6 +18,7 @@ export const experience = $state({
 	riderPoseReplaced: null as { projectId: string; clip: string; pose: string } | null,
 	/** The Live Views clip chosen per character ID and action (liveRoles.ts); a missing one plays Automatic. */
 	liveRoles: liveSaved.roles,
+	liveLayering: liveSaved.layering ?? {},
 	mountLegIssue: '',
 	presentation: 'animation' as string,
 	/** The chosen zoom in CSS px per art px, shared by all views; null shows each view's fit. */

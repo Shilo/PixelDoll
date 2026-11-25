@@ -93,7 +93,11 @@ namespace PixelDollNativeReview
                 else Check(Math.Abs(animator.GetCurrentAnimatorStateInfo(0).normalizedTime - completedTime) < .0001f && clock.sprite == completedSprite, label + ": repeated Play preserves active loop " + state);
             }
             foreach (var move in data.animations) VerifyTurn(label, doll, animator, clock, move);
-            if (label == "LayeredTiming") VerifyEquipmentAndPalette(label, prefab, doll, clock, data);
+            if (label == "LayeredTiming")
+            {
+                VerifyEquipmentAndPalette(label, prefab, doll, clock, data);
+                VerifyAction(label, doll, animator, clock);
+            }
             UnityEngine.Object.DestroyImmediate(instance);
             if (label == "LayeredTiming") VerifyState(label, prefab, data);
         }
@@ -124,6 +128,61 @@ namespace PixelDollNativeReview
             Check((bool)Invoke(doll, "SetDirection", from) && animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f && shows(move.id + "_" + from + "_" + move.frames[entry].cell), label + ": turning a completed once-only clip holds its final entry " + move.id);
             Invoke(doll, "Play", move.id, from); animator.Update(0); Invoke(doll, "Sync");
             Check(animator.GetCurrentAnimatorStateInfo(0).normalizedTime < .01f && shows(move.id + "_" + from + "_" + move.frames[0].cell), label + ": a turned completed clip still replays " + move.id);
+
+static void VerifyAction(string label, object doll, Animator animator, SpriteRenderer clock)
+        {
+            var state = doll.GetType().GetProperty("IsActionPlaying");
+            bool Playing() => (bool)state.GetValue(doll);
+            Invoke(doll, "Play", "walk", "south", true);
+            animator.Update(0);
+            Invoke(doll, "Sync");
+            Check((bool)Invoke(doll, "CanLayerAction", "jump", "south"), label + ": action can use exported anchors");
+            Check((string)Invoke(doll, "PlayAction", "jump", "south") == "full" && Playing(), label + ": action layering defaults off");
+            animator.Update(.1f);
+            Invoke(doll, "Sync");
+            Check(clock.sprite.name == "walk_south_1", label + ": native loop advances during a full action");
+            Invoke(doll, "SetActionLayering", true);
+            Check((string)Invoke(doll, "PlayAction", "jump", "south") == "layered", label + ": enabled action uses precut textures");
+            var renderers = ((Component)doll).GetComponentsInChildren<SpriteRenderer>();
+            Check(renderers.Any(r => r.enabled && r.name.StartsWith("action_upper_") && r.sprite.name == "jump_south_0"), label + ": upper renderers display the action");
+            Check(renderers.Any(r => r.enabled && r.name == "body_fg" && r.sprite.name == "walk_south_1"), label + ": lower renderer displays the current gait");
+            Check((string)Invoke(doll, "PlayAction", "missing", "south") == "" && Playing(), label + ": invalid action preserves playback");
+            Invoke(doll, "SetActionLayering", false);
+            var elapsed = doll.GetType().GetField("actionElapsed", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var phases = new HashSet<string>();
+            foreach (var ms in new[] { 84, 174, 265, 359 })
+            {
+                elapsed.SetValue(doll, (double)ms);
+                animator.Update(.09f);
+                Invoke(doll, "Sync");
+                phases.Add(clock.sprite.name);
+                Check(Playing() && renderers.Any(r => r.enabled && r.name.StartsWith("action_upper_") && r.sprite.name.StartsWith("jump_south_")), label + ": layered throughout action at " + ms);
+                Check(renderers.Any(r => r.enabled && r.name == "body_fg" && r.sprite.name == clock.sprite.name), label + ": gait still displayed at " + ms);
+            }
+            Check(phases.Count > 1, label + ": layered action crosses gait cells");
+            var walkFrame = clock.sprite.name;
+            var duration = doll.GetType().GetField("actionDuration", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            elapsed.SetValue(doll, duration.GetValue(doll));
+            doll.GetType().GetMethod("LateUpdate", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(doll, null);
+            Check(!Playing() && clock.sprite.name == walkFrame, label + ": layered action completes without resetting the walk");
+            Invoke(doll, "SetActionLayering", true);
+            Check((string)Invoke(doll, "PlayAction", "jump", "south") == "layered", label + ": starts another layered action");
+            double actionTime = 84;
+            elapsed.SetValue(doll, actionTime);
+            bool UsesUpper() => renderers.Any(r => r.enabled && r.name.StartsWith("action_upper_"));
+            Check((bool)Invoke(doll, "Equip", "head", "walk_only_hat"), label + ": equips walk-only hat");
+            Invoke(doll, "Sync");
+			Check(Playing() && UsesUpper() && (double)elapsed.GetValue(doll) == actionTime, label + ": walk-only hat does not downgrade or reset the action");
+			Check((bool)Invoke(doll, "Equip", "legs", "attack_only_legs"), label + ": equips attack-only legs");
+			Invoke(doll, "Sync");
+            Check(Playing() && !UsesUpper() && (double)elapsed.GetValue(doll) == actionTime, label + ": unsupported outfit downgrades without resetting action time");
+            Check((bool)Invoke(doll, "Equip", "head", "hat"), label + ": restores supported hat");
+			Check((bool)Invoke(doll, "Equip", "legs", ""), label + ": removes attack-only legs");
+            Invoke(doll, "Sync");
+            Check((bool)Invoke(doll, "CanLayerAction", "jump", "south") && Playing() && !UsesUpper() && (double)elapsed.GetValue(doll) == actionTime, label + ": restoring outfit does not upgrade an active action");
+            Invoke(doll, "Play", "walk", "south");
+            Invoke(doll, "Sync");
+            Check(!Playing() && clock.sprite.name == walkFrame, label + ": Play cancels the action without resetting the walk");
         }
 
         /// The fixture's one-cell State has a magenta center block that no Move cell has; the hat layer is read because it is not recolored.

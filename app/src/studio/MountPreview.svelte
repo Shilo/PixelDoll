@@ -108,7 +108,7 @@
 					clips: currentLiveClips(current.id, current.project.manifest.rig.animations)
 				});
 				clock = advancePlayback(p, clock, dt);
-				place = mountPlacement(current.project, p, grounding);
+				place = mountPlacement(current.project, direction, p, grounding);
 				const key = JSON.stringify([p.clip, p.direction, clock.cell]);
 				if (composed?.key !== key && place?.view && p.clip && p.direction) {
 					const result = renderPresentation(a, current.items, p, clock.cell);

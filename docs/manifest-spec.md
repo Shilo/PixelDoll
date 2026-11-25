@@ -1047,6 +1047,13 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
   one; off Steam and superseded by U2U), WITH and other console or handheld editions (no custom images), and U2U (unreleased;
   no announced character import). The research is in `docs/research/rpg-maker-export-2026-11-07.md`.
 
+### 6.9 Optional moving-action fragments
+
+The Export checkbox **Moving attack layers** is off by default and independent of the Live switch. Enabled Phaser, GDevelop, Godot and Unity exports use the character's Live Walk, Attack and Waist settings. Optional `actionSheets.lower` and `actionSheets.upper` map moves to the new `action/` body PNGs or to existing source-color equipment sheets. Rows, columns and pivots match the original layer. `actionLayers.planes` stores integer hip registration coordinates by direction and cell.
+
+Each `actionLayers.pairs` entry is a set that passed the geometry and seam gate for all reachable cells of the Walk, Attack and shared direction. Its `blocked` IDs are items without drawable art on their required clip. The `cells` array is row-major by Walk cell then Attack cell. Unused combinations are null; the rest contain the integer correction to add to the hip difference. This optional data is rebuilt with the same archive, not separately versioned or updated in place. Re-export when the source art, timing, or Waist setting changes. See the [controller contract](architecture/javascript-runtime.md#one-shot-actions-over-a-loop).
+
+
 ## 7. Editable import copy
 
 Every new export ZIP also contains `project.json` and `cells/<rgba-sha256>.png`. Engine readers continue to consume `manifest.json` and `layers/`.

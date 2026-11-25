@@ -286,6 +286,8 @@ function drawMount(direction: DirectionName, H: number, dy: number): Omit<MountF
 	}
 }
 
+export const mountSupportsFacing = (direction: DirectionName) => DIRECTIONS.includes(direction);
+
 const GAIT = [0, -1, 0, 1] as const;
 
 const views = new Map<string, MountView>();
@@ -293,7 +295,7 @@ const views = new Map<string, MountView>();
 export function mountView(id: MountId, direction: DirectionName, height: number): MountViewResult {
 	if (id !== TEST_MOUNT)
 		return { ok: false, reason: `Unknown mount fixture: ${id}`, missingView: false };
-	if (!DIRECTIONS.includes(direction))
+	if (!mountSupportsFacing(direction))
 		return {
 			ok: false,
 			reason: `Open saddle has no ${directionLabel(direction)} view; mount hidden`,
@@ -402,15 +404,21 @@ export function placeRider(ground: Point, contact: Point, frame: MountFrame): Mo
  * The ground-relative frame (x, y = standing ground) holding the mount and the shifted rider body across every gait
  * frame, so Preview fits the whole mounted group without resizing as it bobs.
  */
-export function mountedFrame(body: Frame, ground: Point, view: MountView, contact: Point): Frame {
+export function mountedFrame(
+	body: Frame,
+	ground: Point,
+	view: MountView,
+	contact: Point,
+	riderGround = ground
+): Frame {
 	let l = Infinity,
 		t = Infinity,
 		right = -Infinity,
 		b = -Infinity;
 	for (const f of view.frames) {
 		const { mount, rider } = placeRider(ground, contact, f);
-		const bodyL = ground.x - body.x + rider.x,
-			bodyT = ground.y - body.y + rider.y;
+		const bodyL = riderGround.x - body.x + rider.x,
+			bodyT = riderGround.y - body.y + rider.y;
 		l = Math.min(l, mount.x, bodyL);
 		t = Math.min(t, mount.y, bodyT);
 		right = Math.max(right, mount.x + f.back.w, bodyL + body.w);

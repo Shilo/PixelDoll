@@ -67,6 +67,7 @@ export async function orderingProbe() {
 		dir: 'south',
 		body: { anims: { currentFrame: { textureFrame: 'south_0' } } },
 		texture: (entry: Item) => entry.id,
+		actionNodes: [],
 		nodes: manifest.slots.map((slot, index) => ({
 			slot,
 			role: 'fg',

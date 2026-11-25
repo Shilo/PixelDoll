@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { currentLiveClips, currentLiveLayering } from './experience/liveViews.ts';
 	import { MediaQuery } from 'svelte/reactivity';
 	import SettingsItemButton from './SettingsItemButton.svelte';
 	import { CURRENT_OUTFIT_ID } from '../lib/store/identity.ts';
@@ -47,7 +48,7 @@
 	import type { WhisperKey } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
-	import type { NoteTerm } from '../lib/export/export.ts';
+	import { ACTION_LAYER_ENGINES, type NoteTerm } from '../lib/export/export.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { slotLabelMessage } from './slots.ts';
 	import RichMessage from './RichMessage.svelte';
@@ -156,6 +157,8 @@
 	let savedProjects = $state.raw<StoredProject[]>([]);
 	let formatChoice = $state<Engine | null>(null);
 	const engine = $derived(formatChoice ?? preferences?.engine ?? DEFAULT_EXPORT_ENGINE);
+	const supportsActionLayers = $derived(ACTION_LAYER_ENGINES.includes(engine));
+	const actionLayers = $derived(preferences?.actionLayers ?? false);
 	const selected = $derived(
 		engine === 'rpgmakerxp' ? RPG_XP : ENGINES.find((target) => target.id === engine)
 	);
@@ -278,6 +281,7 @@
 	);
 	const PLAY_ONCE = $derived(t('export.settings.playOnce'));
 	const DRESSED_SHEETS = $derived(t('export.settings.dressed'));
+	const ACTION_LAYERS = $derived(t('export.settings.actionLayers'));
 	function animationLabel(id: string): string {
 		return displayMove(id, names);
 	}
@@ -529,6 +533,16 @@
 		result = null;
 		const look = { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) };
 		const snapshot = { ...p, manifest: structuredClone(p.manifest) };
+		const layering = currentLiveLayering(doc.id);
+		const clips = currentLiveClips(doc.id, snapshot.manifest.rig.animations);
+		const actionLayering =
+			actionLayers && supportsActionLayers
+				? {
+						waist: layering.waist,
+						walk: clips.walk.slice(0, 1),
+						attacks: [...clips.attack, ...clips.attackUp, ...clips.attackDown]
+					}
+				: undefined;
 		let stale = false;
 		void (async () => {
 			const qa = rec?.rigQa as { clips?: Record<string, { fails?: unknown }> } | undefined;
@@ -556,7 +570,8 @@
 					look,
 					settings: exportPreferences!,
 					projectData: editableData(rec),
-					rpgWalk: w
+					rpgWalk: w,
+					actionLayering
 				})),
 				rigIssues
 			};
@@ -746,6 +761,23 @@
 			</label>
 			<p class="bu-muted settings-description" id="export-dressed-description">
 				{t('export.settings.dressedHint')}
+			</p>
+		</div>
+		<hr class="bu-separator export-divider" />
+		<div class="export-dressed" data-setting="action-layers" tabindex="-1">
+			<label class="check">
+				<input
+					type="checkbox"
+					checked={actionLayers}
+					disabled={saving || !ready}
+					aria-describedby="export-action-layers-description"
+					onchange={(e) =>
+						changeSetting(e.currentTarget, { actionLayers: e.currentTarget.checked })}
+				/>
+				<span class="settings-label">{ACTION_LAYERS}</span>
+			</label>
+			<p class="bu-muted settings-description" id="export-action-layers-description">
+				{t('export.settings.actionLayersHint')}
 			</p>
 		</div>
 		<hr class="bu-separator export-divider" />
@@ -1056,6 +1088,18 @@
 											? t('common.loading')
 											: t('common.unavailable')}
 								</dd>
+								{#if supportsActionLayers}
+									<dt>{ACTION_LAYERS}</dt>
+									<dd>
+										{!ready
+											? refreshing
+												? t('common.loading')
+												: t('common.unavailable')
+											: actionLayers
+												? t('export.settings.actionLayersOn')
+												: t('export.settings.actionLayersOff')}
+									</dd>
+								{/if}
 							</dl>
 						</section>{/if}
 					{#if result?.zip}<details class="disclosure">

@@ -236,6 +236,11 @@
 				},
 				{ id: 'sheets', label: 'export.settings.dressed', terms: ['export.settings.dressedHint'] },
 				{
+					id: 'action-layers',
+					label: 'export.settings.actionLayers',
+					terms: ['export.settings.actionLayersHint']
+				},
+				{
 					id: 'format',
 					label: 'export.settings.defaultTarget',
 					terms: ['export.settings.format', 'export.group.engines', 'export.settings.versionMenu'],

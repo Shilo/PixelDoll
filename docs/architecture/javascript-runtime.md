@@ -59,6 +59,10 @@ Deliberate boundaries:
 - Aseprite resolves and applies first-outfit palettes through the canonical color API. Generic and RPG
   Maker baked frames use the canonical compositor. Godot and Unity retain native-language controllers,
   so their independent implementations still require native conformance checks rather than source identity.
+- A mount and its rider have independent facings and clocks. The mount follows travel, and the rider
+  can face an attack while its hip contact stays on the mount's seat. The editor's test mount is an
+  editor feature. A game can compose the same behavior by playing two exported dolls independently
+  and placing the rider's contact on the mount's seat.
 
 Add runtime behavior to the canonical JavaScript modules, not the TypeScript facades. Existing
 application entry points preserve caller interfaces; direct canonical imports are appropriate for
@@ -178,6 +182,21 @@ All four live controllers must preserve these behaviors:
 Generic PNG/JSON is an integration format, not a live API. Aseprite records editable layers and the
 first outfit. RPG Maker resamples to its fixed sheet format. These targets must use shared decisions
 where applicable, but cannot expose live operations the destination format does not support.
+
+### One-shot actions over a loop
+
+| Operation | Phaser / GDevelop | Godot | Unity |
+| --- | --- | --- | --- |
+| Enable precut action layers | `setActionLayering(enabled)` | `set_action_layering(enabled)` | `SetActionLayering(enabled)` |
+| Start a one-shot action | `playAction(move, direction)` | `play_action(move, direction)` | `PlayAction(move, direction)` |
+| Check the entire action set | `canLayerAction(move, direction)` | `can_layer_action(move, direction)` | `CanLayerAction(move, direction)` |
+| Query the action clock | `actionPlaying` | `is_action_playing()` | `IsActionPlaying` |
+
+Layering starts off. `canLayerAction` checks all reachable cells of the current walk and action in their shared direction and checks the visible outfit, independently of the switch. `playAction` starts at time zero and returns `layered` when enabled and eligible, or `full` for a whole-body action. That choice is latched. A different gait cell, palette change, or toggle cannot flip a playing action. After an equipment change, a layered action can downgrade once if the outfit is unsupported; restoring the outfit does not upgrade that action. Neither clock is restarted. A valid `play`, including a facing change, cancels the action in all four exports. Live instead keeps the last cell of the original facing when the user stops walking or turns until the action ends. Invalid `playAction` calls throw in Phaser and GDevelop and warn and return `""` in Godot and Unity. All leave the visible state and both clocks intact.
+
+The Studio uses the canonical fragment splitter, seam measurement and compositor. It pads the whole cached set around the same pivot without changing Live's world scale. Engine sprites are independently translated and have no shared clipping frame. Export preparation writes source-color body fragments with the original grids and pivots and points whole equipment layers at their existing source sheets. Both parts share normal layer ordering. The upper translation is lower hip minus upper hip plus the baked correction. Native controllers consume only prepared assets and metadata. The host game owns travel speed, action input and hit timing.
+
+For configured attacks, gear without complete attack art is omitted from either action mode. It does not block layering; Live retains the hidden-gear or loading notice. Visible lower-slot gear with complete attack art and incomplete walk art forces a full-body action. Exports record the omissions by attack/facing and the blockers by walk/attack/facing, so the four players do not recalculate image coverage. Seam limits are scaled by unpadded rig width, and off-silhouette hips prefer valid measured or requested coordinates before clamping to the occupied silhouette.
 
 ## Maintaining cross-engine consistency
 

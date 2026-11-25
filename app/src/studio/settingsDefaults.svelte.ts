@@ -92,6 +92,7 @@ function isDefaultExport(settings: ExportSettings) {
 	return (
 		settings.engine === defaults.engine &&
 		settings.dressedCharacterSheets === defaults.dressedCharacterSheets &&
+		settings.actionLayers === defaults.actionLayers &&
 		settings.playOnce.length === 0
 	);
 }

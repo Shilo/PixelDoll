@@ -10,7 +10,9 @@ import {
 	type MountId,
 	type MountView
 } from '../../src/studio/experience/mounts.ts';
-import type { DirectionName } from '../../src/lib/store/manifest.ts';
+import type { DirectionName, Project } from '../../src/lib/store/manifest.ts';
+import { mountPlacement } from '../../src/studio/experience/mountPlacement.ts';
+import type { Presentation } from '../../src/studio/experience/presentation.ts';
 import { DIRECTIONS } from '../../src/lib/rig/rig.ts';
 import type { Img } from '../../src/lib/image/png.ts';
 
@@ -214,6 +216,69 @@ describe('rider placement', () => {
 	const rig = { pivot: { x: 32, y: 64 } };
 	const frame = { x: 40, y: 70 };
 	const ground = { x: 40.5, y: 70 };
+
+	test('a south-facing attack uses its own hip on the unchanged east-facing mount', () => {
+		const project: Project = {
+			manifest: {
+				format: 'pixeldoll/3',
+				name: 'Rider',
+				app: 'test',
+				rig: {
+					cell: { w: 64, h: 64 },
+					pivot: { x: 32, y: 64 },
+					baseItem: 'rider',
+					baseHash: 'sha256:rider',
+					directions: [{ id: 'east' }, { id: 'south' }],
+					animations: [],
+					anchors: { hip: { slash: { east: [[30, 39]], south: [[27, 42]] } } }
+				},
+				slots: [],
+				items: [],
+				materials: [],
+				presets: []
+			},
+			images: new Map()
+		};
+		const body = { w: 30, h: 50, x: 15, y: 50 };
+		const grounding = {
+			body,
+			reach: body,
+			facings: new Map([
+				['east' as const, { x: 1, y: -2, standingHeight: 50, reach: body }],
+				['south' as const, { x: -4, y: 2, standingHeight: 35, reach: body }]
+			])
+		};
+		const action: Presentation = {
+			kind: 'animation',
+			clip: 'slash',
+			direction: 'south',
+			moving: false,
+			requestedClip: 'slash',
+			intendedDirection: 'south',
+			cell: 0,
+			issue: null,
+			issueKey: null,
+			loading: false
+		};
+		const east = mountPlacement(project, 'east', { ...action, direction: 'east' }, grounding);
+		const south = mountPlacement(project, 'east', action, grounding);
+		if (!east?.view || !south?.view) throw new Error('Expected mounted artwork');
+		expect(south.view).toBe(view(TEST_MOUNT, 'east', 50));
+		expect(south.view).toBe(east.view);
+		expect(south.ground).toEqual(east.ground);
+		expect(south.contact).toMatchObject({ x: 27.5, y: 42.5, source: 'hip' });
+		expect(south.contact).not.toEqual(east.contact);
+		for (const frame of south.view.frames) {
+			const at = placeRider(south.ground, south.contact, frame);
+			expect(at.mount).toEqual(placeRider(east.ground, east.contact, frame).mount);
+			expect(
+				Math.abs(at.rider.x + south.contact.x - at.mount.x - frame.seat.x)
+			).toBeLessThanOrEqual(0.5);
+			expect(
+				Math.abs(at.rider.y + south.contact.y - at.mount.y - frame.seat.y)
+			).toBeLessThanOrEqual(0.5);
+		}
+	});
 
 	test('uses the move hip anchor when present and discloses an estimate otherwise', () => {
 		const anchors = { hip: { ride: { east: [[31, 40] as [number, number]] } } };

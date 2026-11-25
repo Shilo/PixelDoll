@@ -113,7 +113,7 @@ test('Export choices survive abrupt browser termination and restart', async ({},
 		await reopened.getByRole('button', { name: 'Export', exact: true }).click();
 		const settings = reopened.getByRole('dialog');
 		await expect(settings.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked();
-		await expect(settings.locator('.export-summary dd')).toHaveText(['Walk', 'None']);
+		await expect(settings.locator('.export-summary dd')).toHaveText(['Walk', 'None', 'Off']);
 		await settings.getByRole('button', { name: 'Settings', exact: true }).click();
 		await expect(settings.getByRole('checkbox', { name: 'Walk', exact: true })).toBeChecked();
 		await expect(

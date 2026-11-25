@@ -30,6 +30,14 @@ import {
 	shownItems
 } from '../runtime/paperdoll.js';
 export {
+	actionHip,
+	actionLowerSlot,
+	actionWaist,
+	composeLayeredAction,
+	compositeAction,
+	layerOffset,
+	splitLower,
+	splitUpper,
 	rigFrame,
 	layerFrame,
 	unionFrame,
