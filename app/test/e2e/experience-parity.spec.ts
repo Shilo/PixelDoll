@@ -4105,7 +4105,7 @@ test.describe('Preview facing lineup', () => {
 			s.doc.rev++;
 		});
 		await expect(world(page)).toHaveAttribute('data-facing', 'south');
-		const note = page.locator('.world-coverage');
+		const note = page.locator('.preview-note');
 		await expect(note).toContainText('missing Walk / North frames');
 		await expect(note).toContainText('missing Walk / East frames');
 		await expect
@@ -4114,7 +4114,7 @@ test.describe('Preview facing lineup', () => {
 				const playback = await page
 					.getByRole('toolbar', { name: 'Preview controls' })
 					.boundingBox();
-				return notice !== null && playback !== null && notice.y >= playback.y + playback.height;
+				return notice !== null && playback !== null && notice.y + notice.height <= playback.y;
 			})
 			.toBe(true);
 		await page.evaluate(async () => {
@@ -4125,9 +4125,7 @@ test.describe('Preview facing lineup', () => {
 		});
 		await expect(page.locator('.world-loading-items')).toContainText('Lineup hat loading');
 		await expect(page.locator('.world-loading-items')).toContainText('North, East');
-		await expect(page.locator('.world-coverage').filter({ hasText: 'missing Walk' })).toHaveCount(
-			0
-		);
+		await expect(note.filter({ hasText: 'missing Walk' })).toHaveCount(0);
 	});
 
 	type Rig = [DirectionName, DirectionName?][];
