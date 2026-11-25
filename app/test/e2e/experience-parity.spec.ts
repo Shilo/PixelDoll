@@ -3494,11 +3494,43 @@ test('customization panel docks on either side, gives the stage its width back a
 		return {
 			shown: !panel.hidden,
 			inert: panel.inert,
-			sliding: Number(slide?.effect?.getTiming().duration) > 0,
+			sliding: Number(slide?.effect?.getTiming().duration) >= 100,
 			stage: document.querySelector('.experience-stage')!.getBoundingClientRect().width
 		};
 	});
 	expect(closing).toEqual({ shown: true, inert: true, sliding: true, stage: originalStage.width });
+	await expect(rail).toBeHidden();
+	expect((await stage.boundingBox())!.width).toBe(1440);
+	await toggle.click();
+	await expect(rail).toBeVisible();
+	await expect(rail).toHaveJSProperty('inert', false);
+	// Let the opening slide finish, so this close starts a full one that the test can hold.
+	await page.evaluate(() =>
+		Promise.all(
+			document
+				.getElementById('customization-rail')!
+				.getAnimations()
+				.map((a) => a.finished)
+		)
+	);
+	// A slide paused by a background tab never delivers its finish event: it still settles, and the next press starts
+	// its own slide instead of reversing a dead one.
+	const stalled = await page.evaluate(async () => {
+		const toggle = document.getElementById('customization-toggle') as HTMLButtonElement;
+		const panel = document.getElementById('customization-rail')!;
+		// Capture the animation at creation: Chromium can report no relevant animations on its first frame.
+		const animate = panel.animate;
+		let slide: Animation | undefined;
+		panel.animate = function (...args: Parameters<Element['animate']>) {
+			return (slide = animate.apply(this, args));
+		};
+		toggle.click();
+		panel.animate = animate;
+		await Promise.resolve();
+		slide?.pause();
+		return slide?.playState ?? 'none';
+	});
+	expect(stalled).toBe('paused');
 	await expect(rail).toBeHidden();
 	expect((await stage.boundingBox())!.width).toBe(1440);
 	await toggle.click();

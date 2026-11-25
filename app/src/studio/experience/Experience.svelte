@@ -586,22 +586,37 @@
 	// closing one gives it back only when it has gone, so the stage, camera, floor and controls move once per toggle
 	// and never chase the panel. A second press reverses the slide from where it is.
 	let panelMotion: Animation | undefined;
+	let panelSettle = 0;
 	const dockEdge = $derived(g.sheet ? 'bottom' : panelSettings.side);
 	const SLIDE = {
 		left: ['-100% 0', 'inset(0 0 0 100%)'],
 		right: ['100% 0', 'inset(0 100% 0 0)'],
 		bottom: ['0 100%', 'inset(0 0 100% 0)']
 	} as const;
+	/** A CSS time in ms: the built theme may write the token in seconds (`140ms` minifies to `.14s`). */
+	function timeMs(value: string) {
+		const match = value.trim().match(/^([\d.]+)(ms|s)$/i);
+		if (!match) return 0;
+		const time = Number(match[1]);
+		return match[2]?.toLowerCase() === 'ms' ? time : time * 1000;
+	}
 	function slidePanel(open: boolean) {
 		if (panelMotion) {
-			experience.panelClosing = !open;
-			panelMotion.reverse();
-			return;
+			// A slide that ended without its finish event reaching us (a backgrounded tab or occluded window can pause
+			// or discard a Web Animation) is over: settle it, then start this press's own slide rather than reverse a
+			// dead one, which would leave the panel shown but inert.
+			if (panelMotion.playState === 'finished' || panelMotion.playState === 'idle')
+				stopPanelMotion();
+			else {
+				experience.panelClosing = !open;
+				panelMotion.reverse();
+				panelMotion.play();
+				armPanelSettle(panelMotion);
+				return;
+			}
 		}
 		// Bronze's duration, which is 0 under reduced motion.
-		const duration = rail
-			? parseFloat(getComputedStyle(rail).getPropertyValue('--bu-duration'))
-			: 0;
+		const duration = rail ? timeMs(getComputedStyle(rail).getPropertyValue('--bu-duration')) : 0;
 		if (!rail || !(duration > 0)) return;
 		const [translate, clipPath] = SLIDE[dockEdge];
 		const motion = rail.animate(
@@ -614,14 +629,31 @@
 		if (!open) motion.reverse();
 		experience.panelClosing = !open;
 		panelMotion = motion;
-		// A press that reversed the slide after it finished but before this event arrived leaves it running.
 		motion.onfinish = () => {
-			if (panelMotion === motion && motion.playState === 'finished') stopPanelMotion();
+			if (panelMotion === motion) stopPanelMotion();
 		};
+		armPanelSettle(motion);
+	}
+	/** Settles a slide whose finish event never arrives, so a paused or discarded animation cannot leave the panel
+	 *  shown and inert. The fallback is longer than any slide, including one reversed partway. */
+	function armPanelSettle(motion: Animation) {
+		clearTimeout(panelSettle);
+		const duration = Number(motion.effect?.getTiming().duration) || 0;
+		panelSettle = window.setTimeout(() => {
+			if (panelMotion !== motion) return;
+			// finish() can fail on a discarded animation; the panel must settle either way.
+			try {
+				motion.finish();
+			} finally {
+				stopPanelMotion();
+			}
+		}, duration + 100);
 	}
 	/** Ends a slide at once when the layout changes under it (a mode, dock or screen change) or the screen unmounts.
 	 *  Synchronous, so a press before the cancel event starts a new slide rather than reversing the canceled one. */
 	function stopPanelMotion() {
+		clearTimeout(panelSettle);
+		panelSettle = 0;
 		const motion = panelMotion;
 		panelMotion = undefined;
 		experience.panelClosing = false;
