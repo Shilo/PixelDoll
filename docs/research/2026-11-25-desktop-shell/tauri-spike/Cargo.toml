@@ -1,0 +1,15 @@
+[package]
+name = "pixeldoll-tauri-spike"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde_json = "1"
+tauri = { version = "=2.12.7", features = [] }
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[profile.release]
+lto = "thin"
+strip = true
