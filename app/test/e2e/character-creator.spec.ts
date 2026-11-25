@@ -1340,9 +1340,9 @@ for (const viewport of [
 		if (layout.stacked)
 			for (const width of layout.sections) expect(width).toBeCloseTo(layout.width, 0);
 		for (const { tag, width } of layout.controls) {
-			// Desktop pairs two traits per row; textareas keep the full appearance width.
+			// Desktop pairs two traits across the 16px column gap; textareas keep the full appearance width.
 			if (layout.paired && tag === 'SELECT')
-				expect(width).toBeGreaterThan(layout.appearanceWidth * 0.4);
+				expect(Math.abs(width - (layout.appearanceWidth - 16) / 2)).toBeLessThanOrEqual(2);
 			else expect(width).toBeCloseTo(layout.appearanceWidth, 0);
 		}
 		await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A friendly dwarf');
