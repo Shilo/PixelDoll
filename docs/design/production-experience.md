@@ -8,6 +8,15 @@ The More menu starts with one PixelLab row: Connect PixelLab, Reconnect PixelLab
 
 The PixelLab row is followed by character actions (demo copy and phone shortcuts), Settings, a Language recovery shortcut,
 contextual wardrobe visibility, library backup, Activity, and app actions (installation, updates, and help).
+Studio audio is enabled by default at low levels and starts after a gesture in the active tab. Settings > Audio uses
+positive switches for Play audio, Music, and Sound effects. Any switch can silence its scope while preserving the volume
+choices. People can also set either volume to zero. Characters, New character, and Customize always link directly
+to Audio from their top bars, including while muted. Closing Audio from New character returns to the draft.
+The browser remembers the choices. Both themes share one longer [original synthesized soundtrack](audio.md).
+The soundtrack and its player download on demand, and the interface cue buffers are synthesized only when used.
+Separate channel levels follow familiar [game audio settings](https://www.ea.com/able/resources/dead-space/dead-space/ps5/audio),
+and the positive switch wording follows [macOS sound settings](https://support.apple.com/guide/mac-help/change-the-alert-sounds-mchlp2207/mac).
+
 The version button lives in Settings and opens a popover to view source code, open the displayed commit, or copy the
 version details for support. The row uses `-pre` for prereleases, no suffix for stable builds, and `-dev` for the
 Vite dev server regardless of release status. The dev commit is the checked-out revision and does not include local edits. The PixelLab affiliation

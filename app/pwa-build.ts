@@ -11,8 +11,11 @@ export interface PwaRelease {
 export interface PwaFile {
 	path: string;
 	hash: string;
+	optional?: true;
 	locale?: string;
 }
+export const studioMusicAsset = /^assets\/studio-ambient-[^/]+\.flac$/;
+const AUDIO_PLAYBACK_MODULE = /[\\/]src[\\/]studio[\\/]audioPlayback\.ts$/;
 
 /** Public URLs need a release identity too: unlike Vite chunks their names do not contain a content hash. */
 export function revisionPath(path: string, build: string) {
@@ -29,8 +32,13 @@ export function revisionHtml(html: string, build: string) {
 		.replace('</head>', `<script src="./${revisionPath('install.js', build)}"></script>\n</head>`);
 }
 
-/** Keep lazy locale bytes in the release inventory without making them prerequisites for offline use. */
-export function emitPwa(outDir: string, release: PwaRelease, locales = new Map<string, string>()) {
+/** Keep lazy locales and audio in the verified inventory so they can be cached on demand. */
+export function emitPwa(
+	outDir: string,
+	release: PwaRelease,
+	locales = new Map<string, string>(),
+	audioChunk?: string
+) {
 	const manifestPath = join(outDir, 'manifest.webmanifest');
 	const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { icons: { src: string }[] };
 	for (const icon of manifest.icons)
@@ -48,6 +56,9 @@ export function emitPwa(outDir: string, release: PwaRelease, locales = new Map<s
 				files.push({
 					path: revisionPath(path, release.build),
 					hash: createHash('sha256').update(readFileSync(absolute)).digest('hex'),
+					...(locale || studioMusicAsset.test(path) || path === audioChunk
+						? { optional: true }
+						: {}),
 					...(locale ? { locale } : {})
 				});
 			}
@@ -92,7 +103,24 @@ export function pwaBuild(release: PwaRelease): Plugin {
 				const locale = /[\\/]src[\\/]locales[\\/]([\w-]+)\.json$/.exec(chunk.moduleIds[0]!)?.[1];
 				if (locale && locale !== 'en') locales.set(chunk.fileName, locale);
 			}
-			emitPwa(outDir, release, locales);
+			const audioChunks = chunks.filter((chunk) =>
+				chunk.moduleIds.some((id) => AUDIO_PLAYBACK_MODULE.test(id))
+			);
+			const audio = audioChunks[0];
+			const music = Object.values(bundle).filter(
+				(entry) => entry.type === 'asset' && studioMusicAsset.test(entry.fileName)
+			);
+			if (music.length !== 1) throw new Error('PWA: expected one content-hashed Studio soundtrack');
+			if (
+				audioChunks.length !== 1 ||
+				!audio?.isDynamicEntry ||
+				audio.isEntry ||
+				!AUDIO_PLAYBACK_MODULE.test(audio.facadeModuleId ?? '') ||
+				imported.has(audio.fileName) ||
+				audio.imports.some((path) => locales.has(path))
+			)
+				throw new Error('PWA: expected one lazy audio playback chunk with only required imports');
+			emitPwa(outDir, release, locales, audio.fileName);
 		}
 	};
 }

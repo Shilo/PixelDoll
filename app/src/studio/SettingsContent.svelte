@@ -28,7 +28,8 @@
 		Sun,
 		SunMoon,
 		Trash,
-		UserRound
+		UserRound,
+		Volume2
 	} from './icons.ts';
 	import DeveloperSettings from './DeveloperSettings.svelte';
 	import SettingsItemSegmented from './SettingsItemSegmented.svelte';
@@ -40,6 +41,7 @@
 	import MountSettings from './MountSettings.svelte';
 	import LiveViewSettings from './LiveViewSettings.svelte';
 	import AboutSettings from './AboutSettings.svelte';
+	import AudioSettings from './AudioSettings.svelte';
 	import PixelLabSettings from './PixelLabSettings.svelte';
 	import LibrarySettings from './LibrarySettings.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
@@ -110,6 +112,18 @@
 				},
 				{ id: 'language', label: 'language.label' },
 				{ id: 'reset', label: 'settings.reset.allAction', terms: ['settings.reset.action'] }
+			]
+		},
+		{
+			id: 'audio',
+			label: settingsLabels.audio,
+			icon: Volume2,
+			entries: [
+				{ id: 'audio-enabled', label: 'settings.audio.play', terms: ['settings.audio.mute'] },
+				{ id: 'audio-music', label: 'settings.audio.music' },
+				{ id: 'audio-music-volume', label: 'settings.audio.musicVolume' },
+				{ id: 'audio-effects', label: 'settings.audio.effects' },
+				{ id: 'audio-effects-volume', label: 'settings.audio.effectsVolume' }
 			]
 		},
 		{
@@ -298,7 +312,7 @@
 	);
 	const groups: SettingsSection[][] = [
 		['pixellab'],
-		['general', 'wardrobe', 'mount', 'live'],
+		['general', 'audio', 'wardrobe', 'mount', 'live'],
 		['characters', 'moves', 'states', 'items'],
 		['export', 'library', 'trash'],
 		['developer', 'about']
@@ -550,6 +564,8 @@
 					{/snippet}
 				</SettingsItemSegmented>
 				<div data-setting="language" tabindex="-1"><LanguagePicker settings /></div>
+			{:else if active.id === 'audio'}
+				<AudioSettings />
 			{:else if active.id === 'wardrobe'}
 				<div data-setting="visibility" tabindex="-1">
 					<WardrobeVisibility settings />

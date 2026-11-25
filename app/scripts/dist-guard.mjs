@@ -4,6 +4,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { distDir } from '../dist-dir.ts';
+import { studioMusicAsset } from '../pwa-build.ts';
 
 // Historical names are leak indicators, not a list of permitted environment references. resolveAgentKey covers any name.
 
@@ -67,15 +68,29 @@ try {
 		.filter((name) => name.endsWith('.json') && name !== 'en.json')
 		.map((name) => name.slice(0, -5))
 		.sort();
-	const optional = inventory.filter((file) => Object.hasOwn(file, 'locale'));
+	const locales = inventory.filter((file) => Object.hasOwn(file, 'locale'));
+	const validHash = (file) => /^[a-f0-9]{64}$/.test(file.hash);
 	if (
-		JSON.stringify(optional.map((file) => file.locale).sort()) !== JSON.stringify(expected) ||
-		optional.some(
-			(file) => !/^assets\/[^/]+\.js$/.test(file.path) || !/^[a-f0-9]{64}$/.test(file.hash)
+		JSON.stringify(locales.map((file) => file.locale).sort()) !== JSON.stringify(expected) ||
+		locales.some(
+			(file) => file.optional !== true || !/^assets\/[^/]+\.js$/.test(file.path) || !validHash(file)
 		) ||
-		new Set(optional.map((file) => file.path)).size !== optional.length
+		new Set(locales.map((file) => file.path)).size !== locales.length
 	)
 		bad.push(`${worker}: expected exactly one verified optional chunk per non-English locale`);
+	const audio = inventory.filter(
+		(file) => file.optional === true && !Object.hasOwn(file, 'locale')
+	);
+	const music = audio.find((file) => studioMusicAsset.test(file.path));
+	const playback = audio.find((file) => /^assets\/[^/]+\.js$/.test(file.path));
+	if (audio.length !== 2 || !playback || !music || !audio.every(validHash))
+		bad.push(`${worker}: expected verified optional playback JavaScript and content-hashed music`);
+	const html = join(dist, 'index.html');
+	const resources = [
+		...readFileSync(html, 'utf8').matchAll(/\b(?:src|href)=["']([^"']+)["']/g)
+	].map(([, path]) => path.replace(/^\.?\//, '').split('?')[0]);
+	if ((music && resources.includes(music.path)) || (playback && resources.includes(playback.path)))
+		bad.push(`${html}: optional audio is referenced by the app shell`);
 } catch {
 	bad.push(`${join(dist, 'sw.js')}: missing or malformed offline inventory`);
 }

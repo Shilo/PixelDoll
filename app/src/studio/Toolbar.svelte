@@ -15,6 +15,7 @@
 	import NewCharacterButton from './NewCharacterButton.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import GlobalActions from './GlobalActions.svelte';
+	import AudioSettingsButton from './AudioSettingsButton.svelte';
 	import MoreMenu from './MoreMenu.svelte';
 	import { historyText } from './historyText.ts';
 	import { activityStatus } from './activityStatus.svelte.ts';
@@ -269,6 +270,7 @@
 				bind:this={redoButton}
 				onclick={() => step(redo, undoButton)}><Redo2 size={18} /></button
 			>
+			<AudioSettingsButton />
 			<button
 				class="bu-action header-random"
 				data-variant="quiet"
@@ -297,7 +299,7 @@
 				/></button
 			>
 		{/if}
-		<GlobalActions />
+		<GlobalActions showAudio={experience.screen === 'characters'} />
 	</div>
 </header>
 <SharePopover />

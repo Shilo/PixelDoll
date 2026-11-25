@@ -1,4 +1,5 @@
 import { fromStore } from 'svelte/store';
+import { audioAtDefaults } from './audio.svelte.ts';
 import { languagePreference } from '../lib/i18n.ts';
 import {
 	defaultExportSettings,
@@ -135,6 +136,7 @@ export function watchExportDefaults() {
 const atDefaults = {
 	// An explicit language, even the detected one, is a saved choice that Reset clears.
 	general: () => ui.theme === 'dark' && language.current === undefined,
+	audio: audioAtDefaults,
 	wardrobe: () =>
 		!sharedItemsHiddenForAll() && !demoItemsShown() && !sharedItemsHiddenForCharacter(doc.id),
 	mount: () => mountAtDefaults(doc.id),

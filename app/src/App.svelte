@@ -8,6 +8,7 @@
 	import { applyRiderPose } from './studio/mountPreview.ts';
 	import { experience } from './studio/experience/state.svelte.ts';
 	import { doc } from './studio/state.svelte.ts';
+	import { syncAudio, watchAudio } from './studio/audio.svelte.ts';
 	import { watchPromptSuggestions } from './studio/promptSuggestions.svelte.ts';
 
 	// Dev-only harness pages (M1, M3-M5, #/selftest; some spend credits). Behind import.meta.env.DEV, so `vite build` drops them.
@@ -38,6 +39,8 @@
 	);
 	$effect(watchPromptSuggestions);
 	$effect(watchLivePreferences);
+	$effect(watchAudio);
+	$effect(syncAudio);
 	$effect(() => {
 		if (!import.meta.env.DEV || workspaceCopy || localDeveloperToolsEnabled() || route === '/')
 			return;

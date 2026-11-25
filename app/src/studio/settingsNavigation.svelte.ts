@@ -1,9 +1,10 @@
-import { doc, ui } from './state.svelte.ts';
+import { canReturnToCreator, doc, returnToCreator, ui } from './state.svelte.ts';
 import type { WhisperKey } from 'svelte-whisper';
 import type { CreationSection } from './creationSettings.ts';
 
 export type SettingsSection =
 	| 'general'
+	| 'audio'
 	| 'wardrobe'
 	| 'mount'
 	| 'live'
@@ -17,6 +18,7 @@ export type SettingsSection =
 
 export const settingsLabels = {
 	general: 'settings.appearance',
+	audio: 'settings.audio.title',
 	wardrobe: 'experience.tabWardrobe',
 	mount: 'settings.mount',
 	live: 'liveViews.title',
@@ -52,6 +54,7 @@ export const settingsNavigation = $state<{
 });
 
 let returnFocus: 'connection' | 'recent-activity' | 'cost-estimate' | undefined;
+let returnToDraftFromAudio = false;
 
 export function takeSettingsReturnFocus() {
 	const entry = returnFocus;
@@ -67,9 +70,17 @@ export const isSettingsShortcut = (e: KeyboardEvent) =>
 /** Without a section, Settings reopens on the page last shown; kept in memory only, so a reload starts at the index. */
 export function openSettings(section?: SettingsSection) {
 	returnFocus = undefined;
+	returnToDraftFromAudio = ui.sheet === 'create' && section === 'audio';
 	settingsNavigation.fromExport = ui.sheet === 'export';
 	if (section) settingsNavigation.section = section;
 	ui.sheet = 'settings';
+}
+
+export function closeSettings() {
+	const backToDraft = returnToDraftFromAudio && canReturnToCreator();
+	returnToDraftFromAudio = false;
+	if (backToDraft) returnToCreator();
+	else ui.sheet = null;
 }
 
 export function openSettingsAccount(replace = false) {

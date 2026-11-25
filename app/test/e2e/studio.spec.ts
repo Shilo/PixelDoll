@@ -30,6 +30,272 @@ test.beforeEach(async ({ context }) => {
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort()); // stay offline by default; a test's own route overrides this
 });
 
+test('Audio settings start after a gesture and preserve independent levels and mutes', async ({
+	page,
+	baseURL
+}) => {
+	const audioRequests: string[] = [];
+	page.on('request', (request) => {
+		if (/audioPlayback|studio-ambient-[^/]+\.flac/.test(request.url()))
+			audioRequests.push(request.url());
+	});
+	await page.addInitScript(() => {
+		const calls = {
+			opened: 0,
+			loops: 0,
+			musicStarts: 0,
+			musicStopTime: 0,
+			failed: false,
+			gainTargets: [] as number[]
+		};
+		Object.defineProperty(window, 'audioTestCalls', { value: calls });
+		Object.defineProperty(window, 'AudioContext', {
+			value: class extends EventTarget {
+				state = 'suspended';
+				currentTime = 0;
+				constructor() {
+					super();
+					calls.opened++;
+				}
+				async resume() {
+					this.state = 'running';
+					this.dispatchEvent(new Event('statechange'));
+				}
+				async close() {
+					this.state = 'closed';
+				}
+				createGain() {
+					const noop = () => {};
+					return {
+						connect: noop,
+						disconnect: noop,
+						gain: {
+							value: 0,
+							setTargetAtTime: (level: number) => calls.gainTargets.push(level),
+							setValueAtTime: noop,
+							cancelScheduledValues: noop,
+							linearRampToValueAtTime: noop
+						}
+					};
+				}
+				createBuffer(_channels: number, frames: number, rate: number) {
+					return { duration: frames / rate, getChannelData: () => new Float32Array(frames) };
+				}
+				async decodeAudioData() {
+					return this.createBuffer(1, 240, 24_000);
+				}
+				createBufferSource() {
+					return {
+						loop: false,
+						onended: null as (() => void) | null,
+						detune: { value: 0 },
+						connect() {},
+						disconnect() {},
+						start() {
+							if (!this.loop && document.body.hasAttribute('data-fail-audio')) {
+								calls.failed = true;
+								throw new DOMException('Synthetic audio start failure', 'NotSupportedError');
+							}
+							if (this.loop) {
+								calls.loops++;
+								calls.musicStarts++;
+							}
+						},
+						stop(when = 0) {
+							if (this.loop) {
+								calls.loops--;
+								calls.musicStopTime = when;
+							}
+							this.onended?.();
+						}
+					};
+				}
+			}
+		});
+	});
+	const calls = () => page.evaluate(() => Reflect.get(window, 'audioTestCalls'));
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	const master = settings.getByRole('switch', { name: 'Play all audio', exact: true });
+	const musicSwitch = settings.getByRole('switch', { name: 'Music', exact: true });
+	const effectsSwitch = settings.getByRole('switch', { name: 'Sound effects', exact: true });
+	const music = settings.getByRole('slider', { name: 'Music volume', exact: true });
+	const effects = settings.getByRole('slider', { name: 'Sound effects volume', exact: true });
+	const shortcut = page.locator('.header-audio');
+	const expectAlignedAudioRows = async () => {
+		const [masterBox, musicBox, effectsBox, musicToggle, effectsToggle] = await Promise.all(
+			[master, music, effects, musicSwitch, effectsSwitch].map((control) => control.boundingBox())
+		);
+		for (const [slider, toggle] of [
+			[musicBox!, musicToggle!],
+			[effectsBox!, effectsToggle!]
+		]) {
+			expect(slider.y + slider.height / 2).toBeCloseTo(toggle.y + toggle.height / 2, 0);
+			expect(toggle.x + toggle.width).toBeCloseTo(masterBox!.x + masterBox!.width, 0);
+			expect(toggle.x).toBeGreaterThan(slider.x + slider.width);
+			expect(slider.width).toBeGreaterThanOrEqual(44);
+		}
+	};
+	await page.goto(baseURL!);
+	const customize = page.locator('.customize-action');
+	await expect(customize).toBeVisible();
+	await customize.dispatchEvent('pointerdown', { pointerType: 'mouse' });
+	await expect(shortcut).toBeVisible();
+	expect(await calls()).toMatchObject({ opened: 0, loops: 0 });
+	expect(audioRequests).toEqual([]);
+	await enterStudio(page);
+	await expect(shortcut).toBeVisible();
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1 });
+	expect(audioRequests).toEqual([
+		expect.stringMatching(/assets\/audioPlayback-.*\.js/),
+		expect.stringMatching(/assets\/studio-ambient-[^/]+\.flac/)
+	]);
+	const loop = await page.evaluate(async (url) => {
+		const rate = 48_000;
+		const halfSecond = rate / 2;
+		const offline = new OfflineAudioContext(1, rate, rate);
+		const response = await fetch(url);
+		const track = await offline.decodeAudioData(await response.arrayBuffer());
+		const source = offline.createBufferSource();
+		source.buffer = track;
+		source.loop = true;
+		source.connect(offline.destination);
+		source.start(0, track.duration - 0.5);
+		const rendered = (await offline.startRendering()).getChannelData(0);
+		const original = track.getChannelData(0);
+		let wrapError = 0;
+		let nearbyStep = 0;
+		let before = 0;
+		let after = 0;
+		for (let i = 0; i < halfSecond; i++) {
+			const tail = rendered[i]!;
+			const head = rendered[halfSecond + i]!;
+			wrapError = Math.max(
+				wrapError,
+				Math.abs(tail - original[original.length - halfSecond + i]!),
+				Math.abs(head - original[i]!)
+			);
+			before += tail * tail;
+			after += head * head;
+			if (i)
+				nearbyStep = Math.max(
+					nearbyStep,
+					Math.abs(tail - rendered[i - 1]!),
+					Math.abs(head - rendered[halfSecond + i - 1]!)
+				);
+		}
+		return {
+			frames: track.length,
+			wrapError,
+			levelDifference: Math.abs(10 * Math.log10(before / after)),
+			seamStep: Math.abs(rendered[halfSecond]! - rendered[halfSecond - 1]!),
+			nearbyStep
+		};
+	}, audioRequests[1]!);
+	expect(loop.frames).toBe(160 * 48_000);
+	expect(loop.wrapError).toBeLessThan(1e-5);
+	expect(loop.levelDifference).toBeLessThan(0.2);
+	expect(loop.seamStep).toBeLessThan(loop.nearbyStep);
+	await expect(page.locator('.header-audio + .header-random')).toBeVisible();
+	await shortcut.click();
+	await expect(master).toBeChecked();
+	await expect(musicSwitch).toBeChecked();
+	await expect(effectsSwitch).toBeChecked();
+	await expect(music).toHaveValue('50');
+	await expect(effects).toHaveValue('50');
+	const { gainTargets } = await calls();
+	expect(gainTargets[0]).toBeCloseTo(0.05761, 5);
+	expect(gainTargets[1]).toBeCloseTo(0.13796, 5);
+	await music.press('End');
+	await expect.poll(async () => (await calls()).gainTargets.at(-1)).toBeCloseTo(0.4, 5);
+	await music.fill('50');
+	await settings.getByRole('button', { name: 'Appearance', exact: true }).click();
+	await settings.getByRole('radio', { name: 'Light', exact: true }).check();
+	await settings.getByRole('button', { name: 'Audio', exact: true }).click();
+	await expect(master).toBeChecked();
+	expect(await calls()).toMatchObject({ loops: 1, musicStarts: 1 });
+	await expectAlignedAudioRows();
+	await effects.press('End');
+	await expect(effects).toHaveValue('100');
+	await expect(music).toHaveValue('50');
+	expect((await calls()).gainTargets.at(-1)).toBeCloseTo(0.25, 5);
+	await effects.press('ArrowLeft');
+	await musicSwitch.uncheck();
+	await expect(shortcut).toBeVisible();
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 0, musicStopTime: 0.05 });
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await shortcut.click();
+	await expect(musicSwitch).not.toBeChecked();
+	await expect(effectsSwitch).toBeChecked();
+	await effectsSwitch.uncheck();
+	await expect(shortcut).toBeVisible();
+	await musicSwitch.check();
+	await expect(shortcut).toHaveCount(1);
+	await music.press('Home');
+	await expect(shortcut).toBeVisible();
+	await music.fill('50');
+	await expect(shortcut).toHaveCount(1);
+	await master.uncheck();
+	await expect(shortcut).toBeVisible();
+	await master.check();
+	await expect(shortcut).toHaveCount(1);
+	await expect(effectsSwitch).not.toBeChecked();
+	await page.evaluate(() => {
+		Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+		document.dispatchEvent(new Event('visibilitychange'));
+	});
+	expect(await calls()).toMatchObject({ opened: 1, loops: 0, musicStopTime: 0 });
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.reload();
+	await expect(page.locator('.customize-action, .experience-stage')).toBeVisible();
+	expect(await calls()).toMatchObject({ opened: 0, loops: 0 });
+	await enterStudio(page);
+	await shortcut.click();
+	await expect(master).toBeChecked();
+	await expect(effectsSwitch).not.toBeChecked();
+	await expect(effects).toHaveValue('99');
+	await expect(music).toHaveValue('50');
+	await page.setViewportSize({ width: 320, height: 568 });
+	await expectAlignedAudioRows();
+	await page.setViewportSize({ width: 390, height: 844 });
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1 });
+	await effectsSwitch.check();
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await expect(settings).toBeHidden();
+	const errors: string[] = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	const tile = page.locator('[data-tile="hat_wizard"]');
+	await tile.focus();
+	await page.evaluate(() => document.body.setAttribute('data-fail-audio', ''));
+	await tile.press('Enter');
+	await expect(tile).toHaveAttribute('aria-pressed', 'true');
+	await expect.poll(calls).toMatchObject({ opened: 1, loops: 1, failed: true });
+	expect(errors).toEqual([]);
+
+	await shortcut.click();
+	await master.uncheck();
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await page.setViewportSize({ width: 320, height: 568 });
+	await expect(shortcut).toBeVisible();
+	await page.getByRole('button', { name: 'Characters', exact: true }).click();
+	const topBar = page.locator('.experience-header');
+	await topBar.getByRole('button', { name: 'Audio settings', exact: true }).click();
+	await expect(master).not.toBeChecked();
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await page
+		.getByRole('complementary', { name: 'Your characters' })
+		.getByRole('button', { name: 'New character', exact: true })
+		.first()
+		.click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
+	const draftName = creator.getByRole('textbox', { name: 'Name', exact: true });
+	await draftName.fill('Audio draft');
+	await creator.getByRole('button', { name: 'Audio settings', exact: true }).click();
+	await expect(master).not.toBeChecked();
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await expect(draftName).toHaveValue('Audio draft');
+});
+
 async function reviewSelectedDraft(page: Page) {
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',

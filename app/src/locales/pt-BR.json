@@ -151,6 +151,17 @@
 		"mountPreviewPause": "Pausar prévia da montaria",
 		"mount": "Montaria",
 		"mountNotSaved": "A configuração de montaria mudou, mas este navegador não conseguiu salvá-la.",
+		"audio": {
+			"title": "Áudio",
+			"open": "Configurações de áudio",
+			"play": "Reproduzir todo o áudio",
+			"mute": "Silenciar todo o áudio",
+			"music": "Música",
+			"musicVolume": "Volume da música",
+			"effects": "Efeitos sonoros",
+			"effectsVolume": "Volume dos efeitos sonoros",
+			"notSaved": "O áudio foi alterado, mas o navegador não conseguiu salvar a alteração."
+		},
 		"reset": {
 			"allAction": "Redefinir todas as configurações",
 			"pageAction": "Redefinir esta página",

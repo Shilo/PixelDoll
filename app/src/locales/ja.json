@@ -145,6 +145,17 @@
 		"mountPreviewPause": "乗り物のプレビューを一時停止",
 		"mount": "乗り物",
 		"mountNotSaved": "乗り物の設定を変更しましたが、このブラウザーに保存できませんでした。",
+		"audio": {
+			"title": "オーディオ",
+			"open": "オーディオ設定",
+			"play": "すべての音を再生",
+			"mute": "すべての音をミュート",
+			"music": "音楽",
+			"musicVolume": "音楽の音量",
+			"effects": "効果音",
+			"effectsVolume": "効果音の音量",
+			"notSaved": "音の設定を変更しましたが、ブラウザーに保存できませんでした。"
+		},
 		"reset": {
 			"allAction": "すべての設定をリセット",
 			"pageAction": "このページをリセット",

@@ -889,10 +889,12 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await page.keyboard.press('Escape');
 	await expect(toggle).toHaveAccessibleName('Mount settings');
 	await expect(toggle).toHaveAttribute('aria-haspopup', 'dialog');
-	// Mount settings sits in Preview's playback bar, right of Inspect; the top bar keeps Undo, Redo, Random look, Share.
+	// Mount settings sits right of Inspect. While music plays, Audio sits immediately before Random look.
 	await expect(page.locator('.playback-bar .playback-inspect + .test-mount-toggle')).toHaveCount(1);
 	await expect(
-		page.locator('.header-actions > .header-undo + .header-redo + .header-random + .header-share')
+		page.locator(
+			'.header-actions > .header-undo + .header-redo + .header-audio + .header-random + .header-share'
+		)
 	).toHaveCount(1);
 	// F shows and hides the mount in Preview too.
 	await world(page).focus();

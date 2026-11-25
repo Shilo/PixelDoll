@@ -317,7 +317,14 @@ test('an offline launch needs no optional languages and retains a language used 
 			'tr',
 			'zh-Hans'
 		]);
-		for (const file of optional) expect(server.requests).not.toContain(server.scope + file.path);
+		const deferred = release.inventory.filter((file) => file.optional);
+		expect(deferred.filter((file) => !file.locale).map((file) => file.path)).toEqual(
+			expect.arrayContaining([
+				expect.stringMatching(/audioPlayback-.*\.js$/),
+				expect.stringMatching(/studio-ambient-.*\.flac$/)
+			])
+		);
+		for (const file of deferred) expect(server.requests).not.toContain(server.scope + file.path);
 		const customize = page.locator('.customize-action');
 		const english = await customize.innerText();
 		await context.setOffline(true);
@@ -748,6 +755,8 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
 		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
+		// A hovered Help tooltip would receive Escape before the sheet.
+		await page.mouse.move(0, 0);
 		await page.keyboard.press('Escape');
 		await page.clock.fastForward(8000);
 		await expect(notice).toBeVisible();
@@ -771,6 +780,7 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
 		await expect(notice).toHaveCount(0);
+		await page.mouse.move(0, 0);
 		await page.keyboard.press('Escape');
 		await expect(notice).toHaveCount(0);
 		server.deploy(c);
@@ -1537,7 +1547,7 @@ test('a missing current static cache is repaired online without clearing saved b
 						async (urls) =>
 							(await Promise.all(urls.map((url) => caches.match(url)))).every(Boolean),
 						release.inventory
-							.filter((file) => !file.locale)
+							.filter((file) => !file.optional)
 							.map((file) => new URL(file.path, server.url).href)
 					),
 				{ timeout: 30_000 }

@@ -145,6 +145,17 @@
 		"mountPreviewPause": "탈것 미리보기 일시 정지",
 		"mount": "탈것",
 		"mountNotSaved": "탈것 설정이 바뀌었지만 이 브라우저에 저장하지 못했어요.",
+		"audio": {
+			"title": "오디오",
+			"open": "오디오 설정",
+			"play": "모든 오디오 재생",
+			"mute": "모든 소리 끄기",
+			"music": "음악",
+			"musicVolume": "음악 음량",
+			"effects": "효과음",
+			"effectsVolume": "효과음 음량",
+			"notSaved": "오디오 설정을 변경했지만 브라우저에 저장하지 못했습니다."
+		},
 		"reset": {
 			"allAction": "모든 설정 초기화",
 			"pageAction": "이 페이지 초기화",

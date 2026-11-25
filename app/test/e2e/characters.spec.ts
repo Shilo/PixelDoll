@@ -315,7 +315,8 @@ test.describe('first Studio render in French', () => {
 		const name = draft.getByRole('textbox', { name: french.common.name, exact: true });
 		await name.fill('Draft hero');
 		await expect(name).toHaveValue('Draft hero');
-		// Escape with typed text asks first.
+		// Move off Help so Escape reaches the dirty sheet and asks before discarding.
+		await page.mouse.move(0, 0);
 		await page.keyboard.press('Escape');
 		await page
 			.getByRole('alertdialog', { name: french.common.discardChangesTitle, exact: true })
