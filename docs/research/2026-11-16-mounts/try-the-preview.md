@@ -26,9 +26,9 @@ opens there and also works while the mount is hidden; the crosshair marks the se
 are signed pixels from that direction's automatic placement, from -32 to 32. `0, 0` is
 Automatic: Studio keeps its estimate, or the reviewed rider contact when one exists, and
 the export stores no correction. Arrow buttons move one pixel; hold one to keep moving.
-While playing, the preview turns through the character's directions until you open the editor,
-which holds the current direction. Use **Seat direction** beside the coordinates to edit
-another facing. Mirrored facings are corrected individually. Clicking **Seat position** again,
+While playing, the preview turns through the character's directions until you open the editor.
+Opening pauses playback and closing restores its prior state. Use **Seat direction** at the top
+left of the editor to edit another facing. Mirrored facings are corrected individually. Clicking **Seat position** again,
 **Cancel**, or closing the page discards the draft. **Save** writes every adjusted facing. The center button previews
 Automatic for the current direction. Resetting Mount settings resets the display
 preferences and keeps the character's saved seat.

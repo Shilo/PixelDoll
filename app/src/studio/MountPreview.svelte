@@ -107,6 +107,7 @@
 	type Draft = { id: string; before: MountSeatOffsets; offsets: MountSeatOffsets };
 	let draft = $state.raw<Draft | null>(null);
 	const editing = $derived(editable && draft?.id === doc.id ? draft : null);
+	const previewPlaying = $derived(playing && !editing);
 	$effect.pre(() => {
 		if (draft && !editing) draft = null;
 	});
@@ -261,7 +262,7 @@
 			savedPlacement = editing ? placement : null,
 			legs = experience.mountLegs,
 			height = standingHeight,
-			running = playing,
+			running = previewPlaying,
 			turning = facings,
 			autoTurn = !editing && turning.length > 1,
 			seatOffset = offset;
@@ -427,7 +428,8 @@
 	class="mount-preview"
 	class:editing={!!editing}
 	type="button"
-	aria-label={t(playing ? 'settings.mountPreviewPause' : 'settings.mountPreviewPlay')}
+	aria-label={t(previewPlaying ? 'settings.mountPreviewPause' : 'settings.mountPreviewPlay')}
+	disabled={!!editing}
 	onclick={() => (playing = !playing)}
 >
 	<canvas bind:this={canvas} aria-hidden="true"></canvas>
@@ -437,40 +439,45 @@
 		</span>
 	{/if}
 	<span class="mount-play" aria-hidden="true">
-		{#if playing}<Pause size={18} />{:else}<Play size={18} />{/if}
+		{#if previewPlaying}<Pause size={18} />{:else}<Play size={18} />{/if}
 	</span>
 </button>
-<hr class="bu-separator preview-divider" />
 
 {@render visibility()}
 
 <div class="seat-setting" class:editing={!!editing} data-setting="rider-seat">
-	<div class="seat-header">
-		<SettingsItemButton
-			aria-label={t('settings.seatPosition')}
-			title={t('settings.adjustSeat')}
-			aria-expanded={!!editing}
-			aria-controls={editing ? controlsId : undefined}
-			aria-describedby={editable ? `${controlsId}-value` : `${controlsId}-help`}
-			disabled={!editable || busy || (opening && !editing)}
-			bind:element={adjustButton}
-			onclick={() => void (editing ? endEdit() : beginEdit())}
-		>
-			<Armchair size={18} aria-hidden="true" />
-			<span class="seat-summary">
-				<span>{t('settings.seatPosition')}</span>
-				{#if editable}
-					<span class="seat-detail" id={`${controlsId}-value`}>
-						{#if !editing}<span>{displayDirection(facing)} · </span>{/if}
-						<output class="seat-value" aria-live={editing ? 'polite' : 'off'}>
-							{t('settings.seatOffset', offset)}
-						</output>
-					</span>
-				{/if}
+	<SettingsItemButton
+		aria-label={t('settings.seatPosition')}
+		title={t('settings.adjustSeat')}
+		aria-expanded={!!editing}
+		aria-controls={editing ? controlsId : undefined}
+		aria-describedby={editable ? `${controlsId}-value` : `${controlsId}-help`}
+		disabled={!editable || busy || (opening && !editing)}
+		bind:element={adjustButton}
+		onclick={() => void (editing ? endEdit() : beginEdit())}
+	>
+		<Armchair size={18} aria-hidden="true" />
+		<span class="seat-label">{t('settings.seatPosition')}</span>
+		{#if editable}
+			<span class="seat-detail" id={`${controlsId}-value`}>
+				{#if !editing}<span>{displayDirection(facing)} · </span>{/if}
+				<output class="seat-value" aria-live={editing ? 'polite' : 'off'}>
+					{t('settings.seatOffset', offset)}
+				</output>
 			</span>
-			<Pencil size={16} aria-hidden="true" />
-		</SettingsItemButton>
-		{#if editing}
+		{/if}
+		<Pencil size={16} aria-hidden="true" />
+	</SettingsItemButton>
+	{#if !editable}
+		<p class="seat-help" id={`${controlsId}-help`}>
+			{t('settings.seatNeedsCharacter')}
+		</p>
+	{/if}
+</div>
+
+{#if editing}
+	<div class="seat-editor" id={controlsId}>
+		<div class="seat-controls">
 			<div class="direction-select">
 				{#each facings as direction (direction)}
 					<span class="direction-measure" aria-hidden="true">{displayDirection(direction)}</span>
@@ -490,58 +497,51 @@
 					{/each}
 				</select>
 			</div>
-		{/if}
-	</div>
-	{#if !editable}
-		<p class="seat-help" id={`${controlsId}-help`}>
-			{t('settings.seatNeedsCharacter')}
-		</p>
-	{/if}
-</div>
-
-{#if editing}
-	<div class="seat-editor" id={controlsId}>
-		<div class="seat-nudges" dir="ltr" bind:this={nudgeControls}>
-			{#each nudges as step, index (step.area)}
-				{#if index === 2}
+			<div class="seat-nudges" dir="ltr" bind:this={nudgeControls}>
+				{#each nudges as step, index (step.area)}
+					{#if index === 2}
+						<button
+							type="button"
+							class="bu-action"
+							data-variant="outline"
+							style:grid-area="reset"
+							aria-label={t('settings.seatAuto')}
+							title={t('settings.seatAuto')}
+							aria-pressed={automatic}
+							disabled={busy}
+							onkeydown={padKey}
+							onclick={() => setOffset(AUTOMATIC_MOUNT_SEAT)}
+							><LocateFixed size={18} aria-hidden="true" /></button
+						>
+					{/if}
 					<button
 						type="button"
 						class="bu-action"
 						data-variant="outline"
-						style:grid-area="reset"
-						aria-label={t('settings.seatAuto')}
-						title={t('settings.seatAuto')}
-						aria-pressed={automatic}
+						data-nudge={step.area}
+						style:grid-area={step.area}
+						aria-label={t(step.label)}
+						title={t(step.label)}
 						disabled={busy}
+						onpointerdown={(event) => holdNudge(event, step.x, step.y)}
+						onpointerup={releaseNudge}
+						onpointercancel={releaseNudge}
+						onlostpointercapture={stopRepeat}
+						oncontextmenu={(event) => event.preventDefault()}
 						onkeydown={padKey}
-						onclick={() => setOffset(AUTOMATIC_MOUNT_SEAT)}
-						><LocateFixed size={18} aria-hidden="true" /></button
+						onclick={() => clickNudge(step.x, step.y)}
 					>
-				{/if}
-				<button
-					type="button"
-					class="bu-action"
-					data-variant="outline"
-					data-nudge={step.area}
-					style:grid-area={step.area}
-					aria-label={t(step.label)}
-					title={t(step.label)}
-					disabled={busy}
-					onpointerdown={(event) => holdNudge(event, step.x, step.y)}
-					onpointerup={releaseNudge}
-					onpointercancel={releaseNudge}
-					onlostpointercapture={stopRepeat}
-					oncontextmenu={(event) => event.preventDefault()}
-					onkeydown={padKey}
-					onclick={() => clickNudge(step.x, step.y)}
-				>
-					<step.icon size={18} aria-hidden="true" />
-				</button>
-			{/each}
+						<step.icon size={18} aria-hidden="true" />
+					</button>
+				{/each}
+			</div>
 		</div>
 		{#if failure}<p class="notice bad small" role="alert">{displayNestedMessage(failure)}</p>{/if}
 		<div class="seat-footer">
-			<p class="seat-help">{t('settings.seatMarkerHelp')}</p>
+			<p class="seat-help">
+				<span>{t('settings.seatMarkerHelp')}</span><br />
+				<span>{t('settings.seatDirectionHelp', { direction: displayDirection(facing) })}</span>
+			</p>
 			<div class="seat-actions">
 				<button
 					type="button"
@@ -577,7 +577,10 @@
 		border: 1px solid var(--bu-line);
 		border-radius: var(--r-ctl);
 	}
-	.mount-preview:hover {
+	.mount-preview:disabled {
+		cursor: default;
+	}
+	.mount-preview:not(:disabled):hover {
 		border-color: var(--bu-border);
 	}
 	@media (max-height: 700px) {
@@ -624,23 +627,20 @@
 		color: var(--bu-text);
 		filter: drop-shadow(0 0 1px var(--bu-canvas)) drop-shadow(0 0 1px var(--bu-canvas));
 	}
-	.seat-header {
-		display: flex;
-		align-items: stretch;
-		gap: 8px;
-	}
-	.seat-header :global(.settings-action) {
-		flex: 1;
+	.seat-label {
 		min-inline-size: 0;
-	}
-	.seat-summary {
-		flex: 1;
-		min-inline-size: 0;
-		display: grid;
 	}
 	.seat-detail {
+		margin-inline-start: auto;
+		text-align: end;
 		font-size: 12px;
 		color: var(--bu-muted);
+	}
+	.seat-controls {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 8px;
 	}
 	.direction-select {
 		display: grid;
@@ -661,11 +661,9 @@
 		white-space: nowrap;
 		padding-inline: 8px calc(26px + 1.25em + 2px);
 	}
-	.preview-divider {
-		margin-block: 4px 8px;
-	}
 	.seat-value {
 		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 	}
 	.seat-setting .seat-help {
 		margin-block: 6px 0;
@@ -682,7 +680,6 @@
 		grid-template-rows: repeat(3, 44px);
 		gap: 6px;
 		inline-size: max-content;
-		margin-inline: auto;
 	}
 	.seat-nudges button {
 		inline-size: 44px;

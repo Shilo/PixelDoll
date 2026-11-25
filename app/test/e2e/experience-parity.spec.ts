@@ -1256,18 +1256,22 @@ touchTest(
 		await facing.selectOption('east');
 		await expect.poll(async () => (await facing.boundingBox())!.width).toBe(wide);
 		await expect(canvas).toHaveAttribute('data-facing', 'east');
-		await expect(pausePreview).toBeVisible();
+		await expect(play).toBeDisabled();
 		await expect(auto).toHaveAttribute('aria-pressed', 'true');
 		await right.tap();
 		await expect(seat).toHaveText('x 1, y 0');
-		// Hold the editing direction for longer than a full turn interval without pausing playback.
+		const pausedMarker = await marker.getAttribute('style');
+		// An open editor freezes the facing and gait for longer than a full turn interval.
 		await page.waitForTimeout(1500);
 		await expect(canvas).toHaveAttribute('data-facing', 'east');
 		await expect(seat).toHaveText('x 1, y 0');
+		await expect(marker).toHaveAttribute('style', pausedMarker!);
 		await adjustSeat.click();
 		await expect(left).toBeHidden();
 		await expect(seat).toHaveText('x 0, y 0');
+		await expect(pausePreview).toBeEnabled();
 		await expect(canvas).not.toHaveAttribute('data-facing', 'east');
+		await pausePreview.click();
 		await adjustSeat.click();
 		await facing.selectOption('east');
 		const pad = await mountMenu.locator('.seat-nudges button').evaluateAll((buttons) =>
@@ -1278,7 +1282,6 @@ touchTest(
 		);
 		expect(new Set(pad.map(({ x, y }) => `${x},${y}`)).size).toBe(5);
 		expect(pad.every(({ width, height }) => width === 44 && height === 44)).toBe(true);
-		await pausePreview.click();
 		await expect(canvas).toHaveAttribute('data-rider', '');
 		const markBefore = (await marker.boundingBox())!;
 		const scale = Number(await canvas.getAttribute('data-scale'));
@@ -1303,13 +1306,8 @@ touchTest(
 		await riderPose.click();
 		await page.getByRole('menuitemradio', { name: 'Walk', exact: true }).click();
 		await expect(seat).toHaveText('x 1, y 0');
-		const pausedMarker = await marker.getAttribute('style');
-		const pausedScale = await canvas.getAttribute('data-scale');
-		await play.click();
-		await expect(pausePreview).toBeVisible();
-		await expect(marker).not.toHaveAttribute('style', pausedMarker!);
-		await expect(canvas).toHaveAttribute('data-scale', pausedScale!);
 		await mountMenu.getByRole('button', { name: 'Cancel', exact: true }).click();
+		await expect(play).toBeEnabled();
 		await expect(adjustSeat).toBeFocused();
 		await expect(seat).toHaveText('x 0, y 0');
 		await adjustSeat.press('Enter');
@@ -1343,13 +1341,20 @@ touchTest(
 		await adjustSeat.click();
 		await facing.selectOption('west');
 		await expect(seat).toHaveText('x 0, y 1');
+		await expect(mountMenu.getByText('X and Y is offset for West.', { exact: true })).toBeVisible();
 		await facing.selectOption('east');
 		await expect(seat).toHaveText('x -1, y 0');
 		expect(await mountMenu.evaluate((sheet) => sheet.scrollWidth)).toBeLessThanOrEqual(320);
 		await auto.click();
-		const helpBounds = (await mountMenu
-			.getByText('Pixels from Automatic', { exact: true })
-			.boundingBox())!;
+		const directionBounds = (await facing.boundingBox())!;
+		const padBounds = (await mountMenu.locator('.seat-nudges').boundingBox())!;
+		const labelBounds = (await seatRow.getByText('Seat position', { exact: true }).boundingBox())!;
+		const valueBounds = (await seat.boundingBox())!;
+		expect(directionBounds.x + directionBounds.width).toBeLessThan(padBounds.x);
+		expect(directionBounds.y).toBeCloseTo(padBounds.y, 0);
+		expect(valueBounds.x).toBeGreaterThan(labelBounds.x + labelBounds.width);
+		expect(valueBounds.y).toBeLessThan(labelBounds.y + labelBounds.height);
+		const helpBounds = (await mountMenu.locator('.seat-footer .seat-help').boundingBox())!;
 		const saveBounds = (await saveSeat.boundingBox())!;
 		expect(helpBounds.x + helpBounds.width).toBeLessThan(saveBounds.x);
 		expect(helpBounds.y).toBeLessThan(saveBounds.y + saveBounds.height);
