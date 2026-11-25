@@ -288,20 +288,29 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await master.check();
 	await expect(shortcut).toBeVisible();
 	await settings.getByRole('button', { name: 'Close', exact: true }).click();
-	await page
-		.getByRole('complementary', { name: 'Your characters' })
-		.getByRole('button', { name: 'New character', exact: true })
-		.first()
-		.click();
+	await page.getByRole('button', { name: 'New character', exact: true }).first().click();
 	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	const draftName = creator.getByRole('textbox', { name: 'Name', exact: true });
+	const creatorScreen = page.locator('dialog.character-sheet:modal');
 	await draftName.fill('Audio draft');
 	await creator.getByRole('button', { name: 'Audio settings', exact: true }).click();
+	await expect(settings).toBeVisible();
+	await expect(creatorScreen).toBeVisible();
+	await expect(settings.locator(':focus')).toHaveCount(1);
+	await expect(creatorScreen.locator('.character-name')).toHaveValue('Audio draft');
 	await master.uncheck();
 	await settings.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(draftName).toHaveValue('Audio draft');
 	await expect(creator.locator('.header-audio')).toHaveCSS('display', 'none');
+	await draftName.press('ControlOrMeta+,');
+	await expect(settings).toBeVisible();
+	await expect(creatorScreen).toBeVisible();
+	await page.goBack();
+	await expect(settings.getByRole('button', { name: 'Audio', exact: true })).toBeVisible();
+	await page.goBack();
+	await expect(settings).toBeHidden();
+	await expect(draftName).toHaveValue('Audio draft');
 });
 
 async function reviewSelectedDraft(page: Page) {
@@ -5230,7 +5239,7 @@ test('Create in a second tab takes the jobs from the idle first tab at once and 
 	// Records whether Activity ever opened in this tab, however briefly.
 	await follower.addInitScript(() => {
 		new MutationObserver(() => {
-			if (document.querySelector('#sheet-title')?.textContent === 'Activity')
+			if (document.querySelector('dialog[open] .sheet-title')?.textContent === 'Activity')
 				(window as unknown as { sawActivity: boolean }).sawActivity = true;
 		}).observe(document, { childList: true, subtree: true, characterData: true });
 	});

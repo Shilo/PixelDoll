@@ -58,7 +58,8 @@ even if four copies of the highest-peak effect align with the music's peak at ma
 The Characters, New character, and Customize top bars show the Audio shortcut while Music or Sound
 effects is enabled at a nonzero volume. On Characters it sits to the left of New character when
 that action is in the top bar. When both channels are silent, the shortcut takes up no space and
-Audio remains available through Settings. Closing Audio from New character returns to the draft.
+Audio remains available through Settings. From New character, Settings opens over the live creator
+and closing it reveals the same draft.
 The PWA verifies and caches the module and soundtrack
 on demand. If the first gesture happens offline before the module is cached,
 reconnect and reload to enable audio. The 1.42 MB FLAC decodes to about 31 MB at a 48 kHz device rate.

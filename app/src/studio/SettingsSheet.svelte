@@ -5,6 +5,7 @@
 	import SettingsContent from './SettingsContent.svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
+	import { ui } from './state.svelte.ts';
 	import type { ResetScope } from './resetSettings.ts';
 	import { watchExportDefaults } from './settingsDefaults.svelte.ts';
 	import {
@@ -34,6 +35,7 @@
 <Sheet
 	title={t('export.sheet.settings')}
 	className="settings-sheet"
+	overlay={ui.settingsOverlay}
 	wide
 	locked={busy}
 	{back}

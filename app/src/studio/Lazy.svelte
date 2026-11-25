@@ -9,10 +9,12 @@
 	let {
 		load,
 		sheet = true,
+		onLoadError,
 		...props
 	}: {
 		load: () => Promise<{ default: AnyComponent }>;
 		sheet?: boolean;
+		onLoadError?: () => void;
 		[prop: string]: unknown;
 	} = $props();
 	let Loaded = $state.raw<AnyComponent>();
@@ -24,7 +26,8 @@
 			},
 			(error: unknown) => {
 				if (!live) return;
-				if (sheet) ui.sheet = null;
+				if (onLoadError) onLoadError();
+				else if (sheet) ui.sheet = null;
 				toast(errorMessage(error), { tone: 'danger', error });
 			}
 		);
