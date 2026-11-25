@@ -318,14 +318,21 @@
 	let resetFailures = $state<WhisperKey[]>([]);
 	let targetEntry = $state<string>();
 	let panel: HTMLElement;
+	let indexElement: HTMLElement;
 	let search: HTMLInputElement;
+	function homeFocusTarget() {
+		// A touchscreen laptop can still report a fine primary pointer.
+		return navigator.maxTouchPoints === 0 && matchMedia('(pointer: fine)').matches
+			? search
+			: indexElement;
+	}
 	onMount(() => {
 		const stopWatching = watchCreationSettings();
 		const entry = takeSettingsReturnFocus();
 		void tick().then(() => {
 			if (!search.isConnected) return;
 			if (entry) panel.querySelector<HTMLElement>(`[data-setting="${entry}"] button`)?.focus();
-			else if (matchMedia('(pointer: fine)').matches) search.focus({ preventScroll: true });
+			else homeFocusTarget().focus({ preventScroll: true });
 		});
 		return stopWatching;
 	});
@@ -341,7 +348,7 @@
 			query = '';
 			void tick().then(() => {
 				scrollToTop();
-				search.focus({ preventScroll: true });
+				homeFocusTarget().focus({ preventScroll: true });
 			});
 		}
 		previousSection = section;
@@ -380,7 +387,7 @@
 		await tick();
 		scrollToTop();
 		if (!section) {
-			search.focus({ preventScroll: true });
+			homeFocusTarget().focus({ preventScroll: true });
 			return;
 		}
 		const row = entry && panel.querySelector<HTMLElement>(`[data-setting="${entry}"]`);
@@ -407,7 +414,7 @@
 				// The Reset that opened the dialog is now disabled at defaults, so focus cannot return to it.
 				await tick();
 				if (!document.activeElement?.closest('.settings-content'))
-					(panel.querySelector<HTMLElement>('.settings-heading') ?? search).focus();
+					(panel.querySelector<HTMLElement>('.settings-heading') ?? homeFocusTarget()).focus();
 			}
 		} finally {
 			resetting = false;
@@ -430,7 +437,7 @@
 		}
 	]}
 >
-	<div class="settings-index">
+	<div class="settings-index" tabindex="-1" bind:this={indexElement}>
 		<input
 			class="bu-input input"
 			type="search"

@@ -263,6 +263,26 @@ test('Settings About opens a page with build details and copies them', async ({ 
 	await expect(settings.getByRole('status')).toHaveText('No settings match your search.');
 });
 
+test.describe('Settings on a touchscreen', () => {
+	test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+	test('keeps search unfocused until tapped', async ({ page }) => {
+		await page.goto('/');
+		await page.getByRole('button', { name: 'More options', exact: true }).tap();
+		await page.getByRole('button', { name: 'Settings...', exact: true }).tap();
+		const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+		const search = settings.getByRole('searchbox', { name: 'Search settings', exact: true });
+		await expect(search).toBeVisible();
+		await expect(search).not.toBeFocused();
+		await settings.getByRole('button', { name: 'About', exact: true }).tap();
+		await settings.getByRole('button', { name: 'Back to Settings', exact: true }).tap();
+		await expect(search).toBeVisible();
+		await expect(search).not.toBeFocused();
+		await search.tap();
+		await expect(search).toBeFocused();
+	});
+});
+
 test('notifications support optional titles, keyboard dismissal and visible errors inside dialogs', async ({
 	page
 }, info) => {
