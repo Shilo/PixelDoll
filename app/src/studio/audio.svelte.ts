@@ -8,6 +8,7 @@ import {
 } from './audioPreferences.ts';
 import type { AudioCue } from './audioCues.ts';
 import type { AudioPlayback } from './audioPlayback.ts';
+import { developerModeEnabled } from './developerMode.svelte.ts';
 
 let preferences = $state.raw(audioPreferenceStore.read());
 let unsaved = false;
@@ -17,6 +18,8 @@ let loading = false;
 let unavailable = false;
 let effectsUnavailable = false;
 let pageOpen = true;
+
+const developmentAudioMuted = () => import.meta.env.MODE === 'agent' || developerModeEnabled();
 
 export const audioPreferences = () => preferences;
 
@@ -59,6 +62,10 @@ function visible(): boolean {
 }
 
 function updatePlayback() {
+	if (import.meta.env.DEV && developmentAudioMuted()) {
+		closeAudio();
+		return;
+	}
 	try {
 		playback?.update(preferences, visible());
 	} catch (error) {
@@ -104,6 +111,7 @@ function disableAudio(error: unknown) {
 
 // Keep creation and resume on the trusted gesture stack, before the lazy module load.
 function activateAudio(event: Event) {
+	if (import.meta.env.DEV && developmentAudioMuted()) return;
 	if (
 		unavailable ||
 		!event.isTrusted ||
@@ -148,6 +156,7 @@ let cueRevision = 0;
 export function playAudioCue(cue: AudioCue): void {
 	// An action owns its feedback even if playback is still loading when it commits.
 	cueRevision++;
+	if (import.meta.env.DEV && developmentAudioMuted()) return;
 	if (
 		effectsUnavailable ||
 		!playback ||
