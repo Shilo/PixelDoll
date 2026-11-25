@@ -1,0 +1,43 @@
+{
+  "endpoint": "/edit-images-v2",
+  "status": "completed",
+  "failed": [],
+  "empty": [],
+  "qa": {
+    "riding/south": {
+      "minKeyKept": 0.997,
+      "maxKeyOutside": 0.0008,
+      "minAreaRatio": 1,
+      "maxAreaCV": 0,
+      "maxPaletteDist": 3.2,
+      "clipPx": 0,
+      "shiftedFrames": 0,
+      "strayPx": 0,
+      "status": "pass"
+    },
+    "riding/east": {
+      "minKeyKept": 1,
+      "maxKeyOutside": 0,
+      "minAreaRatio": 1,
+      "maxAreaCV": 0,
+      "maxPaletteDist": 2.9,
+      "clipPx": 0,
+      "shiftedFrames": 0,
+      "strayPx": 0,
+      "status": "pass"
+    }
+  },
+  "edges": [],
+  "area": [
+    [
+      "riding/south/0",
+      223
+    ],
+    [
+      "riding/east/0",
+      96
+    ]
+  ],
+  "quotedGenerations": 10,
+  "invoicedGenerations": null
+}

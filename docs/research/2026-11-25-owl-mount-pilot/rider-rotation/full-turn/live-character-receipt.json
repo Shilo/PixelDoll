@@ -1,0 +1,36 @@
+{
+  "endpoint": "create-character-v3",
+  "name": "live-character",
+  "image": "source.png",
+  "mask": "none",
+  "seed": 7501,
+  "status": "completed",
+  "http": 200,
+  "submitUsage": null,
+  "directions": [
+    "east",
+    "west",
+    "north",
+    "south",
+    "north-east",
+    "north-west",
+    "south-east",
+    "south-west"
+  ],
+  "usage": {
+    "type": "generations",
+    "generations": 1
+  },
+  "images": 0,
+  "outputKeys": [
+    "status",
+    "character_id",
+    "storage_urls",
+    "billing_usage",
+    "character_name",
+    "directions_type",
+    "generation_mode",
+    "directions_count",
+    "character_description"
+  ]
+}

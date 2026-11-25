@@ -2645,6 +2645,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		y: (12 + Math.floor(i / 4) * 8) / 64
 	}));
 	const jobs = new Map<string, number>(),
+		ridingInputs = new Map<string, string>(),
 		posts: { path: string; body: Record<string, unknown> }[] = [],
 		errors: string[] = [];
 	let stateImages: { type: 'base64'; base64: string }[] = [];
@@ -2711,6 +2712,8 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 			if (path.endsWith('/animate-with-skeleton-v3')) {
 				const id = `pose-${jobs.size}`;
 				jobs.set(id, (body.keypoints as unknown[]).length);
+				if (String(body.action).startsWith('Hold a still riding pose.'))
+					ridingInputs.set(id, (body.first_frame as { base64: string }).base64);
 				return route.fulfill({ json: { background_job_id: id } });
 			}
 		}
@@ -2723,7 +2726,10 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 					created_at: '',
 					usage: { type: 'generations', generations: 2 },
 					last_response: {
-						images: Array.from({ length: count }, () => ({ type: 'base64', base64 }))
+						images: Array.from({ length: count }, () => ({
+							type: 'base64',
+							base64: ridingInputs.get(path.split('/').pop()!) ?? base64
+						}))
 					}
 				}
 			});
@@ -3149,7 +3155,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	const ridingIdea = ideas.getByRole('button', { name: 'Riding', exact: true });
 	const stateName = newState.getByRole('textbox', { name: 'State name' });
 	await ridingIdea.click();
-	await expect(instructions).toHaveValue(/^Change only the pose\. Keep the same view and facing\./);
+	await expect(instructions).toHaveValue(/^Hold a still riding pose\. Preserve the direction/);
 	await expect(stateName).toHaveValue('Riding');
 	// Riding stays pressed through edits; pressing it again releases it and its suggested name.
 	await instructions.press('End');
@@ -3393,6 +3399,37 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await saveJoints.click();
 	await expect.poll(async () => (await savedSource())?.south?.measured?.[0]?.length).toBe(18);
 	await expect(moveSheet.getByRole('button', { name: /^Generate / })).toBeEnabled();
+	await moveSheet.getByRole('button', { name: 'Close', exact: true }).click();
+	await equipmentMode(page, 'States');
+	await addState.click();
+	await expect(
+		newState.getByRole('button', { name: 'Source: Standing', exact: true })
+	).toBeVisible();
+	await newState.getByRole('switch', { name: 'Edit this pose' }).check();
+	await ridingIdea.click();
+	await expect(newState.getByText('Skeleton V3', { exact: true })).toBeVisible();
+	const beforeRide = posts.length;
+	await newState.getByRole('button', { name: 'Generate State', exact: true }).click();
+	const ridingRow = panel.getByRole('button', { name: 'Riding Ready to review', exact: true });
+	await ridingRow.click();
+	const ridingReview = page.getByRole('dialog', { name: 'Riding', exact: true });
+	await expect(ridingReview.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+	const ridingPosts = posts.slice(beforeRide);
+	expect(ridingPosts).toHaveLength(4);
+	for (const { path, body } of ridingPosts) {
+		expect(path).toBe('/v2/animate-with-skeleton-v3');
+		expect(body.keypoints).toHaveLength(3);
+		expect(body.no_background).toBe(true);
+	}
+	await ridingReview.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect
+		.poll(async () => (await read()).manifest.rig.anchors?.hip?.riding?.south?.length)
+		.toBe(1);
+	expect((await read()).manifest.rig.animations.find(({ id }) => id === 'riding')).toMatchObject({
+		kind: 'state',
+		cells: 1,
+		source: { endpoint: '/animate-with-skeleton-v3' }
+	});
 	expect(errors).toEqual([]);
 });
 
