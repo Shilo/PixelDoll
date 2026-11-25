@@ -596,6 +596,38 @@ test('live coverage stays in the world notes while movement diagnostics respect 
 	await expect(notice).toHaveCount(0);
 });
 
+test('live view notices stay above the phone panel without moving it', async ({ page }, info) => {
+	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.goto(dev);
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	await page.locator('.customize-action').click();
+	const panel = page.locator('.sheet-layout .equipment-rail');
+	const error = page.getByRole('alert').filter({ hasText: 'Could not open this character.' });
+	for (const mode of ['Top-down', 'Side-scroller']) {
+		await modes(page).getByRole('button', { name: mode, exact: true }).click();
+		const before = await panel.boundingBox();
+		expect(before).not.toBeNull();
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts';
+			const { doc } = await import(path);
+			doc.error = 'Could not open this character. '.repeat(8);
+		});
+		await expect(error).toBeVisible();
+		const box = (await error.boundingBox())!;
+		expect(box.x).toBe(16);
+		expect(box.y + box.height).toBeLessThan(before!.y);
+		expect(await panel.boundingBox()).toEqual(before);
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts';
+			const { doc } = await import(path);
+			doc.error = '';
+		});
+		await expect(error).toHaveCount(0);
+		expect(await panel.boundingBox()).toEqual(before);
+	}
+});
+
 test('screen transitions preserve world keyboard focus while creator fields remain native', async ({
 	page
 }) => {

@@ -993,7 +993,9 @@
 			<PhonePanel />
 		</aside>
 	{/if}
-	{#if doc.error}<p class="experience-error" role="alert">{displayNestedMessage(doc.error)}</p>{/if}
+	{#if doc.error && (experience.screen !== 'studio' || experience.mode === 'preview')}
+		<p class="experience-error" role="alert">{displayNestedMessage(doc.error)}</p>
+	{/if}
 </div>
 
 <style>

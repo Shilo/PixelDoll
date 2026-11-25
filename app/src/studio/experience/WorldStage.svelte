@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { t, type WhisperKey } from 'svelte-whisper';
 	import { onMount, untrack } from 'svelte';
+	import { displayNestedMessage } from '../../lib/i18n.ts';
 	import { ui, doc, view, toast, stepPreviewFrame } from '../state.svelte.ts';
 	import { experience, characters, setMode, sharedZoom } from './state.svelte.ts';
 	import type { Ground, RenderOptions } from './ground.ts';
@@ -128,6 +129,7 @@
 	// Share the bottom edge with the live controls when there is room for readable text beside them.
 	const noteRoom = $derived(stageRoom - (touchInput ? 204 : 196));
 	const notesAboveControls = $derived(noteRoom < 80);
+	const liveView = $derived(experience.mode !== 'preview');
 	const touchControlsHeight =
 		MOTION.actions.stick.base + MOTION.actions.gap + MOTION.actions.buttons.jump.size;
 	// Mouse travel: a left press sets a floor destination; while right is held the cursor only aims.
@@ -1881,14 +1883,15 @@
 </div>
 <!-- One bottom-anchored stack: the movement hint always sits above the fallback note, whatever the note wraps to.
      In Preview it also clears the playback bar, whose top is --playback-top. -->
-{#if mountIssue || hint || experience.mode !== 'preview' || loadingNote || rendererWarning}<div
-		class="world-notes"
-		style:bottom={experience.mode === 'preview' && playbackHeight
+{#if mountIssue || hint || liveView || loadingNote || rendererWarning}<div
+		class={['world-notes', { 'live-world-notes': liveView }]}
+		style:bottom={!liveView && playbackHeight
 			? 'max(calc(var(--stage-bottom) + 16px), calc(100% - var(--playback-top) + 8px))'
-			: experience.mode !== 'preview' && notesAboveControls
-				? `calc(var(--stage-bottom) + ${touchInput ? touchControlsHeight + 20 : 68}px)`
-				: undefined}
-		style:max-width={experience.mode !== 'preview'
+			: undefined}
+		style:--live-notes-clearance={liveView && notesAboveControls
+			? `${touchInput ? touchControlsHeight + 20 : 68}px`
+			: undefined}
+		style:max-width={liveView
 			? `${Math.min(420, notesAboveControls ? stageRoom : noteRoom)}px`
 			: undefined}
 	>
@@ -1901,18 +1904,23 @@
 						: t('liveViews.hintTopDown')}
 			</p>{/if}{#if loadingNote}<p class="world-coverage world-loading-items" role="status">
 				<LoaderCircle size={14} class="spin" aria-hidden="true" />{loadingNote}
-			</p>{/if}{#if experience.mode !== 'preview' && rendererWarning}<p
+			</p>{/if}{#if liveView && rendererWarning}<p
 				class="world-coverage world-renderer-warning"
 				role="status"
 			>
 				{t(rendererWarning)}
-			</p>{/if}{#if experience.mode !== 'preview'}
+			</p>{/if}{#if liveView}
 			<p class={attackNote ? 'world-coverage world-live-note' : 'sr'} role="status">
 				{attackNote}
 			</p>
 			{#if note}<p class={['world-coverage', { 'world-live-note': !rendererWarning }]}>
 					{note}
 				</p>{/if}
+			{#if doc.error}
+				<p class="world-live-note world-document-error" role="alert">
+					{displayNestedMessage(doc.error)}
+				</p>
+			{/if}
 		{/if}
 	</div>{/if}
 <JoystickView
@@ -1937,6 +1945,15 @@
 {/if}
 
 <style>
+	/* The stage ends at the panel's top edge. Growing this overlay upward leaves both boxes in place. */
+	.world-notes.live-world-notes {
+		position: absolute;
+		left: var(--edge);
+		bottom: clamp(8px, calc(100% - 64px), var(--live-notes-clearance, 16px));
+	}
+	.world-document-error {
+		color: var(--bu-danger);
+	}
 	/* A held right button aims at the cursor. */
 	:global(.world-stage.live.aiming) .world-input {
 		cursor: crosshair;
