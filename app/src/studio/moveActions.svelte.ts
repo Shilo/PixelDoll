@@ -1,4 +1,5 @@
 import { retainMoves, retainMoveMetadata } from '../lib/rig/moves.ts';
+import { appearanceReviewHold } from './appearanceSource.ts';
 import { stableStringify } from '../lib/image/hash.ts';
 import {
 	baseHashOf,
@@ -290,6 +291,8 @@ export async function removeMove(id: string) {
 	const snapshot = await db.get<StoredProject>('projects', projectId);
 	if (!snapshot)
 		throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
+	if (Object.values(snapshot.appearanceEdits ?? {}).some(({ target }) => target.clip === id))
+		throw appearanceReviewHold();
 	const version = stableStringify(snapshot.manifest);
 	const removed = snapshot.manifest.rig.animations.find((clip) => clip.id === id);
 	// Named before the clip leaves the manifest: afterwards the label falls back, and the toast would not match it.
@@ -317,6 +320,8 @@ export async function removeMove(id: string) {
 					);
 				if (!record)
 					throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
+				if (Object.values(record.appearanceEdits ?? {}).some(({ target }) => target.clip === id))
+					throw appearanceReviewHold();
 				if (stableStringify(record.manifest) !== version)
 					throw new LocalizedError(
 						'This character changed before the move could be deleted. Try again.',

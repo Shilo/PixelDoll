@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { appearanceReviewHold } from './appearanceSource.ts';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import { LocalizedError, errorMessage, message, type Message } from '../lib/message.ts';
@@ -98,6 +99,7 @@
 		error = '';
 		let step: Awaited<ReturnType<typeof prepareArtworkStep>>;
 		try {
+			if (Object.keys(record.appearanceEdits ?? {}).length) throw appearanceReviewHold();
 			const { record: next, newImages } = await configureDirections(
 				record,
 				retained,

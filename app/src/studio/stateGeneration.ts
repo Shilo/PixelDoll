@@ -206,7 +206,7 @@ function validShape(value: unknown): value is Size {
 	);
 }
 
-async function flashShapes(reference: boolean) {
+export async function flashShapes(reference: boolean) {
 	type EditCapabilities = {
 		sizes?: unknown;
 		edit_methods?: unknown;
@@ -253,7 +253,7 @@ async function flashShapes(reference: boolean) {
 	return shapes;
 }
 
-async function flashCost(plan: ReadyStatePlan): Promise<StateGenerationCost> {
+export async function flashCost(plan: ReadyStatePlan): Promise<StateGenerationCost> {
 	const canvases = plan.batches.map((batch) =>
 		batch.transport === 'sheet' ? batch.canvas : plan.cellSize
 	);

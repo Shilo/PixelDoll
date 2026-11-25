@@ -23,7 +23,8 @@ const BACKUP_STRIPPED = [
 	'creationSpec',
 	'moveRecovery',
 	'moveReviews',
-	'stateGenerations'
+	'stateGenerations',
+	'appearanceEdits'
 ] as const;
 
 export interface DebugContext {
@@ -54,7 +55,7 @@ activity.json     This tab's PixelLab requests and downloads since it opened (bo
 jobs.json         The saved job ledger: every queued, running, failed and finished paid request.
 records.json      Saved records that are not characters (drafts, creation and move forms, setup, export settings, demo
                   outfit) and the character fields a normal backup leaves out (creationSpec, moveRecovery, moveReviews,
-                  stateGenerations).
+                  stateGenerations, appearanceEdits).
 storage.json      PixelDoll's local and session storage settings; other keys of this site by name and size only.
 artwork.json      Every stored image: hash, size, type and where it is. "character": a saved character uses it, so
                   blobs/<hash> holds it unless it failed verification; "debug": debug/blobs/<hash>; "device only".

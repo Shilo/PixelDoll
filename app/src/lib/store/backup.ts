@@ -271,6 +271,7 @@ function canonical(record: StoredProject & { dress?: unknown }) {
 		creationSpec: _creationSpec,
 		moveRecovery: _moveRecovery,
 		stateGenerations: _stateGenerations,
+		appearanceEdits: _appearanceEdits,
 		restoredFrom: _restoredFrom,
 		dress: _dress,
 		origin: _origin,

@@ -11094,6 +11094,9 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await page.keyboard.press('ArrowDown');
 	await expect(items.nth(1)).toHaveAccessibleName('Rename...');
 	await expect(items.nth(1)).toBeFocused();
+	await page.keyboard.press('ArrowDown');
+	await expect(items.nth(2)).toHaveAccessibleName('Edit appearance…');
+	await expect(items.nth(2)).toBeFocused();
 	await page.keyboard.press('Escape');
 	await expect.poll(() => menuOpen(page)).toBe(false);
 	await expect(more).toBeFocused();

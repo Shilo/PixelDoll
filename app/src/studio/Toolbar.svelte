@@ -25,6 +25,7 @@
 		store,
 		openProject,
 		openRename,
+		openAppearance,
 		undo,
 		redo,
 		randomize,
@@ -43,6 +44,7 @@
 		House,
 		Activity,
 		Pencil,
+		Sparkles,
 		PersonStanding,
 		Copy,
 		Dices,
@@ -358,6 +360,18 @@
 					openRename(doc.id);
 				}}
 				><Pencil size={16} /><span class="row-name">{openerLabel(t('toolbar.rename'))}</span
+				><SurfaceChevron /></button
+			>{/if}
+		{#if doc.id.startsWith('rig-')}<button
+				class="row"
+				role="menuitem"
+				aria-haspopup="dialog"
+				onclick={() => {
+					close();
+					openAppearance(doc.id);
+				}}
+				><Sparkles size={16} aria-hidden="true" /><span class="row-name"
+					>{t('appearance.action')}</span
 				><SurfaceChevron /></button
 			>{/if}
 		{#if !isDemo()}<button

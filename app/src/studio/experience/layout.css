@@ -1683,10 +1683,10 @@
 	font-size: 16px;
 }
 .studio-app .character-sheet :is(input:where(:not([type='checkbox'], [type='radio'])), select),
-.studio-app .character-sheet .base-clothing .bu-segmented {
+.studio-app .compact-segments .bu-segmented {
 	min-height: 44px;
 }
-.studio-app .character-sheet .base-clothing .bu-segment-face {
+.studio-app .compact-segments .bu-segment-face {
 	min-height: 0;
 	padding-block: 0;
 }
