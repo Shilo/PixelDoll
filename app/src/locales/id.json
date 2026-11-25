@@ -147,6 +147,7 @@
 		"mountNotSaved": "Pengaturan tunggangan berubah, tetapi browser ini tidak dapat menyimpannya.",
 		"adjustSeat": "Sesuaikan posisi duduk",
 		"seatFacing": "Arah pratinjau",
+		"seatAutoTurn": "Putar pratinjau secara otomatis",
 		"seatNeedsCharacter": "Pilih karakter untuk menyesuaikan posisi duduknya.",
 		"seatPosition": "Posisi duduk",
 		"seatOffset": "x {x}, y {y}",

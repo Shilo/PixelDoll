@@ -335,7 +335,8 @@ export interface ExportInfo {
 The optional `rig.mountSeatOffsets` map stores the **Seat position** values from Studio in signed
 sprite pixels by mount facing. Positive x moves the seat right and positive y moves it down.
 Studio allows whole-pixel corrections from −32 to 32 on each axis. Applying Automatic removes
-that facing’s entry. A missing entry is equivalent to `{x: 0, y: 0}`.
+that facing’s entry. A missing entry is equivalent to `{x: 0, y: 0}`, and both keep automatic
+placement: the correction is relative to the contact, not a body coordinate.
 These values are character settings shared across clips and are included in the editor copy and
 engine manifest. All eight mount facings are available, independent of how many directions the
 rider has. The host adds the correction to its saddle point before aligning the rider:
@@ -1085,7 +1086,6 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
 The Export checkbox **Moving attack layers** is off by default and independent of the Live switch. Enabled Phaser, GDevelop, Godot and Unity exports use the character's Live Walk, Attack and Waist settings. Optional `actionSheets.lower` and `actionSheets.upper` map moves to the new `action/` body PNGs or to existing source-color equipment sheets. Rows, columns and pivots match the original layer. `actionLayers.planes` stores integer hip registration coordinates by direction and cell.
 
 Each `actionLayers.pairs` entry is a set that passed the geometry and seam gate for all reachable cells of the Walk, Attack and shared direction. Its `blocked` IDs are items without drawable art on their required clip. The `cells` array is row-major by Walk cell then Attack cell. Unused combinations are null; the rest contain the integer correction to add to the hip difference. This optional data is rebuilt with the same archive, not separately versioned or updated in place. Re-export when the source art, timing, or Waist setting changes. See the [controller contract](architecture/javascript-runtime.md#one-shot-actions-over-a-loop).
-
 
 ## 7. Editable import copy
 

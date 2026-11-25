@@ -147,6 +147,7 @@
 		"mountNotSaved": "탈것 설정이 바뀌었지만 이 브라우저에 저장하지 못했어요.",
 		"adjustSeat": "탑승 위치 조정",
 		"seatFacing": "미리보기 방향",
+		"seatAutoTurn": "미리보기 자동 회전",
 		"seatNeedsCharacter": "탑승 위치를 조정할 캐릭터를 선택하세요.",
 		"seatPosition": "탑승 위치",
 		"seatOffset": "x {x}, y {y}",

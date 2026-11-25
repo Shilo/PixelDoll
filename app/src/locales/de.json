@@ -153,6 +153,7 @@
 		"mountNotSaved": "Reittier-Einstellung geändert, aber dieser Browser konnte sie nicht speichern.",
 		"adjustSeat": "Sitz anpassen",
 		"seatFacing": "Vorschaurichtung",
+		"seatAutoTurn": "Vorschau automatisch drehen",
 		"seatNeedsCharacter": "Wähle eine Figur aus, um ihre Sitzposition anzupassen.",
 		"seatPosition": "Sitzposition",
 		"seatOffset": "x {x}, y {y}",

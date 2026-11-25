@@ -1223,10 +1223,20 @@ touchTest(
 		await openCompactMount();
 		const seatRow = mountMenu.locator('[data-setting="rider-seat"]');
 		const facing = mountMenu.getByRole('combobox', { name: 'Preview direction', exact: true });
+		const autoTurn = mountMenu.getByRole('button', {
+			name: 'Rotate preview automatically',
+			exact: true
+		});
+		await expect(autoTurn).toHaveAttribute('aria-pressed', 'true');
 		await facing.selectOption('south-east');
 		const wide = (await facing.boundingBox())!.width;
 		await facing.selectOption('east');
 		await expect.poll(async () => (await facing.boundingBox())!.width).toBe(wide);
+		await expect(autoTurn).toHaveAttribute('aria-pressed', 'false');
+		await autoTurn.click();
+		await expect(autoTurn).toHaveAttribute('aria-pressed', 'true');
+		await facing.selectOption('east');
+		await expect(autoTurn).toHaveAttribute('aria-pressed', 'false');
 		const adjustSeat = mountMenu.getByRole('button', { name: 'Seat position', exact: true });
 		const shown = mountMenu.getByRole('switch', { name: 'Show character mounted', exact: true });
 		await expect(shown).not.toBeChecked();
@@ -1253,6 +1263,19 @@ touchTest(
 		await expect(facing).toBeEnabled();
 		await expect(pausePreview).toBeVisible();
 		await expect(auto).toHaveAttribute('aria-pressed', 'true');
+		// The open row closes like Cancel and discards its draft; the preview keeps turning while editing.
+		await right.tap();
+		await expect(seat).toHaveText('x 1, y 0');
+		await adjustSeat.click();
+		await expect(left).toBeHidden();
+		await expect(seat).toHaveText('x 0, y 0');
+		await adjustSeat.click();
+		await expect(left).toBeVisible();
+		await autoTurn.click();
+		await expect(autoTurn).toHaveAttribute('aria-pressed', 'true');
+		await expect.poll(() => canvas.getAttribute('data-facing'), { timeout: 5000 }).not.toBe('east');
+		await facing.selectOption('east');
+		await expect(autoTurn).toHaveAttribute('aria-pressed', 'false');
 		const pad = await mountMenu.locator('.seat-nudges button').evaluateAll((buttons) =>
 			buttons.map((button) => {
 				const { x, y, width, height } = button.getBoundingClientRect();
@@ -1337,6 +1360,22 @@ touchTest(
 		await expect(auto).toHaveAttribute('aria-pressed', 'true');
 		await expect(seat).toHaveText('x 0, y 0');
 		await saveSeat.click();
+		await expect(adjustSeat).toHaveAttribute('aria-expanded', 'false');
+		await expect(seat).toHaveText('x 0, y 0');
+
+		// Holding an arrow keeps nudging on pointer and touch input.
+		await adjustSeat.click();
+		await right.scrollIntoViewIfNeeded();
+		const held = (await right.boundingBox())!;
+		await page.mouse.move(held.x + held.width / 2, held.y + held.height / 2);
+		await page.mouse.down();
+		await expect
+			.poll(async () => Number(/x (-?\d+)/.exec((await seat.textContent()) ?? '')?.[1] ?? 0), {
+				timeout: 5000
+			})
+			.toBeGreaterThan(1);
+		await page.mouse.up();
+		await mountMenu.getByRole('button', { name: 'Cancel', exact: true }).click();
 		await expect(adjustSeat).toHaveAttribute('aria-expanded', 'false');
 		await expect(seat).toHaveText('x 0, y 0');
 	}

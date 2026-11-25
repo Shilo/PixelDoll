@@ -153,6 +153,7 @@
 		"mountNotSaved": "Binek ayarı değişti ancak bu tarayıcı kaydedemedi.",
 		"adjustSeat": "Oturma konumunu ayarla",
 		"seatFacing": "Önizleme yönü",
+		"seatAutoTurn": "Önizlemeyi otomatik döndür",
 		"seatNeedsCharacter": "Oturma konumunu ayarlamak için bir karakter seçin.",
 		"seatPosition": "Oturma konumu",
 		"seatOffset": "x {x}, y {y}",

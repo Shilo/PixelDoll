@@ -2,11 +2,12 @@
 	// The Mount settings preview: the test mount always walks in place and turns through its facings. With Show mount on,
 	// the open character (or the demo, when none is open) rides it exactly as on stage, following every mount setting.
 	// Clicking pauses and plays. Its loop and image caches live only while Settings shows this page.
-	import { tick, type Snippet } from 'svelte';
+	import { onDestroy, tick, type Snippet } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import Armchair from '@lucide/svelte/icons/armchair';
 	import Crosshair from '@lucide/svelte/icons/crosshair';
 	import LocateFixed from '@lucide/svelte/icons/locate-fixed';
+	import RotateCw from '@lucide/svelte/icons/rotate-cw';
 	import { bakedFrame } from '../lib/compose/compose.ts';
 	import { openFixture } from '../lib/dress/project.ts';
 	import { displayNestedMessage } from '../lib/i18n.ts';
@@ -56,6 +57,8 @@
 
 	let { visibility }: { visibility: Snippet } = $props();
 	const TURN_MS = 1400;
+	const REPEAT_DELAY_MS = 350;
+	const REPEAT_EVERY_MS = 75;
 	let canvas = $state<HTMLCanvasElement>();
 	let marker = $state<HTMLSpanElement>();
 	let playing = $state(!matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -182,6 +185,46 @@
 		event.preventDefault();
 		nudge(step.x, step.y);
 	}
+	let repeatDelay = 0,
+		repeatEvery = 0,
+		heldPointer: number | null = null;
+	function stopRepeat() {
+		clearTimeout(repeatDelay);
+		clearInterval(repeatEvery);
+		repeatDelay = repeatEvery = 0;
+	}
+	// Press and hold (mouse, pen or touch) keeps nudging after a short delay; the click that ends the press is ignored.
+	function holdNudge(event: PointerEvent, x: number, y: number) {
+		if (event.button !== 0 || busy) return;
+		event.preventDefault();
+		const button = event.currentTarget as HTMLElement;
+		button.focus();
+		try {
+			button.setPointerCapture(event.pointerId);
+		} catch {
+			// A synthetic pointer may not be capturable; the press still nudges once.
+		}
+		heldPointer = event.pointerId;
+		nudge(x, y);
+		stopRepeat();
+		repeatDelay = window.setTimeout(() => {
+			repeatDelay = 0;
+			repeatEvery = window.setInterval(() => nudge(x, y), REPEAT_EVERY_MS);
+		}, REPEAT_DELAY_MS);
+	}
+	function releaseNudge(event: PointerEvent) {
+		if (heldPointer !== event.pointerId) return;
+		stopRepeat();
+		const id = event.pointerId;
+		// Click follows pointerup, so clear only after it had the chance to be ignored.
+		window.setTimeout(() => {
+			if (heldPointer === id) heldPointer = null;
+		}, 0);
+	}
+	function clickNudge(x: number, y: number) {
+		if (heldPointer === null) nudge(x, y);
+	}
+	onDestroy(stopRepeat);
 	async function saveSeat() {
 		if (!editing || !changes.length || busy || opening) return;
 		busy = true;
@@ -218,7 +261,7 @@
 			legs = experience.mountLegs,
 			height = standingHeight,
 			running = playing,
-			autoTurn = !pinned && !editing,
+			autoTurn = !pinned,
 			seatOffset = offset;
 		if (!target) return;
 		// Fit the full gait envelope, not a single bob frame. A stationary edit keeps its saved framing
@@ -397,25 +440,44 @@
 </button>
 <div class="mount-caption">
 	<label for="mount-preview-facing">{t('settings.seatFacing')}</label>
-	<div class="direction-select">
-		{#each DIRECTIONS as direction (direction)}
-			<span class="direction-measure" aria-hidden="true">{displayDirection(direction)}</span>
-		{/each}
-		<select
-			id="mount-preview-facing"
-			class="bu-select select"
-			value={facing}
-			disabled={busy}
-			onchange={(event) => {
-				pinned = true;
+	<div class="direction-row">
+		<button
+			type="button"
+			class="bu-action auto-turn"
+			data-variant="outline"
+			aria-label={t('settings.seatAutoTurn')}
+			title={t('settings.seatAutoTurn')}
+			aria-pressed={!pinned}
+			onclick={() => {
+				pinned = false;
 				turned = 0;
-				facing = event.currentTarget.value as DirectionName;
-			}}
+				playing = true;
+			}}><RotateCw size={18} aria-hidden="true" /></button
 		>
+		<div class="direction-select">
 			{#each DIRECTIONS as direction (direction)}
-				<option value={direction}>{displayDirection(direction)}</option>
+				<span class="direction-measure" aria-hidden="true">{displayDirection(direction)}</span>
 			{/each}
-		</select>
+			<select
+				id="mount-preview-facing"
+				class="bu-select select"
+				value={facing}
+				disabled={busy}
+				onfocus={() => {
+					pinned = true;
+					turned = 0;
+				}}
+				onchange={(event) => {
+					pinned = true;
+					turned = 0;
+					facing = event.currentTarget.value as DirectionName;
+				}}
+			>
+				{#each DIRECTIONS as direction (direction)}
+					<option value={direction}>{displayDirection(direction)}</option>
+				{/each}
+			</select>
+		</div>
 	</div>
 </div>
 <hr class="bu-separator preview-divider" />
@@ -431,7 +493,7 @@
 		aria-describedby={editable ? `${controlsId}-value` : `${controlsId}-help`}
 		disabled={!editable || busy || (opening && !editing)}
 		bind:element={adjustButton}
-		onclick={beginEdit}
+		onclick={() => void (editing ? endEdit() : beginEdit())}
 	>
 		<Armchair size={18} aria-hidden="true" />
 		<span class="row-name">{t('settings.seatPosition')}</span>
@@ -478,8 +540,13 @@
 					aria-label={t(step.label)}
 					title={t(step.label)}
 					disabled={busy}
+					onpointerdown={(event) => holdNudge(event, step.x, step.y)}
+					onpointerup={releaseNudge}
+					onpointercancel={releaseNudge}
+					onlostpointercapture={stopRepeat}
+					oncontextmenu={(event) => event.preventDefault()}
 					onkeydown={padKey}
-					onclick={() => nudge(step.x, step.y)}
+					onclick={() => clickNudge(step.x, step.y)}
 				>
 					<step.icon size={18} aria-hidden="true" />
 				</button>
@@ -576,8 +643,23 @@
 		font-size: 12px;
 		color: var(--bu-muted);
 	}
+	.direction-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		min-inline-size: 0;
+		max-inline-size: 100%;
+	}
+	.auto-turn {
+		flex: none;
+		inline-size: 44px;
+		block-size: 44px;
+		min-inline-size: 0;
+		justify-content: center;
+	}
 	.direction-select {
 		display: grid;
+		min-inline-size: 0;
 		max-inline-size: 100%;
 	}
 	.direction-select > * {
@@ -622,6 +704,9 @@
 		block-size: 44px;
 		min-inline-size: 0;
 		justify-content: center;
+		touch-action: manipulation;
+		user-select: none;
+		-webkit-touch-callout: none;
 	}
 	.seat-actions {
 		justify-content: flex-end;

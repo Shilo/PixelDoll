@@ -153,6 +153,7 @@
 		"mountNotSaved": "A configuração de montaria mudou, mas este navegador não conseguiu salvá-la.",
 		"adjustSeat": "Ajustar assento",
 		"seatFacing": "Direção da prévia",
+		"seatAutoTurn": "Girar a prévia automaticamente",
 		"seatNeedsCharacter": "Selecione um personagem para ajustar seu assento.",
 		"seatPosition": "Posição do assento",
 		"seatOffset": "x {x}, y {y}",

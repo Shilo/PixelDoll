@@ -147,6 +147,7 @@
 		"mountNotSaved": "乗り物の設定を変更しましたが、このブラウザーに保存できませんでした。",
 		"adjustSeat": "座る位置を調整",
 		"seatFacing": "プレビューの向き",
+		"seatAutoTurn": "プレビューを自動で回転",
 		"seatNeedsCharacter": "座る位置を調整するには、キャラクターを選んでください。",
 		"seatPosition": "座る位置",
 		"seatOffset": "x {x}、y {y}",

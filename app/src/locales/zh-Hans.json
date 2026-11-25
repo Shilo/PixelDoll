@@ -147,6 +147,7 @@
 		"mountNotSaved": "坐骑设置已更改，但此浏览器无法保存。",
 		"adjustSeat": "调整骑乘位置",
 		"seatFacing": "预览朝向",
+		"seatAutoTurn": "自动旋转预览",
 		"seatNeedsCharacter": "请选择角色来调整骑乘位置。",
 		"seatPosition": "骑乘位置",
 		"seatOffset": "x {x}，y {y}",

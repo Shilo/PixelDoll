@@ -153,6 +153,7 @@
 		"mountNotSaved": "El ajuste de montura cambió, pero este navegador no pudo guardarlo.",
 		"adjustSeat": "Ajustar asiento",
 		"seatFacing": "Orientación de la vista previa",
+		"seatAutoTurn": "Girar la vista previa automáticamente",
 		"seatNeedsCharacter": "Selecciona un personaje para ajustar su asiento.",
 		"seatPosition": "Posición del asiento",
 		"seatOffset": "x {x}, y {y}",

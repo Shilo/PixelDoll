@@ -21,15 +21,17 @@ The schematic has eight authored or explicitly mirrored directions. A four-direc
 
 ## Correct a saved seat
 
-In Mount settings, turn on **Show mount**, choose a saved one-cell **Riding pose**, and
-select its facing under the preview. Open the pencil on the **Seat position** row to
-pause on that facing. The crosshair marks the contact with the test saddle. The arrow
-buttons move the whole rider one pixel at a time, and the row displays the same
-pivot-relative coordinates used by the export. Click the preview to check the mount's
-gait while the facing stays fixed. **Save** keeps the point for that pose and facing.
-The center button previews automatic placement before you save. Mirrored facings can be
-corrected individually. Closing the page discards a draft. Resetting Mount settings
-resets the display preferences and keeps the character's reviewed points.
+In Mount settings, select **Seat position** below **Show character mounted**. The editor
+opens there and also works while the mount is hidden; the crosshair marks the seat. X and Y
+are signed pixels from that direction's automatic placement, from -32 to 32. `0, 0` is
+Automatic: Studio keeps its estimate, or the reviewed rider contact when one exists, and
+the export stores no correction. Arrow buttons move one pixel; hold one to keep moving.
+Choosing a **Preview direction** pauses auto-rotation, and the Auto button starts it
+again. Editing keeps the preview turning until you choose a direction. Mirrored facings are
+corrected individually. Clicking **Seat position** again, **Cancel**, or closing the page
+discards the draft. **Save** writes every adjusted facing. The center button previews
+Automatic for the current direction. Resetting Mount settings resets the display
+preferences and keeps the character's saved seat.
 
 The [stored East Ride frame](evidence/mount-live-east-raw-strip.png) reproduces why the
 fallback can need a correction. With a standing ground of (32, 60) and height of 50 px,
