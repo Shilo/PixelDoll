@@ -8,6 +8,7 @@
 	import './experience/hoverActions.css';
 	import { rememberActivation } from './experience/focus.ts';
 	import {
+		closeSettings,
 		closeSettingsAccount,
 		closeSettingsActivity,
 		closeSettingsCost,
@@ -186,7 +187,7 @@
 	// ponytail: not reactive on purpose (plain flag); a sheet -> sheet switch keeps the same entry.
 	let sheetEntry = false;
 	$effect(() => {
-		const open = !!ui.sheet;
+		const open = !!ui.sheet || ui.settingsOverlay;
 		if (open && !sheetEntry) {
 			history.pushState({ pixeldollSheet: 1 }, '');
 			sheetEntry = true;
@@ -217,7 +218,7 @@
 	const onpop = () => {
 		if (!sheetEntry) return;
 		// An atomic local save/publish has the same disabled-close rule for browser Back as for its X and Escape.
-		if (ui.sheetBusy && !alertOnTop()) {
+		if (ui.sheetBusy && !ui.settingsOverlay && !alertOnTop()) {
 			history.pushState({ pixeldollSheet: 1 }, '');
 			return;
 		}
@@ -233,7 +234,9 @@
 		// Otherwise Back takes the sheet's own Back (an inner pane) or its close request, which may ask first.
 		sheetEntry = false;
 		// A sheet still loading (lazy) has not claimed its exits yet: a Settings child still steps back to Settings.
-		if (
+		if (ui.settingsOverlay && !document.querySelector('dialog.settings-sheet:modal'))
+			closeSettings();
+		else if (
 			!sheetBrowserBack() &&
 			!(
 				closeSettingsAccount() ||
@@ -243,7 +246,7 @@
 			)
 		)
 			ui.sheet = null;
-		if (ui.sheet) {
+		if (ui.sheet || ui.settingsOverlay) {
 			history.pushState({ pixeldollSheet: 1 }, '');
 			sheetEntry = true;
 		}
@@ -292,7 +295,7 @@
 		// Like other apps, the settings shortcut works from anywhere, including text fields and other sheets.
 		if (isSettingsShortcut(e)) {
 			e.preventDefault();
-			if (ui.sheet !== 'settings') openSettings();
+			if (ui.sheet !== 'settings' && !ui.settingsOverlay) openSettings();
 			return;
 		}
 		const t = e.target as HTMLElement;
@@ -326,6 +329,7 @@
 			return;
 		}
 		if (
+			ui.settingsOverlay ||
 			(ui.sheet && ui.sheet !== 'inspect') ||
 			t.closest('input, textarea, select, [contenteditable]')
 		)
@@ -398,7 +402,7 @@
 	{#if !workspaceCopy && offline}<div class="offline-banner" role="status">
 			<WifiOff size={14} aria-hidden="true" />{t('studio.youReOfflineEditAndExportLocally')}
 		</div>{/if}
-	{#if !ui.sheet}<Toast />{/if}
+	{#if !ui.sheet && !ui.settingsOverlay}<Toast />{/if}
 
 	{#if ui.sheet === 'inspect'}<Lazy load={parts.notes} />{/if}
 	{#if ui.sheet === 'connect'}<Lazy load={parts.connect} />{/if}
@@ -407,7 +411,7 @@
 	{#if ui.sheet === 'export' || (ui.sheet === 'settings' && settingsNavigation.fromExport)}<Lazy
 			load={parts.export}
 		/>
-	{:else if ui.sheet === 'settings'}<Lazy load={parts.settings} />{/if}
+	{/if}
 	{#if ui.sheet === 'activity'}<Lazy load={parts.activity} />{/if}
 	{#if ui.sheet === 'workspaceReport' && workspaceCopy}<Lazy load={parts.workspace} />{/if}
 	{#if ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
@@ -436,6 +440,9 @@
 	{/if}
 	{#if ui.sheet === 'gen' && genOf(ui.selected)}
 		<Lazy load={parts.gen} g={genOf(ui.selected)!} />
+	{/if}
+	{#if ui.settingsOverlay || (ui.sheet === 'settings' && !settingsNavigation.fromExport)}
+		<Lazy load={parts.settings} onLoadError={closeSettings} />
 	{/if}
 	{#if reportDialog.report}{#key reportDialog.report}<ReportDialog
 				report={reportDialog.report}

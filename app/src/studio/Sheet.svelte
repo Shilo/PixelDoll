@@ -1,5 +1,5 @@
 <script lang="ts">
-	// One sheet at a time (HIG): centered on desktop, bottom sheet on phones, trailing panel in phone landscape.
+	// Centered on desktop, bottom sheet on phones, trailing panel in phone landscape.
 	// Fixed chrome (docs/design/2026-11-21-app-bars/plan.md): Back only at the start and only inside an inner pane, the
 	// centered title, header tools, then the X at the end. A footer exists only for a commit, primary action last.
 	import { openingTrigger, restoreTrigger } from './experience/focus.ts';
@@ -32,6 +32,7 @@
 		dirty = false,
 		wide = false,
 		screen = false,
+		overlay = false,
 		className = ''
 	}: {
 		title: string;
@@ -64,9 +65,12 @@
 		/** A full-window screen (New character): its bar matches the top bar it covers, Back at the start and Full
 		 *  screen and More at the end, instead of the X. */
 		screen?: boolean;
+		/** Overlays an existing sheet, which still owns the screen's busy state. */
+		overlay?: boolean;
 		className?: string;
 	} = $props();
 	let dlg: HTMLDialogElement;
+	const titleId = $props.id();
 	let titleElement = $state<HTMLHeadingElement>();
 	/** The exit waiting on Discard changes?. */
 	let discarding = $state<(() => void) | null>(null);
@@ -77,7 +81,7 @@
 	// The native `close` event from our own unmount fires after a replacement sheet is already set; ignore it.
 	let unmounting = false;
 	// Without an inner pane of its own, a sheet opened over New character steps back to it.
-	const backTo = $derived(back ?? (canReturnToCreator() ? returnToCreator : undefined));
+	const backTo = $derived(back ?? (!overlay && canReturnToCreator() ? returnToCreator : undefined));
 	const backName = $derived(back ? backPlace : backTo ? t('create.sheet.title') : undefined);
 	function guarded(exit: () => void) {
 		if (locked || discarding) return;
@@ -87,11 +91,12 @@
 	const requestClose = () => guarded(onclose);
 	const dismissFromBackdrop = () => {
 		if (locked || discarding) return;
-		restoreScene = true;
+		restoreScene = !overlay;
 		requestClose();
 	};
 	const goBack = $derived(backTo && backDiscards ? () => guarded(backTo as () => void) : backTo);
 	$effect(() => {
+		if (overlay) return;
 		ui.sheetBusy = locked;
 		return () => {
 			ui.sheetBusy = false;
@@ -144,7 +149,7 @@
 	bind:this={dlg}
 	class="sheet {kind} {className}"
 	class:wide
-	aria-labelledby="sheet-title"
+	aria-labelledby={titleId}
 	onclose={() => {
 		if (!unmounting && !locked) onclose();
 	}}
@@ -156,7 +161,7 @@
 >
 	<SurfaceHeader
 		{title}
-		titleId="sheet-title"
+		{titleId}
 		bind:titleElement
 		{heading}
 		back={goBack ?? (screen ? requestClose : undefined)}
@@ -177,7 +182,7 @@
 	{#if footer}<footer class="sheet-foot" bind:offsetHeight={footHeight}>
 			{@render footer()}
 		</footer>{/if}
-	<Toast />
+	{#if !ui.settingsOverlay || overlay}<Toast />{/if}
 	{#if screen}<MoreMenu context="creator" />{/if}
 </dialog>
 

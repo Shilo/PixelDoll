@@ -1,4 +1,4 @@
-import { canReturnToCreator, doc, returnToCreator, ui } from './state.svelte.ts';
+import { doc, ui } from './state.svelte.ts';
 import type { WhisperKey } from 'svelte-whisper';
 import type { CreationSection } from './creationSettings.ts';
 
@@ -54,7 +54,6 @@ export const settingsNavigation = $state<{
 });
 
 let returnFocus: 'connection' | 'recent-activity' | 'cost-estimate' | undefined;
-let returnToDraftFromAudio = false;
 
 export function takeSettingsReturnFocus() {
 	const entry = returnFocus;
@@ -70,20 +69,20 @@ export const isSettingsShortcut = (e: KeyboardEvent) =>
 /** Without a section, Settings reopens on the page last shown; kept in memory only, so a reload starts at the index. */
 export function openSettings(section?: SettingsSection) {
 	returnFocus = undefined;
-	returnToDraftFromAudio = ui.sheet === 'create' && section === 'audio';
-	settingsNavigation.fromExport = ui.sheet === 'export';
+	settingsNavigation.fromExport = ui.sheet === 'export' && section === 'export';
 	if (section) settingsNavigation.section = section;
-	ui.sheet = 'settings';
+	if (ui.sheet && ui.sheet !== 'settings' && !settingsNavigation.fromExport)
+		ui.settingsOverlay = true;
+	else ui.sheet = 'settings';
 }
 
 export function closeSettings() {
-	const backToDraft = returnToDraftFromAudio && canReturnToCreator();
-	returnToDraftFromAudio = false;
-	if (backToDraft) returnToCreator();
+	if (ui.settingsOverlay) ui.settingsOverlay = false;
 	else ui.sheet = null;
 }
 
 export function openSettingsAccount(replace = false) {
+	ui.settingsOverlay = false;
 	settingsNavigation.accountOpen = true;
 	settingsNavigation.accountReplace = replace;
 	ui.sheet = 'connect';
@@ -99,6 +98,7 @@ export function closeSettingsAccount(): boolean {
 }
 
 export function openSettingsActivity() {
+	ui.settingsOverlay = false;
 	settingsNavigation.activityOpen = true;
 	ui.sheet = 'activity';
 }
@@ -114,6 +114,7 @@ export function closeSettingsActivity(): boolean {
 
 /** Cost estimate for the open character, returning to Settings when it closes. */
 export function openSettingsCost() {
+	ui.settingsOverlay = false;
 	settingsNavigation.costOpen = true;
 	ui.costProject = doc.id;
 	ui.sheet = 'cost';
@@ -129,6 +130,7 @@ export function closeSettingsCost(): boolean {
 }
 
 export function openSettingsExport() {
+	ui.settingsOverlay = false;
 	settingsNavigation.exportOpen = true;
 	ui.sheet = 'export';
 }

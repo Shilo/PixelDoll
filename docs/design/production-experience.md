@@ -12,7 +12,8 @@ Studio audio is enabled by default at low levels and starts after a gesture in t
 positive switches for Play audio, Music, and Sound effects. Any switch can silence its scope while preserving the volume
 choices. People can also set either volume to zero. The Characters, New character, and Customize top bars link
 directly to Audio while either channel is enabled at a nonzero volume. In the Characters top bar, Audio sits to
-the left of New character. Closing Audio from New character returns to the draft.
+the left of New character. Settings opens over the current screen, including New character, where
+the draft and its scroll position stay in place.
 The browser remembers the choices. Both themes share one longer [original synthesized soundtrack](audio.md).
 The soundtrack and its player download on demand, and the interface cue buffers are synthesized only when used.
 Separate channel levels follow familiar [game audio settings](https://www.ea.com/able/resources/dead-space/dead-space/ps5/audio),

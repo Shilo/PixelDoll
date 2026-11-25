@@ -383,6 +383,7 @@ export const ui = $state({
 	frameProject: '', // the character the Adjust frame sheet is for
 	costProject: '', // the character the Cost estimate sheet opens on
 	details: '', // the character the Details sheet is for
+	settingsOverlay: false, // Settings opened over the current sheet without replacing it
 	newItem: { group: 'head', slot: '', prompt: '', name: '' } as {
 		reuseMethod?: boolean;
 		group: string;
@@ -2014,6 +2015,7 @@ function updateBlocker(allowAbout?: () => boolean): LocalizedError | undefined {
 	// Standalone About has no editable form. Export and a suspended creator still own their work.
 	if (
 		ui.sheetBusy ||
+		ui.settingsOverlay ||
 		(ui.sheet && !(allowAbout?.() && ui.sheet === 'settings' && !canReturnToCreator()))
 	)
 		return new LocalizedError(
