@@ -9,6 +9,7 @@
 	import Outfits from './Outfits.svelte';
 	import { FileArchive } from './icons.ts';
 	import { fileDrop } from './fileDrop.ts';
+	let { wardrobeScroll }: { wardrobeScroll?: number } = $props();
 
 	const TAB_IMPORTS: Partial<Record<typeof ui.tab, ImportKind>> = {
 		wardrobe: 'items',
@@ -52,7 +53,7 @@
 	{@attach dropZone}
 >
 	{#if ui.tab === 'wardrobe'}
-		<Wardrobe />
+		<Wardrobe initialScroll={wardrobeScroll} />
 	{:else if ui.tab === 'outfits'}
 		<div class="equipment-scroll panel-list"><Outfits /></div>
 	{:else if ui.tab === 'colors'}

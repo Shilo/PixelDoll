@@ -3353,6 +3353,23 @@ test('translated State and Move tabs do not overlap on a 320px phone', async ({ 
 	}
 });
 
+test('the longest translated panel toggle fits beside all view buttons at 320px', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 320, height: 568 });
+	await page.addInitScript(() => localStorage.setItem('pixeldoll.locale', 'fr'));
+	await page.goto('/');
+	await page.locator('.customize-action').click();
+	const toggle = page.locator('#customization-toggle');
+	await expect(toggle).toHaveAccessibleName('Masquer le panneau');
+	const expanded = (await toggle.boundingBox())!;
+	const views = (await page.locator('.view-modes').boundingBox())!;
+	expect(views.x + views.width).toBeLessThan(expanded.x);
+	await toggle.click();
+	await expect(toggle).toHaveAccessibleName('Personnaliser');
+	expect(await toggle.boundingBox()).toEqual(expanded);
+});
+
 test('Moves stays in place, disabled with its reason, in the live views', async ({ page }) => {
 	await customize(page);
 	const tabs = page.getByRole('tablist', { name: 'Customization panels' });
@@ -3393,6 +3410,148 @@ test('Moves stays in place, disabled with its reason, in the live views', async 
 	await expect(page.locator('.world-notes')).not.toContainText('missing —');
 	await views.getByRole('button', { name: 'Preview', exact: true }).click();
 	await expect(moves).not.toHaveAttribute('aria-disabled', 'true');
+});
+
+test('customization panel docks on either side, gives the stage its width back and resets on reload', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await customize(page);
+	const toggle = page.locator('#customization-toggle');
+	const rail = page.locator('#customization-rail');
+	const stage = page.locator('.experience-stage');
+	const originalToggle = await toggle.boundingBox();
+	const originalStage = (await stage.boundingBox())!;
+	const list = rail.locator('.equipment-scroll').first();
+	const scroll = await list.evaluate((el) => {
+		el.scrollTop = 150;
+		return el.scrollTop;
+	});
+	expect(scroll).toBeGreaterThan(0);
+	await toggle.press('Space');
+	await expect(toggle).toHaveAccessibleName('Customize');
+	await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+	await expect(toggle).toBeFocused();
+	await expect(rail).toBeHidden();
+	expect((await stage.boundingBox())!.width).toBe(1440);
+	expect(await toggle.boundingBox()).toEqual(originalToggle);
+	await toggle.press('Enter');
+	await expect(rail).toBeVisible();
+	await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBe(scroll);
+	expect(await stage.boundingBox()).toEqual(originalStage);
+	await page.keyboard.press('Control+,');
+	const search = page.getByRole('searchbox', { name: 'Search settings' });
+	await search.fill('Panel side');
+	await page.getByRole('button', { name: /Panel side/ }).click();
+	const sides = page.getByRole('radiogroup', { name: 'Panel side' });
+	await expect(sides.getByRole('radio', { name: 'Right' })).toBeChecked();
+	await sides.getByRole('radio', { name: 'Left' }).check();
+	await page.keyboard.press('Escape');
+	const leftStage = (await stage.boundingBox())!;
+	const leftRail = (await rail.boundingBox())!;
+	expect(leftRail.x + leftRail.width).toBeLessThan(leftStage.x);
+	expect(leftStage.width).toBeCloseTo(originalStage.width, 0);
+	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
+	await rail.getByRole('tab', { name: 'Moves', exact: true }).click({ force: true });
+	const toast = page.locator('.toast');
+	await expect
+		.poll(() =>
+			toast.evaluate((el) => Number.parseFloat(el.style.getPropertyValue('--bu-toast-center')))
+		)
+		.toBeCloseTo(leftStage.x + leftStage.width / 2, 1);
+	await toggle.click();
+	await expect(rail).toBeHidden();
+	await expect(toast).toHaveCSS('--bu-toast-center', '720px');
+	await customize(page);
+	await expect(toggle).toHaveAccessibleName('Hide panel');
+	expect((await stage.boundingBox())!.x).toBeGreaterThan(0);
+});
+
+test.describe('customization panel on compact touch screens', () => {
+	test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+	test('auto-hide is scoped to each visit and restores the Preview tab', async ({
+		page,
+		context
+	}) => {
+		await customize(page);
+		const toggle = page.locator('#customization-toggle');
+		const modes = page.getByRole('group', { name: 'Character view', exact: true });
+		const preview = modes.getByRole('button', { name: 'Preview' });
+		const topDown = modes.getByRole('button', { name: 'Top-down' });
+		const side = modes.getByRole('button', { name: 'Side-scroller' });
+		const rail = page.locator('#customization-rail');
+		const moves = rail.getByRole('tab', { name: 'Moves' });
+		const stage = page.locator('.experience-stage');
+		const editing = (await stage.boundingBox())!;
+		const list = rail.locator('#wardrobe-list');
+		const browsePosition = await list.evaluate((el) => {
+			el.scrollTop = 495;
+			return el.scrollTop;
+		});
+		expect(browsePosition).toBeGreaterThan(0);
+		await topDown.tap();
+		await expect(rail).toBeHidden();
+		await toggle.tap();
+		await rail.getByRole('tab', { name: 'Colors' }).tap();
+		await preview.tap();
+		await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBe(browsePosition);
+		await moves.tap();
+		await topDown.tap();
+		await expect(rail).toBeHidden();
+		await expect(page.locator('.game-touch')).toBeVisible();
+		expect((await stage.boundingBox())!.height).toBeGreaterThan(editing.height);
+		const touch = await context.newCDPSession(page);
+		try {
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [{ id: 1, x: 90, y: 300 }]
+			});
+			await expect(page.locator('.world-stick')).toBeVisible();
+			await toggle.evaluate((button) => (button as HTMLButtonElement).click());
+			await expect(page.locator('.world-stick')).toBeHidden();
+		} finally {
+			await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+			await touch.detach();
+		}
+		await expect(rail.getByRole('tab', { name: 'Wardrobe' })).toHaveAttribute(
+			'aria-selected',
+			'true'
+		);
+		await page.setViewportSize({ width: 568, height: 320 });
+		await side.tap();
+		await expect(rail).toBeVisible();
+		const split = (await stage.boundingBox())!;
+		const dock = (await rail.boundingBox())!;
+		const disclosure = (await toggle.boundingBox())!;
+		expect(disclosure.y + disclosure.height).toBeLessThanOrEqual(dock.y);
+		const attack = (await page
+			.locator('.game-touch')
+			.getByRole('button', { name: 'Attack' })
+			.boundingBox())!;
+		expect(attack.x + attack.width).toBeLessThanOrEqual(split.x + split.width);
+		await preview.tap();
+		await expect(moves).toHaveAttribute('aria-selected', 'true');
+		await toggle.tap();
+		await topDown.tap();
+		await toggle.tap();
+		await preview.tap();
+		await expect(rail).toBeHidden();
+		await toggle.tap();
+		await page.keyboard.press('Control+,');
+		const search = page.getByRole('searchbox', { name: 'Search settings' });
+		await search.fill('Hide panel when entering Live Views');
+		await page.getByRole('button', { name: /Hide panel when entering Live Views/ }).click();
+		const autoHide = page.getByRole('switch', { name: 'Hide panel when entering Live Views' });
+		await expect(autoHide).toBeChecked();
+		await autoHide.uncheck();
+		await page.keyboard.press('Escape');
+		await topDown.tap();
+		await expect(rail).toBeVisible();
+		await customize(page);
+		await side.tap();
+		await expect(rail).toBeVisible();
+	});
 });
 
 test('short tab labels, the character name and sheet Done buttons keep 44 px targets', async ({
@@ -3647,7 +3806,7 @@ test.describe('Preview facing lineup', () => {
 			]) {
 				await page.setViewportSize({ width, height });
 				await expect(page.locator('.world-actors')).toHaveJSProperty('width', width);
-				const controls = page.getByRole('toolbar', { name: 'Preview controls' });
+				const controls = page.locator('.playback-bar');
 				await expect
 					.poll(
 						async () => {
@@ -3662,6 +3821,14 @@ test.describe('Preview facing lineup', () => {
 						{ message: `${theme} ${width}×${height}: geometry tracks the wrapped toolbar` }
 					)
 					.toBeLessThanOrEqual(1);
+				const stage = page.locator('.experience-stage');
+				const singlePane = await stage.evaluate((element) => (element as HTMLElement).inert);
+				const toggle = page.locator('#customization-toggle');
+				if (singlePane) {
+					await toggle.click();
+					await expect(stage).toHaveJSProperty('inert', false);
+					await expect(page.locator('.equipment-rail')).toBeHidden();
+				}
 				const bar = (await controls.boundingBox())!;
 				heights.add(Math.round(bar.height));
 				const bottom = await page.locator('.world-actors').evaluate((canvas: HTMLCanvasElement) => {
@@ -3694,6 +3861,7 @@ test.describe('Preview facing lineup', () => {
 					expect(box.width).toBeGreaterThanOrEqual(44);
 					expect(box.height).toBeGreaterThanOrEqual(44);
 				}
+				if (singlePane) await toggle.click();
 			}
 		}
 		expect([...heights].some((height) => height >= 100)).toBe(true);

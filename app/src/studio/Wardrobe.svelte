@@ -403,6 +403,7 @@
 	const sharedMissing = (x: SharedItem) =>
 		m ? displayMessage(missingFramesNote(m, { ...x.item, coverage: x.cells as CellKey[] })) : '';
 	const sectionId = (id: string) => `wardrobe-${id.replace(/\s+/g, '-').toLowerCase()}`;
+	let { initialScroll }: { initialScroll?: number } = $props();
 
 	function remember() {
 		if (list)
@@ -553,9 +554,11 @@
 	onMount(() => {
 		const group = ui.group;
 		const open = ui.wardrobeOpenRevision;
+		const restored = initialScroll;
 		void tick().then(() => {
 			if (!list) return;
-			if (memory?.id === doc.id && memory.open === open && memory.group === group)
+			if (restored !== undefined) list.scrollTop = restored;
+			else if (memory?.id === doc.id && memory.open === open && memory.group === group)
 				list.scrollTop = memory.scroll;
 			else {
 				void show(group, true);

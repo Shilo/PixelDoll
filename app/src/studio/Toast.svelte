@@ -4,8 +4,7 @@
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { t } from 'svelte-whisper';
 	import { ui, activateToast, dismissToast, pauseToast, resumeToast } from './state.svelte.ts';
-	import { experience } from './experience/state.svelte.ts';
-	import { layout } from './experience/geometry.ts';
+	import { experience, experienceLayout } from './experience/state.svelte.ts';
 	import { restoreTrigger } from './experience/focus.ts';
 	import { updateNotice } from './updateNotice.svelte.ts';
 	import PwaNotice from './PwaNotice.svelte';
@@ -108,11 +107,11 @@
 				room: sheetBox.right - sheetBox.left - 32,
 				height: Math.min(viewportHeight * 0.45, sheetBox.bottom - 12 - sheetBox.top)
 			};
-		const g = layout(viewportWidth, viewportHeight, experience.screen),
+		const g = experienceLayout(viewportWidth, viewportHeight),
 			studio = experience.screen === 'studio',
 			bottom = Math.min(
 				studio && g.sheet ? g.sheetTop - 12 : viewportHeight - 16,
-				studio && experience.mode === 'preview' ? g.playbackTop - 12 : Infinity
+				studio && !g.panelOnly && experience.mode === 'preview' ? g.playbackTop - 12 : Infinity
 			);
 		return {
 			top: g.toastTop,

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
+	import { setPanelOpen } from './experience/state.svelte.ts';
 	import Sheet from './Sheet.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
@@ -357,6 +358,7 @@
 		if (!it) return;
 		ui.colorsFocus = it.id;
 		ui.tab = 'colors';
+		setPanelOpen(true);
 		ui.sheet = null;
 	}
 	let confirmRemove = $state(false);

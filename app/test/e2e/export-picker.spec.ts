@@ -3390,22 +3390,22 @@ test('Share popover follows the selected move, direction and Animate switch on d
 		return actual;
 	};
 	const headerFits = async () => {
-		// The phone's view tabs float in their own row under the bar; compare the bar's own controls.
+		// The view switch and panel toggle can sit in a second row, so compare both axes.
 		const buttons = await page
 			.locator('.experience-header button:visible')
 			.evaluateAll((elements) =>
-				elements
-					.filter((element) => !element.closest('.view-modes'))
-					.map((element) => {
-						const { left, right } = element.getBoundingClientRect();
-						return [left, right];
-					})
-					.sort((a, b) => a[0] - b[0])
+				elements.map((element) => element.getBoundingClientRect().toJSON())
 			);
-		for (const [index, [left, right]] of buttons.entries()) {
-			expect(left).toBeGreaterThanOrEqual(0);
-			expect(right).toBeLessThanOrEqual(page.viewportSize()!.width);
-			if (index) expect(left).toBeGreaterThanOrEqual(buttons[index - 1][1]);
+		for (const [index, button] of buttons.entries()) {
+			expect(button.left).toBeGreaterThanOrEqual(0);
+			expect(button.right).toBeLessThanOrEqual(page.viewportSize()!.width);
+			for (const other of buttons.slice(index + 1))
+				expect(
+					button.right <= other.left ||
+						other.right <= button.left ||
+						button.bottom <= other.top ||
+						other.bottom <= button.top
+				).toBe(true);
 		}
 	};
 	const desktopLayout = await geometry();

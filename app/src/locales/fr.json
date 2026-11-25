@@ -3522,6 +3522,16 @@
 			"changed": "Ce personnage a changé. Choisissez à nouveau le ZIP pour vérifier la dernière version."
 		}
 	},
+	"studioPanel": {
+		"showPanel": "Personnaliser",
+		"hidePanel": "Masquer le panneau",
+		"side": "Côté du panneau",
+		"left": "Gauche",
+		"right": "Droite",
+		"autoHide": "Masquer le panneau à l’ouverture des vues interactives",
+		"autoHideHelp": "Sur les petits écrans tactiles. Pour le rouvrir, sélectionne Personnaliser.",
+		"notSaved": "Les réglages du panneau ont changé, mais le navigateur n’a pas pu les enregistrer."
+	},
 	"liveViews": {
 		"walkWhileAttacking": "Marcher en attaquant",
 		"layeringHelp": "La marche et l’attaque doivent être orientées dans le même sens, les jambes doivent avoir des images pour les deux mouvements et le raccord à la taille doit être aligné. Sinon, l’attaque normale du corps entier est jouée.",

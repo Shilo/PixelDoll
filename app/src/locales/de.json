@@ -3519,6 +3519,16 @@
 			"changed": "Diese Figur hat sich geändert. Wähle das ZIP erneut, um die aktuelle Version zu prüfen."
 		}
 	},
+	"studioPanel": {
+		"showPanel": "Anpassen",
+		"hidePanel": "Panel ausblenden",
+		"side": "Panelposition",
+		"left": "Links",
+		"right": "Rechts",
+		"autoHide": "Panel beim Start der Live-Ansichten ausblenden",
+		"autoHideHelp": "Auf kompakten Touchscreens. Über „Anpassen“ jederzeit wieder öffnen.",
+		"notSaved": "Die Panel-Einstellungen wurden geändert, konnten aber im Browser nicht gespeichert werden."
+	},
 	"liveViews": {
 		"walkWhileAttacking": "Beim Angriff weiterlaufen",
 		"layeringHelp": "Gehen und Angriff müssen in dieselbe Richtung zeigen, die Beine brauchen Grafiken für beide Bewegungen und der Übergang an der Taille muss passen. Sonst läuft der normale Ganzkörperangriff.",

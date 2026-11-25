@@ -6,7 +6,8 @@
 	import { app } from '../lib/app.svelte.ts';
 	import { navigateMenu, popoverFocus } from './experience/focus.ts';
 	import { tick } from 'svelte';
-	import { experience, characters, setMode, type WorldMode } from './experience/state.svelte.ts';
+	import { experience, characters, type WorldMode } from './experience/state.svelte.ts';
+	import type { PanelSide } from './experience/panelSettings.svelte.ts';
 	import CharacterThumb from './experience/CharacterThumb.svelte';
 	import SharePopover from './SharePopover.svelte';
 	import CharacterActions from './CharacterActions.svelte';
@@ -48,8 +49,36 @@
 		Dices,
 		Eye,
 		Layers2,
-		Mountain
+		Mountain,
+		PanelLeft,
+		PanelRight,
+		PanelBottom
 	} from './icons.ts';
+	let {
+		panelOpen,
+		panelSide,
+		onpanel,
+		onmode
+	}: {
+		panelOpen: boolean;
+		panelSide: PanelSide | 'bottom';
+		onpanel: () => void;
+		onmode: (mode: WorldMode, pointer: string) => void;
+	} = $props();
+	const panelLabel = $derived(t(panelOpen ? 'studioPanel.hidePanel' : 'studioPanel.showPanel'));
+	const PanelIcon = $derived(
+		panelSide === 'left' ? PanelLeft : panelSide === 'right' ? PanelRight : PanelBottom
+	);
+	$effect.pre(() => {
+		void panelSide;
+		const focused = document.activeElement;
+		if (focused?.id === 'customization-toggle') {
+			void tick().then(() => {
+				if (!focused.isConnected && document.activeElement === document.body)
+					document.getElementById('customization-toggle')?.focus({ preventScroll: true });
+			});
+		}
+	});
 
 	const m = $derived(store.project?.manifest);
 	const facts = $derived(m && characterFacts(m));
@@ -61,18 +90,23 @@
 		['topdown', 'toolbar.viewTopDown', Layers2],
 		['side', 'toolbar.viewSide', Mountain]
 	] as const;
-	async function changeMode(mode: WorldMode) {
-		setMode(mode);
+	let activationPointer = '';
+	async function changeMode(mode: WorldMode, event: MouseEvent) {
+		const pointer = event.detail ? (event as PointerEvent).pointerType || activationPointer : '';
+		activationPointer = '';
+		onmode(mode, pointer);
 		await tick();
 		focusWorld();
 	}
 	function focusWorld() {
-		document.querySelector<HTMLElement>('.world-stage')?.focus({ preventScroll: true });
+		const stage = document.querySelector<HTMLElement>('.world-stage');
+		if (!stage?.closest('[inert]')) stage?.focus({ preventScroll: true });
 	}
 	function resumeWorldAfterPointer(header: HTMLElement) {
 		const clicked = async (event: MouseEvent) => {
 			const button = event.target instanceof Element ? event.target.closest('button') : null;
-			if (event.detail === 0 || !button || button.hasAttribute('popovertarget')) return;
+			if (event.detail === 0 || !button || button.matches('[popovertarget], #customization-toggle'))
+				return;
 			await tick();
 			if (
 				experience.screen !== 'studio' ||
@@ -140,6 +174,10 @@
 	 *  name and the actions, and fall back to the bar's center when there is no room. Floating rows (phones,
 	 *  sheets) are positioned by CSS and are left alone. */
 	function centerOnStage(node: HTMLElement) {
+		void panelOpen;
+		void panelSide;
+		// Reposition after translated labels change, before a stale offset can cover adjacent actions.
+		void t('toolbar.viewSide');
 		const header = node.parentElement!;
 		const update = () => {
 			node.style.removeProperty('--view-shift');
@@ -173,9 +211,29 @@
 		return () => {
 			observer.disconnect();
 			removeEventListener('resize', update);
+			node.style.removeProperty('--view-shift');
 		};
 	}
 </script>
+
+{#snippet panelToggle()}
+	<button
+		id="customization-toggle"
+		class="bu-action panel-toggle"
+		data-variant="outline"
+		aria-expanded={panelOpen}
+		aria-controls="customization-rail"
+		aria-label={panelLabel}
+		title={panelLabel}
+		onclick={onpanel}
+	>
+		<PanelIcon size={18} aria-hidden="true" />
+		<span class="panel-toggle-label" aria-hidden="true">
+			<span class={{ inactive: panelOpen }}>{t('studioPanel.showPanel')}</span>
+			<span class={{ inactive: !panelOpen }}>{t('studioPanel.hidePanel')}</span>
+		</span>
+	</button>
+{/snippet}
 
 <header class="experience-header" {@attach resumeWorldAfterPointer}>
 	<div class="header-start">
@@ -186,6 +244,7 @@
 				title={t('common.characters')}
 				onclick={characters}><ChevronLeft size={20} /></button
 			><!-- The page heading sits beside the menu button: a heading is not allowed inside a button. -->
+			{#if panelSide === 'left'}{@render panelToggle()}{/if}
 			<h1 class="sr">{name}</h1>
 			<button
 				class="name-menu project-btn"
@@ -231,7 +290,8 @@
 					aria-controls="world-stage"
 					aria-label={label}
 					title={label}
-					onclick={() => changeMode(id)}
+					onpointerdown={(event) => (activationPointer = event.pointerType)}
+					onclick={(event) => changeMode(id, event)}
 					><span class="bu-tab-label"
 						><Icon size={18} aria-hidden="true" /><span
 							class="view-label bu-tab-text"
@@ -296,6 +356,7 @@
 			>
 		{/if}
 		<GlobalActions />
+		{#if experience.screen === 'studio' && panelSide !== 'left'}{@render panelToggle()}{/if}
 	</div>
 </header>
 <SharePopover />

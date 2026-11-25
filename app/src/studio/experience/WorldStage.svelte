@@ -2,7 +2,7 @@
 	import { t, type WhisperKey } from 'svelte-whisper';
 	import { onMount, untrack } from 'svelte';
 	import { ui, doc, view, toast, stepPreviewFrame } from '../state.svelte.ts';
-	import { experience, characters, setMode, sharedZoom } from './state.svelte.ts';
+	import { experience, characters, sharedZoom, type WorldMode } from './state.svelte.ts';
 	import type { Ground, RenderOptions } from './ground.ts';
 	import { MOTION, WORLDS, worldArt } from './config.ts';
 	import {
@@ -15,7 +15,7 @@
 	import {
 		EYE,
 		heroRoom,
-		layout,
+		type Layout,
 		liveFeetY,
 		liveFrame,
 		liveRoom,
@@ -99,11 +99,13 @@
 	let {
 		missing = $bindable(null),
 		note = $bindable(''),
-		playbackHeight = 0
+		place,
+		onmode
 	}: {
 		missing: { clip: string; direction: DirectionName; items: Item[] } | null;
 		note?: string;
-		playbackHeight?: number;
+		place: Layout;
+		onmode: (mode: WorldMode) => void;
 	} = $props();
 	let host: HTMLDivElement,
 		canvas: HTMLCanvasElement,
@@ -472,7 +474,7 @@
 			previewFacing();
 		} else if (!e.repeat && ['1', '2', '3'].includes(k)) {
 			e.preventDefault();
-			setMode((['preview', 'topdown', 'side'] as const)[Number(k) - 1]);
+			onmode((['preview', 'topdown', 'side'] as const)[Number(k) - 1]);
 		} else if (!e.repeat && (k === 'escape' || k === 'backspace')) {
 			e.preventDefault();
 			const popover = document.querySelector<HTMLElement>('[popover]:popover-open');
@@ -676,6 +678,17 @@
 		letGo();
 		clearHover();
 	}
+	const stageBounds = $derived(
+		`${place.stage.l},${place.stage.r},${place.stage.t},${place.stage.b},${place.panelOnly}`
+	);
+	const narrowLiveStage = $derived(
+		experience.mode !== 'preview' && place.stage.r - place.stage.l < 360
+	);
+	const shortLiveStage = $derived(place.stage.b - place.stage.t < 196);
+	$effect(() => {
+		void stageBounds;
+		untrack(stop);
+	});
 	// A walk held on the keyboard continues through a plain mouse click on a control outside the stage (a wardrobe tile,
 	// a tab). The click takes focus; while it does (`handoff`), movement keys stay the stage's, and one frame after the
 	// button is released the stage takes focus back, so the held keys and the next ones still move the character.
@@ -688,8 +701,9 @@
 	function pressOutside(e: PointerEvent) {
 		cancelAnimationFrame(handback);
 		handoff = false;
-		// Any press, a game button's or a panel's, shows the controls for the hand in use (hybrid devices).
-		if (experience.mode !== 'preview') touchInput = e.pointerType !== 'mouse';
+		// A touch used to enter a live view should show the thumb controls before the first press on the stage.
+		if (experience.mode !== 'preview' || e.pointerType === 'touch' || e.pointerType === 'pen')
+			touchInput = e.pointerType !== 'mouse';
 		if (
 			experience.mode === 'preview' ||
 			!keys.size ||
@@ -997,7 +1011,6 @@
 			g.clearRect(0, 0, width, height);
 			g.imageSmoothingEnabled = false;
 			// The feet sit just above the playback bar in every view; only a Preview lineup lifts them to clear its ring.
-			const place = layout(width, height, 'studio', playbackHeight);
 			const anchor = { x: place.feet.x, y: place.feet.y };
 			const room = heroRoom(place);
 			const live = experience.mode !== 'preview';
@@ -1813,6 +1826,7 @@
 <div
 	class="world-stage bu-focus"
 	{@attach (node) => {
+		void stageBounds;
 		const mode = experience.mode;
 		const enabled = !ui.sheet;
 		return sceneZoom(node, {
@@ -1872,16 +1886,17 @@
      In Preview it also clears the playback bar, whose top is --playback-top. -->
 {#if mountIssue || hint || (experience.mode !== 'preview' && note) || loadingNote || rendererWarning}<div
 		class="world-notes"
-		style:bottom={experience.mode === 'preview' && playbackHeight
+		class:notes-at-top={narrowLiveStage || (experience.mode !== 'preview' && shortLiveStage)}
+		style:bottom={experience.mode === 'preview'
 			? 'max(calc(var(--stage-bottom) + 16px), calc(100% - var(--playback-top) + 8px))'
 			: undefined}
-		style:max-width={experience.mode !== 'preview'
+		style:max-width={experience.mode !== 'preview' && !narrowLiveStage && !shortLiveStage
 			? // Stop short of the game controls at the stage's lower right (GameControls.svelte).
 				`min(420px, calc(100vw - var(--stage-left) - var(--stage-right) - 2 * var(--edge) - ${touchInput ? 204 : 196}px))`
 			: undefined}
 	>
 		{#if mountIssue}<p class="world-hint" role="status">{mountIssue}</p>{/if}
-		{#if hint}<p class="world-hint">
+		{#if hint && !(narrowLiveStage && place.short)}<p class="world-hint">
 				{touchInput
 					? t('liveViews.hintTouch')
 					: experience.mode === 'side'
@@ -1905,6 +1920,7 @@
 {#if experience.mode !== 'preview' && view.project && !ui.sheet}{#key interruptions}
 		<GameControls
 			touch={touchInput}
+			compact={shortLiveStage}
 			mounted={experience.testMount}
 			sprinting={sprintOn}
 			onattack={() => attack('button')}

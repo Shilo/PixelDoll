@@ -3418,6 +3418,16 @@
 			"changed": "此角色已更改。请重新选择 ZIP 以查看最新版本。"
 		}
 	},
+	"studioPanel": {
+		"showPanel": "自定义",
+		"hidePanel": "隐藏面板",
+		"side": "面板位置",
+		"left": "左侧",
+		"right": "右侧",
+		"autoHide": "进入实时视图时隐藏面板",
+		"autoHideHelp": "适用于小型触摸屏。选择“自定义”即可随时重新打开。",
+		"notSaved": "面板设置已更改，但浏览器未能保存。"
+	},
 	"liveViews": {
 		"walkWhileAttacking": "攻击时保持行走",
 		"layeringHelp": "行走和攻击的朝向必须相同，双腿需要有两种动作的图像，腰部接缝也必须对齐。否则会播放普通的全身攻击。",

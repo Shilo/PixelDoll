@@ -4,12 +4,18 @@ import { resolveZoom, type SceneCamera } from './zoom.ts';
 import type { MountLegMode } from './mountLegs.ts';
 import { readMountPreferences } from './mountStorage.ts';
 import { livePreferences } from './liveSettings.ts';
+import { layout } from './geometry.ts';
+import { panelSettings } from './panelSettings.svelte.ts';
 export type WorldMode = 'preview' | 'topdown' | 'side';
 const saved = readMountPreferences();
 const liveSaved = livePreferences.read();
 export const experience = $state({
 	screen: 'characters' as 'characters' | 'studio',
 	mode: 'preview' as WorldMode,
+	previewPanelOpen: true,
+	/** A separate visibility choice for one compact touch visit. Null shares Preview's visibility. */
+	livePanelOpen: null as boolean | null,
+	playbackHeight: 0,
 	testMount: saved.show,
 	mountLegs: saved.legs as MountLegMode,
 	/** The Riding pose per character ID; a character without one rides with Ride or Standing. */
@@ -53,4 +59,27 @@ export function characters() {
 export function setMode(mode: WorldMode) {
 	if (mode !== 'preview') cancelStartupUpdate();
 	experience.mode = mode;
+}
+
+export function setPanelOpen(open: boolean) {
+	if (experience.mode !== 'preview' && experience.livePanelOpen !== null)
+		experience.livePanelOpen = open;
+	else experience.previewPanelOpen = open;
+}
+
+export function panelIsOpen() {
+	return experience.mode === 'preview'
+		? experience.previewPanelOpen
+		: (experience.livePanelOpen ?? experience.previewPanelOpen);
+}
+
+export function experienceLayout(width: number, height: number) {
+	return layout(
+		width,
+		height,
+		experience.screen,
+		experience.mode === 'preview' ? experience.playbackHeight : 0,
+		panelIsOpen(),
+		panelSettings.side
+	);
 }

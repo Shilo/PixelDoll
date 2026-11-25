@@ -2164,6 +2164,9 @@ test.describe('renderer failure on short screens', () => {
 			] as const) {
 				await page.setViewportSize({ width, height });
 				await settle(page);
+				const singlePane = (await experience.getAttribute('class'))?.includes('panel-only');
+				const panel = page.locator('#customization-toggle');
+				if (singlePane) await panel.tap();
 				const short = height <= 540;
 				if (short) await expect(experience).toHaveClass(/\bshort-layout\b/);
 				else await expect(experience).not.toHaveClass(/\bshort-layout\b/);
@@ -2178,9 +2181,11 @@ test.describe('renderer failure on short screens', () => {
 					`${width}x${height} ${theme}: the warning starts inside the screen`
 				).toBeGreaterThanOrEqual(0);
 				expect(
-					box.x + box.width,
+					box.x + box.width <= cluster.x || box.y + box.height <= cluster.y,
 					`${width}x${height} ${theme}: clear of the touch controls`
-				).toBeLessThanOrEqual(cluster.x);
+				).toBe(true);
+				const toggle = (await panel.boundingBox())!;
+				expect(cluster.y).toBeGreaterThanOrEqual(toggle.y + toggle.height);
 				expect(
 					box.y,
 					`${width}x${height} ${theme}: the warning stays below the top edge`
@@ -2190,6 +2195,7 @@ test.describe('renderer failure on short screens', () => {
 					`${width}x${height} ${theme}: the warning stays above the bottom edge`
 				).toBeLessThanOrEqual(height);
 				await shot(page, info, `renderer-warning-${theme}-${width}x${height}`);
+				if (singlePane) await panel.tap();
 			}
 		}
 	});

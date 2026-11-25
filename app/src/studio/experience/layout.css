@@ -38,6 +38,14 @@
 .sheet-layout .scene-reading {
 	background: linear-gradient(180deg, var(--bu-reading-start), transparent 30%);
 }
+.panel-left.panel-open .scene-reading {
+	background:
+		linear-gradient(180deg, var(--bu-reading-start), transparent 30%),
+		linear-gradient(90deg, var(--bu-reading-end), transparent 35%);
+}
+.experience:not(.selection, .panel-open) .scene-reading {
+	background: linear-gradient(180deg, var(--bu-reading-start), transparent 30%);
+}
 
 /* ---------- top bar: no solid bar, controls sit on the scene ---------- */
 .experience-header {
@@ -90,6 +98,26 @@
 }
 .experience-header .bu-action[data-variant='quiet'] {
 	padding: 0;
+}
+.experience-header .panel-toggle {
+	flex: none;
+}
+.panel-toggle-label {
+	display: grid;
+}
+.panel-toggle-label > span {
+	grid-area: 1 / 1;
+}
+.panel-toggle-label .inactive {
+	visibility: hidden;
+}
+@media (max-width: 1299px) {
+	.experience-header .panel-toggle {
+		padding-inline: 0;
+	}
+	.panel-toggle-label {
+		display: none;
+	}
 }
 /* Phones keep every header target 44 px but tighter, so the name keeps its room: the view tabs float below, so the
    bar has no middle column, and the actions take only their own width. */
@@ -235,11 +263,6 @@
 	translate: none;
 	gap: 0;
 }
-/* A phone held sideways keeps the panel beside the stage (geometry.ts): the tab row centers over the stage instead. */
-.phone-layout:not(.sheet-layout) .view-modes {
-	/* The whole header is the containing block (an absolute grid item's is its grid area otherwise). */
-	left: calc((var(--stage-left) + 100vw - var(--stage-right)) / 2 - var(--edge));
-}
 :is(.sheet-layout, .phone-layout) .view-modes .view-label {
 	display: none;
 }
@@ -248,7 +271,41 @@
 }
 :is(.sheet-layout, .phone-layout) .experience-header .view-modes .bu-action {
 	width: 44px;
-	height: 40px;
+	height: 44px;
+}
+:is(.sheet-layout, .phone-layout) .experience-header .panel-toggle {
+	position: absolute;
+	top: var(--header-row);
+	right: 0;
+	padding-inline: 10px;
+}
+.phone-layout.panel-left .experience-header .panel-toggle {
+	left: 0;
+	right: auto;
+}
+:is(.sheet-layout, .phone-layout) .panel-toggle-label {
+	display: grid;
+}
+@media (max-width: 600px) {
+	.phone-layout .experience-header .view-modes {
+		left: 0;
+		transform: none;
+	}
+	.phone-layout.panel-left .experience-header .view-modes {
+		left: auto;
+		right: 0;
+	}
+}
+@media (max-width: 310px) {
+	.phone-layout .panel-toggle-label {
+		display: none;
+	}
+}
+@media (max-width: 360px) {
+	.phone-layout .experience-header .panel-toggle {
+		column-gap: 6px;
+		padding-inline: 6px;
+	}
 }
 @media (max-width: 899px), (max-height: 540px) {
 	.name-facts {
@@ -269,17 +326,17 @@
 .sheet-layout :is(.selection-import, .selection-create) {
 	display: none;
 }
-/* Phones keep Back, the name, Random look, Mount settings, Undo, Export, Full screen and More in the bar; Redo and Share move into More
-   so the character name stays readable (Share's popover then points at More). Random look follows up to 430 px and
-   Undo up to 430 px. Full screen always stays on the bar (production-experience.md). */
-.phone-layout:not(.selection) :is(.header-redo, .header-share) {
-	display: none !important;
-}
-.phone-layout:not(.selection) :is(.mobile-redo, .mobile-share) {
-	display: flex !important;
-}
-.phone-layout:not(.selection) .mobile-sep {
-	display: block !important;
+/* Keep room for the name and the dock toggle beside a narrow stage. Share and Redo stay available in More. */
+@media (max-width: 700px) {
+	.experience:not(.selection) :is(.header-redo, .header-share) {
+		display: none !important;
+	}
+	.experience:not(.selection) :is(.mobile-redo, .mobile-share) {
+		display: flex !important;
+	}
+	.experience:not(.selection) .mobile-sep {
+		display: block !important;
+	}
 }
 @media (max-width: 430px) {
 	.phone-layout .experience-header {
@@ -480,11 +537,14 @@
 .equipment-rail {
 	gap: 8px;
 }
-/* A window too short for a usable sheet hides the panel until it grows (geometry.ts). */
-.no-panel .equipment-rail {
+.equipment-rail[hidden] {
 	display: none;
 }
-.sheet-layout .equipment-rail {
+.panel-left .equipment-rail {
+	left: var(--edge);
+	right: auto;
+}
+:is(.sheet-layout, .panel-only) .equipment-rail {
 	/* The sheet already pads its bottom edge; the lists keep only room for a focus ring. */
 	--panel-bottom: 6px;
 	left: 0;
@@ -500,14 +560,9 @@
 	border-radius: var(--bu-radius-dialog) var(--bu-radius-dialog) 0 0;
 	box-shadow: var(--bu-shadow);
 }
-.sheet-handle {
-	flex: none;
-	width: 36px;
-	height: 4px;
-	margin: 8px auto 0;
-	border-radius: 2px;
-	background: var(--bu-muted);
-	opacity: 0.5;
+.panel-only .equipment-rail {
+	top: var(--stage-top);
+	height: auto;
 }
 .equipment-modes {
 	display: flex;
@@ -1407,8 +1462,12 @@
 	flex-direction: column;
 	align-items: flex-start;
 	gap: 6px;
-	max-width: min(420px, calc(100% - var(--stage-right) - 2 * var(--edge)));
+	max-width: min(420px, calc(100% - var(--stage-left) - var(--stage-right) - 2 * var(--edge)));
 	pointer-events: none;
+}
+.world-notes.notes-at-top {
+	top: calc(var(--stage-top) + 8px);
+	bottom: auto;
 }
 .world-notes p {
 	margin: 0;

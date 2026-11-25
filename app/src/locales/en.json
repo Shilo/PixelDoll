@@ -3522,6 +3522,16 @@
 			"changed": "This character changed. Choose the ZIP again to review the latest version."
 		}
 	},
+	"studioPanel": {
+		"showPanel": "Customize",
+		"hidePanel": "Hide panel",
+		"side": "Panel side",
+		"left": "Left",
+		"right": "Right",
+		"autoHide": "Hide panel when entering Live Views",
+		"autoHideHelp": "On compact touch screens. Open it anytime with Customize.",
+		"notSaved": "Panel settings changed, but this browser could not save them."
+	},
 	"liveViews": {
 		"walkWhileAttacking": "Walk while attacking",
 		"layeringHelp": "Walk and attack must face the same way, the legs need art for both moves, and the waist join must line up. Otherwise, the normal full-body attack plays.",

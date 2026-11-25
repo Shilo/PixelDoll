@@ -30,7 +30,7 @@ import { splitBase } from '../lib/dress/regions.ts';
 import { retainSlotDirections } from '../lib/items/slots.ts';
 import { canRelocateItem, relocateItem, relocateWornItem } from '../lib/items/relocate.ts';
 import { keepThumbnails } from './experience/thumbnails.svelte.ts';
-import { experience } from './experience/state.svelte.ts';
+import { experience, setPanelOpen } from './experience/state.svelte.ts';
 import {
 	deriveMaterials,
 	randomOutfit,
@@ -4042,6 +4042,7 @@ export async function openDraft(g: Gen) {
 	if (!gens.includes(g) || doc.id !== g.draft.rigId) return;
 	ui.sheet = null;
 	ui.tab = 'wardrobe';
+	setPanelOpen(true);
 	ui.group = g.input.slot;
 	ui.selected = `gen:${g.draft.spec.id}`;
 }

@@ -49,10 +49,16 @@
 		experience,
 		customize as enterCustomize,
 		characters,
-		sharedZoom
+		sharedZoom,
+		setMode,
+		setPanelOpen,
+		panelIsOpen,
+		experienceLayout,
+		type WorldMode
 	} from './state.svelte.ts';
+	import { panelSettings, watchPanelSettings } from './panelSettings.svelte.ts';
 	import { WORLDS, worldArt } from './config.ts';
-	import { heroScale, layout, placeWorld } from './geometry.ts';
+	import { heroScale, placeWorld } from './geometry.ts';
 	import {
 		ChevronDown,
 		ChevronLeft,
@@ -81,12 +87,26 @@
 	let selection = $state<HTMLDivElement>();
 	let missing = $state.raw<{ clip: string; direction: DirectionName; items: Item[] } | null>(null);
 	let coveragePopover = $state<HTMLElement>();
-	let playbackHeight = $state(0);
 	let stageNote = $state('');
 	let selectionCaptionHeight = $state(0);
-	const previewHeight = $derived(experience.mode === 'preview' ? playbackHeight : 0);
 	let viewportWidth = $state(1280),
 		viewportHeight = $state(720);
+	let rail = $state<HTMLElement>();
+	type ScrollPositions = {
+		project: string;
+		tab: typeof ui.tab;
+		offsets: { top: number; left: number }[];
+	};
+	let hiddenScroll = $state.raw<ScrollPositions>();
+	let previewContext:
+		{ project: string; tab: typeof ui.tab; scroll: ScrollPositions | undefined } | undefined;
+	const wardrobeScroll = $derived(
+		hiddenScroll?.project === doc.id && hiddenScroll?.tab === 'wardrobe'
+			? hiddenScroll.offsets[0]?.top
+			: undefined
+	);
+	const panelOpen = $derived(panelIsOpen());
+	onMount(watchPanelSettings);
 	const m = $derived(store.project?.manifest);
 	// The F shortcut belongs to a keyboard, so only a hovering pointer (a desktop mouse) gets the hint.
 	const hoverPointer = new MediaQuery('(hover: hover) and (pointer: fine)');
@@ -154,7 +174,7 @@
 	// While a tab is on screen and usable, More's dot leaves its work to it: not without a panel, under a sheet or on
 	// another screen, and not Moves or States outside Preview, where they are disabled.
 	$effect(() => {
-		const shown = experience.screen === 'studio' && !(g.sheet && !g.sheetHeight) && !ui.sheet,
+		const shown = experience.screen === 'studio' && panelOpen && !ui.sheet,
 			clips = shown && experience.mode === 'preview';
 		Object.assign(workTabs, { wardrobe: shown, moves: clips, states: clips });
 		return () => Object.assign(workTabs, { wardrobe: false, moves: false, states: false });
@@ -166,7 +186,14 @@
 		['moves', 'experience.tabMoves'],
 		['states', 'experience.tabStates']
 	] as const;
-	const g = $derived(layout(viewportWidth, viewportHeight, experience.screen, previewHeight));
+	const g = $derived(experienceLayout(viewportWidth, viewportHeight));
+	$effect.pre(() => {
+		if (g.panelOnly && document.activeElement?.closest('.experience-stage')) {
+			void tick().then(() => {
+				document.getElementById('customization-toggle')?.focus({ preventScroll: true });
+			});
+		}
+	});
 	// The cast is drawn from 64 px frames whose bodies stand about 50 px tall and 48 px wide.
 	const castScale = $derived(heroScale(g, 50, 48));
 	const castSize = $derived(64 * castScale);
@@ -522,6 +549,68 @@
 			.querySelectorAll<HTMLElement>('[popover]:popover-open')
 			.forEach((el) => el.hidePopover());
 		ui.tab = id;
+		hiddenScroll = undefined;
+	}
+	const scrollers = () => rail?.querySelectorAll<HTMLElement>('.equipment-scroll, .slot-rail-list');
+	const readPanelScroll = () =>
+		panelOpen
+			? {
+					project: doc.id,
+					tab: ui.tab,
+					offsets: Array.from(scrollers() ?? [], (node) => ({
+						top: node.scrollTop,
+						left: node.scrollLeft
+					}))
+				}
+			: hiddenScroll;
+	function restorePanelScroll() {
+		void tick().then(() => {
+			const scroll = hiddenScroll;
+			if (!panelOpen || !scroll) return;
+			hiddenScroll = undefined;
+			if (scroll.project !== doc.id || scroll.tab !== ui.tab) return;
+			scrollers()?.forEach((node, i) => {
+				if (scroll.offsets[i]) node.scrollTo({ ...scroll.offsets[i], behavior: 'instant' });
+			});
+		});
+	}
+	function leavePanelFocus() {
+		const focused = document.activeElement;
+		rail?.querySelectorAll<HTMLElement>('[popover]:popover-open').forEach((el) => el.hidePopover());
+		if (rail?.contains(focused) || rail?.contains(document.activeElement))
+			document.getElementById('customization-toggle')?.focus({ preventScroll: true });
+	}
+	function togglePanel() {
+		const next = !panelOpen;
+		if (!next) {
+			hiddenScroll = readPanelScroll();
+			leavePanelFocus();
+		}
+		setPanelOpen(next);
+		if (next) restorePanelScroll();
+	}
+	function changeMode(mode: WorldMode, pointer = '') {
+		if (experience.mode === mode) return;
+		if (experience.mode === 'preview') {
+			previewContext = { project: doc.id, tab: ui.tab, scroll: readPanelScroll() };
+			const touch = pointer ? pointer !== 'mouse' : matchMedia('(pointer: coarse)').matches;
+			experience.livePanelOpen =
+				panelSettings.autoHide && touch && (g.sheet || g.short) ? false : null;
+			if (experience.livePanelOpen === false) {
+				hiddenScroll = previewContext.scroll;
+				leavePanelFocus();
+			}
+			if (ui.tab === 'moves' || ui.tab === 'states') panel('wardrobe');
+		} else if (mode === 'preview') {
+			experience.livePanelOpen = null;
+			if (previewContext?.project === doc.id) {
+				ui.tab = previewContext.tab;
+				hiddenScroll = previewContext.scroll;
+			}
+			previewContext = undefined;
+		}
+		setMode(mode);
+		if (mode === 'preview') restorePanelScroll();
 	}
 	function showMissingItem(item: Item) {
 		if (!missing) return;
@@ -542,6 +631,11 @@
 	});
 	$effect(() => {
 		const screen = experience.screen;
+		if (screen === 'characters') {
+			experience.livePanelOpen = null;
+			previewContext = undefined;
+			hiddenScroll = undefined;
+		}
 		void tick().then(() => {
 			if (!ui.sheet)
 				(screen === 'characters'
@@ -600,13 +694,20 @@
 	class:short-layout={g.short}
 	class:phone-layout={g.phone}
 	class:compact-playback={g.compactPlayback}
-	class:no-panel={experience.screen === 'studio' && g.sheet && !g.sheetHeight}
+	class:panel-only={g.panelOnly}
+	class:panel-left={experience.screen === 'studio' && !g.sheet && panelSettings.side === 'left'}
+	class:panel-open={experience.screen === 'studio' && panelOpen}
 	style:--world-image="url('{background}')"
 	style={vars}
 >
 	<div class="scene-backdrop" aria-hidden="true"></div>
 	<div class="scene-reading" aria-hidden="true"></div>
-	<Toolbar />
+	<Toolbar
+		{panelOpen}
+		panelSide={g.sheet || g.panelOnly ? 'bottom' : panelSettings.side}
+		onpanel={togglePanel}
+		onmode={changeMode}
+	/>
 	{#if workspaceCopy}<div class="workspace-banner bu-floating" role="status">
 			{t(
 				app.key && !app.keyRejected
@@ -802,8 +903,8 @@
 			>
 		</aside>
 	{:else}
-		<div class="experience-stage">
-			<WorldStage playbackHeight={previewHeight} bind:missing bind:note={stageNote} />
+		<div class="experience-stage" inert={g.panelOnly}>
+			<WorldStage place={g} onmode={changeMode} bind:missing bind:note={stageNote} />
 		</div>
 		{#if experience.zoomFits.studio && experience.sceneZoom !== null}
 			<div class="scene-zoom-controls">
@@ -811,7 +912,7 @@
 			</div>
 		{/if}
 		{#if experience.mode === 'preview' && m}
-			<div class="experience-playback" bind:offsetHeight={playbackHeight}>
+			<div class="experience-playback" bind:offsetHeight={experience.playbackHeight}>
 				<div
 					class="playback-bar bu-floating"
 					role="toolbar"
@@ -955,12 +1056,17 @@
 				{#if stageNote}<p class="world-coverage preview-note">{stageNote}</p>{/if}
 			</div>
 		{/if}
-		<aside class="equipment-rail" aria-label={t('experience.customization')}>
-			{#if g.sheet}<span class="sheet-handle" aria-hidden="true"></span>{/if}
+		<aside
+			id="customization-rail"
+			class="equipment-rail"
+			aria-label={t('experience.customization')}
+			hidden={!panelOpen}
+			bind:this={rail}
+		>
 			<div class="equipment-modes" role="tablist" aria-label={t('experience.customizationPanels')}>
 				<!-- Moves stays in place in the live views, aria-disabled: there movement picks idle or walk. It stays in the Tab
 				     order so keyboard and screen reader users reach its reason (arrows step past it, Studio.svelte). -->
-				{#each tabs as [id, label]}{@const off =
+				{#each tabs as [id, label] (id)}{@const off =
 						(id === 'moves' || id === 'states') && experience.mode !== 'preview'}{@const work =
 						!off && id in tabWork ? tabWork[id as keyof typeof tabWork] : undefined}<button
 						class="bu-action"
@@ -985,7 +1091,7 @@
 			<span class="sr" id="moves-tab-note">{displayMessage(movesOff)}</span>
 			<span hidden id="tab-work-busy">{t('experience.tabWorkRunning')}</span>
 			<span hidden id="tab-work-stopped">{t('experience.tabWorkAttention')}</span>
-			<PhonePanel />
+			<PhonePanel {wardrobeScroll} />
 		</aside>
 	{/if}
 	{#if doc.error}<p class="experience-error" role="alert">{displayNestedMessage(doc.error)}</p>{/if}

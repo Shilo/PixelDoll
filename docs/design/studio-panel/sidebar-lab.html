@@ -1,0 +1,1109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>PixelDoll panel prototype</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font: 14px/1.45 var(--font-sans, system-ui, sans-serif);
+      }
+      .lab {
+        display: grid;
+        gap: 12px;
+      }
+      .lab-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        align-items: end;
+      }
+      .lab-options label {
+        display: grid;
+        gap: 3px;
+      }
+      .lab-options .check {
+        display: flex;
+        align-items: center;
+        min-height: 44px;
+      }
+      .lab-options input {
+        inline-size: 18px;
+        block-size: 18px;
+      }
+      .lab-options select {
+        min-height: 44px;
+        padding: 0 8px;
+        font: inherit;
+        color: var(--foreground, CanvasText);
+        background: var(--secondary, Canvas);
+        border: 1px solid var(--border, GrayText);
+        border-radius: 8px;
+      }
+      #frame {
+        position: relative;
+        overflow: hidden;
+        justify-self: center;
+        max-width: 100%;
+        border-radius: 12px;
+      }
+      #studio {
+        --surface: #202329;
+        --text: #f2eee6;
+        --muted: #b8b5ad;
+        --accent: #c9a66b;
+        --line: color-mix(in srgb, var(--muted) 40%, var(--surface));
+        --art: url("../../../app/public/worlds/obsidian-stage.png");
+        position: absolute;
+        inset: 0 auto auto 0;
+        transform-origin: top left;
+        overflow: hidden;
+        background: var(--surface);
+        color: var(--text);
+        isolation: isolate;
+      }
+      #studio.light {
+        --surface: #faf7f0;
+        --text: #25282d;
+        --muted: #5e625f;
+        --accent: #76562f;
+        --art: url("../../../app/public/worlds/porcelain-stage.png");
+      }
+      #studio button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-width: 44px;
+        min-height: 44px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: inherit;
+        background: transparent;
+        font: inherit;
+        cursor: pointer;
+      }
+      #studio button:hover {
+        background: color-mix(in srgb, var(--text) 7%, var(--surface));
+      }
+      #studio :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+      }
+      #studio button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      #studio svg {
+        width: 20px;
+        height: 20px;
+        flex: none;
+      }
+      #world {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(180deg, var(--surface), transparent 34%),
+          var(--art) center 70% / cover no-repeat;
+      }
+      #stage {
+        position: absolute;
+        top: var(--stage-t);
+        left: var(--stage-l);
+        right: var(--stage-r);
+        bottom: var(--stage-b);
+      }
+      #hero {
+        position: absolute;
+        left: 50%;
+        bottom: var(--hero-b);
+        transform: translateX(-50%);
+        width: var(--hero-size);
+        height: var(--hero-size);
+        image-rendering: pixelated;
+      }
+      #playback,
+      #gamepad {
+        position: absolute;
+        bottom: 12px;
+      }
+      #playback {
+        left: 50%;
+        transform: translateX(-50%);
+        width: max-content;
+        max-width: calc(100% - 16px);
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 44px;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+      }
+      #gamepad {
+        right: 16px;
+        width: 174px;
+        height: 182px;
+        pointer-events: none;
+      }
+      #studio.reserve #gamepad {
+        bottom: calc(12px - var(--stage-b));
+      }
+      #gamepad span {
+        position: absolute;
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border: 1px solid var(--line);
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--surface) 90%, transparent);
+      }
+      #gamepad .attack {
+        width: 112px;
+        height: 112px;
+        bottom: 0;
+        right: 0;
+      }
+      #gamepad .jump {
+        width: 56px;
+        height: 56px;
+        bottom: 126px;
+        right: 28px;
+      }
+      #gamepad .sprint {
+        width: 48px;
+        height: 48px;
+        bottom: 98px;
+        right: 98px;
+      }
+      #gamepad .mount {
+        width: 48px;
+        height: 48px;
+        bottom: 32px;
+        right: 126px;
+      }
+      #studio.keyboard #gamepad {
+        width: 178px;
+        height: 44px;
+        display: flex;
+        background: var(--surface);
+        border-radius: 8px;
+      }
+      #studio.keyboard #gamepad span {
+        position: static;
+        width: 44px;
+        height: 44px;
+        border: none;
+        background: transparent;
+      }
+      #bar {
+        position: absolute;
+        z-index: 3;
+        inset: 8px 8px auto;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+      }
+      #identity,
+      #global,
+      #views {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+      #identity {
+        flex: 0 1 auto;
+        min-width: 0;
+      }
+      #identity > span {
+        font:
+          20px/1.15 Georgia,
+          serif;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #global > span,
+      #identity > svg {
+        display: grid;
+        place-items: center;
+        min-width: 38px;
+      }
+      #views {
+        flex: 0 0 auto;
+      }
+      #studio [aria-pressed="true"],
+      #studio [aria-selected="true"] {
+        color: var(--accent);
+      }
+      #studio [aria-pressed="true"].tile {
+        border-color: var(--accent);
+      }
+      #studio #views button[aria-pressed="true"],
+      #studio #tabs button[aria-selected="true"] {
+        border-bottom-color: var(--accent);
+        border-radius: 0;
+      }
+      #studio #toggle {
+        background: var(--surface);
+        border-color: var(--line);
+        white-space: nowrap;
+        padding: 0 10px;
+      }
+      #toggle[aria-expanded="true"] svg .closed,
+      #toggle[aria-expanded="false"] svg .open {
+        display: none;
+      }
+      #toggle .toggle-label {
+        display: grid;
+        justify-items: center;
+      }
+      #toggle .toggle-label span {
+        grid-area: 1 / 1;
+      }
+      #toggle[aria-expanded="true"] .toggle-label .closed,
+      #toggle[aria-expanded="false"] .toggle-label .open {
+        visibility: hidden;
+      }
+      #toggle .left,
+      #toggle .bottom {
+        display: none;
+      }
+      #studio.left:not(.stacked) #toggle .right,
+      #studio.stacked #toggle .right {
+        display: none;
+      }
+      #studio.left:not(.stacked) #toggle .left,
+      #studio.stacked #toggle .bottom {
+        display: inline;
+      }
+      #studio.compact #view-row {
+        position: absolute;
+        inset: 44px 0 auto;
+        display: flex;
+        justify-content: space-between;
+      }
+      #studio:not(.compact) #view-row {
+        display: contents;
+      }
+      #studio.compact #toggle {
+        margin-inline-start: auto;
+      }
+      #studio.compact.left:not(.stacked) #toggle {
+        order: -1;
+        margin-inline-start: 0;
+      }
+      #studio.compact.left:not(.stacked) #views {
+        margin-inline-start: auto;
+      }
+      #studio.icon-views .view-name {
+        display: none;
+      }
+      #studio.icon-views #views button {
+        width: 44px;
+        padding: 0;
+      }
+      #studio:not(.icon-views) #views svg {
+        display: none;
+      }
+      #studio:not(.compact) #views {
+        order: 2;
+      }
+      #studio:not(.compact) #toggle {
+        order: 3;
+      }
+      #studio:not(.compact) #global {
+        order: 4;
+      }
+      #studio:not(.compact).left #toggle {
+        order: 1;
+      }
+      #studio.mid #toggle .toggle-label {
+        display: none;
+      }
+      #panel {
+        position: absolute;
+        z-index: 2;
+        inset: var(--panel-t) var(--panel-r) var(--panel-b) var(--panel-l);
+        display: flex;
+        flex-direction: column;
+        padding: 4px 10px 10px;
+        gap: 6px;
+        background: color-mix(in srgb, var(--surface) 97%, transparent);
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        #panel {
+          transition: opacity 140ms ease-out;
+        }
+        @starting-style {
+          #panel:not([hidden]) {
+            opacity: 0;
+          }
+        }
+      }
+      #studio.stacked #panel {
+        border-top: 1px solid var(--line);
+        border-radius: 16px 16px 0 0;
+      }
+      #tabs {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      #tabs button {
+        flex: 1 0 44px;
+        padding: 0 3px;
+        font-size: 13px;
+      }
+      #content {
+        min-height: 0;
+        overflow: auto;
+        overscroll-behavior: contain;
+        padding: 0 2px 4px;
+      }
+      #content h3 {
+        font-size: 14px;
+        margin: 8px 0;
+      }
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+        gap: 6px;
+      }
+      #studio .tile {
+        display: grid;
+        align-content: end;
+        justify-items: center;
+        min-height: 76px;
+        padding: 4px;
+        border-color: var(--line);
+        font-size: 12px;
+        text-align: center;
+      }
+      .tile canvas {
+        width: 42px;
+        height: 42px;
+        image-rendering: pixelated;
+      }
+      #studio .tile:not(:has(canvas)) {
+        align-content: center;
+        border-style: dashed;
+      }
+      #content .sample-row {
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+      }
+      #content [aria-hidden="true"] {
+        color: var(--muted);
+      }
+      #readout {
+        margin: 0;
+        color: var(--muted-foreground, inherit);
+        font-variant-numeric: tabular-nums;
+      }
+      #studio [hidden] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="lab">
+      <div class="lab-options">
+        <label
+          >Viewport
+          <select id="viewport">
+            <option value="390,844,touch">Phone portrait (390 × 844)</option>
+            <option value="320,568,touch">Small phone (320 × 568)</option>
+            <option value="320,300,touch">Very short window (320 × 300)</option>
+            <option value="568,320,touch">
+              Small phone landscape (568 × 320)
+            </option>
+            <option value="844,390,touch">Phone landscape (844 × 390)</option>
+            <option value="768,1024,touch">Tablet portrait (768 × 1024)</option>
+            <option value="1024,768,touch">
+              Tablet landscape (1024 × 768)
+            </option>
+            <option value="1440,900,mouse">Desktop (1440 × 900)</option>
+          </select>
+        </label>
+        <label
+          >Open layout
+          <select id="pattern">
+            <option value="docked">Docked</option>
+            <option value="overlay">Overlay</option>
+            <option value="controls">Separate controls area</option>
+          </select>
+        </label>
+        <label
+          >Side dock
+          <select id="dock">
+            <option value="right">Right</option>
+            <option value="left">Left</option>
+          </select>
+        </label>
+        <label
+          >Theme
+          <select id="theme">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+        </label>
+        <label class="check"
+          ><input id="auto" type="checkbox" checked /> Hide panel when entering
+          touch Live Views</label
+        >
+      </div>
+      <div id="frame">
+        <section id="studio" aria-label="Studio prototype">
+          <div id="world" aria-hidden="true"></div>
+          <header id="bar">
+            <div id="identity">
+              <svg aria-hidden="true"><use href="#back" /></svg>
+              <span>Adventurer</span>
+            </div>
+            <div id="view-row">
+              <div id="views" role="group" aria-label="View">
+                <button
+                  type="button"
+                  data-view="preview"
+                  aria-label="Preview"
+                  title="Preview"
+                >
+                  <svg aria-hidden="true"><use href="#eye" /></svg
+                  ><span class="view-name">Preview</span>
+                </button>
+                <button
+                  type="button"
+                  data-view="top"
+                  aria-label="Top-down"
+                  title="Top-down"
+                >
+                  <svg aria-hidden="true"><use href="#layers" /></svg
+                  ><span class="view-name">Top-down</span>
+                </button>
+                <button
+                  type="button"
+                  data-view="side"
+                  aria-label="Side-scroller"
+                  title="Side-scroller"
+                >
+                  <svg aria-hidden="true"><use href="#mountain" /></svg
+                  ><span class="view-name">Side-scroller</span>
+                </button>
+              </div>
+              <button
+                type="button"
+                id="toggle"
+                aria-label="Hide panel"
+                aria-expanded="true"
+                aria-controls="panel"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <g class="right">
+                    <use class="open" href="#right-close" />
+                    <use class="closed" href="#right-open" />
+                  </g>
+                  <g class="left" transform="translate(24 0) scale(-1 1)">
+                    <use class="open" href="#right-close" />
+                    <use class="closed" href="#right-open" />
+                  </g>
+                  <g class="bottom" transform="translate(24 0) rotate(90)">
+                    <use class="open" href="#right-close" />
+                    <use class="closed" href="#right-open" />
+                  </g>
+                </svg>
+                <span class="toggle-label" aria-hidden="true">
+                  <span class="open">Hide panel</span>
+                  <span class="closed">Customize</span>
+                </span>
+              </button>
+            </div>
+            <div id="global" aria-hidden="true">
+              <span
+                ><svg><use href="#export" /></svg
+              ></span>
+              <span
+                ><svg><use href="#maximize" /></svg
+              ></span>
+              <span
+                ><svg><use href="#more" /></svg
+              ></span>
+            </div>
+          </header>
+          <div id="stage" aria-hidden="true">
+            <canvas id="hero" width="64" height="64"></canvas>
+            <div id="playback">
+              <svg><use href="#play" /></svg> Default
+              <svg><use href="#down" /></svg> <span>S · E · N · W</span>
+            </div>
+            <div id="gamepad" hidden>
+              <span class="attack"
+                ><svg><use href="#sword" /></svg
+              ></span>
+              <span class="jump"
+                ><svg><use href="#up" /></svg
+              ></span>
+              <span class="sprint"
+                ><svg><use href="#fast" /></svg
+              ></span>
+              <span class="mount"
+                ><svg><use href="#paw" /></svg
+              ></span>
+            </div>
+          </div>
+          <aside id="panel" aria-label="Customization">
+            <div id="tabs" role="tablist" aria-label="Customization panels">
+              <button
+                type="button"
+                role="tab"
+                id="wardrobe"
+                aria-controls="content"
+              >
+                Wardrobe
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="colors"
+                aria-controls="content"
+              >
+                Colors
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="outfits"
+                aria-controls="content"
+              >
+                Outfits
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="moves"
+                aria-controls="content"
+              >
+                Moves
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="states"
+                aria-controls="content"
+              >
+                States
+              </button>
+            </div>
+            <div id="content" role="tabpanel" tabindex="0"></div>
+          </aside>
+        </section>
+      </div>
+      <p id="readout"></p>
+    </main>
+    <svg width="0" height="0" aria-hidden="true" style="position: absolute">
+      <defs
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.7"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <g id="right-panel">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <path d="M15 3v18" />
+        </g>
+        <g id="right-close">
+          <use href="#right-panel" />
+          <path d="m8 9 3 3-3 3" />
+        </g>
+        <g id="right-open">
+          <use href="#right-panel" />
+          <path d="m11 9-3 3 3 3" />
+        </g>
+        <symbol id="eye" viewBox="0 0 24 24">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"
+          />
+          <circle
+            cx="12"
+            cy="12"
+            r="2.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          />
+        </symbol>
+        <symbol id="layers" viewBox="0 0 24 24">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linejoin="round"
+            d="m2 8 10-5 10 5-10 5Zm0 4 10 5 10-5M2 16l10 5 10-5"
+          />
+        </symbol>
+        <symbol id="mountain" viewBox="0 0 24 24">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linejoin="round"
+            d="M2 20 9 7l4 7 3-4 6 10Z"
+          />
+        </symbol>
+        <symbol id="back" viewBox="0 0 24 24">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            d="m14 6-6 6 6 6"
+          />
+        </symbol>
+        <symbol id="more" viewBox="0 0 24 24">
+          <circle fill="currentColor" cx="5" cy="12" r="1.5" />
+          <circle fill="currentColor" cx="12" cy="12" r="1.5" />
+          <circle fill="currentColor" cx="19" cy="12" r="1.5" />
+        </symbol>
+        <symbol id="maximize" viewBox="0 0 24 24">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            d="M9 5H5v4m10-4h4v4M5 15v4h4m10-4v4h-4"
+          />
+        </symbol>
+        <symbol id="export" viewBox="0 0 24 24">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linejoin="round"
+            d="M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5"
+          />
+        </symbol>
+        <symbol id="down" viewBox="0 0 24 24">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            d="m7 10 5 5 5-5"
+          />
+        </symbol>
+        <symbol id="play" viewBox="0 0 24 24">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linejoin="round"
+            d="m8 5 11 7-11 7Z"
+          />
+        </symbol>
+        <symbol id="sword" viewBox="0 0 24 24">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linejoin="round"
+            d="m5 19 3-3m-3-3 6 6m-2-3 10-10V3h-3L6 13"
+          />
+        </symbol>
+        <symbol id="up" viewBox="0 0 24 24">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linejoin="round"
+            d="m3 12 9-8 9 8h-5v7H8v-7Z"
+          />
+        </symbol>
+        <symbol id="fast" viewBox="0 0 24 24">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            d="m5 7 5 5-5 5m8-10 5 5-5 5"
+          />
+        </symbol>
+        <symbol id="paw" viewBox="0 0 24 24">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            d="M5 17c0-2 4-6 7-6s7 4 7 6c0 3-4 3-7 2-3 1-7 1-7-2Z"
+          />
+          <circle cx="5" cy="9" r="1.5" fill="currentColor" />
+          <circle cx="10" cy="6" r="1.5" fill="currentColor" />
+          <circle cx="15" cy="6" r="1.5" fill="currentColor" />
+          <circle cx="20" cy="9" r="1.5" fill="currentColor" />
+        </symbol>
+      </defs>
+    </svg>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const studio = $("studio"),
+        panel = $("panel"),
+        toggle = $("toggle"),
+        content = $("content");
+      const views = [...$("views").querySelectorAll("button")],
+        tabs = [...$("tabs").querySelectorAll("button")];
+      const storageKey = "pixeldoll.sidebar-lab";
+      let preference = {};
+      try {
+        preference = JSON.parse(localStorage.getItem(storageKey)) || {};
+      } catch {
+        /* The inline preview can block storage. */
+      }
+      $("dock").value = preference.side === "left" ? "left" : "right";
+      $("auto").checked = preference.auto !== false;
+      let mode = "preview",
+        previewOpen = true,
+        liveOpen = null,
+        tab = "wardrobe",
+        previewTab = tab;
+      const scroll = new Map();
+      const outfit = { head: "helmet", back: "cape" };
+      const paths = {
+        body: "body/base",
+        vest: "torso_inner/vest_leather",
+        hair: "hair/hair_brown",
+        sword: "main_hand/sword_steel",
+        helmet: "head/helmet_steel",
+        wizard: "head/hat_wizard",
+        cape: "back/cape_red",
+      };
+      const tileBounds = {
+        helmet: [25, 14, 14, 15],
+        wizard: [19, 6, 26, 19],
+        cape: [16, 29, 32, 33],
+      };
+      const art = Object.fromEntries(
+        Object.entries(paths).map(([id, path]) => {
+          const image = new Image();
+          image.src =
+            "../../../app/public/fixtures/s2/layers/" + path + "/main/walk.png";
+          return [id, image];
+        }),
+      );
+      function paint(canvas, layers) {
+        const context = canvas.getContext("2d");
+        context.clearRect(0, 0, 64, 64);
+        for (const id of layers) {
+          const image = art[id];
+          if (image?.complete && image.naturalWidth)
+            context.drawImage(image, 0, 0, 64, 64, 0, 0, 64, 64);
+        }
+      }
+      function paintArt() {
+        paint($("hero"), [
+          outfit.back,
+          "body",
+          "vest",
+          "hair",
+          outfit.head,
+          "sword",
+        ]);
+        for (const canvas of content.querySelectorAll("canvas")) {
+          const id = canvas.dataset.item;
+          const image = art[id];
+          if (!image.complete || !image.naturalWidth) continue;
+          const [x, y, w, h] = tileBounds[id];
+          const scale = Math.max(1, Math.floor(56 / Math.max(w, h)));
+          const context = canvas.getContext("2d");
+          context.imageSmoothingEnabled = false;
+          context.clearRect(0, 0, 64, 64);
+          context.drawImage(
+            image,
+            x,
+            y,
+            w,
+            h,
+            Math.floor((64 - w * scale) / 2),
+            Math.floor((64 - h * scale) / 2),
+            w * scale,
+            h * scale,
+          );
+        }
+      }
+      for (const image of Object.values(art))
+        image.addEventListener("load", paintArt);
+      const dims = () => {
+        const [w, h, input] = $("viewport").value.split(",");
+        return { w: Number(w), h: Number(h), touch: input === "touch" };
+      };
+      const tightForPlay = ({ w, h, touch }) =>
+        touch && (w <= 760 || h <= 540 || (w <= 1024 && w < h));
+      const open = () => liveOpen ?? previewOpen;
+      function savePreferences() {
+        try {
+          localStorage.setItem(
+            storageKey,
+            JSON.stringify({ side: $("dock").value, auto: $("auto").checked }),
+          );
+        } catch {
+          /* Keep the session interactive when the inline preview blocks storage. */
+        }
+      }
+      function layout() {
+        const { w, h, touch } = dims();
+        const live = mode !== "preview",
+          side = $("dock").value,
+          pattern = $("pattern").value;
+        const expanded = open(),
+          edge = w <= 600 ? 16 : w < 1100 ? 20 : 24;
+        const rail = w < 900 ? 300 : w < 1100 ? 320 : Math.min(480, w * 0.33);
+        const short = h <= 540;
+        let stacked =
+          w <= 600 || (!short && (w <= 760 || (w < h && w <= 1024)));
+        let sheet = Math.round(
+          Math.min(h - 250, Math.max(240, h * 0.45), Math.max(200, h - 357)),
+        );
+        if (stacked && sheet < 200 && w - edge - rail - 12 >= 200)
+          stacked = false;
+        const compact = stacked || w <= 600;
+        const header = (short || w <= 600 ? 52 : 60) + (compact ? 44 : 0);
+        const tiny = stacked && h - header < 308;
+        if (stacked) sheet = tiny ? h - header : Math.max(200, sheet);
+        const reserve = expanded && live && touch && pattern === "controls";
+        const controlsBand = reserve ? 194 : 0;
+        const reserveFits =
+          !reserve ||
+          (stacked
+            ? h - header - controlsBand >= 308
+            : h - header - controlsBand >= 200);
+        const footer = reserve && reserveFits ? controlsBand : 0;
+        const overlay = expanded && pattern === "overlay" && !tiny;
+        const panelHeight = stacked
+          ? Math.min(sheet, h - header - footer)
+          : h - header - footer;
+        const editorOnly = expanded && tiny;
+        const left =
+          expanded && !stacked && !overlay && side === "left"
+            ? rail + edge + 12
+            : 0;
+        const right =
+          expanded && !stacked && !overlay && side === "right"
+            ? rail + edge + 12
+            : 0;
+        const bottom =
+          expanded && stacked && !overlay ? panelHeight + footer : footer;
+        const stageHeight = h - header - bottom;
+        const stageWidth = w - left - right;
+        studio.classList.toggle("light", $("theme").value === "light");
+        studio.classList.toggle("compact", compact);
+        studio.classList.toggle("icon-views", compact || w < 1000);
+        studio.classList.toggle(
+          "mid",
+          !compact && (w < 760 || (w >= 1000 && w < 1200)),
+        );
+        studio.classList.toggle("stacked", stacked);
+        studio.classList.toggle("left", side === "left");
+        studio.classList.toggle("keyboard", !touch);
+        studio.classList.toggle("reserve", reserve && reserveFits);
+        const first = side === "left" && !stacked;
+        if (first !== (toggle === $("view-row").firstElementChild)) {
+          const focused = document.activeElement === toggle;
+          if (first) $("view-row").prepend(toggle);
+          else $("view-row").append(toggle);
+          if (focused) toggle.focus({ preventScroll: true });
+        }
+        const heroBottom = live
+          ? Math.max(16, Math.round(stageHeight * 0.23))
+          : 64;
+        const heroScale = Math.max(
+          1,
+          Math.min(
+            8,
+            Math.floor(
+              Math.min((stageHeight - heroBottom - 12) / 58, stageWidth / 72),
+            ),
+          ),
+        );
+        const css = {
+          width: w,
+          height: h,
+          "--stage-t": header,
+          "--stage-b": bottom,
+          "--stage-l": left,
+          "--stage-r": right,
+          "--panel-t": stacked ? h - panelHeight - footer : header,
+          "--panel-b": footer,
+          "--panel-l": stacked ? 0 : side === "left" ? edge : w - rail - edge,
+          "--panel-r": stacked ? 0 : side === "right" ? edge : w - rail - edge,
+          "--hero-b": heroBottom,
+          "--hero-size": 64 * heroScale,
+        };
+        for (const [key, value] of Object.entries(css))
+          studio.style.setProperty(key, value + "px");
+        const wasHidden = panel.hidden;
+        if (!expanded && !wasHidden) scroll.set(tab, content.scrollTop);
+        if (!expanded && panel.contains(document.activeElement))
+          toggle.focus({ preventScroll: true });
+        panel.hidden = !expanded;
+        if (expanded && wasHidden) content.scrollTop = scroll.get(tab) || 0;
+        toggle.setAttribute("aria-expanded", String(expanded));
+        toggle.setAttribute(
+          "aria-label",
+          expanded ? "Hide panel" : "Customize",
+        );
+        toggle.title = expanded
+          ? "Hide customization panel"
+          : "Show customization panel";
+        $("stage").hidden = editorOnly;
+        $("playback").hidden = live;
+        $("gamepad").hidden = !live;
+        for (const button of views)
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.view === mode),
+          );
+        const note = editorOnly
+          ? "Editor fills the available area."
+          : reserve && !reserveFits
+            ? "A separate touch-control area would leave too little room for both panes."
+            : overlay
+              ? "The panel covers part of the stage."
+              : reserve
+                ? "The touch controls occupy a separate bottom area."
+                : expanded
+                  ? stacked
+                    ? "Panel docked below the stage."
+                    : "Panel docked on the " + side + "."
+                  : "Panel hidden.";
+        $("readout").textContent =
+          (editorOnly ? "" : `Stage: ${stageWidth} × ${stageHeight} CSS px. `) +
+          note;
+        const scale = Math.min(
+          1,
+          ($("frame").parentElement.clientWidth || w) / w,
+        );
+        $("frame").style.width = w * scale + "px";
+        $("frame").style.height = h * scale + "px";
+        studio.style.transform = `scale(${scale})`;
+      }
+      function renderTab(next) {
+        if (next !== tab && !panel.hidden) scroll.set(tab, content.scrollTop);
+        tab = next;
+        const live = mode !== "preview";
+        for (const button of tabs) {
+          button.disabled = live && ["moves", "states"].includes(button.id);
+          button.setAttribute("aria-selected", String(button.id === tab));
+          button.tabIndex = button.id === tab ? 0 : -1;
+        }
+        content.setAttribute("aria-labelledby", tab);
+        const item = (slot, id, label) =>
+          `<button type="button" class="tile" data-slot="${slot}" data-item="${id}" aria-pressed="${outfit[slot] === id}">` +
+          (id
+            ? `<canvas width="64" height="64" data-item="${id}" aria-hidden="true"></canvas>`
+            : "") +
+          `<span>${label}</span></button>`;
+        const rows = {
+          colors: ["Character", "Hair", "Head", "Chest", "Cape", "Main hand"],
+          outfits: ["Adventurer"],
+          moves: ["Walk", "Cross punch"],
+          states: ["No saved states"],
+        };
+        content.innerHTML =
+          tab === "wardrobe"
+            ? `<h3>Head</h3><div class="tiles">${item("head", "", "Empty")}${item("head", "helmet", "Steel helmet")}${item("head", "wizard", "Wizard hat")}</div>
+					<h3>Back</h3><div class="tiles">${item("back", "", "Empty")}${item("back", "cape", "Red cape")}</div>
+					<h3>Chest</h3><div class="sample-row">Leather vest</div><h3>Main hand</h3><div class="sample-row">Steel sword</div>`
+            : rows[tab]
+                .map((label) => `<div class="sample-row">${label}</div>`)
+                .join("");
+        content.scrollTop = scroll.get(tab) || 0;
+        paintArt();
+      }
+      function setMode(next) {
+        if (next === mode) return;
+        const entering = mode === "preview";
+        if (entering) {
+          previewTab = tab;
+          liveOpen = $("auto").checked && tightForPlay(dims()) ? false : null;
+        }
+        mode = next;
+        if (next === "preview") liveOpen = null;
+        renderTab(
+          next === "preview"
+            ? previewTab
+            : ["moves", "states"].includes(tab)
+              ? "wardrobe"
+              : tab,
+        );
+        layout();
+      }
+      for (const button of views)
+        button.addEventListener("click", () => setMode(button.dataset.view));
+      toggle.addEventListener("click", () => {
+        if (liveOpen !== null) liveOpen = !liveOpen;
+        else previewOpen = !previewOpen;
+        layout();
+      });
+      for (const button of tabs)
+        button.addEventListener("click", () => renderTab(button.id));
+      $("tabs").addEventListener("keydown", (event) => {
+        const available = tabs.filter((button) => !button.disabled);
+        const index = available.findIndex((button) => button.id === tab);
+        const next = {
+          ArrowRight: (index + 1) % available.length,
+          ArrowLeft: (index + available.length - 1) % available.length,
+          Home: 0,
+          End: available.length - 1,
+        }[event.key];
+        if (next === undefined) return;
+        event.preventDefault();
+        renderTab(available[next].id);
+        available[next].focus();
+      });
+      content.addEventListener("click", (event) => {
+        const button = event.target.closest(".tile");
+        if (!button) return;
+        const { slot, item } = button.dataset;
+        outfit[slot] = item;
+        for (const candidate of content.querySelectorAll(".tile")) {
+          if (candidate.dataset.slot === slot)
+            candidate.setAttribute(
+              "aria-pressed",
+              String(candidate === button),
+            );
+        }
+        paintArt();
+      });
+      for (const id of ["viewport", "theme", "pattern"])
+        $(id).addEventListener("change", layout);
+      for (const id of ["auto", "dock"])
+        $(id).addEventListener("change", () => {
+          savePreferences();
+          layout();
+        });
+      new ResizeObserver(layout).observe($("frame").parentElement);
+      renderTab(tab);
+      layout();
+    </script>
+  </body>
+</html>

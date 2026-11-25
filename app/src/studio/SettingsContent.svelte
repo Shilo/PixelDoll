@@ -20,6 +20,8 @@
 		KeyRound,
 		Layers2,
 		Moon,
+		PanelLeft,
+		PanelRight,
 		PawPrint,
 		PersonStanding,
 		Settings2,
@@ -51,6 +53,11 @@
 	import { message } from '../lib/message.ts';
 	import { characterName, setTheme, store, toast, ui } from './state.svelte.ts';
 	import { openerLabel } from './openerLabel.ts';
+	import {
+		panelSettings,
+		setPanelSettings,
+		type PanelSide
+	} from './experience/panelSettings.svelte.ts';
 
 	let {
 		exportSettings,
@@ -74,6 +81,13 @@
 		{ value: 'dark', label: t('settings.dark') },
 		{ value: 'light', label: t('settings.light') }
 	] as const);
+	const panelSides = $derived([
+		{ value: 'left', label: t('studioPanel.left') },
+		{ value: 'right', label: t('studioPanel.right') }
+	] as const);
+	function setPanelSide(side: PanelSide) {
+		if (!setPanelSettings({ side })) toast(message('studioPanel.notSaved'), { tone: 'warning' });
+	}
 	const sections = [
 		{
 			id: 'pixellab',
@@ -106,6 +120,16 @@
 					id: 'theme',
 					label: 'settings.theme',
 					terms: ['toolbar.lightMode', 'toolbar.darkMode']
+				},
+				{
+					id: 'panel-side',
+					label: 'studioPanel.side',
+					terms: [
+						'studioPanel.left',
+						'studioPanel.right',
+						'studioPanel.showPanel',
+						'experience.customization'
+					]
 				},
 				{ id: 'language', label: 'language.label' },
 				{ id: 'reset', label: 'settings.reset.allAction', terms: ['settings.reset.action'] }
@@ -146,6 +170,11 @@
 			label: settingsLabels.live,
 			icon: Gamepad2,
 			entries: [
+				{
+					id: 'panel-auto-hide',
+					label: 'studioPanel.autoHide',
+					terms: ['toolbar.viewTopDown', 'toolbar.viewSide', 'studioPanel.showPanel']
+				},
 				{
 					id: 'live-idle',
 					label: 'liveViews.idle',
@@ -535,6 +564,21 @@
 					{#snippet icon()}<SunMoon size={18} aria-hidden="true" />{/snippet}
 					{#snippet optionIcon(value)}
 						{#if value === 'dark'}<Moon size={16} aria-hidden="true" />{:else}<Sun
+								size={16}
+								aria-hidden="true"
+							/>{/if}
+					{/snippet}
+				</SettingsItemSegmented>
+				<SettingsItemSegmented
+					label={t('studioPanel.side')}
+					setting="panel-side"
+					options={panelSides}
+					value={panelSettings.side}
+					onselect={setPanelSide}
+				>
+					{#snippet icon()}<PanelRight size={18} aria-hidden="true" />{/snippet}
+					{#snippet optionIcon(value)}
+						{#if value === 'left'}<PanelLeft size={16} aria-hidden="true" />{:else}<PanelRight
 								size={16}
 								aria-hidden="true"
 							/>{/if}
