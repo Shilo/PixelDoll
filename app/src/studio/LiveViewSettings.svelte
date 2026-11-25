@@ -106,19 +106,13 @@
 		</div>
 
 		{#if role === 'attack'}
-			<div class="layering switch-row">
-				<SettingsItemToggle
-					checked={layering.on}
-					onchange={(event) => setLayering(event.currentTarget.checked, layering.waist)}
-				>
-					{t('liveViews.walkWhileAttacking')}
-				</SettingsItemToggle>
-				<Help
-					iconOnly
-					title={t('liveViews.walkWhileAttacking')}
-					text={t('liveViews.layeringHelp')}
-				/>
-			</div>
+			<SettingsItemToggle
+				tooltip={t('liveViews.layeringHelp')}
+				checked={layering.on}
+				onchange={(event) => setLayering(event.currentTarget.checked, layering.waist)}
+			>
+				<span class="row-name">{t('liveViews.walkWhileAttacking')}</span>
+			</SettingsItemToggle>
 
 			{#if layering.on}
 				<div class="layering">
@@ -170,13 +164,6 @@
 
 	.layering {
 		flex-wrap: wrap;
-	}
-	.switch-row {
-		flex-wrap: nowrap;
-	}
-	.switch-row :global(label) {
-		flex: 1;
-		min-inline-size: 0;
 	}
 
 	.character {
