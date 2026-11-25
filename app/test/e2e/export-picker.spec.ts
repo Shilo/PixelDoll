@@ -3566,9 +3566,9 @@ test('Share popover follows the selected move, direction and Animate switch on d
 
 	await page.keyboard.press('Escape');
 	await page.setViewportSize({ width: 390, height: 844 });
-	// Phones keep Export on the bar and open Share from More; the popover then points at More.
+	// Phones keep the audio and panel controls on the bar and open Share from More; the popover then points at More.
+	// Export's position follows the measured name width, so this does not assert it here.
 	await expect(trigger).toBeHidden();
-	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
 		.locator('#experience-options')
@@ -3612,7 +3612,8 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await selectShareClip(popover, 'Everything');
 	await fixedLayout(smallLayout);
 	await expect(page.getByRole('button', { name: 'Share character' })).toBeHidden();
-	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
+	// The audio control and the panel toggle leave no room for Export here, so it moves into More. The bar still fits.
+	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeHidden();
 	await headerFits();
 	await page.screenshot({ path: testInfo.outputPath('share-grid-320.png') });
 	await selectShareClip(popover, 'Walk');
@@ -3640,8 +3641,8 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('south');
 	await page.setViewportSize({ width: 320, height: 390 });
 	await expect(page.getByRole('button', { name: 'Share character' })).toBeHidden();
-	// The demo's short name leaves Export, Full screen and the panel toggle room in the bar.
-	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
+	// The panel toggle and audio control leave no room for Export on a 320 px bar; Full screen stays.
+	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeHidden();
 	await expect(page.getByRole('button', { name: 'Enter full screen', exact: true })).toBeVisible();
 	await headerFits();
 	expect(
@@ -3696,7 +3697,9 @@ test('Share popover follows the selected move, direction and Animate switch on d
 		.boundingBox())!;
 	expect(reachableDownload.y + reachableDownload.height).toBeLessThanOrEqual(390);
 	await page.setViewportSize({ width: 390, height: 844 });
-	await expect(page.locator('.header-export')).toBeVisible();
+	// Export's place follows the measured name width; the bar itself must always come back.
+	await expect(page.getByRole('button', { name: 'More options', exact: true })).toBeVisible();
+	await headerFits();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.getByRole('button', { name: 'Export game assets' })).toHaveCount(0);
 	const disabledRedo = page.locator('.mobile-redo');

@@ -23,6 +23,20 @@ async function mouseDrag(page: Page, from: { x: number; y: number }, to: { x: nu
 	await page.mouse.up();
 }
 
+/** Opens Export from the bar, or from More when a narrow phone has moved it there. */
+async function openExport(page: Page) {
+	const direct = page.getByRole('button', { name: 'Export', exact: true });
+	if (await direct.isVisible()) {
+		await direct.click();
+		return;
+	}
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page
+		.locator('#experience-options')
+		.getByRole('button', { name: /^Export/ })
+		.click();
+}
+
 for (const [width, height, touch] of [
 	[1440, 900, false],
 	[390, 844, true],
@@ -105,7 +119,7 @@ for (const [width, height, touch] of [
 				},
 				{
 					name: 'Export',
-					open: () => page.getByRole('button', { name: 'Export', exact: true }).click(),
+					open: () => openExport(page),
 					close: 'Close'
 				},
 				{
