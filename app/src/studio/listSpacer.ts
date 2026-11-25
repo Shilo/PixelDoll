@@ -12,9 +12,22 @@ export function watchListSpacer(
 				list.clientHeight - last.offsetHeight - parseFloat(getComputedStyle(list).paddingBottom)
 			)
 		);
-	size();
-	const observer = new ResizeObserver(size);
+	// The spacer changes the list's own layout, so writing it inside the observer would re-enter the observer. Measure
+	// and set on the next frame instead, coalescing bursts of resizes.
+	let frame = 0;
+	const update = () => {
+		cancelAnimationFrame(frame);
+		frame = requestAnimationFrame(() => {
+			frame = 0;
+			size();
+		});
+	};
+	update();
+	const observer = new ResizeObserver(update);
 	observer.observe(list);
 	observer.observe(last);
-	return () => observer.disconnect();
+	return () => {
+		cancelAnimationFrame(frame);
+		observer.disconnect();
+	};
 }
