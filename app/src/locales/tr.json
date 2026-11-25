@@ -501,6 +501,26 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"artworkSection": "Görseller",
+		"movesSection": "Hareketler ve durumlar",
+		"outfitSection": "Kıyafet davranışı",
+		"replaceFrames": "Bu görünümün karelerini değiştir",
+		"technicalDetails": "Teknik ayrıntılar",
+		"openSprite": "{title} görselini büyüt",
+		"drawForMoves": "Eksik kareleri çiz",
+		"drawSelected": "Seçilenleri çiz",
+		"selectAllMoves": "Tümünü seç",
+		"clearSelection": "Seçimi temizle",
+		"drawMovesHelp": "Yalnızca eksik eşya karelerini çizer. PixelLab üretim için ücret alabilir.",
+		"repairView": "Bu görünümü onar",
+		"redrawView": "Bu görünümü yeniden çiz",
+		"sendBackward": "Arkaya gönder",
+		"bringForward": "Öne getir",
+		"makeAnother": "Yeni eşya oluştur",
+		"layerCategory": "Katman sırası {slot} kategorisine uygulanır.",
+		"inFrontOf": "{name} önünde",
+		"behind": "{name} arkasında",
+		"previewUnavailable": "Bu hareket için eşya görseli yok.",
 		"restoreStanding": {
 			"one": "Ayakta duruş görünümünü geri yükle",
 			"other": "Ayakta duruş görünümlerini geri yükle"

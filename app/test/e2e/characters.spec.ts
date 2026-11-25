@@ -235,7 +235,7 @@ test('Edit appearance makes reviewed character and equipment copies from saved p
 	await equipmentGroup(page, 'Head');
 	await pickItem(page, hat.name);
 	const details = await selectedItemDetails(page);
-	await openItemSection(details, 'Customize');
+	await openItemSection(details, 'Artwork');
 	await details.getByRole('button', { name: action }).click();
 	const editItem = edit.getByRole('button', { name: /^Edit item ·/ });
 	await expect(edit.getByRole('radio')).toHaveCount(0);
@@ -2137,7 +2137,8 @@ test('suspicious imported walking joints plan a priced frozen-frame alternative 
 	expect(planned.extension[0]).toMatchObject({ path: '/inpaint-v3', generations: 10 });
 	await pickItem(page, 'Leather vest');
 	const pane = await selectedItemDetails(page);
-	await expect(pane.getByRole('button', { name: /^Make for Walk/ })).toContainText('~10 gens');
+	await openItemSection(pane, 'Moves & States');
+	await expect(pane.getByRole('button', { name: /^Draw selected/ })).toContainText('~10 gens');
 	await pane.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
 	const frozen = api.locator('.peek-call').filter({ hasText: planned.extension[0].label });
 	await expect(frozen).toHaveCount(1);
@@ -2194,7 +2195,7 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 	const pane = await selectedItemDetails(page);
 	await expect(pane.locator('.badge.look')).toContainText('Needs a look');
 	// The notes sit in the quality checks disclosure, one intentional step from the summary.
-	const itemPane = page.getByRole('dialog', { name: 'Item', exact: true });
+	const itemPane = page.locator('dialog.item-detail[open]');
 	await openItemSection(itemPane, 'Quality checks');
 	await expect(
 		itemPane.getByText('Some lower clothing is missing compared with the standing design', {
@@ -2243,6 +2244,7 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 			},
 			{ projectId, items }
 		);
+	await openItemSection(pane, 'Quality checks');
 	const accept = pane.getByRole('button', { name: 'Accept as is', exact: true });
 	await stoppedMove('another-character', [before.id]);
 	await expect(accept).toBeEnabled();

@@ -501,6 +501,26 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"artworkSection": "Graphismes",
+		"movesSection": "Mouvements et états",
+		"outfitSection": "Comportement de la tenue",
+		"replaceFrames": "Remplacer les images de cette vue",
+		"technicalDetails": "Détails techniques",
+		"openSprite": "Agrandir {title}",
+		"drawForMoves": "Dessiner les images manquantes",
+		"drawSelected": "Dessiner la sélection",
+		"selectAllMoves": "Tout sélectionner",
+		"clearSelection": "Effacer la sélection",
+		"drawMovesHelp": "Dessine uniquement les images manquantes de l’objet. PixelLab peut facturer la génération.",
+		"repairView": "Réparer cette vue",
+		"redrawView": "Redessiner cette vue",
+		"sendBackward": "Reculer",
+		"bringForward": "Avancer",
+		"makeAnother": "Créer un nouvel objet",
+		"layerCategory": "L’ordre des calques s’applique à la catégorie {slot}.",
+		"inFrontOf": "Devant {name}",
+		"behind": "Derrière {name}",
+		"previewUnavailable": "Aucun graphisme pour cet objet dans ce mouvement.",
 		"restoreStanding": {
 			"one": "Restaurer la vue debout",
 			"other": "Restaurer les vues debout"

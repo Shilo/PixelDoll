@@ -501,6 +501,26 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"artworkSection": "Artwork",
+		"movesSection": "Moves & States",
+		"outfitSection": "Outfit behavior",
+		"replaceFrames": "Replace frames for this view",
+		"technicalDetails": "Technical details",
+		"openSprite": "Enlarge {title}",
+		"drawForMoves": "Draw missing frames",
+		"drawSelected": "Draw selected",
+		"selectAllMoves": "Select all",
+		"clearSelection": "Clear selection",
+		"drawMovesHelp": "Draws only missing item frames. PixelLab may charge for generation.",
+		"repairView": "Repair this view",
+		"redrawView": "Redraw this view",
+		"sendBackward": "Send backward",
+		"bringForward": "Bring forward",
+		"makeAnother": "Make a new item",
+		"layerCategory": "Layer order applies to the {slot} category.",
+		"inFrontOf": "In front of {name}",
+		"behind": "Behind {name}",
+		"previewUnavailable": "No item artwork for this move.",
 		"restoreStanding": {
 			"one": "Restore standing view",
 			"other": "Restore standing views"

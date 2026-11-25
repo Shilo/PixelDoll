@@ -492,6 +492,26 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"artworkSection": "图像",
+		"movesSection": "动作与状态",
+		"outfitSection": "穿戴行为",
+		"replaceFrames": "替换此视角的帧",
+		"technicalDetails": "技术详情",
+		"openSprite": "放大{title}",
+		"drawForMoves": "绘制缺失帧",
+		"drawSelected": "绘制选中项",
+		"selectAllMoves": "全选",
+		"clearSelection": "清除选择",
+		"drawMovesHelp": "仅绘制缺失的装备帧。PixelLab 可能收取生成费用。",
+		"repairView": "修复此视角",
+		"redrawView": "重绘此视角",
+		"sendBackward": "下移一层",
+		"bringForward": "上移一层",
+		"makeAnother": "新建装备",
+		"layerCategory": "图层顺序应用于{slot}类别。",
+		"inFrontOf": "位于{name}前方",
+		"behind": "位于{name}后方",
+		"previewUnavailable": "此动作没有装备图像。",
 		"restoreStanding": {
 			"other": "恢复站立视图"
 		},

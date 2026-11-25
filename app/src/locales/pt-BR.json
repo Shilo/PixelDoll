@@ -501,6 +501,26 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"artworkSection": "Arte",
+		"movesSection": "Movimentos e estados",
+		"outfitSection": "Comportamento do traje",
+		"replaceFrames": "Substituir quadros desta vista",
+		"technicalDetails": "Detalhes técnicos",
+		"openSprite": "Ampliar {title}",
+		"drawForMoves": "Desenhar quadros ausentes",
+		"drawSelected": "Desenhar seleção",
+		"selectAllMoves": "Selecionar tudo",
+		"clearSelection": "Limpar seleção",
+		"drawMovesHelp": "Desenha apenas os quadros ausentes do item. O PixelLab pode cobrar pela geração.",
+		"repairView": "Reparar esta vista",
+		"redrawView": "Redesenhar esta vista",
+		"sendBackward": "Enviar para trás",
+		"bringForward": "Trazer para frente",
+		"makeAnother": "Criar um novo item",
+		"layerCategory": "A ordem das camadas se aplica à categoria {slot}.",
+		"inFrontOf": "Na frente de {name}",
+		"behind": "Atrás de {name}",
+		"previewUnavailable": "Não há arte deste item para este movimento.",
 		"restoreStanding": {
 			"one": "Restaurar vista em pé",
 			"other": "Restaurar vistas em pé"

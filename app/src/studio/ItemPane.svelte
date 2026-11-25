@@ -10,7 +10,11 @@
 	import { displayMessage, displayNestedMessage, errorMessage } from '../lib/i18n.ts';
 	import { toast } from './state.svelte.ts';
 	import type { Message } from '../lib/message.ts';
-	import { displayDirectionInSentence, displayDirectionShort } from './displayDirection.ts';
+	import {
+		displayDirection,
+		displayDirectionInSentence,
+		displayDirectionShort
+	} from './displayDirection.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayKey } from './displayKey.ts';
 	import { coverageGaps, moveDirs } from '../lib/dress/dress.ts';
@@ -32,7 +36,8 @@
 	} from './create.ts';
 	import { setupRedoMoves } from '../lib/rig/setup.ts';
 	import { extendable } from './movePricing.ts';
-	import { seeded, fillMissingMovesOffer, itemClipDrawn } from './itemGeneration.ts';
+	import { seeded, itemClipDrawn } from './itemGeneration.ts';
+	import type { Img } from '../lib/image/png.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { app } from '../lib/app.svelte.ts';
 	import { accountTier, tierDecision } from '../lib/pixellab/plans.ts';
@@ -43,6 +48,7 @@
 	import ApiPeek from './ApiPeek.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import Sprite from './Sprite.svelte';
+	import SpritePreview from './SpritePreview.svelte';
 	import {
 		HEALTH_LABEL,
 		healthOf,
@@ -62,8 +68,9 @@
 		view,
 		wear,
 		toggleHide,
+		showHiddenItem,
 		moveLayer,
-		canMoveLayer,
+		itemLayerNeighbors,
 		resetLayer,
 		removeItem,
 		isDemo,
@@ -89,8 +96,10 @@
 		ArrowDown,
 		Check,
 		ChevronRight,
-		CircleCheck,
+		EyeOff,
 		Grid2x2,
+		Layers2,
+		Maximize,
 		Palette,
 		RefreshCw,
 		Trash,
@@ -129,21 +138,24 @@
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	const hiddenNow = $derived(m && it ? hiddenSlots(m, equipped(m, doc.items)).has(it.slot) : false);
 	// The worn item that hides this one, so the summary can show what is hiding it and offer to show it again.
-	const hider = $derived(
+	const hiders = $derived(
 		m && it
-			? equipped(m, doc.items).find(
-					(o) => o.id !== it.id && o.slot !== it.slot && hidesOf(m, o).includes(it.slot)
-				)
-			: undefined
+			? equipped(m, doc.items).filter((o) => o.slot !== it.slot && hidesOf(m, o).includes(it.slot))
+			: []
 	);
-	const canForward = $derived(!!it && canMoveLayer(it.id, 1));
-	const canBackward = $derived(!!it && canMoveLayer(it.id, -1));
+	const neighbors = $derived(it ? itemLayerNeighbors(it.id) : null);
 	const health = $derived(m && it ? healthOf(m, it) : 'demo');
 	const anim = $derived(m?.rig.animations.find((a) => a.id === ui.anim));
 	const made = $derived(m ? moveDirs(m, ui.anim) : []);
 	// Cache a shared crop across every frame and direction, rather than resizing the strip on each playback tick.
 	const previews = $derived(view.project && it ? itemPreviewFrames(view.project, it, ui.anim) : []);
 	const strip = $derived(previews[ui.frame % previews.length] ?? []);
+	const artwork = $derived(
+		m?.rig.directions.some(
+			(direction) => made.includes(direction.id) && !moveGaps.includes(direction.id)
+		) ?? false
+	);
+	let expanded = $state.raw<{ image: Img; title: string } | null>(null);
 	const k = $derived(
 		strip.length
 			? Math.max(1, Math.floor(Math.min(60 / strip[0].w, 72 / strip[0].h, 6) * ui.dpr))
@@ -160,7 +172,7 @@
 	// so these derived values read it to refresh the chips and Reset after toggleHide or moveLayer.
 	const hides = $derived.by(() => {
 		void doc.rev;
-		return it ? (it.hides ?? m?.slots.find((s) => s.id === it.slot)?.hides ?? []) : [];
+		return m && it ? hidesOf(m, it) : [];
 	});
 	const tucks = $derived.by(() => {
 		void doc.rev;
@@ -242,15 +254,31 @@
 	const unposedMoves = $derived(
 		m && it && !isDemo() ? unposedItemMoves(m, it.id, currentItemDrawing(), redo) : []
 	);
-	let chosenMove = $state('');
-	const missingMove = $derived(
-		missingMoves.find((s) => s.id === chosenMove) ??
-			missingMoves.find((s) => s.id === ui.anim) ??
-			missingMoves[0]
+	const moveOptions = $derived(
+		m ? missingMoves.map((spec) => ({ spec, offer: itemMoveOffer(m, [spec], redo) })) : []
 	);
-	const missingOffer = $derived(m && missingMove ? itemMoveOffer(m, [missingMove], redo) : null);
+	const availableMoves = $derived(
+		moveOptions.filter(({ offer }) => offer.gens != null).map(({ spec }) => spec.id)
+	);
+	let chosenMoves = $state<string[] | null>(null);
+	const selectedMoves = $derived(
+		chosenMoves ??
+			availableMoves.filter((id, index) =>
+				availableMoves.includes(ui.anim) ? id === ui.anim : index === 0
+			)
+	);
+	const selectedSpecs = $derived(
+		missingMoves.filter(
+			(spec) => selectedMoves.includes(spec.id) && availableMoves.includes(spec.id)
+		)
+	);
+	const missingOffer = $derived(
+		m && selectedSpecs.length ? itemMoveOffer(m, selectedSpecs, redo) : null
+	);
 	const missingTier = $derived(offerTier(missingOffer));
-	const missingName = $derived(missingMove ? displayMove(missingMove.id, moveRefs) : '');
+	function selectMove(id: string, checked: boolean) {
+		chosenMoves = checked ? [...selectedMoves, id] : selectedMoves.filter((move) => move !== id);
+	}
 	// Every move and State the body has views for, marked drawn or missing for this item (same rules as clipMissingItems).
 	const coverage = $derived(
 		m && it
@@ -261,26 +289,15 @@
 			: []
 	);
 	const coverageMissing = $derived(coverage.filter((clip) => !clip.drawn).length);
-	// One combined estimate for every missing move this item has, so a character with several new moves fills them together.
-	const fillOffer = $derived(m ? fillMissingMovesOffer(m, missingMoves, redo) : null);
-	const fillTier = $derived(offerTier(fillOffer));
 	function makeMissing() {
-		if (!missingOffer?.specs.length) return;
+		if (!missingOffer?.specs.length || missingOffer.gens == null || tierBlocked(missingTier))
+			return;
 		const projectId = doc.id,
 			specs = seeded($state.snapshot(missingOffer.specs));
 		withKey(() => {
 			void queueMoves(projectId, specs);
 			ui.sheet = 'move';
 		}, missingTier);
-	}
-	function fillMissing() {
-		if (!fillOffer?.specs.length) return;
-		const projectId = doc.id,
-			specs = seeded($state.snapshot(fillOffer.specs));
-		withKey(() => {
-			void queueMoves(projectId, specs);
-			ui.sheet = 'move';
-		}, fillTier);
 	}
 	let colorPlan = $state<ItemPaletteRepairPlan | null>(null);
 	// The pending-work notice explains a disabled action, so it shows only while one it covers is actually waiting.
@@ -354,10 +371,6 @@
 	const restorable = $derived(
 		m && it && !isDemo() ? restorableViews(m, it).map((key) => key.split('/')[1]) : []
 	);
-	// The paid repair leads only when the item has something to repair in the shown view and nothing free can fix it.
-	const repairLeads = $derived(
-		!restorable.length && (health === 'look' || moveGaps.includes(sourceDir))
-	);
 	// A re-fit's checks were measured on the source body; its fit notes replace them. An unfitted copy keeps its source's pixels,
 	// so the source's findings (a grip in the wrong hand) still describe them.
 	const reasons = $derived(
@@ -405,19 +418,38 @@
 	}
 </script>
 
-<Sheet title={t('studio.titleItem')} onclose={() => (ui.sheet = null)}>
+{#snippet sectionTitle(label: string, note?: string)}
+	<summary>
+		<ChevronRight size={16} aria-hidden="true" />
+		<span>{label}</span>
+		{#if note}<span class="section-note muted">{note}</span>{/if}
+	</summary>
+{/snippet}
+
+<Sheet
+	title={it?.name ?? t('studio.titleItem')}
+	className="item-detail"
+	onclose={() => (ui.sheet = null)}
+>
+	{#snippet heading()}
+		{#if it}
+			<div class="item-meta">
+				<span>{slotName(it.slot)}</span>
+				{#if health !== 'demo' || isDemo()}
+					<span class="badge {health}">{displayMessage(HEALTH_LABEL[health])}</span>
+				{/if}
+			</div>
+		{/if}
+	{/snippet}
 	{#snippet developer()}
 		<ApiPeek
 			targets={[
-				...(it && !(freeFrames && it.copiedFrom && !isDemo()) && missingMoves.length
+				...(m && it && !(freeFrames && it.copiedFrom && !isDemo()) && missingOffer
 					? [
 							{
 								scope: 'item-missing-move',
-								label: t('itemPane.labelMakeNameForMissingName', { name: it.name, missingName }),
-								plan:
-									m && missingOffer?.specs[0]
-										? movePlan({ manifest: m }, missingOffer.specs[0])
-										: []
+								label: t('itemPane.drawForMoves'),
+								plan: missingOffer.specs.flatMap((spec) => movePlan({ manifest: m }, spec))
 							}
 						]
 					: []),
@@ -441,67 +473,385 @@
 			copyId={it?.id}
 		/>
 	{/snippet}
-	{#if m && it && view.project}
-		<div class="insp-body">
-			<header class="insp-head">
-				<h2 class="insp-title">{it.name}</h2>
-				<p class="insp-sub">
-					<span>{slotName(it.slot)}</span>
-					<span class="badge" data-worn={on || undefined}
-						>{on ? t('wardrobe.wearing') : t('itemPane.notWorn')}</span
-					>
-					{#if health !== 'demo' || isDemo()}<span class="badge {health}"
-							>{#if health === 'clean'}<CircleCheck
-									size={12}
-								/>{:else if health === 'unfitted'}<Puzzle
-									size={12}
-								/>{:else if health !== 'demo'}<TriangleAlert size={12} />{/if}{displayMessage(
-								HEALTH_LABEL[health]
-							)}</span
-						>{/if}
-					{#if hiddenNow}<span class="badge">{t('itemPane.hiddenByAnotherItem')}</span>{/if}
-				</p>
-				{#if hiddenNow && hider}
-					<p class="badge-line small">
-						<span>{t('itemPane.hiddenByItem', { name: hider.name })}</span>
-						<button
-							class="bu-action btn sm plain"
-							data-variant="quiet"
-							onclick={() => toggleHide(hider.id, it.slot)}
-							>{t('itemPane.showName', { name: it.name })}</button
-						>
-					</p>
-				{/if}
-			</header>
 
-			{#if anim}
-				<div
-					class="dir-strip"
-					style:--preview-width="{Math.max(60, ((strip[0]?.w ?? 0) * k) / ui.dpr)}px"
-					aria-label={t('itemPane.nameInEveryDirection', { name: it.name })}
+	{#if m && it && view.project}
+		<div class="item-workbench">
+			<div class="preview-toolbar">
+				<span class="preview-move">{moveName}</span>
+				<button
+					class="bu-action btn"
+					data-variant={on ? 'outline' : 'primary'}
+					data-item-wear-toggle
+					onclick={() => wear(it.id)}
 				>
+					{on ? t('common.takeOff') : t('common.wear')}
+				</button>
+			</div>
+			{#if strip.length && artwork}
+				<div class="item-views" aria-label={t('itemPane.nameInEveryDirection', { name: it.name })}>
 					{#each m.rig.directions as d, i (d.id)}
-						{#if strip[i] && made.includes(d.id)}<figure>
-								<Sprite
-									img={strip[i]}
-									{k}
-									w={strip[i].w}
-									h={strip[i].h}
-									limit={72}
-									label={t('itemPane.labelNameFacingId', {
-										name: it.name,
-										id: directionName(d.id)
-									})}
-								/>{displayDirectionShort(d.id)}
-							</figure>{/if}
+						{@const frame = strip[i]}
+						{@const title = t('itemPane.labelNameFacingId', {
+							name: it.name,
+							id: displayDirection(d.id)
+						})}
+						{#if frame && made.includes(d.id) && !moveGaps.includes(d.id)}
+							<button
+								class="bu-action item-view"
+								data-variant="quiet"
+								aria-haspopup="dialog"
+								aria-label={t('itemPane.openSprite', { title })}
+								onclick={() => (expanded = { image: frame, title })}
+							>
+								<Sprite img={frame} {k} limit={68} label={title} />
+								<span>{displayDirectionShort(d.id)}</span>
+								<Maximize size={12} aria-hidden="true" />
+							</button>
+						{/if}
 					{/each}
 				</div>
+			{:else}
+				<p class="muted small">{t('itemPane.previewUnavailable')}</p>
 			{/if}
+			{#if hiddenNow && hiders.length}
+				<div class="hidden-row">
+					<EyeOff size={16} aria-hidden="true" />
+					<span
+						>{t('itemPane.hiddenByItem', {
+							name: formatList(hiders.map((hider) => hider.name))
+						})}</span
+					>
+					<button
+						class="bu-action btn plain"
+						data-variant="quiet"
+						onclick={() => showHiddenItem(it.slot)}
+						>{t('itemPane.showName', { name: it.name })}</button
+					>
+				</div>
+			{/if}
+			{#if it.unfitted}<p class="notice warn small">
+					<Puzzle size={14} />{unfitText(
+						m,
+						it.copiedFrom?.name ?? t('studioModel.anotherCharacter'),
+						it.unfitted,
+						t
+					)}{#if !isDemo()}{' '}{t('itemPane.remakeToFit', { name: m.name })}{/if}
+				</p>{/if}
+			{#if health === 'stale'}<p class="notice warn small">
+					<TriangleAlert size={14} />{t('itemPane.madeForAnotherBodyItMayNot')}
+				</p>{/if}
 
-			{#if coverage.length || designReasons.length || reasons.length || notes.length}
-				<details class="disclosure">
-					<summary><ChevronRight size={14} />{t('itemPane.qualityChecks')}</summary>
+			{#if moveGaps.length}<p class="notice warn small">
+					<TriangleAlert size={14} />{t('itemPane.moveGaps', {
+						move: moveName,
+						directions:
+							getLocale() === 'en' ? moveGaps.join(', ') : formatList(moveGaps.map(directionName))
+					})}{#if remakeOnly && !isDemo() && !freeFrames}
+						{t('itemPane.remakeAllMoves', { name: m.name })}{/if}
+				</p>{/if}
+
+			<details class="bu-details item-disclosure" open={restorable.length > 0}>
+				{@render sectionTitle(t('itemPane.artworkSection'))}
+				<div class="stack">
+					<div class="editor-actions">
+						{#if recolorable}
+							<!-- Colors live in the Colors tab; this opens it on the item's own section. -->
+							<button
+								class="bu-action btn plain recolor-link"
+								data-variant="quiet"
+								onclick={recolor}><Palette size={14} />{t('itemPane.recolor')}</button
+							>
+						{/if}
+						<button
+							class="bu-action btn plain"
+							data-variant="quiet"
+							onclick={() => openFrames(it.id)}
+							><Grid2x2 size={14} />{openerLabel(t('fixFrames.open'))}<SurfaceChevron /></button
+						>
+					</div>
+					{#if !isDemo() && (it.prompt || canEditItemAppearance(m, it))}
+						<div class="item-creation">
+							<h3>{t('itemPane.makeAnother')}</h3>
+							<div class="editor-actions">
+								{#if !isDemo() && canEditItemAppearance(m, it)}
+									<button
+										class="bu-action btn plain"
+										data-variant="quiet"
+										aria-haspopup="dialog"
+										onclick={() => openAppearance(doc.id, it.id, 'item')}
+										>{t('appearance.action')}<SurfaceChevron /></button
+									>
+								{/if}
+								{#if !isDemo() && it.prompt}
+									<!-- A fitted copy is remade for this body like any shared item that does not fit it, named from its description. -->
+									<button
+										class="bu-action btn plain"
+										data-variant="quiet"
+										onclick={() =>
+											openNewItem(it.slot, {
+												slot: it.slot,
+												prompt: it.prompt,
+												route: it.route
+											})}
+										><RefreshCw size={14} />{openerLabel(
+											remakeOnly
+												? t('itemMenu.makeOneForName', { name: m.name })
+												: t('itemMenu.createVariant')
+										)}<SurfaceChevron /></button
+									>
+								{/if}
+							</div>
+						</div>
+					{/if}
+					{#if restorable.length}
+						<div class="field">
+							<button
+								class="bu-action btn"
+								data-variant="primary"
+								disabled={!!shared.adding}
+								onclick={() => restoreFromDesign(it.id)}
+								>{t('itemPane.restoreStanding', { count: restorable.length })}
+								<span class="cost">{t('common.free')}</span></button
+							>
+							<p class="faint small">
+								{t('itemPane.restoreStandingHint', {
+									count: restorable.length,
+									directions: formatList(restorable.map(directionName))
+								})}
+							</p>
+						</div>
+					{/if}
+					{#if !isDemo() && colorPlan}
+						<div class="field">
+							<button
+								class="bu-action btn"
+								data-variant="outline"
+								disabled={colorBusy || repairBusy}
+								onclick={matchColors}
+								>{colorBusy ? t('itemPane.matchingColors') : t('itemPane.matchItemColors')}
+								<span class="cost">{t('common.free')}</span></button
+							>
+							<p class="faint small">
+								{t('itemPane.colorMatchNote', {
+									pixels: t('itemPane.pixels', {
+										count: colorPlan.changedPixels,
+										n: number(colorPlan.changedPixels)
+									}),
+									move: moveName,
+									count: colorPlan.changedFrames.length,
+									n: number(colorPlan.changedFrames.length),
+									direction:
+										getLocale() === 'en' ? sourceDir.replaceAll('-', ' ') : directionName(sourceDir)
+								})}
+								{#if sourceDir !== ui.dir}{t('itemPane.itsMirroredViewsUpdateToo')}{/if}
+								{t('itemPane.colorMatchFixed')}
+								{#if colorPlan.missingFrames.length}{t('itemPane.colorMatchMissing', {
+										frames: formatList(colorPlan.missingFrames.map((frame) => frame + 1))
+									})}{/if}
+								{#if colorPlan.unmatchedPixels}{t('itemPane.colorMatchUnmatched', {
+										count: colorPlan.unmatchedPixels,
+										n: number(colorPlan.unmatchedPixels)
+									})}{/if}
+								{t('itemPane.colorMatchFree')}
+							</p>
+						</div>
+					{/if}
+					{#if colorError}<p class="notice bad small">
+							<TriangleAlert size={14} />{displayMessage(colorError)}<ReportButton
+								error={colorError}
+							/>
+						</p>{/if}
+					{#if colorDone}<p class="notice small">
+							{t('itemPane.colorsMatched', {
+								pixels: t('itemPane.pixels', {
+									count: colorDone.pixels,
+									n: number(colorDone.pixels)
+								}),
+								frames: t('itemPane.frames', {
+									count: colorDone.frames,
+									n: number(colorDone.frames)
+								})
+							})}
+						</p>{/if}
+					{#if !isDemo() && repairSpec}
+						<details class="bu-details item-disclosure replace-frames">
+							{@render sectionTitle(t('itemPane.replaceFrames'))}
+							<div class="stack">
+								<p class="faint small">
+									{t(
+										m?.rig.directions.some((direction) => direction.mirrorOf === sourceDir)
+											? 'itemPane.updateNoteMirrors'
+											: 'itemPane.updateNote',
+										{
+											move: moveName,
+											direction:
+												getLocale() === 'en'
+													? sourceDir.replaceAll('-', ' ')
+													: directionName(sourceDir)
+										}
+									)}
+								</p>
+								{#each [{ id: 'repair', label: t('itemPane.repairView'), feature: t('itemPane.repairFeature'), offer: repairOffer, help: t('itemPane.repairHelp') }, { id: 'redraw', label: t('itemPane.redrawView'), feature: t('itemPane.redrawFeature'), offer: redrawOffer, help: t('itemPane.redrawHelp') }] as choice (choice.id)}
+									{@const tier = offerTier(choice.offer)}
+									{@const spec = choice.offer?.specs[0]}
+									{@const plan = m && spec ? movePlan({ manifest: m }, spec) : []}
+									{@const requests = plan.filter((call) => call.method === 'POST').length}
+									<span class="api-action">
+										<button
+											class="bu-action btn"
+											data-variant="outline"
+											disabled={repairBusy || choice.offer?.gens == null || tierBlocked(tier)}
+											aria-describedby={tierBlocked(tier)
+												? `item-${choice.id}-tier`
+												: `item-${choice.id}-help item-repair-billing`}
+											onclick={() => repairFrames(choice.offer, tier)}
+											>{choice.label}
+											<span class="cost"
+												>{choice.offer?.gens == null
+													? t('common.unavailable')
+													: t('moves.estimate', {
+															gens: number(Math.ceil(choice.offer.gens))
+														})}</span
+											></button
+										>
+									</span>
+									<p class="faint small" id={`item-${choice.id}-help`}>
+										{choice.help}{#if requests > 1}
+											{t(
+												choice.id === 'repair'
+													? 'itemPane.repairRequests'
+													: 'itemPane.redrawRequests',
+												{
+													count: requests,
+													n: number(requests)
+												}
+											)}{/if}
+										{#if choice.id === 'redraw' && redrawOffer?.gens != null && repairOffer?.gens != null && redrawOffer.gens < repairOffer.gens}
+											{@const saved = Math.ceil(repairOffer.gens) - Math.ceil(redrawOffer.gens)}
+											{t('itemPane.redrawSaves', { count: saved, n: number(saved) })}
+										{:else if choice.id === 'redraw' && redrawOffer?.gens != null && repairOffer?.gens != null && redrawOffer.gens > repairOffer.gens}
+											{@const extra = Math.ceil(redrawOffer.gens) - Math.ceil(repairOffer.gens)}
+											{t('itemPane.redrawCostsMore', { count: extra, n: number(extra) })}
+										{/if}
+									</p>
+									{#if choice.offer?.error}<p class="notice warn small" role="status">
+											{displayMessage(choice.offer.error)}
+										</p>{/if}
+									{#if tier}<TierNotice
+											id={`item-${choice.id}-tier`}
+											minimumTier={tier}
+											feature={choice.feature}
+										/>{/if}
+								{/each}
+								<p class="faint small" id="item-repair-billing">{t('itemPane.billingNote')}</p>
+							</div>
+						</details>
+					{/if}
+				</div>
+			</details>
+
+			{#if coverage.length || missingMoves.length || unposedMoves.length || (freeFrames && it.copiedFrom && !isDemo())}
+				<details class="bu-details item-disclosure" open={!artwork && missingMoves.length > 0}>
+					{@render sectionTitle(
+						t('itemPane.movesSection'),
+						coverageMissing
+							? t('itemPane.coverageMissing', {
+									count: coverageMissing,
+									n: number(coverageMissing)
+								})
+							: undefined
+					)}
 					<div class="stack">
+						{#if freeFrames && it.copiedFrom && !isDemo()}
+							<!-- An exact copy whose source item gained frames for this body since: copied over for free, not made again. -->
+							<div class="field">
+								<button
+									class="bu-action btn"
+									data-variant="outline"
+									disabled={!!shared.adding}
+									onclick={() => copyFromSource(it.id)}
+									>{t('itemPane.copyFrom', { name: it.copiedFrom.name })}
+									<span class="cost">{t('common.free')}</span></button
+								>
+								<p class="faint small">
+									{t('itemPane.copyFrames', {
+										from: it.copiedFrom.name,
+										name: m.name,
+										count: freeFrames,
+										n: number(freeFrames)
+									})}
+								</p>
+							</div>
+						{/if}
+
+						{#if missingMoves.length && !(freeFrames && it.copiedFrom && !isDemo())}
+							<fieldset class="move-picker">
+								<legend>{t('itemPane.drawForMoves')}</legend>
+								{#if availableMoves.length > 1}
+									{@const allSelected = availableMoves.every((id) => selectedMoves.includes(id))}
+									<button
+										type="button"
+										class="bu-action btn sm plain selection-action"
+										data-variant="quiet"
+										onclick={() => (chosenMoves = allSelected ? [] : [...availableMoves])}
+									>
+										{t(allSelected ? 'itemPane.clearSelection' : 'itemPane.selectAllMoves')}
+									</button>
+								{/if}
+								{#each moveOptions as { spec, offer } (spec.id)}
+									<label class="move-choice bu-check">
+										<input
+											type="checkbox"
+											checked={selectedSpecs.some((move) => move.id === spec.id)}
+											disabled={offer.gens == null}
+											onchange={(event) => selectMove(spec.id, event.currentTarget.checked)}
+										/>
+										<span
+											>{displayMove(spec.id, moveRefs)}
+											{#if offer.error}<small class="muted">{displayMessage(offer.error)}</small
+												>{/if}
+										</span>
+										<span class="muted"
+											>{offer.gens == null
+												? t('common.unavailable')
+												: t('moves.estimate', { gens: number(Math.ceil(offer.gens)) })}</span
+										>
+									</label>
+								{/each}
+							</fieldset>
+							{#if missingOffer?.error}<p class="notice warn small" role="status">
+									{displayMessage(missingOffer.error)}
+								</p>{/if}
+							{#each missingOffer?.unposed ?? [] as note, i (i)}
+								<p class="notice warn small">{displayNestedMessage(note)}</p>
+							{/each}
+							<PoseIssues issues={missingOffer?.poseIssues ?? []} />
+							{#if missingTier}<TierNotice
+									id="item-missing-tier"
+									minimumTier={missingTier}
+									feature={t('itemPane.makingMoreMoves')}
+								/>{/if}
+							<div class="paid-action">
+								<p class="muted small" id="item-missing-help">{t('itemPane.drawMovesHelp')}</p>
+								<button
+									class="bu-action btn"
+									data-variant="primary"
+									disabled={missingOffer?.gens == null || tierBlocked(missingTier)}
+									aria-describedby={tierBlocked(missingTier)
+										? 'item-missing-tier'
+										: 'item-missing-help'}
+									onclick={makeMissing}
+								>
+									{t('itemPane.drawSelected')}
+									{#if missingOffer?.gens != null}<span class="cost"
+											>{t('moves.estimate', { gens: number(Math.ceil(missingOffer.gens)) })}</span
+										>{/if}
+								</button>
+							</div>
+						{/if}
+						{#each unposedMoves as { note }, i (i)}<p class="notice warn small">
+								{displayNestedMessage(note)}
+							</p>{/each}
 						{#if coverage.length}
 							<div class="field">
 								<span class="sec-title">{t('itemPane.coverageTitle')}</span>
@@ -531,7 +881,87 @@
 								</p>
 							</div>
 						{/if}
+					</div>
+				</details>
+			{/if}
 
+			<details class="bu-details item-disclosure">
+				{@render sectionTitle(t('itemPane.outfitSection'))}
+				<div class="stack outfit-settings">
+					<section class="stack" aria-label={t('itemPane.layerOrder')}>
+						<div class="layer-heading">
+							<h3><Layers2 size={16} aria-hidden="true" />{t('itemPane.layerOrder')}</h3>
+							{#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(ladder)}
+								<button
+									class="bu-action btn sm plain"
+									data-variant="quiet"
+									onclick={() => resetLayer(it.id, ladder)}>{t('itemPane.reset')}</button
+								>
+							{/if}
+						</div>
+						<div class="layer-actions">
+							<button
+								class="bu-action btn"
+								data-variant="outline"
+								disabled={!neighbors?.behind}
+								onclick={() => moveLayer(it.id, -1, onlyDir)}
+								><ArrowDown size={16} />{t('itemPane.sendBackward')}</button
+							>
+							<button
+								class="bu-action btn"
+								data-variant="outline"
+								disabled={!neighbors?.ahead}
+								onclick={() => moveLayer(it.id, 1, onlyDir)}
+								><ArrowUp size={16} />{t('itemPane.bringForward')}</button
+							>
+						</div>
+						{#if hiddenNow}
+							<p class="muted small">{t('itemPane.layerHiddenHint')}</p>
+						{:else}
+							<p class="muted small">{t('itemPane.layerCategory', { slot: slotName(it.slot) })}</p>
+							{#if neighbors?.behind || neighbors?.ahead}
+								<div class="layer-position muted small" aria-live="polite">
+									{#if neighbors.behind}<span
+											>{t('itemPane.inFrontOf', { name: neighbors.behind })}</span
+										>{/if}
+									{#if neighbors.ahead}<span>{t('itemPane.behind', { name: neighbors.ahead })}</span
+										>{/if}
+								</div>
+							{/if}
+						{/if}
+						<label class="switch-row bu-check">
+							<span>{t('itemPane.onlyFacing', { direction: displayDirection(ui.dir) })}</span>
+							<input class="bu-switch" type="checkbox" role="switch" bind:checked={onlyDir} />
+						</label>
+					</section>
+					{#if others.length}
+						<section class="stack visibility-settings" aria-label={t('itemPane.whenWornHide')}>
+							<h3><EyeOff size={16} aria-hidden="true" />{t('itemPane.whenWornHide')}</h3>
+							<div class="visibility-list" role="group" aria-label={t('itemPane.whenWornHide')}>
+								{#each others as slot (slot.id)}
+									<label class="switch-row bu-check">
+										<span>{slotName(slot.id)}</span>
+										<input
+											class="bu-switch"
+											type="checkbox"
+											role="switch"
+											checked={hides.includes(slot.id)}
+											onchange={() => toggleHide(it.id, slot.id)}
+										/>
+									</label>
+								{/each}
+							</div>
+							{#if tucks.length}<p class="muted small">
+									{t('itemPane.tuckNote', { slots: formatList(tucks.map(slotName)) })}
+								</p>{/if}
+						</section>
+					{/if}
+				</div>
+			</details>
+			{#if designReasons.length || reasons.length || notes.length || health === 'look' || health === 'accepted' || pendingBlocks}
+				<details class="bu-details item-disclosure">
+					{@render sectionTitle(t('itemPane.qualityChecks'))}
+					<div class="stack">
 						<!-- A re-fit names its source's design findings among its fit notes, on this body's frames. -->
 						<!-- An unfitted copy keeps its source's pixels, so the source's accepted design findings still describe them. -->
 						{#if designReasons.length && !it.refit}
@@ -572,439 +1002,64 @@
 								</ul>
 							</div>
 						{/if}
-					</div>
-				</details>
-			{/if}
-			{#if !isDemo() && pendingBlocks}
-				<p class="notice small" role="status">
-					{t('itemPane.pendingWorkBusy')}
-					<button
-						class="bu-action btn sm plain"
-						data-variant="quiet"
-						onclick={() => void openPendingWork({ flows: true })}
-						>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
-					>
-				</p>
-			{/if}
-			{#if it.unfitted}<p class="notice warn small">
-					<Puzzle size={14} />{unfitText(
-						m,
-						it.copiedFrom?.name ?? t('studioModel.anotherCharacter'),
-						it.unfitted,
-						t
-					)}{#if !isDemo()}{' '}{t('itemPane.remakeToFit', { name: m.name })}{/if}
-				</p>{/if}
-			<!-- A re-fit's issues are its fit, which only a new item for this body fixes: nothing to accept. -->
-			{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail')}
-				<div class="field">
-					<!-- "Accept it as it is" is not on offer when keeping is refused, so only the refusal speaks. -->
-					{#if !(gaps.length && keepRefusal)}<p class="notice warn small">
-							{t('itemPane.checksFoundIssuesNoPaidRetryWas')}
-						</p>{/if}
-					{#if gaps.length && keepRefusal}
-						<!-- Says why it cannot be kept as it is: the missing frames are the way on, offered below. -->
-						<p class="small">{displayMessage(errorMessage(keepRefusal))}</p>
-					{:else if gaps.length}<button
-							class="bu-action btn"
-							data-variant="outline"
-							disabled={acceptingIssues || acceptWaits}
-							onclick={() => acceptIssues(true)}>{t('itemPane.keepWithoutMoves')}</button
-						>
-						<p class="faint small">
-							{t('itemPane.keepWithoutMovesDetail', {
-								moves: formatList(keepWithout.map((move) => displayMove(move, moveRefs)))
-							})}
-						</p>
-					{:else}<button
-							class="bu-action btn"
-							data-variant="outline"
-							disabled={acceptingIssues || acceptWaits}
-							onclick={() => acceptIssues()}>{t('itemPane.acceptAsIs')}</button
-						>
-						<p class="faint small">
-							{t('itemPane.acceptsTheCurrentArtworkWithoutSpendingCredits')}
-						</p>{/if}
-					{#if acceptanceError}<p class="notice bad small" role="alert">
-							{displayMessage(acceptanceError)}<ReportButton error={acceptanceError} />
-						</p>{/if}
-				</div>
-			{:else if health === 'accepted'}
-				<p class="muted small">{t('itemPane.youAcceptedThisArtworkWithItsRecorded')}</p>
-			{/if}
-			{#if moveGaps.length}<p class="notice warn small">
-					<TriangleAlert size={14} />{t('itemPane.moveGaps', {
-						move: moveName,
-						directions:
-							getLocale() === 'en' ? moveGaps.join(', ') : formatList(moveGaps.map(directionName))
-					})}{#if remakeOnly && !isDemo() && !freeFrames}
-						{t('itemPane.remakeAllMoves', { name: m.name })}{/if}
-				</p>{/if}
-			{#if restorable.length}
-				<div class="field">
-					<button
-						class="bu-action btn"
-						data-variant="primary"
-						disabled={!!shared.adding}
-						onclick={() => restoreFromDesign(it.id)}
-						>{t('itemPane.restoreStanding', { count: restorable.length })}
-						<span class="cost">{t('common.free')}</span></button
-					>
-					<p class="faint small">
-						{t('itemPane.restoreStandingHint', {
-							count: restorable.length,
-							directions: formatList(restorable.map(directionName))
-						})}
-					</p>
-				</div>
-			{/if}
-			{#if freeFrames && it.copiedFrom && !isDemo()}
-				<!-- An exact copy whose source item gained frames for this body since: copied over for free, not made again. -->
-				<div class="field">
-					<button
-						class="bu-action btn"
-						data-variant="outline"
-						disabled={!!shared.adding}
-						onclick={() => copyFromSource(it.id)}
-						>{t('itemPane.copyFrom', { name: it.copiedFrom.name })}
-						<span class="cost">{t('common.free')}</span></button
-					>
-					<p class="faint small">
-						{t('itemPane.copyFrames', {
-							from: it.copiedFrom.name,
-							name: m.name,
-							count: freeFrames,
-							n: number(freeFrames)
-						})}
-					</p>
-				</div>
-			{:else if missingMoves.length}
-				<div class="field">
-					{#if missingMoves.length > 1}<label class="field"
-							><span class="label small">{t('itemPane.generateItemForMove')}</span><select
-								class="bu-input input"
-								value={missingMove?.id}
-								onchange={(e) => (chosenMove = e.currentTarget.value)}
-								>{#each missingMoves as move (move.id)}<option value={move.id}
-										>{displayMove(move.id, moveRefs)}</option
-									>{/each}</select
-							></label
-						>{/if}
-					<span class="api-action"
-						><button
-							class="bu-action btn"
-							data-variant="outline"
-							disabled={missingOffer?.gens == null || tierBlocked(missingTier)}
-							aria-describedby={tierBlocked(missingTier) ? 'item-missing-tier' : undefined}
-							onclick={makeMissing}
-							>{t('itemPane.makeFor', { move: missingName })}
-							<span class="cost"
-								>{missingOffer?.gens == null
-									? t('common.unavailable')
-									: t('moves.estimate', { gens: number(Math.ceil(missingOffer.gens)) })}</span
-							></button
-						></span
-					>
-					{#if missingOffer?.error}<p class="notice warn small" role="status">
-							{displayMessage(missingOffer.error)}
-						</p>{/if}
-					{#each missingOffer?.unposed ?? [] as note, i (i)}<p class="notice warn small">
-							{displayNestedMessage(note)}
-						</p>{/each}
-					<PoseIssues issues={missingOffer?.poseIssues ?? []} />
-					{#if missingTier}<TierNotice
-							id="item-missing-tier"
-							minimumTier={missingTier}
-							feature={t('itemPane.makingMoreMoves')}
-						/>{/if}
-					<p class="faint small">
-						{t('itemPane.generatesOnlyThisItemSMissingViews')}
-					</p>
-					{#if fillOffer}<div class="fill-missing">
-							<span class="api-action"
-								><button
-									class="bu-action btn"
-									data-variant="primary"
-									disabled={fillOffer.gens == null || tierBlocked(fillTier)}
-									aria-describedby={tierBlocked(fillTier) ? 'item-fill-tier' : 'item-fill-help'}
-									onclick={fillMissing}
-									>{t('itemPane.fillMissingMoves')}
-									<span class="cost"
-										>{fillOffer.gens == null
-											? t('common.unavailable')
-											: t('moves.estimate', {
-													gens: number(Math.ceil(fillOffer.gens))
-												})}</span
-									></button
-								></span
-							>
-							<p class="faint small" id="item-fill-help">
-								{t('itemPane.fillMissingHint', {
-									count: missingMoves.length,
-									n: number(missingMoves.length)
-								})}
-							</p>
-							{#if fillTier}<TierNotice
-									id="item-fill-tier"
-									minimumTier={fillTier}
-									feature={t('itemPane.makingMoreMoves')}
-								/>{/if}
-						</div>{/if}
-				</div>
-			{/if}
-			{#each unposedMoves as { note }, i (i)}<p class="notice warn small">
-					{displayNestedMessage(note)}
-				</p>{/each}
-			{#if health === 'stale'}<p class="notice warn small">
-					<TriangleAlert size={14} />{t('itemPane.madeForAnotherBodyItMayNot')}
-				</p>{/if}
-
-			{#if !isDemo() && repairSpec}
-				<div class="field">
-					<p class="faint small">
-						{t(
-							m?.rig.directions.some((direction) => direction.mirrorOf === sourceDir)
-								? 'itemPane.updateNoteMirrors'
-								: 'itemPane.updateNote',
-							{
-								move: moveName,
-								direction:
-									getLocale() === 'en' ? sourceDir.replaceAll('-', ' ') : directionName(sourceDir)
-							}
-						)}
-					</p>
-					{#each [{ id: 'repair', label: t('itemPane.repairItem'), feature: t('itemPane.repairFeature'), offer: repairOffer, help: t('itemPane.repairHelp') }, { id: 'redraw', label: t('itemPane.redrawItem'), feature: t('itemPane.redrawFeature'), offer: redrawOffer, help: t('itemPane.redrawHelp') }] as choice (choice.id)}
-						{@const tier = offerTier(choice.offer)}
-						{@const spec = choice.offer?.specs[0]}
-						{@const plan = m && spec ? movePlan({ manifest: m }, spec) : []}
-						{@const requests = plan.filter((call) => call.method === 'POST').length}
-						<span class="api-action">
-							<button
-								class="bu-action btn"
-								data-variant={choice.id === 'repair' && repairLeads ? 'primary' : 'outline'}
-								disabled={repairBusy || choice.offer?.gens == null || tierBlocked(tier)}
-								aria-describedby={tierBlocked(tier)
-									? `item-${choice.id}-tier`
-									: `item-${choice.id}-help item-repair-billing`}
-								onclick={() => repairFrames(choice.offer, tier)}
-								>{choice.label}
-								<span class="cost"
-									>{choice.offer?.gens == null
-										? t('common.unavailable')
-										: t('moves.estimate', { gens: number(Math.ceil(choice.offer.gens)) })}</span
-								></button
-							>
-						</span>
-						<p class="faint small" id={`item-${choice.id}-help`}>
-							{choice.help}{#if requests > 1}
-								{t(choice.id === 'repair' ? 'itemPane.repairRequests' : 'itemPane.redrawRequests', {
-									count: requests,
-									n: number(requests)
-								})}{/if}
-							{#if choice.id === 'redraw' && redrawOffer?.gens != null && repairOffer?.gens != null && redrawOffer.gens < repairOffer.gens}
-								{@const saved = Math.ceil(repairOffer.gens) - Math.ceil(redrawOffer.gens)}
-								{t('itemPane.redrawSaves', { count: saved, n: number(saved) })}
-							{:else if choice.id === 'redraw' && redrawOffer?.gens != null && repairOffer?.gens != null && redrawOffer.gens > repairOffer.gens}
-								{@const extra = Math.ceil(redrawOffer.gens) - Math.ceil(repairOffer.gens)}
-								{t('itemPane.redrawCostsMore', { count: extra, n: number(extra) })}
-							{/if}
-						</p>
-						{#if choice.offer?.error}<p class="notice warn small" role="status">
-								{displayMessage(choice.offer.error)}
-							</p>{/if}
-						{#if tier}<TierNotice
-								id={`item-${choice.id}-tier`}
-								minimumTier={tier}
-								feature={choice.feature}
-							/>{/if}
-					{/each}
-					<p class="faint small" id="item-repair-billing">{t('itemPane.billingNote')}</p>
-				</div>
-			{/if}
-
-			{#if !isDemo() && colorPlan}
-				<div class="field">
-					<button
-						class="bu-action btn"
-						data-variant="outline"
-						disabled={colorBusy || repairBusy}
-						onclick={matchColors}
-						>{colorBusy ? t('itemPane.matchingColors') : t('itemPane.matchItemColors')}
-						<span class="cost">{t('common.free')}</span></button
-					>
-					<p class="faint small">
-						{t('itemPane.colorMatchNote', {
-							pixels: t('itemPane.pixels', {
-								count: colorPlan.changedPixels,
-								n: number(colorPlan.changedPixels)
-							}),
-							move: moveName,
-							count: colorPlan.changedFrames.length,
-							n: number(colorPlan.changedFrames.length),
-							direction:
-								getLocale() === 'en' ? sourceDir.replaceAll('-', ' ') : directionName(sourceDir)
-						})}
-						{#if sourceDir !== ui.dir}{t('itemPane.itsMirroredViewsUpdateToo')}{/if}
-						{t('itemPane.colorMatchFixed')}
-						{#if colorPlan.missingFrames.length}{t('itemPane.colorMatchMissing', {
-								frames: formatList(colorPlan.missingFrames.map((frame) => frame + 1))
-							})}{/if}
-						{#if colorPlan.unmatchedPixels}{t('itemPane.colorMatchUnmatched', {
-								count: colorPlan.unmatchedPixels,
-								n: number(colorPlan.unmatchedPixels)
-							})}{/if}
-						{t('itemPane.colorMatchFree')}
-					</p>
-				</div>
-			{/if}
-			{#if colorError}<p class="notice bad small">
-					<TriangleAlert size={14} />{displayMessage(colorError)}<ReportButton error={colorError} />
-				</p>{/if}
-			{#if colorDone}<p class="notice small">
-					{t('itemPane.colorsMatched', {
-						pixels: t('itemPane.pixels', { count: colorDone.pixels, n: number(colorDone.pixels) }),
-						frames: t('itemPane.frames', { count: colorDone.frames, n: number(colorDone.frames) })
-					})}
-				</p>{/if}
-
-			<details class="disclosure">
-				<summary><ChevronRight size={14} />{t('itemPane.customize')}</summary>
-				<div class="actions">
-					{#if recolorable}
-						<!-- Colors live in the Colors tab; this opens it on the item's own section. -->
-						<button class="bu-action btn plain recolor-link" data-variant="quiet" onclick={recolor}
-							><Palette size={14} />{t('itemPane.recolor')}</button
-						>
-					{/if}
-					<button class="bu-action btn plain" data-variant="quiet" onclick={() => openFrames(it.id)}
-						><Grid2x2 size={14} />{openerLabel(t('fixFrames.open'))}<SurfaceChevron /></button
-					>
-					{#if !isDemo() && canEditItemAppearance(m, it)}
-						<button
-							class="bu-action btn plain"
-							data-variant="quiet"
-							aria-haspopup="dialog"
-							onclick={() => openAppearance(doc.id, it.id, 'item')}
-							>{t('appearance.action')}<SurfaceChevron /></button
-						>
-					{/if}
-				</div>
-			</details>
-
-			<details class="disclosure">
-				<summary><ChevronRight size={14} />{t('itemPane.layerOrder')}</summary>
-				<div class="stack">
-					<div class="actions">
-						<button
-							class="bu-action btn sm"
-							data-variant="outline"
-							disabled={!canForward}
-							onclick={() => moveLayer(it.id, 1, onlyDir)}
-							title={t('itemPane.titleDrawInFrontOfTheNext')}
-							><ArrowUp size={14} />{t('itemPane.forward')}</button
-						>
-						<button
-							class="bu-action btn sm"
-							data-variant="outline"
-							disabled={!canBackward}
-							onclick={() => moveLayer(it.id, -1, onlyDir)}
-							title={t('itemPane.titleDrawBehindThePreviousLayer')}
-							><ArrowDown size={14} />{t('itemPane.backward')}</button
-						>
-						{#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(ladder)}<button
-								class="bu-action btn sm plain"
-								data-variant="quiet"
-								onclick={() => resetLayer(it.id, ladder)}>{t('itemPane.reset')}</button
-							>{/if}
-					</div>
-					{#if hiddenNow}
-						<p class="faint small">{t('itemPane.layerHiddenHint')}</p>
-					{/if}
-					<label class="check small"
-						><input type="checkbox" bind:checked={onlyDir} />{t('itemPane.onlyFacing', {
-							direction: getLocale() === 'en' ? ui.dir.replaceAll('-', ' ') : directionName(ui.dir)
-						})}</label
-					>
-				</div>
-			</details>
-
-			{#if others.length}
-				<details class="disclosure">
-					<summary><ChevronRight size={14} />{t('itemPane.whenWornHide')}</summary>
-					<div class="stack">
-						<div class="chips" role="group" aria-label={t('itemPane.whenWornHide')}>
-							{#each others as s (s.id)}
-								{@const hiddenHere = hides.includes(s.id)}
+						{#if !isDemo() && pendingBlocks}
+							<p class="notice small" role="status">
+								{t('itemPane.pendingWorkBusy')}
 								<button
-									class="chip"
-									aria-pressed={hiddenHere}
-									onclick={() => toggleHide(it.id, s.id)}
-									>{#if hiddenHere}<Check size={12} strokeWidth={2.5} />{/if}{slotName(
-										s.id
-									)}</button
+									class="bu-action btn sm plain"
+									data-variant="quiet"
+									onclick={() => void openPendingWork({ flows: true })}
+									>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
 								>
-							{/each}
-						</div>
-						<p class="faint small">
-							{t('itemPane.hideWhenWorn', { name: it.name })}
-							{#if tucks.length}{' '}{t('itemPane.tuckNote', {
-									slots: formatList(tucks.map(slotName))
-								})}{/if}
-						</p>
+							</p>
+						{/if}
+						<!-- A re-fit's issues are its fit, which only a new item for this body fixes: nothing to accept. -->
+						{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail')}
+							<div class="field">
+								<!-- "Accept it as it is" is not on offer when keeping is refused, so only the refusal speaks. -->
+								{#if !(gaps.length && keepRefusal)}<p class="notice warn small">
+										{t('itemPane.checksFoundIssuesNoPaidRetryWas')}
+									</p>{/if}
+								{#if gaps.length && keepRefusal}
+									<!-- Says why it cannot be kept as it is: the missing frames are the way on, offered below. -->
+									<p class="small">{displayMessage(errorMessage(keepRefusal))}</p>
+								{:else if gaps.length}<button
+										class="bu-action btn"
+										data-variant="outline"
+										disabled={acceptingIssues || acceptWaits}
+										onclick={() => acceptIssues(true)}>{t('itemPane.keepWithoutMoves')}</button
+									>
+									<p class="faint small">
+										{t('itemPane.keepWithoutMovesDetail', {
+											moves: formatList(keepWithout.map((move) => displayMove(move, moveRefs)))
+										})}
+									</p>
+								{:else}<button
+										class="bu-action btn"
+										data-variant="outline"
+										disabled={acceptingIssues || acceptWaits}
+										onclick={() => acceptIssues()}>{t('itemPane.acceptAsIs')}</button
+									>
+									<p class="faint small">
+										{t('itemPane.acceptsTheCurrentArtworkWithoutSpendingCredits')}
+									</p>{/if}
+								{#if acceptanceError}<p class="notice bad small" role="alert">
+										{displayMessage(acceptanceError)}<ReportButton error={acceptanceError} />
+									</p>{/if}
+							</div>
+						{:else if health === 'accepted'}
+							<p class="muted small">{t('itemPane.youAcceptedThisArtworkWithItsRecorded')}</p>
+						{/if}
 					</div>
 				</details>
 			{/if}
-
-			{#if !isDemo() && it.prompt}
-				<details class="disclosure">
-					<summary><ChevronRight size={14} />{t('itemPane.itemActions')}</summary>
-					<div class="actions">
-						<!-- A fitted copy is remade for this body like any shared item that does not fit it, named from its description. -->
-						<button
-							class="bu-action btn"
-							data-variant="outline"
-							onclick={() =>
-								openNewItem(it.slot, {
-									slot: it.slot,
-									prompt: it.prompt,
-									route: it.route
-								})}
-							><RefreshCw size={14} />{openerLabel(
-								remakeOnly
-									? t('itemMenu.makeOneForName', { name: m.name })
-									: t('itemMenu.createVariant')
-							)}<SurfaceChevron /></button
-						>
-						<button
-							class="bu-action btn plain danger"
-							data-variant="quiet"
-							onclick={() => (confirmRemove = true)}
-							><Trash size={14} />{openerLabel(t('itemMenu.labelDeleteItem'))}<SurfaceChevron
-							/></button
-						>
-					</div>
-				</details>
-			{:else if !isDemo()}
-				<details class="disclosure">
-					<summary><ChevronRight size={14} />{t('itemPane.itemActions')}</summary>
-					<div class="actions">
-						<button
-							class="bu-action btn plain danger"
-							data-variant="quiet"
-							onclick={() => (confirmRemove = true)}
-							><Trash size={14} />{openerLabel(t('itemMenu.labelDeleteItem'))}<SurfaceChevron
-							/></button
-						>
-					</div>
-				</details>
-			{/if}
-
-			<details class="disclosure">
-				<summary><ChevronRight size={14} />{t('itemPane.howItWasMade')}</summary>
+			<details class="bu-details item-disclosure">
+				{@render sectionTitle(t('itemPane.howItWasMade'))}
 				<div><GenerationDetails {m} {it} /></div>
 			</details>
 
-			<details class="disclosure">
-				<summary><ChevronRight size={14} />{t('common.details')}</summary>
+			<details class="bu-details item-disclosure">
+				{@render sectionTitle(t('itemPane.technicalDetails'))}
 				<div>
 					<dl class="kv">
 						<dt>{t('itemPane.iD')}</dt>
@@ -1079,6 +1134,18 @@
 					</dl>
 				</div>
 			</details>
+			{#if !isDemo()}
+				<div class="item-management">
+					<button
+						class="bu-action btn plain danger"
+						data-variant="quiet"
+						aria-haspopup="dialog"
+						onclick={() => (confirmRemove = true)}
+					>
+						<Trash size={16} />{openerLabel(t('itemMenu.labelDeleteItem'))}<SurfaceChevron />
+					</button>
+				</div>
+			{/if}
 		</div>
 	{/if}
 	{#if confirmRemove && it}
@@ -1094,33 +1161,191 @@
 			}}><p>{t('common.deleteRecoverable')}</p></ConfirmDialog
 		>
 	{/if}
-	{#snippet footer()}
-		{#if it}
-			<button
-				class="bu-action btn primary"
-				data-variant="primary"
-				data-item-wear-toggle
-				onclick={() => wear(it.id)}>{on ? t('common.takeOff') : t('common.wear')}</button
-			>
-		{/if}
-	{/snippet}
+
+	{#if expanded}
+		<SpritePreview {...expanded} onclose={() => (expanded = null)} />
+	{/if}
 </Sheet>
 
 <style>
+	.item-workbench,
 	.stack {
 		display: grid;
 		gap: 12px;
 	}
-	.badge-line {
+	.item-meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		gap: 4px 8px;
+		font-size: var(--fs-sm);
+		color: var(--text-2);
+	}
+	:global(.item-detail .sheet-heading) {
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 4px 10px;
+	}
+	.preview-toolbar,
+	.hidden-row,
+	.layer-heading,
+	.paid-action,
+	.switch-row {
 		display: flex;
 		align-items: center;
+		gap: 8px;
+		justify-content: space-between;
+	}
+	.preview-toolbar .btn,
+	.layer-actions .btn,
+	.paid-action .btn {
+		min-height: 44px;
+	}
+	.preview-move {
+		font-weight: 600;
+	}
+	.item-views {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(66px, 100%), 1fr));
+		gap: 4px;
+		padding: 4px;
+		background: var(--stage);
+		border-radius: var(--r-card);
+	}
+	.item-view {
+		position: relative;
+		display: grid;
+		grid-template-rows: 72px auto;
+		justify-content: stretch;
+		justify-items: center;
+		align-items: center;
+		gap: 2px;
+		min-width: 0;
+		padding: 8px 6px 4px;
+		font-size: var(--fs-sm);
+		color: var(--text-2);
+	}
+	.item-view > :global(svg) {
+		position: absolute;
+		inset-block-start: 5px;
+		inset-inline-end: 5px;
+	}
+	.hidden-row {
+		justify-content: start;
 		flex-wrap: wrap;
-		gap: 4px 10px;
+		font-size: var(--fs-sm);
+	}
+	.hidden-row .btn {
+		margin-inline-start: auto;
+		min-height: 44px;
+	}
+	.item-disclosure {
+		min-width: 0;
+	}
+	.item-disclosure :global(summary) {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		list-style: none;
+	}
+	.item-disclosure :global(summary::-webkit-details-marker) {
+		display: none;
+	}
+	.item-disclosure :global(summary:hover) {
+		background: var(--bu-action-hover);
+	}
+	.item-disclosure :global(summary > svg) {
+		flex: none;
+		color: var(--text-3);
+		transition: transform var(--dur);
+	}
+	.item-disclosure[open] :global(> summary > svg) {
+		transform: rotate(90deg);
+	}
+	.item-disclosure :global(> div) {
+		padding: 4px 0 12px;
+	}
+	.item-disclosure .section-note {
+		margin-inline-start: auto;
+		font-size: var(--fs-sm);
+		font-weight: 400;
+	}
+	.editor-actions,
+	.visibility-list {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(184px, 100%), 1fr));
+		gap: 4px 12px;
+	}
+	.editor-actions .btn {
+		justify-content: start;
+		min-height: 44px;
+	}
+	.move-picker {
+		min-width: 0;
+		display: grid;
+		gap: 4px;
+		border: 0;
+		padding: 0;
+		margin: 0;
+	}
+	.move-picker legend,
+	.item-creation h3,
+	.outfit-settings h3 {
+		font-size: var(--fs-sm);
+		font-weight: 600;
+	}
+	.selection-action {
+		justify-self: end;
+	}
+	.move-choice {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 8px;
+		min-height: 44px;
+		padding: 6px 2px;
+		border-block-end: 1px solid var(--bu-line);
+	}
+	.move-choice small {
+		display: block;
+	}
+	.paid-action {
+		flex-wrap: wrap;
+	}
+	.paid-action p {
+		flex: 1 1 14rem;
+	}
+	.paid-action .btn {
+		margin-inline-start: auto;
+	}
+	.item-creation h3 {
+		margin: 0 0 4px;
+	}
+	.outfit-settings h3 {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+		margin: 0;
+	}
+	.layer-actions,
+	.layer-position {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	.switch-row {
+		min-height: 44px;
+		font-size: var(--fs-sm);
+	}
+	.visibility-settings {
+		border-block-start: 1px solid var(--bu-line);
+		padding-block-start: 12px;
 	}
 	.coverage-list {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px 10px;
+		gap: 4px 12px;
 		margin: 0;
 		padding: 0;
 		list-style: none;
@@ -1138,18 +1363,12 @@
 	.coverage-clip.missing {
 		color: var(--warn);
 	}
-	.coverage-clip.missing span {
-		color: var(--text);
-	}
-	.fill-missing {
-		display: grid;
-		gap: 6px;
-		margin-top: 4px;
-	}
-	.item-links {
+	.item-management {
+		border-block-start: 1px solid var(--bu-line);
 		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-		gap: 4px 12px;
+		justify-content: end;
+	}
+	.item-management .btn {
+		min-height: 44px;
 	}
 </style>

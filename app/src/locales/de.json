@@ -501,6 +501,26 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"artworkSection": "Grafik",
+		"movesSection": "Bewegungen und Zustände",
+		"outfitSection": "Outfit-Verhalten",
+		"replaceFrames": "Frames dieser Ansicht ersetzen",
+		"technicalDetails": "Technische Details",
+		"openSprite": "{title} vergrößern",
+		"drawForMoves": "Fehlende Frames zeichnen",
+		"drawSelected": "Auswahl zeichnen",
+		"selectAllMoves": "Alle auswählen",
+		"clearSelection": "Auswahl aufheben",
+		"drawMovesHelp": "Zeichnet fehlende Objekt-Frames. PixelLab kann dafür Kosten berechnen.",
+		"repairView": "Diese Ansicht reparieren",
+		"redrawView": "Diese Ansicht neu zeichnen",
+		"sendBackward": "Nach hinten",
+		"bringForward": "Nach vorne",
+		"makeAnother": "Neues Objekt erstellen",
+		"layerCategory": "Die Ebenenreihenfolge gilt für die Kategorie {slot}.",
+		"inFrontOf": "Vor {name}",
+		"behind": "Hinter {name}",
+		"previewUnavailable": "Keine Objektgrafik für diese Bewegung.",
 		"restoreStanding": {
 			"one": "Standansicht wiederherstellen",
 			"other": "Standansichten wiederherstellen"

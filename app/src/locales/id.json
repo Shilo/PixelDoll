@@ -492,6 +492,26 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"artworkSection": "Gambar",
+		"movesSection": "Gerakan dan keadaan",
+		"outfitSection": "Perilaku pakaian",
+		"replaceFrames": "Ganti bingkai tampilan ini",
+		"technicalDetails": "Detail teknis",
+		"openSprite": "Perbesar {title}",
+		"drawForMoves": "Gambar bingkai yang hilang",
+		"drawSelected": "Gambar yang dipilih",
+		"selectAllMoves": "Pilih semua",
+		"clearSelection": "Hapus pilihan",
+		"drawMovesHelp": "Hanya menggambar bingkai item yang hilang. PixelLab dapat mengenakan biaya pembuatan.",
+		"repairView": "Perbaiki tampilan ini",
+		"redrawView": "Gambar ulang tampilan ini",
+		"sendBackward": "Geser ke belakang",
+		"bringForward": "Geser ke depan",
+		"makeAnother": "Buat item baru",
+		"layerCategory": "Urutan lapisan berlaku untuk kategori {slot}.",
+		"inFrontOf": "Di depan {name}",
+		"behind": "Di belakang {name}",
+		"previewUnavailable": "Tidak ada gambar item untuk gerakan ini.",
 		"restoreStanding": {
 			"other": "Pulihkan tampilan berdiri"
 		},

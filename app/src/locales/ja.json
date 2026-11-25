@@ -492,6 +492,26 @@
 		"runningDetail": "{status}・{prompt}"
 	},
 	"itemPane": {
+		"artworkSection": "画像",
+		"movesSection": "動きと状態",
+		"outfitSection": "装備時の設定",
+		"replaceFrames": "この向きのフレームを置き換え",
+		"technicalDetails": "技術詳細",
+		"openSprite": "{title}を拡大",
+		"drawForMoves": "不足フレームを描画",
+		"drawSelected": "選択項目を描画",
+		"selectAllMoves": "すべて選択",
+		"clearSelection": "選択を解除",
+		"drawMovesHelp": "不足しているアイテムのフレームだけを描画します。PixelLab の生成料金がかかる場合があります。",
+		"repairView": "この向きを修復",
+		"redrawView": "この向きを描き直す",
+		"sendBackward": "背面へ",
+		"bringForward": "前面へ",
+		"makeAnother": "新しいアイテムを作成",
+		"layerCategory": "レイヤー順は「{slot}」カテゴリ全体に適用されます。",
+		"inFrontOf": "{name}の前",
+		"behind": "{name}の後ろ",
+		"previewUnavailable": "この動きにはアイテム画像がありません。",
 		"restoreStanding": {
 			"other": "立ち姿を復元"
 		},

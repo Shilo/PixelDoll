@@ -501,6 +501,26 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"artworkSection": "Gráficos",
+		"movesSection": "Movimientos y estados",
+		"outfitSection": "Comportamiento del atuendo",
+		"replaceFrames": "Reemplazar fotogramas de esta vista",
+		"technicalDetails": "Detalles técnicos",
+		"openSprite": "Ampliar {title}",
+		"drawForMoves": "Dibujar fotogramas faltantes",
+		"drawSelected": "Dibujar selección",
+		"selectAllMoves": "Seleccionar todo",
+		"clearSelection": "Borrar selección",
+		"drawMovesHelp": "Dibuja solo los fotogramas faltantes del objeto. PixelLab puede cobrar por generarlos.",
+		"repairView": "Reparar esta vista",
+		"redrawView": "Redibujar esta vista",
+		"sendBackward": "Enviar atrás",
+		"bringForward": "Traer adelante",
+		"makeAnother": "Crear un objeto nuevo",
+		"layerCategory": "El orden de capas se aplica a la categoría {slot}.",
+		"inFrontOf": "Delante de {name}",
+		"behind": "Detrás de {name}",
+		"previewUnavailable": "Este objeto no tiene gráficos para este movimiento.",
 		"restoreStanding": {
 			"one": "Restaurar vista de pie",
 			"other": "Restaurar vistas de pie"
