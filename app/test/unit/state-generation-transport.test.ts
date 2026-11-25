@@ -1,12 +1,14 @@
+import { readFileSync } from 'node:fs';
 import { expect, test } from 'vitest';
 import { base64ToBytes, bytesToBase64, makeImg } from '../../src/lib/image/png.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { png, type B64Image } from '../../src/lib/pixellab/routes.ts';
-import { DIRECTIONS } from '../../src/lib/rig/rig.ts';
+import { DEFAULT_MOVE, DIRECTIONS, type Rig } from '../../src/lib/rig/rig.ts';
 import {
 	planStateGeneration,
 	type StateGenerationInput
 } from '../../src/studio/stateGenerationPlan.ts';
+import { ridingStatePlan } from '../../src/studio/ridingStatePlan.ts';
 import type { StateGenerationSource } from '../../src/studio/stateGenerationSource.ts';
 import { decodeStateBatch, stateRequests } from '../../src/studio/stateGenerationTransport.ts';
 
@@ -224,4 +226,52 @@ test('batch decoding rejects missing, extra and malformed provider results and l
 	expect(decodeStateBatch(plan, batch, [south, makeImg(64, 64)])).toEqual([
 		{ direction: 'south', image: south }
 	]);
+});
+
+test('Riding sends one transparent guided pose per drawn facing and retains one cell', async () => {
+	for (const body of ['A', 'C', 'N']) {
+		const { rig } = JSON.parse(
+			readFileSync(new URL(`../fixtures/bench/body${body}.json`, import.meta.url), 'utf8')
+		) as { rig: Rig };
+		rig.animations.unshift({
+			id: DEFAULT_MOVE,
+			cells: 1,
+			loop: false,
+			frames: [{ cell: 0, ms: 100 }]
+		});
+		const { source } = setup({
+			model: 'pro',
+			cellSize: { width: rig.cell.w, height: rig.cell.h },
+			facingIds: ['south', 'east']
+		});
+		for (const view of source.views) view.hash = rig.rest![view.direction]!.image;
+		const frame = { clip: DEFAULT_MOVE, frame: 0 };
+		const plan = ridingStatePlan(rig, frame, source)!;
+		expect(plan.cost).toEqual({ kind: 'estimate', minGenerations: 4, maxGenerations: 4 });
+		const [south, east] = await stateRequests(plan, source, 'riding', description, controls.seed);
+		expect(south).toMatchObject({
+			method: 'POST',
+			path: '/animate-with-skeleton-v3',
+			body: { ...controls, action: description, direction: 'south', first_frame: encoded }
+		});
+		expect(east.body).toMatchObject({ direction: 'east', seed: controls.seed + 1 });
+		const target = plan.guides[0].poses;
+		expect(target).toEqual([target[0], target[0], target[0]]);
+		const joints = Object.fromEntries(target[0].map((joint) => [joint.label, joint]));
+		expect(joints['RIGHT LEG'].x).toBeLessThan(joints['RIGHT KNEE'].x);
+		expect(joints['LEFT LEG'].x).toBeGreaterThan(joints['LEFT KNEE'].x);
+		expect(joints['LEFT LEG'].y).toBeGreaterThan(joints['LEFT KNEE'].y);
+		expect(joints['LEFT LEG'].y * rig.cell.h).toBeLessThanOrEqual(rig.cell.h - 2.99);
+		const length = (a: string, b: string) =>
+			Math.hypot(joints[a].x - joints[b].x, joints[a].y - joints[b].y);
+		const torso = (joints['LEFT HIP'].y + joints['RIGHT HIP'].y) / 2 - joints.NECK.y;
+		expect(length('LEFT HIP', 'LEFT KNEE') + length('LEFT KNEE', 'LEFT LEG')).toBeLessThanOrEqual(
+			torso * 1.7
+		);
+		const image = source.views[0].image;
+		expect(decodeStateBatch(plan, plan.batches[0], [image, image, image])).toEqual([
+			{ direction: 'south', image }
+		]);
+		expect(ridingStatePlan(rig, { ...frame, clip: 'riding' }, source)).toBeUndefined();
+	}
 });

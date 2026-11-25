@@ -133,14 +133,20 @@ export function rotate(
 	return o;
 }
 /** Shoulder fixed; upper arm at a1, forearm at a2 (deg), bone lengths kept. */
-export function setArm(p: Skeleton, side: 'RIGHT' | 'LEFT', a1: number, a2: number): Skeleton {
+export function setArm(
+	p: Skeleton,
+	side: 'RIGHT' | 'LEFT',
+	a1: number,
+	a2: number,
+	projection: readonly [number, number] = [1, 1]
+): Skeleton {
 	const o = clone(p),
 		S = p[`${side} SHOULDER`],
 		E = p[`${side} ELBOW`],
 		W = p[`${side} ARM`],
 		r = (d: number) => (d * Math.PI) / 180;
-	const l1 = Math.hypot(E.x - S.x, E.y - S.y),
-		l2 = Math.hypot(W.x - E.x, W.y - E.y);
+	const l1 = Math.hypot(E.x - S.x, E.y - S.y) * projection[0],
+		l2 = Math.hypot(W.x - E.x, W.y - E.y) * projection[1];
 	o[`${side} ELBOW`] = { ...E, x: S.x + l1 * Math.cos(r(a1)), y: S.y + l1 * Math.sin(r(a1)) };
 	o[`${side} ARM`] = {
 		...W,
@@ -150,14 +156,20 @@ export function setArm(p: Skeleton, side: 'RIGHT' | 'LEFT', a1: number, a2: numb
 	return o;
 }
 /** Hip fixed; thigh at a1, shin at a2 (deg), bone lengths kept. */
-export function setLeg(p: Skeleton, side: 'RIGHT' | 'LEFT', a1: number, a2: number): Skeleton {
+export function setLeg(
+	p: Skeleton,
+	side: 'RIGHT' | 'LEFT',
+	a1: number,
+	a2: number,
+	projection: readonly [number, number] = [1, 1]
+): Skeleton {
 	const o = clone(p),
 		H = p[`${side} HIP`],
 		K = p[`${side} KNEE`],
 		A = p[`${side} LEG`],
 		r = (d: number) => (d * Math.PI) / 180;
-	const l1 = Math.hypot(K.x - H.x, K.y - H.y),
-		l2 = Math.hypot(A.x - K.x, A.y - K.y);
+	const l1 = Math.hypot(K.x - H.x, K.y - H.y) * projection[0],
+		l2 = Math.hypot(A.x - K.x, A.y - K.y) * projection[1];
 	o[`${side} KNEE`] = { ...K, x: H.x + l1 * Math.cos(r(a1)), y: H.y + l1 * Math.sin(r(a1)) };
 	o[`${side} LEG`] = {
 		...A,
@@ -431,13 +443,46 @@ export function stateClipName(id: string) {
 		: slug[0].toUpperCase() + slug.slice(1);
 }
 
+// Riding State angles and projected segment lengths from the reviewed 80 px East and wide South targets.
+// Scale the screen-space changes to the rider's own measurements. Shortening in the rest projection can
+// hide part of a limb, so the seated projection can show a longer segment without changing the rig.
+const ridingStatePose = (rest: Skeleton, dir: DirectionName) => {
+	const side = dir === 'east';
+	const rear = backView(dir);
+	const diagonal = dir.includes('-');
+	const bearing = (front: number, east: number) => {
+		const axial = rear ? 180 - front : front;
+		return side ? east : diagonal ? (axial + east) / 2 : axial;
+	};
+	const legBearing = (front: number, east: number, quarter: number) =>
+		diagonal ? quarter : bearing(front, east);
+	const length = (front: number, east: number) =>
+		side ? east : diagonal ? (front + east) / 2 : front;
+	let pose = setLeg(rest, 'RIGHT', legBearing(150, 32, 52), legBearing(110, 121, 117), [
+		length(1.86, 1.53),
+		length(2.01, 1.72)
+	]);
+	pose = setLeg(pose, 'LEFT', legBearing(27, 55, 51), legBearing(70, 117, 114), [
+		length(2.01, 0.9),
+		length(2.01, 1.55)
+	]);
+	pose = setArm(pose, 'RIGHT', bearing(112, 84), bearing(39, 5), [
+		length(0.76, 0.74),
+		length(0.82, 1.6)
+	]);
+	pose = setArm(pose, 'LEFT', bearing(65, 102), bearing(141, 0), [
+		length(0.78, 0.89),
+		length(0.82, 1.16)
+	]);
+	return [pose, pose, pose];
+};
 /** Use eastern action math on the actual western rest pose, reflecting coordinates without changing art or joint labels. */
 export function authoredPoses(
 	action: string,
 	rest: Skeleton,
 	dir: DirectionName,
 	width = 64,
-	poseStyle?: 'visible-side-v1'
+	poseStyle?: 'visible-side-v1' | 'riding-state'
 ): Skeleton[] {
 	const source = (
 		{ west: 'east', 'south-west': 'south-east', 'north-west': 'north-east' } as Partial<
@@ -447,9 +492,11 @@ export function authoredPoses(
 	const fn = ACTIONS[action];
 	if (!fn) throw new Error(`Unknown authored action: ${action}`);
 	const pose = (r: Skeleton, d: DirectionName) =>
-		action === 'slash' && poseStyle === 'visible-side-v1' && d === 'east'
-			? sideSlash(r, d)
-			: fn(r, d);
+		poseStyle === 'riding-state'
+			? ridingStatePose(r, d)
+			: action === 'slash' && poseStyle === 'visible-side-v1' && d === 'east'
+				? sideSlash(r, d)
+				: fn(r, d);
 	return source
 		? pose(flipSkeleton(rest, width), source).map((p) => flipSkeleton(p, width))
 		: pose(rest, dir);

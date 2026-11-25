@@ -37,6 +37,7 @@ import type { ReadyStatePlan } from './stateGenerationTransport.ts';
 
 /** Saved State art from these endpoints is generated, not captured from a Move or imported. */
 const GENERATED_ENDPOINTS = {
+	'/animate-with-skeleton-v3': true,
 	'/edit-animation-v2': true,
 	'/edit-images-v2': true,
 	'/edit-image-pro-flash': true,
