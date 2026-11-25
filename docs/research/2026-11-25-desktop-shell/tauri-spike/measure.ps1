@@ -3,7 +3,7 @@ param(
     [Parameter(Mandatory)] [string] $Executable,
     [ValidateRange(1, 100)] [int] $Runs = 3,
     [ValidateRange(0, 3600)] [int] $IdleSeconds = 60,
-    [ValidateSet('startup', 'transfer', 'chunked', 'online', 'download', 'backup')] [string] $Case = 'startup',
+    [ValidateSet('startup', 'transfer', 'chunked', 'online', 'download', 'backup', 'publish')] [string] $Case = 'startup',
     [string] $ScratchParent = [IO.Path]::GetTempPath(),
     [switch] $SeparateProfile
 )

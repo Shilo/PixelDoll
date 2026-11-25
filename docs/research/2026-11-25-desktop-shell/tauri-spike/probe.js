@@ -107,7 +107,7 @@ async function main() {
     const canvas = await find('.experience-stage canvas');
     return { width: canvas.width, height: canvas.height };
   });
-  if (mode === 'download' || mode === 'backup') {
+  if (mode === 'download' || mode === 'backup' || mode === 'publish') {
     await check('studio-' + mode, async () => {
       const click = async (label) => {
         const button = await waitFor(
@@ -124,8 +124,15 @@ async function main() {
       await click('More options');
       await click('Edit a copy');
       await waitFor(() => document.body.innerText.includes('Adventurer copy'), 'saved demo copy');
-      if (mode === 'download') {
+      if (mode !== 'backup') {
         await click('Export');
+        if (mode === 'publish') {
+          const godot = await waitFor(
+            () => document.querySelector('dialog[open] input[value="godot"]:not(:disabled)'),
+            'Godot export format'
+          );
+          godot.click();
+        }
         await click(/^Download ZIP/);
       } else {
         await click('More options');
@@ -133,6 +140,7 @@ async function main() {
         await click('Library');
         await click('Back up library');
       }
+      if (mode === 'publish') return waitFor(() => invoke('project_publish_result'), 'project publish');
       return waitFor(async () => await invoke('completed_downloads'), mode + ' ZIP');
     });
     await report('finished');

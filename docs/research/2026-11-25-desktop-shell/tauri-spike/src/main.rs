@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod project_publish;
+
 use std::{
     fs::{self, File, OpenOptions},
     io::Write,
@@ -21,6 +23,7 @@ struct Run {
     root: PathBuf,
     transfer: Mutex<Option<StagedTransfer>>,
     downloads: AtomicUsize,
+    project_publish: Mutex<Option<Result<serde_json::Value, String>>>,
 }
 
 struct StagedTransfer {
@@ -51,6 +54,18 @@ fn report(run: State<'_, Run>, event: serde_json::Value) -> Result<(), String> {
 #[tauri::command]
 fn completed_downloads(run: State<'_, Run>) -> usize {
     run.downloads.load(Ordering::Relaxed)
+}
+
+#[tauri::command]
+fn project_publish_result(run: State<'_, Run>) -> Result<Option<serde_json::Value>, String> {
+    match &*run
+        .project_publish
+        .lock()
+        .map_err(|error| error.to_string())?
+    {
+        Some(result) => result.clone().map(Some),
+        None => Ok(None),
+    }
 }
 
 #[tauri::command]
@@ -160,6 +175,7 @@ fn main() {
             root,
             transfer: Mutex::default(),
             downloads: AtomicUsize::new(0),
+            project_publish: Mutex::default(),
         })
         .invoke_handler(tauri::generate_handler![
             report,
@@ -167,7 +183,8 @@ fn main() {
             begin_transfer,
             append_chunk,
             finish_transfer,
-            completed_downloads
+            completed_downloads,
+            project_publish_result
         ])
         .setup(|app| {
             let run = app.state::<Run>();
@@ -180,6 +197,7 @@ fn main() {
                 Ok("chunked") => "chunked",
                 Ok("download") => "download",
                 Ok("backup") => "backup",
+                Ok("publish") => "publish",
                 _ => "startup",
             };
             WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
@@ -188,7 +206,7 @@ fn main() {
                 .initialization_script(format!("window.__PIXELDOLL_SPIKE_CASE__ = '{mode}';"))
                 .data_directory(profile)
                 .on_download(move |window, event| {
-                    if !matches!(mode, "download" | "backup") {
+                    if !matches!(mode, "download" | "backup" | "publish") {
                         return false;
                     }
                     let run = window.state::<Run>();
@@ -202,6 +220,15 @@ fn main() {
                         }
                         DownloadEvent::Finished { success: true, .. } => {
                             run.downloads.fetch_add(1, Ordering::Relaxed);
+                            if mode == "publish" {
+                                std::thread::spawn(move || {
+                                    let run = window.state::<Run>();
+                                    let archive = run.root.join("studio-download-0.zip");
+                                    let result = project_publish::run(&run.root, &archive);
+                                    *run.project_publish.lock().expect("publish result") =
+                                        Some(result);
+                                });
+                            }
                         }
                         _ => {}
                     }
