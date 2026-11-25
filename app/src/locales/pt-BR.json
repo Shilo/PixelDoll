@@ -509,6 +509,13 @@
 			"other": "Reconstruídas a partir dos desenhos salvos do item para {directions}. Nada é gerado."
 		},
 		"hiddenByAnotherItem": "Oculto por outro item",
+		"hiddenByItem": "Oculto por {name}",
+		"showName": "Mostrar {name}",
+		"notWorn": "Não equipado",
+		"qualityChecks": "Verificações de qualidade",
+		"customize": "Personalizar",
+		"itemActions": "Ações do item",
+		"layerHiddenHint": "Outro item equipado oculta este, então a ordem das camadas não pode mudar aqui. Mostre-o primeiro.",
 		"nameInEveryDirection": "{name} em todas as direções",
 		"labelNameFacingId": "{name} na direção {id}",
 		"acceptedAppearanceWarnings": "Alertas visuais aceitos",

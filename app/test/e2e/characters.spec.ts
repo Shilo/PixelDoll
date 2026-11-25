@@ -5,6 +5,7 @@ import {
 	equipmentGroup,
 	newItem,
 	selectedItemDetails,
+	openItemSection,
 	pickItem,
 	openPlaybackPicker
 } from './immersive-helpers.ts';
@@ -234,6 +235,7 @@ test('Edit appearance makes reviewed character and equipment copies from saved p
 	await equipmentGroup(page, 'Head');
 	await pickItem(page, hat.name);
 	const details = await selectedItemDetails(page);
+	await openItemSection(details, 'Customize');
 	await details.getByRole('button', { name: action }).click();
 	const editItem = edit.getByRole('button', { name: /^Edit item ·/ });
 	await expect(edit.getByRole('radio')).toHaveCount(0);

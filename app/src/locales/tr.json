@@ -509,6 +509,13 @@
 			"other": "Eşyanın {directions} için kayıtlı çizimlerinden yeniden oluşturulur. Üretim yapılmaz."
 		},
 		"hiddenByAnotherItem": "Başka bir eşya tarafından gizleniyor",
+		"hiddenByItem": "{name} tarafından gizleniyor",
+		"showName": "{name} öğesini göster",
+		"notWorn": "Giyili değil",
+		"qualityChecks": "Kalite kontrolleri",
+		"customize": "Özelleştir",
+		"itemActions": "Eşya işlemleri",
+		"layerHiddenHint": "Giyilen başka bir eşya bunu gizliyor, bu yüzden katman sırası burada değiştirilemez. Önce gösterin.",
 		"nameInEveryDirection": "{name}, tüm yönler",
 		"labelNameFacingId": "{name}, yön: {id}",
 		"acceptedAppearanceWarnings": "Kabul edilen görünüm uyarıları",

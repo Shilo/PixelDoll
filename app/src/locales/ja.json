@@ -498,6 +498,13 @@
 			"other": "このアイテムに保存された{directions}向きのデザインから復元します。生成は行いません。"
 		},
 		"hiddenByAnotherItem": "他のアイテムで隠れています",
+		"hiddenByItem": "{name} によって隠れています",
+		"showName": "{name} を表示",
+		"notWorn": "未装着",
+		"qualityChecks": "品質チェック",
+		"customize": "カスタマイズ",
+		"itemActions": "アイテムの操作",
+		"layerHiddenHint": "別の装着中アイテムがこれを隠しているため、ここではレイヤー順を変更できません。先に表示してください。",
 		"nameInEveryDirection": "全方向の{name}",
 		"labelNameFacingId": "{id}向きの{name}",
 		"acceptedAppearanceWarnings": "承認済みの外観に関する警告",

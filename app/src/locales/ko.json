@@ -498,6 +498,13 @@
 			"other": "이 아이템에 저장된 {directions} 방향의 디자인으로 복구합니다. 새로 생성하지 않습니다."
 		},
 		"hiddenByAnotherItem": "다른 아이템에 가려짐",
+		"hiddenByItem": "{name}에 가려짐",
+		"showName": "{name} 표시",
+		"notWorn": "착용 안 함",
+		"qualityChecks": "품질 검사",
+		"customize": "사용자 설정",
+		"itemActions": "아이템 작업",
+		"layerHiddenHint": "다른 착용 아이템이 이것을 가리고 있어 여기서는 레이어 순서를 바꿀 수 없습니다. 먼저 표시하세요.",
 		"nameInEveryDirection": "모든 방향의 {name}",
 		"labelNameFacingId": "{id} 방향의 {name}",
 		"acceptedAppearanceWarnings": "수락한 외형 경고",
