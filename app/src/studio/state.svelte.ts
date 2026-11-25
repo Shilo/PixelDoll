@@ -2542,7 +2542,7 @@ export function randomizeGroup(groupId: string) {
 		Object.assign(doc.variants, variants);
 	});
 	ui.selected = it.id;
-	if (wearing || recolored) playAudioCue('equip');
+	if (wearing || recolored) playAudioCue('recolor');
 }
 /** Colors-only Random for the given item ids (the character or one worn item). Never changes what is worn. */
 export function randomizeColors(owners: string[], label: Message) {
@@ -2579,7 +2579,7 @@ export function randomize() {
 		},
 		{ keepHand: 'main_hand', quiet: true }
 	);
-	playAudioCue('equip');
+	playAudioCue('recolor');
 }
 export function applyPreset(p: Preset) {
 	commit(
