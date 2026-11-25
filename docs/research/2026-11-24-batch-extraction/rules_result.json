@@ -1,0 +1,286 @@
+{
+ "margins": {
+  "C": 2.0,
+  "D": 4.0
+ },
+ "material_px": 4,
+ "scores": {
+  "A: different slot|material": {
+   "tp": 7,
+   "fp": 7,
+   "fn": 0,
+   "tn": 1,
+   "predicted_safe": 14,
+   "actual_safe": 7,
+   "precision": 0.5,
+   "recall": 1.0,
+   "false_safe": 0.5,
+   "false_unsafe": 0.0,
+   "false_safe_pairs": [
+    "vest_leather + cape_red",
+    "vest_leather + helmet_steel",
+    "cape_red + hair_brown",
+    "cape_red + helmet_steel",
+    "cape_red + sword_steel",
+    "hair_brown + helmet_steel",
+    "hair_brown + hat_wizard"
+   ],
+   "false_unsafe_pairs": []
+  },
+  "A: different slot|strict": {
+   "tp": 5,
+   "fp": 9,
+   "fn": 0,
+   "tn": 1,
+   "predicted_safe": 14,
+   "actual_safe": 5,
+   "precision": 0.35714285714285715,
+   "recall": 1.0,
+   "false_safe": 0.6428571428571429,
+   "false_unsafe": 0.0,
+   "false_safe_pairs": [
+    "vest_leather + cape_red",
+    "vest_leather + hair_brown",
+    "vest_leather + helmet_steel",
+    "vest_leather + sword_steel",
+    "cape_red + hair_brown",
+    "cape_red + helmet_steel",
+    "cape_red + sword_steel",
+    "hair_brown + helmet_steel",
+    "hair_brown + hat_wizard"
+   ],
+   "false_unsafe_pairs": []
+  },
+  "B: A + no standing overlap|material": {
+   "tp": 7,
+   "fp": 2,
+   "fn": 0,
+   "tn": 6,
+   "predicted_safe": 9,
+   "actual_safe": 7,
+   "precision": 0.7777777777777778,
+   "recall": 1.0,
+   "false_safe": 0.2222222222222222,
+   "false_unsafe": 0.0,
+   "false_safe_pairs": [
+    "vest_leather + helmet_steel",
+    "cape_red + helmet_steel"
+   ],
+   "false_unsafe_pairs": []
+  },
+  "B: A + no standing overlap|strict": {
+   "tp": 5,
+   "fp": 4,
+   "fn": 0,
+   "tn": 6,
+   "predicted_safe": 9,
+   "actual_safe": 5,
+   "precision": 0.5555555555555556,
+   "recall": 1.0,
+   "false_safe": 0.4444444444444444,
+   "false_unsafe": 0.0,
+   "false_safe_pairs": [
+    "vest_leather + hair_brown",
+    "vest_leather + helmet_steel",
+    "vest_leather + sword_steel",
+    "cape_red + helmet_steel"
+   ],
+   "false_unsafe_pairs": []
+  },
+  "C: B + standing gap >= 2 px|material": {
+   "tp": 6,
+   "fp": 0,
+   "fn": 1,
+   "tn": 8,
+   "predicted_safe": 6,
+   "actual_safe": 7,
+   "precision": 1.0,
+   "recall": 0.8571428571428571,
+   "false_safe": 0.0,
+   "false_unsafe": 0.14285714285714285,
+   "false_safe_pairs": [],
+   "false_unsafe_pairs": [
+    "vest_leather + hair_brown"
+   ]
+  },
+  "C: B + standing gap >= 2 px|strict": {
+   "tp": 5,
+   "fp": 1,
+   "fn": 0,
+   "tn": 9,
+   "predicted_safe": 6,
+   "actual_safe": 5,
+   "precision": 0.8333333333333334,
+   "recall": 1.0,
+   "false_safe": 0.16666666666666666,
+   "false_unsafe": 0.0,
+   "false_safe_pairs": [
+    "vest_leather + sword_steel"
+   ],
+   "false_unsafe_pairs": []
+  },
+  "D: B + (distance + bbox gap) >= 4|material": {
+   "tp": 5,
+   "fp": 0,
+   "fn": 2,
+   "tn": 8,
+   "predicted_safe": 5,
+   "actual_safe": 7,
+   "precision": 1.0,
+   "recall": 0.7142857142857143,
+   "false_safe": 0.0,
+   "false_unsafe": 0.2857142857142857,
+   "false_safe_pairs": [],
+   "false_unsafe_pairs": [
+    "vest_leather + hair_brown",
+    "vest_leather + sword_steel"
+   ]
+  },
+  "D: B + (distance + bbox gap) >= 4|strict": {
+   "tp": 5,
+   "fp": 0,
+   "fn": 0,
+   "tn": 10,
+   "predicted_safe": 5,
+   "actual_safe": 5,
+   "precision": 1.0,
+   "recall": 1.0,
+   "false_safe": 0.0,
+   "false_unsafe": 0.0,
+   "false_safe_pairs": [],
+   "false_unsafe_pairs": []
+  }
+ },
+ "groups": {
+  "A: different slot": [
+   [
+    [
+     "vest_leather",
+     "cape_red",
+     "hair_brown",
+     "helmet_steel",
+     "sword_steel"
+    ],
+    [
+     "cape_red+vest_leather",
+     "hair_brown+vest_leather",
+     "hair_brown+cape_red",
+     "helmet_steel+vest_leather",
+     "helmet_steel+cape_red",
+     "helmet_steel+hair_brown",
+     "sword_steel+vest_leather",
+     "sword_steel+cape_red",
+     "sword_steel+hair_brown",
+     "sword_steel+helmet_steel"
+    ]
+   ],
+   [
+    [
+     "hat_wizard"
+    ],
+    []
+   ]
+  ],
+  "B: A + no standing overlap": [
+   [
+    [
+     "vest_leather",
+     "hair_brown",
+     "sword_steel"
+    ],
+    [
+     "hair_brown+vest_leather",
+     "sword_steel+vest_leather",
+     "sword_steel+hair_brown"
+    ]
+   ],
+   [
+    [
+     "cape_red",
+     "helmet_steel"
+    ],
+    [
+     "helmet_steel+cape_red"
+    ]
+   ],
+   [
+    [
+     "hat_wizard"
+    ],
+    []
+   ]
+  ],
+  "C: B + standing gap >= 2 px": [
+   [
+    [
+     "vest_leather",
+     "hat_wizard",
+     "sword_steel"
+    ],
+    [
+     "hat_wizard+vest_leather",
+     "sword_steel+vest_leather",
+     "sword_steel+hat_wizard"
+    ]
+   ],
+   [
+    [
+     "cape_red"
+    ],
+    []
+   ],
+   [
+    [
+     "hair_brown"
+    ],
+    []
+   ],
+   [
+    [
+     "helmet_steel"
+    ],
+    []
+   ]
+  ],
+  "D: B + (distance + bbox gap) >= 4": [
+   [
+    [
+     "vest_leather",
+     "hat_wizard"
+    ],
+    [
+     "hat_wizard+vest_leather"
+    ]
+   ],
+   [
+    [
+     "cape_red"
+    ],
+    []
+   ],
+   [
+    [
+     "hair_brown",
+     "sword_steel"
+    ],
+    [
+     "sword_steel+hair_brown"
+    ]
+   ],
+   [
+    [
+     "helmet_steel"
+    ],
+    []
+   ]
+  ]
+ },
+ "order": [
+  "vest_leather",
+  "cape_red",
+  "hair_brown",
+  "helmet_steel",
+  "hat_wizard",
+  "sword_steel"
+ ]
+}

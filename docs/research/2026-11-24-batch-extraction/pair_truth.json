@@ -1,0 +1,4342 @@
+{
+ "material_px": 4,
+ "cell": 64,
+ "band_split": {
+  "south": {
+   "top": 19,
+   "neck": 30,
+   "hip": 52,
+   "bottom": 63
+  },
+  "east": {
+   "top": 20,
+   "neck": 31,
+   "hip": 53,
+   "bottom": 63
+  },
+  "north": {
+   "top": 18,
+   "neck": 29,
+   "hip": 52,
+   "bottom": 63
+  }
+ },
+ "body_bbox": {
+  "south": {
+   "top": 19,
+   "bottom": 63,
+   "left": 22,
+   "right": 42,
+   "h": 45,
+   "w": 21
+  },
+  "east": {
+   "top": 20,
+   "bottom": 63,
+   "left": 27,
+   "right": 37,
+   "h": 44,
+   "w": 11
+  },
+  "north": {
+   "top": 18,
+   "bottom": 63,
+   "left": 22,
+   "right": 41,
+   "h": 46,
+   "w": 20
+  }
+ },
+ "item_slots": {
+  "vest_leather": "torso_inner",
+  "cape_red": "back",
+  "hair_brown": "hair",
+  "helmet_steel": "head",
+  "hat_wizard": "head",
+  "sword_steel": "main_hand"
+ },
+ "pairs": [
+  {
+   "a": "vest_leather",
+   "b": "cape_red",
+   "slot_a": "torso_inner",
+   "slot_b": "back",
+   "same_slot": false,
+   "lower": "vest_leather",
+   "shared_cells": 30,
+   "any_overlap_cells": 30,
+   "material_overlap_cells": 30,
+   "max_overlap_px": 163,
+   "max_lower_share": 1.0,
+   "overlap_cells": [
+    {
+     "key": "cross-punch/south/0",
+     "px": 27,
+     "share_a": 0.3,
+     "share_b": 0.08035714285714286
+    },
+    {
+     "key": "cross-punch/south/1",
+     "px": 33,
+     "share_a": 0.30275229357798167,
+     "share_b": 0.10855263157894737
+    },
+    {
+     "key": "cross-punch/south/2",
+     "px": 33,
+     "share_a": 0.2727272727272727,
+     "share_b": 0.08396946564885496
+    },
+    {
+     "key": "cross-punch/south/3",
+     "px": 30,
+     "share_a": 0.2459016393442623,
+     "share_b": 0.0783289817232376
+    },
+    {
+     "key": "cross-punch/south/4",
+     "px": 27,
+     "share_a": 0.2125984251968504,
+     "share_b": 0.0989010989010989
+    },
+    {
+     "key": "cross-punch/south/5",
+     "px": 27,
+     "share_a": 0.3,
+     "share_b": 0.09608540925266904
+    },
+    {
+     "key": "walk/east/0",
+     "px": 42,
+     "share_a": 0.4077669902912621,
+     "share_b": 0.10606060606060606
+    },
+    {
+     "key": "walk/east/1",
+     "px": 38,
+     "share_a": 0.4935064935064935,
+     "share_b": 0.10526315789473684
+    },
+    {
+     "key": "walk/east/2",
+     "px": 31,
+     "share_a": 0.40789473684210525,
+     "share_b": 0.0893371757925072
+    },
+    {
+     "key": "walk/east/3",
+     "px": 38,
+     "share_a": 0.4222222222222222,
+     "share_b": 0.10888252148997135
+    },
+    {
+     "key": "walk/east/4",
+     "px": 33,
+     "share_a": 0.3793103448275862,
+     "share_b": 0.09428571428571429
+    },
+    {
+     "key": "walk/east/5",
+     "px": 30,
+     "share_a": 0.379746835443038,
+     "share_b": 0.08379888268156424
+    },
+    {
+     "key": "walk/east/6",
+     "px": 28,
+     "share_a": 0.36363636363636365,
+     "share_b": 0.08695652173913043
+    },
+    {
+     "key": "walk/east/7",
+     "px": 33,
+     "share_a": 0.38372093023255816,
+     "share_b": 0.09217877094972067
+    },
+    {
+     "key": "walk/north/0",
+     "px": 163,
+     "share_a": 1.0,
+     "share_b": 0.2680921052631579
+    },
+    {
+     "key": "walk/north/1",
+     "px": 151,
+     "share_a": 1.0,
+     "share_b": 0.29549902152641877
+    },
+    {
+     "key": "walk/north/2",
+     "px": 150,
+     "share_a": 1.0,
+     "share_b": 0.2840909090909091
+    },
+    {
+     "key": "walk/north/3",
+     "px": 149,
+     "share_a": 1.0,
+     "share_b": 0.259581881533101
+    },
+    {
+     "key": "walk/north/4",
+     "px": 143,
+     "share_a": 1.0,
+     "share_b": 0.2355848434925865
+    },
+    {
+     "key": "walk/north/5",
+     "px": 147,
+     "share_a": 1.0,
+     "share_b": 0.253448275862069
+    },
+    {
+     "key": "walk/north/6",
+     "px": 138,
+     "share_a": 1.0,
+     "share_b": 0.2490974729241877
+    },
+    {
+     "key": "walk/north/7",
+     "px": 143,
+     "share_a": 0.9930555555555556,
+     "share_b": 0.24033613445378152
+    },
+    {
+     "key": "walk/south/0",
+     "px": 16,
+     "share_a": 0.09523809523809523,
+     "share_b": 0.05405405405405406
+    },
+    {
+     "key": "walk/south/1",
+     "px": 23,
+     "share_a": 0.1402439024390244,
+     "share_b": 0.06906906906906907
+    },
+    {
+     "key": "walk/south/2",
+     "px": 25,
+     "share_a": 0.1497005988023952,
+     "share_b": 0.08710801393728224
+    },
+    {
+     "key": "walk/south/3",
+     "px": 25,
+     "share_a": 0.15060240963855423,
+     "share_b": 0.08561643835616438
+    },
+    {
+     "key": "walk/south/4",
+     "px": 25,
+     "share_a": 0.1488095238095238,
+     "share_b": 0.08503401360544217
+    },
+    {
+     "key": "walk/south/5",
+     "px": 25,
+     "share_a": 0.14705882352941177,
+     "share_b": 0.09057971014492754
+    },
+    {
+     "key": "walk/south/6",
+     "px": 25,
+     "share_a": 0.14450867052023122,
+     "share_b": 0.08896797153024912
+    },
+    {
+     "key": "walk/south/7",
+     "px": 23,
+     "share_a": 0.13690476190476192,
+     "share_b": 0.08846153846153847
+    }
+   ],
+   "proxy_overlap": {
+    "south": 16,
+    "east": 42,
+    "north": 163
+   },
+   "proxy_min_dist": {
+    "south": 0.0,
+    "east": 0.0,
+    "north": 0.0
+   },
+   "proxy_bbox_gap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 16,
+      "east": 42,
+      "north": 163
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 23,
+      "east": 38,
+      "north": 151
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 25,
+      "east": 31,
+      "north": 150
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 25,
+      "east": 38,
+      "north": 149
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 25,
+      "east": 33,
+      "north": 143
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 25,
+      "east": 30,
+      "north": 147
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 25,
+      "east": 28,
+      "north": 138
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 23,
+      "east": 33,
+      "north": 143
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "band_zones": {
+    "a": "torso",
+    "b": "torso",
+    "intrusions": {
+     "south": {
+      "a_in_b": 162,
+      "b_in_a": 125,
+      "a_px": 168,
+      "b_px": 296
+     },
+     "east": {
+      "a_in_b": 98,
+      "b_in_a": 316,
+      "a_px": 103,
+      "b_px": 396
+     },
+     "north": {
+      "a_in_b": 158,
+      "b_in_a": 475,
+      "a_px": 163,
+      "b_px": 608
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 14,
+     "material_cells": 14,
+     "max_px": 33
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 8,
+     "max_px": 42
+    },
+    "north": {
+     "cells": 8,
+     "material_cells": 8,
+     "max_px": 163
+    }
+   },
+   "complete": true,
+   "union_overlap": {
+    "south": 154,
+    "east": 44,
+    "north": 182
+   },
+   "union_min_dist": {
+    "south": 0.0,
+    "east": 0.0,
+    "north": 0.0
+   }
+  },
+  {
+   "a": "vest_leather",
+   "b": "hair_brown",
+   "slot_a": "torso_inner",
+   "slot_b": "hair",
+   "same_slot": false,
+   "lower": "vest_leather",
+   "shared_cells": 30,
+   "any_overlap_cells": 4,
+   "material_overlap_cells": 0,
+   "max_overlap_px": 3,
+   "max_lower_share": 0.039,
+   "overlap_cells": [
+    {
+     "key": "walk/east/4",
+     "px": 2,
+     "share_a": 0.022988505747126436,
+     "share_b": 0.017094017094017096
+    },
+    {
+     "key": "walk/east/5",
+     "px": 2,
+     "share_a": 0.02531645569620253,
+     "share_b": 0.017543859649122806
+    },
+    {
+     "key": "walk/east/6",
+     "px": 3,
+     "share_a": 0.03896103896103896,
+     "share_b": 0.02608695652173913
+    },
+    {
+     "key": "walk/east/7",
+     "px": 2,
+     "share_a": 0.023255813953488372,
+     "share_b": 0.017543859649122806
+    }
+   ],
+   "proxy_overlap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "proxy_min_dist": {
+    "south": 2.0,
+    "east": 1.0,
+    "north": 2.0
+   },
+   "proxy_bbox_gap": {
+    "south": 1,
+    "east": 0,
+    "north": 1
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 1.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 1.0,
+      "north": 1.41
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 1.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 1.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 2,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 0.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 2,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 0.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 3,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 0.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 2,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 0.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 1
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 1,
+    "east": 0,
+    "north": 1
+   },
+   "band_zones": {
+    "a": "torso",
+    "b": "head",
+    "intrusions": {
+     "south": {
+      "a_in_b": 6,
+      "b_in_a": 0,
+      "a_px": 168,
+      "b_px": 115
+     },
+     "east": {
+      "a_in_b": 5,
+      "b_in_a": 2,
+      "a_px": 103,
+      "b_px": 114
+     },
+     "north": {
+      "a_in_b": 5,
+      "b_in_a": 0,
+      "a_px": 163,
+      "b_px": 164
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 14,
+     "material_cells": 0,
+     "max_px": 0
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 3
+    },
+    "north": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    }
+   },
+   "complete": true,
+   "union_overlap": {
+    "south": 8,
+    "east": 3,
+    "north": 1
+   },
+   "union_min_dist": {
+    "south": 0.0,
+    "east": 0.0,
+    "north": 0.0
+   }
+  },
+  {
+   "a": "vest_leather",
+   "b": "helmet_steel",
+   "slot_a": "torso_inner",
+   "slot_b": "head",
+   "same_slot": false,
+   "lower": "vest_leather",
+   "shared_cells": 30,
+   "any_overlap_cells": 5,
+   "material_overlap_cells": 4,
+   "max_overlap_px": 5,
+   "max_lower_share": 0.0649,
+   "overlap_cells": [
+    {
+     "key": "cross-punch/south/2",
+     "px": 2,
+     "share_a": 0.01652892561983471,
+     "share_b": 0.015503875968992248
+    },
+    {
+     "key": "walk/east/4",
+     "px": 4,
+     "share_a": 0.04597701149425287,
+     "share_b": 0.02962962962962963
+    },
+    {
+     "key": "walk/east/5",
+     "px": 5,
+     "share_a": 0.06329113924050633,
+     "share_b": 0.03676470588235294
+    },
+    {
+     "key": "walk/east/6",
+     "px": 5,
+     "share_a": 0.06493506493506493,
+     "share_b": 0.03676470588235294
+    },
+    {
+     "key": "walk/east/7",
+     "px": 4,
+     "share_a": 0.046511627906976744,
+     "share_b": 0.029850746268656716
+    }
+   ],
+   "proxy_overlap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "proxy_min_dist": {
+    "south": 2.0,
+    "east": 1.0,
+    "north": 2.0
+   },
+   "proxy_bbox_gap": {
+    "south": 1,
+    "east": 0,
+    "north": 1
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 1.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 1.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 1.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 1.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 4,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 0.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 5,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 0.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 5,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 0.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 4,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 0.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 1,
+    "east": 0,
+    "north": 1
+   },
+   "band_zones": {
+    "a": "torso",
+    "b": "head",
+    "intrusions": {
+     "south": {
+      "a_in_b": 6,
+      "b_in_a": 0,
+      "a_px": 168,
+      "b_px": 122
+     },
+     "east": {
+      "a_in_b": 5,
+      "b_in_a": 0,
+      "a_px": 103,
+      "b_px": 127
+     },
+     "north": {
+      "a_in_b": 5,
+      "b_in_a": 0,
+      "a_px": 163,
+      "b_px": 142
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 14,
+     "material_cells": 0,
+     "max_px": 2
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 4,
+     "max_px": 5
+    },
+    "north": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    }
+   },
+   "complete": true,
+   "union_overlap": {
+    "south": 21,
+    "east": 5,
+    "north": 5
+   },
+   "union_min_dist": {
+    "south": 0.0,
+    "east": 0.0,
+    "north": 0.0
+   }
+  },
+  {
+   "a": "vest_leather",
+   "b": "hat_wizard",
+   "slot_a": "torso_inner",
+   "slot_b": "head",
+   "same_slot": false,
+   "lower": "vest_leather",
+   "shared_cells": 16,
+   "any_overlap_cells": 0,
+   "material_overlap_cells": 0,
+   "max_overlap_px": 0,
+   "max_lower_share": 0.0,
+   "overlap_cells": [],
+   "proxy_overlap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "proxy_min_dist": {
+    "south": 6.0,
+    "east": 3.16,
+    "north": NaN
+   },
+   "proxy_bbox_gap": {
+    "south": 5,
+    "east": 1,
+    "north": -1
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 6.0,
+      "east": 3.16,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 5,
+      "east": 1,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 4.0,
+      "east": 3.16,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 3,
+      "east": 1,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 5.0,
+      "east": 3.16,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 4,
+      "east": 1,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 5.0,
+      "east": 3.16,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 4,
+      "east": 1,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 4.0,
+      "east": 3.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 3,
+      "east": 1,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 5.0,
+      "east": 3.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 4,
+      "east": 1,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 5.0,
+      "east": 3.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 4,
+      "east": 1,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 5.0,
+      "east": 3.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 4,
+      "east": 1,
+      "north": -1
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 5,
+    "east": 1,
+    "north": null
+   },
+   "band_zones": {
+    "a": "torso",
+    "b": "head",
+    "intrusions": {
+     "south": {
+      "a_in_b": 6,
+      "b_in_a": 0,
+      "a_px": 168,
+      "b_px": 247
+     },
+     "east": {
+      "a_in_b": 5,
+      "b_in_a": 0,
+      "a_px": 103,
+      "b_px": 226
+     },
+     "north": {
+      "a_in_b": 5,
+      "b_in_a": 0,
+      "a_px": 163,
+      "b_px": 0
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    },
+    "north": {
+     "cells": 0,
+     "material_cells": 0,
+     "max_px": 0
+    }
+   },
+   "complete": false,
+   "union_overlap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "union_min_dist": {
+    "south": 4.0,
+    "east": 3.0,
+    "north": NaN
+   }
+  },
+  {
+   "a": "vest_leather",
+   "b": "sword_steel",
+   "slot_a": "torso_inner",
+   "slot_b": "main_hand",
+   "same_slot": false,
+   "lower": "vest_leather",
+   "shared_cells": 30,
+   "any_overlap_cells": 2,
+   "material_overlap_cells": 0,
+   "max_overlap_px": 3,
+   "max_lower_share": 0.0333,
+   "overlap_cells": [
+    {
+     "key": "cross-punch/south/0",
+     "px": 3,
+     "share_a": 0.03333333333333333,
+     "share_b": 0.03333333333333333
+    },
+    {
+     "key": "cross-punch/south/2",
+     "px": 1,
+     "share_a": 0.008264462809917356,
+     "share_b": 0.011111111111111112
+    }
+   ],
+   "proxy_overlap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "proxy_min_dist": {
+    "south": 6.4,
+    "east": 2.83,
+    "north": 6.71
+   },
+   "proxy_bbox_gap": {
+    "south": 0,
+    "east": 0,
+    "north": 1
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 6.4,
+      "east": 2.83,
+      "north": 6.71
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 7.81,
+      "east": 6.4,
+      "north": 5.66
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 7.21,
+      "east": 6.4,
+      "north": 6.4
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 1,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 7.21,
+      "east": 2.83,
+      "north": 7.21
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 7.21,
+      "east": 1.0,
+      "north": 7.81
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 7.21,
+      "east": 2.24,
+      "north": 7.81
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 4.12,
+      "north": 7.21
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 2
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.41,
+      "east": 1.0,
+      "north": 7.07
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 1
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 0,
+    "east": 0,
+    "north": 1
+   },
+   "band_zones": {
+    "a": "torso",
+    "b": "torso",
+    "intrusions": {
+     "south": {
+      "a_in_b": 162,
+      "b_in_a": 36,
+      "a_px": 168,
+      "b_px": 94
+     },
+     "east": {
+      "a_in_b": 98,
+      "b_in_a": 37,
+      "a_px": 103,
+      "b_px": 84
+     },
+     "north": {
+      "a_in_b": 158,
+      "b_in_a": 46,
+      "a_px": 163,
+      "b_px": 95
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 14,
+     "material_cells": 0,
+     "max_px": 3
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    },
+    "north": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    }
+   },
+   "complete": true,
+   "union_overlap": {
+    "south": 5,
+    "east": 1,
+    "north": 0
+   },
+   "union_min_dist": {
+    "south": 0.0,
+    "east": 0.0,
+    "north": 5.0
+   }
+  },
+  {
+   "a": "cape_red",
+   "b": "hair_brown",
+   "slot_a": "back",
+   "slot_b": "hair",
+   "same_slot": false,
+   "lower": "cape_red",
+   "shared_cells": 30,
+   "any_overlap_cells": 13,
+   "material_overlap_cells": 3,
+   "max_overlap_px": 15,
+   "max_lower_share": 0.0417,
+   "overlap_cells": [
+    {
+     "key": "cross-punch/south/0",
+     "px": 14,
+     "share_a": 0.041666666666666664,
+     "share_b": 0.15555555555555556
+    },
+    {
+     "key": "cross-punch/south/1",
+     "px": 1,
+     "share_a": 0.003289473684210526,
+     "share_b": 0.012345679012345678
+    },
+    {
+     "key": "cross-punch/south/2",
+     "px": 15,
+     "share_a": 0.03816793893129771,
+     "share_b": 0.1744186046511628
+    },
+    {
+     "key": "cross-punch/south/3",
+     "px": 15,
+     "share_a": 0.0391644908616188,
+     "share_b": 0.1744186046511628
+    },
+    {
+     "key": "cross-punch/south/4",
+     "px": 2,
+     "share_a": 0.007326007326007326,
+     "share_b": 0.021739130434782608
+    },
+    {
+     "key": "walk/east/0",
+     "px": 3,
+     "share_a": 0.007575757575757576,
+     "share_b": 0.02631578947368421
+    },
+    {
+     "key": "walk/east/1",
+     "px": 2,
+     "share_a": 0.00554016620498615,
+     "share_b": 0.017699115044247787
+    },
+    {
+     "key": "walk/east/2",
+     "px": 3,
+     "share_a": 0.008645533141210375,
+     "share_b": 0.02654867256637168
+    },
+    {
+     "key": "walk/east/3",
+     "px": 1,
+     "share_a": 0.0028653295128939827,
+     "share_b": 0.008928571428571428
+    },
+    {
+     "key": "walk/east/4",
+     "px": 2,
+     "share_a": 0.005714285714285714,
+     "share_b": 0.017094017094017096
+    },
+    {
+     "key": "walk/east/5",
+     "px": 2,
+     "share_a": 0.00558659217877095,
+     "share_b": 0.017543859649122806
+    },
+    {
+     "key": "walk/east/6",
+     "px": 3,
+     "share_a": 0.009316770186335404,
+     "share_b": 0.02608695652173913
+    },
+    {
+     "key": "walk/east/7",
+     "px": 2,
+     "share_a": 0.00558659217877095,
+     "share_b": 0.017543859649122806
+    }
+   ],
+   "proxy_overlap": {
+    "south": 0,
+    "east": 3,
+    "north": 0
+   },
+   "proxy_min_dist": {
+    "south": 1.0,
+    "east": 0.0,
+    "north": 2.0
+   },
+   "proxy_bbox_gap": {
+    "south": 0,
+    "east": 0,
+    "north": 1
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 0,
+      "east": 3,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 0.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 2,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 0.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 3,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 0.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 1,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 0.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 2,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 0.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 2,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 0.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 3,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 0.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 2,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 2.0,
+      "east": 0.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 1,
+      "east": 0,
+      "north": 1
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 0,
+    "east": 0,
+    "north": 1
+   },
+   "band_zones": {
+    "a": "torso",
+    "b": "head",
+    "intrusions": {
+     "south": {
+      "a_in_b": 12,
+      "b_in_a": 0,
+      "a_px": 296,
+      "b_px": 115
+     },
+     "east": {
+      "a_in_b": 6,
+      "b_in_a": 2,
+      "a_px": 396,
+      "b_px": 114
+     },
+     "north": {
+      "a_in_b": 5,
+      "b_in_a": 0,
+      "a_px": 608,
+      "b_px": 164
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 14,
+     "material_cells": 3,
+     "max_px": 15
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 3
+    },
+    "north": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    }
+   },
+   "complete": true,
+   "union_overlap": {
+    "south": 57,
+    "east": 6,
+    "north": 1
+   },
+   "union_min_dist": {
+    "south": 0.0,
+    "east": 0.0,
+    "north": 0.0
+   }
+  },
+  {
+   "a": "cape_red",
+   "b": "helmet_steel",
+   "slot_a": "back",
+   "slot_b": "head",
+   "same_slot": false,
+   "lower": "cape_red",
+   "shared_cells": 30,
+   "any_overlap_cells": 10,
+   "material_overlap_cells": 8,
+   "max_overlap_px": 22,
+   "max_lower_share": 0.056,
+   "overlap_cells": [
+    {
+     "key": "cross-punch/south/0",
+     "px": 17,
+     "share_a": 0.050595238095238096,
+     "share_b": 0.13821138211382114
+    },
+    {
+     "key": "cross-punch/south/1",
+     "px": 2,
+     "share_a": 0.006578947368421052,
+     "share_b": 0.015625
+    },
+    {
+     "key": "cross-punch/south/2",
+     "px": 22,
+     "share_a": 0.05597964376590331,
+     "share_b": 0.17054263565891473
+    },
+    {
+     "key": "cross-punch/south/3",
+     "px": 17,
+     "share_a": 0.044386422976501305,
+     "share_b": 0.1328125
+    },
+    {
+     "key": "cross-punch/south/5",
+     "px": 2,
+     "share_a": 0.0071174377224199285,
+     "share_b": 0.014492753623188406
+    },
+    {
+     "key": "walk/east/4",
+     "px": 4,
+     "share_a": 0.011428571428571429,
+     "share_b": 0.02962962962962963
+    },
+    {
+     "key": "walk/east/5",
+     "px": 5,
+     "share_a": 0.013966480446927373,
+     "share_b": 0.03676470588235294
+    },
+    {
+     "key": "walk/east/6",
+     "px": 5,
+     "share_a": 0.015527950310559006,
+     "share_b": 0.03676470588235294
+    },
+    {
+     "key": "walk/east/7",
+     "px": 5,
+     "share_a": 0.013966480446927373,
+     "share_b": 0.03731343283582089
+    },
+    {
+     "key": "walk/north/2",
+     "px": 5,
+     "share_a": 0.00946969696969697,
+     "share_b": 0.034482758620689655
+    }
+   ],
+   "proxy_overlap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "proxy_min_dist": {
+    "south": 1.0,
+    "east": 1.0,
+    "north": 2.0
+   },
+   "proxy_bbox_gap": {
+    "south": 0,
+    "east": 0,
+    "north": 1
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 1.0,
+      "north": 2.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 1.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 5
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 1.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 1.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 4,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 0.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 5,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 0.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 5,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 0.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 5,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 1.0,
+      "east": 0.0,
+      "north": 1.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 0,
+    "east": 0,
+    "north": 1
+   },
+   "band_zones": {
+    "a": "torso",
+    "b": "head",
+    "intrusions": {
+     "south": {
+      "a_in_b": 12,
+      "b_in_a": 0,
+      "a_px": 296,
+      "b_px": 122
+     },
+     "east": {
+      "a_in_b": 6,
+      "b_in_a": 0,
+      "a_px": 396,
+      "b_px": 127
+     },
+     "north": {
+      "a_in_b": 5,
+      "b_in_a": 0,
+      "a_px": 608,
+      "b_px": 142
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 14,
+     "material_cells": 3,
+     "max_px": 22
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 4,
+     "max_px": 5
+    },
+    "north": {
+     "cells": 8,
+     "material_cells": 1,
+     "max_px": 5
+    }
+   },
+   "complete": true,
+   "union_overlap": {
+    "south": 74,
+    "east": 6,
+    "north": 5
+   },
+   "union_min_dist": {
+    "south": 0.0,
+    "east": 0.0,
+    "north": 0.0
+   }
+  },
+  {
+   "a": "cape_red",
+   "b": "hat_wizard",
+   "slot_a": "back",
+   "slot_b": "head",
+   "same_slot": false,
+   "lower": "cape_red",
+   "shared_cells": 16,
+   "any_overlap_cells": 0,
+   "material_overlap_cells": 0,
+   "max_overlap_px": 0,
+   "max_lower_share": 0.0,
+   "overlap_cells": [],
+   "proxy_overlap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "proxy_min_dist": {
+    "south": 5.0,
+    "east": 3.0,
+    "north": NaN
+   },
+   "proxy_bbox_gap": {
+    "south": 4,
+    "east": 1,
+    "north": -1
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 5.0,
+      "east": 3.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 4,
+      "east": 1,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 4.0,
+      "east": 3.16,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 3,
+      "east": 1,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 5.0,
+      "east": 3.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 4,
+      "east": 1,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 5.0,
+      "east": 3.16,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 4,
+      "east": 1,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 4.0,
+      "east": 3.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 3,
+      "east": 1,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 5.0,
+      "east": 3.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 4,
+      "east": 1,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 5.0,
+      "east": 3.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 4,
+      "east": 1,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 5.0,
+      "east": 3.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 4,
+      "east": 1,
+      "north": -1
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 4,
+    "east": 1,
+    "north": null
+   },
+   "band_zones": {
+    "a": "torso",
+    "b": "head",
+    "intrusions": {
+     "south": {
+      "a_in_b": 12,
+      "b_in_a": 0,
+      "a_px": 296,
+      "b_px": 247
+     },
+     "east": {
+      "a_in_b": 6,
+      "b_in_a": 0,
+      "a_px": 396,
+      "b_px": 226
+     },
+     "north": {
+      "a_in_b": 5,
+      "b_in_a": 0,
+      "a_px": 608,
+      "b_px": 0
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    },
+    "north": {
+     "cells": 0,
+     "material_cells": 0,
+     "max_px": 0
+    }
+   },
+   "complete": false,
+   "union_overlap": {
+    "south": 24,
+    "east": 0,
+    "north": 0
+   },
+   "union_min_dist": {
+    "south": 0.0,
+    "east": 3.0,
+    "north": NaN
+   }
+  },
+  {
+   "a": "cape_red",
+   "b": "sword_steel",
+   "slot_a": "back",
+   "slot_b": "main_hand",
+   "same_slot": false,
+   "lower": "cape_red",
+   "shared_cells": 30,
+   "any_overlap_cells": 26,
+   "material_overlap_cells": 24,
+   "max_overlap_px": 84,
+   "max_lower_share": 0.3077,
+   "overlap_cells": [
+    {
+     "key": "cross-punch/south/0",
+     "px": 64,
+     "share_a": 0.19047619047619047,
+     "share_b": 0.7111111111111111
+    },
+    {
+     "key": "cross-punch/south/1",
+     "px": 61,
+     "share_a": 0.20065789473684212,
+     "share_b": 0.6630434782608695
+    },
+    {
+     "key": "cross-punch/south/2",
+     "px": 46,
+     "share_a": 0.11704834605597965,
+     "share_b": 0.5111111111111111
+    },
+    {
+     "key": "cross-punch/south/3",
+     "px": 71,
+     "share_a": 0.185378590078329,
+     "share_b": 0.7395833333333334
+    },
+    {
+     "key": "cross-punch/south/4",
+     "px": 84,
+     "share_a": 0.3076923076923077,
+     "share_b": 0.875
+    },
+    {
+     "key": "cross-punch/south/5",
+     "px": 3,
+     "share_a": 0.010676156583629894,
+     "share_b": 0.0297029702970297
+    },
+    {
+     "key": "walk/east/4",
+     "px": 3,
+     "share_a": 0.008571428571428572,
+     "share_b": 0.03409090909090909
+    },
+    {
+     "key": "walk/east/5",
+     "px": 8,
+     "share_a": 0.0223463687150838,
+     "share_b": 0.09302325581395349
+    },
+    {
+     "key": "walk/east/6",
+     "px": 8,
+     "share_a": 0.024844720496894408,
+     "share_b": 0.10810810810810811
+    },
+    {
+     "key": "walk/east/7",
+     "px": 6,
+     "share_a": 0.01675977653631285,
+     "share_b": 0.06976744186046512
+    },
+    {
+     "key": "walk/north/0",
+     "px": 27,
+     "share_a": 0.044407894736842105,
+     "share_b": 0.28421052631578947
+    },
+    {
+     "key": "walk/north/1",
+     "px": 28,
+     "share_a": 0.0547945205479452,
+     "share_b": 0.2828282828282828
+    },
+    {
+     "key": "walk/north/2",
+     "px": 21,
+     "share_a": 0.03977272727272727,
+     "share_b": 0.22105263157894736
+    },
+    {
+     "key": "walk/north/3",
+     "px": 15,
+     "share_a": 0.02613240418118467,
+     "share_b": 0.1595744680851064
+    },
+    {
+     "key": "walk/north/4",
+     "px": 33,
+     "share_a": 0.054365733113673806,
+     "share_b": 0.3473684210526316
+    },
+    {
+     "key": "walk/north/5",
+     "px": 22,
+     "share_a": 0.03793103448275862,
+     "share_b": 0.23655913978494625
+    },
+    {
+     "key": "walk/north/6",
+     "px": 27,
+     "share_a": 0.048736462093862815,
+     "share_b": 0.28125
+    },
+    {
+     "key": "walk/north/7",
+     "px": 20,
+     "share_a": 0.03361344537815126,
+     "share_b": 0.20202020202020202
+    },
+    {
+     "key": "walk/south/0",
+     "px": 44,
+     "share_a": 0.14864864864864866,
+     "share_b": 0.46808510638297873
+    },
+    {
+     "key": "walk/south/1",
+     "px": 59,
+     "share_a": 0.17717717717717718,
+     "share_b": 0.6082474226804123
+    },
+    {
+     "key": "walk/south/2",
+     "px": 60,
+     "share_a": 0.20905923344947736,
+     "share_b": 0.6122448979591837
+    },
+    {
+     "key": "walk/south/3",
+     "px": 53,
+     "share_a": 0.1815068493150685,
+     "share_b": 0.5760869565217391
+    },
+    {
+     "key": "walk/south/4",
+     "px": 53,
+     "share_a": 0.18027210884353742,
+     "share_b": 0.5638297872340425
+    },
+    {
+     "key": "walk/south/5",
+     "px": 55,
+     "share_a": 0.19927536231884058,
+     "share_b": 0.5913978494623656
+    },
+    {
+     "key": "walk/south/6",
+     "px": 57,
+     "share_a": 0.20284697508896798,
+     "share_b": 0.6
+    },
+    {
+     "key": "walk/south/7",
+     "px": 55,
+     "share_a": 0.21153846153846154,
+     "share_b": 0.5612244897959183
+    }
+   ],
+   "proxy_overlap": {
+    "south": 44,
+    "east": 0,
+    "north": 27
+   },
+   "proxy_min_dist": {
+    "south": 0.0,
+    "east": 8.0,
+    "north": 0.0
+   },
+   "proxy_bbox_gap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 44,
+      "east": 0,
+      "north": 27
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 8.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 59,
+      "east": 0,
+      "north": 28
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 11.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 2,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 60,
+      "east": 0,
+      "north": 21
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 12.37,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 4,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 53,
+      "east": 0,
+      "north": 15
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 4.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 53,
+      "east": 3,
+      "north": 33
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 55,
+      "east": 8,
+      "north": 22
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 57,
+      "east": 8,
+      "north": 27
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 55,
+      "east": 6,
+      "north": 20
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "band_zones": {
+    "a": "torso",
+    "b": "torso",
+    "intrusions": {
+     "south": {
+      "a_in_b": 125,
+      "b_in_a": 36,
+      "a_px": 296,
+      "b_px": 94
+     },
+     "east": {
+      "a_in_b": 316,
+      "b_in_a": 37,
+      "a_px": 396,
+      "b_px": 84
+     },
+     "north": {
+      "a_in_b": 475,
+      "b_in_a": 46,
+      "a_px": 608,
+      "b_px": 95
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 14,
+     "material_cells": 13,
+     "max_px": 84
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 3,
+     "max_px": 8
+    },
+    "north": {
+     "cells": 8,
+     "material_cells": 8,
+     "max_px": 33
+    }
+   },
+   "complete": true,
+   "union_overlap": {
+    "south": 218,
+    "east": 17,
+    "north": 48
+   },
+   "union_min_dist": {
+    "south": 0.0,
+    "east": 0.0,
+    "north": 0.0
+   }
+  },
+  {
+   "a": "hair_brown",
+   "b": "helmet_steel",
+   "slot_a": "hair",
+   "slot_b": "head",
+   "same_slot": false,
+   "lower": "hair_brown",
+   "shared_cells": 30,
+   "any_overlap_cells": 30,
+   "material_overlap_cells": 30,
+   "max_overlap_px": 135,
+   "max_lower_share": 0.9884,
+   "overlap_cells": [
+    {
+     "key": "cross-punch/south/0",
+     "px": 88,
+     "share_a": 0.9777777777777777,
+     "share_b": 0.7154471544715447
+    },
+    {
+     "key": "cross-punch/south/1",
+     "px": 80,
+     "share_a": 0.9876543209876543,
+     "share_b": 0.625
+    },
+    {
+     "key": "cross-punch/south/2",
+     "px": 83,
+     "share_a": 0.9651162790697675,
+     "share_b": 0.6434108527131783
+    },
+    {
+     "key": "cross-punch/south/3",
+     "px": 85,
+     "share_a": 0.9883720930232558,
+     "share_b": 0.6640625
+    },
+    {
+     "key": "cross-punch/south/4",
+     "px": 82,
+     "share_a": 0.8913043478260869,
+     "share_b": 0.6612903225806451
+    },
+    {
+     "key": "cross-punch/south/5",
+     "px": 87,
+     "share_a": 0.9666666666666667,
+     "share_b": 0.6304347826086957
+    },
+    {
+     "key": "walk/east/0",
+     "px": 101,
+     "share_a": 0.8859649122807017,
+     "share_b": 0.7952755905511811
+    },
+    {
+     "key": "walk/east/1",
+     "px": 100,
+     "share_a": 0.8849557522123894,
+     "share_b": 0.7633587786259542
+    },
+    {
+     "key": "walk/east/2",
+     "px": 100,
+     "share_a": 0.8849557522123894,
+     "share_b": 0.7633587786259542
+    },
+    {
+     "key": "walk/east/3",
+     "px": 99,
+     "share_a": 0.8839285714285714,
+     "share_b": 0.7557251908396947
+    },
+    {
+     "key": "walk/east/4",
+     "px": 105,
+     "share_a": 0.8974358974358975,
+     "share_b": 0.7777777777777778
+    },
+    {
+     "key": "walk/east/5",
+     "px": 102,
+     "share_a": 0.8947368421052632,
+     "share_b": 0.75
+    },
+    {
+     "key": "walk/east/6",
+     "px": 102,
+     "share_a": 0.8869565217391304,
+     "share_b": 0.75
+    },
+    {
+     "key": "walk/east/7",
+     "px": 101,
+     "share_a": 0.8859649122807017,
+     "share_b": 0.753731343283582
+    },
+    {
+     "key": "walk/north/0",
+     "px": 135,
+     "share_a": 0.823170731707317,
+     "share_b": 0.9507042253521126
+    },
+    {
+     "key": "walk/north/1",
+     "px": 134,
+     "share_a": 0.8220858895705522,
+     "share_b": 0.9241379310344827
+    },
+    {
+     "key": "walk/north/2",
+     "px": 128,
+     "share_a": 0.7757575757575758,
+     "share_b": 0.8827586206896552
+    },
+    {
+     "key": "walk/north/3",
+     "px": 129,
+     "share_a": 0.7914110429447853,
+     "share_b": 0.9084507042253521
+    },
+    {
+     "key": "walk/north/4",
+     "px": 131,
+     "share_a": 0.793939393939394,
+     "share_b": 0.8972602739726028
+    },
+    {
+     "key": "walk/north/5",
+     "px": 124,
+     "share_a": 0.8,
+     "share_b": 0.9393939393939394
+    },
+    {
+     "key": "walk/north/6",
+     "px": 126,
+     "share_a": 0.7777777777777778,
+     "share_b": 0.9473684210526315
+    },
+    {
+     "key": "walk/north/7",
+     "px": 132,
+     "share_a": 0.8,
+     "share_b": 0.9295774647887324
+    },
+    {
+     "key": "walk/south/0",
+     "px": 98,
+     "share_a": 0.8521739130434782,
+     "share_b": 0.8032786885245902
+    },
+    {
+     "key": "walk/south/1",
+     "px": 90,
+     "share_a": 0.7964601769911505,
+     "share_b": 0.743801652892562
+    },
+    {
+     "key": "walk/south/2",
+     "px": 89,
+     "share_a": 0.7807017543859649,
+     "share_b": 0.7355371900826446
+    },
+    {
+     "key": "walk/south/3",
+     "px": 89,
+     "share_a": 0.7876106194690266,
+     "share_b": 0.7355371900826446
+    },
+    {
+     "key": "walk/south/4",
+     "px": 91,
+     "share_a": 0.7844827586206896,
+     "share_b": 0.7459016393442623
+    },
+    {
+     "key": "walk/south/5",
+     "px": 92,
+     "share_a": 0.8,
+     "share_b": 0.7540983606557377
+    },
+    {
+     "key": "walk/south/6",
+     "px": 94,
+     "share_a": 0.7966101694915254,
+     "share_b": 0.7580645161290323
+    },
+    {
+     "key": "walk/south/7",
+     "px": 91,
+     "share_a": 0.7913043478260869,
+     "share_b": 0.7398373983739838
+    }
+   ],
+   "proxy_overlap": {
+    "south": 98,
+    "east": 101,
+    "north": 135
+   },
+   "proxy_min_dist": {
+    "south": 0.0,
+    "east": 0.0,
+    "north": 0.0
+   },
+   "proxy_bbox_gap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 98,
+      "east": 101,
+      "north": 135
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 90,
+      "east": 100,
+      "north": 134
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 89,
+      "east": 100,
+      "north": 128
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 89,
+      "east": 99,
+      "north": 129
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 91,
+      "east": 105,
+      "north": 131
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 92,
+      "east": 102,
+      "north": 124
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 94,
+      "east": 102,
+      "north": 126
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    },
+    {
+     "overlap": {
+      "south": 91,
+      "east": 101,
+      "north": 132
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": 0.0
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "band_zones": {
+    "a": "head",
+    "b": "head",
+    "intrusions": {
+     "south": {
+      "a_in_b": 84,
+      "b_in_a": 90,
+      "a_px": 115,
+      "b_px": 122
+     },
+     "east": {
+      "a_in_b": 94,
+      "b_in_a": 104,
+      "a_px": 114,
+      "b_px": 127
+     },
+     "north": {
+      "a_in_b": 135,
+      "b_in_a": 126,
+      "a_px": 164,
+      "b_px": 142
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 14,
+     "material_cells": 14,
+     "max_px": 98
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 8,
+     "max_px": 105
+    },
+    "north": {
+     "cells": 8,
+     "material_cells": 8,
+     "max_px": 135
+    }
+   },
+   "complete": true,
+   "union_overlap": {
+    "south": 237,
+    "east": 107,
+    "north": 155
+   },
+   "union_min_dist": {
+    "south": 0.0,
+    "east": 0.0,
+    "north": 0.0
+   }
+  },
+  {
+   "a": "hair_brown",
+   "b": "hat_wizard",
+   "slot_a": "hair",
+   "slot_b": "head",
+   "same_slot": false,
+   "lower": "hair_brown",
+   "shared_cells": 16,
+   "any_overlap_cells": 16,
+   "material_overlap_cells": 16,
+   "max_overlap_px": 102,
+   "max_lower_share": 0.8947,
+   "overlap_cells": [
+    {
+     "key": "walk/east/0",
+     "px": 91,
+     "share_a": 0.7982456140350878,
+     "share_b": 0.4026548672566372
+    },
+    {
+     "key": "walk/east/1",
+     "px": 91,
+     "share_a": 0.8053097345132744,
+     "share_b": 0.4008810572687225
+    },
+    {
+     "key": "walk/east/2",
+     "px": 90,
+     "share_a": 0.7964601769911505,
+     "share_b": 0.4
+    },
+    {
+     "key": "walk/east/3",
+     "px": 91,
+     "share_a": 0.8125,
+     "share_b": 0.4008810572687225
+    },
+    {
+     "key": "walk/east/4",
+     "px": 96,
+     "share_a": 0.8205128205128205,
+     "share_b": 0.42105263157894735
+    },
+    {
+     "key": "walk/east/5",
+     "px": 93,
+     "share_a": 0.8157894736842105,
+     "share_b": 0.40789473684210525
+    },
+    {
+     "key": "walk/east/6",
+     "px": 91,
+     "share_a": 0.7913043478260869,
+     "share_b": 0.4026548672566372
+    },
+    {
+     "key": "walk/east/7",
+     "px": 91,
+     "share_a": 0.7982456140350878,
+     "share_b": 0.4026548672566372
+    },
+    {
+     "key": "walk/south/0",
+     "px": 101,
+     "share_a": 0.8782608695652174,
+     "share_b": 0.4089068825910931
+    },
+    {
+     "key": "walk/south/1",
+     "px": 100,
+     "share_a": 0.8849557522123894,
+     "share_b": 0.4032258064516129
+    },
+    {
+     "key": "walk/south/2",
+     "px": 102,
+     "share_a": 0.8947368421052632,
+     "share_b": 0.4358974358974359
+    },
+    {
+     "key": "walk/south/3",
+     "px": 101,
+     "share_a": 0.8938053097345132,
+     "share_b": 0.4089068825910931
+    },
+    {
+     "key": "walk/south/4",
+     "px": 99,
+     "share_a": 0.853448275862069,
+     "share_b": 0.4090909090909091
+    },
+    {
+     "key": "walk/south/5",
+     "px": 98,
+     "share_a": 0.8521739130434782,
+     "share_b": 0.4206008583690987
+    },
+    {
+     "key": "walk/south/6",
+     "px": 101,
+     "share_a": 0.8559322033898306,
+     "share_b": 0.4410480349344978
+    },
+    {
+     "key": "walk/south/7",
+     "px": 98,
+     "share_a": 0.8521739130434782,
+     "share_b": 0.4279475982532751
+    }
+   ],
+   "proxy_overlap": {
+    "south": 101,
+    "east": 91,
+    "north": 0
+   },
+   "proxy_min_dist": {
+    "south": 0.0,
+    "east": 0.0,
+    "north": NaN
+   },
+   "proxy_bbox_gap": {
+    "south": 0,
+    "east": 0,
+    "north": -1
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 101,
+      "east": 91,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 100,
+      "east": 91,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 102,
+      "east": 90,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 101,
+      "east": 91,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 99,
+      "east": 96,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 98,
+      "east": 93,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 101,
+      "east": 91,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 98,
+      "east": 91,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 0,
+    "east": 0,
+    "north": null
+   },
+   "band_zones": {
+    "a": "head",
+    "b": "head",
+    "intrusions": {
+     "south": {
+      "a_in_b": 84,
+      "b_in_a": 130,
+      "a_px": 115,
+      "b_px": 247
+     },
+     "east": {
+      "a_in_b": 94,
+      "b_in_a": 125,
+      "a_px": 114,
+      "b_px": 226
+     },
+     "north": {
+      "a_in_b": 135,
+      "b_in_a": 0,
+      "a_px": 164,
+      "b_px": 0
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 8,
+     "material_cells": 8,
+     "max_px": 102
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 8,
+     "max_px": 96
+    },
+    "north": {
+     "cells": 0,
+     "material_cells": 0,
+     "max_px": 0
+    }
+   },
+   "complete": false,
+   "union_overlap": {
+    "south": 165,
+    "east": 97,
+    "north": 0
+   },
+   "union_min_dist": {
+    "south": 0.0,
+    "east": 0.0,
+    "north": NaN
+   }
+  },
+  {
+   "a": "hair_brown",
+   "b": "sword_steel",
+   "slot_a": "hair",
+   "slot_b": "main_hand",
+   "same_slot": false,
+   "lower": "hair_brown",
+   "shared_cells": 30,
+   "any_overlap_cells": 0,
+   "material_overlap_cells": 0,
+   "max_overlap_px": 0,
+   "max_lower_share": 0.0,
+   "overlap_cells": [],
+   "proxy_overlap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "proxy_min_dist": {
+    "south": 19.31,
+    "east": 19.8,
+    "north": 19.7
+   },
+   "proxy_bbox_gap": {
+    "south": 17,
+    "east": 13,
+    "north": 17
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 19.31,
+      "east": 19.8,
+      "north": 19.7
+     },
+     "bbox_gap": {
+      "south": 17,
+      "east": 13,
+      "north": 17
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 20.25,
+      "east": 20.52,
+      "north": 18.79
+     },
+     "bbox_gap": {
+      "south": 18,
+      "east": 13,
+      "north": 15
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 19.31,
+      "east": 20.52,
+      "north": 18.79
+     },
+     "bbox_gap": {
+      "south": 17,
+      "east": 13,
+      "north": 16
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 19.31,
+      "east": 14.56,
+      "north": 20.12
+     },
+     "bbox_gap": {
+      "south": 17,
+      "east": 13,
+      "north": 17
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 18.97,
+      "east": 14.04,
+      "north": 19.7
+     },
+     "bbox_gap": {
+      "south": 17,
+      "east": 13,
+      "north": 17
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 18.97,
+      "east": 14.0,
+      "north": 19.7
+     },
+     "bbox_gap": {
+      "south": 17,
+      "east": 13,
+      "north": 17
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 17.0,
+      "east": 14.04,
+      "north": 19.7
+     },
+     "bbox_gap": {
+      "south": 16,
+      "east": 13,
+      "north": 17
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 17.0,
+      "east": 14.0,
+      "north": 19.7
+     },
+     "bbox_gap": {
+      "south": 16,
+      "east": 13,
+      "north": 17
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 17,
+    "east": 13,
+    "north": 17
+   },
+   "band_zones": {
+    "a": "head",
+    "b": "torso",
+    "intrusions": {
+     "south": {
+      "a_in_b": 0,
+      "b_in_a": 0,
+      "a_px": 115,
+      "b_px": 94
+     },
+     "east": {
+      "a_in_b": 2,
+      "b_in_a": 0,
+      "a_px": 114,
+      "b_px": 84
+     },
+     "north": {
+      "a_in_b": 0,
+      "b_in_a": 0,
+      "a_px": 164,
+      "b_px": 95
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 14,
+     "material_cells": 0,
+     "max_px": 0
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    },
+    "north": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    }
+   },
+   "complete": true,
+   "union_overlap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "union_min_dist": {
+    "south": 8.0,
+    "east": 14.0,
+    "north": 18.36
+   }
+  },
+  {
+   "a": "helmet_steel",
+   "b": "hat_wizard",
+   "slot_a": "head",
+   "slot_b": "head",
+   "same_slot": true,
+   "lower": "helmet_steel",
+   "shared_cells": 16,
+   "any_overlap_cells": 16,
+   "material_overlap_cells": 16,
+   "max_overlap_px": 108,
+   "max_lower_share": 0.8168,
+   "overlap_cells": [
+    {
+     "key": "walk/east/0",
+     "px": 102,
+     "share_a": 0.8031496062992126,
+     "share_b": 0.45132743362831856
+    },
+    {
+     "key": "walk/east/1",
+     "px": 105,
+     "share_a": 0.8015267175572519,
+     "share_b": 0.46255506607929514
+    },
+    {
+     "key": "walk/east/2",
+     "px": 104,
+     "share_a": 0.7938931297709924,
+     "share_b": 0.4622222222222222
+    },
+    {
+     "key": "walk/east/3",
+     "px": 107,
+     "share_a": 0.816793893129771,
+     "share_b": 0.4713656387665198
+    },
+    {
+     "key": "walk/east/4",
+     "px": 108,
+     "share_a": 0.8,
+     "share_b": 0.47368421052631576
+    },
+    {
+     "key": "walk/east/5",
+     "px": 107,
+     "share_a": 0.7867647058823529,
+     "share_b": 0.4692982456140351
+    },
+    {
+     "key": "walk/east/6",
+     "px": 104,
+     "share_a": 0.7647058823529411,
+     "share_b": 0.46017699115044247
+    },
+    {
+     "key": "walk/east/7",
+     "px": 104,
+     "share_a": 0.7761194029850746,
+     "share_b": 0.46017699115044247
+    },
+    {
+     "key": "walk/south/0",
+     "px": 96,
+     "share_a": 0.7868852459016393,
+     "share_b": 0.38866396761133604
+    },
+    {
+     "key": "walk/south/1",
+     "px": 97,
+     "share_a": 0.8016528925619835,
+     "share_b": 0.3911290322580645
+    },
+    {
+     "key": "walk/south/2",
+     "px": 95,
+     "share_a": 0.7851239669421488,
+     "share_b": 0.405982905982906
+    },
+    {
+     "key": "walk/south/3",
+     "px": 95,
+     "share_a": 0.7851239669421488,
+     "share_b": 0.38461538461538464
+    },
+    {
+     "key": "walk/south/4",
+     "px": 97,
+     "share_a": 0.7950819672131147,
+     "share_b": 0.40082644628099173
+    },
+    {
+     "key": "walk/south/5",
+     "px": 95,
+     "share_a": 0.7786885245901639,
+     "share_b": 0.40772532188841204
+    },
+    {
+     "key": "walk/south/6",
+     "px": 97,
+     "share_a": 0.782258064516129,
+     "share_b": 0.42358078602620086
+    },
+    {
+     "key": "walk/south/7",
+     "px": 96,
+     "share_a": 0.7804878048780488,
+     "share_b": 0.4192139737991266
+    }
+   ],
+   "proxy_overlap": {
+    "south": 96,
+    "east": 102,
+    "north": 0
+   },
+   "proxy_min_dist": {
+    "south": 0.0,
+    "east": 0.0,
+    "north": NaN
+   },
+   "proxy_bbox_gap": {
+    "south": 0,
+    "east": 0,
+    "north": -1
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 96,
+      "east": 102,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 97,
+      "east": 105,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 95,
+      "east": 104,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 95,
+      "east": 107,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 97,
+      "east": 108,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 95,
+      "east": 107,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 97,
+      "east": 104,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 96,
+      "east": 104,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 0.0,
+      "east": 0.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 0,
+      "east": 0,
+      "north": -1
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 0,
+    "east": 0,
+    "north": null
+   },
+   "band_zones": {
+    "a": "head",
+    "b": "head",
+    "intrusions": {
+     "south": {
+      "a_in_b": 90,
+      "b_in_a": 130,
+      "a_px": 122,
+      "b_px": 247
+     },
+     "east": {
+      "a_in_b": 104,
+      "b_in_a": 125,
+      "a_px": 127,
+      "b_px": 226
+     },
+     "north": {
+      "a_in_b": 126,
+      "b_in_a": 0,
+      "a_px": 142,
+      "b_px": 0
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 8,
+     "material_cells": 8,
+     "max_px": 97
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 8,
+     "max_px": 108
+    },
+    "north": {
+     "cells": 0,
+     "material_cells": 0,
+     "max_px": 0
+    }
+   },
+   "complete": false,
+   "union_overlap": {
+    "south": 154,
+    "east": 109,
+    "north": 0
+   },
+   "union_min_dist": {
+    "south": 0.0,
+    "east": 0.0,
+    "north": NaN
+   }
+  },
+  {
+   "a": "helmet_steel",
+   "b": "sword_steel",
+   "slot_a": "head",
+   "slot_b": "main_hand",
+   "same_slot": false,
+   "lower": "helmet_steel",
+   "shared_cells": 30,
+   "any_overlap_cells": 0,
+   "material_overlap_cells": 0,
+   "max_overlap_px": 0,
+   "max_lower_share": 0.0,
+   "overlap_cells": [],
+   "proxy_overlap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "proxy_min_dist": {
+    "south": 18.97,
+    "east": 17.89,
+    "north": 18.97
+   },
+   "proxy_bbox_gap": {
+    "south": 17,
+    "east": 15,
+    "north": 17
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 18.97,
+      "east": 17.89,
+      "north": 18.97
+     },
+     "bbox_gap": {
+      "south": 17,
+      "east": 15,
+      "north": 17
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 18.97,
+      "east": 18.36,
+      "north": 17.89
+     },
+     "bbox_gap": {
+      "south": 17,
+      "east": 15,
+      "north": 15
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 18.03,
+      "east": 18.36,
+      "north": 17.46
+     },
+     "bbox_gap": {
+      "south": 16,
+      "east": 15,
+      "north": 15
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 18.03,
+      "east": 16.0,
+      "north": 18.79
+     },
+     "bbox_gap": {
+      "south": 16,
+      "east": 15,
+      "north": 16
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 18.03,
+      "east": 15.0,
+      "north": 18.38
+     },
+     "bbox_gap": {
+      "south": 16,
+      "east": 14,
+      "north": 16
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 18.03,
+      "east": 15.03,
+      "north": 18.79
+     },
+     "bbox_gap": {
+      "south": 16,
+      "east": 14,
+      "north": 16
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 16.0,
+      "east": 15.13,
+      "north": 18.79
+     },
+     "bbox_gap": {
+      "south": 15,
+      "east": 14,
+      "north": 16
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 16.0,
+      "east": 15.0,
+      "north": 18.38
+     },
+     "bbox_gap": {
+      "south": 15,
+      "east": 14,
+      "north": 16
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 17,
+    "east": 15,
+    "north": 17
+   },
+   "band_zones": {
+    "a": "head",
+    "b": "torso",
+    "intrusions": {
+     "south": {
+      "a_in_b": 0,
+      "b_in_a": 0,
+      "a_px": 122,
+      "b_px": 94
+     },
+     "east": {
+      "a_in_b": 0,
+      "b_in_a": 0,
+      "a_px": 127,
+      "b_px": 84
+     },
+     "north": {
+      "a_in_b": 0,
+      "b_in_a": 0,
+      "a_px": 142,
+      "b_px": 95
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 14,
+     "material_cells": 0,
+     "max_px": 0
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    },
+    "north": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    }
+   },
+   "complete": true,
+   "union_overlap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "union_min_dist": {
+    "south": 6.0,
+    "east": 15.0,
+    "north": 17.46
+   }
+  },
+  {
+   "a": "hat_wizard",
+   "b": "sword_steel",
+   "slot_a": "head",
+   "slot_b": "main_hand",
+   "same_slot": false,
+   "lower": "hat_wizard",
+   "shared_cells": 16,
+   "any_overlap_cells": 0,
+   "material_overlap_cells": 0,
+   "max_overlap_px": 0,
+   "max_lower_share": 0.0,
+   "overlap_cells": [],
+   "proxy_overlap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "proxy_min_dist": {
+    "south": 22.0,
+    "east": 21.54,
+    "north": NaN
+   },
+   "proxy_bbox_gap": {
+    "south": 21,
+    "east": 16,
+    "north": -1
+   },
+   "proxy_frames": [
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 22.0,
+      "east": 21.54,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 21,
+      "east": 16,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 22.0,
+      "east": 21.93,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 20,
+      "east": 16,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 21.0,
+      "east": 21.93,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 20,
+      "east": 16,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 21.0,
+      "east": 18.03,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 20,
+      "east": 16,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 21.0,
+      "east": 17.12,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 19,
+      "east": 16,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 21.0,
+      "east": 17.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 20,
+      "east": 16,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 20.0,
+      "east": 17.0,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 19,
+      "east": 16,
+      "north": -1
+     }
+    },
+    {
+     "overlap": {
+      "south": 0,
+      "east": 0,
+      "north": 0
+     },
+     "min_dist": {
+      "south": 20.0,
+      "east": 17.03,
+      "north": null
+     },
+     "bbox_gap": {
+      "south": 19,
+      "east": 16,
+      "north": -1
+     }
+    }
+   ],
+   "proxy_band_gap": {
+    "south": 21,
+    "east": 16,
+    "north": null
+   },
+   "band_zones": {
+    "a": "head",
+    "b": "torso",
+    "intrusions": {
+     "south": {
+      "a_in_b": 0,
+      "b_in_a": 0,
+      "a_px": 247,
+      "b_px": 94
+     },
+     "east": {
+      "a_in_b": 0,
+      "b_in_a": 0,
+      "a_px": 226,
+      "b_px": 84
+     },
+     "north": {
+      "a_in_b": 0,
+      "b_in_a": 0,
+      "a_px": 0,
+      "b_px": 95
+     }
+    }
+   },
+   "per_dir": {
+    "south": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    },
+    "east": {
+     "cells": 8,
+     "material_cells": 0,
+     "max_px": 0
+    },
+    "north": {
+     "cells": 0,
+     "material_cells": 0,
+     "max_px": 0
+    }
+   },
+   "complete": false,
+   "union_overlap": {
+    "south": 0,
+    "east": 0,
+    "north": 0
+   },
+   "union_min_dist": {
+    "south": 13.04,
+    "east": 17.0,
+    "north": NaN
+   }
+  }
+ ]
+}
