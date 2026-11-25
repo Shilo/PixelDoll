@@ -1430,6 +1430,8 @@
 		"previewZip": "Vista previa del ZIP del personaje",
 		"previewCharacter": "Vista previa del personaje",
 		"preview": "Vista previa",
+		"appearanceTip": "La ropa dibujada en el personaje sigue siendo parte de la imagen. Después de importar, usa Editar apariencia para crear una nueva base.",
+		"dismissAppearanceTip": "Cerrar consejo sobre la apariencia",
 		"previewArtwork": "Vista previa de importación del personaje",
 		"stalePreview": "Se muestra la última vista previa. Actualiza tu selección para continuar.",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",
@@ -1453,7 +1455,7 @@
 		"untitledState": "Estado sin título",
 		"warning": {
 			"noRoom": "No se añadió espacio para animaciones porque este personaje tiene demasiados píxeles de imagen. Usa Ajustar marco después de importar para añadirlo.",
-			"fixedBase": "Las imágenes importadas forman la base fija: no puedes quitar la ropa ni el pelo que ya aparecen. Configura el rig para añadir animaciones y adaptar el equipamiento a las poses del esqueleto.",
+			"fixedBase": "Configura el esqueleto de poses para ajustar objetos y añadir nuevos movimientos.",
 			"frameCounts": "“{move}” tiene distinta cantidad de fotogramas según la dirección. Sus direcciones se importaron como animaciones separadas para conservar todos los fotogramas originales y la duración de cada dirección.",
 			"skippedMove": "Se omitió «{move}»: no se pudieron leer sus fotogramas de animación. Vuelve a exportarla con fotogramas numerados individuales.",
 			"skippedDirection": "Se omitió «{move}» en la dirección {direction}: sus fotogramas están vacíos, faltan o están desordenados.",

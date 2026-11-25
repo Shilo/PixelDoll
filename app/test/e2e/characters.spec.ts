@@ -2439,6 +2439,13 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 			.getByLabel('Character ZIP', { exact: true })
 			.setInputFiles({ name: 'saved-character.zip', mimeType: 'application/zip', buffer: bytes });
 		await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
+		const tip = page.getByRole('button', { name: 'Dismiss appearance tip' });
+		await expect(tip).toBeVisible();
+		if (name === 'Imported two') {
+			await tip.click();
+			await expect(tip).toBeHidden();
+			await expect(page.getByLabel('Character name', { exact: true })).toBeFocused();
+		}
 		await page.getByLabel('Character name', { exact: true }).fill(name);
 		await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck();
 		await page.getByRole('button', { name: 'Import character', exact: true }).click();
@@ -2446,6 +2453,10 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 		await expect(page.locator('.project-btn')).toContainText(name, { timeout: 30_000 });
 	}
 	await importCopy('Imported one');
+	await page.getByRole('button', { name: 'Edit appearance…', exact: true }).click();
+	const appearance = page.getByRole('dialog', { name: 'Edit appearance', exact: true });
+	await expect(appearance).toContainText('Imported one');
+	await appearance.getByRole('button', { name: 'Close', exact: true }).click();
 	await reloadStudio(page);
 	await expect(page.locator('.project-btn')).toContainText('Imported one');
 	await importCopy('Imported two');
@@ -2814,6 +2825,7 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await page.getByRole('button', { name: 'Next page', exact: true }).click();
 	await page.getByRole('button', { name: /Page two hero/ }).click();
 	await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
+	await expect(dialog.getByRole('button', { name: 'Dismiss appearance tip' })).toBeVisible();
 	// Back drops the staged review, so it asks first.
 	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
 	await page

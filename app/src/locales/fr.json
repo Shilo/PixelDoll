@@ -1430,6 +1430,8 @@
 		"previewZip": "Prévisualiser le ZIP de personnage",
 		"previewCharacter": "Prévisualiser le personnage",
 		"preview": "Prévisualiser",
+		"appearanceTip": "Les vêtements dessinés sur le personnage font partie de son image. Après l’importation, utilisez Modifier l’apparence pour créer une nouvelle base.",
+		"dismissAppearanceTip": "Fermer le conseil sur l’apparence",
 		"previewArtwork": "Aperçu de l’import du personnage",
 		"stalePreview": "Affichage du dernier aperçu. Mettez à jour vos sélections pour continuer.",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",
@@ -1453,7 +1455,7 @@
 		"untitledState": "État sans titre",
 		"warning": {
 			"noRoom": "L’espace pour les animations n’a pas été ajouté, car ce personnage a trop de pixels d’image. Utilisez Ajuster le cadre après l’import pour l’ajouter.",
-			"fixedBase": "Le visuel importé devient le corps de base figé : il est impossible de retirer les vêtements et les cheveux déjà dessinés. Configurez le rig de pose pour animer l’équipement avec le squelette et ajouter de nouvelles animations.",
+			"fixedBase": "Configurez le squelette de pose pour ajuster les objets et ajouter de nouveaux mouvements.",
 			"frameCounts": "« {move} » a un nombre d’images différent selon la direction. Ses directions ont été importées comme animations distinctes pour conserver chaque image et la durée d’origine de chaque direction.",
 			"skippedMove": "« {move} » a été laissée de côté : ses images d’animation sont illisibles. Exportez-la à nouveau avec des images numérotées individuelles.",
 			"skippedDirection": "« {move} » vers {direction} a été laissée de côté : ses images sont vides, manquantes ou dans le désordre.",

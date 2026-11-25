@@ -1381,6 +1381,8 @@
 		"previewZip": "캐릭터 ZIP 미리보기",
 		"previewCharacter": "캐릭터 미리보기",
 		"preview": "미리보기",
+		"appearanceTip": "캐릭터에 그려진 옷은 그림의 일부로 남습니다. 가져온 뒤 외형 편집으로 새 기본 모습을 만들 수 있습니다.",
+		"dismissAppearanceTip": "외형 도움말 닫기",
 		"previewArtwork": "캐릭터 가져오기 미리보기",
 		"stalePreview": "마지막 미리보기를 표시하고 있어요. 계속하려면 선택을 업데이트하세요.",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",
@@ -1404,7 +1406,7 @@
 		"untitledState": "제목 없는 상태",
 		"warning": {
 			"noRoom": "이 캐릭터는 이미지 픽셀이 너무 많아 동작용 공간을 추가하지 않았어요. 가져온 뒤 프레임 조정에서 추가하세요.",
-			"fixedBase": "가져온 아트워크는 고정 기본 몸체예요. 기존 옷과 머리카락은 제거할 수 없어요. 스켈레톤 자세 장비와 새 동작을 쓰려면 자세 리그를 설정하세요.",
+			"fixedBase": "아이템을 맞추고 새 동작을 추가하려면 포즈 리그를 설정하세요.",
 			"frameCounts": "“{move}” 동작은 방향마다 프레임 수가 달라요. 모든 원본 프레임과 방향 길이를 유지하려고 방향을 별도 동작으로 가져왔어요.",
 			"skippedMove": "“{move}”은(는) 제외됐어요. 애니메이션 프레임을 읽을 수 없어요. 번호가 붙은 개별 프레임으로 다시 내보내세요.",
 			"skippedDirection": "“{move}”의 {direction} 방향은 제외됐어요. 프레임이 비어 있거나, 빠져 있거나, 순서가 맞지 않아요.",

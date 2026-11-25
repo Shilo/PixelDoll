@@ -1,7 +1,8 @@
 <script lang="ts">
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
-	import { onDestroy } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
+	import CloseButton from './CloseButton.svelte';
 	import Sheet from './Sheet.svelte';
 	import { fileDrop, preventFileNavigation } from './fileDrop.ts';
 	import DirectionCompass from './DirectionCompass.svelte';
@@ -42,8 +43,12 @@
 	import { clipKind } from '../lib/runtime/timeline.js';
 	import {
 		ui,
+		doc,
 		store,
+		dismissImportAppearanceTip,
 		dismissWelcome,
+		importAppearanceTipDismissed,
+		openAppearance,
 		refreshProjects,
 		openProject,
 		toast,
@@ -68,6 +73,8 @@
 	let previewValid = $state(false),
 		nameInitialized = false;
 	let setupNext = $state(true);
+	let showAppearanceTip = $state(untrack(() => !importAppearanceTipDismissed()));
+	let nameInput = $state<HTMLInputElement>();
 	let directionChoices = $state.raw<RigDirection[] | null>(null);
 	let facing = $state<DirectionName>('south');
 	const originalDirections = $derived(prepared?.project.manifest.rig.directions ?? []);
@@ -403,7 +410,19 @@
 				store.projects.some((entry) => entry.id !== projectId && entry.exportId === alias)
 			)
 				toast(message('renameSheet.characterIdConflict'), { tone: 'warning', report: false });
-			else toast(message('import.imported', { name: name.trim() }));
+			else
+				toast(
+					message('import.imported', { name: name.trim() }),
+					showAppearanceTip && !ui.sheet
+						? {
+								duration: 8000,
+								actionLabel: message('appearance.action'),
+								action: () => {
+									if (doc.id === projectId) openAppearance(projectId);
+								}
+							}
+						: undefined
+				);
 		} catch (e) {
 			if (alive) fail(e);
 		} finally {
@@ -728,11 +747,26 @@
 					})}
 				</p>{/if}
 		</div>
+		{#if showAppearanceTip && preview && previewValid}
+			<div class="import-appearance-tip">
+				<p class="muted small">{t('import.appearanceTip')}</p>
+				<CloseButton
+					label={t('import.dismissAppearanceTip')}
+					disabled={busy}
+					onclick={() => {
+						dismissImportAppearanceTip();
+						showAppearanceTip = false;
+						nameInput?.focus({ preventScroll: true });
+					}}
+				/>
+			</div>
+		{/if}
 		{#if busy && !saving}<p class="muted" role="status">{t('import.updatingPreview')}</p>{/if}
 		<label class="field"
 			><span class="label">{t('import.characterName')}</span><input
 				class="bu-input input"
 				type="text"
+				bind:this={nameInput}
 				bind:value={name}
 				maxlength="60"
 				disabled={busy}
@@ -922,6 +956,15 @@
 		padding: 12px;
 		border-radius: var(--r-ctl);
 		background: var(--bg-hover);
+	}
+	.import-appearance-tip {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+	}
+	.import-appearance-tip p {
+		margin: 0;
 	}
 	.import-drop {
 		display: grid;

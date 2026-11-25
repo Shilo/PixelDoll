@@ -1430,6 +1430,8 @@
 		"previewZip": "Vorschau des Figuren-ZIP",
 		"previewCharacter": "Figur in Vorschau anzeigen",
 		"preview": "Vorschau",
+		"appearanceTip": "Kleidung, die in die Figur eingezeichnet ist, bleibt Teil der Grafik. Nach dem Import kannst du mit „Aussehen bearbeiten“ eine neue Basis erstellen.",
+		"dismissAppearanceTip": "Hinweis zum Aussehen schließen",
 		"previewArtwork": "Vorschau für den Figurenimport",
 		"stalePreview": "Die letzte Vorschau wird angezeigt. Aktualisiere deine Auswahl, um fortzufahren.",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",
@@ -1453,7 +1455,7 @@
 		"untitledState": "Unbenannter Zustand",
 		"warning": {
 			"noRoom": "Platz für Animationen wurde nicht hinzugefügt, weil diese Figur zu viele Bildpixel hat. Nutze nach dem Import Frame anpassen, um ihn hinzuzufügen.",
-			"fixedBase": "Importierte Grafiken bilden den festen Grundkörper: Vorhandene Kleidung und Haare können nicht entfernt werden. Richte das Posen-Rig ein, um Ausrüstung per Skelett zu animieren und neue Animationen hinzuzufügen.",
+			"fixedBase": "Richte das Posen-Rig ein, um Gegenstände anzupassen und neue Bewegungen hinzuzufügen.",
 			"frameCounts": "„{move}“ hat je nach Blickrichtung unterschiedlich viele Frames. Die Blickrichtungen wurden als separate Animationen importiert, damit alle Originalframes und die jeweilige Länge erhalten bleiben.",
 			"skippedMove": "„{move}“ wurde weggelassen: Die Animationsframes konnten nicht gelesen werden. Exportiere sie erneut mit einzelnen nummerierten Frames.",
 			"skippedDirection": "„{move}“ in Blickrichtung {direction} wurde weggelassen: Die Frames sind leer, fehlen oder sind nicht in Reihenfolge.",

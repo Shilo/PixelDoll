@@ -1436,6 +1436,8 @@
 		"previewZip": "Ver prévia do ZIP do personagem",
 		"previewCharacter": "Ver prévia do personagem",
 		"preview": "Prévia",
+		"appearanceTip": "A roupa desenhada no personagem continua fazendo parte da imagem. Após importar, use Editar aparência para criar uma nova base.",
+		"dismissAppearanceTip": "Dispensar dica de aparência",
 		"previewArtwork": "Prévia da importação do personagem",
 		"stalePreview": "Mostrando a última prévia. Atualize suas seleções para continuar.",
 		"previewSummary": "{directions} · {states} · {moves} · {items}",
@@ -1459,7 +1461,7 @@
 		"untitledState": "Estado sem nome",
 		"warning": {
 			"noRoom": "Não foi adicionado espaço para animações porque este personagem tem pixels de imagem demais. Use Ajustar quadro depois de importar para adicioná-lo.",
-			"fixedBase": "A arte importada vira a base fixa: as roupas e os cabelos existentes não podem ser removidos. Configure o rig de poses para usar equipamentos animados pelo esqueleto e adicionar novas animações.",
+			"fixedBase": "Configure o rig de poses para ajustar itens e adicionar novos movimentos.",
 			"frameCounts": "“{move}” tem quantidades diferentes de quadros em cada direção. As direções foram importadas como animações separadas para preservar todos os quadros originais e a duração de cada direção.",
 			"skippedMove": "“{move}” ficou de fora: não foi possível ler seus quadros de animação. Exporte novamente com quadros numerados individuais.",
 			"skippedDirection": "“{move}” na direção {direction} ficou de fora: os quadros estão vazios, faltando ou fora de ordem.",
