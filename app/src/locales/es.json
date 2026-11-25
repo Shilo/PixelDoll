@@ -722,6 +722,8 @@
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratis: nunca vuelve a generar objetos ya creados.",
 		"drawsAbove": "Se dibuja encima de",
 		"worksLike": "Funciona como",
+		"icon": "Icono",
+		"iconNote": "Se ve en el vestuario y en las listas de ranuras. Solo cambia el aspecto de esta categoría.",
 		"hand": "Mano",
 		"placeholderEGSmallAndShinyPinned": "p. ej., pequeño y brillante, prendido en el pecho",
 		"deleteSlot": "Mover a la papelera…",
@@ -1745,6 +1747,11 @@
 			"shoulders": "Hombros",
 			"accessory": "Accesorio"
 		},
+		"icons": {
+			"tag": "Etiqueta",
+			"star": "Estrella",
+			"gem": "Gema"
+		},
 		"ideas": {
 			"head": ["sombrero de mago", "yelmo de hierro de caballero", "corona dorada", "capucha"],
 			"hair": ["pelo largo trenzado", "pelo corto en punta", "coleta"],
@@ -1778,6 +1785,7 @@
 			"fixedName": "Los nombres integrados no se pueden cambiar.",
 			"fixedHint": "Solo las categorías personalizadas admiten una pista creativa.",
 			"fixedBehavior": "El comportamiento integrado no se puede cambiar; agrega una copia personalizada.",
+			"fixedIcon": "Los iconos de las categorías integradas no cambian; añade una copia personalizada.",
 			"fixedHand": "Solo puedes elegir la mano en ranuras personalizadas para objetos de mano.",
 			"fixedDrawOrder": "El orden de dibujo integrado no se puede cambiar.",
 			"fixedSettings": "Las categorías integradas solo se pueden mostrar, ocultar o mover.",

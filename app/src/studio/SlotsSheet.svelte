@@ -14,7 +14,7 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import GroupIcon from './GroupIcon.svelte';
 	import * as db from '../lib/store/db.ts';
-	import type { SlotProfile } from '../lib/store/manifest.ts';
+	import type { SlotIcon, SlotProfile } from '../lib/store/manifest.ts';
 	import {
 		ui,
 		doc,
@@ -32,10 +32,12 @@
 		ACCESSORY,
 		applySettings,
 		BEHAVIORS,
+		ICON_CHOICES,
 		MAX_HINT,
 		MAX_LABEL,
 		baseClothesNote,
 		behaviorLabelMessage,
+		iconLabelMessage,
 		slotBusyMessage,
 		categories,
 		cleanLabel,
@@ -143,7 +145,14 @@
 	}
 
 	// ---------- a custom slot's settings ----------
-	let form = $state({ name: '', behavior: '' as SlotProfile, hand: 'right', above: '', hint: '' });
+	let form = $state({
+		name: '',
+		behavior: '' as SlotProfile,
+		icon: 'accessory' as SlotIcon,
+		hand: 'right',
+		above: '',
+		hint: ''
+	});
 	/** Draws above as the editor opened: only a changed choice is saved, so a new behavior or hand keeps its own depth. */
 	let startAbove = '';
 	let formError = $state<Message | string>('');
@@ -173,6 +182,7 @@
 		form = {
 			name: def.label ?? edited.key,
 			behavior: def.profile ?? 'accessory',
+			icon: def.icon ?? def.profile ?? 'accessory',
 			hand: def.anchor === 'hand_l' ? 'left' : 'right',
 			above: drawsAbove(m, edited.key),
 			hint: def.promptTemplate ?? ''
@@ -192,6 +202,7 @@
 			applySettings(trial, edited.key, {
 				label: edited.label,
 				profile: form.behavior as Exclude<SlotProfile, 'body'>,
+				icon: form.icon,
 				...(heldChoice ? { hand: form.hand as 'left' | 'right' } : {}),
 				hint: editedDef.promptTemplate ?? ''
 			});
@@ -211,6 +222,7 @@
 			const reason = await saveSlotSettings(edited.key, {
 				label: form.name,
 				profile: form.behavior as Exclude<SlotProfile, 'body'>,
+				icon: form.icon,
 				...(heldChoice ? { hand: form.hand as 'left' | 'right' } : {}),
 				...(form.above !== startAbove ? { above: form.above } : {}),
 				hint: form.hint
@@ -352,6 +364,26 @@
 					</div>
 				</div>
 			{/if}
+			<div class="field">
+				<span class="label" id="slot-icon-label">{t('slotsSheet.icon')}</span>
+				<div class="icon-grid" role="radiogroup" aria-labelledby="slot-icon-label">
+					{#each ICON_CHOICES as icon (icon)}
+						{@const name = displayMessage(iconLabelMessage(icon))}
+						<button
+							type="button"
+							class="icon-choice"
+							role="radio"
+							aria-checked={form.icon === icon}
+							aria-label={name}
+							title={name}
+							onclick={() => (form.icon = icon)}
+						>
+							<GroupIcon {icon} size={20} />
+						</button>
+					{/each}
+				</div>
+				<p class="faint small">{t('slotsSheet.iconNote')}</p>
+			</div>
 			<label class="field"
 				><span class="label"
 					>{t('slotsSheet.creativeHint')}
@@ -518,5 +550,28 @@
 	}
 	.delete-slot {
 		margin-top: 8px;
+	}
+	.icon-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+		gap: 4px;
+	}
+	.icon-choice {
+		display: grid;
+		place-items: center;
+		min-height: 44px;
+		border: 1px solid var(--line);
+		border-radius: var(--r-ctl);
+		background: transparent;
+		color: var(--text);
+		cursor: pointer;
+	}
+	.icon-choice:hover {
+		background: var(--bg-hover);
+	}
+	.icon-choice[aria-checked='true'] {
+		border-color: var(--accent);
+		background: var(--accent-soft);
+		color: var(--accent-text);
 	}
 </style>

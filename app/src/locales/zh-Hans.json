@@ -700,6 +700,8 @@
 		"freeNeverRegeneratesItemsAlreadyMade": "免费：不会重新生成已制作的装备。",
 		"drawsAbove": "绘制在以下装备栏之上",
 		"worksLike": "作用类似于",
+		"icon": "图标",
+		"iconNote": "显示在衣橱和装备栏列表中。只改变此分类的外观。",
 		"hand": "手",
 		"placeholderEGSmallAndShinyPinned": "例如：小巧闪亮，别在胸前",
 		"deleteSlot": "移到回收站…",
@@ -1690,6 +1692,11 @@
 			"shoulders": "肩部",
 			"accessory": "配饰"
 		},
+		"icons": {
+			"tag": "标签",
+			"star": "星星",
+			"gem": "宝石"
+		},
 		"ideas": {
 			"head": ["巫师帽", "铁甲骑士头盔", "金色王冠", "兜帽"],
 			"hair": ["长辫发", "短刺发", "马尾"],
@@ -1723,6 +1730,7 @@
 			"fixedName": "内置名称保持固定。",
 			"fixedHint": "只有自定义类别可以使用创意提示。",
 			"fixedBehavior": "内置行为保持固定；请添加自定义副本。",
+			"fixedIcon": "内置分类的图标不可更改；请添加自定义副本。",
 			"fixedHand": "只有手持类自定义类别可以选择手。",
 			"fixedDrawOrder": "内置绘制顺序保持固定。",
 			"fixedSettings": "内置类别只能显示、隐藏或移动。",

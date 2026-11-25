@@ -722,6 +722,8 @@
 		"freeNeverRegeneratesItemsAlreadyMade": "Grátis: nunca gera de novo os itens já criados.",
 		"drawsAbove": "Camada acima de",
 		"worksLike": "Funciona como",
+		"icon": "Ícone",
+		"iconNote": "Aparece no Guarda-roupa e nas listas de espaços. Só muda a aparência desta categoria.",
 		"hand": "Mão",
 		"placeholderEGSmallAndShinyPinned": "Ex.: pequeno e brilhante, preso ao peito",
 		"deleteSlot": "Mover para a lixeira…",
@@ -1751,6 +1753,11 @@
 			"shoulders": "Ombros",
 			"accessory": "Acessório"
 		},
+		"icons": {
+			"tag": "Etiqueta",
+			"star": "Estrela",
+			"gem": "Gema"
+		},
 		"ideas": {
 			"head": ["chapéu de mago", "elmo de cavaleiro de ferro", "coroa dourada", "capuz"],
 			"hair": ["cabelo longo trançado", "cabelo curto espetado", "rabo de cavalo"],
@@ -1784,6 +1791,7 @@
 			"fixedName": "Os nomes padrão não podem ser alterados.",
 			"fixedHint": "Só categorias personalizadas aceitam uma dica criativa.",
 			"fixedBehavior": "O comportamento padrão não pode ser alterado. Crie uma cópia personalizada.",
+			"fixedIcon": "Os ícones das categorias integradas não mudam; adicione uma cópia personalizada.",
 			"fixedHand": "Só nas categorias personalizadas de itens de mão é possível escolher a mão.",
 			"fixedDrawOrder": "A ordem de desenho padrão não pode ser alterada.",
 			"fixedSettings": "Categorias padrão só podem ser mostradas, ocultadas ou movidas.",

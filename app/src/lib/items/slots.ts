@@ -191,7 +191,9 @@ export function createSlot(
 				? { origin: profile }
 				: {}),
 		wardrobeHidden: false,
-		wardrobeOrder: DEFAULT_WARDROBE_ORDER.length
+		wardrobeOrder: DEFAULT_WARDROBE_ORDER.length,
+		// A custom category owns a generic icon until its settings pick a closer one; it never borrows the behavior's.
+		icon: 'tag'
 	};
 }
 

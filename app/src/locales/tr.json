@@ -722,6 +722,8 @@
 		"freeNeverRegeneratesItemsAlreadyMade": "Ücretsiz: Daha önce yapılmış eşyalar yeniden üretilmez.",
 		"drawsAbove": "Üstüne çizildiği yuva",
 		"worksLike": "Davranış örneği",
+		"icon": "Simge",
+		"iconNote": "Gardıropta ve yuva listelerinde görünür. Yalnızca bu kategorinin görünümünü değiştirir.",
 		"hand": "El",
 		"placeholderEGSmallAndShinyPinned": "Örn. küçük, parlak, göğse iliştirilmiş",
 		"deleteSlot": "Çöp kutusuna taşı…",
@@ -1745,6 +1747,11 @@
 			"shoulders": "Omuzlar",
 			"accessory": "Aksesuar"
 		},
+		"icons": {
+			"tag": "Etiket",
+			"star": "Yıldız",
+			"gem": "Mücevher"
+		},
 		"ideas": {
 			"head": ["büyücü şapkası", "demir şövalye miğferi", "altın taç", "kapüşon"],
 			"hair": ["uzun örgülü saç", "kısa dik saç", "at kuyruğu"],
@@ -1778,6 +1785,7 @@
 			"fixedName": "Yerleşik adlar değiştirilemez.",
 			"fixedHint": "Tasarım ipucu yalnızca özel kategorilere eklenebilir.",
 			"fixedBehavior": "Yerleşik davranış değiştirilemez; özel bir kopya ekleyin.",
+			"fixedIcon": "Yerleşik kategorilerin simgeleri sabittir; özel bir kopya ekleyin.",
 			"fixedHand": "Yalnızca elde tutulan özel kategoriler için el seçilebilir.",
 			"fixedDrawOrder": "Yerleşik çizim sırası değiştirilemez.",
 			"fixedSettings": "Yerleşik kategoriler yalnızca gösterilebilir, gizlenebilir veya taşınabilir.",
