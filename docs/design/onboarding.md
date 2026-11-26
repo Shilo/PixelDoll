@@ -88,8 +88,10 @@ tips read existing app state read-only instead of the app emitting tip events.
 - A control counts as on screen only when it is whole inside the viewport and every clipping ancestor, not inert, and
   actually on top at its center (a sticky header over it hides it). Open sheets and menus hold tips back; passing hints
   (help tooltips, drag previews) do not.
-- Checked at 1280 x 800, 390 x 844 and 320 x 568. At 320 x 568 the Wardrobe sheet shows no whole tile at first, so the
-  gear tip waits until one scrolls into view rather than point at a clipped edge.
+- Checked at 1280 x 800, 1440 x 900, 390 x 844, 844 x 390 and 320 x 568, dark and light, English and German (also by a
+  GPT 6.2 Sol hands-on pass with screenshots). At 320 x 568 the collapsed Wardrobe sheet is shorter than a tile plus
+  its sticky section header, so the gear tip waits until the sheet is expanded rather than point at a covered tile.
+  With a phone held sideways, the PixelLab tip sits beside Start free trial so the key field stays clear.
 
 ## Best practices for future onboarding
 

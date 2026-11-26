@@ -168,6 +168,7 @@
 			title={t(current.spec.title)}
 			body={t(current.spec.body(current.anchor))}
 			placement={current.spec.placement}
+			fallbacks={current.spec.fallbacks}
 			announce={!heard.has(current.spec.id)}
 			onannounce={() => heard.add(current.spec.id)}
 			ondismiss={() => dismiss(current.spec)}

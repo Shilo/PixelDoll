@@ -23,6 +23,7 @@
 		title,
 		body,
 		placement = 'bottom',
+		fallbacks,
 		announce = true,
 		onannounce,
 		ondismiss
@@ -32,6 +33,7 @@
 		title: string;
 		body: string;
 		placement?: Side;
+		fallbacks?: Side[];
 		/** Read it out once it is placed: false when it was already announced this visit and only came back. */
 		announce?: boolean;
 		onannounce?: () => void;
@@ -56,6 +58,7 @@
 		const pointer = floating.querySelector<HTMLElement>(':scope > .bu-popover-arrow')!;
 		const across: Placement[] =
 			placement === 'bottom' || placement === 'top' ? ['right', 'left'] : ['bottom', 'top'];
+		const order: Placement[] = fallbacks ?? [opposite[placement], ...across];
 		let sequence = 0;
 		const place = () => {
 			const current = ++sequence;
@@ -64,7 +67,7 @@
 				placement,
 				middleware: [
 					offset(12),
-					flip({ padding: 8, fallbackPlacements: [opposite[placement], ...across] }),
+					flip({ padding: 8, fallbackPlacements: order }),
 					shift({ padding: 8 }),
 					arrow({ element: pointer, padding: 14 }),
 					hide()

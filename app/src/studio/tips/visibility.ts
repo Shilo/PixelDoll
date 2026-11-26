@@ -21,11 +21,14 @@ export function fullyVisible(el: Element | null | undefined): boolean {
 		)
 			return false;
 	}
-	// Something drawn over it, such as a sticky section header, hides it as surely as clipping does.
-	const top = document
-		.elementsFromPoint(r.left + r.width / 2, r.top + r.height / 2)
-		.find((hit) => !hit.closest('.tip-layer'));
-	return !!top && el.contains(top);
+	// Something drawn over it, such as a sticky section header, hides it as surely as clipping does: it must be on top
+	// at its center and near each edge (inside the clipping slack).
+	const x = r.left + r.width / 2,
+		inset = Math.min(slack + 2, r.height / 2);
+	return [r.top + inset, r.top + r.height / 2, r.bottom - inset].every((y) => {
+		const top = document.elementsFromPoint(x, y).find((hit) => !hit.closest('.tip-layer'));
+		return !!top && el.contains(top);
+	});
 }
 
 /** A sheet or menu is open that does not hold the control: the tip would sit under it or compete. Manual popovers

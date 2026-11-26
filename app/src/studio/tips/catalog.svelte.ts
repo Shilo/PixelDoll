@@ -19,6 +19,8 @@ export interface TipSpec {
 	anchor: () => HTMLElement | null;
 	/** The preferred side; with no room the tip flips to the opposite side, then across. Default: below. */
 	placement?: Side;
+	/** Sides to try, in order, when the preferred one has no room (instead of opposite, then across). */
+	fallbacks?: Side[];
 	/** The app context the tip belongs to. */
 	when: () => boolean;
 	/** Tips that must be done first. */
@@ -150,6 +152,8 @@ export const catalog: TipSpec[] = [
 			document.querySelector<HTMLElement>('dialog[open] .trial-guide > a') ??
 			document.querySelector<HTMLElement>('dialog[open] form a.btn[href$="/account"]'),
 		placement: 'top',
+		// Beside the button before below it, so the key field it leads to stays clear (a phone held sideways).
+		fallbacks: ['left', 'right', 'bottom'],
 		// Only while Connect asks for a key (not while replacing a working one).
 		when: () => !app.key || app.keyRejected,
 		// Connected: a key PixelLab accepted (a remembered key counts once its balance check succeeds).
