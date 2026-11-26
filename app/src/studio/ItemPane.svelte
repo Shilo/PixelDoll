@@ -2243,7 +2243,8 @@
 			grid-template-columns: minmax(0, 1fr);
 		}
 		.outfit-body > :global(*),
-		.layer-preview {
+		.layer-preview,
+		.layer-controls {
 			grid-column: 1;
 		}
 		.layer-preview {
