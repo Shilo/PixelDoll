@@ -930,19 +930,25 @@
 		"itemQueued": "queued for {move}"
 	},
 	"welcome": {
-		"demoIntro": "Swap gear, try a move, and export the demo. No PixelLab key needed.",
-		"quickstart": "Quickstart",
-		"gear": "Change gear",
-		"gearHint": "Choose an item to wear or remove.",
-		"motion": "Preview your gear",
-		"motionHint": "See how the gear layers follow the character through a move.",
-		"layers": "Take it into your game",
-		"layersHint": "Export spritesheets for the body and gear so you can swap items in your game.",
-		"playMove": "Play {move}",
-		"dismissQuickstart": "Dismiss quickstart",
-		"demoQuickstart": "Demo quickstart",
-		"exportDemo": "Export demo",
-		"createYourCharacter": "Create your character"
+		"demoNeedsNoAccount": "The demo needs no account. Creating uses your {pixelLab} generations.",
+		"steps": {
+			"create": "Create",
+			"describeBody": "Describe the body",
+			"addItems": "Add items",
+			"examples": "Hats, tops, weapons",
+			"dressUp": "Dress up",
+			"wearRecolorPlay": "Wear, recolor, play",
+			"export": "Export",
+			"anyEngine": "Any game engine"
+		},
+		"switchToLightMode": "Switch to light mode",
+		"switchToDarkMode": "Switch to dark mode",
+		"labelDemoCharacterWalking": "Demo character walking",
+		"dressUpYour2DGameCharactersWith": "Dress up your 2D game characters with pixel‑perfect paper dolling",
+		"generateSwappableFrameAlignedEquipmentLayersWith": "Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine.",
+		"createYourCharacter": "Create your character",
+		"tryTheDemo": "Try the demo",
+		"importAnExistingCharacter": "Import an existing character"
 	},
 	"experience": {
 		"movesOffMounted": "Moves are picked in Preview. Mounted movement follows the Riding pose in Mount settings.",

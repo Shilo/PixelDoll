@@ -930,19 +930,25 @@
 		"itemQueued": "en cola para {move}"
 	},
 	"welcome": {
-		"demoIntro": "Cambia el equipo, prueba una animación y exporta la demo. No necesitas una clave de PixelLab.",
-		"quickstart": "Inicio rápido",
-		"gear": "Cambia el equipo",
-		"gearHint": "Elige un objeto para ponértelo o quitártelo.",
-		"motion": "Previsualiza tu equipo",
-		"motionHint": "Mira cómo las capas de equipo acompañan al personaje durante una animación.",
-		"layers": "Llévalo a tu juego",
-		"layersHint": "Exporta hojas de sprites del cuerpo y el equipo para cambiar objetos en tu juego.",
-		"playMove": "Reproducir {move}",
-		"dismissQuickstart": "Cerrar el inicio rápido",
-		"demoQuickstart": "Inicio rápido de la demo",
-		"exportDemo": "Exportar la demo",
-		"createYourCharacter": "Crea tu personaje"
+		"demoNeedsNoAccount": "La demo no necesita cuenta. Crear usa tus generaciones de {pixelLab}.",
+		"steps": {
+			"create": "Crea",
+			"describeBody": "Describe el cuerpo",
+			"addItems": "Agrega objetos",
+			"examples": "Sombreros, camisas, armas",
+			"dressUp": "Viste al personaje",
+			"wearRecolorPlay": "Equipa, cambia colores y juega",
+			"export": "Exporta",
+			"anyEngine": "Cualquier motor de juego"
+		},
+		"switchToLightMode": "Cambiar a modo claro",
+		"switchToDarkMode": "Cambiar a modo oscuro",
+		"labelDemoCharacterWalking": "Personaje de demo caminando",
+		"dressUpYour2DGameCharactersWith": "Viste a tus personajes 2D con capas de muñeco recortable que encajan píxel a píxel",
+		"generateSwappableFrameAlignedEquipmentLayersWith": "Genera capas de equipamiento intercambiables y alineadas por fotograma con PixelLab AI y expórtalas a cualquier motor de juego.",
+		"createYourCharacter": "Crea tu personaje",
+		"tryTheDemo": "Prueba la demo",
+		"importAnExistingCharacter": "Importa un personaje existente"
 	},
 	"experience": {
 		"movesOffMounted": "Las animaciones se eligen en Vista previa. Al moverte con montura se sigue la pose de jinete de los ajustes de montura.",

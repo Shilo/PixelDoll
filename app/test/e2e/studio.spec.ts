@@ -1816,7 +1816,7 @@ test('dev server: offline pauses the queue, back online resumes it, and Settings
 
 // The demo tests run the production preview without a key. Each is independent so a slow machine costs one short test,
 // not one long chain; the guard records and refuses every paid API call and collects page errors for the final check.
-async function demoGuard(context: BrowserContext, firstRun = false) {
+async function demoGuard(context: BrowserContext) {
 	const errors: string[] = [],
 		unexpectedRequests: string[] = [];
 	await context.route('https://api.pixellab.ai/**', async (route) => {
@@ -1825,10 +1825,10 @@ async function demoGuard(context: BrowserContext, firstRun = false) {
 		);
 		await route.abort();
 	});
-	await context.addInitScript((firstRun) => {
-		if (!firstRun) localStorage.setItem('pixeldoll.welcomed', '1');
+	await context.addInitScript(() => {
+		localStorage.setItem('pixeldoll.welcomed', '1');
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-	}, firstRun);
+	});
 	context.on('weberror', (e) => {
 		errors.push(e.error().message);
 		console.log('pageerror', e.error().message);
@@ -1848,87 +1848,6 @@ async function openDemo(page: Page) {
 }
 
 const step = (s: string) => console.log('ok', s);
-
-test('quickstart teaches the real demo, remembers dismissal and can be replayed', async ({
-	context,
-	page
-}) => {
-	const finish = await demoGuard(context, true);
-	await page.setViewportSize({ width: 390, height: 844 });
-	await page.goto('/#/');
-	const customize = page
-		.getByRole('complementary', { name: 'Your characters', exact: true })
-		.getByRole('button', { name: 'Customize Adventurer', exact: true });
-	await expect(customize).toHaveAccessibleDescription(/No PixelLab key needed/);
-	await customize.press('Enter');
-	const guide = page.getByRole('region', { name: 'Quickstart', exact: true });
-	await expect(guide.getByRole('heading')).toHaveText('Change gear');
-	await expect(guide).toBeInViewport();
-
-	// A complete head item keeps the first lesson free of a missing-frames warning.
-	const emptyHead = page.getByRole('button', { name: 'Empty head', exact: true });
-	await emptyHead.focus();
-	await page.keyboard.press('Enter');
-	await expect(emptyHead).toHaveAttribute('aria-pressed', 'true');
-	await expect(guide.getByRole('heading')).toHaveText('Preview your gear');
-	await expect(guide.getByRole('heading')).toBeFocused();
-	const play = guide.getByRole('button', { name: 'Play Walk', exact: true });
-	await expect(play).toBeInViewport();
-	// The guide is pinned above the list on this tall phone.
-	expect(await guide.evaluate((el) => !!el.closest('#wardrobe-list'))).toBe(false);
-	await page.keyboard.press('Tab');
-	await page.keyboard.press('Tab');
-	await expect(play).toBeFocused();
-	await page.keyboard.press('Enter');
-	await expect(playbackPicker(page)).toHaveAttribute('value', 'walk');
-	await expect(guide.getByRole('heading')).toHaveText('Take it into your game');
-	await expect(guide.getByRole('heading')).toBeFocused();
-	await guide.getByRole('button', { name: 'Export demo', exact: true }).click();
-	const dialog = page.getByRole('dialog', { name: 'Export', exact: true });
-	await expect(dialog).toBeVisible();
-	// The guide stays mounted as the sheet's focus opener. The open dialog removes the background from the
-	// accessibility tree, so check the mounted element directly.
-	await expect(page.locator('section[aria-label="Quickstart"]')).toHaveCount(1);
-	const downloadButton = dialog.getByRole('button', { name: /^Download ZIP/ });
-	const [download] = await Promise.all([page.waitForEvent('download'), downloadButton.click()]);
-	expect(download.suggestedFilename()).toMatch(/\.zip$/);
-	await expect(download.failure()).resolves.toBeNull();
-	const files = await unzip(new Uint8Array(readFileSync((await download.path())!)));
-	const manifest = JSON.parse(new TextDecoder().decode(files.get('manifest.json')!)) as Manifest;
-	expect(manifest.items.find((item) => item.id === 'vest_leather')?.layers).not.toHaveLength(0);
-	await expect(dialog).toHaveCount(0);
-	await expect(guide).toHaveCount(0);
-	await expect(page.getByRole('tab', { name: 'Wardrobe', exact: true })).toBeFocused();
-
-	await page.setViewportSize({ width: 320, height: 568 });
-	await page.emulateMedia({ reducedMotion: 'reduce' });
-	await page.evaluate(() => localStorage.setItem('pixeldoll.theme', 'light'));
-	await page.reload();
-	await expect(customize).not.toHaveAccessibleDescription(/No PixelLab key needed/);
-	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: /^Help/ }).click();
-	await page.getByRole('button', { name: 'Demo quickstart', exact: true }).click();
-	await expect(guide.getByRole('heading')).toBeFocused();
-	await expect(guide).toBeInViewport();
-	await expect(section(page, 'Head')).toBeInViewport();
-	await expect(emptyHead).toHaveAttribute('aria-pressed', 'true');
-	// At 320, the follow-up hint scrolls with the list instead of squeezing it to a few pixels.
-	const helmet = page.getByRole('button', { name: 'Steel helmet', exact: true });
-	await helmet.focus();
-	await page.keyboard.press('Enter');
-	await expect(guide.getByRole('heading')).toHaveText('Preview your gear');
-	await expect(guide.getByRole('heading')).toBeFocused();
-	expect(await guide.evaluate((el) => !!el.closest('#wardrobe-list'))).toBe(true);
-	expect(await page.locator('#wardrobe-list').evaluate((el) => el.clientHeight)).toBeGreaterThan(
-		100
-	);
-	await section(page, 'Head').scrollIntoViewIfNeeded();
-	await expect(helmet).toBeInViewport();
-	await guide.getByRole('button', { name: 'Dismiss quickstart', exact: true }).click();
-	await expect(guide).toHaveCount(0);
-	await expect(page.getByRole('tab', { name: 'Wardrobe', exact: true })).toBeFocused();
-	finish();
-});
 
 test('studio demo: list search appears only when a panel overflows and filters without reordering', async ({
 	context,

@@ -904,19 +904,25 @@
 		"itemQueued": "{move}用に待機中"
 	},
 	"welcome": {
-		"demoIntro": "デモで装備を替え、モーションを試してエクスポートできます。PixelLab キーは不要です。",
-		"quickstart": "クイックスタート",
-		"gear": "装備を替えましょう",
-		"gearHint": "アイテムを選ぶと着脱できます。",
-		"motion": "装備をプレビューしましょう",
-		"motionHint": "モーションの中で装備のレイヤーがキャラクターの動きに追従します。",
-		"layers": "ゲームに取り込みましょう",
-		"layersHint": "素体と装備のスプライトシートをエクスポートすると、ゲーム内で装備を切り替えられます。",
-		"playMove": "{move}を再生",
-		"dismissQuickstart": "クイックスタートを閉じる",
-		"demoQuickstart": "デモのクイックスタート",
-		"exportDemo": "デモをエクスポート",
-		"createYourCharacter": "キャラクターを作成"
+		"demoNeedsNoAccount": "デモはアカウントなしで使えます。作成には、お使いの{pixelLab}アカウントの生成回数を使います。",
+		"steps": {
+			"create": "作成",
+			"describeBody": "素体の特徴を入力",
+			"addItems": "アイテムを追加",
+			"examples": "帽子、トップス、武器",
+			"dressUp": "着せ替え",
+			"wearRecolorPlay": "装備、色の変更、プレイ",
+			"export": "エクスポート",
+			"anyEngine": "あらゆるゲームエンジンに"
+		},
+		"switchToLightMode": "ライトモードに切り替え",
+		"switchToDarkMode": "ダークモードに切り替え",
+		"labelDemoCharacterWalking": "歩いているデモキャラクター",
+		"dressUpYour2DGameCharactersWith": "2Dゲームのキャラクターを、ピクセル単位でぴったり合う装備で着せ替え",
+		"generateSwappableFrameAlignedEquipmentLayersWith": "PixelLab AIで各フレームにぴったり合う、交換可能な装備レイヤーを生成し、どのゲームエンジンにもエクスポートできます。",
+		"createYourCharacter": "キャラクターを作成",
+		"tryTheDemo": "デモを試す",
+		"importAnExistingCharacter": "既存のキャラクターをインポート"
 	},
 	"experience": {
 		"movesOffMounted": "モーションはプレビューで選びます。騎乗中の移動は、乗り物の設定の騎乗ポーズに従います。",

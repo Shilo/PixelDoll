@@ -930,19 +930,25 @@
 		"itemQueued": "en attente pour {move}"
 	},
 	"welcome": {
-		"demoIntro": "Change l’équipement, essaie une animation et exporte la démo. Aucune clé PixelLab nécessaire.",
-		"quickstart": "Démarrage rapide",
-		"gear": "Change l’équipement",
-		"gearHint": "Choisis un objet pour l’équiper ou le retirer.",
-		"motion": "Prévisualise ton équipement",
-		"motionHint": "Regarde comment les calques d’équipement suivent le personnage pendant une animation.",
-		"layers": "Emporte-le dans ton jeu",
-		"layersHint": "Exporte les planches de sprites du corps et de l’équipement pour changer d’objet dans ton jeu.",
-		"playMove": "Lire {move}",
-		"dismissQuickstart": "Fermer le démarrage rapide",
-		"demoQuickstart": "Démarrage rapide de la démo",
-		"exportDemo": "Exporter la démo",
-		"createYourCharacter": "Créer votre personnage"
+		"demoNeedsNoAccount": "Aucun compte n’est nécessaire pour essayer la démo. Créer des visuels utilise des générations de votre compte {pixelLab}.",
+		"steps": {
+			"create": "Créer",
+			"describeBody": "Décrivez le corps",
+			"addItems": "Ajouter des objets",
+			"examples": "Chapeaux, hauts, armes",
+			"dressUp": "Habiller",
+			"wearRecolorPlay": "Porter, recolorer, jouer",
+			"export": "Exporter",
+			"anyEngine": "N’importe quel moteur de jeu"
+		},
+		"switchToLightMode": "Passer en mode clair",
+		"switchToDarkMode": "Passer en mode sombre",
+		"labelDemoCharacterWalking": "Personnage de démo en train de marcher",
+		"dressUpYour2DGameCharactersWith": "Habillez vos personnages de jeu 2D au pixel près, comme des poupées à habiller",
+		"generateSwappableFrameAlignedEquipmentLayersWith": "Générez avec PixelLab AI des calques d’équipement interchangeables, alignés image par image, et exportez-les vers n’importe quel moteur de jeu.",
+		"createYourCharacter": "Créer votre personnage",
+		"tryTheDemo": "Essayer la démo",
+		"importAnExistingCharacter": "Importer un personnage existant"
 	},
 	"experience": {
 		"movesOffMounted": "Choisissez les animations dans « Aperçu ». Le déplacement à dos de monture suit la pose du cavalier des réglages de la monture.",

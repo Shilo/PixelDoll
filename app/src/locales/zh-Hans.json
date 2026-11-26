@@ -904,19 +904,25 @@
 		"itemQueued": "排队中，将为{move}绘制"
 	},
 	"welcome": {
-		"demoIntro": "替换装备、试播动作，再导出示例角色。无需 PixelLab 密钥。",
-		"quickstart": "快速入门",
-		"gear": "更换装备",
-		"gearHint": "选择物品即可穿上或卸下。",
-		"motion": "预览装备",
-		"motionHint": "看看装备图层如何跟随角色完成一个动作。",
-		"layers": "将角色带入游戏",
-		"layersHint": "导出身体和装备的精灵图集，即可在游戏中切换装备。",
-		"playMove": "播放{move}",
-		"dismissQuickstart": "关闭快速入门",
-		"demoQuickstart": "演示快速入门",
-		"exportDemo": "导出示例角色",
-		"createYourCharacter": "创建你的角色"
+		"demoNeedsNoAccount": "演示无需账户。创建会消耗你的 {pixelLab} 生成次数。",
+		"steps": {
+			"create": "创建",
+			"describeBody": "描述身体",
+			"addItems": "添加装备",
+			"examples": "帽子、上衣、武器",
+			"dressUp": "换装",
+			"wearRecolorPlay": "穿戴、重新上色、试玩",
+			"export": "导出",
+			"anyEngine": "任意游戏引擎"
+		},
+		"switchToLightMode": "切换到浅色模式",
+		"switchToDarkMode": "切换到深色模式",
+		"labelDemoCharacterWalking": "演示角色行走",
+		"dressUpYour2DGameCharactersWith": "用像素级完美的纸娃娃换装，装扮你的 2D 游戏角色",
+		"generateSwappableFrameAlignedEquipmentLayersWith": "使用 PixelLab AI 生成可替换、帧对齐的装备图层，并导出到任意游戏引擎。",
+		"createYourCharacter": "创建你的角色",
+		"tryTheDemo": "试用演示",
+		"importAnExistingCharacter": "导入现有角色"
 	},
 	"experience": {
 		"movesOffMounted": "动作在预览中选择。骑乘移动会遵循坐骑设置中的骑乘姿势。",

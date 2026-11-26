@@ -2,7 +2,6 @@
 	// Customization content for the desktop rail and the phone sheet: one tab at a time. A character ZIP dropped on Wardrobe,
 	// Moves or States opens New item, New move or New State on its Import page.
 	import { t } from 'svelte-whisper';
-	import type { Snippet } from 'svelte';
 	import { isDemo, openImport, store, ui, type ImportKind } from './state.svelte.ts';
 	import Wardrobe from './Wardrobe.svelte';
 	import ColorSections from './ColorSections.svelte';
@@ -10,11 +9,7 @@
 	import Outfits from './Outfits.svelte';
 	import { FileArchive } from './icons.ts';
 	import { fileDrop } from './fileDrop.ts';
-	let {
-		wardrobeScroll,
-		guide,
-		pinGuide = false
-	}: { wardrobeScroll?: number; guide?: Snippet; pinGuide?: boolean } = $props();
+	let { wardrobeScroll }: { wardrobeScroll?: number } = $props();
 
 	const TAB_IMPORTS: Partial<Record<typeof ui.tab, ImportKind>> = {
 		wardrobe: 'items',
@@ -58,8 +53,7 @@
 	{@attach dropZone}
 >
 	{#if ui.tab === 'wardrobe'}
-		{#if pinGuide}{@render guide?.()}{/if}
-		<Wardrobe initialScroll={wardrobeScroll} guide={pinGuide ? undefined : guide} />
+		<Wardrobe initialScroll={wardrobeScroll} />
 	{:else if ui.tab === 'outfits'}
 		<Outfits />
 	{:else if ui.tab === 'colors'}

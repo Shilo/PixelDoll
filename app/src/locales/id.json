@@ -904,19 +904,25 @@
 		"itemQueued": "dalam antrean untuk {move}"
 	},
 	"welcome": {
-		"demoIntro": "Ganti perlengkapan, coba animasi, lalu ekspor demo. Kamu tidak perlu kunci PixelLab.",
-		"quickstart": "Mulai cepat",
-		"gear": "Ganti perlengkapan",
-		"gearHint": "Pilih item untuk memakai atau melepasnya.",
-		"motion": "Lihat pratinjau perlengkapan",
-		"motionHint": "Lihat bagaimana lapisan perlengkapan mengikuti animasi karakter.",
-		"layers": "Bawa karakter ke gamemu",
-		"layersHint": "Ekspor spritesheet tubuh dan perlengkapan agar kamu bisa mengganti item di dalam game.",
-		"playMove": "Putar {move}",
-		"dismissQuickstart": "Tutup panduan mulai cepat",
-		"demoQuickstart": "Mulai cepat demo",
-		"exportDemo": "Ekspor demo",
-		"createYourCharacter": "Buat karakter Anda"
+		"demoNeedsNoAccount": "Demo tidak memerlukan akun. Pembuatan menggunakan jatah generasi {pixelLab} Anda.",
+		"steps": {
+			"create": "Buat",
+			"describeBody": "Deskripsikan tubuh",
+			"addItems": "Tambah item",
+			"examples": "Topi, atasan, senjata",
+			"dressUp": "Dandani",
+			"wearRecolorPlay": "Kenakan, warnai ulang, putar animasi",
+			"export": "Ekspor",
+			"anyEngine": "Ke game engine apa pun"
+		},
+		"switchToLightMode": "Beralih ke mode terang",
+		"switchToDarkMode": "Beralih ke mode gelap",
+		"labelDemoCharacterWalking": "Karakter demo sedang berjalan",
+		"dressUpYour2DGameCharactersWith": "Dandani karakter game 2D Anda dengan teknik boneka kertas yang presisi hingga tiap piksel",
+		"generateSwappableFrameAlignedEquipmentLayersWith": "Buat lapisan perlengkapan yang bisa ditukar dan sejajar di setiap frame dengan PixelLab AI, lalu ekspor ke game engine apa pun.",
+		"createYourCharacter": "Buat karakter Anda",
+		"tryTheDemo": "Coba demo",
+		"importAnExistingCharacter": "Impor karakter yang sudah ada"
 	},
 	"experience": {
 		"movesOffMounted": "Pilih animasi di Pratinjau. Saat menunggang, gerakan mengikuti Pose penunggang di pengaturan tunggangan.",

@@ -13,7 +13,6 @@
 	import CharacterActions from '../CharacterActions.svelte';
 	import CharacterName from '../CharacterName.svelte';
 	import PhonePanel from '../PhonePanel.svelte';
-	import Quickstart from '../Quickstart.svelte';
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import CharacterThumb from './CharacterThumb.svelte';
@@ -36,8 +35,6 @@
 	import {
 		ui,
 		doc,
-		DEMO,
-		dismissWelcome,
 		store,
 		creates,
 		openProject,
@@ -51,7 +48,6 @@
 		matchStateColors
 	} from '../state.svelte.ts';
 	import { stateColorDrift } from '../../lib/dress/stateColors.ts';
-	import { missingFrames, moveDirs } from '../../lib/dress/dress.ts';
 	import {
 		experience,
 		customize as enterCustomize,
@@ -153,126 +149,6 @@
 		)
 	);
 	const list = $derived(saved.filter((p) => matchesSearch([p.name], query)));
-	const showDemoIntro = $derived(
-		!workspaceCopy &&
-			ui.welcome &&
-			doc.id === DEMO &&
-			!!m &&
-			saved.length === 1 &&
-			!allPending.length
-	);
-	const introId = $props.id();
-	let quickstart = $state.raw<
-		{ step: 'gear'; items: string } | { step: 'move'; clip: string } | { step: 'export' } | null
-	>(null);
-	let quickstartHeading = $state<HTMLHeadingElement>();
-	let quickstartExport = false;
-	let quickstartExportFromGuide = false;
-	let focusedQuickstartStep: 'gear' | 'move' | 'export' | null = null;
-	const gear = () =>
-		JSON.stringify(
-			Object.entries(doc.items)
-				.filter(([, item]) => item)
-				.sort()
-		);
-	const nextPreview = $derived.by(() => {
-		const manifest = m;
-		if (quickstart?.step !== 'move' || !manifest) return;
-		const worn = manifest.items.filter((item) => doc.items[item.slot] === item.id);
-		// Prefer the move already on screen, then the current facing, so the hint continues what the user sees.
-		const moves = clips
-			.filter(({ kind }) => kind === 'move')
-			.sort((a, b) => Number(b.key === ui.anim) - Number(a.key === ui.anim));
-		for (const { key } of moves) {
-			const direction = moveDirs(manifest, key)
-				.sort((a, b) => Number(b === ui.dir) - Number(a === ui.dir))
-				.find((dir) => worn.every((item) => !missingFrames(manifest, item, key, dir).length));
-			if (direction) return { key, direction };
-		}
-	});
-	$effect(() => {
-		if (!quickstart || doc.loading) return;
-		if (doc.id !== DEMO || experience.screen !== 'studio') {
-			quickstart = null;
-			quickstartExport = false;
-			quickstartExportFromGuide = false;
-			return;
-		}
-		// Keep the guide mounted while Export is open: its button is the sheet's focus opener. Finish on close instead,
-		// when a guide-opened sheet returns focus to that button and would otherwise leave it on a removed element.
-		if (ui.sheet === 'export') {
-			quickstartExport = true;
-			return;
-		}
-		if (quickstartExport) {
-			quickstartExport = false;
-			const focusWardrobe = quickstartExportFromGuide;
-			quickstartExportFromGuide = false;
-			finishQuickstart();
-			if (focusWardrobe)
-				void tick().then(() =>
-					document.getElementById('customization-tab-wardrobe')?.focus({ preventScroll: true })
-				);
-			return;
-		}
-		if (quickstart.step === 'gear' && quickstart.items !== gear()) {
-			quickstart = { step: 'move', clip: ui.anim };
-		} else if (
-			quickstart.step === 'move' &&
-			(ui.anim !== quickstart.clip || experience.mode !== 'preview' || !nextPreview)
-		)
-			quickstart = { step: 'export' };
-	});
-	function finishQuickstart() {
-		dismissWelcome();
-		quickstart = null;
-	}
-	async function skipQuickstart() {
-		finishQuickstart();
-		await tick();
-		document.getElementById('customization-tab-wardrobe')?.focus({ preventScroll: true });
-	}
-	function selectClip(clip: string) {
-		ui.anim = clip;
-		ui.frame = 0;
-	}
-	function quickstartAction() {
-		if (quickstart?.step === 'move' && nextPreview) {
-			selectClip(nextPreview.key);
-			ui.dir = nextPreview.direction;
-			ui.playing = true;
-			quickstart = { step: 'export' };
-		} else {
-			if (quickstart?.step === 'export') quickstartExportFromGuide = true;
-			ui.sheet = 'export';
-		}
-	}
-	function enterSelectedCustomize(startGuide: boolean) {
-		// Customize opens on the standing move, also for the character already shown, or mounted on its Riding pose.
-		showStanding();
-		applyRiderPose();
-		enterCustomize();
-		if (startGuide) {
-			panel('wardrobe');
-			setPanelOpen(true);
-			focusedQuickstartStep = null;
-			quickstart = { step: 'gear', items: gear() };
-		}
-	}
-	async function replayQuickstart() {
-		if (openingProjectId()) return;
-		const screen = experience.screen;
-		if (doc.id !== DEMO || doc.error) await openProject(DEMO);
-		if (
-			doc.id !== DEMO ||
-			doc.error ||
-			openingProjectId() ||
-			experience.screen !== screen ||
-			ui.sheet
-		)
-			return;
-		enterSelectedCustomize(true);
-	}
 	const pending = $derived(allPending.filter((run) => matchesSearch([run.spec.name], query)));
 	const searchTotal = $derived(saved.length + allPending.length);
 	const searchVisibility = createSearchVisibility({
@@ -323,11 +199,6 @@
 		['states', 'experience.tabStates']
 	] as const;
 	const g = $derived(experienceLayout(viewportWidth, viewportHeight));
-	// Pin the follow-up hints only where the sheet leaves the item list useful room; on short sheets they scroll with
-	// the list, so a pinned card cannot squeeze the work it is teaching down to a few pixels.
-	const pinQuickstart = $derived(
-		quickstart?.step !== 'gear' && (!g.sheet || viewportHeight >= 700)
-	);
 	$effect.pre(() => {
 		if (g.panelOnly && document.activeElement?.closest('.experience-stage')) {
 			void tick().then(() => {
@@ -626,7 +497,10 @@
 					experience.screen === 'characters' &&
 					!ui.sheet
 				) {
-					enterSelectedCustomize(showDemoIntro);
+					// Customize opens on the standing move, also for the character already shown, or mounted on its Riding pose.
+					showStanding();
+					applyRiderPose();
+					enterCustomize();
 				}
 			}
 			return;
@@ -869,24 +743,12 @@
 			hiddenScroll = undefined;
 		}
 		void tick().then(() => {
-			if (ui.sheet) return;
-			(screen === 'characters'
-				? selection
-				: document.querySelector<HTMLElement>('.world-stage')
-			)?.focus({ preventScroll: true });
+			if (!ui.sheet)
+				(screen === 'characters'
+					? selection
+					: document.querySelector<HTMLElement>('.world-stage')
+				)?.focus({ preventScroll: true });
 		});
-	});
-	// Focus follows each new hint, so keyboard and screen-reader users hear the step they just reached instead of
-	// staying on the tile that completed the last one.
-	$effect(() => {
-		const step = quickstart?.step ?? null;
-		if (!step) {
-			focusedQuickstartStep = null;
-			return;
-		}
-		if (step === focusedQuickstartStep) return;
-		focusedQuickstartStep = step;
-		void tick().then(() => quickstartHeading?.focus());
 	});
 
 	function back(e: KeyboardEvent) {
@@ -946,13 +808,7 @@
 >
 	<div class="scene-backdrop" aria-hidden="true"></div>
 	<div class="scene-reading" aria-hidden="true"></div>
-	<Toolbar
-		{panelOpen}
-		panelSide={dockEdge}
-		onpanel={togglePanel}
-		onmode={changeMode}
-		onquickstart={workspaceCopy ? undefined : replayQuickstart}
-	/>
+	<Toolbar {panelOpen} panelSide={dockEdge} onpanel={togglePanel} onmode={changeMode} />
 	{#if workspaceCopy}<div class="workspace-banner bu-floating" role="status">
 			{t(
 				app.key && !app.keyRejected
@@ -1138,14 +994,10 @@
 					</CharacterActions>
 				{/each}
 			</div>
-			{#if showDemoIntro}<p class="demo-intro bu-muted" id={introId}>
-					{t('welcome.demoIntro')}
-				</p>{/if}
 			<button
 				class="bu-action customize-action"
 				data-variant="primary"
 				onclick={customize}
-				aria-describedby={showDemoIntro ? introId : undefined}
 				aria-label={t('experience.customizeName', { name })}
 				title={t('experience.customizeName', { name })}
 				aria-busy={doc.loading || !!openingProjectId() || !!wheelTarget}
@@ -1190,7 +1042,10 @@
 						compact={g.compactPlayback}
 						thumbnail={(key) =>
 							view.project && lookClipThumbnail(view.project, view.items, key, ui.dir)}
-						onselect={selectClip}
+						onselect={(clip) => {
+							ui.anim = clip;
+							ui.frame = 0;
+						}}
 					/>
 					{#if experience.presentation !== 'animation'}<span class="small muted playback-still"
 							>{experience.presentation === 'unavailable'
@@ -1354,19 +1209,7 @@
 			<span class="sr" id="moves-tab-note">{displayMessage(movesOff)}</span>
 			<span hidden id="tab-work-busy">{t('experience.tabWorkRunning')}</span>
 			<span hidden id="tab-work-stopped">{t('experience.tabWorkAttention')}</span>
-			<PhonePanel {wardrobeScroll} pinGuide={pinQuickstart}>
-				{#snippet guide()}
-					{#if quickstart && doc.id === DEMO}
-						<Quickstart
-							step={quickstart.step}
-							move={nextPreview ? displayMove(nextPreview.key, moveRefs) : ''}
-							bind:heading={quickstartHeading}
-							onskip={skipQuickstart}
-							onaction={quickstartAction}
-						/>
-					{/if}
-				{/snippet}
-			</PhonePanel>
+			<PhonePanel {wardrobeScroll} />
 		</aside>
 	{/if}
 	{#if doc.error && experience.screen !== 'studio'}
@@ -1375,12 +1218,6 @@
 </div>
 
 <style>
-	.demo-intro {
-		margin: 0;
-		font-size: var(--fs-sm);
-		line-height: 1.4;
-		text-wrap: pretty;
-	}
 	.pending-character > .character-thumbnail {
 		width: 64px;
 		flex: none;
