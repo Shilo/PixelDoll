@@ -3688,15 +3688,14 @@
 		"results": "{count} de {total}"
 	},
 	"spriteViewer": {
-		"frameOf": "Fotograma {frame} de {count}",
 		"missing": "No hay fotograma para mostrar",
 		"direction": "Dirección",
 		"previousView": "Vista anterior",
 		"previousViewHint": "Vista anterior (flecha izquierda)",
 		"nextView": "Vista siguiente",
 		"nextViewHint": "Vista siguiente (flecha derecha)",
-		"frame": "Fotograma",
-		"frameOption": "Fotograma {n}"
+		"pauseHint": "Pausar (Espacio)",
+		"playHint": "Reproducir (Espacio)"
 	},
 	"imageViewer": {
 		"role": "visor de imágenes",
@@ -3704,7 +3703,7 @@
 		"zoom": "Zoom de la imagen",
 		"hint": "Usa la rueda o pellizca para hacer zoom. Arrastra para mover.",
 		"fit": "Ajustar a la ventana",
-		"fitHint": "Ajustar a la ventana (0 o doble clic)",
+		"fitHint": "Ajustar a la ventana (0)",
 		"percent": "{percent} % del tamaño real",
 		"zoomed": "Zoom {percent} %",
 		"missing": "No hay imagen"

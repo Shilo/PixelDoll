@@ -5,22 +5,23 @@
 </script>
 
 <script lang="ts">
-	// Sprite frames in the image viewer: the move or state and the direction are pickers in its header, the frame steps in
-	// its footer (and with the arrow keys outside the image). Frames keep their true numbers, and a missing frame says so in
-	// place. Changing direction or move keeps the frame and the zoom where they still fit.
+	// Sprite frames in the image viewer. The move or state and the direction are pickers in its header, and the arrows on
+	// the image's sides (or Left and Right) walk every view. The move plays at its own timing; a tap on the image, the corner button or
+	// Space pauses it, and , and . step frames. A missing frame says so in place.
 	import { untrack } from 'svelte';
-	import { formatNumber, t } from 'svelte-whisper';
+	import { t } from 'svelte-whisper';
 	import type { playbackClips } from '../lib/runtime/timeline.js';
 	import ImageViewer from './ImageViewer.svelte';
 	import PlaybackPicker from './experience/PlaybackPicker.svelte';
 	import type { MoveRef } from './model.ts';
-	import { ChevronLeft, ChevronRight } from './icons.ts';
+	import { Pause, Play } from './icons.ts';
 
 	let {
 		title,
 		views,
 		view: initialView,
 		frame: initialFrame = 0,
+		durations,
 		moves,
 		onclose
 	}: {
@@ -29,6 +30,8 @@
 		/** The facing to open on, by id; the first by default. */
 		view?: string;
 		frame?: number;
+		/** How long each frame shows, in ms (the move's timeline); 100 ms each by default. */
+		durations?: readonly number[];
 		/** The move or state shown, which the header's picker changes (the host then passes that move's views). */
 		moves?: {
 			clips: readonly Pick<ReturnType<typeof playbackClips>[number], 'id' | 'key' | 'kind'>[];
@@ -47,7 +50,7 @@
 	const count = $derived(current?.frames.length ?? 0);
 	const shown = $derived(count ? Math.min(Math.max(0, frame), count - 1) : 0);
 	const image = $derived(current?.frames[shown] ?? null);
-	// Every frame of every facing shares one box, so stepping never rescales the sprite.
+	// Every frame of every facing shares one box, so playing never rescales the sprite.
 	const box = $derived.by(() => {
 		let w = 1,
 			h = 1;
@@ -59,13 +62,21 @@
 				}
 		return { w, h };
 	});
-	const number = (value: number) => formatNumber(value, { useGrouping: false });
-	const frameText = $derived(
-		count > 1 ? t('spriteViewer.frameOf', { frame: number(shown + 1), count: number(count) }) : ''
-	);
 
+	// It plays unless the player asked for less motion.
+	let playing = $state(
+		typeof matchMedia === 'undefined' || !matchMedia('(prefers-reduced-motion: reduce)').matches
+	);
+	$effect(() => {
+		if (!playing || count < 2) return;
+		const ms = durations?.[shown] ?? 100;
+		const timer = setTimeout(() => (frame = (shown + 1) % count), ms > 0 ? ms : 100);
+		return () => clearTimeout(timer);
+	});
 	function step(delta: 1 | -1) {
-		if (count > 1) frame = (shown + delta + count) % count;
+		if (count < 2) return;
+		playing = false;
+		frame = (shown + delta + count) % count;
 	}
 
 	/** The moves and states the arrows walk through, in the picker's order (moves, then states), skipping ones with
@@ -116,31 +127,37 @@
 	{title}
 	{image}
 	{box}
-	label={[title, current?.label, frameText].filter(Boolean).join(' · ')}
+	label={[title, current?.label].filter(Boolean).join(' · ')}
 	missing={t('spriteViewer.missing')}
 	{onclose}
+	step={canCycle
+		? {
+				previous: t('spriteViewer.previousView'),
+				next: t('spriteViewer.nextView'),
+				previousHint: t('spriteViewer.previousViewHint'),
+				nextHint: t('spriteViewer.nextViewHint'),
+				go: cycle
+			}
+		: undefined}
+	ontap={count > 1 ? () => (playing = !playing) : undefined}
+	corner={count > 1 ? playButton : undefined}
 	onkeydown={(event) => {
-		// Left and Right walk the views and , and . step frames, anywhere but the pickers and the image (where the arrows
-		// pan).
+		// Left and Right walk the views, , and . step frames and Space plays or pauses, anywhere but the pickers (and the
+		// image, where the arrows pan).
 		const target = event.target as HTMLElement;
-		if (target.closest('select, [role=menu], [popover], .viewer-stage')) return;
+		if (target.closest('select, [role=menu], [popover]')) return;
 		if (event.altKey || event.ctrlKey || event.metaKey) return;
-		if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+		const onImage = !!target.closest('.viewer-stage');
+		if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') && !onImage) {
 			if (!canCycle) return;
 			cycle(event.key === 'ArrowLeft' ? -1 : 1);
 		} else if (event.key === ',' || event.key === '.') step(event.key === ',' ? -1 : 1);
+		else if (event.key === ' ' && count > 1 && !target.closest('button')) playing = !playing;
 		else return;
 		event.preventDefault();
 	}}
 >
 	{#snippet controls()}
-		{#if canCycle}<button
-				class="bu-action btn icon viewer-cycle"
-				data-variant="outline"
-				aria-label={t('spriteViewer.previousView')}
-				title={t('spriteViewer.previousViewHint')}
-				onclick={() => cycle(-1)}><ChevronLeft size={18} aria-hidden="true" /></button
-			>{/if}
 		<div class="viewer-pickers">
 			{#if moves}<PlaybackPicker
 					clips={moves.clips}
@@ -161,30 +178,30 @@
 						<option value={entry.id}>{entry.label}</option>
 					{/each}
 				</select>{/if}
-			{#if count > 1}<select
-					class="bu-input viewer-direction"
-					aria-label={t('spriteViewer.frame')}
-					value={shown}
-					onchange={(event) => (frame = Number(event.currentTarget.value))}
-				>
-					{#each current?.frames ?? [] as _, index (index)}
-						<option value={index}>{t('spriteViewer.frameOption', { n: number(index + 1) })}</option>
-					{/each}
-				</select>{/if}
 		</div>
-		{#if canCycle}<button
-				class="bu-action btn icon viewer-cycle"
-				data-variant="outline"
-				aria-label={t('spriteViewer.nextView')}
-				title={t('spriteViewer.nextViewHint')}
-				onclick={() => cycle(1)}><ChevronRight size={18} aria-hidden="true" /></button
-			>{/if}
 	{/snippet}
 </ImageViewer>
 
+{#snippet playButton()}
+	<div class="viewer-play scene-zoom bu-floating">
+		<button
+			class="bu-action"
+			data-variant="quiet"
+			aria-label={playing ? t('common.pause') : t('common.play')}
+			title={playing ? t('spriteViewer.pauseHint') : t('spriteViewer.playHint')}
+			onclick={() => (playing = !playing)}
+			>{#if playing}<Pause size={18} aria-hidden="true" />{:else}<Play
+					size={18}
+					aria-hidden="true"
+				/>{/if}</button
+		>
+	</div>
+{/snippet}
+
 <style>
+	/* Exactly its longest choice's width (the theme's fitSelects), not the chosen one's, so nothing beside it shifts. */
 	.viewer-direction {
-		width: auto;
+		inline-size: var(--bu-select-fit, auto);
 		min-height: 40px;
 		padding-block: 6px;
 	}
@@ -194,52 +211,14 @@
 			font-size: 16px;
 		}
 	}
-	/* The pickers stay on one line between the arrows; a phone wraps them on their own row. */
+	/* The pickers keep one line at every width; each keeps its longest choice's width. */
 	.viewer-pickers {
 		display: flex;
 		flex: none;
-		flex-wrap: nowrap;
-		justify-content: center;
 		gap: 8px;
-		min-width: 0;
 	}
-	/* A phone moves the arrows up beside Close and gives the pickers the whole second row. */
-	@media (max-width: 600px) {
-		:global(dialog.image-viewer .sheet-head) {
-			grid-template-columns: minmax(0, 1fr) auto auto auto;
-		}
-		:global(dialog.image-viewer .sheet-head .sheet-heading) {
-			display: contents;
-		}
-		:global(dialog.image-viewer .sheet-head .sheet-start) {
-			grid-area: 1 / 1;
-		}
-		.viewer-cycle:first-child {
-			grid-area: 1 / 2;
-		}
-		.viewer-cycle:last-child {
-			grid-area: 1 / 3;
-		}
-		:global(dialog.image-viewer .sheet-head .sheet-end) {
-			grid-area: 1 / 4;
-		}
-		.viewer-pickers {
-			grid-area: 2 / 1 / 3 / -1;
-			flex-wrap: wrap;
-		}
-	}
-	.viewer-cycle {
-		flex: none;
-		width: 40px;
-		height: 40px;
-		min-height: 40px;
-		padding: 0;
-	}
-	@media (pointer: coarse) {
-		.viewer-cycle {
-			width: 44px;
-			height: 44px;
-			min-height: 44px;
-		}
+	/* The play control matches the zoom controls across the image (same floating material and target size). */
+	.viewer-play {
+		position: static;
 	}
 </style>

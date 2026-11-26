@@ -3697,15 +3697,14 @@
 		"results": "{count} de {total}"
 	},
 	"spriteViewer": {
-		"frameOf": "Quadro {frame} de {count}",
 		"missing": "Nenhum quadro para mostrar",
 		"direction": "Direção",
 		"previousView": "Vista anterior",
 		"previousViewHint": "Vista anterior (seta para a esquerda)",
 		"nextView": "Próxima vista",
 		"nextViewHint": "Próxima vista (seta para a direita)",
-		"frame": "Quadro",
-		"frameOption": "Quadro {n}"
+		"pauseHint": "Pausar (Espaço)",
+		"playHint": "Reproduzir (Espaço)"
 	},
 	"imageViewer": {
 		"role": "visualizador de imagens",
@@ -3713,7 +3712,7 @@
 		"zoom": "Zoom da imagem",
 		"hint": "Use a roda ou faça pinça para dar zoom. Arraste para mover.",
 		"fit": "Ajustar à janela",
-		"fitHint": "Ajustar à janela (0 ou clique duplo)",
+		"fitHint": "Ajustar à janela (0)",
 		"percent": "{percent}% do tamanho real",
 		"zoomed": "Zoom {percent}%",
 		"missing": "Nenhuma imagem"

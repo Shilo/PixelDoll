@@ -300,7 +300,11 @@
 	.clip-sizer {
 		visibility: hidden;
 		white-space: nowrap;
-		overflow: hidden;
+	}
+	/* Sized to its longest choice already, so its value never truncates (an ellipsis there was only sub-pixel rounding). */
+	.clip-values .clip-value {
+		overflow: visible;
+		text-overflow: clip;
 	}
 	@media (pointer: coarse) {
 		.playback-move .clip-trigger.boxed {

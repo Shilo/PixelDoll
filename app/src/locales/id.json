@@ -3587,15 +3587,14 @@
 		"results": "{count} dari {total}"
 	},
 	"spriteViewer": {
-		"frameOf": "Frame {frame} dari {count}",
 		"missing": "Tidak ada frame untuk ditampilkan",
 		"direction": "Arah",
 		"previousView": "Tampilan sebelumnya",
 		"previousViewHint": "Tampilan sebelumnya (panah kiri)",
 		"nextView": "Tampilan berikutnya",
 		"nextViewHint": "Tampilan berikutnya (panah kanan)",
-		"frame": "Frame",
-		"frameOption": "Frame {n}"
+		"pauseHint": "Jeda (Spasi)",
+		"playHint": "Putar (Spasi)"
 	},
 	"imageViewer": {
 		"role": "penampil gambar",
@@ -3603,7 +3602,7 @@
 		"zoom": "Zoom gambar",
 		"hint": "Gulir atau cubit untuk zoom. Seret untuk menggeser.",
 		"fit": "Sesuaikan dengan jendela",
-		"fitHint": "Sesuaikan dengan jendela (0 atau klik dua kali)",
+		"fitHint": "Sesuaikan dengan jendela (0)",
 		"percent": "{percent}% dari ukuran asli",
 		"zoomed": "Zoom {percent}%",
 		"missing": "Tidak ada gambar"

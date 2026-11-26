@@ -55,6 +55,9 @@ function visibleInViewport(target: HTMLElement | null): target is HTMLElement {
 			top = Math.max(top, bounds.top);
 			bottom = Math.min(bottom, bounds.bottom);
 		}
+		// A modal dialog or open popover sits in the top layer, so the elements it is nested in (an item sheet's scrolling
+		// body under the image viewer) cannot clip it or its contents.
+		if (parent.matches('dialog:modal, :popover-open')) break;
 	}
 	return right > left && bottom > top;
 }

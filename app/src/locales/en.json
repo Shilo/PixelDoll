@@ -3688,15 +3688,14 @@
 		"results": "{count} of {total}"
 	},
 	"spriteViewer": {
-		"frameOf": "Frame {frame} of {count}",
 		"missing": "No frame to show",
 		"direction": "Direction",
 		"previousView": "Previous view",
 		"previousViewHint": "Previous view (Left arrow)",
 		"nextView": "Next view",
 		"nextViewHint": "Next view (Right arrow)",
-		"frame": "Frame",
-		"frameOption": "Frame {n}"
+		"pauseHint": "Pause (Space)",
+		"playHint": "Play (Space)"
 	},
 	"imageViewer": {
 		"role": "image viewer",
@@ -3704,7 +3703,7 @@
 		"zoom": "Image zoom",
 		"hint": "Wheel or pinch to zoom. Drag to move.",
 		"fit": "Fit to window",
-		"fitHint": "Fit to window (0 or double-click)",
+		"fitHint": "Fit to window (0)",
 		"percent": "{percent}% of actual size",
 		"zoomed": "Zoom {percent}%",
 		"missing": "No image to show"

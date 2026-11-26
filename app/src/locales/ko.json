@@ -3587,15 +3587,14 @@
 		"results": "{total}개 중 {count}개"
 	},
 	"spriteViewer": {
-		"frameOf": "프레임 {frame}/{count}",
 		"missing": "표시할 프레임이 없습니다",
 		"direction": "방향",
 		"previousView": "이전 보기",
 		"previousViewHint": "이전 보기 (왼쪽 화살표)",
 		"nextView": "다음 보기",
 		"nextViewHint": "다음 보기 (오른쪽 화살표)",
-		"frame": "프레임",
-		"frameOption": "프레임 {n}"
+		"pauseHint": "일시정지 (스페이스)",
+		"playHint": "재생 (스페이스)"
 	},
 	"imageViewer": {
 		"role": "이미지 뷰어",
@@ -3603,7 +3602,7 @@
 		"zoom": "이미지 확대/축소",
 		"hint": "휠이나 핀치로 확대/축소하세요. 드래그해서 이동하세요.",
 		"fit": "창에 맞추기",
-		"fitHint": "창에 맞추기 (0 또는 두 번 클릭)",
+		"fitHint": "창에 맞추기 (0)",
 		"percent": "실제 크기의 {percent}%",
 		"zoomed": "{percent}% 확대",
 		"missing": "표시할 이미지 없음"

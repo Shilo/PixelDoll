@@ -3587,15 +3587,14 @@
 		"results": "{total} 件中 {count} 件"
 	},
 	"spriteViewer": {
-		"frameOf": "フレーム {frame} / {count}",
 		"missing": "表示するフレームがありません",
 		"direction": "向き",
 		"previousView": "前の表示",
 		"previousViewHint": "前の表示（左矢印）",
 		"nextView": "次の表示",
 		"nextViewHint": "次の表示（右矢印）",
-		"frame": "フレーム",
-		"frameOption": "フレーム {n}"
+		"pauseHint": "一時停止（スペース）",
+		"playHint": "再生（スペース）"
 	},
 	"imageViewer": {
 		"role": "画像ビューアー",
@@ -3603,7 +3602,7 @@
 		"zoom": "画像の拡大縮小",
 		"hint": "ホイールかピンチで拡大縮小。ドラッグで移動。",
 		"fit": "ウィンドウに合わせる",
-		"fitHint": "ウィンドウに合わせる（0 またはダブルクリック）",
+		"fitHint": "ウィンドウに合わせる（0）",
 		"percent": "実寸の{percent}%",
 		"zoomed": "{percent}%に拡大",
 		"missing": "表示する画像がありません"

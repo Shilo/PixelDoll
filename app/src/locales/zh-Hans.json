@@ -3587,15 +3587,14 @@
 		"results": "{total} 项中显示 {count} 项"
 	},
 	"spriteViewer": {
-		"frameOf": "第 {frame} 帧，共 {count} 帧",
 		"missing": "没有可显示的帧",
 		"direction": "朝向",
 		"previousView": "上一个视图",
 		"previousViewHint": "上一个视图（左方向键）",
 		"nextView": "下一个视图",
 		"nextViewHint": "下一个视图（右方向键）",
-		"frame": "帧",
-		"frameOption": "第 {n} 帧"
+		"pauseHint": "暂停（空格）",
+		"playHint": "播放（空格）"
 	},
 	"imageViewer": {
 		"role": "图片查看器",
@@ -3603,7 +3602,7 @@
 		"zoom": "图片缩放",
 		"hint": "滚动滚轮或双指捏合缩放。拖动以移动。",
 		"fit": "适应窗口",
-		"fitHint": "适应窗口（0 或双击）",
+		"fitHint": "适应窗口（0）",
 		"percent": "实际大小的 {percent}%",
 		"zoomed": "缩放 {percent}%",
 		"missing": "没有可显示的图片"

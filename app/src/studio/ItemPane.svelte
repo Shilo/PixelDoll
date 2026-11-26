@@ -1778,6 +1778,7 @@
 			views={viewerViews}
 			view={viewer.view}
 			frame={viewer.frame}
+			durations={m.rig.animations.find((clip) => clip.id === viewer?.anim)?.frames.map((f) => f.ms)}
 			moves={{
 				clips: playbackClips(m.rig.animations),
 				moveRefs,
@@ -1854,8 +1855,10 @@
 		max-width: 40%;
 		margin-inline-start: auto;
 	}
+	/* Exactly its longest choice's width (the theme's fitSelects), not the chosen one's, so the row never reflows as the
+	   choice changes. */
 	.item-move select {
-		width: auto;
+		inline-size: var(--bu-select-fit, auto);
 		max-width: 100%;
 		min-height: 32px;
 		padding-block: 2px;
@@ -2245,7 +2248,7 @@
 		color: var(--text-2);
 	}
 	.fix-facing select {
-		width: auto;
+		inline-size: var(--bu-select-fit, auto);
 		min-height: 36px;
 		padding-block: 4px;
 		font-size: var(--fs-sm);

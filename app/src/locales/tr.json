@@ -3688,15 +3688,14 @@
 		"results": "{total} içinden {count}"
 	},
 	"spriteViewer": {
-		"frameOf": "Kare {frame} / {count}",
 		"missing": "Gösterilecek kare yok",
 		"direction": "Yön",
 		"previousView": "Önceki görünüm",
 		"previousViewHint": "Önceki görünüm (sol ok)",
 		"nextView": "Sonraki görünüm",
 		"nextViewHint": "Sonraki görünüm (sağ ok)",
-		"frame": "Kare",
-		"frameOption": "Kare {n}"
+		"pauseHint": "Duraklat (Boşluk)",
+		"playHint": "Oynat (Boşluk)"
 	},
 	"imageViewer": {
 		"role": "görüntü görüntüleyici",
@@ -3704,7 +3703,7 @@
 		"zoom": "Görüntü yakınlaştırma",
 		"hint": "Yakınlaştırmak için tekerleği kullanın veya iki parmakla sıkıştırın. Taşımak için sürükleyin.",
 		"fit": "Pencereye sığdır",
-		"fitHint": "Pencereye sığdır (0 veya çift tıklama)",
+		"fitHint": "Pencereye sığdır (0)",
 		"percent": "Gerçek boyutun %{percent} kadarı",
 		"zoomed": "Yakınlaştırma %{percent}",
 		"missing": "Gösterilecek görüntü yok"

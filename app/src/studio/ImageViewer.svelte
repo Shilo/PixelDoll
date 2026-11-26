@@ -13,7 +13,7 @@
 	import { resolveZoom, settleZoom } from './experience/zoom.ts';
 	import { openingTrigger, restoreTrigger } from './experience/focus.ts';
 	import { claimSheetExit } from './sheetExit.ts';
-	import { ImageOff } from './icons.ts';
+	import { ChevronLeft, ChevronRight, ImageOff } from './icons.ts';
 	import { ui } from './state.svelte.ts';
 	import {
 		centered,
@@ -32,6 +32,9 @@
 		label,
 		missing = t('imageViewer.missing'),
 		controls,
+		corner,
+		step,
+		ontap,
 		onkeydown,
 		onclose
 	}: {
@@ -46,6 +49,19 @@
 		missing?: string;
 		/** Controls in the header beside the title, such as pickers. */
 		controls?: Snippet;
+		/** A control floating at the bottom right of the image, such as play and pause. */
+		corner?: Snippet;
+		/** Previous and next buttons on the image's left and right edges, as in a gallery. */
+		step?: {
+			previous: string;
+			next: string;
+			/** Tooltips, such as their keys. */
+			previousHint?: string;
+			nextHint?: string;
+			go: (delta: 1 | -1) => void;
+		};
+		/** A tap or click on the image that did not drag or pinch, such as pausing an animation. */
+		ontap?: () => void;
 		/** Keys the image area did not use, such as frame stepping. */
 		onkeydown?: (event: KeyboardEvent) => void;
 		onclose: () => void;
@@ -140,19 +156,26 @@
 	const pointers = new Map<number, { x: number; y: number }>();
 	let gesture: { start: Viewport; points: Map<number, { x: number; y: number }> } | null = null;
 	let dragging = $state(false);
+	/** A press that has not moved or met a second pointer yet: releasing it soon is a tap. */
+	let tap: { x: number; y: number; at: number } | null = null;
 	const begin = () => {
 		gesture = pointers.size ? { start: viewport, points: new Map(pointers) } : null;
 		dragging = pointers.size > 0;
 	};
 	function pointerDown(event: PointerEvent) {
 		if (event.pointerType === 'mouse' && event.button !== 0) return;
+		// Pressing a floating control is not a drag or a tap on the image (capturing it would also swallow the click).
+		if ((event.target as Element).closest('.viewer-zoom, .viewer-corner, .viewer-side')) return;
 		pointers.set(event.pointerId, point(event));
 		stage?.setPointerCapture(event.pointerId);
+		tap = pointers.size === 1 ? { ...point(event), at: event.timeStamp } : null;
 		begin();
 	}
 	function pointerMove(event: PointerEvent) {
 		if (!pointers.has(event.pointerId) || !gesture) return;
 		pointers.set(event.pointerId, point(event));
+		const now = point(event);
+		if (tap && Math.hypot(now.x - tap.x, now.y - tap.y) > 6) tap = null;
 		const ids = [...gesture.points.keys()].filter((id) => pointers.has(id)).slice(0, 2);
 		const { start } = gesture;
 		if (ids.length === 2) {
@@ -175,6 +198,9 @@
 	}
 	function pointerUp(event: PointerEvent) {
 		if (!pointers.delete(event.pointerId)) return;
+		if (tap && !pointers.size && event.type === 'pointerup' && event.timeStamp - tap.at < 500)
+			ontap?.();
+		tap = null;
 		const pinched = (gesture?.points.size ?? 0) > 1;
 		if (pinched) {
 			const settled = settleZoom(zoom, viewport.scale);
@@ -252,11 +278,6 @@
 		onpointermove={pointerMove}
 		onpointerup={pointerUp}
 		onpointercancel={pointerUp}
-		ondblclick={(event) => {
-			if (zoom.zoomed) showFit();
-			else zoomTo(Math.max(zoom.fit * 2, 1), point(event));
-			announce();
-		}}
 	>
 		{#if image}
 			<canvas
@@ -272,6 +293,29 @@
 				<ImageOff size={28} aria-hidden="true" /><span>{missing}</span>
 			</p>
 		{/if}
+		{#if step}
+			<div class="viewer-side bu-floating" data-side="start">
+				<button
+					class="bu-action"
+					data-variant="quiet"
+					aria-label={step.previous}
+					title={step.previousHint ?? step.previous}
+					onclick={() => step?.go(-1)}><ChevronLeft size={22} aria-hidden="true" /></button
+				>
+			</div>
+			<div class="viewer-side bu-floating" data-side="end">
+				<button
+					class="bu-action"
+					data-variant="quiet"
+					aria-label={step.next}
+					title={step.nextHint ?? step.next}
+					onclick={() => step?.go(1)}><ChevronRight size={22} aria-hidden="true" /></button
+				>
+			</div>
+		{/if}
+		{#if corner}<div class="viewer-corner">
+				{@render corner()}
+			</div>{/if}
 		<div class="viewer-zoom">
 			<ZoomControls
 				{zoom}
@@ -333,7 +377,6 @@
 		dialog.image-viewer :global(.sheet-heading) {
 			grid-row: 2;
 			grid-column: 1 / -1;
-			flex-wrap: wrap;
 		}
 	}
 	/* The image fills the window: it moves by transform only, so panning and zooming never relayout. */
@@ -368,13 +411,44 @@
 		color: var(--text-3);
 	}
 	/* The zoom controls float at the bottom right, clear of the image's center. */
+	/* Zoom floats at the bottom left and the host's control (play and pause) at the bottom right, clear of the image's
+	   center. */
 	.viewer-zoom :global(.scene-zoom) {
 		position: absolute;
 		top: auto;
+		right: auto;
+		bottom: 12px;
+		left: 12px;
+	}
+	.viewer-corner {
+		position: absolute;
 		right: 12px;
 		bottom: 12px;
 	}
-	.viewer-zoom {
+	/* Previous and next sit on the image's side edges, vertically centered, in the zoom controls' floating material. */
+	.viewer-side {
+		position: absolute;
+		top: 50%;
+		translate: 0 -50%;
+		display: grid;
+		padding: 2px;
+		border-radius: var(--bu-radius-control);
+	}
+	.viewer-side[data-side='start'] {
+		left: 12px;
+	}
+	.viewer-side[data-side='end'] {
+		right: 12px;
+	}
+	.viewer-side .bu-action {
+		display: grid;
+		place-items: center;
+		width: 44px;
+		height: 56px;
+	}
+	.viewer-zoom,
+	.viewer-corner,
+	.viewer-side {
 		cursor: auto;
 	}
 </style>

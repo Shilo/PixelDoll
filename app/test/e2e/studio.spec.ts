@@ -3509,25 +3509,26 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await page.keyboard.press('Enter');
 	const spritePreview = page.locator('dialog.image-viewer');
 	await expect(spritePreview.locator('canvas')).toBeVisible();
-	// The move and the direction are pickers in the header; the frame steps in the footer and with the arrows.
-	await expect(spritePreview.getByRole('button', { name: /^Move: Walk/ })).toBeVisible();
+	// The move and the direction are pickers in the header; its moves menu opens over the viewer.
+	const movePicker = spritePreview.getByRole('button', { name: /^Move: Walk/ });
+	await movePicker.click();
+	await expect(page.getByRole('menuitemradio', { name: 'Walk', exact: true })).toBeVisible();
+	await page.keyboard.press('Escape');
 	const facing = spritePreview.getByRole('combobox', { name: 'Direction', exact: true });
 	await expect(facing).toHaveValue('south');
-	// The frame is a picker too: every view of the move, and , and . step it.
-	const frameNote = spritePreview.getByRole('combobox', { name: 'Frame', exact: true });
-	await expect(frameNote.locator('option')).toHaveCount(8);
-	const firstNote = await frameNote.inputValue();
-	await page.keyboard.press('.');
-	await expect(frameNote).not.toHaveValue(firstNote);
-	const stepped = await frameNote.inputValue();
+	// The move plays; Space pauses and plays it.
+	const playback = spritePreview.getByRole('button', { name: /^(Pause|Play)$/ });
+	await expect(playback).toHaveAccessibleName('Pause');
+	await spritePreview.locator('.sheet-title').focus();
+	await page.keyboard.press(' ');
+	await expect(playback).toHaveAccessibleName('Play');
 	// The arrows walk every direction, then on into the next move or state.
 	await page.keyboard.press('ArrowRight');
 	await expect(facing).toHaveValue('east');
 	await page.keyboard.press('ArrowLeft');
 	await expect(facing).toHaveValue('south');
 	await facing.selectOption('east');
-	await expect(spritePreview.getByRole('application')).toHaveAccessibleName(/^Red cape · East · /);
-	await expect(frameNote).toHaveValue(stepped);
+	await expect(spritePreview.getByRole('application')).toHaveAccessibleName(/^Red cape · East\./);
 	// The image zooms from the keyboard and returns to its fit.
 	const zoomShown = spritePreview.getByRole('button', { name: 'Fit to window', exact: true });
 	const fitted = await zoomShown.textContent();
