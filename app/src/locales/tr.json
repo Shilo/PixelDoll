@@ -644,10 +644,11 @@
 		"billingNote": "Tahminler üretim sayısını karşılaştırır, dolar fiyatlarını değil. PixelLab dolar cinsinden ücret alabilir ve bekleme süresi değişebilir."
 	},
 	"newCharacterButton": {
+		"addCharacter": "Karakter ekle",
 		"newCharacter": "Yeni karakter",
-		"createFromScratch": "Sıfırdan oluşturun…",
-		"importFromDevice": "Cihazdan içe aktarın…",
-		"importFromPixelLab": "PixelLab üzerinden içe aktarın…"
+		"createFromScratch": "Oluştur…",
+		"fromFile": "Dosyadan…",
+		"fromPixelLab": "PixelLab'den…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(yeni sekmede açılır)"
@@ -1403,7 +1404,7 @@
 		"posesTitle": "Durum olarak da içe aktar",
 		"posesHint": "Aynı gövdenin, görsele işlenmiş ekipman içermeyen pozlarını seçin. Farklı bir görünümü ayrı bir karakter olarak içe aktarın. Animasyonları aşağıdan seçin.",
 		"poseMismatch": "Bu durumun görsel boyutları, bakış yönleri veya kamera ayarları farklı. Ayrı bir karakter olarak içe aktarın.",
-		"titleDevice": "Cihazdan içe aktarın",
+		"titleFile": "Dosyadan içe aktar",
 		"titlePixelLab": "PixelLab üzerinden içe aktarın",
 		"browseLibrary": "PixelLab karakterlerine göz atın",
 		"standingState": "Ayakta duruş durumu",

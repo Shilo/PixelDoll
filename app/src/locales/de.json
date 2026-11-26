@@ -644,10 +644,11 @@
 		"billingNote": "Die Schätzungen vergleichen Generierungen, nicht Dollarpreise. PixelLab kann US-Dollar berechnen, und die Wartezeit kann variieren."
 	},
 	"newCharacterButton": {
+		"addCharacter": "Figur hinzufügen",
 		"newCharacter": "Neue Figur",
-		"createFromScratch": "Neu erstellen…",
-		"importFromDevice": "Vom Gerät importieren…",
-		"importFromPixelLab": "Aus PixelLab importieren…"
+		"createFromScratch": "Erstellen…",
+		"fromFile": "Aus Datei…",
+		"fromPixelLab": "Aus PixelLab…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(öffnet in einem neuen Tab)"
@@ -1403,7 +1404,7 @@
 		"posesTitle": "Auch als Zustände importieren",
 		"posesHint": "Wähle Posen desselben Körpers ohne fest eingezeichnete Ausrüstung. Importiere ein anderes Aussehen als separaten Charakter. Die Animationen wählst du weiter unten aus.",
 		"poseMismatch": "Dieser Zustand hat andere Bildabmessungen, Blickrichtungen oder Kameraeinstellungen. Importiere ihn als separaten Charakter.",
-		"titleDevice": "Vom Gerät importieren",
+		"titleFile": "Aus Datei importieren",
 		"titlePixelLab": "Aus PixelLab importieren",
 		"browseLibrary": "PixelLab-Figuren durchsuchen",
 		"standingState": "Zustand für die Standpose",

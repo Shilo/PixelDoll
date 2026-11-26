@@ -622,10 +622,11 @@
 		"billingNote": "这些估算比较的是生成次数，不是美元价格。PixelLab 可能按美元计费，排队时间可能不同。"
 	},
 	"newCharacterButton": {
+		"addCharacter": "添加角色",
 		"newCharacter": "新建角色",
-		"createFromScratch": "从零创建…",
-		"importFromDevice": "从设备导入…",
-		"importFromPixelLab": "从 PixelLab 导入…"
+		"createFromScratch": "创建…",
+		"fromFile": "从文件…",
+		"fromPixelLab": "从 PixelLab…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "（在新标签页中打开）"
@@ -1357,7 +1358,7 @@
 		"posesTitle": "同时作为状态导入",
 		"posesHint": "请选择同一身体且未画入装备的姿势。外观不同的请作为独立角色导入。请在下方选择动作。",
 		"poseMismatch": "此状态的图像尺寸、朝向或相机设置不同。请将其作为独立角色导入。",
-		"titleDevice": "从设备导入",
+		"titleFile": "从文件导入",
 		"titlePixelLab": "从 PixelLab 导入",
 		"browseLibrary": "浏览 PixelLab 角色",
 		"standingState": "站立姿势状态",

@@ -622,10 +622,11 @@
 		"billingNote": "推定値は生成数を比較したもので、ドル価格ではありません。PixelLabから米ドルで請求される場合があり、待ち時間は状況によって異なります。"
 	},
 	"newCharacterButton": {
+		"addCharacter": "キャラクターを追加",
 		"newCharacter": "新しいキャラクター",
-		"createFromScratch": "一から作成…",
-		"importFromDevice": "デバイスからインポート…",
-		"importFromPixelLab": "PixelLabからインポート…"
+		"createFromScratch": "作成…",
+		"fromFile": "ファイルから…",
+		"fromPixelLab": "PixelLabから…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "（新しいタブで開きます）"
@@ -1357,7 +1358,7 @@
 		"posesTitle": "ステートとしてもインポート",
 		"posesHint": "装備が描き込まれていない、同じ素体のポーズを選んでください。外見が異なるものは別のキャラクターとしてインポートしてください。モーションは下で選びます。",
 		"poseMismatch": "このステートは画像サイズ、向き、またはカメラ設定が異なります。別のキャラクターとしてインポートしてください。",
-		"titleDevice": "デバイスからインポート",
+		"titleFile": "ファイルからインポート",
 		"titlePixelLab": "PixelLabからインポート",
 		"browseLibrary": "PixelLabのキャラクターを見る",
 		"standingState": "立ちポーズのステート",

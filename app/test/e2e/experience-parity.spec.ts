@@ -725,10 +725,10 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	await expect(world(page)).toBeFocused();
 	await page.keyboard.press('Escape');
 	await expect(selection(page)).toBeFocused();
-	const create = page.getByRole('button', { name: 'New character', exact: true }).first();
+	const create = page.getByRole('button', { name: 'Add character', exact: true }).first();
 	await create.focus();
 	await page.keyboard.press('Enter');
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'New character', exact: true });
 	const name = dialog.getByRole('textbox', { name: 'Name', exact: true });
 	await name.fill('Keyboard draft');
@@ -1508,11 +1508,11 @@ test('imported move names remain readable, distinct and contained in Preview and
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.first()
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
-	const importing = page.getByRole('dialog', { name: 'Import from device', exact: true });
+	await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
+	const importing = page.getByRole('dialog', { name: 'Import from file', exact: true });
 	await importing.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'move-labels.zip',
 		mimeType: 'application/zip',
@@ -2684,11 +2684,11 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 		await page.locator('.project-btn').click();
 		await page
 			.locator('#project-menu')
-			.getByRole('button', { name: 'New character', exact: true })
+			.getByRole('button', { name: 'Add character', exact: true })
 			.first()
 			.click();
-		await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
-		const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true });
+		await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
+		const dialog = page.getByRole('dialog', { name: 'Import from file', exact: true });
 		await dialog
 			.getByLabel('Character ZIP', { exact: true })
 			.setInputFiles({ name: 'wheel-character.zip', mimeType: 'application/zip', buffer: bytes });

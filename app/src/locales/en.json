@@ -644,10 +644,11 @@
 		"billingNote": "Estimates compare generations, not dollar prices. PixelLab may bill dollars, and queue time may vary."
 	},
 	"newCharacterButton": {
+		"addCharacter": "Add character",
 		"newCharacter": "New character",
-		"createFromScratch": "Create from scratch…",
-		"importFromDevice": "Import from device…",
-		"importFromPixelLab": "Import from PixelLab…"
+		"createFromScratch": "Create…",
+		"fromFile": "From file…",
+		"fromPixelLab": "From PixelLab…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(opens in a new tab)"
@@ -1403,7 +1404,7 @@
 		"posesTitle": "Also import as States",
 		"posesHint": "Choose poses of the same body with no baked-in gear. Import a different look as a separate character. Moves are selected below.",
 		"poseMismatch": "This state has different artwork dimensions, facings, or camera settings. Import it as a separate character.",
-		"titleDevice": "Import from device",
+		"titleFile": "Import from file",
 		"titlePixelLab": "Import from PixelLab",
 		"browseLibrary": "Browse PixelLab characters",
 		"standingState": "Standing pose state",
