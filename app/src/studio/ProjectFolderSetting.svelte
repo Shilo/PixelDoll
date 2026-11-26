@@ -181,6 +181,12 @@
 							class="bu-action btn sm"
 							disabled={working}
 							onclick={replace}>{t('projectFolder.replace')}</button
+						>{:else}<button
+							type="button"
+							class="bu-action btn sm"
+							disabled={disabled || working}
+							onclick={() => act(() => publishProjectFolder())}
+							>{t('projectFolder.publishNow')}</button
 						>{/if}
 					<button type="button" class="bu-action btn sm" disabled={working} onclick={keep}
 						>{t('projectFolder.keep')}</button

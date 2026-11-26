@@ -11,9 +11,9 @@ A project folder receives **individual files**, exactly the files the export ZIP
 | Platform | Support | Why |
 | --- | --- | --- |
 | Chrome, Edge, Opera and other Chromium browsers on Windows, macOS, Linux and ChromeOS | Project folder with automatic updates, plus ZIP | Documented API since Chrome 86. Windows passed real tests here. macOS and Linux use the same Chromium code but were not tested. |
-| Brave | Same as Chrome once its flag is on, plus ZIP | Brave ships the same Chromium API switched off. With `brave://flags/#file-system-access-api` enabled and Brave restarted, it behaves like Chrome. With the flag off, Settings > Export explains how to turn it on. Nothing is forced. |
+| Brave | Same as Chrome once its flag is on, plus ZIP | Brave ships the same Chromium API switched off. With `brave://flags/#file-system-access-api` enabled and Brave restarted, it behaves like Chrome. With the flag off, Settings > Export explains how to turn it on. Nothing is forced. Verified in real Brave on Windows: off by default (the hint appears), and with the flag on a real folder grant published 372 files. |
 | Android Chrome | Shown where the browser offers it (Chrome 132 and later), untested | The API is present on Android according to browser compat data. Android storage providers lack atomic writes, so the per-file journal matters more there. No real Android game workflow was tested. |
-| Firefox, Safari on macOS | ZIP only | Mozilla and WebKit oppose the API. The section does not appear. |
+| Firefox, Safari on macOS | ZIP only | Mozilla and WebKit oppose the API. No folder control appears anywhere (checked in Firefox 159 and WebKit with iPhone emulation, with no page errors). |
 | iOS and iPadOS (every browser) | ZIP only | Apple requires every iOS browser, Chrome included, to use WebKit, which lacks the API. |
 | Native Windows, macOS, Linux | None for now | Nothing tested requires it. See [the native case](#native-editions). |
 
