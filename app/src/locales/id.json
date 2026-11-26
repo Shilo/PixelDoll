@@ -650,7 +650,8 @@
 		"slotLayerOrder": "Urutan lapisan slot {slot}",
 		"layerScopeFacing": "Berlaku untuk semua item {slot} yang menghadap {direction}.",
 		"twoHandedNote": "Memakai kedua tangan, jadi memakainya melepas item {slot}.",
-		"makeForSlotDetail": "Gambar item ini lagi untuk {slot}."
+		"makeForSlotDetail": "Gambar item ini lagi untuk {slot}.",
+		"groupReady": "{ready} dari {count} siap"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Karakter baru",

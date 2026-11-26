@@ -671,7 +671,8 @@
 		"slotLayerOrder": "{slot} slot layer order",
 		"layerScopeFacing": "Applies to all {slot} items facing {direction}.",
 		"twoHandedNote": "Uses both hands, so wearing it takes off the {slot} item.",
-		"makeForSlotDetail": "Draw this item again for the {slot}."
+		"makeForSlotDetail": "Draw this item again for the {slot}.",
+		"groupReady": "{ready} of {count} ready"
 	},
 	"newCharacterButton": {
 		"newCharacter": "New character",

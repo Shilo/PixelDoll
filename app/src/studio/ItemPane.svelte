@@ -323,13 +323,14 @@
 	// Every move and State the body has, with the directions this item lacks there (same rules as clipMissingItems).
 	const clips = $derived(
 		m && it
-			? playbackClips(m.rig.animations).flatMap(({ key }) => {
+			? playbackClips(m.rig.animations).flatMap(({ key, kind }) => {
 					const drawn = itemClipDrawn(m, it!.id, key);
 					if (drawn == null) return [];
 					const missing = gaps.filter((g) => g.startsWith(`${key}/`)).map((g) => g.split('/')[1]);
 					return [
 						{
 							id: key,
+							kind,
 							name: displayMove(key, moveRefs),
 							drawn,
 							missing,
@@ -1084,7 +1085,28 @@
 										>{t(all ? 'itemPane.clearSelection' : 'itemPane.selectAllMoves')}</button
 									>
 								{/if}
-								{#each clips as clip (clip.id)}
+								<!-- Moves, then states, each saying how many already have this item's artwork. -->
+								{#each [{ kind: 'move', title: t('experience.tabMoves') }, { kind: 'state', title: t('experience.tabStates') }] as group (group.kind)}
+									{@const rows = clips.filter((clip) => clip.kind === group.kind)}
+									{#if rows.length}
+										<div
+											class="clip-group"
+											role="group"
+											aria-labelledby="clips-{group.kind}-{it.id}"
+										>
+											<h4 class="clip-group-head" id="clips-{group.kind}-{it.id}">
+												{group.title}<small
+													>{t('itemPane.groupReady', {
+														ready: number(rows.filter((clip) => clip.drawn).length),
+														count: number(rows.length)
+													})}</small
+												>
+											</h4>
+											{#each rows as clip (clip.id)}{@render clipRow(clip)}{/each}
+										</div>
+									{/if}
+								{/each}
+								{#snippet clipRow(clip: (typeof clips)[number])}
 									{@const offer = moveOffers.get(clip.id)}
 									{@const pickable = !copyOffer && eligible.includes(clip.id)}
 									{@const pending = pendingMoveIds.includes(clip.id)}
@@ -1126,7 +1148,7 @@
 											>
 										</div>
 									{/if}
-								{/each}
+								{/snippet}
 							</fieldset>
 							{#if eligible.length && !copyOffer}
 								{#if missingOffer?.error}<p class="notice warn small" role="status">
@@ -2137,6 +2159,29 @@
 		margin: 0;
 		padding: 0;
 		border: 0;
+	}
+	.clip-group {
+		display: grid;
+		min-width: 0;
+	}
+	.clip-group + .clip-group {
+		margin-block-start: 16px;
+	}
+	/* The group's name, with how many of its moves or states already have the item's artwork at the far end. */
+	.clip-group-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 12px;
+		margin: 0;
+		padding-block-end: 6px;
+		border-block-end: 1px solid var(--bu-line);
+		font-size: var(--fs-sm, 13px);
+		font-weight: 600;
+	}
+	.clip-group-head small {
+		font-weight: 400;
+		color: var(--text-2);
 	}
 	.select-all {
 		justify-self: end;

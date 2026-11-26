@@ -671,7 +671,8 @@
 		"slotLayerOrder": "Ebenenreihenfolge im Slot {slot}",
 		"layerScopeFacing": "Gilt für alle Gegenstände im Slot {slot} in Blickrichtung {direction}.",
 		"twoHandedNote": "Braucht beide Hände, daher wird beim Tragen der Gegenstand in {slot} abgelegt.",
-		"makeForSlotDetail": "Diesen Gegenstand noch einmal für {slot} zeichnen."
+		"makeForSlotDetail": "Diesen Gegenstand noch einmal für {slot} zeichnen.",
+		"groupReady": "{ready} von {count} fertig"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Neue Figur",

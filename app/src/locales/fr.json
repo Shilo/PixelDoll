@@ -671,7 +671,8 @@
 		"slotLayerOrder": "Ordre des calques de l’emplacement {slot}",
 		"layerScopeFacing": "S’applique à tous les objets {slot} orientés {direction}.",
 		"twoHandedNote": "Utilise les deux mains : le porter retire l’objet de {slot}.",
-		"makeForSlotDetail": "Redessiner cet objet pour {slot}."
+		"makeForSlotDetail": "Redessiner cet objet pour {slot}.",
+		"groupReady": "{ready} sur {count} prêts"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nouveau personnage",

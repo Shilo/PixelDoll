@@ -671,7 +671,8 @@
 		"slotLayerOrder": "{slot} yuvası katman sırası",
 		"layerScopeFacing": "{direction} yönündeki tüm {slot} eşyalarına uygulanır.",
 		"twoHandedNote": "İki eli de kullanır; giyildiğinde {slot} eşyası çıkarılır.",
-		"makeForSlotDetail": "Bu eşyayı {slot} için yeniden çiz."
+		"makeForSlotDetail": "Bu eşyayı {slot} için yeniden çiz.",
+		"groupReady": "{count} içinden {ready} hazır"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Yeni karakter",

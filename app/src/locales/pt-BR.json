@@ -671,7 +671,8 @@
 		"slotLayerOrder": "Ordem das camadas do espaço {slot}",
 		"layerScopeFacing": "Vale para todos os itens de {slot} virados para {direction}.",
 		"twoHandedNote": "Usa as duas mãos, então usá-lo tira o item de {slot}.",
-		"makeForSlotDetail": "Desenhe este item de novo para {slot}."
+		"makeForSlotDetail": "Desenhe este item de novo para {slot}.",
+		"groupReady": "{ready} de {count} prontos"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Novo personagem",

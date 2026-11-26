@@ -650,7 +650,8 @@
 		"slotLayerOrder": "{slot}スロットのレイヤー順",
 		"layerScopeFacing": "{direction}向きのすべての{slot}アイテムに適用されます。",
 		"twoHandedNote": "両手を使うため、装備すると{slot}のアイテムが外れます。",
-		"makeForSlotDetail": "このアイテムを{slot}用にもう一度描きます。"
+		"makeForSlotDetail": "このアイテムを{slot}用にもう一度描きます。",
+		"groupReady": "{count}件中{ready}件完了"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新しいキャラクター",

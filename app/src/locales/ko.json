@@ -650,7 +650,8 @@
 		"slotLayerOrder": "{slot} 슬롯 레이어 순서",
 		"layerScopeFacing": "{direction} 방향의 모든 {slot} 아이템에 적용돼요.",
 		"twoHandedNote": "양손을 사용하므로 착용하면 {slot} 아이템이 해제됩니다.",
-		"makeForSlotDetail": "이 아이템을 {slot}용으로 다시 그립니다."
+		"makeForSlotDetail": "이 아이템을 {slot}용으로 다시 그립니다.",
+		"groupReady": "{count}개 중 {ready}개 준비됨"
 	},
 	"newCharacterButton": {
 		"newCharacter": "새 캐릭터",

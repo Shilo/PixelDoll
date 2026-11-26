@@ -671,7 +671,8 @@
 		"slotLayerOrder": "Orden de capas de la ranura {slot}",
 		"layerScopeFacing": "Se aplica a todos los objetos de {slot} mirando hacia {direction}.",
 		"twoHandedNote": "Usa ambas manos, así que al llevarlo se quita el objeto de {slot}.",
-		"makeForSlotDetail": "Dibuja este objeto otra vez para {slot}."
+		"makeForSlotDetail": "Dibuja este objeto otra vez para {slot}.",
+		"groupReady": "{ready} de {count} listos"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nuevo personaje",
