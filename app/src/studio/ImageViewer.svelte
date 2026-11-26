@@ -300,7 +300,7 @@
 					data-variant="quiet"
 					aria-label={step.previous}
 					title={step.previousHint ?? step.previous}
-					onclick={() => step?.go(-1)}><ChevronLeft size={22} aria-hidden="true" /></button
+					onclick={() => step?.go(-1)}><ChevronLeft size={18} aria-hidden="true" /></button
 				>
 			</div>
 			<div class="viewer-side bu-floating" data-side="end">
@@ -309,7 +309,7 @@
 					data-variant="quiet"
 					aria-label={step.next}
 					title={step.nextHint ?? step.next}
-					onclick={() => step?.go(1)}><ChevronRight size={22} aria-hidden="true" /></button
+					onclick={() => step?.go(1)}><ChevronRight size={18} aria-hidden="true" /></button
 				>
 			</div>
 		{/if}
@@ -425,11 +425,13 @@
 		right: 12px;
 		bottom: 12px;
 	}
-	/* Previous and next sit on the image's side edges, vertically centered, in the zoom controls' floating material. */
+	/* Previous and next sit just above the bottom controls (zoom on the left, the host's control on the right), clear of
+	   the image's middle, as square as those controls: a 44px target in the same floating material. They keep that height
+	   even without a control below, so they never jump while being clicked through. */
 	.viewer-side {
 		position: absolute;
-		top: 50%;
-		translate: 0 -50%;
+		/* The controls below stand 50px (a 44px target, 2px padding, 1px border): 8px clear of them. */
+		bottom: calc(12px + 50px + 8px);
 		display: grid;
 		padding: 2px;
 		border-radius: var(--bu-radius-control);
@@ -444,7 +446,7 @@
 		display: grid;
 		place-items: center;
 		width: 44px;
-		height: 56px;
+		height: 44px;
 	}
 	.viewer-zoom,
 	.viewer-corner,
