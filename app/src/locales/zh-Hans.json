@@ -3561,49 +3561,60 @@
 	},
 	"projectFolder": {
 		"title": "项目文件夹",
-		"hint": "将此角色的导出保存到游戏的子文件夹中，并保持最新。",
-		"choose": "选择文件夹",
+		"hint": "将此角色的导出文件保存在你的游戏项目中。",
+		"choose": "选择文件夹…",
 		"change": "更换文件夹",
 		"stop": "取消关联",
-		"publishNow": "立即发布",
+		"publishNow": "立即更新",
 		"auto": "自动更新",
-		"reconnect": "重新连接",
-		"replace": "替换文件",
+		"reconnect": "重新连接文件夹",
+		"replace": "替换列出的文件",
+		"keep": "保留现有文件",
 		"review": "查看",
 		"copy": "复制",
 		"copied": "已复制",
+		"copyPath": "复制路径",
+		"pathCopied": "路径已复制",
 		"brave": "要在 Brave 中使用，请开启 {flag}，然后重启 Brave。",
+		"kept": {
+			"other": "已保留 {count} 个文件"
+		},
+		"updateKept": "查看已保留的文件",
+		"updated": "{time}更新",
+		"tryAgain": "重试",
 		"state": {
-			"off": "关闭",
-			"on": "开启",
+			"off": "未关联",
+			"on": "自动更新已开启",
+			"manual": "自动更新已关闭",
+			"updating": "正在更新…",
 			"attention": "需要处理"
 		},
 		"status": {
-			"publishing": "正在发布…",
+			"publishing": "正在更新…",
 			"done": "已是最新",
-			"reconnect": "文件夹访问已结束。请重新连接，并选择“每次访问时都允许”。",
-			"missing": "找不到文件夹。请重新选择。",
-			"blocked": {
-				"other": "文件夹中有 {count} 个文件与 PixelDoll 的版本不同。"
-			},
+			"already": "已经是最新",
+			"reconnect": "PixelDoll 需要再次访问此文件夹。请选择“每次访问时都允许”，以便持续有效。",
+			"missing": "找不到文件夹。它可能已被移动或删除。",
+			"blocked": "更新已暂停。以下文件与 PixelDoll 上次写入的内容不同：",
 			"unavailable": "此角色目前无法导出。",
 			"locked": "有文件在其他应用中打开。请关闭后重试。",
 			"space": "磁盘已满。",
 			"permission": "不允许使用该文件夹。请选择其他文件夹。",
 			"failed": "无法写入文件夹。请重试。",
-			"folder": "有文件夹占用了文件的位置。请移走它，或选择其他文件夹。",
 			"taken": "另一个角色已在使用此文件夹。请选择其他文件夹。"
 		},
+		"reason": {
+			"edited": "在 PixelDoll 之外编辑过",
+			"notOurs": "原本就在文件夹中",
+			"deleted": "已删除",
+			"folder": "有文件夹占用了位置"
+		},
 		"toast": {
-			"reconnect": "重新连接 {folder} 以继续发布。",
-			"paused": "发布已暂停：文件夹中的文件已更改。",
+			"reconnect": "重新连接 {folder} 以继续更新。",
+			"paused": "更新已暂停：文件夹中的文件已更改。",
 			"missing": "找不到 {folder}。",
-			"failed": "无法发布到 {folder}。"
+			"failed": "无法更新 {folder}。"
 		},
-		"keep": "保留我的",
-		"kept": {
-			"other": "{count} 个文件按你的编辑保留。"
-		},
-		"updateKept": "更新它们"
+		"justUpdated": "刚刚更新"
 	}
 }

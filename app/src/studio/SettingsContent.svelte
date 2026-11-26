@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { onMount, tick, type Snippet } from 'svelte';
+	import { onMount, tick, untrack, type Snippet } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { getLocale, t, type WhisperKey } from 'svelte-whisper';
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
+	import { revealSetting } from './settingsReveal.ts';
 	import { pwa } from '../lib/pwa.ts';
 	import { getKeyRevision } from '../lib/app.svelte.ts';
 	import { isResettableSection, resetSettings, type ResetScope } from './resetSettings.ts';
@@ -425,6 +426,27 @@
 				return words.every((word) => text.includes(word)) ? [{ section, entry }] : [];
 			})
 		);
+	});
+
+	// openSettings(section, entry): bring that row into view once its page has rendered, then forget the request.
+	$effect(() => {
+		const request = settingsNavigation.reveal;
+		if (!request || !panel) return;
+		// Navigating elsewhere first cancels it, so it never pulls focus back later.
+		if (request.section !== settingsNavigation.section) {
+			settingsNavigation.reveal = null;
+			return;
+		}
+		const controller = new AbortController();
+		void revealSetting(panel, request.entry, controller.signal).then(() => {
+			if (settingsNavigation.reveal?.id === request.id) settingsNavigation.reveal = null;
+		});
+		// Leaving the page, closing Settings or a newer request stops this one before it can move focus.
+		return () => controller.abort();
+	});
+	// Typing a search is a new destination: forget a pending reveal.
+	$effect(() => {
+		if (query) untrack(() => (settingsNavigation.reveal = null));
 	});
 
 	async function show(section: SettingsSection | null, entry?: string) {

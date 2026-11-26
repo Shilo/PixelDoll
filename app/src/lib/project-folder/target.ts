@@ -106,7 +106,16 @@ export function directoryTarget(
 			try {
 				// The browser stages these bytes in a temporary copy; the file itself changes only on close.
 				await out.write(data as Uint8Array<ArrayBuffer>);
-				if (unchanged && !(await unchanged(createdHere))) throw new ChangedError(path);
+				if (unchanged) {
+					// The content check reads and hashes the file, which takes a moment. The size and modified time are
+					// taken before it and compared again right before the swap, so a change during the check is caught
+					// too, leaving only the instant between this last comparison and close() (no browser API closes it).
+					const before = await file.getFile();
+					if (!(await unchanged(createdHere))) throw new ChangedError(path);
+					const now = await file.getFile();
+					if (now.size !== before.size || now.lastModified !== before.lastModified)
+						throw new ChangedError(path);
+				}
 				await out.close();
 			} catch (error) {
 				// Abort drops the browser's temporary copy, leaving the previous file in place.

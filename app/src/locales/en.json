@@ -3663,51 +3663,61 @@
 	},
 	"projectFolder": {
 		"title": "Project folder",
-		"hint": "Saves this character’s export into a subfolder of your game and keeps it updated.",
-		"choose": "Choose folder",
+		"hint": "Keep this character’s export files in your game project.",
+		"choose": "Choose folder…",
 		"change": "Change folder",
 		"stop": "Unlink",
-		"publishNow": "Publish now",
+		"publishNow": "Update now",
 		"auto": "Update automatically",
-		"reconnect": "Reconnect",
-		"replace": "Replace files",
+		"reconnect": "Reconnect folder",
+		"replace": "Replace listed files",
+		"keep": "Keep existing files",
 		"review": "Review",
 		"copy": "Copy",
 		"copied": "Copied",
+		"copyPath": "Copy path",
+		"pathCopied": "Path copied",
 		"brave": "To use this in Brave, turn on {flag}, then restart Brave.",
+		"kept": {
+			"one": "{count} file kept",
+			"other": "{count} files kept"
+		},
+		"updateKept": "Review kept files",
+		"updated": "Updated {time}",
+		"tryAgain": "Try again",
 		"state": {
-			"off": "Off",
-			"on": "On",
+			"off": "Not linked",
+			"on": "Automatic updates on",
+			"manual": "Automatic updates off",
+			"updating": "Updating…",
 			"attention": "Needs attention"
 		},
 		"status": {
-			"publishing": "Publishing…",
+			"publishing": "Updating…",
 			"done": "Up to date",
-			"reconnect": "Folder access ended. Reconnect, and choose “Allow on every visit”.",
-			"missing": "Folder not found. Choose it again.",
-			"blocked": {
-				"one": "{count} file in the folder differs from PixelDoll’s version.",
-				"other": "{count} files in the folder differ from PixelDoll’s versions."
-			},
+			"already": "Already up to date",
+			"reconnect": "PixelDoll needs access to this folder again. Choose “Allow on every visit” so it lasts.",
+			"missing": "Folder not found. It may have been moved or deleted.",
+			"blocked": "Updates paused. These files differ from what PixelDoll last wrote:",
 			"unavailable": "This character can’t be exported right now.",
 			"locked": "A file is open in another app. Close it and try again.",
 			"space": "The disk is full.",
 			"permission": "That folder isn’t allowed. Choose another.",
 			"failed": "Couldn’t write to the folder. Try again.",
-			"folder": "A folder is in the way of a file. Move it, or choose another folder.",
 			"taken": "Another character already uses this folder. Choose another one."
 		},
+		"reason": {
+			"edited": "Edited outside PixelDoll",
+			"notOurs": "Already in the folder",
+			"deleted": "Deleted",
+			"folder": "A folder is in the way"
+		},
 		"toast": {
-			"reconnect": "Reconnect {folder} to keep publishing.",
-			"paused": "Publishing paused: files in the folder changed.",
+			"reconnect": "Reconnect {folder} to keep updating.",
+			"paused": "Updates paused: files in the folder changed.",
 			"missing": "Can’t find {folder}.",
-			"failed": "Couldn’t publish to {folder}."
+			"failed": "Couldn’t update {folder}."
 		},
-		"keep": "Keep mine",
-		"kept": {
-			"one": "{count} file is kept as you edited it.",
-			"other": "{count} files are kept as you edited them."
-		},
-		"updateKept": "Update them"
+		"justUpdated": "Updated just now"
 	}
 }

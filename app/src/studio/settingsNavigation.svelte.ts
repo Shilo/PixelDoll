@@ -43,6 +43,8 @@ export const settingsNavigation = $state<{
 	activityOpen: boolean;
 	costOpen: boolean;
 	exportOpen: boolean;
+	/** A row to bring into view once its page shows (openSettings(section, entry)); `id` makes a repeat request new. */
+	reveal: { section: SettingsSection; entry: string; id: number } | null;
 }>({
 	section: null,
 	fromExport: false,
@@ -50,8 +52,10 @@ export const settingsNavigation = $state<{
 	accountReplace: false,
 	activityOpen: false,
 	costOpen: false,
-	exportOpen: false
+	exportOpen: false,
+	reveal: null
 });
+let revealCount = 0;
 
 let returnFocus: 'connection' | 'recent-activity' | 'cost-estimate' | undefined;
 
@@ -66,10 +70,16 @@ export const SETTINGS_KEYS = ['Mod', ','] as const;
 export const isSettingsShortcut = (e: KeyboardEvent) =>
 	(e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key === ',';
 
-/** Without a section, Settings reopens on the page last shown; kept in memory only, so a reload starts at the index. */
-export function openSettings(section?: SettingsSection) {
+/** Without a section, Settings reopens on the page last shown; kept in memory only, so a reload starts at the index.
+ *  With an `entry` (a row's data-setting id, as Settings search uses), that row is scrolled into view, focused and
+ *  briefly highlighted once the page shows. */
+export function openSettings(section?: SettingsSection, entry?: string) {
 	returnFocus = undefined;
-	settingsNavigation.fromExport = ui.sheet === 'export' && section === 'export';
+	settingsNavigation.reveal = section && entry ? { section, entry, id: ++revealCount } : null;
+	// Opening Export's page again from inside Export's Settings (a notice's Review) keeps Back to Export.
+	settingsNavigation.fromExport =
+		section === 'export' &&
+		(ui.sheet === 'export' || (ui.sheet === 'settings' && settingsNavigation.fromExport));
 	if (section) settingsNavigation.section = section;
 	if (ui.sheet && ui.sheet !== 'settings' && !settingsNavigation.fromExport)
 		ui.settingsOverlay = true;
@@ -77,6 +87,7 @@ export function openSettings(section?: SettingsSection) {
 }
 
 export function closeSettings() {
+	settingsNavigation.reveal = null;
 	if (ui.settingsOverlay) ui.settingsOverlay = false;
 	else ui.sheet = null;
 }

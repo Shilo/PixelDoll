@@ -3663,51 +3663,61 @@
 	},
 	"projectFolder": {
 		"title": "Carpeta del proyecto",
-		"hint": "Guarda la exportación de este personaje en una subcarpeta de tu juego y la mantiene al día.",
-		"choose": "Elegir carpeta",
+		"hint": "Mantén los archivos exportados de este personaje en tu proyecto de juego.",
+		"choose": "Elegir carpeta…",
 		"change": "Cambiar carpeta",
 		"stop": "Desvincular",
-		"publishNow": "Publicar ahora",
+		"publishNow": "Actualizar ahora",
 		"auto": "Actualizar automáticamente",
-		"reconnect": "Volver a conectar",
-		"replace": "Reemplazar archivos",
+		"reconnect": "Volver a conectar la carpeta",
+		"replace": "Reemplazar los archivos listados",
+		"keep": "Conservar los archivos existentes",
 		"review": "Revisar",
 		"copy": "Copiar",
 		"copied": "Copiado",
+		"copyPath": "Copiar ruta",
+		"pathCopied": "Ruta copiada",
 		"brave": "Para usarlo en Brave, activa {flag} y reinicia Brave.",
+		"kept": {
+			"one": "{count} archivo conservado",
+			"other": "{count} archivos conservados"
+		},
+		"updateKept": "Revisar archivos conservados",
+		"updated": "Actualizado {time}",
+		"tryAgain": "Reintentar",
 		"state": {
-			"off": "Desactivada",
-			"on": "Activada",
+			"off": "Sin vincular",
+			"on": "Actualizaciones automáticas activadas",
+			"manual": "Actualizaciones automáticas desactivadas",
+			"updating": "Actualizando…",
 			"attention": "Requiere atención"
 		},
 		"status": {
-			"publishing": "Publicando…",
+			"publishing": "Actualizando…",
 			"done": "Al día",
-			"reconnect": "Terminó el acceso a la carpeta. Vuelve a conectar y elige «Permitir en cada visita».",
-			"missing": "No se encuentra la carpeta. Elígela de nuevo.",
-			"blocked": {
-				"one": "{count} archivo de la carpeta es distinto de la versión de PixelDoll.",
-				"other": "{count} archivos de la carpeta son distintos de las versiones de PixelDoll."
-			},
+			"already": "Ya está al día",
+			"reconnect": "PixelDoll necesita acceso a esta carpeta otra vez. Elige «Permitir en cada visita» para que dure.",
+			"missing": "No se encuentra la carpeta. Puede que se haya movido o eliminado.",
+			"blocked": "Actualizaciones en pausa. Estos archivos difieren de lo que PixelDoll escribió por última vez:",
 			"unavailable": "Este personaje no se puede exportar ahora.",
 			"locked": "Hay un archivo abierto en otra app. Ciérralo e inténtalo de nuevo.",
 			"space": "El disco está lleno.",
 			"permission": "Esa carpeta no está permitida. Elige otra.",
 			"failed": "No se pudo escribir en la carpeta. Inténtalo de nuevo.",
-			"folder": "Una carpeta ocupa el lugar de un archivo. Muévela o elige otra carpeta.",
 			"taken": "Otro personaje ya usa esta carpeta. Elige otra."
 		},
+		"reason": {
+			"edited": "Editado fuera de PixelDoll",
+			"notOurs": "Ya estaba en la carpeta",
+			"deleted": "Eliminado",
+			"folder": "Hay una carpeta en su lugar"
+		},
 		"toast": {
-			"reconnect": "Vuelve a conectar {folder} para seguir publicando.",
-			"paused": "Publicación en pausa: cambiaron archivos de la carpeta.",
+			"reconnect": "Vuelve a conectar {folder} para seguir actualizando.",
+			"paused": "Actualizaciones en pausa: cambiaron archivos de la carpeta.",
 			"missing": "No se encuentra {folder}.",
-			"failed": "No se pudo publicar en {folder}."
+			"failed": "No se pudo actualizar {folder}."
 		},
-		"keep": "Conservar las mías",
-		"kept": {
-			"one": "Se conserva {count} archivo como lo editaste.",
-			"other": "Se conservan {count} archivos como los editaste."
-		},
-		"updateKept": "Actualizarlos"
+		"justUpdated": "Actualizado hace un momento"
 	}
 }

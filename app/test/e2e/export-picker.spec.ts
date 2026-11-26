@@ -4115,16 +4115,22 @@ test('a linked project folder publishes, updates after changes, pauses on game e
 	const dialog = page.getByRole('dialog');
 	await dialog.getByRole('radio', { name: 'PNG + JSON', exact: true }).check();
 	// Export keeps one button; the folder is chosen and managed in Settings > Export.
-	await dialog.getByRole('button', { name: 'Project folder · Off' }).click();
+	const folderButton = dialog.getByRole('button', { name: 'Project folder', exact: true });
+	await expect(folderButton).toHaveAccessibleDescription('Not linked');
+	await folderButton.click();
 	const row = dialog.locator('[data-setting="project-folder"]');
-	await row.getByRole('button', { name: 'Choose folder' }).click();
+	// Export's button opens Settings at the Project folder section: in view and focused, so Tab enters its controls.
+	await expect(row).toBeInViewport();
+	await expect(row.getByRole('heading', { name: 'Project folder' })).toBeFocused();
+	await row.getByRole('button', { name: 'Choose folder…' }).click();
 	await expect(row.getByRole('status')).toHaveText('Up to date');
 	await expect(row.getByRole('checkbox', { name: 'Update automatically' })).toBeChecked();
 	const sub = await page.evaluate(async () => {
 		const path = '/src/studio/projectFolder.svelte.ts';
 		return (await import(path)).projectFolder.link.subfolder as string;
 	});
-	await expect(row).toContainText(`game/${sub}/ · PNG + JSON`);
+	await expect(row).toContainText('game · PNG + JSON');
+	await expect(row).toContainText(`${sub}/`);
 	const manifestPath = `game/${sub}/manifest.json`;
 	const first = await folderText(page, manifestPath);
 	expect(JSON.parse(first!).name).toBe('Export settings test');
@@ -4132,8 +4138,8 @@ test('a linked project folder publishes, updates after changes, pauses on game e
 	expect(await folderText(page, `game/${sub}/.pixeldoll-publish.json`)).toBeNull();
 
 	// Publishing again with nothing changed writes nothing, so the manifest keeps its timestamp.
-	await row.getByRole('button', { name: 'Publish now' }).click();
-	await expect(row.getByRole('status')).toHaveText('Up to date');
+	await row.getByRole('button', { name: 'Update now' }).click();
+	await expect(row.getByRole('status')).toHaveText('Already up to date');
 	expect(await folderText(page, manifestPath)).toBe(first);
 
 	// A saved change republishes by itself.
@@ -4184,14 +4190,14 @@ test('a linked project folder publishes, updates after changes, pauses on game e
 		await state.flushSave();
 	});
 	const toast = page.locator('.toast');
-	await expect(toast).toContainText('Publishing paused: files in the folder changed.');
+	await expect(toast).toContainText('Updates paused: files in the folder changed.');
 	expect(await folderText(page, manifestPath)).toBe('{"edited":"in the game"}');
 	await toast.getByRole('button', { name: 'Review' }).click();
 	await expect(row.getByRole('alert')).toContainText(
-		'1 file in the folder differs from PixelDoll’s version.'
+		'These files differ from what PixelDoll last wrote'
 	);
 	await expect(row.getByRole('alert')).toContainText('manifest.json');
-	await row.getByRole('button', { name: 'Replace files' }).click();
+	await row.getByRole('button', { name: 'Replace listed files' }).click();
 	await expect(row.getByRole('status')).toHaveText('Up to date');
 	expect(JSON.parse((await folderText(page, manifestPath))!).name).toBe('Export settings test');
 
@@ -4199,19 +4205,21 @@ test('a linked project folder publishes, updates after changes, pauses on game e
 	await page.evaluate(
 		() => ((window as unknown as Record<string, unknown>).__folderPermission = 'prompt')
 	);
-	await row.getByRole('button', { name: 'Publish now' }).click();
-	await expect(row.getByRole('alert')).toContainText('Folder access ended.');
-	await row.getByRole('button', { name: 'Reconnect' }).click();
-	await expect(row.getByRole('status')).toHaveText('Up to date');
+	await row.getByRole('button', { name: 'Update now' }).click();
+	await expect(row.getByRole('alert')).toContainText(
+		'PixelDoll needs access to this folder again.'
+	);
+	await row.getByRole('button', { name: 'Reconnect folder' }).click();
+	await expect(row.getByRole('status')).toHaveText(/^(Already up|Up) to date/);
 
 	// A moved or deleted folder says so; Unlink leaves the row ready to choose a folder again.
 	await page.evaluate(async () =>
 		(await navigator.storage.getDirectory()).removeEntry('game', { recursive: true })
 	);
-	await row.getByRole('button', { name: 'Publish now' }).click();
+	await row.getByRole('button', { name: 'Update now' }).click();
 	await expect(row.getByRole('alert')).toContainText('Folder not found.');
 	await row.getByRole('button', { name: 'Unlink' }).click();
-	await expect(row.getByRole('button', { name: 'Choose folder' })).toBeVisible();
+	await expect(row.getByRole('button', { name: 'Choose folder…' })).toBeVisible();
 });
 
 test('project folders stay out of browsers that cannot write folders, with a Brave hint in Settings', async ({
@@ -4229,10 +4237,10 @@ test('project folders stay out of browsers that cannot write folders, with a Bra
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
 	const dialog = page.getByRole('dialog');
-	await dialog.getByRole('button', { name: 'Project folder · Off' }).click();
+	await dialog.getByRole('button', { name: 'Project folder', exact: true }).click();
 	const row = dialog.locator('[data-setting="project-folder"]');
 	await expect(row).toContainText('brave://flags/#file-system-access-api');
-	await expect(row.getByRole('button', { name: 'Choose folder' })).toHaveCount(0);
+	await expect(row.getByRole('button', { name: 'Choose folder…' })).toHaveCount(0);
 	expect(errors).toEqual([]);
 });
 
@@ -4282,11 +4290,11 @@ test('a project folder never replaces files changed outside PixelDoll without ap
 	await changeFolder(page, at('manifest.json'), { text: 'my own manifest' });
 	await changeFolder(page, at('notes.txt'), { text: 'game notes' });
 	await changeFolder(page, at('manifest.json.import'), { text: 'engine sidecar' });
-	await dialog.getByRole('button', { name: 'Project folder · Off' }).click();
+	await dialog.getByRole('button', { name: 'Project folder', exact: true }).click();
 	const row = dialog.locator('[data-setting="project-folder"]');
-	await row.getByRole('button', { name: 'Choose folder' }).click();
+	await row.getByRole('button', { name: 'Choose folder…' }).click();
 	await expect(row.getByRole('alert')).toContainText(
-		'1 file in the folder differs from PixelDoll’s version.'
+		'These files differ from what PixelDoll last wrote'
 	);
 	expect(await folderText(page, at('manifest.json'))).toBe('my own manifest');
 	expect(await folderText(page, at('.pixeldoll-publish.json'))).toBeNull();
@@ -4294,10 +4302,10 @@ test('a project folder never replaces files changed outside PixelDoll without ap
 
 	// Edited again after the warning appeared: Replace files does not cover the newer bytes.
 	await changeFolder(page, at('manifest.json'), { text: 'my newer manifest' });
-	await row.getByRole('button', { name: 'Replace files' }).click();
-	await expect(row.getByRole('alert')).toContainText('1 file in the folder differs');
+	await row.getByRole('button', { name: 'Replace listed files' }).click();
+	await expect(row.getByRole('alert')).toContainText('Updates paused');
 	expect(await folderText(page, at('manifest.json'))).toBe('my newer manifest');
-	await row.getByRole('button', { name: 'Replace files' }).click();
+	await row.getByRole('button', { name: 'Replace listed files' }).click();
 	await expect(row.getByRole('status')).toHaveText('Up to date');
 	expect(JSON.parse((await folderText(page, at('manifest.json')))!).name).toBe(
 		'Export settings test'
@@ -4305,31 +4313,32 @@ test('a project folder never replaces files changed outside PixelDoll without ap
 
 	// A published file the user deleted is not quietly put back.
 	await changeFolder(page, at('project.json'), { remove: true });
-	await row.getByRole('button', { name: 'Publish now' }).click();
-	await expect(row.getByRole('alert')).toContainText('1 file in the folder differs');
+	await row.getByRole('button', { name: 'Update now' }).click();
+	await expect(row.getByRole('alert')).toContainText('Updates paused');
 	await expect(row.getByRole('alert')).toContainText('project.json');
 	expect(await folderText(page, at('project.json'))).toBeNull();
-	await row.getByRole('button', { name: 'Replace files' }).click();
+	await row.getByRole('button', { name: 'Replace listed files' }).click();
 	await expect(row.getByRole('status')).toHaveText('Up to date');
 	expect(await folderText(page, at('project.json'))).not.toBeNull();
 
 	// A folder where a file belongs is never replaced: the user is asked to move it.
 	await changeFolder(page, at('project.json'), { folder: true });
-	await row.getByRole('button', { name: 'Publish now' }).click();
-	await expect(row.getByRole('alert')).toContainText('A folder is in the way of a file.');
-	await expect(row.getByRole('button', { name: 'Replace files' })).toHaveCount(0);
+	await row.getByRole('button', { name: 'Update now' }).click();
+	await expect(row.getByRole('alert')).toContainText('A folder is in the way');
+	await expect(row.getByRole('button', { name: 'Replace listed files' })).toHaveCount(0);
 	await changeFolder(page, at('project.json'), { remove: true });
-	await row.getByRole('button', { name: 'Publish now' }).click();
-	await expect(row.getByRole('alert')).toContainText('1 file in the folder differs');
-	await row.getByRole('button', { name: 'Replace files' }).click();
+	// After moving it away, Try again finds the file now missing, which is the user's change too.
+	await row.getByRole('button', { name: 'Try again' }).click();
+	await expect(row.getByRole('alert')).toContainText('Updates paused');
+	await row.getByRole('button', { name: 'Replace listed files' }).click();
 	await expect(row.getByRole('status')).toHaveText('Up to date');
 
 	// Keep mine: an intentional edit stays, PixelDoll keeps publishing the rest, and Update them asks again.
 	await changeFolder(page, at('manifest.json'), { text: 'my intentional manifest' });
-	await row.getByRole('button', { name: 'Publish now' }).click();
-	await row.getByRole('button', { name: 'Keep mine' }).click();
-	await expect(row.getByRole('status')).toHaveText('Up to date');
-	await expect(row).toContainText('1 file is kept as you edited it.');
+	await row.getByRole('button', { name: 'Update now' }).click();
+	await row.getByRole('button', { name: 'Keep existing files' }).click();
+	await expect(row.getByRole('status')).toHaveText(/^Already up to date · 1 file kept/);
+	await expect(row).toContainText('1 file kept');
 	await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
 			state = await import(statePath);
@@ -4337,11 +4346,11 @@ test('a project folder never replaces files changed outside PixelDoll without ap
 		state.setVariant(material.id, Object.keys(material.variants)[0] ?? null);
 		await state.flushSave();
 	});
-	await row.getByRole('button', { name: 'Publish now' }).click();
-	await expect(row.getByRole('status')).toHaveText('Up to date');
+	await row.getByRole('button', { name: 'Update now' }).click();
+	await expect(row.getByRole('status')).toHaveText(/^(Already up|Up) to date/);
 	expect(await folderText(page, at('manifest.json'))).toBe('my intentional manifest');
-	await row.getByRole('button', { name: 'Update them' }).click();
-	await expect(row.getByRole('alert')).toContainText('1 file in the folder differs');
+	await row.getByRole('button', { name: 'Review kept files' }).click();
+	await expect(row.getByRole('alert')).toContainText('Updates paused');
 	expect(await folderText(page, at('manifest.json'))).toBe('my intentional manifest');
 
 	// Files PixelDoll never exported, such as engine sidecars and the game's own notes, are never touched.

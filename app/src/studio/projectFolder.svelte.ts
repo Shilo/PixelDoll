@@ -37,12 +37,15 @@ import { characterZipId, editableData } from './download.svelte.ts';
 import { exportActionLayering } from './exportLayering.ts';
 import { openSettings } from './settingsNavigation.svelte.ts';
 import { doc, store, toast } from './state.svelte.ts';
+import { timeAgo } from './timeAgo.ts';
+import { t } from 'svelte-whisper';
 
 export type FolderStatus =
 	| { kind: 'idle' }
 	| { kind: 'publishing' }
 	/** `kept`: files the user chose to keep as they are. */
-	| { kind: 'done'; kept: number }
+	/** `already`: answers an Update now click that found nothing to write ("Already up to date"). */
+	| { kind: 'done'; kept: number; already: boolean }
 	/** Another character already publishes into this folder. */
 	| { kind: 'taken' }
 	| { kind: 'reconnect' }
@@ -59,6 +62,12 @@ class FolderState {
 	status = $state.raw<FolderStatus>({ kind: 'idle' });
 }
 export const projectFolder = new FolderState();
+
+/** "Updated 2 minutes ago", or "Updated just now" within the first minute. */
+export function updatedLabel(iso: string, now: number) {
+	const time = timeAgo(iso, now);
+	return time ? t('projectFolder.updated', { time }) : t('projectFolder.justUpdated');
+}
 
 /** Whether the open character's folder needs the user. */
 export const folderNeedsAttention = (status: FolderStatus) =>
@@ -186,7 +195,7 @@ function notify(link: FolderLink, kind: string, manual: boolean, show: () => voi
 }
 
 const review = {
-	action: () => openSettings('export'),
+	action: () => openSettings('export', 'project-folder'),
 	actionLabel: message('projectFolder.review')
 };
 /** Notices that need the user stay until dismissed, so a paused publish is never missed. */
@@ -221,6 +230,8 @@ async function publish(link: FolderLink, request: Request) {
 		// Update automatically may have been turned off in another tab.
 		if (!request.manual && !link.auto) return;
 		if ((await permission(link)) !== 'granted') return lostAccess(link, request.manual);
+		// Read before "publishing" replaces it: a problem on screen must be rechecked on disk, never cleared unseen.
+		const showingProblem = folderNeedsAttention(projectFolder.status);
 		setStatus(id, { kind: 'publishing' });
 		const key = recordKey(link);
 		if (request.release) await setKept(key, [], false);
@@ -233,9 +244,13 @@ async function publish(link: FolderLink, request: Request) {
 			const next = same && (await hashFiles(same));
 			if (
 				next &&
-				(request.manual ? await inSync(target, record, next) : matchesRecord(record, next))
+				// A click, or a problem still on screen, checks the folder itself: only a quiet background check may trust
+				// the record alone, so a shown problem is never cleared without looking.
+				(request.manual || showingProblem
+					? await inSync(target, record, next)
+					: matchesRecord(record, next))
 			)
-				return setStatus(id, { kind: 'done', kept: record.kept.length });
+				return setStatus(id, { kind: 'done', kept: record.kept.length, already: request.manual });
 		}
 		const now = new Date().toISOString();
 		const files = await buildFiles(link, input, settings, now);
@@ -264,7 +279,11 @@ async function publish(link: FolderLink, request: Request) {
 						console.warn('Could not record the project folder publish', error);
 					}
 				}
-				return setStatus(id, { kind: 'done', kept: outcome.kept });
+				return setStatus(id, {
+					kind: 'done',
+					kept: outcome.kept,
+					already: request.manual && outcome.kind === 'unchanged'
+				});
 			case 'blocked':
 				setStatus(id, { kind: 'blocked', conflicts: outcome.conflicts, linkedAt: link.linkedAt });
 				return notify(link, 'blocked', request.manual, () =>
@@ -458,7 +477,7 @@ export async function reconnectProjectFolder(expected?: FolderLink) {
 		expected &&
 		(expected.characterId !== link.characterId || expected.linkedAt !== link.linkedAt)
 	) {
-		openSettings('export');
+		openSettings('export', 'project-folder');
 		return;
 	}
 	try {

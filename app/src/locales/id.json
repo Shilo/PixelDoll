@@ -3561,49 +3561,60 @@
 	},
 	"projectFolder": {
 		"title": "Folder proyek",
-		"hint": "Menyimpan ekspor karakter ini ke subfolder game Anda dan tetap memperbaruinya.",
-		"choose": "Pilih folder",
+		"hint": "Simpan file ekspor karakter ini di proyek game Anda.",
+		"choose": "Pilih folder…",
 		"change": "Ganti folder",
 		"stop": "Putuskan",
-		"publishNow": "Terbitkan sekarang",
+		"publishNow": "Perbarui sekarang",
 		"auto": "Perbarui otomatis",
-		"reconnect": "Hubungkan ulang",
-		"replace": "Timpa file",
+		"reconnect": "Hubungkan ulang folder",
+		"replace": "Timpa file yang tercantum",
+		"keep": "Pertahankan file yang ada",
 		"review": "Tinjau",
 		"copy": "Salin",
 		"copied": "Disalin",
+		"copyPath": "Salin jalur",
+		"pathCopied": "Jalur disalin",
 		"brave": "Untuk memakai ini di Brave, aktifkan {flag}, lalu mulai ulang Brave.",
+		"kept": {
+			"other": "{count} file dipertahankan"
+		},
+		"updateKept": "Tinjau file yang dipertahankan",
+		"updated": "Diperbarui {time}",
+		"tryAgain": "Coba lagi",
 		"state": {
-			"off": "Mati",
-			"on": "Aktif",
+			"off": "Belum ditautkan",
+			"on": "Pembaruan otomatis aktif",
+			"manual": "Pembaruan otomatis mati",
+			"updating": "Memperbarui…",
 			"attention": "Perlu perhatian"
 		},
 		"status": {
-			"publishing": "Menerbitkan…",
+			"publishing": "Memperbarui…",
 			"done": "Terbaru",
-			"reconnect": "Akses folder berakhir. Hubungkan ulang, lalu pilih “Izinkan di setiap kunjungan”.",
-			"missing": "Folder tidak ditemukan. Pilih lagi.",
-			"blocked": {
-				"other": "{count} file di folder berbeda dari versi PixelDoll."
-			},
+			"already": "Sudah terbaru",
+			"reconnect": "PixelDoll perlu akses ke folder ini lagi. Pilih “Izinkan di setiap kunjungan” agar tetap berlaku.",
+			"missing": "Folder tidak ditemukan. Mungkin telah dipindahkan atau dihapus.",
+			"blocked": "Pembaruan dijeda. File ini berbeda dari yang terakhir ditulis PixelDoll:",
 			"unavailable": "Karakter ini tidak dapat diekspor sekarang.",
 			"locked": "Sebuah file terbuka di aplikasi lain. Tutup, lalu coba lagi.",
 			"space": "Disk penuh.",
 			"permission": "Folder itu tidak diizinkan. Pilih folder lain.",
 			"failed": "Tidak dapat menulis ke folder. Coba lagi.",
-			"folder": "Ada folder di tempat sebuah file. Pindahkan, atau pilih folder lain.",
 			"taken": "Karakter lain sudah memakai folder ini. Pilih folder lain."
 		},
+		"reason": {
+			"edited": "Diedit di luar PixelDoll",
+			"notOurs": "Sudah ada di folder",
+			"deleted": "Dihapus",
+			"folder": "Ada folder di tempatnya"
+		},
 		"toast": {
-			"reconnect": "Hubungkan ulang {folder} untuk terus menerbitkan.",
-			"paused": "Penerbitan dijeda: file di folder berubah.",
+			"reconnect": "Hubungkan ulang {folder} untuk terus memperbarui.",
+			"paused": "Pembaruan dijeda: file di folder berubah.",
 			"missing": "{folder} tidak ditemukan.",
-			"failed": "Tidak dapat menerbitkan ke {folder}."
+			"failed": "Tidak dapat memperbarui {folder}."
 		},
-		"keep": "Pertahankan milik saya",
-		"kept": {
-			"other": "{count} file dipertahankan seperti yang Anda edit."
-		},
-		"updateKept": "Perbarui"
+		"justUpdated": "Baru saja diperbarui"
 	}
 }

@@ -1,8 +1,9 @@
 <script lang="ts">
-	// Settings > Export's "Project folder" row for the open character. Nothing where the browser cannot write folders; in
-	// Brave with the API switched off, a short hint on turning it on.
+	// Settings > Export's "Project folder" section for the open character: where it publishes, its state, and actions.
+	// Nothing where the browser cannot write folders; in Brave with the API switched off, a short hint on turning it on.
 	import { t } from 'svelte-whisper';
 	import type { Engine } from '../lib/store/manifest.ts';
+	import type { PlanAction } from '../lib/project-folder/plan.ts';
 	import { BRAVE_FLAG } from '../lib/project-folder/support.ts';
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import { Copy, FolderOpen, TriangleAlert } from './icons.ts';
@@ -16,30 +17,47 @@
 		reconnectProjectFolder,
 		releaseKeptFiles,
 		setFolderAutoPublish,
-		unlinkProjectFolder
+		unlinkProjectFolder,
+		updatedLabel
 	} from './projectFolder.svelte.ts';
 	import { doc } from './state.svelte.ts';
 
 	let { engine, disabled = false }: { engine: Engine; disabled?: boolean } = $props();
 
-	let copied = $state(false);
+	let copied = $state('');
 	let busy = $state(false);
+	let now = $state(Date.now());
 
 	$effect(() => {
 		void checkFolderSupport();
 		void loadFolderLink(doc.id);
 	});
+	// Keeps "Updated 2 minutes ago" current while Settings stays open.
+	$effect(() => {
+		const timer = setInterval(() => (now = Date.now()), 30_000);
+		return () => clearInterval(timer);
+	});
 
 	const link = $derived(projectFolder.link);
 	const status = $derived(projectFolder.status);
 	const working = $derived(busy || status.kind === 'publishing');
+	const conflicts = $derived(status.kind === 'blocked' ? status.conflicts : []);
+	const conflictLink = $derived(status.kind === 'blocked' ? status.linkedAt : '');
+	/** A folder sitting where a file belongs cannot be replaced by a file: the user moves it (or keeps it). */
+	const replaceable = $derived(conflicts.every((c) => c.reason !== 'folder' && c.found));
+	const formatName = $derived(
+		link ? (exportFormatNames[link.engine as keyof typeof exportFormatNames] ?? link.engine) : ''
+	);
 
-	async function copyFlag() {
+	/** Copies a value, showing "Copied" on the button that asked. Where the clipboard is blocked, the shown text is
+	 *  selected instead, ready for Ctrl+C. */
+	async function copy(value: string, key: string, shown?: Element | null) {
 		try {
-			await navigator.clipboard.writeText(BRAVE_FLAG);
-			copied = true;
+			await navigator.clipboard.writeText(value);
+			copied = key;
 		} catch (error) {
-			console.warn('Could not copy the Brave flag', error);
+			console.warn('Could not copy', error);
+			if (shown) getSelection()?.selectAllChildren(shown);
 		}
 	}
 	/** Runs a click's action with the buttons disabled, without ever rejecting. */
@@ -57,11 +75,8 @@
 	// Each runs synchronously from its click, so the browser still sees the user's gesture.
 	const choose = () => act(() => linkProjectFolder(engine));
 	const reconnect = () => act(() => reconnectProjectFolder());
-	const conflicts = $derived(status.kind === 'blocked' ? status.conflicts : []);
-	/** A folder sitting where a file belongs cannot be replaced by a file: the user moves it (or keeps it). */
-	const replaceable = $derived(conflicts.every((c) => c.reason !== 'folder' && c.found));
-	// Approves exactly the bytes listed here; anything changed after this list appeared pauses again.
-	const conflictLink = $derived(status.kind === 'blocked' ? status.linkedAt : '');
+	const update = () => act(() => publishProjectFolder());
+	// Approves exactly the bytes listed here; anything changed after this list appeared asks again.
 	const replace = () =>
 		act(() =>
 			publishProjectFolder(new Map(conflicts.map((c) => [c.path, c.found!])), conflictLink)
@@ -73,6 +88,18 @@
 				conflictLink
 			)
 		);
+	const reason = (c: PlanAction) =>
+		t(
+			c.reason === 'deleted'
+				? 'projectFolder.reason.deleted'
+				: c.reason === 'folder'
+					? 'projectFolder.reason.folder'
+					: c.reason === 'not-ours'
+						? 'projectFolder.reason.notOurs'
+						: 'projectFolder.reason.edited'
+		);
+	const fullPath = (path: string) =>
+		link ? `${link.handle.name}/${link.subfolder}/${path}` : path;
 	const problem = $derived.by(() => {
 		switch (status.kind) {
 			case 'reconnect':
@@ -82,9 +109,7 @@
 			case 'taken':
 				return t('projectFolder.status.taken');
 			case 'blocked':
-				return replaceable
-					? t('projectFolder.status.blocked', { count: conflicts.length })
-					: t('projectFolder.status.folder');
+				return t('projectFolder.status.blocked');
 			case 'unavailable':
 				return t('projectFolder.status.unavailable');
 			case 'failed':
@@ -99,36 +124,71 @@
 				return '';
 		}
 	});
+	/** Announced when it changes: Updating…, Up to date, Already up to date, kept files. */
+	const summary = $derived.by(() => {
+		if (status.kind === 'publishing') return t('projectFolder.status.publishing');
+		// Only a finished check says "Up to date"; a link that was just loaded has not been checked yet.
+		if (status.kind !== 'done') return '';
+		const parts = [
+			status.already ? t('projectFolder.status.already') : t('projectFolder.status.done')
+		];
+		if (status.kept) parts.push(t('projectFolder.kept', { count: status.kept }));
+		return parts.join(' · ');
+	});
+	/** Shown beside it but never announced, since it changes every minute on its own. */
+	const updated = $derived(
+		(status.kind === 'done' || status.kind === 'idle') && link?.publishedAt
+			? updatedLabel(link.publishedAt, now)
+			: ''
+	);
 </script>
 
 {#if projectFolder.support === 'brave-disabled' || projectFolder.support === 'supported'}
 	<hr class="bu-separator export-divider" />
-	<div class="export-dressed project-folder" data-setting="project-folder" tabindex="-1">
-		<span class="settings-label" id="project-folder-label">{t('projectFolder.title')}</span>
-		<p class="bu-muted settings-description">{t('projectFolder.hint')}</p>
+	<section
+		class="export-dressed project-folder"
+		data-setting="project-folder"
+		tabindex="-1"
+		aria-labelledby="project-folder-title"
+	>
+		<h3 class="settings-label" id="project-folder-title" tabindex="-1" data-reveal-focus>
+			{t('projectFolder.title')}
+		</h3>
 		{#if projectFolder.support === 'brave-disabled'}
-			<p class="small folder-text">
+			<p class="bu-muted settings-description">{t('projectFolder.hint')}</p>
+			<p class="small">
 				{t('projectFolder.brave', { flag: BRAVE_FLAG })}
-				<button type="button" class="bu-action btn sm plain" onclick={copyFlag}
-					><Copy size={14} aria-hidden="true" />{copied
-						? t('projectFolder.copied')
-						: t('projectFolder.copy')}</button
-				>
 			</p>
+			<button
+				type="button"
+				class="bu-action btn sm"
+				data-variant="outline"
+				onclick={() => copy(BRAVE_FLAG, 'flag')}
+				><Copy size={14} aria-hidden="true" />{copied === 'flag'
+					? t('projectFolder.copied')
+					: t('projectFolder.copy')}</button
+			>
 		{:else if !link}
-			<button type="button" class="bu-action btn sm" disabled={disabled || working} onclick={choose}
+			<p class="bu-muted settings-description">{t('projectFolder.hint')}</p>
+			<button
+				type="button"
+				class="bu-action btn"
+				data-variant="outline"
+				disabled={disabled || working}
+				onclick={choose}
 				><FolderOpen size={16} aria-hidden="true" />{t('projectFolder.choose')}</button
 			>
 			{#if problem}<p class="notice warn small" role="alert">
 					<TriangleAlert size={14} aria-hidden="true" />{problem}
 				</p>{/if}
 		{:else}
-			<p class="small folder-text">
-				<span class="folder-path">{link.handle.name}/{link.subfolder}/</span>
-				<span class="bu-muted"
-					>· {exportFormatNames[link.engine as keyof typeof exportFormatNames] ?? link.engine}</span
-				>
-			</p>
+			<div class="destination">
+				<FolderOpen size={16} aria-hidden="true" />
+				<div class="destination-text">
+					<span class="destination-name">{link.handle.name} · {formatName}</span>
+					<span class="destination-path">{link.subfolder}/</span>
+				</div>
+			</div>
 			<label class="check">
 				<input
 					type="checkbox"
@@ -138,68 +198,90 @@
 				/>
 				<span>{t('projectFolder.auto')}</span>
 			</label>
-			<p class="small folder-text" role="status" aria-live="polite">
-				{status.kind === 'publishing'
-					? t('projectFolder.status.publishing')
-					: status.kind === 'done'
-						? t('projectFolder.status.done')
-						: ''}
+			<p class="small summary">
+				<span role="status" aria-live="polite">{summary}</span>{#if updated}<span class="bu-muted"
+						>{summary ? ' · ' : ''}{updated}</span
+					>{/if}
 			</p>
 			{#if problem}
 				<div class="notice warn small" role="alert">
 					<TriangleAlert size={14} aria-hidden="true" />
-					<div>
-						{problem}
-						{#if conflicts.length}<ul class="mono conflicts">
-								{#each conflicts as conflict (conflict.path)}<li>{conflict.path}</li>{/each}
+					<div class="problem">
+						<p>{problem}</p>
+						{#if conflicts.length}<ul class="conflicts">
+								{#each conflicts as conflict (conflict.path)}
+									<li>
+										<span class="conflict-path">{conflict.path}</span>
+										<span class="conflict-reason">{reason(conflict)}</span>
+										<button
+											type="button"
+											class="bu-action btn sm plain"
+											onclick={(e) =>
+												copy(
+													fullPath(conflict.path),
+													conflict.path,
+													e.currentTarget.parentElement?.querySelector('.conflict-path')
+												)}
+											><Copy size={14} aria-hidden="true" />{copied === conflict.path
+												? t('projectFolder.pathCopied')
+												: t('projectFolder.copyPath')}</button
+										>
+									</li>
+								{/each}
 							</ul>{/if}
 					</div>
 				</div>
 			{/if}
-			{#if status.kind === 'done' && status.kept}
-				<p class="small folder-text">
-					{t('projectFolder.kept', { count: status.kept })}
-					<button
-						type="button"
-						class="bu-action btn sm plain"
-						disabled={working}
-						onclick={() => act(() => releaseKeptFiles())}>{t('projectFolder.updateKept')}</button
-					>
-				</p>
-			{/if}
-			<div class="folder-actions">
+			<div class="primary-action">
 				{#if status.kind === 'reconnect'}
-					<button
-						type="button"
-						class="bu-action btn sm primary"
-						disabled={working}
-						onclick={reconnect}>{t('projectFolder.reconnect')}</button
+					<button type="button" class="bu-action btn primary" disabled={working} onclick={reconnect}
+						>{t('projectFolder.reconnect')}</button
 					>
 				{:else if status.kind === 'blocked'}
-					{#if replaceable}<button
+					{#if replaceable}
+						<button
 							type="button"
-							class="bu-action btn sm"
+							class="bu-action btn"
+							data-variant="outline"
 							disabled={working}
 							onclick={replace}>{t('projectFolder.replace')}</button
-						>{:else}<button
+						>
+					{:else}
+						<button
 							type="button"
-							class="bu-action btn sm"
+							class="bu-action btn"
+							data-variant="outline"
 							disabled={disabled || working}
-							onclick={() => act(() => publishProjectFolder())}
-							>{t('projectFolder.publishNow')}</button
-						>{/if}
-					<button type="button" class="bu-action btn sm" disabled={working} onclick={keep}
-						>{t('projectFolder.keep')}</button
+							onclick={update}>{t('projectFolder.tryAgain')}</button
+						>
+					{/if}
+					<button
+						type="button"
+						class="bu-action btn"
+						data-variant="outline"
+						disabled={working}
+						onclick={keep}>{t('projectFolder.keep')}</button
 					>
 				{:else if status.kind !== 'missing'}
 					<button
 						type="button"
-						class="bu-action btn sm"
+						class="bu-action btn"
+						data-variant="outline"
 						disabled={disabled || working}
-						onclick={() => act(() => publishProjectFolder())}
-						>{t('projectFolder.publishNow')}</button
+						onclick={update}>{t('projectFolder.publishNow')}</button
 					>
+					{#if status.kind === 'done' && status.kept}
+						<button
+							type="button"
+							class="bu-action btn"
+							data-variant="outline"
+							disabled={working}
+							onclick={() => act(() => releaseKeptFiles())}>{t('projectFolder.updateKept')}</button
+						>
+					{/if}
 				{/if}
+			</div>
+			<div class="secondary-actions">
 				<button
 					type="button"
 					class="bu-action btn sm plain"
@@ -214,38 +296,94 @@
 				>
 			</div>
 		{/if}
-	</div>
+	</section>
 {/if}
 
 <style>
 	.project-folder {
 		display: grid;
-		gap: 8px;
+		gap: 10px;
 		justify-items: start;
 	}
+	.project-folder h3,
 	.project-folder p {
 		margin: 0;
 	}
-	.folder-text {
+	.project-folder h3:focus {
+		outline-offset: 2px;
+	}
+	.destination {
+		display: flex;
+		gap: 8px;
+		align-items: flex-start;
+		min-width: 0;
+		max-width: 100%;
+	}
+	.destination :global(svg) {
+		flex: none;
+		margin-top: 2px;
+	}
+	.destination-text {
+		display: grid;
+		min-width: 0;
+	}
+	.destination-name {
+		font-weight: 600;
 		overflow-wrap: anywhere;
 	}
-	.folder-text:empty {
+	.destination-path {
+		font-family: var(--mono, ui-monospace, monospace);
+		font-size: 0.8125rem;
+		opacity: 0.8;
+		overflow-wrap: anywhere;
+	}
+	.summary:has(> [role='status']:empty:only-child) {
 		display: none;
 	}
-	.folder-path {
-		font-family: var(--mono, ui-monospace, monospace);
-		word-break: break-all;
-	}
-	.folder-actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px 8px;
+	.problem {
+		display: grid;
+		gap: 6px;
+		min-width: 0;
 	}
 	.conflicts {
-		margin: 4px 0 0;
-		padding-left: 16px;
-		max-height: 120px;
+		display: grid;
+		gap: 6px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		max-height: 200px;
 		overflow: auto;
+	}
+	.conflicts li {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		column-gap: 8px;
+		align-items: center;
+	}
+	.conflict-path {
+		grid-column: 1 / -1;
+	}
+	.conflict-path {
+		font-family: var(--mono, ui-monospace, monospace);
 		overflow-wrap: anywhere;
+		user-select: text;
+	}
+	.conflict-reason {
+		grid-column: 1;
+		grid-row: 2;
+		opacity: 0.75;
+	}
+	.conflicts li button {
+		grid-column: 2;
+		grid-row: 2;
+	}
+	.primary-action,
+	.secondary-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	.secondary-actions {
+		gap: 4px;
 	}
 </style>

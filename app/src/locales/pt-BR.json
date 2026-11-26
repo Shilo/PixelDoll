@@ -3672,51 +3672,61 @@
 	},
 	"projectFolder": {
 		"title": "Pasta do projeto",
-		"hint": "Salva a exportação deste personagem numa subpasta do seu jogo e a mantém atualizada.",
-		"choose": "Escolher pasta",
+		"hint": "Mantenha os arquivos exportados deste personagem no seu projeto de jogo.",
+		"choose": "Escolher pasta…",
 		"change": "Trocar pasta",
 		"stop": "Desvincular",
-		"publishNow": "Publicar agora",
+		"publishNow": "Atualizar agora",
 		"auto": "Atualizar automaticamente",
-		"reconnect": "Reconectar",
-		"replace": "Substituir arquivos",
+		"reconnect": "Reconectar pasta",
+		"replace": "Substituir os arquivos listados",
+		"keep": "Manter os arquivos existentes",
 		"review": "Revisar",
 		"copy": "Copiar",
 		"copied": "Copiado",
+		"copyPath": "Copiar caminho",
+		"pathCopied": "Caminho copiado",
 		"brave": "Para usar no Brave, ative {flag} e reinicie o Brave.",
+		"kept": {
+			"one": "{count} arquivo mantido",
+			"other": "{count} arquivos mantidos"
+		},
+		"updateKept": "Revisar arquivos mantidos",
+		"updated": "Atualizado {time}",
+		"tryAgain": "Tentar de novo",
 		"state": {
-			"off": "Desativada",
-			"on": "Ativada",
+			"off": "Não vinculada",
+			"on": "Atualizações automáticas ativadas",
+			"manual": "Atualizações automáticas desativadas",
+			"updating": "Atualizando…",
 			"attention": "Precisa de atenção"
 		},
 		"status": {
-			"publishing": "Publicando…",
+			"publishing": "Atualizando…",
 			"done": "Atualizado",
-			"reconnect": "O acesso à pasta terminou. Reconecte e escolha “Permitir em todas as visitas”.",
-			"missing": "Pasta não encontrada. Escolha-a de novo.",
-			"blocked": {
-				"one": "{count} arquivo da pasta é diferente da versão do PixelDoll.",
-				"other": "{count} arquivos da pasta são diferentes das versões do PixelDoll."
-			},
+			"already": "Já está atualizado",
+			"reconnect": "O PixelDoll precisa de acesso a esta pasta de novo. Escolha “Permitir em todas as visitas” para que continue.",
+			"missing": "Pasta não encontrada. Ela pode ter sido movida ou excluída.",
+			"blocked": "Atualizações pausadas. Estes arquivos diferem do que o PixelDoll gravou por último:",
 			"unavailable": "Este personagem não pode ser exportado agora.",
 			"locked": "Um arquivo está aberto em outro app. Feche-o e tente de novo.",
 			"space": "O disco está cheio.",
 			"permission": "Essa pasta não é permitida. Escolha outra.",
 			"failed": "Não foi possível gravar na pasta. Tente de novo.",
-			"folder": "Uma pasta está no lugar de um arquivo. Mova-a ou escolha outra pasta.",
 			"taken": "Outro personagem já usa esta pasta. Escolha outra."
 		},
+		"reason": {
+			"edited": "Editado fora do PixelDoll",
+			"notOurs": "Já estava na pasta",
+			"deleted": "Excluído",
+			"folder": "Há uma pasta no lugar"
+		},
 		"toast": {
-			"reconnect": "Reconecte {folder} para continuar publicando.",
-			"paused": "Publicação pausada: arquivos da pasta mudaram.",
+			"reconnect": "Reconecte {folder} para continuar atualizando.",
+			"paused": "Atualizações pausadas: arquivos da pasta mudaram.",
 			"missing": "Não foi possível encontrar {folder}.",
-			"failed": "Não foi possível publicar em {folder}."
+			"failed": "Não foi possível atualizar {folder}."
 		},
-		"keep": "Manter os meus",
-		"kept": {
-			"one": "{count} arquivo é mantido como você o editou.",
-			"other": "{count} arquivos são mantidos como você os editou."
-		},
-		"updateKept": "Atualizá-los"
+		"justUpdated": "Atualizado agora há pouco"
 	}
 }

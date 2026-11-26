@@ -3663,51 +3663,61 @@
 	},
 	"projectFolder": {
 		"title": "Dossier du projet",
-		"hint": "Enregistre l’export de ce personnage dans un sous-dossier de votre jeu et le garde à jour.",
-		"choose": "Choisir un dossier",
+		"hint": "Gardez les fichiers exportés de ce personnage dans votre projet de jeu.",
+		"choose": "Choisir un dossier…",
 		"change": "Changer de dossier",
 		"stop": "Dissocier",
-		"publishNow": "Publier maintenant",
+		"publishNow": "Mettre à jour maintenant",
 		"auto": "Mettre à jour automatiquement",
-		"reconnect": "Reconnecter",
-		"replace": "Remplacer les fichiers",
+		"reconnect": "Reconnecter le dossier",
+		"replace": "Remplacer les fichiers listés",
+		"keep": "Garder les fichiers existants",
 		"review": "Voir",
 		"copy": "Copier",
 		"copied": "Copié",
+		"copyPath": "Copier le chemin",
+		"pathCopied": "Chemin copié",
 		"brave": "Pour l’utiliser dans Brave, activez {flag}, puis redémarrez Brave.",
+		"kept": {
+			"one": "{count} fichier gardé",
+			"other": "{count} fichiers gardés"
+		},
+		"updateKept": "Revoir les fichiers gardés",
+		"updated": "Mis à jour {time}",
+		"tryAgain": "Réessayer",
 		"state": {
-			"off": "Désactivé",
-			"on": "Activé",
+			"off": "Non lié",
+			"on": "Mises à jour automatiques activées",
+			"manual": "Mises à jour automatiques désactivées",
+			"updating": "Mise à jour…",
 			"attention": "À vérifier"
 		},
 		"status": {
-			"publishing": "Publication…",
+			"publishing": "Mise à jour…",
 			"done": "À jour",
-			"reconnect": "L’accès au dossier a pris fin. Reconnectez-vous et choisissez « Autoriser à chaque visite ».",
-			"missing": "Dossier introuvable. Choisissez-le à nouveau.",
-			"blocked": {
-				"one": "{count} fichier du dossier diffère de la version de PixelDoll.",
-				"other": "{count} fichiers du dossier diffèrent des versions de PixelDoll."
-			},
+			"already": "Déjà à jour",
+			"reconnect": "PixelDoll a de nouveau besoin d’accéder à ce dossier. Choisissez « Autoriser à chaque visite » pour que cela dure.",
+			"missing": "Dossier introuvable. Il a peut-être été déplacé ou supprimé.",
+			"blocked": "Mises à jour en pause. Ces fichiers diffèrent de ce que PixelDoll a écrit en dernier :",
 			"unavailable": "Ce personnage ne peut pas être exporté pour le moment.",
 			"locked": "Un fichier est ouvert dans une autre app. Fermez-le et réessayez.",
 			"space": "Le disque est plein.",
 			"permission": "Ce dossier n’est pas autorisé. Choisissez-en un autre.",
 			"failed": "Impossible d’écrire dans le dossier. Réessayez.",
-			"folder": "Un dossier occupe l’emplacement d’un fichier. Déplacez-le ou choisissez un autre dossier.",
 			"taken": "Un autre personnage utilise déjà ce dossier. Choisissez-en un autre."
 		},
+		"reason": {
+			"edited": "Modifié en dehors de PixelDoll",
+			"notOurs": "Déjà dans le dossier",
+			"deleted": "Supprimé",
+			"folder": "Un dossier est à sa place"
+		},
 		"toast": {
-			"reconnect": "Reconnectez {folder} pour continuer à publier.",
-			"paused": "Publication en pause : des fichiers du dossier ont changé.",
+			"reconnect": "Reconnectez {folder} pour continuer les mises à jour.",
+			"paused": "Mises à jour en pause : des fichiers du dossier ont changé.",
 			"missing": "{folder} est introuvable.",
-			"failed": "Impossible de publier dans {folder}."
+			"failed": "Impossible de mettre à jour {folder}."
 		},
-		"keep": "Garder les miens",
-		"kept": {
-			"one": "{count} fichier est gardé tel que vous l’avez modifié.",
-			"other": "{count} fichiers sont gardés tels que vous les avez modifiés."
-		},
-		"updateKept": "Les mettre à jour"
+		"justUpdated": "Mis à jour à l’instant"
 	}
 }

@@ -1,13 +1,14 @@
 <script lang="ts">
-	// Export's one Project folder control: opens Settings > Export, where the folder is chosen and managed. Absent where the
-	// browser cannot write folders.
+	// Export's Project folder control: one clear button above the formats that shows the folder's state and opens
+	// Settings > Export at the Project folder section. Absent where the browser cannot write folders.
 	import { t } from 'svelte-whisper';
-	import { FolderOpen } from './icons.ts';
+	import { ChevronRight, FolderOpen } from './icons.ts';
 	import {
 		checkFolderSupport,
 		folderNeedsAttention,
 		loadFolderLink,
-		projectFolder
+		projectFolder,
+		updatedLabel
 	} from './projectFolder.svelte.ts';
 	import { doc } from './state.svelte.ts';
 
@@ -18,35 +19,69 @@
 		void loadFolderLink(doc.id);
 	});
 
-	const summary = $derived(
-		!projectFolder.link
-			? t('projectFolder.state.off')
-			: folderNeedsAttention(projectFolder.status)
-				? t('projectFolder.state.attention')
-				: t('projectFolder.state.on')
-	);
+	// Refreshes "Updated 2 minutes ago" while Export stays open.
+	let now = $state(Date.now());
+	$effect(() => {
+		const timer = setInterval(() => (now = Date.now()), 30_000);
+		return () => clearInterval(timer);
+	});
+
+	const attention = $derived(folderNeedsAttention(projectFolder.status));
+	const summary = $derived.by(() => {
+		const link = projectFolder.link;
+		if (!link) return t('projectFolder.state.off');
+		if (attention) return t('projectFolder.state.attention');
+		if (projectFolder.status.kind === 'publishing') return t('projectFolder.state.updating');
+		const mode = t(link.auto ? 'projectFolder.state.on' : 'projectFolder.state.manual');
+		return link.publishedAt ? `${mode} · ${updatedLabel(link.publishedAt, now)}` : mode;
+	});
 </script>
 
 {#if projectFolder.support === 'supported' || projectFolder.support === 'brave-disabled'}
-	<button type="button" class="bu-action btn plain folder-button" onclick={onopen}
-		><FolderOpen size={16} aria-hidden="true" />{t('projectFolder.title')}<span
-			class="bu-muted folder-state"
-			class:attention={folderNeedsAttention(projectFolder.status)}>{summary}</span
-		></button
+	<!-- A stable name with the changing state as its description, so a ticking timestamp is not re-announced as a new name. -->
+	<button
+		type="button"
+		class="bu-action btn folder-button"
+		data-variant="field"
+		aria-label={t('projectFolder.title')}
+		aria-describedby="project-folder-summary"
+		onclick={onopen}
 	>
+		<FolderOpen size={18} aria-hidden="true" />
+		<span class="folder-text">
+			<span class="folder-title">{t('projectFolder.title')}</span>
+			<span class="folder-state" id="project-folder-summary" class:attention>{summary}</span>
+		</span>
+		<ChevronRight size={16} aria-hidden="true" />
+	</button>
 {/if}
 
 <style>
 	.folder-button {
-		align-self: flex-start;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		width: 100%;
+		min-height: 44px;
+		padding-block: 8px;
+		text-align: start;
+	}
+	.folder-text {
+		display: grid;
+		flex: 1;
+		min-width: 0;
+	}
+	.folder-title {
+		font-weight: 600;
 	}
 	.folder-state {
-		margin-left: 4px;
-	}
-	.folder-state::before {
-		content: '· ';
+		font-size: 0.8125rem;
+		font-weight: 400;
+		opacity: 0.75;
+		overflow-wrap: anywhere;
 	}
 	.folder-state.attention {
 		color: var(--warn);
+		opacity: 1;
 	}
 </style>

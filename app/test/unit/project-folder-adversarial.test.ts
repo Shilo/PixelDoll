@@ -348,7 +348,7 @@ describe('round two', () => {
 					}
 					return {
 						async getFile() {
-							return new File([folder.files.get(name)!.slice()], name);
+							return new File([folder.files.get(name)!.slice()], name, { lastModified: 1 });
 						},
 						async createWritable() {
 							let staged = new Uint8Array();
@@ -401,5 +401,82 @@ describe('round two', () => {
 		});
 		expect(folder.text(sprite)).toBe(userEdit);
 		expect(folder.text(other)).toBe(after);
+	});
+});
+
+describe('browser adapter final check', () => {
+	/** A minimal File System Access folder whose single file a "game" rewrites during PixelDoll's content check. */
+	function fakeFolder(initial: string) {
+		let bytes = new TextEncoder().encode(initial);
+		let modified = 1;
+		let reads = 0;
+		const handle = {
+			async getFile() {
+				return new File([bytes.slice()], sprite, { lastModified: modified });
+			},
+			async createWritable() {
+				let staged = new Uint8Array();
+				return {
+					async write(data: Uint8Array) {
+						staged = data.slice();
+					},
+					async close() {
+						bytes = staged;
+						modified++;
+					},
+					async abort() {}
+				};
+			}
+		};
+		const root = {
+			async *keys() {
+				yield sprite;
+			},
+			async getFileHandle() {
+				return handle;
+			}
+		} as unknown as FileSystemDirectoryHandle;
+		return {
+			root,
+			text: () => new TextDecoder().decode(bytes),
+			/** Called by the content check's read: the game saves right after PixelDoll read the bytes. */
+			edit(onRead: number, keepTime = false) {
+				const original = handle.getFile;
+				handle.getFile = async () => {
+					const file = await original();
+					if (++reads === onRead) {
+						bytes = new TextEncoder().encode(userEdit);
+						if (!keepTime) modified++;
+					}
+					return file;
+				};
+			}
+		};
+	}
+
+	it('catches an edit saved while PixelDoll was checking the content', async () => {
+		const folder = fakeFolder(before);
+		const record = { written: { [sprite]: await hash(before) }, kept: [] };
+		// Reads: 1 planning, 2 size/time before the check, 3 the content check itself (the game saves right after it).
+		folder.edit(3);
+		const outcome = await publishFiles(directoryTarget(folder.root), files({ [sprite]: after }), {
+			record,
+			onRecord: async () => {}
+		});
+		expect(outcome).toMatchObject({ kind: 'blocked', conflicts: [{ path: sprite }] });
+		expect(folder.text()).toBe(userEdit);
+	});
+
+	// Documented limit: on a file system whose timestamps are too coarse to change (FAT, some network shares), a
+	// same-size edit saved during the content check looks unchanged to the size and time comparison.
+	it.fails('cannot see a same-size edit that keeps the modified time', async () => {
+		const same = 'x'.repeat(userEdit.length);
+		const folder = fakeFolder(same);
+		folder.edit(3, true);
+		await publishFiles(directoryTarget(folder.root), files({ [sprite]: after }), {
+			record: { written: { [sprite]: await hash(same) }, kept: [] },
+			onRecord: async () => {}
+		});
+		expect(folder.text()).toBe(userEdit);
 	});
 });

@@ -384,16 +384,6 @@
 			document.removeEventListener('visibilitychange', refresh);
 		};
 	});
-	/** Export's Project folder button: Settings > Export, scrolled to that row. */
-	async function openFolderSettings() {
-		await navigate();
-		await tick();
-		const row = content?.querySelector<HTMLElement>('[data-setting="project-folder"]');
-		row?.scrollIntoView({ block: 'nearest' });
-		(
-			row?.querySelector<HTMLElement>('button:not(:disabled), input:not(:disabled)') ?? row
-		)?.focus();
-	}
 	async function navigate() {
 		if (returningToExport) ui.sheet = 'export';
 		else openSettings('export');
@@ -852,6 +842,7 @@
 			{:else}
 				<div class="export-page" bind:this={content}>
 					{@render preferencesStatus()}
+					<ProjectFolderButton onopen={() => openSettings('export', 'project-folder')} />
 					<fieldset class="export-picker" aria-label={t('export.settings.format')}>
 						{#each GROUPS as group (group.id)}
 							<section aria-labelledby={`export-${group.id}`}>
@@ -980,7 +971,6 @@
 									>{/each}</select
 							></label
 						>{/if}
-					<ProjectFolderButton onopen={openFolderSettings} />
 					{#if ready && !pendingExport && (result?.kind === 'recovery' || result?.kind === 'failed')}
 						<p
 							class="notice {result.kind === 'recovery' ? 'warn' : 'bad'} small"
