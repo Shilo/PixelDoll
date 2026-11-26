@@ -38,13 +38,14 @@ this file first, then the doc for your engine in docs/, then that engine's READM
   layer, then item id. Never sort by name instead of z.
 - Palette swaps are exact RGB replacements from materials[].ramp and materials[].variants. Replace those pixels; never
   scale, rotate, blur or resample the art. A ramp is the item's source palette; only entries listed under variants can be
-  selected, and an unknown material or variant id selects nothing without throwing. When materials is empty, or the
+  selected. An unknown material or variant id throws nothing but applies no swap, and it replaces that material's
+  previous selection. When materials is empty, or the
   material you want lists no variants, this character ships nothing to recolor: skip the recolor step instead of calling
   it with invented ids. Supplying your own ramp is not part of this export's API. Variants are the ones saved in PixelDoll
   before the export.
-- An item id containing "~", such as <hair>~<hat>, is a baked tuck variant: the hair redrawn to sit under that hat. The
-  runtime applies it automatically when the covering item is worn. Never equip it yourself: the equipment API rejects
-  variant items.
+- An item id containing "~" is a baked tuck variant: an item redrawn to sit under the items named after the ~, joined
+  with ~ when several cover it. The runtime swaps it in by itself when those covering items are worn. Never equip it:
+  the equipment API throws on variant items.
 - Nearest-neighbor filtering and whole-pixel positions. No atlas packing, rotation or trimming.
 - The base body is always worn. A layer that a move or an item does not provide is simply absent.
 - Mirroring is already baked into the exported views; do not flip a sheet that manifest.json lists on its own.
@@ -92,8 +93,9 @@ doll.playAction(move, direction) plays a one-shot action and doll.setDirection(d
 An unknown move, direction, slot, item or outfit throws before changing anything; an unknown material or variant id
 in setVariants selects nothing, so check manifest.json's materials before relying on a recolor.
 The constructor starts in model.presets[0], the first outfit in manifest.json.
-Call doll.destroy() when removing the character, including when the scene shuts down. With the Canvas renderer, keep
-integer positions and call scene.cameras.main.setRoundPixels(false) for exact pixels; WebGL does not need that. Atlas files are phaser/<length>-<item>_<length>-<layer>_<length>-<move>.json
+Call doll.destroy() when removing the character, including when the scene shuts down.
+With the Canvas renderer, keep integer positions and call scene.cameras.main.setRoundPixels(false) for exact pixels;
+WebGL does not need that. Atlas files are phaser/<length>-<item>_<length>-<layer>_<length>-<move>.json
 with frames named <move>_<direction>_<frame>: each atlas JSON lists the frames it holds, and phaser/README.txt states the
 naming pattern.
 baked/<outfit>/<move>.png holds the same grid flattened for engines that draw one sprite: rows are directions, columns
@@ -112,9 +114,11 @@ Full guide: godot/README.txt.
     doll.set_preset("outfit_id")        # items and colors together; it replaces earlier selections
     doll.equip("main_hand", "sword")    # after a preset; "" empties a slot
 
-The scene starts in presets[0], the first outfit in manifest.json. Nothing plays until you call play_anim, and the API
-is safe once the node is in the tree (add_child has run its _ready).
-set_variant returns true for a known material even when the variant name is unknown; no colors change in that case.
+The scene starts playing the first move facing the first direction from its own _ready, so nothing has to start it; call
+play_anim to change move or direction. The API is safe once the node is in the tree, and the scene starts in
+manifest.presets[0].
+set_variant returns true for a known material even when the variant name is unknown; the new name replaces that
+material's previous selection and applies no swap.
 Set Rendering > Textures > Default Texture Filter to Nearest and 2D > Snap 2D Transforms To Pixel on.
 Manifest depths become native z_index ranks; keep the root's z_index to place the character among scene objects.
 `;

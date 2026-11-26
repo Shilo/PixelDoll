@@ -555,7 +555,7 @@ Outfits: ${m.presets
 		.map((p, i) => `${p.name} (${p.id})${i === 0 ? ' starts the character' : ''}`)
 		.join(', ')}.
 An item id containing ~ is a baked tuck variant (for example hair under a hat): the runtime applies it automatically when
-the covering item is worn, and the equipment API rejects it if you equip it yourself.
+the covering item is worn, and the equipment API throws if you equip it yourself.
 A move lists the directions it has in rig.animations[].directions; its other sheet rows are empty.
 Pixel art: use nearest-neighbor filtering and whole-pixel positions.
 `;
