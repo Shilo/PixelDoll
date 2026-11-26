@@ -1,7 +1,7 @@
 // An in-memory project folder for project-folder unit tests: it can fail chosen operations (a locked or vanished file)
 // and lets a test act at the moment a write's new bytes are staged, like a game editor saving at the worst time.
 // `publish` runs publishFiles with an in-memory trusted record, as the Studio keeps one in IndexedDB.
-import type { FolderRecord } from '../../src/lib/project-folder/plan.ts';
+import { PENDING, type FolderRecord } from '../../src/lib/project-folder/plan.ts';
 import { publishFiles, type FolderFile } from '../../src/lib/project-folder/publish.ts';
 import {
 	ChangedError,
@@ -63,6 +63,7 @@ export function memoryFolder(initial: Record<string, string> = {}) {
 				overwrite,
 				onRecord: async (path, hash) => {
 					if (hash === null) return void delete record.written[path];
+					if (hash === PENDING) return void (record.written[path] = hash);
 					// failRecord fails recording a finished write (the moment a crash or full storage matters most).
 					const e = failRecord?.(path);
 					if (e) throw e;

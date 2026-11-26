@@ -52,7 +52,9 @@
 
 	const link = $derived(projectFolder.link);
 	const status = $derived(projectFolder.status);
-	const working = $derived(busy || status.kind === 'publishing');
+	// Only this row's own click disables its buttons: a background update leaves them usable (a click then queues
+	// behind it), so keyboard focus is never dropped by a button turning disabled under it.
+	const working = $derived(busy);
 	const conflicts = $derived(status.kind === 'blocked' ? status.conflicts : []);
 	const conflictLink = $derived(status.kind === 'blocked' ? status.linkedAt : '');
 	/** A folder sitting where a file belongs cannot be replaced by a file: the user moves it (or keeps it). */

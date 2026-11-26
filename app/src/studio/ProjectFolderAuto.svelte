@@ -43,5 +43,11 @@
 		else if (!turnedOff) untrack(folderFallsBehind);
 	});
 
-	$effect(() => subscribeExportSettings(scheduleFolderPublish));
+	// A settings change changes the export too: it republishes, or with automatic updates off leaves the folder behind.
+	$effect(() =>
+		subscribeExportSettings(() => {
+			scheduleFolderPublish();
+			folderFallsBehind();
+		})
+	);
 </script>

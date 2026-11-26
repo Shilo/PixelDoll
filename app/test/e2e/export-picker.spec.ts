@@ -4191,6 +4191,8 @@ test('a project folder never replaces files changed outside PixelDoll without ap
 	expect(await folderText(page, at('manifest.json'))).toBe('my own manifest');
 	expect(await folderText(page, at('.pixeldoll-publish.json'))).toBeNull();
 	expect(await folderText(page, at('project.json'))).toBeNull();
+	// Every step below is a click, so a background update cannot land between a folder change and the next click.
+	await row.getByRole('checkbox', { name: 'Update automatically' }).uncheck();
 
 	// Edited again after the warning appeared: Replace files does not cover the newer bytes.
 	await changeFolder(page, at('manifest.json'), { text: 'my newer manifest' });

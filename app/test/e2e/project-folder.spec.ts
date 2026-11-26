@@ -383,7 +383,7 @@ test('the Project folder card deep-links Settings, repeats safely, returns to Ex
 	expect(errors).toEqual([]);
 });
 
-test('notice Review opens the paused row while Export is open, and a deleted folder recovers through Change folder', async ({
+test('notice Review opens the paused row while Export is open, and a deleted folder is listed for approval after Change folder', async ({
 	page
 }, info) => {
 	const dev = devURL(info);
@@ -435,8 +435,11 @@ test('notice Review opens the paused row while Export is open, and a deleted fol
 		(await navigator.storage.getDirectory()).getDirectoryHandle('game', { create: true })
 	);
 	await paused.getByRole('button', { name: 'Change folder' }).click();
-	// The files' folder is gone entirely, so nothing of the user's is left to protect: choosing it again starts a fresh
-	// record and republishes everything instead of listing each file as deleted.
+	// The user deleted PixelDoll's files, so choosing the folder again lists them for approval rather than quietly
+	// putting them back, and nothing is written before that approval.
+	await expect(paused.getByRole('alert')).toContainText('Deleted');
+	expect(await folderText(page, manifestPath)).toBeNull();
+	await paused.getByRole('button', { name: 'Replace listed files' }).click();
 	await expect(paused.getByRole('status')).toHaveText('Up to date');
 	expect(JSON.parse((await folderText(page, manifestPath))!).name).toBe('Export settings test');
 	expect(errors).toEqual([]);

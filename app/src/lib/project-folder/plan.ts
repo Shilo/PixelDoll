@@ -37,6 +37,10 @@ export interface Plan {
 
 /** What an approval records for a published file the user deleted: approving it puts the file back. */
 export const DELETED = 'deleted';
+/** What the record holds for a path while PixelDoll writes it, and keeps if recording the result then fails: the file
+ *  may hold PixelDoll's bytes or the user's, so it is treated as the user's (a later deletion or edit pauses) and is
+ *  never mistaken for a path PixelDoll has not written. */
+export const PENDING = 'pending';
 /** The disk "hash" of a folder found where a file belongs: never replaceable by a file write. */
 export const NOT_A_FILE = 'not-a-file';
 

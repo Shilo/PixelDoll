@@ -15,7 +15,13 @@ const studio = vi.hoisted(() => ({
 	buildExport: vi.fn()
 }));
 
-vi.mock('../../src/studio/state.svelte.ts', () => ({ ...studio, toast: vi.fn() }));
+vi.mock('../../src/studio/state.svelte.ts', () => ({
+	...studio,
+	toast: vi.fn(),
+	ui: {},
+	dismissToast: vi.fn(),
+	prepareWorkspaceExport: async () => {}
+}));
 vi.mock('../../src/studio/settingsNavigation.svelte.ts', () => ({ openSettings: vi.fn() }));
 vi.mock('../../src/studio/download.svelte.ts', () => ({ editableData: vi.fn() }));
 vi.mock('../../src/studio/exportLayering.ts', () => ({ exportActionLayering: vi.fn() }));

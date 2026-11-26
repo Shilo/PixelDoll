@@ -1,7 +1,14 @@
 // Publishes export files into a folder target. Plans against PixelDoll's trusted record of what it last wrote, writes
 // only changed files (manifest last), checks each file once more with its new bytes staged, and reports every write so
 // the record is updated file by file. Never throws: every outcome, including failure, is a value. Never deletes.
-import { DELETED, NOT_A_FILE, planPublish, type FolderRecord, type PlanAction } from './plan.ts';
+import {
+	DELETED,
+	NOT_A_FILE,
+	PENDING,
+	planPublish,
+	type FolderRecord,
+	type PlanAction
+} from './plan.ts';
 import { ChangedError, NotAFileError, UnsafePathError, type FolderTarget } from './target.ts';
 
 export interface FolderFile {
@@ -16,6 +23,8 @@ export type PublishOutcome =
 	| { kind: 'published'; written: number; kept: number }
 	| { kind: 'unchanged'; kept: number }
 	| { kind: 'blocked'; conflicts: PlanAction[] }
+	/** `proceed` said no before anything was written. */
+	| { kind: 'stopped' }
 	| { kind: 'failed'; reason: FailureReason; error: unknown; written: number };
 
 /** SHA-256 of no bytes: the file a browser creates when PixelDoll opens a new path for writing. */
@@ -90,9 +99,11 @@ export async function inSync(
 /**
  * @param record PixelDoll's trusted record for this folder
  * @param overwrite conflicting paths the user approved replacing, each with the bytes they saw there
- * @param onRecord updates the trusted record for a path: null just before a write (the path is untrusted while its
+ * @param onRecord updates the trusted record for a path: PENDING just before a write (the path is untrusted while its
  *   swap may or may not have happened, so a crash there leaves it to the user), then the new hash after it, or the
- *   previous hash again when the write failed before swapping. If recording fails, publishing stops.
+ *   previous hash again (null: none) when the write failed before swapping. If recording fails, publishing stops.
+ * @param proceed asked once the plan is ready, just before the first write; false stops without writing (such as
+ *   automatic updates having been turned off meanwhile).
  */
 export async function publishFiles(
 	target: FolderTarget,
@@ -101,6 +112,7 @@ export async function publishFiles(
 		record: FolderRecord;
 		overwrite?: ReadonlyMap<string, string>;
 		onRecord: (path: string, hash: string | null) => Promise<void>;
+		proceed?: () => Promise<boolean>;
 	}
 ): Promise<PublishOutcome> {
 	let written = 0;
@@ -118,6 +130,7 @@ export async function publishFiles(
 		if (plan.conflicts.length) return { kind: 'blocked', conflicts: plan.conflicts };
 		approved = plan.approved;
 		if (!plan.writes.length) return { kind: 'unchanged', kept: o.record.kept.length };
+		if (o.proceed && !(await o.proceed())) return { kind: 'stopped' };
 		// The manifest goes last, so a game that reads it never sees it ahead of its images.
 		const order = [...plan.writes].sort(
 			(a, b) => Number(a.path === 'manifest.json') - Number(b.path === 'manifest.json')
@@ -128,7 +141,7 @@ export async function publishFiles(
 			// pauses the publish instead. (The browser has no compare-and-swap, so a change in the instant between this
 			// check and the swap can still be lost.)
 			const previous = Object.hasOwn(o.record.written, a.path) ? o.record.written[a.path] : null;
-			if (previous) await o.onRecord(a.path, null);
+			await o.onRecord(a.path, PENDING);
 			try {
 				await target.write(
 					a.path,
@@ -141,10 +154,9 @@ export async function publishFiles(
 				);
 			} catch (error) {
 				// The swap only happens when a write completes, so the file still holds its previous bytes.
-				if (previous)
-					await o.onRecord(a.path, previous).catch((recordError: unknown) => {
-						console.warn('Could not restore the project folder record', recordError);
-					});
+				await o.onRecord(a.path, previous).catch((recordError: unknown) => {
+					console.warn('Could not restore the project folder record', recordError);
+				});
 				throw error;
 			}
 			written++;
@@ -160,23 +172,20 @@ export async function publishFiles(
 				conflicts: [{ path: error.path, kind: 'conflict', reason: 'folder', found: NOT_A_FILE }]
 			};
 		if (error instanceof ChangedError) {
-			let found: string | null = null;
+			// What is there now decides what the user can approve. Unreadable bytes cannot be approved at all, so the
+			// review offers Try again instead of a Replace that would cover whatever turns up there later.
+			let conflict: PlanAction = { path: error.path, kind: 'conflict', reason: 'edited-outside' };
 			try {
-				found = await hashAt(target, error.path);
+				const found = await hashAt(target, error.path);
+				if (found === null) conflict = { ...conflict, reason: 'deleted', found: DELETED };
+				else if (found === NOT_A_FILE) conflict = { ...conflict, reason: 'folder', found };
+				else conflict = { ...conflict, found };
 			} catch {
-				// The pause below stands either way; only the bytes to approve are unknown.
+				// The pause stands either way.
 			}
 			return {
 				kind: 'blocked',
-				conflicts: [
-					{
-						path: error.path,
-						kind: 'conflict',
-						reason: 'edited-outside',
-						found: found ?? DELETED
-					},
-					...approved.filter((c) => c.path !== error.path)
-				]
+				conflicts: [conflict, ...approved.filter((c) => c.path !== error.path)]
 			};
 		}
 		return { kind: 'failed', reason: failureReason(error), error, written };
