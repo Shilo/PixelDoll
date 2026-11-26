@@ -30,6 +30,19 @@ import {
 } from '../../src/studio/slots.ts';
 import { SLOT_ICON_PATHS } from '../../src/studio/slotIcons.ts';
 
+// The drawing contract a replacement icon set must keep: one path per SlotIcon key, on the 24 px grid, filled with
+// currentColor by GroupIcon (fill-rule even-odd), so nothing else in the app has to change when the art is swapped.
+test('the icon set keeps its keys and 24 px path contract', () => {
+	const keys = Object.keys(SLOT_ICON_PATHS).sort();
+	// ICON_CHOICES lists the pickable icons (Base is not a category); the drawing set adds Base.
+	expect(keys).toEqual([...ICON_CHOICES, 'body'].sort());
+	for (const [key, d] of Object.entries(SLOT_ICON_PATHS)) {
+		expect(d.length, key).toBeGreaterThan(10);
+		expect(d, key).toMatch(/^[Mm]/);
+		expect(d, key).toMatch(/^[MmLlHhVvCcSsQqTtAaZz0-9.,\-\s]+$/);
+	}
+});
+
 const item = (id: string, slot: string) =>
 	({ id, name: id, slot, layers: [], materials: [] }) as unknown as Item;
 function character(items: Item[] = []) {
