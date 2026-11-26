@@ -213,7 +213,6 @@
 									class="bu-action slot-tab"
 									data-variant="rail"
 									data-color-rail={s.it.id}
-									data-filled
 									aria-current={active === s.it.id ? 'true' : undefined}
 									aria-label={s.name}
 									tabindex={active === s.it.id ? 0 : -1}
@@ -221,10 +220,7 @@
 									>{#if s.base}<PersonStanding size={24} aria-hidden="true" />{:else}<GroupIcon
 											group={s.it.slot}
 											size={24}
-										/>{/if}<span class="bu-rail-label">{s.name}</span><i
-										class="bu-rail-dot"
-										aria-hidden="true"
-									></i></button
+										/>{/if}<span class="bu-rail-label">{s.name}</span></button
 								>
 							</li>
 						{/each}
