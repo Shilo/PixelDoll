@@ -3669,14 +3669,12 @@
 		"stop": "Trennen",
 		"publishNow": "Jetzt veröffentlichen",
 		"auto": "Automatisch aktualisieren",
-		"linked": "{path} · {format}",
 		"reconnect": "Neu verbinden",
 		"replace": "Dateien ersetzen",
 		"review": "Ansehen",
 		"copy": "Kopieren",
 		"copied": "Kopiert",
 		"brave": "Um das in Brave zu nutzen, aktiviere {flag} und starte Brave neu.",
-		"unsaved": "Dieser Ordner wird nach dem Schließen von PixelDoll nicht gespeichert.",
 		"state": {
 			"off": "Aus",
 			"on": "An",
@@ -3704,6 +3702,12 @@
 			"paused": "Veröffentlichen pausiert: Dateien im Ordner wurden geändert.",
 			"missing": "{folder} wurde nicht gefunden.",
 			"failed": "Veröffentlichen in {folder} fehlgeschlagen."
-		}
+		},
+		"keep": "Meine behalten",
+		"kept": {
+			"one": "{count} Datei bleibt so, wie du sie bearbeitet hast.",
+			"other": "{count} Dateien bleiben so, wie du sie bearbeitet hast."
+		},
+		"updateKept": "Aktualisieren"
 	}
 }

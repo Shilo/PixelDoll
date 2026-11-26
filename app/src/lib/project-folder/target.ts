@@ -2,17 +2,32 @@
 // can supply its own). Paths are export-relative with forward slashes.
 
 export interface FolderTarget {
+	/** Throws NotFoundError when the linked folder itself is gone (moved or deleted). */
+	check(): Promise<void>;
 	/** The file's bytes, or null when it does not exist. Throws NotAFileError when a folder sits at the path. */
 	read(path: string): Promise<Uint8Array | null>;
-	/** Replaces the file in one step: readers see the old or the new bytes, never a mix. */
-	write(path: string, data: Uint8Array): Promise<void>;
-	remove(path: string): Promise<void>;
+	/** Replaces the file in one step: readers see the old or the new bytes, never a mix. `unchanged` runs once the new
+	 *  bytes are staged, just before they replace the file, and learns whether this write created the (still empty) file;
+	 *  false cancels the write and throws ChangedError, leaving the file as it was. There is deliberately no delete. */
+	write(
+		path: string,
+		data: Uint8Array,
+		unchanged?: (createdHere: boolean) => Promise<boolean>
+	): Promise<void>;
 }
 
 export class NotAFileError extends Error {
-	constructor(path: string) {
+	constructor(readonly path: string) {
 		super(`A folder is in the way of ${path}`);
 		this.name = 'NotAFileError';
+	}
+}
+
+/** The file changed after PixelDoll checked it, so the write was cancelled. */
+export class ChangedError extends Error {
+	constructor(readonly path: string) {
+		super(`${path} changed while publishing`);
+		this.name = 'ChangedError';
 	}
 }
 
@@ -51,6 +66,10 @@ export function directoryTarget(
 		return dir;
 	}
 	return {
+		async check() {
+			// Listing the picked folder fails once it was moved or deleted; its subfolder may legitimately not exist yet.
+			for await (const _ of root.keys()) break;
+		},
 		async read(path) {
 			const parts = pathParts(path);
 			try {
@@ -64,22 +83,36 @@ export function directoryTarget(
 				throw error;
 			}
 		},
-		async write(path, data) {
+		async write(path, data, unchanged) {
 			const parts = pathParts(path);
 			const dir = await folder(parts.slice(0, -1), true);
-			const out = await (await dir.getFileHandle(parts.at(-1)!, { create: true })).createWritable();
+			const name = parts.at(-1)!;
+			let file: FileSystemFileHandle;
+			let createdHere = false;
 			try {
+				file = await dir.getFileHandle(name);
+			} catch (error) {
+				if (!(error instanceof DOMException && error.name === 'NotFoundError')) {
+					if (error instanceof DOMException && error.name === 'TypeMismatchError')
+						throw new NotAFileError(path);
+					throw error;
+				}
+				// Opening for writing creates the file empty; knowing this write made it lets the check below tell it
+				// apart from an empty file someone else saved there.
+				file = await dir.getFileHandle(name, { create: true });
+				createdHere = true;
+			}
+			const out = await file.createWritable();
+			try {
+				// The browser stages these bytes in a temporary copy; the file itself changes only on close.
 				await out.write(data as Uint8Array<ArrayBuffer>);
+				if (unchanged && !(await unchanged(createdHere))) throw new ChangedError(path);
 				await out.close();
 			} catch (error) {
 				// Abort drops the browser's temporary copy, leaving the previous file in place.
 				await out.abort().catch(() => {});
 				throw error;
 			}
-		},
-		async remove(path) {
-			const parts = pathParts(path);
-			await (await folder(parts.slice(0, -1), false)).removeEntry(parts.at(-1)!);
 		}
 	};
 }

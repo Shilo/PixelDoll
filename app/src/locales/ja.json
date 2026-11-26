@@ -3567,14 +3567,12 @@
 		"stop": "リンク解除",
 		"publishNow": "今すぐ書き出す",
 		"auto": "自動で更新",
-		"linked": "{path} · {format}",
 		"reconnect": "再接続",
 		"replace": "ファイルを置き換える",
 		"review": "確認",
 		"copy": "コピー",
 		"copied": "コピーしました",
 		"brave": "Brave で使うには {flag} を有効にして、Brave を再起動してください。",
-		"unsaved": "PixelDoll を閉じると、このフォルダーは記憶されません。",
 		"state": {
 			"off": "オフ",
 			"on": "オン",
@@ -3601,6 +3599,11 @@
 			"paused": "書き出しを一時停止しました：フォルダー内のファイルが変更されました。",
 			"missing": "{folder} が見つかりません。",
 			"failed": "{folder} に書き出せませんでした。"
-		}
+		},
+		"keep": "自分のものを残す",
+		"kept": {
+			"other": "{count}個のファイルを編集したまま残しています。"
+		},
+		"updateKept": "更新する"
 	}
 }

@@ -1,5 +1,7 @@
-// Linked project folders, one per character, in their own small database. Kept apart from the library so the feature can
-// be absent, fail or be cleared without touching saved characters, and so backups never carry a device's folder handle.
+// Linked project folders, one per character, and PixelDoll's trusted record of what it wrote into each, in their own small
+// database. Kept apart from the library so the feature can be absent, fail or be cleared without touching saved
+// characters, so backups never carry a device's folder handle, and so nothing in the user's folder can claim ownership.
+import type { FolderRecord } from './plan.ts';
 import type { Engine } from '../store/manifest.ts';
 
 export interface FolderLink {
@@ -18,16 +20,31 @@ export interface FolderLink {
 
 const DB = 'pixeldoll-project-folders';
 const STORE = 'links';
+/** One entry per written or kept path: { link, path, hash?, kept? }, keyed by [link, path]. */
+const FILES = 'files';
 
 function open(): Promise<IDBDatabase> {
 	return new Promise((resolve, reject) => {
 		if (typeof indexedDB === 'undefined') return reject(new Error('IndexedDB is unavailable'));
-		const request = indexedDB.open(DB, 1);
-		request.onupgradeneeded = () =>
-			request.result.createObjectStore(STORE, { keyPath: 'characterId' });
-		request.onsuccess = () => resolve(request.result);
+		const request = indexedDB.open(DB, 2);
+		request.onupgradeneeded = () => {
+			const db = request.result;
+			if (!db.objectStoreNames.contains(STORE))
+				db.createObjectStore(STORE, { keyPath: 'characterId' });
+			if (!db.objectStoreNames.contains(FILES))
+				db.createObjectStore(FILES, { keyPath: ['link', 'path'] }).createIndex('link', 'link');
+		};
+		let blocked = false;
+		request.onsuccess = () => {
+			// An open that was blocked and later succeeds is no longer wanted: close it instead of leaking it.
+			if (blocked) request.result.close();
+			else resolve(request.result);
+		};
 		request.onerror = () => reject(request.error);
-		request.onblocked = () => reject(new Error('Project folder storage is blocked by another tab'));
+		request.onblocked = () => {
+			blocked = true;
+			reject(new Error('Project folder storage is blocked by another tab'));
+		};
 	});
 }
 
@@ -116,3 +133,113 @@ export async function updateLink(
 		db.close();
 	}
 }
+
+/** The key of one link's file record: a new folder choice starts a new record. */
+export const recordKey = (link: Pick<FolderLink, 'characterId' | 'linkedAt'>) =>
+	`${link.characterId}|${link.linkedAt}`;
+
+type FileEntry = { link: string; path: string; hash?: string; kept?: true };
+
+async function inFiles<T>(
+	mode: IDBTransactionMode,
+	work: (store: IDBObjectStore, done: (value: T) => void) => void
+): Promise<T> {
+	const db = await open();
+	try {
+		return await new Promise<T>((resolve, reject) => {
+			const tx = db.transaction(FILES, mode);
+			let result: T;
+			work(tx.objectStore(FILES), (value) => (result = value));
+			tx.oncomplete = () => resolve(result);
+			tx.onabort = tx.onerror = () => reject(tx.error);
+		});
+	} finally {
+		db.close();
+	}
+}
+
+/** What PixelDoll wrote (or the user approved) and what the user chose to keep, for one link. */
+export function readRecord(key: string): Promise<FolderRecord> {
+	return inFiles('readonly', (store, done) => {
+		const request = store.index('link').getAll(key);
+		request.onsuccess = () => {
+			const written: Record<string, string> = {};
+			const kept: string[] = [];
+			for (const entry of request.result as FileEntry[]) {
+				if (entry.hash) written[entry.path] = entry.hash;
+				if (entry.kept) kept.push(entry.path);
+			}
+			done({ written, kept });
+		};
+	});
+}
+
+/** Records that PixelDoll just left these bytes at the path; null marks it untrusted while a write is in flight. */
+export function recordWritten(key: string, path: string, hash: string | null): Promise<void> {
+	return inFiles('readwrite', (store, done) => {
+		const read = store.get([key, path]);
+		read.onsuccess = () => {
+			const { hash: _old, ...entry } = (read.result as FileEntry | undefined) ?? {
+				link: key,
+				path
+			};
+			store.put(hash ? { ...entry, link: key, path, hash } : { ...entry, link: key, path });
+			done(undefined);
+		};
+	});
+}
+
+/** Marks paths as kept by the user (never written again), or, with `keep` false, clears every kept mark. */
+export function setKept(key: string, paths: readonly string[], keep: boolean): Promise<void> {
+	return inFiles('readwrite', (store, done) => {
+		if (keep) {
+			for (const path of paths) {
+				const read = store.get([key, path]);
+				read.onsuccess = () =>
+					store.put({ ...(read.result as FileEntry | undefined), link: key, path, kept: true });
+			}
+		} else {
+			const cursor = store.index('link').openCursor(key);
+			cursor.onsuccess = () => {
+				const c = cursor.result;
+				if (!c) return;
+				const { kept: _kept, ...rest } = c.value as FileEntry;
+				c.update(rest);
+				c.continue();
+			};
+		}
+		done(undefined);
+	});
+}
+
+/** Copies one link's record to another, when the user picks the same folder again. */
+export async function copyRecord(from: string, to: string): Promise<void> {
+	const record = await readRecord(from);
+	await inFiles('readwrite', (store, done) => {
+		for (const [path, hash] of Object.entries(record.written)) store.put({ link: to, path, hash });
+		for (const path of record.kept) {
+			const read = store.get([to, path]);
+			read.onsuccess = () =>
+				store.put({ ...(read.result as FileEntry | undefined), link: to, path, kept: true });
+		}
+		done(undefined);
+	});
+}
+
+/** Drops one link's record. */
+export function deleteRecord(key: string): Promise<void> {
+	return inFiles('readwrite', (store, done) => {
+		const cursor = store.index('link').openCursor(key);
+		cursor.onsuccess = () => {
+			const c = cursor.result;
+			if (!c) return;
+			c.delete();
+			c.continue();
+		};
+		done(undefined);
+	});
+}
+
+/** Every stored link, to stop two characters from sharing one folder. */
+export const allLinks = () =>
+	run<unknown[]>('readonly', (s) => s.getAll()).then((values) => values.filter(isLink));

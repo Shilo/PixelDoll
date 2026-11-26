@@ -3678,14 +3678,12 @@
 		"stop": "Desvincular",
 		"publishNow": "Publicar agora",
 		"auto": "Atualizar automaticamente",
-		"linked": "{path} · {format}",
 		"reconnect": "Reconectar",
 		"replace": "Substituir arquivos",
 		"review": "Revisar",
 		"copy": "Copiar",
 		"copied": "Copiado",
 		"brave": "Para usar no Brave, ative {flag} e reinicie o Brave.",
-		"unsaved": "Esta pasta não será lembrada depois que você fechar o PixelDoll.",
 		"state": {
 			"off": "Desativada",
 			"on": "Ativada",
@@ -3713,6 +3711,12 @@
 			"paused": "Publicação pausada: arquivos da pasta mudaram.",
 			"missing": "Não foi possível encontrar {folder}.",
 			"failed": "Não foi possível publicar em {folder}."
-		}
+		},
+		"keep": "Manter os meus",
+		"kept": {
+			"one": "{count} arquivo é mantido como você o editou.",
+			"other": "{count} arquivos são mantidos como você os editou."
+		},
+		"updateKept": "Atualizá-los"
 	}
 }

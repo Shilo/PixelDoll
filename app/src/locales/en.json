@@ -3669,14 +3669,12 @@
 		"stop": "Unlink",
 		"publishNow": "Publish now",
 		"auto": "Update automatically",
-		"linked": "{path} · {format}",
 		"reconnect": "Reconnect",
 		"replace": "Replace files",
 		"review": "Review",
 		"copy": "Copy",
 		"copied": "Copied",
 		"brave": "To use this in Brave, turn on {flag}, then restart Brave.",
-		"unsaved": "This folder won’t be remembered after you close PixelDoll.",
 		"state": {
 			"off": "Off",
 			"on": "On",
@@ -3704,6 +3702,12 @@
 			"paused": "Publishing paused: files in the folder changed.",
 			"missing": "Can’t find {folder}.",
 			"failed": "Couldn’t publish to {folder}."
-		}
+		},
+		"keep": "Keep mine",
+		"kept": {
+			"one": "{count} file is kept as you edited it.",
+			"other": "{count} files are kept as you edited them."
+		},
+		"updateKept": "Update them"
 	}
 }

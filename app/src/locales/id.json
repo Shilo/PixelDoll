@@ -3567,14 +3567,12 @@
 		"stop": "Putuskan",
 		"publishNow": "Terbitkan sekarang",
 		"auto": "Perbarui otomatis",
-		"linked": "{path} · {format}",
 		"reconnect": "Hubungkan ulang",
 		"replace": "Timpa file",
 		"review": "Tinjau",
 		"copy": "Salin",
 		"copied": "Disalin",
 		"brave": "Untuk memakai ini di Brave, aktifkan {flag}, lalu mulai ulang Brave.",
-		"unsaved": "Folder ini tidak akan diingat setelah Anda menutup PixelDoll.",
 		"state": {
 			"off": "Mati",
 			"on": "Aktif",
@@ -3601,6 +3599,11 @@
 			"paused": "Penerbitan dijeda: file di folder berubah.",
 			"missing": "{folder} tidak ditemukan.",
 			"failed": "Tidak dapat menerbitkan ke {folder}."
-		}
+		},
+		"keep": "Pertahankan milik saya",
+		"kept": {
+			"other": "{count} file dipertahankan seperti yang Anda edit."
+		},
+		"updateKept": "Perbarui"
 	}
 }

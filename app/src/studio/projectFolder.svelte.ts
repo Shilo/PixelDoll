@@ -6,9 +6,16 @@ import { ACTION_LAYER_ENGINES } from '../lib/export/export.ts';
 import { walkMoves } from '../lib/export/rpgmaker.ts';
 import { message } from '../lib/message.ts';
 import {
+	allLinks,
+	copyRecord,
 	deleteLink,
+	deleteRecord,
 	getLink,
 	putLink,
+	readRecord,
+	recordKey,
+	recordWritten,
+	setKept,
 	updateLink,
 	type FolderLink
 } from '../lib/project-folder/links.ts';
@@ -16,7 +23,7 @@ import type { PlanAction } from '../lib/project-folder/plan.ts';
 import {
 	hashFiles,
 	inSync,
-	matchesPublished,
+	matchesRecord,
 	publishFiles,
 	type FailureReason,
 	type FolderFile
@@ -34,10 +41,14 @@ import { doc, store, toast } from './state.svelte.ts';
 export type FolderStatus =
 	| { kind: 'idle' }
 	| { kind: 'publishing' }
-	| { kind: 'done' }
+	/** `kept`: files the user chose to keep as they are. */
+	| { kind: 'done'; kept: number }
+	/** Another character already publishes into this folder. */
+	| { kind: 'taken' }
 	| { kind: 'reconnect' }
 	| { kind: 'missing' }
-	| { kind: 'blocked'; conflicts: PlanAction[] }
+	/** `linkedAt`: the link these conflicts were found in; an approval only ever applies to that link. */
+	| { kind: 'blocked'; conflicts: PlanAction[]; linkedAt: string }
 	| { kind: 'unavailable' }
 	| { kind: 'failed'; reason: FailureReason };
 
@@ -46,8 +57,6 @@ class FolderState {
 	/** The open character's link, once read. */
 	link = $state.raw<FolderLink | null>(null);
 	status = $state.raw<FolderStatus>({ kind: 'idle' });
-	/** The link could not be stored, so it lasts only until the page closes. */
-	unsaved = $state(false);
 }
 export const projectFolder = new FolderState();
 
@@ -55,8 +64,15 @@ export const projectFolder = new FolderState();
 export const folderNeedsAttention = (status: FolderStatus) =>
 	!['idle', 'publishing', 'done'].includes(status.kind);
 
-/** A publish request, bound to the link it was made for (`linkedAt`), so it never runs against a different one. */
-type Request = { manual: boolean; linkedAt?: string; overwrite?: ReadonlyMap<string, string> };
+/** A publish request, bound to the link it was made for (`linkedAt`), so it never runs against a different one.
+ *  `overwrite` approves replacing exact bytes; `keep` marks paths the user keeps; `release` clears every kept path. */
+type Request = {
+	manual: boolean;
+	linkedAt: string;
+	overwrite?: ReadonlyMap<string, string>;
+	keep?: readonly string[];
+	release?: boolean;
+};
 
 const RW = { mode: 'readwrite' } as const;
 const AUTO_DELAY_MS = 1500;
@@ -91,7 +107,6 @@ export async function loadFolderLink(characterId: string) {
 	loadedFor = characterId;
 	projectFolder.link = null;
 	projectFolder.status = { kind: 'idle' };
-	projectFolder.unsaved = false;
 	if ((await checkFolderSupport()) !== 'supported' || !characterId) return;
 	try {
 		showLink(characterId, await getLink(characterId));
@@ -151,12 +166,16 @@ async function permission(link: FolderLink): Promise<PermissionState> {
 	}
 }
 
-/** One publish at a time per destination, across tabs where Web Locks exist. */
-function exclusive<T>(link: FolderLink, work: () => Promise<T>): Promise<T> {
+/** Runs `work` alone across tabs where Web Locks exist. */
+function locked<T>(name: string, work: () => Promise<T>): Promise<T> {
 	return navigator.locks
-		? navigator.locks.request(`pixeldoll:project-folder:${link.subfolder}`, work)
+		? navigator.locks.request(`pixeldoll:project-folder:${name}`, work)
 		: work();
 }
+
+/** One publish, link change or unlink at a time per destination. */
+const exclusive = <T>(link: FolderLink, work: () => Promise<T>) =>
+	locked(`folder:${link.subfolder.toLowerCase()}`, work);
 
 function notify(link: FolderLink, kind: string, manual: boolean, show: () => void) {
 	const key = `${link.characterId}:${kind}`;
@@ -170,6 +189,19 @@ const review = {
 	action: () => openSettings('export'),
 	actionLabel: message('projectFolder.review')
 };
+/** Notices that need the user stay until dismissed, so a paused publish is never missed. */
+const lasting = { tone: 'warning' as const, report: false, duration: 0 };
+
+/** The stored link, if it is still the one this request was made for; another tab may have stopped or replaced it. */
+async function stillLinked(link: FolderLink): Promise<FolderLink | null | 'unknown'> {
+	try {
+		const current = await getLink(link.characterId);
+		return current && current.linkedAt === link.linkedAt ? current : null;
+	} catch (error) {
+		console.warn('Could not recheck the linked project folder', error);
+		return 'unknown';
+	}
+}
 
 async function publish(link: FolderLink, request: Request) {
 	const id = link.characterId;
@@ -177,48 +209,50 @@ async function publish(link: FolderLink, request: Request) {
 	if (!input) return;
 	const settings = await readExportSettings();
 	await exclusive(link, async () => {
-		// Another tab may have stopped or replaced this link meanwhile.
-		let current: FolderLink | null = link;
-		// An unsaved link exists only in this tab, so there is nothing stored to recheck.
-		if (!projectFolder.unsaved)
-			try {
-				current = await getLink(id);
-			} catch (error) {
-				// Without a fresh read this tab cannot know whether the folder was stopped elsewhere, so it waits.
-				console.warn('Could not recheck the linked project folder', error);
-				return setStatus(id, { kind: 'failed', reason: 'unknown' });
-			}
-		if (!current || current.linkedAt !== link.linkedAt) {
-			showLink(id, current);
-			setStatus(id, { kind: 'idle' });
-			return;
+		const checked = await stillLinked(link);
+		// Without a fresh read this tab cannot know whether the folder was stopped elsewhere, so it waits.
+		if (checked === 'unknown') return setStatus(id, { kind: 'failed', reason: 'unknown' });
+		if (!checked) {
+			showLink(id, await getLink(id).catch(() => null));
+			return setStatus(id, { kind: 'idle' });
 		}
-		link = current;
+		link = checked;
 		showLink(id, link);
 		// Update automatically may have been turned off in another tab.
 		if (!request.manual && !link.auto) return;
 		if ((await permission(link)) !== 'granted') return lostAccess(link, request.manual);
 		setStatus(id, { kind: 'publishing' });
+		const key = recordKey(link);
+		if (request.release) await setKept(key, [], false);
+		if (request.keep?.length) await setKept(key, request.keep, true);
+		const record = await readRecord(key);
 		const target = directoryTarget(link.handle, [link.subfolder]);
 		// Reusing the last timestamp first means an unchanged character matches what is there and writes nothing.
 		if (link.exportedAt && !request.overwrite) {
 			const same = await buildFiles(link, input, settings, link.exportedAt);
 			const next = same && (await hashFiles(same));
-			if (next && (await (request.manual ? inSync : matchesPublished)(target, next)))
-				return setStatus(id, { kind: 'done' });
+			if (
+				next &&
+				(request.manual ? await inSync(target, record, next) : matchesRecord(record, next))
+			)
+				return setStatus(id, { kind: 'done', kept: record.kept.length });
 		}
 		const now = new Date().toISOString();
 		const files = await buildFiles(link, input, settings, now);
 		if (!files) return setStatus(id, { kind: 'unavailable' });
+		// Building takes a moment: recheck that the link was not stopped or replaced meanwhile.
+		const recheck = await stillLinked(link);
+		if (recheck === 'unknown') return setStatus(id, { kind: 'failed', reason: 'unknown' });
+		if (!recheck) return setStatus(id, { kind: 'idle' });
 		const outcome = await publishFiles(target, files, {
-			owner: id,
+			record,
 			overwrite: request.overwrite,
-			adopt: request.manual
+			onRecord: (path, hash) => recordWritten(key, path, hash)
 		});
 		switch (outcome.kind) {
 			case 'published':
 			case 'unchanged':
-				for (const key of [...noticed]) if (key.startsWith(`${id}:`)) noticed.delete(key);
+				for (const k of [...noticed]) if (k.startsWith(`${id}:`)) noticed.delete(k);
 				if (outcome.kind === 'published') {
 					try {
 						const stored = await updateLink(id, link.linkedAt, {
@@ -230,15 +264,11 @@ async function publish(link: FolderLink, request: Request) {
 						console.warn('Could not record the project folder publish', error);
 					}
 				}
-				return setStatus(id, { kind: 'done' });
+				return setStatus(id, { kind: 'done', kept: outcome.kept });
 			case 'blocked':
-				setStatus(id, { kind: 'blocked', conflicts: outcome.conflicts });
+				setStatus(id, { kind: 'blocked', conflicts: outcome.conflicts, linkedAt: link.linkedAt });
 				return notify(link, 'blocked', request.manual, () =>
-					toast(message('projectFolder.toast.paused'), {
-						tone: 'warning',
-						report: false,
-						...review
-					})
+					toast(message('projectFolder.toast.paused'), { ...lasting, ...review })
 				);
 			case 'failed':
 				console.warn('Project folder publish failed', outcome.error);
@@ -247,8 +277,7 @@ async function publish(link: FolderLink, request: Request) {
 					setStatus(id, { kind: 'missing' });
 					return notify(link, 'missing', request.manual, () =>
 						toast(message('projectFolder.toast.missing', { folder: link.handle.name }), {
-							tone: 'warning',
-							report: false,
+							...lasting,
 							...review
 						})
 					);
@@ -269,8 +298,7 @@ function lostAccess(link: FolderLink, manual: boolean) {
 	setStatus(link.characterId, { kind: 'reconnect' });
 	notify(link, 'reconnect', manual, () =>
 		toast(message('projectFolder.toast.reconnect', { folder: link.handle.name }), {
-			tone: 'warning',
-			report: false,
+			...lasting,
 			// A notice's button is a click, so the browser can ask for access straight away.
 			action: () => void reconnectProjectFolder(link),
 			actionLabel: message('projectFolder.reconnect')
@@ -282,11 +310,17 @@ function lostAccess(link: FolderLink, manual: boolean) {
  *  request and an approval. Never rejects. */
 function run(request: Request): Promise<void> {
 	if (running) {
-		queued = {
-			manual: request.manual || !!queued?.manual,
-			linkedAt: request.linkedAt ?? queued?.linkedAt,
-			overwrite: request.overwrite ?? queued?.overwrite
-		};
+		// Requests for different links never merge, so an approval can only apply to the folder it was made for.
+		queued =
+			queued && queued.linkedAt === request.linkedAt
+				? {
+						manual: request.manual || queued.manual,
+						linkedAt: request.linkedAt,
+						overwrite: request.overwrite ?? queued.overwrite,
+						keep: [...(queued.keep ?? []), ...(request.keep ?? [])],
+						release: request.release || queued.release
+					}
+				: request;
 		return running;
 	}
 	running = (async () => {
@@ -294,12 +328,7 @@ function run(request: Request): Promise<void> {
 		while (next) {
 			const link = projectFolder.link;
 			const current = next;
-			if (
-				usable() &&
-				link &&
-				link.characterId === doc.id &&
-				(!current.linkedAt || current.linkedAt === link.linkedAt)
-			) {
+			if (usable() && link && link.characterId === doc.id && current.linkedAt === link.linkedAt) {
 				try {
 					await publish(link, current);
 				} catch (error) {
@@ -329,9 +358,30 @@ export function scheduleFolderPublish() {
 	timer = setTimeout(() => void run({ manual: false, linkedAt }), AUTO_DELAY_MS);
 }
 
-/** Publish now, or replace the listed conflicting files when `overwrite` maps each to the bytes the user saw. */
-export const publishProjectFolder = (overwrite?: ReadonlyMap<string, string>) =>
-	run({ manual: true, linkedAt: projectFolder.link?.linkedAt, overwrite });
+/** The open link, if it is the one `linkedAt` names (when given): a decision made about one folder never reaches another. */
+function current(linkedAt?: string) {
+	const link = projectFolder.link;
+	return link && (!linkedAt || link.linkedAt === linkedAt) ? link : null;
+}
+
+/** Publish now, or replace the listed conflicting files when `overwrite` maps each to the bytes the user saw in the link
+ *  `linkedAt` names. */
+export function publishProjectFolder(overwrite?: ReadonlyMap<string, string>, linkedAt?: string) {
+	const link = current(linkedAt);
+	return link ? run({ manual: true, linkedAt: link.linkedAt, overwrite }) : Promise.resolve();
+}
+
+/** Keep mine: PixelDoll stops writing these files of the link `linkedAt` names, and publishes the rest. */
+export function keepProjectFolderFiles(paths: readonly string[], linkedAt: string) {
+	const link = current(linkedAt);
+	return link ? run({ manual: true, linkedAt: link.linkedAt, keep: paths }) : Promise.resolve();
+}
+
+/** Stops keeping every kept file, so their differences are reported again. */
+export function releaseKeptFiles() {
+	const link = projectFolder.link;
+	return link ? run({ manual: true, linkedAt: link.linkedAt, release: true }) : Promise.resolve();
+}
 
 /** Must run straight from a click: the folder picker needs the user's gesture. */
 export async function linkProjectFolder(engine: Engine) {
@@ -350,23 +400,41 @@ export async function linkProjectFolder(engine: Engine) {
 	}
 	if (doc.id !== characterId) return;
 	const previous = projectFolder.link;
+	const same = !!previous && (await sameFolder(previous.handle, handle));
 	const link: FolderLink = {
 		characterId,
 		handle,
-		subfolder:
-			previous && (await sameFolder(previous.handle, handle))
-				? previous.subfolder
-				: characterZipId(project.manifest),
+		subfolder: same ? previous!.subfolder : characterZipId(project.manifest),
 		engine,
 		auto: previous?.auto ?? true,
-		linkedAt: new Date().toISOString()
+		// Unique even when two tabs link in the same millisecond: it identifies this link and its approvals.
+		linkedAt: `${new Date().toISOString()} ${crypto.randomUUID()}`
 	};
 	try {
-		await putLink(link);
-		projectFolder.unsaved = false;
+		// Claiming a folder happens one tab at a time, and waits for any publish into the previous folder to finish.
+		const saved = await locked('links', async () => {
+			// One folder per character: another character's files there are never touched.
+			for (const other of await allLinks())
+				if (
+					other.characterId !== characterId &&
+					other.subfolder.toLowerCase() === link.subfolder.toLowerCase() &&
+					(await sameFolder(other.handle, handle))
+				)
+					return false;
+			const replace = async () => {
+				await putLink(link);
+				// Picking the same folder again keeps what PixelDoll knows it wrote there.
+				if (same) await copyRecord(recordKey(previous!), recordKey(link));
+				if (previous) await deleteRecord(recordKey(previous));
+			};
+			await (previous ? exclusive(previous, replace) : replace());
+			return true;
+		});
+		if (!saved) return setStatus(characterId, { kind: 'taken' });
 	} catch (error) {
+		// Without stored records PixelDoll could not tell its files from the user's, so it publishes nothing.
 		console.warn('Could not save the linked project folder', error);
-		projectFolder.unsaved = true;
+		return setStatus(characterId, { kind: 'failed', reason: 'unknown' });
 	}
 	showLink(characterId, link);
 	await publishProjectFolder();
@@ -399,20 +467,20 @@ export async function reconnectProjectFolder(expected?: FolderLink) {
 		console.warn('Could not reconnect the project folder', error);
 		return;
 	}
-	await publishProjectFolder();
+	// Bound to the link access was granted for, even if another character opened meanwhile.
+	await run({ manual: true, linkedAt: link.linkedAt });
 }
 
 export async function setFolderAutoPublish(auto: boolean) {
 	const link = projectFolder.link;
 	if (!link) return;
 	try {
-		const stored = await updateLink(link.characterId, link.linkedAt, { auto });
 		// Null means another tab stopped or replaced this link.
-		showLink(link.characterId, stored ?? (projectFolder.unsaved ? { ...link, auto } : null));
+		showLink(link.characterId, await updateLink(link.characterId, link.linkedAt, { auto }));
 	} catch (error) {
 		console.warn('Could not save Update automatically', error);
-		projectFolder.unsaved = true;
-		showLink(link.characterId, { ...link, auto });
+		setStatus(link.characterId, { kind: 'failed', reason: 'unknown' });
+		return;
 	}
 	if (auto) scheduleFolderPublish();
 }
@@ -423,8 +491,11 @@ export async function unlinkProjectFolder() {
 	if (!link) return;
 	clearTimeout(timer);
 	try {
-		// Only this link: if another tab chose a new folder meanwhile, that one stays.
-		await deleteLink(link.characterId, link.linkedAt);
+		// Waits for a publish into this folder to finish; only this link goes, so a newer one from another tab stays.
+		await exclusive(link, async () => {
+			await deleteLink(link.characterId, link.linkedAt);
+			await deleteRecord(recordKey(link));
+		});
 	} catch (error) {
 		console.warn('Could not remove the linked project folder', error);
 		setStatus(link.characterId, { kind: 'failed', reason: 'unknown' });
@@ -432,5 +503,4 @@ export async function unlinkProjectFolder() {
 	}
 	showLink(link.characterId, null);
 	setStatus(link.characterId, { kind: 'idle' });
-	projectFolder.unsaved = false;
 }

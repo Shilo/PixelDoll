@@ -3669,14 +3669,12 @@
 		"stop": "Bağlantıyı kaldır",
 		"publishNow": "Şimdi yayımla",
 		"auto": "Otomatik güncelle",
-		"linked": "{path} · {format}",
 		"reconnect": "Yeniden bağlan",
 		"replace": "Dosyaların üzerine yaz",
 		"review": "İncele",
 		"copy": "Kopyala",
 		"copied": "Kopyalandı",
 		"brave": "Bunu Brave'de kullanmak için {flag} ayarını açın ve Brave'i yeniden başlatın.",
-		"unsaved": "PixelDoll'u kapattıktan sonra bu klasör hatırlanmayacak.",
 		"state": {
 			"off": "Kapalı",
 			"on": "Açık",
@@ -3704,6 +3702,12 @@
 			"paused": "Yayımlama duraklatıldı: klasördeki dosyalar değişti.",
 			"missing": "Şu klasör bulunamadı: {folder}",
 			"failed": "Şu klasöre yayımlanamadı: {folder}"
-		}
+		},
+		"keep": "Benimkileri koru",
+		"kept": {
+			"one": "{count} dosya düzenlediğiniz gibi korunuyor.",
+			"other": "{count} dosya düzenlediğiniz gibi korunuyor."
+		},
+		"updateKept": "Güncelle"
 	}
 }

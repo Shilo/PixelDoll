@@ -8,11 +8,13 @@
 	import { Copy, FolderOpen, TriangleAlert } from './icons.ts';
 	import {
 		checkFolderSupport,
+		keepProjectFolderFiles,
 		linkProjectFolder,
 		loadFolderLink,
 		projectFolder,
 		publishProjectFolder,
 		reconnectProjectFolder,
+		releaseKeptFiles,
 		setFolderAutoPublish,
 		unlinkProjectFolder
 	} from './projectFolder.svelte.ts';
@@ -55,24 +57,34 @@
 	// Each runs synchronously from its click, so the browser still sees the user's gesture.
 	const choose = () => act(() => linkProjectFolder(engine));
 	const reconnect = () => act(() => reconnectProjectFolder());
-	/** Conflicting files that Replace can overwrite; a folder in the way has to be moved by the user. */
-	const replaceable = $derived(
-		status.kind === 'blocked'
-			? status.conflicts.filter((c) => c.reason !== 'folder' && c.found)
-			: []
-	);
+	const conflicts = $derived(status.kind === 'blocked' ? status.conflicts : []);
+	/** A folder sitting where a file belongs cannot be replaced by a file: the user moves it (or keeps it). */
+	const replaceable = $derived(conflicts.every((c) => c.reason !== 'folder' && c.found));
+	// Approves exactly the bytes listed here; anything changed after this list appeared pauses again.
+	const conflictLink = $derived(status.kind === 'blocked' ? status.linkedAt : '');
 	const replace = () =>
-		act(() => publishProjectFolder(new Map(replaceable.map((c) => [c.path, c.found!]))));
+		act(() =>
+			publishProjectFolder(new Map(conflicts.map((c) => [c.path, c.found!])), conflictLink)
+		);
+	const keep = () =>
+		act(() =>
+			keepProjectFolderFiles(
+				conflicts.map((c) => c.path),
+				conflictLink
+			)
+		);
 	const problem = $derived.by(() => {
 		switch (status.kind) {
 			case 'reconnect':
 				return t('projectFolder.status.reconnect');
 			case 'missing':
 				return t('projectFolder.status.missing');
+			case 'taken':
+				return t('projectFolder.status.taken');
 			case 'blocked':
-				return status.conflicts.some((c) => c.reason === 'folder')
-					? t('projectFolder.status.folder')
-					: t('projectFolder.status.blocked', { count: status.conflicts.length });
+				return replaceable
+					? t('projectFolder.status.blocked', { count: conflicts.length })
+					: t('projectFolder.status.folder');
 			case 'unavailable':
 				return t('projectFolder.status.unavailable');
 			case 'failed':
@@ -82,9 +94,7 @@
 						? t('projectFolder.status.space')
 						: status.reason === 'permission'
 							? t('projectFolder.status.permission')
-							: status.reason === 'taken'
-								? t('projectFolder.status.taken')
-								: t('projectFolder.status.failed');
+							: t('projectFolder.status.failed');
 			default:
 				return '';
 		}
@@ -106,20 +116,18 @@
 				>
 			</p>
 		{:else if !link}
-			<p class="folder-actions">
-				<button type="button" class="bu-action btn" disabled={disabled || working} onclick={choose}
-					><FolderOpen size={16} aria-hidden="true" />{t('projectFolder.choose')}</button
-				>
-			</p>
+			<button type="button" class="bu-action btn sm" disabled={disabled || working} onclick={choose}
+				><FolderOpen size={16} aria-hidden="true" />{t('projectFolder.choose')}</button
+			>
 			{#if problem}<p class="notice warn small" role="alert">
 					<TriangleAlert size={14} aria-hidden="true" />{problem}
 				</p>{/if}
 		{:else}
-			<p class="small mono folder-text">
-				{t('projectFolder.linked', {
-					path: `${link.handle.name}/${link.subfolder}/`,
-					format: exportFormatNames[link.engine as keyof typeof exportFormatNames] ?? link.engine
-				})}
+			<p class="small folder-text">
+				<span class="folder-path">{link.handle.name}/{link.subfolder}/</span>
+				<span class="bu-muted"
+					>· {exportFormatNames[link.engine as keyof typeof exportFormatNames] ?? link.engine}</span
+				>
 			</p>
 			<label class="check">
 				<input
@@ -142,26 +150,45 @@
 					<TriangleAlert size={14} aria-hidden="true" />
 					<div>
 						{problem}
-						{#if status.kind === 'blocked'}<ul class="mono conflicts">
-								{#each status.conflicts as conflict (conflict.path)}<li>{conflict.path}</li>{/each}
+						{#if conflicts.length}<ul class="mono conflicts">
+								{#each conflicts as conflict (conflict.path)}<li>{conflict.path}</li>{/each}
 							</ul>{/if}
 					</div>
 				</div>
 			{/if}
-			{#if projectFolder.unsaved}<p class="notice warn small">{t('projectFolder.unsaved')}</p>{/if}
-			<p class="folder-actions">
-				{#if status.kind === 'reconnect'}
-					<button type="button" class="bu-action btn primary" disabled={working} onclick={reconnect}
-						>{t('projectFolder.reconnect')}</button
+			{#if status.kind === 'done' && status.kept}
+				<p class="small folder-text">
+					{t('projectFolder.kept', { count: status.kept })}
+					<button
+						type="button"
+						class="bu-action btn sm plain"
+						disabled={working}
+						onclick={() => act(() => releaseKeptFiles())}>{t('projectFolder.updateKept')}</button
 					>
-				{:else if status.kind === 'blocked' && replaceable.length === status.conflicts.length}
-					<button type="button" class="bu-action btn" disabled={working} onclick={replace}
-						>{t('projectFolder.replace')}</button
+				</p>
+			{/if}
+			<div class="folder-actions">
+				{#if status.kind === 'reconnect'}
+					<button
+						type="button"
+						class="bu-action btn sm primary"
+						disabled={working}
+						onclick={reconnect}>{t('projectFolder.reconnect')}</button
+					>
+				{:else if status.kind === 'blocked'}
+					{#if replaceable}<button
+							type="button"
+							class="bu-action btn sm"
+							disabled={working}
+							onclick={replace}>{t('projectFolder.replace')}</button
+						>{/if}
+					<button type="button" class="bu-action btn sm" disabled={working} onclick={keep}
+						>{t('projectFolder.keep')}</button
 					>
 				{:else if status.kind !== 'missing'}
 					<button
 						type="button"
-						class="bu-action btn"
+						class="bu-action btn sm"
 						disabled={disabled || working}
 						onclick={() => act(() => publishProjectFolder())}
 						>{t('projectFolder.publishNow')}</button
@@ -179,7 +206,7 @@
 					disabled={working}
 					onclick={() => act(() => unlinkProjectFolder())}>{t('projectFolder.stop')}</button
 				>
-			</p>
+			</div>
 		{/if}
 	</div>
 {/if}
@@ -199,10 +226,14 @@
 	.folder-text:empty {
 		display: none;
 	}
+	.folder-path {
+		font-family: var(--mono, ui-monospace, monospace);
+		word-break: break-all;
+	}
 	.folder-actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
+		gap: 4px 8px;
 	}
 	.conflicts {
 		margin: 4px 0 0;

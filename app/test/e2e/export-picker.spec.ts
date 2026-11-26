@@ -4128,9 +4128,8 @@ test('a linked project folder publishes, updates after changes, pauses on game e
 	const manifestPath = `game/${sub}/manifest.json`;
 	const first = await folderText(page, manifestPath);
 	expect(JSON.parse(first!).name).toBe('Export settings test');
-	expect(
-		JSON.parse((await folderText(page, `game/${sub}/.pixeldoll-publish.json`))!).pending
-	).toBeNull();
+	// PixelDoll keeps its record of what it wrote in its own storage: nothing else is added to the folder.
+	expect(await folderText(page, `game/${sub}/.pixeldoll-publish.json`)).toBeNull();
 
 	// Publishing again with nothing changed writes nothing, so the manifest keeps its timestamp.
 	await row.getByRole('button', { name: 'Publish now' }).click();
@@ -4235,4 +4234,117 @@ test('project folders stay out of browsers that cannot write folders, with a Bra
 	await expect(row).toContainText('brave://flags/#file-system-access-api');
 	await expect(row.getByRole('button', { name: 'Choose folder' })).toHaveCount(0);
 	expect(errors).toEqual([]);
+});
+
+/** Writes, removes or replaces with a folder a path in the browser-private stand-in folder. */
+const changeFolder = (
+	page: Page,
+	path: string,
+	change: { text?: string; remove?: boolean; folder?: boolean }
+) =>
+	page.evaluate(
+		async ({ path, change }) => {
+			const parts = path.split('/');
+			let dir = await navigator.storage.getDirectory();
+			for (const part of parts.slice(0, -1))
+				dir = await dir.getDirectoryHandle(part, { create: true });
+			const name = parts.at(-1)!;
+			if (change.remove || change.folder) await dir.removeEntry(name).catch(() => {});
+			if (change.folder) return void (await dir.getDirectoryHandle(name, { create: true }));
+			if (change.remove) return;
+			const out = await (await dir.getFileHandle(name, { create: true })).createWritable();
+			await out.write(change.text!);
+			await out.close();
+		},
+		{ path, change }
+	);
+
+test('a project folder never replaces files changed outside PixelDoll without approval', async ({
+	page
+}, info) => {
+	await fakeProjectFolder(page);
+	await savedExport(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('radio', { name: 'PNG + JSON', exact: true }).check();
+	const sub = await page.evaluate(async () => {
+		const path = '/src/studio/download.svelte.ts',
+			statePath = '/src/studio/state.svelte.ts';
+		const { characterZipId } = await import(path),
+			state = await import(statePath);
+		return characterZipId(state.store.project.manifest) as string;
+	});
+	const at = (name: string) => `game/${sub}/${name}`;
+
+	// A copy the user extracted and edited earlier sits where PixelDoll would publish: nothing at all is written.
+	await changeFolder(page, at('manifest.json'), { text: 'my own manifest' });
+	await changeFolder(page, at('notes.txt'), { text: 'game notes' });
+	await changeFolder(page, at('manifest.json.import'), { text: 'engine sidecar' });
+	await dialog.getByRole('button', { name: 'Project folder · Off' }).click();
+	const row = dialog.locator('[data-setting="project-folder"]');
+	await row.getByRole('button', { name: 'Choose folder' }).click();
+	await expect(row.getByRole('alert')).toContainText(
+		'1 file in the folder differs from PixelDoll’s version.'
+	);
+	expect(await folderText(page, at('manifest.json'))).toBe('my own manifest');
+	expect(await folderText(page, at('.pixeldoll-publish.json'))).toBeNull();
+	expect(await folderText(page, at('project.json'))).toBeNull();
+
+	// Edited again after the warning appeared: Replace files does not cover the newer bytes.
+	await changeFolder(page, at('manifest.json'), { text: 'my newer manifest' });
+	await row.getByRole('button', { name: 'Replace files' }).click();
+	await expect(row.getByRole('alert')).toContainText('1 file in the folder differs');
+	expect(await folderText(page, at('manifest.json'))).toBe('my newer manifest');
+	await row.getByRole('button', { name: 'Replace files' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+	expect(JSON.parse((await folderText(page, at('manifest.json')))!).name).toBe(
+		'Export settings test'
+	);
+
+	// A published file the user deleted is not quietly put back.
+	await changeFolder(page, at('project.json'), { remove: true });
+	await row.getByRole('button', { name: 'Publish now' }).click();
+	await expect(row.getByRole('alert')).toContainText('1 file in the folder differs');
+	await expect(row.getByRole('alert')).toContainText('project.json');
+	expect(await folderText(page, at('project.json'))).toBeNull();
+	await row.getByRole('button', { name: 'Replace files' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+	expect(await folderText(page, at('project.json'))).not.toBeNull();
+
+	// A folder where a file belongs is never replaced: the user is asked to move it.
+	await changeFolder(page, at('project.json'), { folder: true });
+	await row.getByRole('button', { name: 'Publish now' }).click();
+	await expect(row.getByRole('alert')).toContainText('A folder is in the way of a file.');
+	await expect(row.getByRole('button', { name: 'Replace files' })).toHaveCount(0);
+	await changeFolder(page, at('project.json'), { remove: true });
+	await row.getByRole('button', { name: 'Publish now' }).click();
+	await expect(row.getByRole('alert')).toContainText('1 file in the folder differs');
+	await row.getByRole('button', { name: 'Replace files' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+
+	// Keep mine: an intentional edit stays, PixelDoll keeps publishing the rest, and Update them asks again.
+	await changeFolder(page, at('manifest.json'), { text: 'my intentional manifest' });
+	await row.getByRole('button', { name: 'Publish now' }).click();
+	await row.getByRole('button', { name: 'Keep mine' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+	await expect(row).toContainText('1 file is kept as you edited it.');
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(statePath);
+		const material = state.store.project.manifest.materials[0];
+		state.setVariant(material.id, Object.keys(material.variants)[0] ?? null);
+		await state.flushSave();
+	});
+	await row.getByRole('button', { name: 'Publish now' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+	expect(await folderText(page, at('manifest.json'))).toBe('my intentional manifest');
+	await row.getByRole('button', { name: 'Update them' }).click();
+	await expect(row.getByRole('alert')).toContainText('1 file in the folder differs');
+	expect(await folderText(page, at('manifest.json'))).toBe('my intentional manifest');
+
+	// Files PixelDoll never exported, such as engine sidecars and the game's own notes, are never touched.
+	expect(await folderText(page, at('notes.txt'))).toBe('game notes');
+	expect(await folderText(page, at('manifest.json.import'))).toBe('engine sidecar');
 });

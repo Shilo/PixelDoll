@@ -3567,14 +3567,12 @@
 		"stop": "取消关联",
 		"publishNow": "立即发布",
 		"auto": "自动更新",
-		"linked": "{path} · {format}",
 		"reconnect": "重新连接",
 		"replace": "替换文件",
 		"review": "查看",
 		"copy": "复制",
 		"copied": "已复制",
 		"brave": "要在 Brave 中使用，请开启 {flag}，然后重启 Brave。",
-		"unsaved": "关闭 PixelDoll 后将不会记住此文件夹。",
 		"state": {
 			"off": "关闭",
 			"on": "开启",
@@ -3601,6 +3599,11 @@
 			"paused": "发布已暂停：文件夹中的文件已更改。",
 			"missing": "找不到 {folder}。",
 			"failed": "无法发布到 {folder}。"
-		}
+		},
+		"keep": "保留我的",
+		"kept": {
+			"other": "{count} 个文件按你的编辑保留。"
+		},
+		"updateKept": "更新它们"
 	}
 }
