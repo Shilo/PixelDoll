@@ -1448,6 +1448,42 @@
 					)}
 					<!-- The outfit preview stays beside every control here, so each change shows where it is made. -->
 					<div class="section-body outfit-body">
+						{#if otherHand}
+							<!-- First: how the item is held (functional), before how the outfit is layered and drawn. Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
+							<section class="hide-rules hand-rules">
+								<label class="switch-row bu-check">
+									<span>{t('itemMenu.twoHanded')}</span>
+									<input
+										class="bu-switch"
+										type="checkbox"
+										role="switch"
+										checked={twoHanded(m, it)}
+										onchange={() => toggleTwoHanded(it.id)}
+									/>
+								</label>
+								<p class="faint small">
+									{t('itemPane.twoHandedNote', { slot: slotName(otherHand) })}
+								</p>
+								{#if !isDemo() && it.prompt && !twoHanded(m, it)}
+									<!-- The same description drawn for the other hand; the New item sheet prices it first. -->
+									<div class="tool-list">
+										<ToolRow
+											{...{
+												icon: CopyPlus,
+												label: openerLabel(
+													t('itemMenu.makeForSlot', { slot: slotName(otherHand) })
+												),
+												detail: t('itemPane.makeForSlotDetail', { slot: slotName(otherHand) }),
+												aside: '',
+												opens: true,
+												onclick: () =>
+													openNewItem(otherHand, { slot: otherHand, prompt: it.prompt })
+											}}
+										/>
+									</div>
+								{/if}
+							</section>
+						{/if}
 						<section class="layer-order" aria-labelledby="layer-order-{it.id}">
 							<div class="layer-preview">
 								<button
@@ -1607,42 +1643,6 @@
 								</div>
 							</div>
 						</section>
-						{#if otherHand}
-							<!-- Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
-							<section class="hide-rules">
-								<label class="switch-row bu-check">
-									<span>{t('itemMenu.twoHanded')}</span>
-									<input
-										class="bu-switch"
-										type="checkbox"
-										role="switch"
-										checked={twoHanded(m, it)}
-										onchange={() => toggleTwoHanded(it.id)}
-									/>
-								</label>
-								<p class="faint small">
-									{t('itemPane.twoHandedNote', { slot: slotName(otherHand) })}
-								</p>
-								{#if !isDemo() && it.prompt && !twoHanded(m, it)}
-									<!-- The same description drawn for the other hand; the New item sheet prices it first. -->
-									<div class="tool-list">
-										<ToolRow
-											{...{
-												icon: CopyPlus,
-												label: openerLabel(
-													t('itemMenu.makeForSlot', { slot: slotName(otherHand) })
-												),
-												detail: t('itemPane.makeForSlotDetail', { slot: slotName(otherHand) }),
-												aside: '',
-												opens: true,
-												onclick: () =>
-													openNewItem(otherHand, { slot: otherHand, prompt: it.prompt })
-											}}
-										/>
-									</div>
-								{/if}
-							</section>
-						{/if}
 						{#if hideChoices.length}
 							<section class="hide-rules" aria-labelledby="hide-rules-{it.id}">
 								<h4 id="hide-rules-{it.id}">{t('itemPane.whenWornHide')}</h4>
@@ -2469,6 +2469,12 @@
 		padding-block-start: 12px;
 		border-block-start: 1px solid var(--bu-line);
 	}
+	/* The hand settings open the column: a line below them instead of above. */
+	.hand-rules {
+		padding-block: 0 12px;
+		border-block-start: 0;
+		border-block-end: 1px solid var(--bu-line);
+	}
 	.hide-rules p:empty {
 		display: none;
 	}
@@ -2484,7 +2490,9 @@
 		.layer-controls {
 			grid-column: 1;
 		}
+		/* One column: the outfit preview still comes first. */
 		.layer-preview {
+			order: -1;
 			grid-row: auto;
 			position: relative;
 			top: auto;
