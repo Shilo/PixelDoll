@@ -2,6 +2,7 @@
 import { decodePng, makeImg, pngSize, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { detectUpscale } from '../image/upscale.ts';
+import { looksCompressed, pooledPaletteStats } from '../image/resampling.ts';
 import { cellImg, layerFrame } from '../compose/compose.ts';
 import { validate } from '../export/generic.ts';
 import {
@@ -908,7 +909,9 @@ async function pixelLab(
 				return work;
 			};
 		// An integer upscale shows in the standing rotations, which are the base cells every direction shares; animation and
-		// pose cells would only repeat the same warning, so the detector runs on the standing cells only.
+		// pose cells would only repeat the same warning, so the detector runs on the standing cells only. Compression is
+		// judged over every direction: a clean upscale repeats its palette and never trips it, while a damaged direction
+		// still does.
 		const standingCells = await Promise.all(rotations.map((r) => decode(r.path)));
 		const upscale = standingCells.reduce((max, im) => Math.max(max, detectUpscale(im)), 1);
 		if (upscale >= 2) {
@@ -916,6 +919,12 @@ async function pixelLab(
 				`The standing artwork looks like a ${upscale}x upscale. It is kept as it is: items made from it cost more pixels, mix pixel sizes and recolor less cleanly. Import the original 1x art if you can.`
 			);
 			warningKeys.push(message('import.warning.upscaledBase', { scale: upscale }));
+		}
+		if (looksCompressed(pooledPaletteStats(standingCells))) {
+			warnings.push(
+				'The standing artwork looks compressed or resampled: many of its colors appear only once. It is kept as it is: items made from it are harder to cut out, recolor and line up. Import the original art if you can.'
+			);
+			warningKeys.push(message('import.warning.compressedBase'));
 		}
 		// PixelLab draws standing feet about 1 px above its canvas edge and a walk steps lower, so the frame adds room for moves
 		// (lib/rig/reframe.ts roomFrame), centered as PixelLab centers its own larger animation canvases.

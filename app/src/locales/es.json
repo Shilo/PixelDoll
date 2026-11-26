@@ -1490,6 +1490,7 @@
 			"skippedStanding": "Se omitió «{move}» en la dirección {direction}: el personaje no tiene una vista de pie en esa dirección.",
 			"semiAlpha": "Los bordes semitransparentes se convirtieron a transparencia de pixel art.",
 			"upscaledBase": "El arte de pie parece una ampliación de {scale}x. Se mantiene tal cual: los objetos hechos a partir de él usan más píxeles, mezclan tamaños de píxel y se recolorean con menos limpieza. Importa el arte original de 1x si lo tienes.",
+			"compressedBase": "El arte de pie parece comprimido o reescalado: muchos de sus colores aparecen una sola vez. Se mantiene tal cual: los objetos hechos a partir de él son más difíciles de recortar, recolorear y alinear. Importa el arte original si puedes.",
 			"detailsDropped": "Algunos datos guardados del personaje estaban dañados y se omitieron. Vuelve a configurar su rig de pose si hace falta."
 		},
 		"error": {

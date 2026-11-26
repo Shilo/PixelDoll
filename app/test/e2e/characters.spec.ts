@@ -5249,3 +5249,50 @@ test('every character loads its frames once across switching, menus and updates,
 	expect(final.reads).toBe(imported.reads);
 	expect(final.decodes).toBe(imported.decodes);
 });
+
+test('import warns when the standing artwork looks compressed or resampled', async ({ page }) => {
+	// Every pixel a slightly different color, the signature of JPEG damage or a smooth rescale.
+	const art = makeImg(32, 32);
+	for (let y = 0; y < 32; y++)
+		for (let x = 0; x < 32; x++)
+			art.data.set(
+				[(x * 7 + y * 3) & 255, (x * 5 + y * 11) & 255, (x * 13 + y) & 255, 255],
+				(y * 32 + x) * 4
+			);
+	const enc = new TextEncoder();
+	const dirs = ['south', 'east', 'west'];
+	const archive = await zip([
+		{
+			name: 'metadata.json',
+			data: enc.encode(
+				JSON.stringify({
+					character: {
+						id: 'compressed',
+						name: 'Compressed check',
+						size: { width: 32, height: 32 }
+					},
+					frames: {
+						rotations: Object.fromEntries(dirs.map((dir) => [dir, `rotations/${dir}.png`])),
+						animations: {}
+					}
+				})
+			)
+		},
+		...(await Promise.all(
+			dirs.map(async (dir) => ({ name: `rotations/${dir}.png`, data: await encodePngBytes(art) }))
+		))
+	]);
+	await openStudio(page, '/');
+	await page.locator('.project-btn').click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
+		name: 'compressed.zip',
+		mimeType: 'application/zip',
+		buffer: Buffer.from(archive)
+	});
+	await expect(page.getByText('looks compressed or resampled', { exact: false })).toBeVisible();
+});

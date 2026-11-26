@@ -1490,6 +1490,7 @@
 			"skippedStanding": "« {move} » vers {direction} a été laissée de côté : le personnage n’a pas de vue debout dans cette direction.",
 			"semiAlpha": "Les pixels partiellement transparents en bordure ont été convertis en pixels opaques ou transparents, comme en pixel art.",
 			"upscaledBase": "L’illustration debout semble agrandie {scale} fois. Elle est conservée telle quelle : les objets qui en dérivent utilisent plus de pixels, mélangent des tailles de pixel et se recolorent moins proprement. Importez l’original en 1x si possible.",
+			"compressedBase": "L'illustration debout semble compressée ou redimensionnée : beaucoup de ses couleurs n'apparaissent qu'une fois. Elle est conservée telle quelle : les objets qui en dérivent sont plus difficiles à détourer, recolorer et aligner. Importez l'original si possible.",
 			"detailsDropped": "Certaines informations enregistrées du personnage étaient endommagées et ont été ignorées. Configurez de nouveau son rig de pose si nécessaire."
 		},
 		"error": {
