@@ -3516,9 +3516,14 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	const frameNote = spritePreview.locator('.viewer-count');
 	await expect(frameNote).toHaveText(/^\d+ \/ 8$/);
 	const firstNote = await frameNote.textContent();
-	await page.keyboard.press('ArrowRight');
+	await page.keyboard.press('.');
 	await expect(frameNote).not.toHaveText(firstNote!);
 	const stepped = await frameNote.textContent();
+	// The arrows walk every direction, then on into the next move or state.
+	await page.keyboard.press('ArrowRight');
+	await expect(facing).toHaveValue('east');
+	await page.keyboard.press('ArrowLeft');
+	await expect(facing).toHaveValue('south');
 	await facing.selectOption('east');
 	await expect(spritePreview.getByRole('application')).toHaveAccessibleName(/^Red cape · East · /);
 	await expect(frameNote).toHaveText(stepped!);

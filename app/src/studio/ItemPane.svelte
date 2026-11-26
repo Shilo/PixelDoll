@@ -96,6 +96,7 @@
 		showFrame,
 		moveLayer,
 		itemLayerNeighbors,
+		itemLayerPosition,
 		placedOutfitFrames,
 		resetLayer,
 		removeItem,
@@ -592,6 +593,7 @@
 	});
 	let onlyDir = $state(false);
 	const neighbors = $derived(it ? itemLayerNeighbors(it.id, animId, outfitFacing, onlyDir) : null);
+	const layerPosition = $derived(it ? itemLayerPosition(it.id, animId, outfitFacing) : null);
 	// The outfit preview shows the frame where the last step made a difference, else the first one.
 	let witness = $state(0);
 	$effect(() => {
@@ -1455,11 +1457,11 @@
 											frame: witness
 										})}
 								>
+									<span class="layer-checker" aria-hidden="true"></span>
 									{#if outfitCell}<Sprite
 											img={outfitCell}
 											k={outfitK}
 											fitToBox
-											checker
 											label={on || hiddenNow
 												? t('itemPane.outfitPreview', {
 														name: it.name,
@@ -1497,7 +1499,27 @@
 								{/if}
 							</div>
 							<div class="layer-controls">
-								<h4 id="layer-order-{it.id}">{t('itemPane.layerOrder')}</h4>
+								<div class="layer-head">
+									<h4 id="layer-order-{it.id}">{t('itemPane.layerOrder')}</h4>
+									{#if layerPosition}<span
+											class="layer-position"
+											title={t('itemPane.layerPositionHint', {
+												position: number(layerPosition.position),
+												count: number(layerPosition.count)
+											})}
+											><span aria-hidden="true"
+												>{t('itemPane.layerPosition', {
+													position: number(layerPosition.position),
+													count: number(layerPosition.count)
+												})}</span
+											><span class="sr"
+												>{t('itemPane.layerPositionHint', {
+													position: number(layerPosition.position),
+													count: number(layerPosition.count)
+												})}</span
+											></span
+										>{/if}
+								</div>
 								<div class="layer-actions">
 									<button
 										bind:this={backwardButton}
@@ -2269,11 +2291,24 @@
 		place-items: center;
 		width: 120px;
 		height: 120px;
-		padding: 8px;
-		background: var(--stage);
+		padding: 12px;
 		border-radius: var(--r-card);
 		overflow: hidden;
 		cursor: zoom-in;
+	}
+	/* The transparency checker fills the whole box; only the art keeps a margin. It sits under the art, so the press is
+	   shown by the art itself. */
+	.layer-checker {
+		position: absolute;
+		inset: 0;
+		background: repeating-conic-gradient(var(--check-a) 0 25%, var(--check-b) 0 50%) 0 0 / 12px 12px;
+	}
+	.layer-art:active:not(:disabled) :global(.sprite-box) {
+		transform: scale(0.96);
+	}
+	.layer-art :global(.sprite-box) {
+		position: relative;
+		transition: transform var(--dur);
 	}
 	.layer-art:disabled {
 		cursor: default;
@@ -2281,6 +2316,19 @@
 	.layer-art :global(.sprite-box) {
 		width: 100%;
 		height: 100%;
+	}
+	/* The item's place in the outfit's stack, counted from the back, beside the heading. */
+	.layer-head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 8px;
+	}
+	.layer-position {
+		color: var(--text-2);
+		font-size: var(--fs-sm);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 	}
 	.layer-art:is(:hover, :focus-visible) .view-enlarge {
 		color: var(--text);

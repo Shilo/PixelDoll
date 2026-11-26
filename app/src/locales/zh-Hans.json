@@ -645,7 +645,9 @@
 		"fixOneView": "修复单个视角",
 		"outfitPreviewUnworn": "假设穿上{name}的整套装扮，朝向{direction}",
 		"openOutfit": "全尺寸打开{name}的整套装扮",
-		"outfitTitle": "{name}的整套装扮"
+		"outfitTitle": "{name}的整套装扮",
+		"layerPosition": "第 {position} / {count}",
+		"layerPositionHint": "从后往前数，第 {position} 层，共 {count} 层"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新建角色",
@@ -3588,7 +3590,13 @@
 		"frameOf": "第 {frame} 帧，共 {count} 帧",
 		"missing": "没有可显示的帧",
 		"direction": "朝向",
-		"frames": "帧"
+		"frames": "帧",
+		"previousView": "上一个视图",
+		"previousViewHint": "上一个视图（左方向键）",
+		"nextView": "下一个视图",
+		"nextViewHint": "下一个视图（右方向键）",
+		"previousFrameHint": "上一帧（,）",
+		"nextFrameHint": "下一帧（.）"
 	},
 	"imageViewer": {
 		"role": "图片查看器",

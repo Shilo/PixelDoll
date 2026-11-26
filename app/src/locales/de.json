@@ -666,7 +666,9 @@
 		"fixOneView": "Eine Ansicht korrigieren",
 		"outfitPreviewUnworn": "{name} im Outfit, als ob getragen, Blickrichtung {direction}",
 		"openOutfit": "{name} im Outfit in voller Größe öffnen",
-		"outfitTitle": "{name} im Outfit"
+		"outfitTitle": "{name} im Outfit",
+		"layerPosition": "{position} von {count}",
+		"layerPositionHint": "Ebene {position} von {count}, von hinten gezählt"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Neue Figur",
@@ -3689,7 +3691,13 @@
 		"frameOf": "Frame {frame} von {count}",
 		"missing": "Kein Frame zum Anzeigen",
 		"direction": "Blickrichtung",
-		"frames": "Frames"
+		"frames": "Frames",
+		"previousView": "Vorherige Ansicht",
+		"previousViewHint": "Vorherige Ansicht (Pfeil nach links)",
+		"nextView": "Nächste Ansicht",
+		"nextViewHint": "Nächste Ansicht (Pfeil nach rechts)",
+		"previousFrameHint": "Vorheriger Frame (,)",
+		"nextFrameHint": "Nächster Frame (.)"
 	},
 	"imageViewer": {
 		"role": "Bildbetrachter",

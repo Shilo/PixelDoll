@@ -17,10 +17,10 @@ evidence and a recommendation first (AGENTS.md "Think before coding").
 
 ## Working as a pair
 
-Work with a GPT **Sol 6.4 medium** subagent (give it a short name, as this session called its reviewer "Bob"). Call
-`orchestrator_capabilities` first, then `delegate_task` with the catalog's Codex Sol 6.4 model ID and
-`target.options.reasoningEffort` set to `medium`. If it is not offered, ask the owner which model to use and continue
-the inventory and research while you wait; never switch silently.
+Work with a GPT **Sol 6.2 medium** subagent, the same setup as this session's reviewer "Bob" (give yours a short name
+too). Call `orchestrator_capabilities` first, then `delegate_task` with `target: { providerInstanceId: "codex", model:
+"gpt-6.2-sol", options: { reasoningEffort: "medium" } }`. If it is not offered, ask the owner which model to use and
+continue the inventory and research while you wait; never switch silently.
 
 How the pair worked best:
 

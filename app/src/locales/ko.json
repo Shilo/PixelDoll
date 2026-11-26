@@ -645,7 +645,9 @@
 		"fixOneView": "한 방향 수정",
 		"outfitPreviewUnworn": "{name}을(를) 착용한 것처럼 본 의상, {direction} 방향",
 		"openOutfit": "{name} 의상을 전체 크기로 열기",
-		"outfitTitle": "{name} 의상"
+		"outfitTitle": "{name} 의상",
+		"layerPosition": "{count}개 중 {position}",
+		"layerPositionHint": "뒤에서부터 {count}개 레이어 중 {position}번째"
 	},
 	"newCharacterButton": {
 		"newCharacter": "새 캐릭터",
@@ -3588,7 +3590,13 @@
 		"frameOf": "프레임 {frame}/{count}",
 		"missing": "표시할 프레임이 없습니다",
 		"direction": "방향",
-		"frames": "프레임"
+		"frames": "프레임",
+		"previousView": "이전 보기",
+		"previousViewHint": "이전 보기 (왼쪽 화살표)",
+		"nextView": "다음 보기",
+		"nextViewHint": "다음 보기 (오른쪽 화살표)",
+		"previousFrameHint": "이전 프레임 (,)",
+		"nextFrameHint": "다음 프레임 (.)"
 	},
 	"imageViewer": {
 		"role": "이미지 뷰어",

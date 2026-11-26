@@ -666,7 +666,9 @@
 		"fixOneView": "Corregir una vista",
 		"outfitPreviewUnworn": "{name} en el atuendo como si lo llevara, mirando hacia {direction}",
 		"openOutfit": "Abrir {name} en el atuendo a tamaño completo",
-		"outfitTitle": "{name} en el atuendo"
+		"outfitTitle": "{name} en el atuendo",
+		"layerPosition": "{position} de {count}",
+		"layerPositionHint": "Capa {position} de {count}, contando desde atrás"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nuevo personaje",
@@ -3689,7 +3691,13 @@
 		"frameOf": "Fotograma {frame} de {count}",
 		"missing": "No hay fotograma para mostrar",
 		"direction": "Dirección",
-		"frames": "Fotogramas"
+		"frames": "Fotogramas",
+		"previousView": "Vista anterior",
+		"previousViewHint": "Vista anterior (flecha izquierda)",
+		"nextView": "Vista siguiente",
+		"nextViewHint": "Vista siguiente (flecha derecha)",
+		"previousFrameHint": "Fotograma anterior (,)",
+		"nextFrameHint": "Fotograma siguiente (.)"
 	},
 	"imageViewer": {
 		"role": "visor de imágenes",

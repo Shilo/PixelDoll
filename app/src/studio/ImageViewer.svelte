@@ -312,6 +312,7 @@
 	/* The title keeps one line beside the pickers and truncates first. */
 	dialog.image-viewer :global(.sheet-start) {
 		min-width: 0;
+		padding-inline-start: 8px;
 	}
 	dialog.image-viewer :global(.sheet-start .sheet-title) {
 		min-width: 0;

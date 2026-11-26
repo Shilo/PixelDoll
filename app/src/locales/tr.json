@@ -666,7 +666,9 @@
 		"fixOneView": "Tek görünümü düzelt",
 		"outfitPreviewUnworn": "Giyilmiş gibi kombinde {name}, {direction} yönü",
 		"openOutfit": "{name} kombinini tam boyutta aç",
-		"outfitTitle": "Kombinde {name}"
+		"outfitTitle": "Kombinde {name}",
+		"layerPosition": "{count} içinde {position}",
+		"layerPositionHint": "Arkadan sayınca {count} katmandan {position}."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Yeni karakter",
@@ -3689,7 +3691,13 @@
 		"frameOf": "Kare {frame} / {count}",
 		"missing": "Gösterilecek kare yok",
 		"direction": "Yön",
-		"frames": "Kareler"
+		"frames": "Kareler",
+		"previousView": "Önceki görünüm",
+		"previousViewHint": "Önceki görünüm (sol ok)",
+		"nextView": "Sonraki görünüm",
+		"nextViewHint": "Sonraki görünüm (sağ ok)",
+		"previousFrameHint": "Önceki kare (,)",
+		"nextFrameHint": "Sonraki kare (.)"
 	},
 	"imageViewer": {
 		"role": "görüntü görüntüleyici",

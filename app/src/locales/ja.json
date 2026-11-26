@@ -645,7 +645,9 @@
 		"fixOneView": "1つの向きを修正",
 		"outfitPreviewUnworn": "装備したと仮定した{name}のコーディネート、{direction}向き",
 		"openOutfit": "{name}のコーディネートを全画面で開く",
-		"outfitTitle": "{name}のコーディネート"
+		"outfitTitle": "{name}のコーディネート",
+		"layerPosition": "{count}中{position}",
+		"layerPositionHint": "後ろから数えて{count}レイヤー中{position}番目"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新しいキャラクター",
@@ -3588,7 +3590,13 @@
 		"frameOf": "フレーム {frame} / {count}",
 		"missing": "表示するフレームがありません",
 		"direction": "向き",
-		"frames": "フレーム"
+		"frames": "フレーム",
+		"previousView": "前の表示",
+		"previousViewHint": "前の表示（左矢印）",
+		"nextView": "次の表示",
+		"nextViewHint": "次の表示（右矢印）",
+		"previousFrameHint": "前のフレーム（,）",
+		"nextFrameHint": "次のフレーム（.）"
 	},
 	"imageViewer": {
 		"role": "画像ビューアー",

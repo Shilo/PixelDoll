@@ -666,7 +666,9 @@
 		"fixOneView": "Corrigir uma vista",
 		"outfitPreviewUnworn": "{name} no visual como se estivesse vestido, virado para {direction}",
 		"openOutfit": "Abrir {name} no visual em tamanho real",
-		"outfitTitle": "{name} no visual"
+		"outfitTitle": "{name} no visual",
+		"layerPosition": "{position} de {count}",
+		"layerPositionHint": "Camada {position} de {count}, contando de trás"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Novo personagem",
@@ -3698,7 +3700,13 @@
 		"frameOf": "Quadro {frame} de {count}",
 		"missing": "Nenhum quadro para mostrar",
 		"direction": "Direção",
-		"frames": "Quadros"
+		"frames": "Quadros",
+		"previousView": "Vista anterior",
+		"previousViewHint": "Vista anterior (seta para a esquerda)",
+		"nextView": "Próxima vista",
+		"nextViewHint": "Próxima vista (seta para a direita)",
+		"previousFrameHint": "Quadro anterior (,)",
+		"nextFrameHint": "Próximo quadro (.)"
 	},
 	"imageViewer": {
 		"role": "visualizador de imagens",

@@ -645,7 +645,9 @@
 		"fixOneView": "Perbaiki satu tampilan",
 		"outfitPreviewUnworn": "{name} di pakaian seolah dipakai, menghadap {direction}",
 		"openOutfit": "Buka {name} di pakaian dalam ukuran penuh",
-		"outfitTitle": "{name} di pakaian"
+		"outfitTitle": "{name} di pakaian",
+		"layerPosition": "{position} dari {count}",
+		"layerPositionHint": "Lapisan {position} dari {count}, dihitung dari belakang"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Karakter baru",
@@ -3588,7 +3590,13 @@
 		"frameOf": "Frame {frame} dari {count}",
 		"missing": "Tidak ada frame untuk ditampilkan",
 		"direction": "Arah",
-		"frames": "Frame"
+		"frames": "Frame",
+		"previousView": "Tampilan sebelumnya",
+		"previousViewHint": "Tampilan sebelumnya (panah kiri)",
+		"nextView": "Tampilan berikutnya",
+		"nextViewHint": "Tampilan berikutnya (panah kanan)",
+		"previousFrameHint": "Frame sebelumnya (,)",
+		"nextFrameHint": "Frame berikutnya (.)"
 	},
 	"imageViewer": {
 		"role": "penampil gambar",

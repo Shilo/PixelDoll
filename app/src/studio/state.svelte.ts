@@ -43,6 +43,7 @@ import {
 } from '../lib/dress/dress.ts';
 import {
 	composeCell,
+	cellImg,
 	drawList,
 	equipped,
 	handHides,
@@ -2867,6 +2868,22 @@ export function itemLayerNeighbors(
 			frame: crossing.frame
 		};
 	return { behind: named(place?.behind), ahead: named(place?.ahead) };
+}
+/** Where the item's front layer sits in the shown move and facing, counted from the back among the layers that draw
+ *  something there (empty layers are not part of what anyone sees): `position` of `count`. */
+export function itemLayerPosition(itemId: string, animId = ui.anim, dir: DirectionName = ui.dir) {
+	void doc.rev;
+	const p = store.project,
+		anim = p?.manifest.rig.animations.find((x) => x.id === animId);
+	const placed = p && anim?.frames.length ? placedOutfit(p, itemId) : null;
+	if (!placed || !anim) return null;
+	const { project, items } = placed,
+		cells = [...new Set(anim.frames.map((frame) => frame.cell))];
+	const drawn = drawList(project.manifest, items, animId, dir, cells[0]).filter((entry) =>
+		cells.some((cell) => cellImg(project, entry.layer, animId, dir, cell))
+	);
+	const at = drawn.findIndex((entry) => entry.item.id === itemId && entry.layer.role === 'fg');
+	return at < 0 ? null : { position: at + 1, count: drawn.length };
 }
 /** Move the item's front layer past the next layer it visibly crosses (all directions, or only the current one). Returns
  *  the playback frame where the change shows. */

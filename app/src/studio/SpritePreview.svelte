@@ -67,6 +67,49 @@
 	function step(delta: 1 | -1) {
 		if (count > 1) frame = (shown + delta + count) % count;
 	}
+
+	/** The moves and states the arrows walk through, in the picker's order (moves, then states), skipping ones with
+	 *  nothing to show. */
+	const sequence = $derived(
+		moves
+			? [
+					...moves.clips.filter((clip) => clip.kind === 'move'),
+					...moves.clips.filter((clip) => clip.kind === 'state')
+				]
+					.map((clip) => clip.key)
+					.filter((key) => !moves.unavailable?.has(key))
+			: []
+	);
+	/** Which end of the next move's directions to land on once its views arrive. */
+	let landing = $state<'first' | 'last' | null>(null);
+	/** Every direction of the shown move or state in turn, then on into the next (or previous) one, wrapping around. */
+	function cycle(delta: 1 | -1) {
+		const at = Math.max(
+			0,
+			views.findIndex((entry) => entry.id === current?.id)
+		);
+		const next = at + delta;
+		if (next >= 0 && next < views.length) {
+			facing = views[next].id;
+			return;
+		}
+		if (!moves || sequence.length < 2) {
+			if (views.length) facing = views[(next + views.length) % views.length].id;
+			return;
+		}
+		const from = Math.max(0, sequence.indexOf(moves.selected));
+		landing = delta > 0 ? 'first' : 'last';
+		moves.onselect(sequence[(from + delta + sequence.length) % sequence.length]);
+	}
+	$effect(() => {
+		const edge = landing;
+		if (!edge || !views.length) return;
+		untrack(() => {
+			facing = (edge === 'first' ? views[0] : views[views.length - 1]).id;
+			landing = null;
+		});
+	});
+	const canCycle = $derived(views.length > 1 || sequence.length > 1);
 </script>
 
 {#snippet frames()}
@@ -76,6 +119,7 @@
 				class="bu-action btn icon"
 				data-variant="outline"
 				aria-label={t('stage.previousFrame')}
+				title={t('spriteViewer.previousFrameHint')}
 				onclick={() => step(-1)}><ChevronLeft size={18} aria-hidden="true" /></button
 			>
 			<span class="viewer-count" aria-live="polite">{number(shown + 1)} / {number(count)}</span>
@@ -83,6 +127,7 @@
 				class="bu-action btn icon"
 				data-variant="outline"
 				aria-label={t('stage.nextFrame')}
+				title={t('spriteViewer.nextFrameHint')}
 				onclick={() => step(1)}><ChevronRight size={18} aria-hidden="true" /></button
 			>
 		</div>
@@ -98,15 +143,27 @@
 	{onclose}
 	footer={count > 1 ? frames : undefined}
 	onkeydown={(event) => {
-		// Frames step with the arrows anywhere but the pickers and the image (where they pan).
+		// Left and Right walk the views and , and . step frames, anywhere but the pickers and the image (where the arrows
+		// pan).
 		const target = event.target as HTMLElement;
 		if (target.closest('select, [role=menu], [popover], .viewer-stage')) return;
-		if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+		if (event.altKey || event.ctrlKey || event.metaKey) return;
+		if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+			if (!canCycle) return;
+			cycle(event.key === 'ArrowLeft' ? -1 : 1);
+		} else if (event.key === ',' || event.key === '.') step(event.key === ',' ? -1 : 1);
+		else return;
 		event.preventDefault();
-		step(event.key === 'ArrowLeft' ? -1 : 1);
 	}}
 >
 	{#snippet controls()}
+		{#if canCycle}<button
+				class="bu-action btn icon viewer-cycle"
+				data-variant="outline"
+				aria-label={t('spriteViewer.previousView')}
+				title={t('spriteViewer.previousViewHint')}
+				onclick={() => cycle(-1)}><ChevronLeft size={18} aria-hidden="true" /></button
+			>{/if}
 		{#if moves}<PlaybackPicker
 				clips={moves.clips}
 				moveRefs={moves.moveRefs}
@@ -126,6 +183,13 @@
 					<option value={entry.id}>{entry.label}</option>
 				{/each}
 			</select>{/if}
+		{#if canCycle}<button
+				class="bu-action btn icon viewer-cycle"
+				data-variant="outline"
+				aria-label={t('spriteViewer.nextView')}
+				title={t('spriteViewer.nextViewHint')}
+				onclick={() => cycle(1)}><ChevronRight size={18} aria-hidden="true" /></button
+			>{/if}
 	{/snippet}
 </ImageViewer>
 
@@ -139,6 +203,19 @@
 		.viewer-direction {
 			min-height: 44px;
 			font-size: 16px;
+		}
+	}
+	.viewer-cycle {
+		width: 40px;
+		height: 40px;
+		min-height: 40px;
+		padding: 0;
+	}
+	@media (pointer: coarse) {
+		.viewer-cycle {
+			width: 44px;
+			height: 44px;
+			min-height: 44px;
 		}
 	}
 	.viewer-frames {

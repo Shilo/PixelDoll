@@ -666,7 +666,9 @@
 		"fixOneView": "Fix one view",
 		"outfitPreviewUnworn": "{name} in the outfit as if worn, facing {direction}",
 		"openOutfit": "Open {name} in the outfit full size",
-		"outfitTitle": "{name} in the outfit"
+		"outfitTitle": "{name} in the outfit",
+		"layerPosition": "{position} of {count}",
+		"layerPositionHint": "Layer {position} of {count}, counted from the back"
 	},
 	"newCharacterButton": {
 		"newCharacter": "New character",
@@ -3689,7 +3691,13 @@
 		"frameOf": "Frame {frame} of {count}",
 		"missing": "No frame to show",
 		"direction": "Direction",
-		"frames": "Frames"
+		"frames": "Frames",
+		"previousView": "Previous view",
+		"previousViewHint": "Previous view (Left arrow)",
+		"nextView": "Next view",
+		"nextViewHint": "Next view (Right arrow)",
+		"previousFrameHint": "Previous frame (,)",
+		"nextFrameHint": "Next frame (.)"
 	},
 	"imageViewer": {
 		"role": "image viewer",
