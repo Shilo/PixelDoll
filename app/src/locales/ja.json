@@ -3548,7 +3548,8 @@
 		"results": "{total} 件中 {count} 件"
 	},
 	"tips": {
-		"intro": "装備を試着して、ゲーム用にエクスポートしましょう。PixelLabのキーは不要です。",
+		"customizeTitle": "デモを着せ替える",
+		"customizeBody": "装備を試着して、ゲーム用にエクスポートしましょう。デモにはPixelLabのキーは不要です。",
 		"gearTitle": "装備を試着",
 		"gearBody": "「装備」でアイテムを選ぶと、着けたり外したりできます。",
 		"exportTitle": "ゲームに持っていく",

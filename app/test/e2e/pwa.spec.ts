@@ -5,7 +5,7 @@ import { pwaServer, testRelease, type TestRelease } from './pwa-test-server.ts';
 test.beforeEach(async ({ context }) => {
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
+		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
 	});
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort());
 });

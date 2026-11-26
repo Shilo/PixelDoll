@@ -27,7 +27,7 @@
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { readSavedKey, SAVED_KEY } from '../lib/shared-auth.ts';
 	import Tip from './tips/Tip.svelte';
-	import { completeTip, tips } from './tips/tips.svelte.ts';
+	import { tips } from './tips/tips.svelte.ts';
 
 	// Settings > Replace key opens straight into the replacement form and returns to Settings when it ends.
 	const replaceOnly =
@@ -73,10 +73,6 @@
 	});
 	onDestroy(() => {
 		closed = true;
-	});
-	// Connected means the person knows what PixelLab is: its tip is done.
-	$effect(() => {
-		if (!needsKey) completeTip('pixellab');
 	});
 	// R6 P1-4: a *.github.io project path (user.github.io/PixelDoll/) shares its origin, and so localStorage, with every other Pages project of that account
 	const sharedOrigin =
@@ -315,6 +311,21 @@
 				<span>{t('connectSheet.trialNotEnough')}</span>
 			</NoticeLink>
 		{/if}
+		<!-- Newcomers meet PixelLab on its sign-up button (or, asked for again, its key link). Following any PixelLab
+		     link, typing or pasting a key, or connecting means they have. -->
+		<Tip
+			id="pixellab"
+			when={(firstOpen || tips.requested) && !replacing && !checking}
+			anchor={() =>
+				document.querySelector<HTMLElement>('.trial-guide > a') ??
+				keyForm?.querySelector<HTMLElement>('a[href$="/account"].btn') ??
+				null}
+			doneWhen={!needsKey}
+			doneOn="dialog[open] :is(a[href*='pixellab.ai'], input[type='password'])"
+			title={t('tips.pixellabTitle')}
+			body={t('tips.pixellabBody')}
+			placement="top"
+		/>
 		{#if firstOpen && !replacing}
 			<div class="field trial-guide">
 				<p tabindex="-1" bind:this={guideIntro}>{t('connectSheet.generationProvider')}</p>
@@ -324,7 +335,6 @@
 					href="https://www.pixellab.ai/signup"
 					target="_blank"
 					rel="noreferrer"
-					onclick={() => completeTip('pixellab')}
 					>{t('connectSheet.startFreeTrial')} <ExternalLink size={14} aria-hidden="true" /></a
 				>
 				{#snippet account()}
@@ -363,10 +373,6 @@
 		<form
 			class="form"
 			bind:this={keyForm}
-			onclick={(e) => {
-				// Following any PixelLab link here means the person has met PixelLab.
-				if (e.target instanceof Element && e.target.closest('a')) completeTip('pixellab');
-			}}
 			onsubmit={(e) => {
 				e.preventDefault();
 				if (!checking && key.trim()) void use(key, remember);
@@ -408,15 +414,6 @@
 				</p>{/if}
 			<p class="small bu-muted">{t('connectSheet.sentOnlyToApiPixellabAi')}</p>
 			<p class="small bu-muted">{t('connectSheet.demoNoAccount')}</p>
-			<!-- Newcomers meet PixelLab on its own link; above it the tip covers only small print, never the key field. -->
-			<Tip
-				id="pixellab"
-				when={(firstOpen || tips.requested) && !replacing && !checking}
-				anchor={() => keyForm?.querySelector<HTMLElement>('.affiliation-spacing a') ?? null}
-				title={t('tips.pixellabTitle')}
-				body={t('tips.pixellabBody')}
-				placement="top"
-			/>
 			<AffiliationNotice multiline />
 			<div class="field-row">
 				<a

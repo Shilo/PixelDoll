@@ -7,7 +7,7 @@ const peek = (page: Page) => page.locator('[popover][aria-label="API calls"]:pop
 test.beforeEach(async ({ context }) => {
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
+		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
 		if (!new URLSearchParams(location.search).has('developer-default'))
 			localStorage.setItem('pixeldoll.developerMode', '1');
 		// Exercise Copy without replacing the person's system clipboard.

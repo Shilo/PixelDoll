@@ -3548,7 +3548,8 @@
 		"results": "{total}개 중 {count}개"
 	},
 	"tips": {
-		"intro": "장비를 입어 보고 게임용으로 내보내 보세요. PixelLab 키가 없어도 돼요.",
+		"customizeTitle": "데모 꾸미기",
+		"customizeBody": "장비를 입혀 보고 게임용으로 내보내 보세요. 데모에는 PixelLab 키가 필요 없어요.",
 		"gearTitle": "장비 입어 보기",
 		"gearBody": "옷장에서 아이템을 골라 착용하거나 벗어 보세요.",
 		"exportTitle": "게임으로 가져가기",

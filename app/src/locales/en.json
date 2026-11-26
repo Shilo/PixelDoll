@@ -3650,7 +3650,8 @@
 		"results": "{count} of {total}"
 	},
 	"tips": {
-		"intro": "Try on gear, then export it for your game. No PixelLab key needed.",
+		"customizeTitle": "Dress up the demo",
+		"customizeBody": "Try on gear and export it for your game. The demo needs no PixelLab key.",
 		"gearTitle": "Try on gear",
 		"gearBody": "Choose an item in the Wardrobe to put it on or take it off.",
 		"exportTitle": "Take it into your game",

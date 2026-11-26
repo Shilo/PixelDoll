@@ -3,7 +3,7 @@
 	import { t } from 'svelte-whisper';
 	import Tip from '../tips/Tip.svelte';
 	import { untrack } from 'svelte';
-	import { completeTip, tipDone, tips } from '../tips/tips.svelte.ts';
+	import { tips } from '../tips/tips.svelte.ts';
 	import { doc, ui } from '../state.svelte.ts';
 	import { experience } from './state.svelte.ts';
 
@@ -36,12 +36,7 @@
 		void tips.request;
 		entered = untrack(outfit);
 	});
-	$effect(() => {
-		if (outfit() !== entered) completeTip('gear');
-	});
-	$effect(() => {
-		if (ui.sheet === 'export') completeTip('export');
-	});
+	const triedOn = $derived(outfit() !== entered);
 
 	/** Whole in its list, so the arrow lands on it rather than on a clipped edge. */
 	const whole = (el: HTMLElement) => {
@@ -49,12 +44,24 @@
 		const box = el.closest('.equipment-scroll')?.getBoundingClientRect();
 		return r.height > 0 && (!box || (r.top >= box.top && r.bottom <= box.bottom));
 	};
-	/** An item not worn yet is the clearest thing to try on; else a worn one, which can come off. */
+	/** The clearest thing to try on: an item not worn yet (one with frames for the move on screen first), else a worn
+	 *  one, which can come off, else an Empty tile. Only whole tiles, so the arrow lands on the tile itself. */
 	function gearAnchor() {
-		const tiles = [
-			...document.querySelectorAll<HTMLElement>('#customization-panel [data-tile]')
-		].filter((tile) => tryable.has(tile.dataset.tile!) && whole(tile));
-		return tiles.find((tile) => tile.getAttribute('aria-pressed') === 'false') ?? tiles[0] ?? null;
+		const panel = document.getElementById('customization-panel');
+		if (!panel) return null;
+		const items = [...panel.querySelectorAll<HTMLElement>('[data-tile]')].filter(
+			(tile) => !tile.dataset.tile!.startsWith('gen:') && whole(tile)
+		);
+		const worn = (tile: HTMLElement) => tile.getAttribute('aria-pressed') === 'true';
+		const ready = (tile: HTMLElement) => tryable.has(tile.dataset.tile!);
+		return (
+			items.find((tile) => !worn(tile) && ready(tile)) ??
+			items.find((tile) => !worn(tile)) ??
+			items.find(ready) ??
+			items[0] ??
+			[...panel.querySelectorAll<HTMLElement>('.bu-tile[data-variant="empty"]')].find(whole) ??
+			null
+		);
 	}
 	/** Export in the top bar, or More once the bar has moved Export into it (Toolbar.svelte fitting). */
 	let inMore = $state(false);
@@ -71,6 +78,7 @@
 <Tip
 	id="gear"
 	when={calm && ui.tab === 'wardrobe'}
+	doneWhen={triedOn}
 	anchor={gearAnchor}
 	title={t('tips.gearTitle')}
 	body={t('tips.gearBody')}
@@ -78,7 +86,9 @@
 />
 <Tip
 	id="export"
-	when={calm && tipDone('gear')}
+	when={calm}
+	after={['gear']}
+	doneWhen={ui.sheet === 'export'}
 	anchor={exportAnchor}
 	title={t('tips.exportTitle')}
 	body={t(inMore ? 'tips.exportInMoreBody' : 'tips.exportBody')}

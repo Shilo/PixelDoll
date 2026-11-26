@@ -1,7 +1,9 @@
 <script lang="ts">
-	// One tip: a small arrow callout on the control it is about. It shows while it is not done, `when` holds and the
-	// anchor is on screen, at most one tip at a time, and it never takes focus. Place it in the layer of its anchor
-	// (inside a sheet for a control in that sheet), just before that control so the X comes first in tab order.
+	// One tip: a small arrow callout on the control it is about. It shows while it is not done, its `after` tips are
+	// done, `when` holds and the anchor is on screen; at most one tip at a time, and it never takes focus. It is done
+	// when `doneWhen` turns true, when the person uses a control matching `doneOn`, or on its X. Place it in the layer of
+	// its anchor (inside a sheet for a control in that sheet), just before that control so the X comes first in tab
+	// order. See docs/design/onboarding.md.
 	import {
 		arrow,
 		autoUpdate,
@@ -23,25 +25,53 @@
 		title,
 		body,
 		placement = 'bottom',
-		when = true
+		when = true,
+		after = [],
+		doneWhen = false,
+		doneOn
 	}: {
 		id: TipId;
-		/** Finds the control the tip points at, or null while there is none on screen. Called again whenever the page may
-		 *  have changed: reactive state it reads, DOM changes, scrolling and resizing. */
-		anchor: () => HTMLElement | null;
+		/** The control the tip points at: a selector, or a function returning it (null while there is none on screen).
+		 *  Found again whenever the page may have changed: reactive state it reads, DOM changes, scrolling and resizing. */
+		anchor: string | (() => HTMLElement | null);
 		title: string;
 		body: string;
 		/** The preferred side. With no room there it tries the opposite side, then the other two. */
 		placement?: 'bottom' | 'top' | 'left' | 'right';
 		/** The app's own condition, such as being in the right view. */
 		when?: boolean;
+		/** Tips that must be done first: a sequence shows in order. */
+		after?: TipId[];
+		/** The suggested action happened (state the app already has): done, even if never shown. */
+		doneWhen?: boolean;
+		/** A selector for controls whose use (press, typing, paste) means the person did what the tip suggests. */
+		doneOn?: string;
 	} = $props();
+	const find = () => {
+		const el = typeof anchor === 'string' ? document.querySelector<HTMLElement>(anchor) : anchor();
+		return el?.checkVisibility() ? el : null;
+	};
 
 	let tip = $state<HTMLElement>();
 	let target = $state.raw<HTMLElement | null>(null);
 	let announced = $state(false);
 
-	const eligible = $derived(when && !tipDone(id));
+	const eligible = $derived(when && !tipDone(id) && after.every(tipDone));
+
+	$effect(() => {
+		if (doneWhen) completeTip(id);
+	});
+	$effect(() => {
+		if (!doneOn || tipDone(id)) return;
+		const used = (event: Event) => {
+			if (event.target instanceof Element && event.target.closest(doneOn)) completeTip(id);
+		};
+		const events = ['click', 'input', 'paste'] as const;
+		for (const type of events) addEventListener(type, used, true);
+		return () => {
+			for (const type of events) removeEventListener(type, used, true);
+		};
+	});
 	const mine = $derived(tips.showing === null || tips.showing === id);
 	const shown = $derived(eligible && mine && !!target);
 
@@ -51,11 +81,11 @@
 			target = null;
 			return;
 		}
-		target = anchor();
+		target = find();
 		let frame = 0;
 		const later = () => {
 			cancelAnimationFrame(frame);
-			frame = requestAnimationFrame(() => (target = anchor()));
+			frame = requestAnimationFrame(() => (target = find()));
 		};
 		const observer = new MutationObserver(later);
 		observer.observe(document.body, {

@@ -3650,7 +3650,8 @@
 		"results": "{total} içinden {count}"
 	},
 	"tips": {
-		"intro": "Ekipman deneyin, sonra oyununuz için dışa aktarın. PixelLab anahtarı gerekmez.",
+		"customizeTitle": "Demoyu giydir",
+		"customizeBody": "Eşyaları dene ve oyunun için dışa aktar. Demo için PixelLab anahtarı gerekmez.",
 		"gearTitle": "Ekipman deneyin",
 		"gearBody": "Giymek veya çıkarmak için Gardırop’tan bir eşya seçin.",
 		"exportTitle": "Oyununuza taşıyın",

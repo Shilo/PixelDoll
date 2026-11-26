@@ -5,7 +5,7 @@ const key = 'synthetic-shared-token-a';
 test.beforeEach(async ({ context }) => {
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
+		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
 	});
 	await context.route('https://api.pixellab.ai/**', (route) => {
 		expect(route.request().method()).toBe('GET');

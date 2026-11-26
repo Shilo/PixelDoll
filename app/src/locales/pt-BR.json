@@ -3659,7 +3659,8 @@
 		"results": "{count} de {total}"
 	},
 	"tips": {
-		"intro": "Experimente equipamentos e exporte para o seu jogo. Não precisa de chave do PixelLab.",
+		"customizeTitle": "Vista a demo",
+		"customizeBody": "Experimente equipamentos e exporte para o seu jogo. A demo não precisa de chave do PixelLab.",
 		"gearTitle": "Experimente equipamentos",
 		"gearBody": "Escolha um item no Guarda-roupa para vesti-lo ou tirá-lo.",
 		"exportTitle": "Leve para o seu jogo",

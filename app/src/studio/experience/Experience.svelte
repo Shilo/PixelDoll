@@ -14,7 +14,8 @@
 	import CharacterName from '../CharacterName.svelte';
 	import PhonePanel from '../PhonePanel.svelte';
 	import DemoTips from './DemoTips.svelte';
-	import { tipDone, tips, tipsEnabled } from '../tips/tips.svelte.ts';
+	import Tip from '../tips/Tip.svelte';
+	import { completeTip, tips, tipsEnabled } from '../tips/tips.svelte.ts';
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import CharacterThumb from './CharacterThumb.svelte';
@@ -154,9 +155,12 @@
 	const list = $derived(saved.filter((p) => matchesSearch([p.name], query)));
 	/** A newcomer: nothing saved or being created yet. */
 	const newcomer = $derived(tipsEnabled && saved.length === 1 && !allPending.length);
-	// First run with only the demo: one line beside Customize says what the demo offers and that it is free.
-	const showIntro = $derived(newcomer && !tipDone('export') && doc.id === DEMO && !!m);
-	const introId = $props.id();
+	/** Tips that otherwise only greet a newcomer show for anyone who asked for them again. */
+	const showTips = $derived(newcomer || tips.requested);
+	// Opening any character's Customize, by any control, is what the first tip asks for.
+	$effect(() => {
+		if (experience.screen === 'studio') completeTip('customize');
+	});
 	/** The demo's Customize, where its tips live. */
 	const inDemo = $derived(
 		tipsEnabled && experience.screen === 'studio' && doc.id === DEMO && !doc.loading && !!m
@@ -167,8 +171,8 @@
 			(m?.items ?? []).filter((it) => !missingMoves(m!, it).includes(ui.anim)).map((it) => it.id)
 		)
 	);
-	// Help > Show tips again: open the demo's Customize in Preview with the Wardrobe, where the first tip lives. Each
-	// request is used up at once, so it can never act later, such as on a press of Characters.
+	// Show tips again: back to Characters with the demo, where the first tip lives. Each request is used up at once, so
+	// it can never act later.
 	let tipsRequest = tips.request;
 	$effect(() => {
 		if (tips.request === tipsRequest || doc.loading || openingProjectId()) return;
@@ -178,14 +182,7 @@
 		}
 		untrack(() => {
 			tipsRequest = tips.request;
-			if (doc.error || doc.id !== DEMO || !m || ui.sheet) return;
-			if (experience.screen === 'characters') {
-				showStanding();
-				applyRiderPose();
-				enterCustomize();
-			} else changeMode('preview');
-			panel('wardrobe');
-			setPanelOpen(true);
+			if (!doc.error && doc.id === DEMO) characters();
 		});
 	});
 	const pending = $derived(allPending.filter((run) => matchesSearch([run.spec.name], query)));
@@ -1033,14 +1030,17 @@
 					</CharacterActions>
 				{/each}
 			</div>
-			{#if showIntro}<p class="demo-intro bu-muted" id={introId}>
-					{t('tips.intro')}
-				</p>{/if}
+			<Tip
+				id="customize"
+				when={showTips && doc.id === DEMO && !!m && !ui.sheet}
+				anchor=".customize-action"
+				title={t('tips.customizeTitle')}
+				body={t('tips.customizeBody')}
+			/>
 			<button
 				class="bu-action customize-action"
 				data-variant="primary"
 				onclick={customize}
-				aria-describedby={showIntro ? introId : undefined}
 				aria-label={t('experience.customizeName', { name })}
 				title={t('experience.customizeName', { name })}
 				aria-busy={doc.loading || !!openingProjectId() || !!wheelTarget}
@@ -1207,7 +1207,7 @@
 			</div>
 		{/if}
 		<!-- Before the panel, so keyboard users reach the tip's close button before the gear it is about. -->
-		{#if inDemo}<DemoTips show={newcomer || tips.requested} {tryable} />{/if}
+		{#if inDemo}<DemoTips show={showTips} {tryable} />{/if}
 		<aside
 			id="customization-rail"
 			class="equipment-rail"
@@ -1263,12 +1263,6 @@
 </div>
 
 <style>
-	.demo-intro {
-		margin: 0;
-		font-size: var(--fs-sm);
-		line-height: 1.4;
-		text-wrap: pretty;
-	}
 	.pending-character > .character-thumbnail {
 		width: 64px;
 		flex: none;

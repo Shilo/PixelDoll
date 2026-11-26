@@ -5,44 +5,55 @@ Welcome page and the unmerged hint-card attempt on `t3/quickstart-onboarding` (c
 
 ## What ships
 
-1. **Characters, first visit.** The app still opens straight on the bundled Adventurer. With only the demo in the
-   library and the Export tip not done, one quiet line sits above Customize: "Try on gear, then export it for your
-   game. No PixelLab key needed."
+1. **Characters, first visit.** The app still opens straight on the bundled Adventurer, with the first tip on its
+   Customize button (the earlier one-line note above it was too easy to miss).
 2. **No pre-release warning while a newcomer is trying the demo.** The startup "Saved characters may stop working"
    toast waits while the demo tips are unfinished and nothing is saved. Any saved character or an unreadable library
    shows it as before.
 3. **Create from scratch says it is paid before the form.** The New character menu row reads "Needs a PixelLab key and
    uses paid generations" under its label (its accessible description).
-4. **Three tips, one at a time,** each an arrow callout on the control it is about:
+4. **Four tips, one at a time, in order,** each an arrow callout on the control it is about. Each is stored once by id,
+   whatever control it points at on a given screen size (the Export tip points at Export or at More options, and is
+   one tip either way).
 
-   | Tip                        | Points at                                                                         | Shows when                                                              | Done when                                             |
-   | -------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------- |
-   | **Try on gear**            | A whole Wardrobe tile with frames for the move on screen; an unworn one first     | Demo's Customize, Preview at normal zoom, Wardrobe open, for a newcomer | Any outfit change, shown or not; or its X             |
-   | **Take it into your game** | Export, or More options when the bar has moved Export into it ("Find Export in…") | Same place, once the gear tip is done                                   | Export opens; or its X                                |
-   | **What is PixelLab?**      | The "Powered by PixelLab" link in Connect (to pixellab.ai)                        | Connect's key form on its first open (the welcome view)                 | Any PixelLab link followed, a key connected; or its X |
+   | Tip                        | Points at                                                                                                     | Shows when                                                                   | Done when                                                                 |
+   | -------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+   | **Dress up the demo**      | Customize on Characters                                                                                       | Demo selected, for a newcomer                                                | Any character's Customize opens, by any control; or its X                 |
+   | **Try on gear**            | A whole Wardrobe tile: unworn first (with frames for the move on screen before others), then worn, then Empty | Demo's Customize, Preview at normal zoom, Wardrobe open, after the first tip | Any outfit change, shown or not; or its X                                 |
+   | **Take it into your game** | Export, or More options when the bar has moved Export into it ("Find Export in...")                           | Same place, after the gear tip                                               | Export opens; or its X                                                    |
+   | **What is PixelLab?**      | Start free trial in Connect (Get Secret API Key when asked for again)                                         | Connect's key form on its first open (the welcome view)                      | Any PixelLab link followed, typing or pasting a key, connecting; or its X |
 
-   Copy for the third: "An AI pixel art service that draws the characters and gear you create here, using generations
-   from your PixelLab account." It sits above the link, over small print only, so the key field, free-trial button and
-   Connect stay clear.
+   Copy for the last: "An AI pixel art service that draws the characters and gear you create here, using generations
+   from your PixelLab account." It sits above the button, over the intro line.
 
-5. **Help > Show tips again** clears every done tip, opens the demo's Customize in Preview with the Wardrobe, and lets
-   tips show this visit even for someone who is no longer a newcomer. The request is used up at once, so it never acts
-   on a later press. Workspace copies (someone's backup opened for a look) never show tips and hide the row.
+5. **Show tips again** clears every done tip and returns to Characters with the demo, where the first tip lives; tips
+   then show this visit even for someone who is no longer a newcomer. It is in two places: **More options > Help**
+   (where people look for help) and **Settings > Appearance** (where people look for app preferences; searchable).
+   Two entry points to one action cost nothing and cover both habits; a third in About would not add a habit.
+   Workspace copies (someone's backup opened for a look) never show tips and hide both rows.
 
 ## How it is built
 
 - `app/src/studio/tips/tips.svelte.ts` owns the state: the done tips, which tip is on screen, and the Show again
   request. It is the only code that reads or writes `localStorage['pixeldoll.tips']`, a JSON array of done tip ids
   (unknown ids are ignored; blocked storage keeps done tips for the visit only).
-- `app/src/studio/tips/Tip.svelte` is the one generic callout: `id`, `anchor()` (finds the control, or null), `title`,
-  `body`, preferred `placement` and an app `when` condition. It shows while not done, `when` holds and the anchor is on
-  screen; only one tip holds the screen at a time. It re-finds its anchor on reactive changes, DOM changes, scroll and
-  resize, places itself with floating-ui (`offset`, `flip` to the opposite side and then the other two, `shift`,
-  `arrow`, `hide`), and waits while the anchor is clipped or scrolled away. Its X completes it.
-- The app only reports actions and decides where a tip belongs: `experience/DemoTips.svelte` holds the two demo tips
-  and their completion rules (mounted only in the demo's Customize); `ConnectSheet.svelte` holds the PixelLab tip.
-  Experience handles the Show again navigation. Removing a tip is deleting its `<Tip>`; nothing else in the app reads
-  tip state except the Characters note and the toast deferral, which ask `tipDone('export')`.
+- `app/src/studio/tips/Tip.svelte` is the one generic callout. Its behavior is declared where it is used:
+  - `anchor`: a selector, or a function returning the control (null while there is none on screen);
+  - `placement`: the preferred side (below by default; flips to the opposite side, then across);
+  - `when`: the app's own condition, such as being in Preview;
+  - `after`: tips that must be done first, which makes a sequence;
+  - `doneWhen`: app state meaning the action happened (done even if never shown);
+  - `doneOn`: a selector for controls whose press, typing or paste means the action happened;
+  - its X, which completes it.
+
+  It shows while not done, `after` is done, `when` holds and the anchor is on screen; only one tip holds the screen at
+  a time. It re-finds its anchor on reactive changes, DOM changes, scroll and resize, places itself with floating-ui
+  (`offset`, `flip`, `shift`, `arrow`, `hide`), and waits while the anchor is clipped or scrolled away.
+
+- The app declares where each tip belongs: Experience holds the Customize tip (and completes it whenever Customize
+  opens), `experience/DemoTips.svelte` the gear and Export tips (mounted only in the demo's Customize),
+  `ConnectSheet.svelte` the PixelLab tip. Experience handles the Show again navigation. Removing a tip is deleting its
+  `<Tip>`; the only other reader of tip state is the toast deferral, which asks `tipDone('export')`.
 
 ## Why per-tip state, and not "seen" or a single flag
 
@@ -51,17 +62,17 @@ Welcome page and the unmerged hint-card attempt on `t3/quickstart-onboarding` (c
 - Recording a tip when it is **shown** loses it when the person never noticed it (navigated away, a menu covered it).
   A tip is recorded when it is **done**: the person did what it suggests, or closed it. That is Apple TipKit's model
   (a tip is invalidated by the action, not by display).
-- No display counter, no "turn tips off" setting: with three tips that each end on a single action, both would be
-  options without a need (KISS). Show tips again is the one control people need, in Help where they look for it.
+- No display counter, no "turn tips off" setting: with a few tips that each end on a single action, both would be
+  options without a need (KISS). Show tips again is the one control people need.
 
 ## Placement
 
 - Every tip points at its control: the arrow tip lands on it, centered when space allows. Default side is below; a
   tip names another side when below would cover what it is about (the gear tip goes above its tile so the gear list
-  stays visible; the PixelLab tip goes above its link so the key form stays usable). With no room it flips to the
+  stays visible; the PixelLab tip goes above its button so the key field stays usable). With no room it flips to the
   opposite side, then the sides across.
-- A tip may cover other content briefly; it never covers its own control, takes focus, or blocks the control it points
-  at. Tips wait in Top-down and Side-scroller (game controls), while the scene is zoomed, and while a sheet or menu is
+- A tip may cover nearby controls until it is done or closed: pointing at the exact control is worth more than keeping
+  every neighbor clear. It never covers its own control or takes focus. Tips wait in Top-down and Side-scroller (game controls), while the scene is zoomed, and while a sheet or menu is
   open over them.
 - The tip is a plain fixed layer, not a popover: the app reads an open popover as an open menu and pauses stage keys,
   scene zoom and refocusing for it. Place it in the same layer as its anchor (inside a sheet's dialog for a control in
@@ -123,5 +134,5 @@ recall). Precedents for sample-first: Linear's demo workspace, Figma's starter f
 
 - No first-time-user study; the flow was checked in the browser and by end-to-end tests.
 - Screen-reader announcement was checked through the accessibility tree, not with a live screen reader.
-- The demo has no unworn item with frames for every view, so the gear tip usually points at the worn Steel helmet
-  (taking it off is the try-on). The Wizard hat is skipped on purpose: it lacks frames in its moves.
+- On a first visit the gear tip points at the Wizard hat, the demo's only unworn item. It lacks some frames, so its
+  back view hides it with a "missing frames" note; trying on something new was judged worth that.

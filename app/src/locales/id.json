@@ -3548,7 +3548,8 @@
 		"results": "{count} dari {total}"
 	},
 	"tips": {
-		"intro": "Coba perlengkapan, lalu ekspor untuk game Anda. Tidak perlu kunci PixelLab.",
+		"customizeTitle": "Dandani demo",
+		"customizeBody": "Coba perlengkapan dan ekspor untuk game Anda. Demo tidak perlu kunci PixelLab.",
 		"gearTitle": "Coba perlengkapan",
 		"gearBody": "Pilih item di Lemari untuk memakainya atau melepasnya.",
 		"exportTitle": "Bawa ke game Anda",

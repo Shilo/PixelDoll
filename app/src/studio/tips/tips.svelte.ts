@@ -1,9 +1,10 @@
 /** App tips: small callouts, each anchored to one control, that end for good once the person does what they suggest or
  *  closes them (Apple TipKit's model). The app only reports those events; this module owns which tips are done, keeps
  *  that across visits, and lets one tip show at a time. See docs/design/onboarding.md. */
+import { untrack } from 'svelte';
 import { workspaceCopy } from '../../lib/store/workspace-mode.ts';
 
-export type TipId = 'gear' | 'export' | 'pixellab';
+export type TipId = 'customize' | 'gear' | 'export' | 'pixellab';
 
 /** The done tips, as a JSON array of ids. Ids this version does not know are ignored. */
 export const TIPS_KEY = 'pixeldoll.tips';
@@ -44,9 +45,12 @@ export function tipDone(id: TipId): boolean {
 
 /** The person did what the tip suggests, or closed it: it never shows on its own again. */
 export function completeTip(id: TipId) {
-	if (!tipsEnabled || tips.done[id]) return;
-	tips.done[id] = true;
-	write();
+	// Untracked, so an effect that reports an action reruns only when that action changes, never when tips reset.
+	untrack(() => {
+		if (!tipsEnabled || tips.done[id]) return;
+		tips.done[id] = true;
+		write();
+	});
 }
 
 /** Every tip shows again, from the first. */

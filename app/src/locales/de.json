@@ -3650,7 +3650,8 @@
 		"results": "{count} von {total}"
 	},
 	"tips": {
-		"intro": "Probiere Ausrüstung an und exportiere sie für dein Spiel. Kein PixelLab-Schlüssel nötig.",
+		"customizeTitle": "Demo einkleiden",
+		"customizeBody": "Probiere Ausrüstung an und exportiere sie für dein Spiel. Für die Demo brauchst du keinen PixelLab-Schlüssel.",
 		"gearTitle": "Ausrüstung anprobieren",
 		"gearBody": "Wähle in der Garderobe einen Gegenstand, um ihn anzulegen oder abzulegen.",
 		"exportTitle": "Ab in dein Spiel",

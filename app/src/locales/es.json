@@ -3650,7 +3650,8 @@
 		"results": "{count} de {total}"
 	},
 	"tips": {
-		"intro": "Pruébate equipo y expórtalo para tu juego. No necesitas clave de PixelLab.",
+		"customizeTitle": "Viste la demo",
+		"customizeBody": "Pruébate equipo y expórtalo para tu juego. La demo no necesita clave de PixelLab.",
 		"gearTitle": "Pruébate equipo",
 		"gearBody": "Elige un objeto del Armario para ponértelo o quitártelo.",
 		"exportTitle": "Llévalo a tu juego",

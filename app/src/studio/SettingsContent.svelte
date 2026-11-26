@@ -27,6 +27,7 @@
 		PersonStanding,
 		Settings2,
 		Shirt,
+		Lightbulb,
 		Sun,
 		SunMoon,
 		Trash,
@@ -56,6 +57,7 @@
 	import { message } from '../lib/message.ts';
 	import { characterName, setTheme, store, toast, ui } from './state.svelte.ts';
 	import { openerLabel } from './openerLabel.ts';
+	import { showTipsAgain, tipsEnabled } from './tips/tips.svelte.ts';
 	import {
 		panelSettings,
 		setPanelSettings,
@@ -130,6 +132,7 @@
 					terms: ['studioPanel.left', 'studioPanel.right', 'experience.customization']
 				},
 				{ id: 'language', label: 'language.label' },
+				...(tipsEnabled ? [{ id: 'tips', label: 'tips.showAgain' } as const] : []),
 				{ id: 'reset', label: 'settings.reset.allAction', terms: ['settings.reset.action'] }
 			]
 		},
@@ -604,6 +607,19 @@
 					{/snippet}
 				</SettingsItemSegmented>
 				<div data-setting="language" tabindex="-1"><LanguagePicker settings /></div>
+				{#if tipsEnabled}
+					<SettingsItemButton
+						data-setting="tips"
+						onclick={() => {
+							// Tips start on Characters, under this sheet.
+							ui.sheet = null;
+							showTipsAgain();
+						}}
+						><Lightbulb size={18} aria-hidden="true" /><span class="row-name"
+							>{t('tips.showAgain')}</span
+						></SettingsItemButton
+					>
+				{/if}
 			{:else if active.id === 'audio'}
 				<AudioSettings />
 			{:else if active.id === 'wardrobe'}

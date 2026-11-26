@@ -3548,7 +3548,8 @@
 		"results": "{total} 项中显示 {count} 项"
 	},
 	"tips": {
-		"intro": "试穿装备，然后导出到你的游戏。无需 PixelLab 密钥。",
+		"customizeTitle": "给演示角色换装",
+		"customizeBody": "试穿装备，并导出到你的游戏中。演示无需 PixelLab 密钥。",
 		"gearTitle": "试穿装备",
 		"gearBody": "在“衣橱”中选择一件装备来穿上或卸下。",
 		"exportTitle": "带进你的游戏",
