@@ -40,9 +40,11 @@ this file first, then the doc for your engine in docs/, then that engine's READM
   scale, rotate, blur or resample the art. A ramp is the item's source palette; only entries listed under variants can be
   selected, and an unknown material or variant id selects nothing without throwing. When materials is empty, or the
   material you want lists no variants, this character ships nothing to recolor: skip the recolor step instead of calling
-  it with invented ids. Supplying your own ramp is not part of this export's API.
-- An item id containing "~", such as hair_brown~helmet_steel, is a baked tuck variant: the hair redrawn to sit under that
-  helmet. Wear the tuck item instead of the plain item whenever that headwear is worn.
+  it with invented ids. Supplying your own ramp is not part of this export's API. Variants are the ones saved in PixelDoll
+  before the export.
+- An item id containing "~", such as <hair>~<hat>, is a baked tuck variant: the hair redrawn to sit under that hat. The
+  runtime applies it automatically when the covering item is worn. Never equip it yourself: the equipment API rejects
+  variant items.
 - Nearest-neighbor filtering and whole-pixel positions. No atlas packing, rotation or trimming.
 - The base body is always worn. A layer that a move or an item does not provide is simply absent.
 - Mirroring is already baked into the exported views; do not flip a sheet that manifest.json lists on its own.
@@ -80,16 +82,18 @@ Full guide: phaser/README.txt. Data: manifest.json and the TexturePacker atlases
     doll.setVariants({ '<material-id>': '<variant-id>' })             // only ids listed in manifest.json
 
 Use pixelArt: true and roundPixels: true and serve the folder over http: the module fetches manifest.json.
-The path you pass is relative to the page that loads the game, not to PaperdollContainer.js.
-This export does not bundle Phaser. Load Phaser 3.80+ or 4 yourself (a script tag exposing the global Phaser, or your
-bundler with an explicit import) and import phaser/PaperdollContainer.js as an ES module, as above.
+The path you pass is relative to the document's base URL (document.baseURI), not to PaperdollContainer.js.
+This export does not bundle Phaser. Load Phaser 3.80+ or 4 yourself: a script tag that exposes the global Phaser, or your
+bundler with an explicit import (import Phaser from 'phaser'); then import phaser/PaperdollContainer.js as an ES module.
 Phaser does not await an async create(): nothing may use the doll until loadPaperdoll resolves, so guard update() on
-this.doll or create it in a scene that starts after loading.
+this.doll or create it in a scene that starts after loading. loadPaperdoll caches per game, so one scene may load it and
+another may create the doll.
 doll.playAction(move, direction) plays a one-shot action and doll.setDirection(dir) turns the active move.
 An unknown move, direction, slot, item or outfit throws before changing anything; an unknown material or variant id
 in setVariants selects nothing, so check manifest.json's materials before relying on a recolor.
 The constructor starts in model.presets[0], the first outfit in manifest.json.
-Call doll.destroy() when removing the character. Atlas files are phaser/<length>-<item>_<length>-<layer>_<length>-<move>.json
+Call doll.destroy() when removing the character, including when the scene shuts down. With the Canvas renderer, keep
+integer positions and call scene.cameras.main.setRoundPixels(false) for exact pixels; WebGL does not need that. Atlas files are phaser/<length>-<item>_<length>-<layer>_<length>-<move>.json
 with frames named <move>_<direction>_<frame>: each atlas JSON lists the frames it holds, and phaser/README.txt states the
 naming pattern.
 baked/<outfit>/<move>.png holds the same grid flattened for engines that draw one sprite: rows are directions, columns
@@ -108,7 +112,9 @@ Full guide: godot/README.txt.
     doll.set_preset("outfit_id")        # items and colors together; it replaces earlier selections
     doll.equip("main_hand", "sword")    # after a preset; "" empties a slot
 
-The scene starts in presets[0], the first outfit in manifest.json.
+The scene starts in presets[0], the first outfit in manifest.json. Nothing plays until you call play_anim, and the API
+is safe once the node is in the tree (add_child has run its _ready).
+set_variant returns true for a known material even when the variant name is unknown; no colors change in that case.
 Set Rendering > Textures > Default Texture Filter to Nearest and 2D > Snap 2D Transforms To Pixel on.
 Manifest depths become native z_index ranks; keep the root's z_index to place the character among scene objects.
 `;
