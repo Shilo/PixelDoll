@@ -492,6 +492,30 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"artworkSection": "Gambar",
+		"movesSection": "Gerakan dan keadaan",
+		"outfitSection": "Perilaku pakaian",
+		"replaceFrames": "Perbaiki atau gambar ulang tampilan ini",
+		"technicalDetails": "Detail teknis",
+		"openSprite": "Perbesar {title}",
+		"availableDirectionsFor": "Arah yang tersedia untuk {name}",
+		"previewContext": "{move} · bingkai {frame} dari {count}",
+		"drawForMoves": "Buat untuk gerakan yang hilang",
+		"drawSelected": "Buat gerakan terpilih",
+		"reviewMissingMoves": "Tinjau gerakan yang hilang",
+		"drawMovesSelect": "Pilih setidaknya satu gerakan.",
+		"selectAllMoves": "Pilih semua",
+		"clearSelection": "Hapus pilihan",
+		"drawMovesHelp": "Hanya menggambar bingkai item yang hilang. PixelLab dapat mengenakan biaya pembuatan.",
+		"repairView": "Perbaiki tampilan ini",
+		"redrawView": "Gambar ulang tampilan ini",
+		"sendBackward": "Geser ke belakang",
+		"bringForward": "Geser ke depan",
+		"makeAnother": "Buat item baru",
+		"layerCategory": "Urutan lapisan berlaku untuk kategori {slot}.",
+		"inFrontOf": "Di depan {name}",
+		"behind": "Di belakang {name}",
+		"previewUnavailable": "Tidak ada gambar item untuk gerakan ini.",
 		"restoreStanding": {
 			"other": "Pulihkan tampilan berdiri"
 		},
@@ -501,12 +525,8 @@
 		"hiddenByAnotherItem": "Tertutup oleh item lain",
 		"hiddenByItem": "Tertutup oleh {name}",
 		"showName": "Tampilkan {name}",
-		"notWorn": "Tidak dipakai",
 		"qualityChecks": "Pemeriksaan kualitas",
-		"customize": "Sesuaikan",
-		"itemActions": "Tindakan item",
 		"layerHiddenHint": "Item lain yang dipakai menutupi item ini, jadi urutan lapisannya tidak dapat diubah di sini. Tampilkan dulu.",
-		"nameInEveryDirection": "{name} dari semua arah",
 		"labelNameFacingId": "{name} menghadap {id}",
 		"acceptedAppearanceWarnings": "Peringatan tampilan yang diterima",
 		"titleShowThisFrame": "Tampilkan frame ini",
@@ -517,7 +537,6 @@
 		"keepWithoutMoves": "Simpan tanpa animasi itu",
 		"keepWithoutMovesDetail": "Menyimpan item dari animasinya yang lengkap tanpa memakai kredit. Item disembunyikan di {moves}, yang tetap tercantum sebagai hilang agar Anda bisa membuatnya nanti dengan harganya sendiri.",
 		"youAcceptedThisArtworkWithItsRecorded": "Anda menerima gambar ini beserta catatan kualitasnya.",
-		"generateItemForMove": "Buat item untuk animasi",
 		"coverageTitle": "Cakupan animasi",
 		"coverageAllDrawn": "Digambar di setiap animasi dan status",
 		"coverageMissing": {
@@ -525,24 +544,13 @@
 		},
 		"coverageClipDrawn": "{move}: sudah digambar",
 		"coverageClipMissing": "{move}: belum ada",
-		"fillMissingMoves": "Lengkapi animasi yang belum ada",
-		"fillMissingHint": {
-			"other": "Menggambar item ini untuk semua {n} animasi yang belum ada dalam satu penawaran, memakai ulang desain berdirinya."
-		},
-		"labelMakeNameForMissingName": "Buat {name} untuk {missingName}",
-		"generatesOnlyThisItemSMissingViews": "Hanya membuat tampilan item yang belum ada untuk animasi pilihan, memakai ulang desain saat berdiri. Tubuh tetap sama. PixelLab mungkin mengenakan biaya dalam dolar. Waktu antrean bervariasi.",
-		"madeForAnotherBodyItMayNot": "Dibuat untuk tubuh lain. Letaknya mungkin tidak pas.",
 		"itsMirroredViewsUpdateToo": "Tampilan cerminnya juga diperbarui.",
 		"matchingColors": "Mencocokkan warna…",
 		"matchItemColors": "Cocokkan warna item",
 		"recolor": "Warnai ulang",
 		"layerOrder": "Urutan lapisan",
-		"titleDrawInFrontOfTheNext": "Gambar di depan lapisan berikutnya",
-		"forward": "Ke depan",
-		"titleDrawBehindThePreviousLayer": "Gambar di belakang lapisan sebelumnya",
-		"backward": "Ke belakang",
 		"reset": "Atur ulang",
-		"whenWornHide": "Saat dikenakan, sembunyikan",
+		"whenWornHide": "Sembunyikan kategori saat dipakai",
 		"howItWasMade": "Cara pembuatan",
 		"iD": "ID",
 		"slot": "Slot perlengkapan",
@@ -562,7 +570,7 @@
 		"edgePx": "Piksel tepi",
 		"hands": "Tangan",
 		"reRolls": "Percobaan ulang",
-		"missingFrames": "Frame yang belum ada",
+		"missingFrames": "Kunci bingkai yang hilang",
 		"refitIntro": "Disesuaikan secara gratis dari item milik {from}. Periksa frame berikut:",
 		"remakeToFit": "Buat versi khusus untuk {name} agar pas.",
 		"moveGaps": "Sebagian atau semua frame animasi {move} yang menghadap {directions} belum ada. Item tidak akan terlihat di frame tersebut.",
@@ -571,7 +579,6 @@
 		"copyFrames": {
 			"other": "{from} memiliki {n} frame item ini yang belum dimiliki {name}. Tidak ada generasi baru."
 		},
-		"makeFor": "Buat untuk animasi {move}",
 		"makingMoreMoves": "Membuat item untuk animasi lain",
 		"colorMatchNote": {
 			"other": "Cocokkan {pixels} dalam {n} frame tersimpan dari animasi {move} yang menghadap {direction} dengan palet warna item yang sudah ada."
@@ -589,9 +596,8 @@
 		"frames": {
 			"other": "{n} frame"
 		},
-		"onlyFacing": "Hanya saat menghadap {direction}",
-		"hideWhenWorn": "Item yang dicentang disembunyikan saat {name} dikenakan.",
-		"tuckNote": "Jika tidak dicentang, {slots} diselipkan di bawahnya: hanya bagian yang menjuntai di bawah tepian yang terlihat. Centang untuk tudung dan topeng penuh.",
+		"onlyFacing": "Pindahkan lapisan hanya saat menghadap {direction}",
+		"tuckNote": "Item yang terlihat di {slots} mungkin tertutup sebagian.",
 		"chromaKey": "Warna kunci {color}",
 		"qaStatus": {
 			"pass": "lulus",

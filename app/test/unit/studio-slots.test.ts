@@ -9,6 +9,7 @@ import {
 	busyReason,
 	changesAttachment,
 	categories,
+	defaultFrontOrder,
 	deleteCustom,
 	drawsAbove,
 	hintProblem,
@@ -309,6 +310,9 @@ test('switching a held custom category to the other hand rebuilds its whole atta
 	]);
 	// What it generates stays a main-hand item; only the hand and its layering change.
 	expect([slot.profile, slot.label]).toEqual(['main_hand', 'Spare sword']);
+	expect(defaultFrontOrder(m, item('sword', key))).toEqual(
+		off.zOverrides?.filter((rule) => rule.layer === 'fg')
+	);
 	setHand(m, key, 'right');
 	const main = slotLadder(m.rig).find((s) => s.id === 'main_hand')!;
 	expect([

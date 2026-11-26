@@ -1570,22 +1570,30 @@ test('an unworn item can be ordered among the worn layers, and a hidden one cann
 	s.ui.frame = 0;
 	const head = project.manifest.slots.find((slot) => slot.id === 'head')!;
 	// Not worn: the hat is placed as if worn, so it can be ordered before wearing it.
-	expect(s.canMoveLayer('hat', -1)).toBe(true);
-	expect(s.canMoveLayer('hat', 1)).toBe(false);
+	expect(s.itemLayerNeighbors('hat').behind).toBeDefined();
+	expect(s.itemLayerNeighbors('hat').ahead).toBeUndefined();
 	s.moveLayer('hat', -1, false);
 	expect(head.zOverrides).toEqual([{ layer: 'fg', z: 9 }]);
-	expect(s.canMoveLayer('hat', 1)).toBe(true);
+	expect(s.itemLayerNeighbors('hat').ahead).toBeDefined();
 	// Only this direction keeps the all-direction step and adds a direction-specific one.
 	s.moveLayer('hat', 1, true);
 	expect(head.zOverrides).toEqual([
 		{ layer: 'fg', z: 9 },
 		{ layer: 'fg', z: 11, dir: 'south' }
 	]);
+	// An all-direction step still moves the facing that already has a more specific rule.
+	s.moveLayer('hat', -1, false);
+	expect(head.zOverrides).toEqual([
+		{ layer: 'fg', z: 9, dir: 'south' },
+		{ layer: 'fg', z: 7 }
+	]);
+	expect(s.itemLayerNeighbors('hat').behind).toBeUndefined();
+	expect(s.itemLayerNeighbors('hat').ahead).toBeDefined();
 	// A worn item that hides the body's slot leaves it out of the draw order: its arrows do nothing.
 	const hat = project.manifest.items.find((item) => item.id === 'hat')!;
 	hat.hides = ['body'];
 	s.doc.items = { body: 'base', head: 'hat' };
-	expect(s.canMoveLayer('base', -1)).toBe(false);
+	expect(s.itemLayerNeighbors('base').behind).toBeUndefined();
 	s.moveLayer('base', -1, false);
 	expect(project.manifest.slots.find((slot) => slot.id === 'body')!.zOverrides).toBeUndefined();
 });

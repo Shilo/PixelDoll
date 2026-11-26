@@ -492,6 +492,30 @@
 		"runningDetail": "{status}・{prompt}"
 	},
 	"itemPane": {
+		"artworkSection": "画像",
+		"movesSection": "動きと状態",
+		"outfitSection": "装備時の設定",
+		"replaceFrames": "この向きを修復または再描画",
+		"technicalDetails": "技術詳細",
+		"openSprite": "{title}を拡大",
+		"availableDirectionsFor": "{name}の利用可能な向き",
+		"previewContext": "{move} · {frame}/{count} フレーム",
+		"drawForMoves": "不足しているモーション用に生成",
+		"drawSelected": "選択したモーションを生成",
+		"reviewMissingMoves": "不足しているモーションを確認",
+		"drawMovesSelect": "モーションを1つ以上選択してください。",
+		"selectAllMoves": "すべて選択",
+		"clearSelection": "選択を解除",
+		"drawMovesHelp": "不足しているアイテムのフレームだけを描画します。PixelLab の生成料金がかかる場合があります。",
+		"repairView": "この向きを修復",
+		"redrawView": "この向きを描き直す",
+		"sendBackward": "背面へ",
+		"bringForward": "前面へ",
+		"makeAnother": "新しいアイテムを作成",
+		"layerCategory": "レイヤー順は「{slot}」カテゴリ全体に適用されます。",
+		"inFrontOf": "{name}の前",
+		"behind": "{name}の後ろ",
+		"previewUnavailable": "この動きにはアイテム画像がありません。",
 		"restoreStanding": {
 			"other": "立ち姿を復元"
 		},
@@ -501,12 +525,8 @@
 		"hiddenByAnotherItem": "他のアイテムで隠れています",
 		"hiddenByItem": "{name} によって隠れています",
 		"showName": "{name} を表示",
-		"notWorn": "未装着",
 		"qualityChecks": "品質チェック",
-		"customize": "カスタマイズ",
-		"itemActions": "アイテムの操作",
 		"layerHiddenHint": "別の装着中アイテムがこれを隠しているため、ここではレイヤー順を変更できません。先に表示してください。",
-		"nameInEveryDirection": "全方向の{name}",
 		"labelNameFacingId": "{id}向きの{name}",
 		"acceptedAppearanceWarnings": "承認済みの外観に関する警告",
 		"titleShowThisFrame": "このフレームを表示",
@@ -517,7 +537,6 @@
 		"keepWithoutMoves": "そのモーションなしで残す",
 		"keepWithoutMovesDetail": "クレジットを使わずに、そろっているモーションだけでアイテムを残します。{moves}では非表示になり、後で個別の価格で作れるよう不足として表示されたままになります。",
 		"youAcceptedThisArtworkWithItsRecorded": "記録された品質メモとともに、このアートワークを承認しました。",
-		"generateItemForMove": "モーション用のアイテムを生成",
 		"coverageTitle": "モーションの網羅状況",
 		"coverageAllDrawn": "すべてのモーションとステートに描画済み",
 		"coverageMissing": {
@@ -525,24 +544,13 @@
 		},
 		"coverageClipDrawn": "{move}: 描画済み",
 		"coverageClipMissing": "{move}: 未描画",
-		"fillMissingMoves": "未描画のモーションをまとめて作成",
-		"fillMissingHint": {
-			"other": "立ち絵のデザインを再利用し、未描画の{n}件のモーションすべてにこのアイテムを1回の見積もりで描画します。"
-		},
-		"labelMakeNameForMissingName": "{missingName}用の{name}を作成",
-		"generatesOnlyThisItemSMissingViews": "選んだモーションで、このアイテムに不足している向きのフレームだけを生成します。立ちポーズのデザインを再利用し、素体は変更しません。PixelLabから米ドルで請求される場合があります。待ち時間は状況によって異なります。",
-		"madeForAnotherBodyItMayNot": "別の素体用に作られたアイテムです。位置が合わない場合があります。",
 		"itsMirroredViewsUpdateToo": "反転で作った向きのフレームも更新されます。",
 		"matchingColors": "色を合わせています…",
 		"matchItemColors": "アイテムの色を合わせる",
 		"recolor": "色を変更",
 		"layerOrder": "レイヤーの順序",
-		"titleDrawInFrontOfTheNext": "次のレイヤーの手前に描画",
-		"forward": "前面へ",
-		"titleDrawBehindThePreviousLayer": "前のレイヤーの奥に描画",
-		"backward": "背面へ",
 		"reset": "リセット",
-		"whenWornHide": "装備時に隠す",
+		"whenWornHide": "装備時に隠すカテゴリ",
 		"howItWasMade": "作成方法",
 		"iD": "ID",
 		"slot": "装備スロット",
@@ -562,7 +570,7 @@
 		"edgePx": "フレーム端のピクセル数",
 		"hands": "手",
 		"reRolls": "再生成",
-		"missingFrames": "不足フレーム",
+		"missingFrames": "不足フレームのキー",
 		"refitIntro": "{from}のアイテムを、この素体に合うよう無料で調整しました。次のフレームを確認してください：",
 		"remakeToFit": "ぴったり合わせるには、{name}用に作成してください。",
 		"moveGaps": "{directions}向きの{move}のフレームが一部またはすべて不足しています。これらのフレームでは表示されません。",
@@ -571,7 +579,6 @@
 		"copyFrames": {
 			"other": "{from}には、{name}にないこのアイテムのフレームが{n}枚あります。新しく生成せずにコピーできます。"
 		},
-		"makeFor": "{move}用に作成",
 		"makingMoreMoves": "追加のモーション用にアイテムのフレームを作成中",
 		"colorMatchNote": {
 			"other": "{direction}向きの保存済み{move}の{n}フレームで、{pixels}をアイテムの既存のカラーパレットに合わせます。"
@@ -589,9 +596,8 @@
 		"frames": {
 			"other": "{n}フレーム"
 		},
-		"onlyFacing": "{direction}向きのときのみ",
-		"hideWhenWorn": "チェックしたアイテムは、{name}の装備中は非表示になります。",
-		"tuckNote": "チェックを外したままの{slots}は、このアイテムの下に重なり、つばより下に出た部分だけが見えます。フードや顔全体を覆うマスクでは、チェックを入れて非表示にしてください。",
+		"onlyFacing": "{direction}向きのときだけレイヤーを移動",
+		"tuckNote": "{slots}が表示されていても、一部が重なって見えないことがあります。",
 		"chromaKey": "キー色：{color}",
 		"qaStatus": {
 			"pass": "合格",

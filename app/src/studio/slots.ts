@@ -2,7 +2,14 @@
 // Organization (label, Wardrobe order, Not shown) lives on the character's own Slot definitions in manifest.slots; a built-in
 // without one uses its catalog default. Wardrobe order never changes drawing: manifest.slots array order and z stay the
 // render contract (docs/design/2026-11-16-slot-system/plan.md §6).
-import type { Manifest, Slot, SlotIcon, SlotProfile, ZOverride } from '../lib/store/manifest.ts';
+import type {
+	Item,
+	Manifest,
+	Slot,
+	SlotIcon,
+	SlotProfile,
+	ZOverride
+} from '../lib/store/manifest.ts';
 import { createSlot, DEFAULT_WARDROBE_ORDER, SLOTS, slotLadder } from '../lib/items/slots.ts';
 import { reservedPathSegment } from '../lib/export/paths.ts';
 import { BASE_CLOTHES, UNDERWEAR_CLOTHES } from './model.ts';
@@ -476,6 +483,32 @@ export function drawsAbove(m: Pick<Manifest, 'slots'>, key: string): string {
 		at = order.findIndex((x) => x.key === key);
 	return at > 0 ? order[at - 1].key : '';
 }
+
+/** Restore the category's authored front depth and, for a custom left-hand category, its near-side order. */
+export function defaultFrontOrder(m: Pick<Manifest, 'rig' | 'slots'>, item: Item): ZOverride[] {
+	const slot = m.slots.find((entry) => entry.id === item.slot);
+	if (!slot) return [];
+	const builtin = isBuiltin(slot.id);
+	const leftHeld = slot.class === 'held' && slot.anchor === 'hand_l';
+	const templateId = builtin ? slot.id : leftHeld ? 'off_hand' : undefined;
+	const template = templateId && slotLadder(m.rig).find((entry) => entry.id === templateId);
+	const defaults = template
+		? (template.zOverrides ?? [])
+				.filter((rule) => rule.layer === 'fg')
+				.map((rule) => ({ ...rule, z: rule.z + (builtin ? 0 : slot.z - template.z) }))
+		: [];
+	const authoredDepth = slot.zOverrides?.some(
+		(rule) =>
+			rule.layer === 'fg' && !rule.dir && !rule.anim && rule.cell == null && rule.z === slot.z
+	);
+	if (
+		!builtin &&
+		(authoredDepth || item.layers.some((layer) => layer.role === 'fg' && layer.z !== slot.z))
+	)
+		defaults.push({ layer: 'fg', z: slot.z });
+	return defaults;
+}
+
 /** Draw a custom category's front directly above `above`: between it and the next depth, or at its depth just after it.
  *  The whole front moves together, items already made included: the undirected front override becomes the new depth and
  *  every directional or per-frame front override (a copied hand's near-side order, a manual layer move) shifts by the same
