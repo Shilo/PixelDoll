@@ -38,14 +38,14 @@ this file first, then the doc for your engine in docs/, then that engine's READM
   layer, then item id. Never sort by name instead of z.
 - Palette swaps are exact RGB replacements from materials[].ramp and materials[].variants. Replace those pixels; never
   scale, rotate, blur or resample the art. A ramp is the item's source palette; only entries listed under variants can be
-  selected. An unknown material or variant id throws nothing but applies no swap, and it replaces that material's
-  previous selection. When materials is empty, or the
+  selected, and an unknown variant applies no swap. Each engine reference says whether that call also throws, warns or
+  clears other selections. When materials is empty, or the
   material you want lists no variants, this character ships nothing to recolor: skip the recolor step instead of calling
   it with invented ids. Supplying your own ramp is not part of this export's API. Variants are the ones saved in PixelDoll
   before the export.
 - An item id containing "~" is a baked tuck variant: an item redrawn to sit under the items named after the ~, joined
   with ~ when several cover it. The runtime swaps it in by itself when those covering items are worn. Never equip it:
-  the equipment API throws on variant items.
+  the equipment API refuses variant items (each engine reference says whether that throws or returns an error).
 - Nearest-neighbor filtering and whole-pixel positions. No atlas packing, rotation or trimming.
 - The base body is always worn. A layer that a move or an item does not provide is simply absent.
 - Mirroring is already baked into the exported views; do not flip a sheet that manifest.json lists on its own.
@@ -82,6 +82,8 @@ Full guide: phaser/README.txt. Data: manifest.json and the TexturePacker atlases
     doll.equip('torso_inner', 'vest_leather')                        // after a preset; null empties a slot
     doll.setVariants({ '<material-id>': '<variant-id>' })             // only ids listed in manifest.json
 
+setVariants replaces the whole selection map, so passing only one material clears the others' choices; pass every material
+you want recolored. An unknown id applies no swap.
 Use pixelArt: true and roundPixels: true and serve the folder over http: the module fetches manifest.json.
 The path you pass is relative to the document's base URL (document.baseURI), not to PaperdollContainer.js.
 This export does not bundle Phaser. Load Phaser 3.80+ or 4 yourself: a script tag that exposes the global Phaser, or your
@@ -117,8 +119,9 @@ Full guide: godot/README.txt.
 The scene starts playing the first move facing the first direction from its own _ready, so nothing has to start it; call
 play_anim to change move or direction. The API is safe once the node is in the tree, and the scene starts in
 manifest.presets[0].
-set_variant returns true for a known material even when the variant name is unknown; the new name replaces that
-material's previous selection and applies no swap.
+set_variant returns true for a known material even when the variant name is unknown; the unknown name replaces that
+material's selection and applies no swap. An unknown material warns, returns false and changes nothing. equip on a
+variant item warns and returns false.
 Set Rendering > Textures > Default Texture Filter to Nearest and 2D > Snap 2D Transforms To Pixel on.
 Manifest depths become native z_index ranks; keep the root's z_index to place the character among scene objects.
 `;
