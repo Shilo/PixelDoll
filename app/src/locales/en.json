@@ -3664,7 +3664,7 @@
 		"newCharacterTitle": "Make your own",
 		"newCharacterBody": "Create a character from a description, or import one you already have.",
 		"addItemTitle": "Add gear",
-		"addItemBody": "Describe an item and PixelLab draws it to fit this character in every frame.",
+		"addItemBody": "Use + on any slot to describe an item. PixelLab draws it to fit this character in every frame.",
 		"generateItemsTitle": "Fit gear to this move",
 		"generateItemsBody": "Open this move's menu and choose Generate items to draw your gear's missing frames.",
 		"addMoveTitle": "Add a move",

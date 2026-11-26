@@ -148,6 +148,12 @@
 		if (quietIn !== null && quietIn !== context()) quietIn = null;
 	});
 
+	/** Tips already read out this visit: one that hides (a live view, a closed panel) and comes back stays quiet. */
+	const heard = new Set<string>();
+	$effect(() => {
+		void tips.request;
+		heard.clear();
+	});
 	function dismiss(spec: TipSpec) {
 		quietIn = context();
 		completeTip(spec.id);
@@ -162,6 +168,8 @@
 			title={t(current.spec.title)}
 			body={t(current.spec.body(current.anchor))}
 			placement={current.spec.placement}
+			announce={!heard.has(current.spec.id)}
+			onannounce={() => heard.add(current.spec.id)}
 			ondismiss={() => dismiss(current.spec)}
 		/>
 	{/key}

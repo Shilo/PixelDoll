@@ -17,17 +17,17 @@ Welcome page and the unmerged hint-card attempt on `t3/quickstart-onboarding` (c
    is stored once by id, whatever control it points at on a given screen size. When several apply, the lower number
    shows; the tip on screen stays while it still applies.
 
-   | #   | Tip                    | Points at                                                                              | Shows when                                                                                                  | Done when                                                         |
-   | --- | ---------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-   | 1   | Dress up the demo      | Customize on Characters                                                                | Demo selected; only the demo saved and nothing being created (or tips asked for again)                      | Any character's Customize opens, by any control                   |
-   | 2   | Make your own          | New character on Characters                                                            | Same library rule, on a later arrival on Characters after #1 is done (not in the same breath as closing #1) | The New character menu opens, or a character of your own is saved |
-   | 3   | What is PixelLab?      | Start free trial in Connect's first-open guide (Get Secret API Key on replay)          | Connect's key form                                                                                          | A PixelLab link followed, a key typed or pasted, or a connection  |
-   | 4   | Try on gear            | A whole Wardrobe tile: unworn first (ready for the move on screen first), then worn    | Any character's Customize, in Preview at normal zoom, Wardrobe open                                         | The outfit changes from what was worn on arrival                  |
-   | 5   | Take it into your game | Export, or More options when the bar has moved Export into it                          | Same place, after #4                                                                                        | Export opens                                                      |
-   | 6   | Add gear               | An empty slot's New tile, else a slot's +                                              | Your own character's Wardrobe (never the bundled demo)                                                      | New item opens                                                    |
-   | 7   | Fit gear to this move  | The ⋮ of a move whose menu offers Generate items (its row while ⋮ shows only on hover) | Your own character's Moves                                                                                  | Generate items opens                                              |
-   | 8   | Add a move             | New move                                                                               | Your own character's Moves                                                                                  | New move is pressed                                               |
-   | 9   | Add a state            | New State                                                                              | Your own character's States                                                                                 | New State is pressed                                              |
+   | #   | Tip                    | Points at                                                                                | Shows when                                                                                                  | Done when                                                         |
+   | --- | ---------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+   | 1   | Dress up the demo      | Customize on Characters                                                                  | Demo selected; only the demo saved and nothing being created (or tips asked for again)                      | Any character's Customize opens, by any control                   |
+   | 2   | Make your own          | New character on Characters                                                              | Same library rule, on a later arrival on Characters after #1 is done (not in the same breath as closing #1) | The New character menu opens, or a character of your own is saved |
+   | 3   | What is PixelLab?      | Start free trial in Connect's first-open guide (Get Secret API Key on later opens)       | Connect's key form                                                                                          | A PixelLab link followed, a key typed or pasted, or a connection  |
+   | 4   | Try on gear            | A whole Wardrobe tile: unworn first (ready for the move on screen first), then worn      | Any character's Customize, in Preview, Wardrobe open                                                        | The outfit changes from what was worn on arrival                  |
+   | 5   | Take it into your game | Export, or More options when the bar has moved Export into it                            | Same place, after #4                                                                                        | Export opens                                                      |
+   | 6   | Add gear               | A slot's + (the New tile is easy to find and disappears once the slot has gear; + stays) | Your own character's Wardrobe (never the bundled demo)                                                      | New item opens                                                    |
+   | 7   | Fit gear to this move  | The ⋮ of a move whose menu offers Generate items (its row while ⋮ shows only on hover)   | Your own character's Moves                                                                                  | Generate items opens                                              |
+   | 8   | Add a move             | New move                                                                                 | Your own character's Moves                                                                                  | New move is pressed                                               |
+   | 9   | Add a state            | New State                                                                                | Your own character's States                                                                                 | New State is pressed                                              |
 
    Every tip also ends on its X. A tip's action ends it even when it never showed. Someone who creates a character
    first never sees #2; on that character's empty Wardrobe, #6 comes first and #4 follows once an item exists. An
@@ -78,7 +78,7 @@ tips read existing app state read-only instead of the app emitting tip events.
   stays visible; the PixelLab tip goes above its button so the key field stays usable). With no room it flips to the
   opposite side, then the sides across.
 - A tip may cover nearby controls until it is done or closed: pointing at the exact control is worth more than keeping
-  every neighbor clear. It never covers its own control or takes focus. Tips wait in Top-down and Side-scroller (game controls), while the scene is zoomed, and while a sheet or menu is
+  every neighbor clear. It never covers its own control or takes focus. Tips wait in Top-down and Side-scroller (game controls) and while a sheet or menu is
   open over them.
 - The tip is a plain fixed layer, not a popover: the app reads an open popover as an open menu and pauses stage keys,
   scene zoom and refocusing for it. It is drawn at the end of the page (or of the open dialog), out of reach of
@@ -101,7 +101,7 @@ tips read existing app state read-only instead of the app emitting tip events.
    Never require a Next button.
 5. **One at a time.** Order tips by prerequisite (a later tip waits for the earlier one to be done).
 6. **Never block.** No scrim, no focus theft, no covering the control or the field needed next. Pause in modes where
-   the tip would compete (live views, zoom, open menus).
+   the tip would compete (live views, open menus). Zoom does not matter: tips point at controls, which zoom never moves.
 7. **Persist per tip, by completion.** Store done ids, not "seen". Unknown ids are ignored, so tips can be added or
    removed without migrations.
 8. **Always recoverable.** X closes one tip for good; Help > Show tips again restores them all.
@@ -147,5 +147,6 @@ recall). Precedents for sample-first: Linear's demo workspace, Figma's starter f
 
 - No first-time-user study; the flow was checked in the browser and by end-to-end tests.
 - Screen-reader announcement was checked through the accessibility tree, not with a live screen reader.
+- Importing a move or State from a ZIP does not end the Add a move or Add a state tip; only their buttons do.
 - On a first visit the gear tip points at the Wizard hat, the demo's only unworn item. It lacks some frames, so its
   back view hides it with a "missing frames" note; trying on something new was judged worth that.

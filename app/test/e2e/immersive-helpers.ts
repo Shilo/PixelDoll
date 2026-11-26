@@ -53,8 +53,8 @@ export async function enterStudio(page: Page) {
 }
 
 /** Marks every tip done unless the test set tips itself: tips sit over controls that unrelated tests press. */
-export async function skipTips(page: Page) {
-	await page.addInitScript(
+export async function skipTips(target: Pick<Page, 'addInitScript'>) {
+	await target.addInitScript(
 		(done) => {
 			try {
 				if (localStorage.getItem('pixeldoll.tips') === null)

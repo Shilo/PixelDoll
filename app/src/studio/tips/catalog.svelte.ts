@@ -48,10 +48,9 @@ const creating = () =>
 const greeting = () =>
 	(store.projects.some((p) => p.demo) && !own().length && !creating()) || tips.requested;
 const ownOpen = () => !!doc.id && store.projects.some((p) => p.id === doc.id && !p.demo);
-/** Customize in Preview at its normal fit: live views are a game with their own controls, and a zoomed scene is being
- *  inspected. */
-const calm = () =>
-	experience.screen === 'studio' && experience.mode === 'preview' && experience.sceneZoom === null;
+/** Customize in Preview: live views are a game with their own controls. Zoom does not matter, since tips point at
+ *  controls, which zoom never moves, and a zoom level is kept after zooming back to the fit. */
+const calm = () => experience.screen === 'studio' && experience.mode === 'preview';
 
 export const outfitNow = () =>
 	JSON.stringify(
@@ -85,7 +84,11 @@ function gearAnchor() {
 	if (!panel || !m) return null;
 	const ready = readyItems(m);
 	const items = [...panel.querySelectorAll<HTMLElement>('[data-tile]')].filter(
-		(tile) => !tile.dataset.tile!.startsWith('gen:') && fullyVisible(tile)
+		// Only tiles a press puts on or takes off: not drafts, and not ones that open a choice menu first.
+		(tile) =>
+			!tile.dataset.tile!.startsWith('gen:') &&
+			!tile.hasAttribute('aria-haspopup') &&
+			fullyVisible(tile)
 	);
 	const worn = (tile: HTMLElement) => tile.getAttribute('aria-pressed') === 'true';
 	const isReady = (tile: HTMLElement) => ready.has(tile.dataset.tile!);
@@ -142,16 +145,15 @@ export const catalog: TipSpec[] = [
 		id: 'pixellab',
 		title: 'tips.pixellabTitle',
 		body: () => 'tips.pixellabBody',
-		// The sign-up button of Connect's first-open guide; asked for again, the key link of its form.
+		// The sign-up button of Connect's first-open guide; on later opens (the guide shows once), its key link.
 		anchor: () =>
 			document.querySelector<HTMLElement>('dialog[open] .trial-guide > a') ??
-			(tips.requested
-				? document.querySelector<HTMLElement>('dialog[open] form a.btn[href$="/account"]')
-				: null),
+			document.querySelector<HTMLElement>('dialog[open] form a.btn[href$="/account"]'),
 		placement: 'top',
 		// Only while Connect asks for a key (not while replacing a working one).
 		when: () => !app.key || app.keyRejected,
-		doneWhen: () => !!app.key && !app.keyRejected,
+		// Connected: a key PixelLab accepted (a remembered key counts once its balance check succeeds).
+		doneWhen: () => !!app.key && !app.keyRejected && !!app.balance,
 		doneOn: "dialog[open] :is(a[href*='pixellab.ai'], input[type='password'])"
 	},
 	{
@@ -178,10 +180,9 @@ export const catalog: TipSpec[] = [
 		id: 'add-item',
 		title: 'tips.addItemTitle',
 		body: () => 'tips.addItemBody',
-		// An empty slot's New tile first, else a slot's +.
-		anchor: () =>
-			first('#customization-panel .item-tile[data-variant="add"]') ??
-			first('#customization-panel [data-tip-anchor="new-item"]'),
+		// The + in a slot's header: the empty slot's New tile is easy to find and disappears once the slot has gear,
+		// while + stays and is easy to miss.
+		anchor: () => first('#customization-panel [data-tip-anchor="new-item"]'),
 		placement: 'top',
 		when: () => calm() && ui.tab === 'wardrobe' && ownOpen(),
 		doneWhen: () => ui.sheet === 'newitem'

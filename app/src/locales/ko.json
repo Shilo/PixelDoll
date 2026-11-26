@@ -3562,7 +3562,7 @@
 		"newCharacterTitle": "나만의 캐릭터 만들기",
 		"newCharacterBody": "설명으로 캐릭터를 만들거나 가지고 있는 캐릭터를 가져오세요.",
 		"addItemTitle": "장비 추가",
-		"addItemBody": "아이템을 설명하면 PixelLab이 모든 프레임에서 이 캐릭터에 맞게 그려 줘요.",
+		"addItemBody": "슬롯의 +로 아이템을 설명하면 PixelLab이 모든 프레임에서 이 캐릭터에 맞게 그려 줘요.",
 		"generateItemsTitle": "이 동작에 장비 맞추기",
 		"generateItemsBody": "이 동작의 메뉴를 열고 아이템 생성을 선택하면 장비에 없는 프레임을 그려 줘요.",
 		"addMoveTitle": "동작 추가",

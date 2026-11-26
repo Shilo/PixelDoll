@@ -742,9 +742,14 @@ test('tips point at each control in order, end on their action, and come back in
 	const pointsAt = async (target: Locator) => {
 		const arrow = (await tip.locator('.bu-popover-arrow').boundingBox())!;
 		const box = (await target.boundingBox())!;
-		const x = arrow.x + arrow.width / 2;
-		expect(x).toBeGreaterThan(box.x);
-		expect(x).toBeLessThan(box.x + box.width);
+		const side = await tip.getAttribute('data-side');
+		// Above or below, the arrow lines up across the control; beside it, along it.
+		const [at, start, size] =
+			side === 'left' || side === 'right'
+				? [arrow.y + arrow.height / 2, box.y, box.height]
+				: [arrow.x + arrow.width / 2, box.x, box.width];
+		expect(at).toBeGreaterThan(start);
+		expect(at).toBeLessThan(start + size);
 	};
 	await expect(heading('Dress up the demo')).toBeVisible();
 	await pointsAt(customize);
@@ -805,6 +810,8 @@ test('tips point at each control in order, end on their action, and come back in
 	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
 	await expect(page.locator('h1')).toHaveText('Adventurer copy');
 	await expect(heading('Add gear')).toBeVisible();
+	// The slot's + in its header, which stays when the slot has gear, not the New tile that goes away.
+	await pointsAt(page.getByRole('button', { name: 'New head item', exact: true }).first());
 	await page.getByRole('tab', { name: 'Moves', exact: true }).click();
 	await expect(heading('Fit gear to this move')).toBeVisible();
 	await tip.getByRole('button', { name: 'Close tip' }).click();

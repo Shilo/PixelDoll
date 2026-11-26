@@ -23,6 +23,8 @@
 		title,
 		body,
 		placement = 'bottom',
+		announce = true,
+		onannounce,
 		ondismiss
 	}: {
 		id: string;
@@ -30,6 +32,9 @@
 		title: string;
 		body: string;
 		placement?: Side;
+		/** Read it out once it is placed: false when it was already announced this visit and only came back. */
+		announce?: boolean;
+		onannounce?: () => void;
 		ondismiss: () => void;
 	} = $props();
 
@@ -76,7 +81,10 @@
 				const away = !!middlewareData.hide?.referenceHidden;
 				floating.toggleAttribute('data-away', away);
 				floating.dataset.positioned = '';
-				if (!away) announced = true;
+				if (!away && !announced) {
+					announced = true;
+					onannounce?.();
+				}
 			});
 		};
 		const stop = autoUpdate(el, floating, place, { layoutShift: true });
@@ -135,7 +143,7 @@
 </script>
 
 <div class="tip-layer" {@attach inLayer}>
-	<p class="sr" role="status">{announced ? `${title}. ${body}` : ''}</p>
+	<p class="sr" role="status">{announce && announced ? `${title}. ${body}` : ''}</p>
 	<!-- Not a popover: the app reads an open popover as an open menu and pauses stage keys and zoom for it. -->
 	<section
 		bind:this={tip}

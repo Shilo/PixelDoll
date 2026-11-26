@@ -5,7 +5,8 @@ import {
 	equipmentMode,
 	openPlaybackPicker,
 	playbackPicker,
-	selectPlaybackClip
+	selectPlaybackClip,
+	skipTips
 } from './immersive-helpers.ts';
 import { layout } from '../../src/studio/experience/geometry.ts';
 import { focalSlot, pickFacings } from '../../src/studio/experience/lineup.ts';
@@ -22,6 +23,8 @@ test.beforeEach(async ({ context }) => {
 			/* Opaque initial pages have no storage. */
 		}
 	});
+	// Not about onboarding: tips sit over the controls these checks press.
+	await skipTips(context);
 	await context.route('https://*.pixellab.ai/**', async (route) => {
 		await route.abort();
 		expect(route.request().method(), 'Parity checks must never submit a paid request').toBe('GET');

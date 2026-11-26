@@ -3664,7 +3664,7 @@
 		"newCharacterTitle": "Kendininkini yap",
 		"newCharacterBody": "Bir açıklamadan karakter oluştur ya da elindeki bir karakteri içe aktar.",
 		"addItemTitle": "Eşya ekle",
-		"addItemBody": "Bir eşyayı tarif et, PixelLab onu her karede bu karaktere uyacak şekilde çizsin.",
+		"addItemBody": "Bir eşyayı tarif etmek için herhangi bir yuvada + kullan. PixelLab onu her karede bu karaktere uyacak şekilde çizer.",
 		"generateItemsTitle": "Eşyaları bu animasyona uydur",
 		"generateItemsBody": "Bu animasyonun menüsünü aç ve eşyaların eksik karelerini çizmek için Eşya üret'i seç.",
 		"addMoveTitle": "Animasyon ekle",

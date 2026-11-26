@@ -3664,7 +3664,7 @@
 		"newCharacterTitle": "Eigene Figur",
 		"newCharacterBody": "Erstelle eine Figur aus einer Beschreibung oder importiere eine vorhandene.",
 		"addItemTitle": "Ausrüstung hinzufügen",
-		"addItemBody": "Beschreibe einen Gegenstand, und PixelLab zeichnet ihn passend zu dieser Figur in jedem Frame.",
+		"addItemBody": "Tippe bei einem Platz auf +, um einen Gegenstand zu beschreiben. PixelLab zeichnet ihn passend zu dieser Figur in jedem Frame.",
 		"generateItemsTitle": "Ausrüstung an diese Animation anpassen",
 		"generateItemsBody": "Öffne das Menü dieser Animation und wähle „Gegenstände generieren“, um die fehlenden Frames deiner Ausrüstung zu zeichnen.",
 		"addMoveTitle": "Animation hinzufügen",

@@ -3562,7 +3562,7 @@
 		"newCharacterTitle": "自分のキャラクターを作る",
 		"newCharacterBody": "説明文からキャラクターを作るか、手持ちのキャラクターをインポートしましょう。",
 		"addItemTitle": "装備を追加",
-		"addItemBody": "アイテムを説明すると、PixelLabがこのキャラクターの全フレームに合わせて描きます。",
+		"addItemBody": "スロットの＋でアイテムを説明すると、PixelLabがこのキャラクターの全フレームに合わせて描きます。",
 		"generateItemsTitle": "装備をこのモーションに合わせる",
 		"generateItemsBody": "このモーションのメニューを開いて「アイテムを生成」を選ぶと、装備の足りないフレームを描きます。",
 		"addMoveTitle": "モーションを追加",

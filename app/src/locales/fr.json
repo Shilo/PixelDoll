@@ -3664,7 +3664,7 @@
 		"newCharacterTitle": "Créez le vôtre",
 		"newCharacterBody": "Créez un personnage à partir d’une description, ou importez-en un que vous avez déjà.",
 		"addItemTitle": "Ajoutez de l’équipement",
-		"addItemBody": "Décrivez un objet et PixelLab le dessine pour qu’il s’adapte à ce personnage dans chaque image.",
+		"addItemBody": "Utilisez + sur un emplacement pour décrire un objet. PixelLab le dessine pour qu’il s’adapte à ce personnage dans chaque image.",
 		"generateItemsTitle": "Adaptez l’équipement à cette animation",
 		"generateItemsBody": "Ouvrez le menu de cette animation et choisissez Générer des objets pour dessiner les images manquantes de votre équipement.",
 		"addMoveTitle": "Ajoutez une animation",

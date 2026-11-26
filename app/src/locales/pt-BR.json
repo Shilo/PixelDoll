@@ -3673,7 +3673,7 @@
 		"newCharacterTitle": "Crie o seu",
 		"newCharacterBody": "Crie um personagem a partir de uma descrição ou importe um que você já tenha.",
 		"addItemTitle": "Adicione equipamento",
-		"addItemBody": "Descreva um item e o PixelLab o desenha para caber neste personagem em todos os quadros.",
+		"addItemBody": "Use + em qualquer espaço para descrever um item. O PixelLab o desenha para caber neste personagem em todos os quadros.",
 		"generateItemsTitle": "Ajuste o equipamento a esta animação",
 		"generateItemsBody": "Abra o menu desta animação e escolha Gerar itens para desenhar os quadros que faltam no seu equipamento.",
 		"addMoveTitle": "Adicione uma animação",

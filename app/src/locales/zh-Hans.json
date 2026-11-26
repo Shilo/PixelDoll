@@ -3562,7 +3562,7 @@
 		"newCharacterTitle": "创建你自己的角色",
 		"newCharacterBody": "根据描述创建角色，或导入你已有的角色。",
 		"addItemTitle": "添加装备",
-		"addItemBody": "描述一件物品，PixelLab 会把它画得在每一帧都贴合这个角色。",
+		"addItemBody": "在任一槽位点 + 描述一件物品，PixelLab 会把它画得在每一帧都贴合这个角色。",
 		"generateItemsTitle": "让装备适配这个动作",
 		"generateItemsBody": "打开这个动作的菜单并选择“生成装备”，为装备补画缺少的帧。",
 		"addMoveTitle": "添加动作",

@@ -48,10 +48,17 @@ export function completeTip(id: TipId) {
 	// Untracked, so an effect that completes a tip reruns only when what it watches changes, never when tips reset.
 	untrack(() => {
 		if (!tipsEnabled || tips.done[id]) return;
-		tips.done[id] = true;
+		// Merge with what storage holds now, so another tab's progress (or its Show tips again) is not overwritten.
+		tips.done = { ...read(), [id]: true };
 		write();
 	});
 }
+
+// Another tab finished a tip or asked for them all again: this tab follows.
+if (tipsEnabled && typeof addEventListener === 'function')
+	addEventListener('storage', (event) => {
+		if (event.key === TIPS_KEY || event.key === null) tips.done = read();
+	});
 
 /** Every tip can show again, starting where the person is now. */
 export function showTipsAgain() {

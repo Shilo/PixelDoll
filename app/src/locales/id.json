@@ -3562,7 +3562,7 @@
 		"newCharacterTitle": "Buat milik Anda",
 		"newCharacterBody": "Buat karakter dari deskripsi, atau impor karakter yang sudah Anda miliki.",
 		"addItemTitle": "Tambah perlengkapan",
-		"addItemBody": "Jelaskan sebuah item dan PixelLab menggambarnya agar pas dengan karakter ini di setiap frame.",
+		"addItemBody": "Pakai + di slot mana pun untuk menjelaskan sebuah item. PixelLab menggambarnya agar pas dengan karakter ini di setiap frame.",
 		"generateItemsTitle": "Sesuaikan perlengkapan dengan animasi ini",
 		"generateItemsBody": "Buka menu animasi ini dan pilih Buat item untuk menggambar frame perlengkapan yang belum ada.",
 		"addMoveTitle": "Tambah animasi",

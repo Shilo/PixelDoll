@@ -7,15 +7,17 @@ export function fullyVisible(el: Element | null | undefined): boolean {
 	if (r.width < 1 || r.height < 1) return false;
 	if (r.top < -1 || r.left < -1 || r.bottom > innerHeight + 1 || r.right > innerWidth + 1)
 		return false;
+	// A few pixels of slack: a 44 px hit area around a small icon may reach just past its scroller's edge.
+	const slack = 6;
 	for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
 		const s = getComputedStyle(p);
 		if (s.overflowX === 'visible' && s.overflowY === 'visible') continue;
 		const b = p.getBoundingClientRect();
 		if (
-			r.top < b.top - 1 ||
-			r.bottom > b.bottom + 1 ||
-			r.left < b.left - 1 ||
-			r.right > b.right + 1
+			r.top < b.top - slack ||
+			r.bottom > b.bottom + slack ||
+			r.left < b.left - slack ||
+			r.right > b.right + slack
 		)
 			return false;
 	}
