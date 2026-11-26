@@ -1,5 +1,5 @@
 import type { Frame } from '../../lib/compose/compose.ts';
-import type { Img } from '../../lib/image/png.ts';
+import { makeImg, type Img } from '../../lib/image/png.ts';
 import type { Project } from '../../lib/store/manifest.ts';
 import { cellImg } from '../../lib/compose/compose.ts';
 import { flipH } from '../../lib/rig/mirror.ts';
@@ -97,7 +97,7 @@ export function hideMountedLegs(
 	cell: number,
 	mode: MountLegMode,
 	geometry?: { resolvedSource?: DirectionName; baseImage?: Sha256 | null }
-): { image: Img; issue: string | null; source?: 'measured' | 'requested' | 'rest' } {
+): { image: Img; behind?: Img; issue: string | null; source?: 'measured' | 'requested' | 'rest' } {
 	const unchanged = (issue: string) => ({ image, issue });
 	if (mode === 'none') return { image, issue: null };
 	if (mode !== 'far' && mode !== 'both') return unchanged('Unknown mounted-leg cutout mode.');
@@ -231,7 +231,11 @@ export function hideMountedLegs(
 						image.h - 1,
 						Math.floor(Math.max(...candidates.map((point) => point.y)) + radius)
 					);
-	let output: Img | undefined;
+	let output: Img | undefined, behind: Img | undefined;
+	const moveBehind = (foreground: Img, background: Img, index: number) => {
+		background.data.set(image.data.subarray(index, index + 4), index);
+		foreground.data.fill(0, index, index + 4);
+	};
 	const removed: number[] = [];
 	for (let y = minY; y <= maxY; y++)
 		for (let x = minX; x <= maxX; x++) {
@@ -249,10 +253,11 @@ export function hideMountedLegs(
 						: candidateDistance <= radius && candidateDistance < otherDistance && !ambiguous;
 			if (!cut) continue;
 			output ??= { w: image.w, h: image.h, data: new Uint8ClampedArray(image.data) };
-			output.data.fill(0, index, index + 4);
+			behind ??= makeImg(image.w, image.h);
+			moveBehind(output, behind, index);
 			if (mode === 'far') removed.push(y * image.w + x);
 		}
-	if (output && removed.length) {
+	if (output && behind && removed.length) {
 		const visited = new Set<number>();
 		for (const removedPixel of removed) {
 			const removedX = removedPixel % image.w,
@@ -293,10 +298,9 @@ export function hideMountedLegs(
 								}
 							}
 					}
-					if (fragment)
-						for (const pixel of component) output.data.fill(0, pixel * 4, pixel * 4 + 4);
+					if (fragment) for (const pixel of component) moveBehind(output, behind, pixel * 4);
 				}
 		}
 	}
-	return { image: output ?? image, issue: null, source };
+	return { image: output ?? image, behind, issue: null, source };
 }

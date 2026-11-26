@@ -27,6 +27,7 @@
 	import {
 		mountedFrame,
 		mountView,
+		mountedLayers,
 		placeRider,
 		sampleMountFrame,
 		TEST_MOUNT
@@ -295,7 +296,7 @@
 			clockRider = current?.id ?? '';
 		}
 		// The rider is composed only when its clip, facing or frame changes, not on every animation frame.
-		let composed: { key: string; image: Img } | null = null,
+		let composed: { key: string; rider: ReturnType<typeof hideMountedLegs> } | null = null,
 			last = performance.now(),
 			frameId = 0;
 		const draw = (now: number) => {
@@ -308,8 +309,6 @@
 				chosenFacing = turning[(turning.indexOf(direction) + 1) % turning.length];
 				return;
 			}
-			const layers: { image: Img | HTMLCanvasElement; x: number; y: number }[] = [];
-			let contact: { x: number; y: number } | undefined;
 			if (mounted && a && current && p) {
 				clock = advancePlayback(p, clock, dt);
 				const key = JSON.stringify([p.clip, p.direction, clock.cell]);
@@ -319,7 +318,7 @@
 					composed = result.image
 						? {
 								key,
-								image: hideMountedLegs(
+								rider: hideMountedLegs(
 									result.image,
 									result.frame,
 									current.project.manifest.rig,
@@ -330,21 +329,26 @@
 									mode === 'none'
 										? undefined
 										: mountLegGeometry(current.project, p.clip, p.direction, clock.cell)
-								).image
+								)
 							}
 						: null;
 				}
 			}
-			if (view) {
-				const gait = view.frames[sampleMountFrame(view, elapsed)];
-				const at = place?.view ? placeRider(place.ground, place.contact, gait) : null;
-				const { x, y } = at?.mount ?? { x: 0, y: 0 };
-				layers.push({ image: gait.back, x, y });
-				if (mounted && composed && at)
-					layers.push({ image: composed.image, x: at.rider.x, y: at.rider.y });
-				layers.push({ image: gait.front, x, y });
-				contact = { x: x + gait.seat.x, y: y + gait.seat.y };
-			}
+			const gait = view?.frames[sampleMountFrame(view, elapsed)];
+			const origin = { x: 0, y: 0 };
+			const at = gait && place?.view ? placeRider(place.ground, place.contact, gait) : null;
+			const shownRider = mounted && at ? composed?.rider : undefined;
+			const layers = gait
+				? mountedLayers(
+						gait,
+						at ?? { mount: origin, rider: origin },
+						shownRider?.image ?? null,
+						shownRider?.behind
+					)
+				: [];
+			const contact = gait
+				? { x: (at?.mount.x ?? 0) + gait.seat.x, y: (at?.mount.y ?? 0) + gait.seat.y }
+				: undefined;
 			const box =
 				bounds && place?.view && contact
 					? {
@@ -355,8 +359,7 @@
 						}
 					: layers.reduce(
 							(b, l) => {
-								const w = 'w' in l.image ? l.image.w : l.image.width,
-									h = 'h' in l.image ? l.image.h : l.image.height;
+								const { w, h } = l.image;
 								return {
 									l: Math.min(b.l, l.x),
 									t: Math.min(b.t, l.y),
@@ -394,7 +397,7 @@
 					top = Math.round(tall / 2 - center.y * scale);
 				g.imageSmoothingEnabled = false;
 				for (const l of layers) {
-					const image = 'data' in l.image ? imageCanvas(l.image, canvases) : l.image;
+					const image = imageCanvas(l.image, canvases);
 					g.drawImage(
 						image,
 						left + l.x * scale,
@@ -411,7 +414,7 @@
 			}
 			if (contactMarker) contactMarker.hidden = !contact || !width || !tall;
 			target.dataset.facing = direction;
-			target.dataset.rider = mounted && layers.length > 2 ? (current?.id ?? '') : '';
+			target.dataset.rider = shownRider ? (current?.id ?? '') : '';
 			// Paused, the frame stays drawn; a settings change reruns this effect and draws once more.
 			if (running) frameId = requestAnimationFrame(draw);
 		};

@@ -1147,6 +1147,35 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(riderPose).toHaveAttribute('value', 'walk');
 	await expect(world(page)).toHaveAttribute('data-clip', 'walk');
 	await expect(legMode('Far leg')).toBeEnabled();
+	// A paused draft seat lets us compare the same pose and gait with and without hiding.
+	const seatEditor = mountMenu.getByRole('button', { name: 'Seat position', exact: true });
+	const seatDirection = mountMenu.getByRole('combobox', { name: 'Seat direction', exact: true });
+	const mountCanvas = mountMenu.locator('.mount-preview canvas');
+	const mountPixels = () =>
+		mountCanvas.evaluate(async (canvas: HTMLCanvasElement) => {
+			await new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+			);
+			const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
+			return new Uint8Array(await crypto.subtle.digest('SHA-256', data.buffer)).join(',');
+		});
+	await seatEditor.click();
+	await seatDirection.selectOption('east');
+	await expect(mountCanvas).toHaveAttribute('data-facing', 'east');
+	await expect(mountCanvas).toHaveAttribute('data-rider', /.+/);
+	await legMode('None').check();
+	const uncutSeated = await mountPixels();
+	await legMode('Both legs').check();
+	expect(await mountPixels()).not.toBe(uncutSeated);
+	await mountMenu.getByRole('button', { name: 'Move seat up', exact: true }).focus();
+	for (let step = 0; step < 32; step++) await page.keyboard.press('ArrowUp');
+	// The raised outfit's sword still reaches the neck. Move it clear horizontally too.
+	for (let step = 0; step < 8; step++) await page.keyboard.press('ArrowLeft');
+	await expect(mountMenu.locator('[data-setting="rider-seat"] output')).toHaveText('x -8, y -32');
+	const raisedWithHiding = await mountPixels();
+	await legMode('None').check();
+	expect(await mountPixels()).toBe(raisedWithHiding);
+	await seatEditor.click();
 	await legMode('Far leg').check();
 	// The live views follow the Move pose too, not just Preview's selection.
 	await closeMount();

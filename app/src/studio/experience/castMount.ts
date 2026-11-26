@@ -8,7 +8,7 @@ import { characterFacts } from '../model.ts';
 import { characterBodySize, previewBounds, standingFrame } from './bounds.ts';
 import { hideMountedLegs, mountLegGeometry } from './mountLegs.ts';
 import { mountPlacement } from './mountPlacement.ts';
-import { placeRider } from './mounts.ts';
+import { mountedLayers, placeRider } from './mounts.ts';
 import {
 	advancePlayback,
 	buildPresentation,
@@ -71,18 +71,17 @@ export function mountedStill(
 				cell,
 				legs,
 				legs === 'none' ? undefined : mountLegGeometry(project, p.clip, p.direction, cell)
-			).image;
+			);
 			const pose = place.view.frames[0];
 			const at = placeRider(place.ground, place.contact, pose);
 			const l = Math.min(at.mount.x, at.rider.x),
 				t = Math.min(at.mount.y, at.rider.y);
 			const image = makeImg(
-				Math.max(at.mount.x + pose.back.w, at.rider.x + rider.w) - l,
-				Math.max(at.mount.y + pose.back.h, at.rider.y + rider.h) - t
+				Math.max(at.mount.x + pose.back.w, at.rider.x + rider.image.w) - l,
+				Math.max(at.mount.y + pose.back.h, at.rider.y + rider.image.h) - t
 			);
-			over(image, pose.back, at.mount.x - l, at.mount.y - t);
-			over(image, rider, at.rider.x - l, at.rider.y - t);
-			over(image, pose.front, at.mount.x - l, at.mount.y - t);
+			for (const layer of mountedLayers(pose, at, rider.image, rider.behind))
+				over(image, layer.image, layer.x - l, layer.y - t);
 			const body = standingFrame(project, p.direction);
 			still = {
 				image,

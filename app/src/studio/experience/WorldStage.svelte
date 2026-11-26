@@ -44,6 +44,7 @@
 		MOUNT_HEIGHT_REASON,
 		mountSupportsFacing,
 		mountedFrame,
+		mountedLayers,
 		placeRider,
 		sampleMountFrame,
 		type MountViewResult
@@ -971,23 +972,16 @@
 			const index = sampleMountFrame(mounted.view, mountElapsed);
 			const pose = mounted.view.frames[index];
 			const placement = placeRider(mounted.ground, mounted.contact, pose);
-			const layer = (image: Img) =>
+			for (const layer of mountedLayers(pose, placement, actor.source, actor.legs?.behind)) {
+				const image = 'data' in layer.image ? mountCanvas(layer.image) : layer.image;
 				g.drawImage(
-					mountCanvas(image),
-					left + placement.mount.x * scale,
-					top + placement.mount.y * scale,
-					image.w * scale,
-					image.h * scale
+					image,
+					left + layer.x * scale,
+					top + layer.y * scale,
+					image.width * scale,
+					image.height * scale
 				);
-			layer(pose.back);
-			g.drawImage(
-				actor.source,
-				left + placement.rider.x * scale,
-				top + placement.rider.y * scale,
-				actor.source.width * scale,
-				actor.source.height * scale
-			);
-			layer(pose.front);
+			}
 			return index;
 		};
 		let raf = 0,

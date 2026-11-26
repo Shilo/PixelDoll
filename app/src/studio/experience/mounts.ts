@@ -400,6 +400,21 @@ export function placeRider(ground: Point, contact: Point, frame: MountFrame): Mo
 	};
 }
 
+/** Draw selected rider pixels behind the mount so its current silhouette supplies the occlusion. */
+export function mountedLayers<T>(
+	pose: MountFrame,
+	{ mount, rider }: MountPlacement,
+	image: T | null,
+	behind?: Img
+): { image: Img | T; x: number; y: number }[] {
+	const layers: { image: Img | T; x: number; y: number }[] = [];
+	if (behind) layers.push({ image: behind, ...rider });
+	layers.push({ image: pose.back, ...mount });
+	if (image !== null) layers.push({ image, ...rider });
+	layers.push({ image: pose.front, ...mount });
+	return layers;
+}
+
 /**
  * The ground-relative frame (x, y = standing ground) holding the mount and the shifted rider body across every gait
  * frame, so Preview fits the whole mounted group without resizing as it bobs.

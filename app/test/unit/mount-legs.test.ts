@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
+import { over } from '../../src/lib/compose/compose.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import { flipH } from '../../src/lib/rig/mirror.ts';
 import { DEFAULT_MOVE, type Keypoint, type Rig, type Sha256 } from '../../src/lib/rig/rig.ts';
 import { hideMountedLegs, mountLegGeometry } from '../../src/studio/experience/mountLegs.ts';
+import {
+	mountedLayers,
+	mountView,
+	placeRider,
+	TEST_MOUNT
+} from '../../src/studio/experience/mounts.ts';
+import { offsetMountSeat } from '../../src/studio/experience/mountPlacement.ts';
 import type { Project } from '../../src/lib/store/manifest.ts';
 
 const hash: Sha256 = 'sha256:standing';
@@ -76,6 +84,117 @@ function rider() {
 }
 
 describe('mounted-leg experimental cutout', () => {
+	it.each(['far', 'both'] as const)(
+		'only hides %s leg pixels covered by the placed mount',
+		(mode) => {
+			const rig = makeRig();
+			const image = rider();
+			const legs = hideMountedLegs(image, rig.pivot, rig, 'walk', 'east', 0, mode);
+			expect(legs.behind).toBeDefined();
+			const restored = makeImg(image.w, image.h);
+			over(restored, legs.behind!);
+			over(restored, legs.image);
+			expect(restored).toEqual(image);
+			const back = makeImg(20, 20);
+			const color = [70, 60, 50, 255];
+			for (const x of [6, 14]) {
+				for (let y = 8; y <= 15; y++) if (y !== 12) paint(back, x, y, color);
+			}
+			const ground = { x: 40, y: 40 };
+			const contact = { x: 10, y: 6 };
+			const view = {
+				fixture: 'narrow-saddle' as const,
+				direction: 'east' as const,
+				frames: [{ back, front: makeImg(20, 20), ground, seat: contact, ms: 140 }]
+			};
+			const draw = (offset: { x: number; y: number }, hide: boolean) => {
+				const pose = offsetMountSeat(view, offset).frames[0];
+				const at = placeRider(ground, contact, pose);
+				const result = makeImg(80, 80);
+				for (const layer of mountedLayers(
+					pose,
+					at,
+					hide ? legs.image : image,
+					hide ? legs.behind : undefined
+				))
+					over(result, layer.image, 30 + layer.x, 30 + layer.y);
+				return result;
+			};
+			const seated = draw({ x: 0, y: 0 }, true);
+			expect(pixel(seated, 36, 40)).toEqual(color);
+			expect(pixel(seated, 44, 40)).toEqual(mode === 'far' ? pixel(image, 14, 10) : color);
+			expect(pixel(seated, 36, 42)).toEqual(pixel(image, 6, 12));
+			expect(pixel(seated, 36, 47)).toEqual(pixel(image, 6, 17));
+			const raised = draw({ x: 0, y: -6 }, true);
+			expect(pixel(raised, 36, 35)).toEqual(pixel(image, 6, 11));
+			expect(pixel(raised, 36, 38)).toEqual(color);
+			const lowered = draw({ x: 0, y: 4 }, true);
+			expect(pixel(lowered, 36, 39)).toEqual(pixel(image, 6, 5));
+			expect(pixel(lowered, 36, 41)).toEqual(color);
+			for (const offset of [
+				{ x: 0, y: -20 },
+				{ x: -24, y: 0 },
+				{ x: 24, y: 0 }
+			])
+				expect(draw(offset, true)).toEqual(draw(offset, false));
+		}
+	);
+
+	it.each([
+		'east',
+		'west',
+		'north-east',
+		'north-west',
+		'south-east',
+		'south-west',
+		'north',
+		'south'
+	] as const)('uses the %s mount silhouette at every gait frame and adjusted seat', (direction) => {
+		const rig = makeRig();
+		rig.directions = [{ id: direction }];
+		rig.animations[0].sources = { [direction]: rig.animations[0].sources!.east! };
+		const view = mountView(TEST_MOUNT, direction, 20);
+		if (!view.ok) throw new Error(view.reason);
+		const image = rider();
+		const ground = { x: 56, y: 68 };
+		const contact = { x: 10.5, y: 6.5 };
+		for (const mode of ['none', 'far', 'both'] as const) {
+			const legs = hideMountedLegs(image, rig.pivot, rig, 'walk', direction, 0, mode);
+			const axial = direction === 'north' || direction === 'south';
+			expect(!!legs.behind).toBe(mode === 'both' || (mode === 'far' && !axial));
+			expect(!!legs.issue).toBe(mode === 'far' && axial);
+			for (const offset of [
+				{ x: 0, y: 0 },
+				{ x: -8, y: -5 },
+				{ x: 8, y: 5 },
+				{ x: 0, y: -32 }
+			]) {
+				for (const gait of offsetMountSeat(view.view, offset).frames) {
+					const at = placeRider(ground, contact, gait);
+					const composed = makeImg(80, 80);
+					for (const layer of mountedLayers(gait, at, legs.image, legs.behind))
+						over(composed, layer.image, layer.x, layer.y);
+					for (const x of [6, 14])
+						for (let y = 3; y <= 18; y++) {
+							const sx = at.rider.x + x,
+								sy = at.rider.y + y;
+							const mountX = sx - at.mount.x,
+								mountY = sy - at.mount.y;
+							const atMount = (layer: Img) =>
+								mountX >= 0 && mountX < layer.w && mountY >= 0 && mountY < layer.h
+									? pixel(layer, mountX, mountY)
+									: [];
+							const front = atMount(gait.front),
+								back = atMount(gait.back);
+							const moved = legs.behind && pixel(legs.behind, x, y)[3];
+							expect(pixel(composed, sx, sy)).toEqual(
+								front[3] ? front : moved && back[3] ? back : pixel(image, x, y)
+							);
+						}
+				}
+			}
+		}
+	});
 	it('keeps matching direction-owned Default rest joints before mirrored source measurements', () => {
 		const rig = makeRig(),
 			image = rider(),
@@ -354,6 +473,7 @@ describe('mounted-leg experimental cutout', () => {
 			expect(pixel(result.image, pixelX, 16)).toEqual([0, 0, 0, 0]);
 		expect(pixel(result.image, 0, 19)).toEqual(pixel(image, 0, 19));
 		expect(pixel(result.image, 14, 16)).toEqual(pixel(image, 14, 16));
+		expect(pixel(result.behind!, 0, 16)).toEqual(pixel(image, 0, 16));
 		expect(image.data).toEqual(original);
 	});
 
