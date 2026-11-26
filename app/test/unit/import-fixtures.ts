@@ -67,9 +67,10 @@ export function noisy(size = 32, seed = 0): Img {
 	return im;
 }
 
-/** A cell with exactly `colors` distinct colors, of which exactly `singles` appear once; the rest fill a repeated color. */
-export function paletteImage(colors: number, singles: number, size = 32): Img {
-	const im = makeImg(size, size);
+/** A cell with exactly `colors` distinct colors, of which `singles` appear once (needs `singles < colors`); the rest
+ *  repeat a fill color. */
+export function paletteImage(colors: number, singles: number): Img {
+	const im = makeImg(32, 32);
 	const color = (i: number) => [i & 255, (i >> 8) & 255, 0, 255] as const;
 	let p = 0;
 	const put = (i: number) => im.data.set(color(i), p++ * 4);
@@ -78,8 +79,8 @@ export function paletteImage(colors: number, singles: number, size = 32): Img {
 		put(singles + i);
 		put(singles + i);
 	}
-	const fill = colors > singles ? singles : 0; // a repeated color when there is one, so no singleton is consumed
-	while (p < size * size) put(fill);
+	const fill = singles; // in the repeated range, so no singleton is consumed
+	while (p < 32 * 32) put(fill);
 	return im;
 }
 

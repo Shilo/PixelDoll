@@ -10,8 +10,9 @@ import type { Img } from './png.ts';
 export const ALPHA_THRESHOLD = 128;
 /** Smallest painted area a cell needs before its palette means anything. */
 export const MIN_PAINTED_FLOOR = 256;
-/** A compressed palette needs a real palette behind it; a handful of colors is never a compression signature. */
-export const MIN_COLORS = 64;
+/** A compressed palette needs a real palette behind it. Above the singles floor on purpose: a 100-color hand-anti-aliased
+ *  sprite can have many one-off colors without being damaged, while JPEG noise lands in the hundreds. */
+export const MIN_COLORS = 128;
 /** An absolute floor, so the ratio is never asked to be meaningful on a tiny palette. */
 export const MIN_SINGLES = 64;
 /** Share of distinct colors used only once that means compression or resampling; native art repeats its palette. */
@@ -30,13 +31,13 @@ export interface PaletteStats {
  * Count distinct and single-use colors over a 24-bit palette. The state table is one byte per RGB value (16 MB), so a
  * large cell costs bounded memory instead of one map entry per pixel.
  */
-export function paletteStats(im: Img, threshold = ALPHA_THRESHOLD): PaletteStats {
+export function paletteStats(im: Img): PaletteStats {
 	const state = new Uint8Array(1 << 24);
 	let painted = 0,
 		colors = 0,
 		singles = 0;
 	for (let p = 0; p < im.w * im.h; p++) {
-		if (im.data[p * 4 + 3] < threshold) continue;
+		if (im.data[p * 4 + 3] < ALPHA_THRESHOLD) continue;
 		painted++;
 		const key = (im.data[p * 4] << 16) | (im.data[p * 4 + 1] << 8) | im.data[p * 4 + 2];
 		const seen = state[key];

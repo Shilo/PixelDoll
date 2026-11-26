@@ -67,17 +67,17 @@ test('the painted floor scales with the cell and is exact', () => {
 });
 
 test('the color floor is exact', () => {
-	const few = paletteImage(MIN_COLORS - 1, MIN_COLORS - 1);
-	expect(paletteStats(few).colors).toBe(MIN_COLORS - 1);
+	const few = paletteImage(MIN_COLORS - 1, 80);
+	expect(paletteStats(few)).toMatchObject({ colors: MIN_COLORS - 1, singles: 80 });
 	expect(detectCompressedPalette(few)).toBe(false);
-	// A palette above the floor with enough one-offs is judged on its share instead.
-	expect(detectCompressedPalette(paletteImage(100, MIN_COLORS))).toBe(true);
+	expect(detectCompressedPalette(paletteImage(MIN_COLORS, 80))).toBe(true);
 });
 
 test('the single-use floor is exact', () => {
-	expect(paletteStats(paletteImage(100, MIN_SINGLES - 1)).singles).toBe(MIN_SINGLES - 1);
-	expect(detectCompressedPalette(paletteImage(100, MIN_SINGLES - 1))).toBe(false);
-	expect(detectCompressedPalette(paletteImage(100, MIN_SINGLES))).toBe(true);
+	const few = paletteImage(200, MIN_SINGLES - 1);
+	expect(paletteStats(few)).toMatchObject({ colors: 200, singles: MIN_SINGLES - 1 });
+	expect(detectCompressedPalette(few)).toBe(false);
+	expect(detectCompressedPalette(paletteImage(200, MIN_SINGLES))).toBe(true);
 });
 
 test('the single-use share threshold is exact at 20%', () => {
@@ -112,7 +112,6 @@ test('real exported pixel art has no single-use colors', async () => {
 		)
 	);
 	const stats = paletteStats(body);
-	expect(stats.colors).toBeLessThan(64);
 	expect(stats.singles).toBe(0);
 	expect(detectCompressedPalette(body)).toBe(false);
 });

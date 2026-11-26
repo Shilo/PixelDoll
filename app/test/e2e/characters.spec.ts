@@ -5304,20 +5304,13 @@ test('import warns when the standing artwork looks compressed or resampled', asy
 });
 
 test('import stays quiet for native standing artwork', async ({ page }) => {
-	// Four colors in repeating bands: the palette of real pixel art.
+	// 200 colors, each repeated about five times: a rich but hand-drawn palette, the case a naive color count would flag.
 	const clean = makeImg(32, 32);
-	const colors = [
-		[200, 48, 48, 255],
-		[48, 180, 64, 255],
-		[48, 72, 200, 255],
-		[220, 196, 48, 255]
-	];
 	for (let y = 0; y < 32; y++)
-		for (let x = 0; x < 32; x++)
-			clean.data.set(
-				colors[(Math.floor(x / 8) + Math.floor(y / 8)) % colors.length],
-				(y * 32 + x) * 4
-			);
+		for (let x = 0; x < 32; x++) {
+			const i = (x + y * 32) % 200;
+			clean.data.set([i & 255, (i >> 8) & 255, 0, 255], (y * 32 + x) * 4);
+		}
 	await importArchive(page, clean);
 	await expect(page.getByText('looks compressed or resampled', { exact: false })).toHaveCount(0);
 });

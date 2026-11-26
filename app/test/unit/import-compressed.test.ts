@@ -49,7 +49,7 @@ test('colors the importer drops (alpha below the cutoff) do not count as compres
 });
 
 test('one slightly damaged direction among clean ones still warns', async () => {
-	// 30% one-off colors: over the share threshold on its own, invisible once pooled with seven clean palettes.
+	// 30% one-off colors: over the share threshold on its own; pooling it with seven clean palettes would hide it.
 	const mild = paletteImage(400, 120);
 	const art = [cell(), cell(), cell(), cell(), cell(), cell(), cell(), mild];
 	const result = await readCharacterZip(await archiveZip(art, DIRS8));
