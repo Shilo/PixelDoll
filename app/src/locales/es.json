@@ -512,8 +512,8 @@
 		"selectAllMoves": "Seleccionar todo",
 		"clearSelection": "Borrar selección",
 		"drawMovesHelp": "Rellena solo los fotogramas faltantes del objeto.",
-		"repairView": "Reparar esta vista",
-		"redrawView": "Redibujar esta vista",
+		"repairView": "Reparar vista {direction}",
+		"redrawView": "Redibujar vista {direction}",
 		"sendBackward": "Enviar atrás",
 		"bringForward": "Traer adelante",
 		"inFrontOf": "Delante de {name}",
@@ -597,12 +597,11 @@
 		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
-		"updateNoteMirrors": "Actualiza {move} hacia {direction} y sus vistas reflejadas. Solo cambia el objeto.",
+		"updateNoteMirrors": "Actualiza {move} hacia {directions}. Solo cambia el objeto.",
 		"repairFeature": "La reparación del objeto",
 		"redrawFeature": "El redibujado del objeto",
 		"repairHelp": "Conserva el diseño y cambia solo la zona del objeto.",
 		"redrawHelp": "Un nuevo intento que puede cambiar la forma o el agarre. Comparas antes de conservarlo.",
-		"billingNote": "Las estimaciones son en generaciones. PixelLab puede cobrar en dólares. Los tiempos de espera varían.",
 		"itemActions": "Acciones del objeto",
 		"statusGenerating": "Generando",
 		"statusIncomplete": "Incompleto",
@@ -612,8 +611,8 @@
 		"missingView": "Falta",
 		"hiddenWhenWorn": "Llevar {names} oculta este objeto.",
 		"clipsIncomplete": {
-			"one": "{n} incompleta",
-			"other": "{n} incompletas"
+			"one": "{n} movimiento incompleto",
+			"other": "{n} movimientos incompletos"
 		},
 		"complete": "Completo",
 		"clipNoFrames": "Aún sin fotogramas",
@@ -626,7 +625,7 @@
 		"passed": "Superadas",
 		"facing": "Dirección",
 		"matchColorsDetail": "Ajusta {pixels} en {frames} a la paleta del objeto.",
-		"fixFramesDetail": "Edita los fotogramas en tu programa de dibujo.",
+		"fixFramesDetail": "Edita todos los fotogramas de {move} en tu programa de dibujo.",
 		"hiddenState": "Oculto",
 		"hidesCount": {
 			"one": "Oculta {n} categoría",
@@ -661,10 +660,11 @@
 			"one": "{n} generación más que Reparar.",
 			"other": "{n} generaciones más que Reparar."
 		},
-		"fixMove": "Corregir {move}",
 		"turnLeft": "Girar a la izquierda",
 		"turnRight": "Girar a la derecha",
-		"facingLabel": "Mirando hacia {direction}"
+		"facingLabel": "Mirando hacia {direction}",
+		"matchViewColors": "Igualar colores de la vista {direction}",
+		"fixOneView": "Corregir una vista"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nuevo personaje",
@@ -2181,7 +2181,7 @@
 		"noCharge": "PixelLab indicó que no hubo ningún cargo por este intento.",
 		"newPaidAttempt": "Volver a generar inicia un nuevo intento de pago.",
 		"retryFeature": "Volver a generar este equipamiento",
-		"retryNote": "Al volver a generar, se redibuja el diseño de la pose de pie en las direcciones del personaje. Se muestra el costo estimado. Cuando te guste el diseño, genera las demás animaciones por separado. Si quieres otro reintento o reparación por motivos de calidad, tendrás que enviar otra solicitud. PixelLab puede cobrar algunas llamadas en dólares; el tiempo en cola varía.",
+		"retryNote": "Al volver a generar, se redibuja el diseño de la pose de pie en las direcciones del personaje. Se muestra el costo estimado. Cuando te guste el diseño, genera las demás animaciones por separado. Si quieres otro reintento o reparación por motivos de calidad, tendrás que enviar otra solicitud.",
 		"slotKey": "{slot} · Color clave: {key}",
 		"calls": "Llamadas",
 		"call": "{index}: {cells} celdas",
@@ -2773,11 +2773,11 @@
 		"recovery": {
 			"reuse": "Reutiliza los fotogramas del cuerpo y los resultados de articulaciones completados.",
 			"checks": {
-				"one": "Reintentar {count} comprobación de articulaciones sin terminar · costo estimado: {gens} generaciones o {usd}. Es posible que ya se hayan cobrado comprobaciones cuyo resultado no se conoce. Reintentarlas puede generar otro cargo. La facturación y el tiempo en cola de PixelLab varían.",
-				"other": "Reintentar {count} comprobaciones de articulaciones sin terminar · costo estimado: {gens} generaciones o {usd}. Es posible que ya se hayan cobrado comprobaciones cuyo resultado no se conoce. Reintentarlas puede generar otro cargo. La facturación y el tiempo en cola de PixelLab varían."
+				"one": "Reintentar {count} comprobación de articulaciones sin terminar · costo estimado: {gens} generaciones o {usd}. Es posible que ya se hayan cobrado comprobaciones cuyo resultado no se conoce. Reintentarlas puede generar otro cargo.",
+				"other": "Reintentar {count} comprobaciones de articulaciones sin terminar · costo estimado: {gens} generaciones o {usd}. Es posible que ya se hayan cobrado comprobaciones cuyo resultado no se conoce. Reintentarlas puede generar otro cargo."
 			},
 			"noRequests": "No se hacen nuevas solicitudes de cuerpo ni de articulaciones.",
-			"items": "Si el cuerpo pasa las comprobaciones, se animará el equipamiento seleccionado · costo adicional estimado: {gens} generaciones. Puede haber reintentos y cobros en dólares."
+			"items": "Si el cuerpo pasa las comprobaciones, se animará el equipamiento seleccionado · costo adicional estimado: {gens} generaciones."
 		},
 		"color": {
 			"pixels": {
@@ -2791,7 +2791,7 @@
 			"match": "Ajusta {pixels} a la paleta de la pose de pie en {frames}. La forma del cuerpo y los demás colores no cambian.",
 			"recheck": "Volver a comprobar fotogramas modificados: {count} · costo estimado: {gens} generaciones o {usd}.",
 			"items": "Si el cuerpo pasa las comprobaciones, se animará el equipamiento seleccionado · costo adicional estimado: {gens} generaciones.",
-			"billing": "PixelLab puede cobrar en dólares; los reintentos de calidad cuestan más y el tiempo en cola varía. Si una comprobación sigue fallando, se conservan las vistas del cuerpo existentes."
+			"kept": "Si una comprobación sigue fallando, se conservan las vistas del cuerpo existentes."
 		},
 		"demo": "Las animaciones se agregan a tu propio personaje.",
 		"needsSetup": "Configura el rig de pose de este personaje para agregar animaciones. Tu arte y tus capas existentes siguen alineados.",
@@ -2810,7 +2810,6 @@
 		},
 		"changedDuringEdit": "Esta animación cambió mientras la editabas. Vuelve a seleccionarla para continuar.",
 		"duplicateOption": "{move} ya está entre las animaciones disponibles. Empieza la descripción con otras palabras.",
-		"costNotice": "PixelLab puede cobrar en dólares. Los reintentos y los métodos alternativos tienen un costo adicional.",
 		"templates": "Plantillas de animación",
 		"suggestionBuiltIn": "Usa la animación integrada de este movimiento.",
 		"suggestionDescribed": "PixelLab anima este movimiento a partir de tu texto en lugar de su animación integrada.",
@@ -2955,7 +2954,7 @@
 		"ideas": "Ideas",
 		"colorHint": "Pista de color",
 		"anyColor": "Cualquiera",
-		"checksNote": "Las comprobaciones de coherencia son automáticas. Si detectan problemas, tú decides si conservas el objeto o solicitas un reintento de pago. No habrá reintentos ni reparaciones por motivos de calidad sin que los solicites. PixelLab puede cobrar en dólares y el tiempo en cola varía.",
+		"checksNote": "Las comprobaciones de coherencia son automáticas. Si detectan problemas, tú decides si conservas el objeto o solicitas un reintento de pago. No habrá reintentos ni reparaciones por motivos de calidad sin que los solicites.",
 		"method": "Método de animación",
 		"automatic": "Automático ({method})",
 		"plan": "{calls} llamadas a PixelLab · {cells} fotogramas · {route}. Cada lote planificado se ejecuta una vez. Si alguna comprobación falla, el proceso queda pendiente de tu revisión.",

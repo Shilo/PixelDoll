@@ -512,8 +512,8 @@
 		"selectAllMoves": "Select all",
 		"clearSelection": "Clear selection",
 		"drawMovesHelp": "Fills only the missing item frames.",
-		"repairView": "Repair this view",
-		"redrawView": "Redraw this view",
+		"repairView": "Repair {direction} view",
+		"redrawView": "Redraw {direction} view",
 		"sendBackward": "Send backward",
 		"bringForward": "Bring forward",
 		"inFrontOf": "In front of {name}",
@@ -597,12 +597,11 @@
 		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
-		"updateNoteMirrors": "Updates {move} facing {direction} and its mirrored views. Only the item changes.",
+		"updateNoteMirrors": "Updates {move} facing {directions}. Only the item changes.",
 		"repairFeature": "Repair item",
 		"redrawFeature": "Redraw item",
 		"repairHelp": "Keeps the design and changes only the item area.",
 		"redrawHelp": "A new attempt that may change shape or grip. You compare before keeping it.",
-		"billingNote": "Estimates are in generations. PixelLab may bill in dollars. Wait times vary.",
 		"itemActions": "Item actions",
 		"statusGenerating": "Generating",
 		"statusIncomplete": "Incomplete",
@@ -612,8 +611,8 @@
 		"missingView": "Missing",
 		"hiddenWhenWorn": "Wearing {names} hides this item.",
 		"clipsIncomplete": {
-			"one": "{n} incomplete",
-			"other": "{n} incomplete"
+			"one": "{n} move incomplete",
+			"other": "{n} moves incomplete"
 		},
 		"complete": "Complete",
 		"clipNoFrames": "No frames yet",
@@ -626,7 +625,7 @@
 		"passed": "Passed",
 		"facing": "Facing",
 		"matchColorsDetail": "Matches {pixels} in {frames} to the item’s palette.",
-		"fixFramesDetail": "Edit frames in your art app.",
+		"fixFramesDetail": "Edit every {move} frame in your art app.",
 		"hiddenState": "Hidden",
 		"hidesCount": {
 			"one": "Hides {n} category",
@@ -661,10 +660,11 @@
 			"one": "{n} gen more than Repair.",
 			"other": "{n} gens more than Repair."
 		},
-		"fixMove": "Fix {move}",
 		"turnLeft": "Turn left",
 		"turnRight": "Turn right",
-		"facingLabel": "Facing {direction}"
+		"facingLabel": "Facing {direction}",
+		"matchViewColors": "Match colors in {direction} view",
+		"fixOneView": "Fix one view"
 	},
 	"newCharacterButton": {
 		"newCharacter": "New character",
@@ -2181,7 +2181,7 @@
 		"noCharge": "PixelLab reported no charge for this attempt.",
 		"newPaidAttempt": "Generate again starts a new paid attempt.",
 		"retryFeature": "Generating this equipment again",
-		"retryNote": "Generate again redraws the standing design in the character’s directions at the displayed estimate. Generate other moves separately after you like it. Further quality retries or repairs require another request. PixelLab may bill some calls in dollars; queue time varies.",
+		"retryNote": "Generate again redraws the standing design in the character’s directions at the displayed estimate. Generate other moves separately after you like it. Further quality retries or repairs require another request.",
 		"slotKey": "{slot} · {key} key",
 		"calls": "Calls",
 		"call": "{index}: {cells} cells",
@@ -2773,11 +2773,11 @@
 		"recovery": {
 			"reuse": "Reuse the completed body frames and joint results.",
 			"checks": {
-				"one": "Retry {count} unfinished joint check · estimated {gens} gens or {usd}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary.",
-				"other": "Retry {count} unfinished joint checks · estimated {gens} gens or {usd}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary."
+				"one": "Retry {count} unfinished joint check · estimated {gens} gens or {usd}. Unknown checks may already have charged; retrying can charge again.",
+				"other": "Retry {count} unfinished joint checks · estimated {gens} gens or {usd}. Unknown checks may already have charged; retrying can charge again."
 			},
 			"noRequests": "No new body or joint requests are made.",
-			"items": "Selected equipment poses follow after the body passes · estimated {gens} additional gens, with retries and dollar billing possible."
+			"items": "Selected equipment poses follow after the body passes · estimated {gens} additional gens."
 		},
 		"color": {
 			"pixels": {
@@ -2791,7 +2791,7 @@
 			"match": "Match {pixels} to the standing palette across {frames}. The body shape stays fixed; other colors are left alone.",
 			"recheck": "Recheck {count} changed frames · estimated {gens} gens or {usd}.",
 			"items": "Selected equipment poses follow after the body passes · estimated {gens} additional gens.",
-			"billing": "PixelLab may bill dollars; quality retries cost extra and queue time varies. Existing body views are kept if a check still fails."
+			"kept": "Existing body views are kept if a check still fails."
 		},
 		"demo": "Moves are added to your own character.",
 		"needsSetup": "Set up this character’s pose rig to add moves. Your existing artwork and layers stay aligned.",
@@ -2810,7 +2810,6 @@
 		},
 		"changedDuringEdit": "This move changed while you were editing. Select it again to continue.",
 		"duplicateOption": "{move} is already a move option. Start the description with different words.",
-		"costNotice": "PixelLab may charge in dollars. Retries and fallbacks cost extra.",
 		"templates": "Move templates",
 		"suggestionBuiltIn": "Uses this move's built-in motion.",
 		"suggestionDescribed": "PixelLab animates this move from your prompt instead of its built-in motion.",
@@ -2955,7 +2954,7 @@
 		"ideas": "Ideas",
 		"colorHint": "Color hint",
 		"anyColor": "Any",
-		"checksNote": "Consistency checks run automatically. If issues are detected, you choose whether to keep the item or request a paid retry. No quality retries or repairs run without your request. PixelLab may bill dollars and queue time varies.",
+		"checksNote": "Consistency checks run automatically. If issues are detected, you choose whether to keep the item or request a paid retry. No quality retries or repairs run without your request.",
 		"method": "Animation method",
 		"automatic": "Automatic ({method})",
 		"plan": "{calls} PixelLab calls · {cells} frames · {route}. Each planned batch runs once. Failed checks wait for your review.",

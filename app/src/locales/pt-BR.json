@@ -512,8 +512,8 @@
 		"selectAllMoves": "Selecionar tudo",
 		"clearSelection": "Limpar seleção",
 		"drawMovesHelp": "Preenche apenas os quadros ausentes do item.",
-		"repairView": "Reparar esta vista",
-		"redrawView": "Redesenhar esta vista",
+		"repairView": "Reparar vista {direction}",
+		"redrawView": "Redesenhar vista {direction}",
 		"sendBackward": "Enviar para trás",
 		"bringForward": "Trazer para frente",
 		"inFrontOf": "Na frente de {name}",
@@ -597,12 +597,11 @@
 		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
-		"updateNoteMirrors": "Atualiza {move} voltado para {direction} e suas vistas espelhadas. Só o item muda.",
+		"updateNoteMirrors": "Atualiza {move} voltado para {directions}. Só o item muda.",
 		"repairFeature": "O reparo do item",
 		"redrawFeature": "O redesenho do item",
 		"repairHelp": "Mantém o design e muda apenas a área do item.",
 		"redrawHelp": "Uma nova tentativa que pode mudar o formato ou a empunhadura. Você compara antes de manter.",
-		"billingNote": "As estimativas são em gerações. O PixelLab pode cobrar em dólares. O tempo de espera varia.",
 		"itemActions": "Ações do item",
 		"statusGenerating": "Gerando",
 		"statusIncomplete": "Incompleto",
@@ -612,8 +611,8 @@
 		"missingView": "Falta",
 		"hiddenWhenWorn": "Usar {names} oculta este item.",
 		"clipsIncomplete": {
-			"one": "{n} incompleta",
-			"other": "{n} incompletas"
+			"one": "{n} movimento incompleto",
+			"other": "{n} movimentos incompletos"
 		},
 		"complete": "Completo",
 		"clipNoFrames": "Ainda sem quadros",
@@ -626,7 +625,7 @@
 		"passed": "Aprovado",
 		"facing": "Direção",
 		"matchColorsDetail": "Ajusta {pixels} em {frames} à paleta do item.",
-		"fixFramesDetail": "Edite os quadros no seu app de desenho.",
+		"fixFramesDetail": "Edite todos os quadros de {move} no seu app de desenho.",
 		"hiddenState": "Oculto",
 		"hidesCount": {
 			"one": "Oculta {n} categoria",
@@ -661,10 +660,11 @@
 			"one": "{n} geração a mais que Reparar.",
 			"other": "{n} gerações a mais que Reparar."
 		},
-		"fixMove": "Corrigir {move}",
 		"turnLeft": "Girar para a esquerda",
 		"turnRight": "Girar para a direita",
-		"facingLabel": "Virado para {direction}"
+		"facingLabel": "Virado para {direction}",
+		"matchViewColors": "Ajustar cores da vista {direction}",
+		"fixOneView": "Corrigir uma vista"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Novo personagem",
@@ -2190,7 +2190,7 @@
 		"noCharge": "O PixelLab informou que não houve cobrança nesta tentativa.",
 		"newPaidAttempt": "Gerar novamente inicia uma nova tentativa paga.",
 		"retryFeature": "Gerando este equipamento novamente",
-		"retryNote": "Gerar novamente redesenha a arte da pose em pé nas direções do personagem pelo custo estimado exibido. Depois de aprovar o resultado, gere as outras animações separadamente. Novas tentativas ou reparos de qualidade exigem outra solicitação. O PixelLab pode cobrar algumas chamadas em dólares, e o tempo de espera na fila varia.",
+		"retryNote": "Gerar novamente redesenha a arte da pose em pé nas direções do personagem pelo custo estimado exibido. Depois de aprovar o resultado, gere as outras animações separadamente. Novas tentativas ou reparos de qualidade exigem outra solicitação.",
 		"slotKey": "{slot} · cor-chave {key}",
 		"calls": "Chamadas",
 		"call": "{index}: {cells} células",
@@ -2782,11 +2782,11 @@
 		"recovery": {
 			"reuse": "Reaproveite os quadros concluídos do corpo e os resultados das articulações.",
 			"checks": {
-				"one": "Repetir {count} verificação de articulações pendente · estimativa de {gens} gerações ou {usd}. Pode já ter havido cobrança por verificações de resultado desconhecido. Repeti-las pode gerar nova cobrança. A cobrança do PixelLab e o tempo na fila variam.",
-				"other": "Repetir {count} verificações de articulações pendentes · estimativa de {gens} gerações ou {usd}. Pode já ter havido cobrança por verificações de resultado desconhecido. Repeti-las pode gerar nova cobrança. A cobrança do PixelLab e o tempo na fila variam."
+				"one": "Repetir {count} verificação de articulações pendente · estimativa de {gens} gerações ou {usd}. Pode já ter havido cobrança por verificações de resultado desconhecido. Repeti-las pode gerar nova cobrança.",
+				"other": "Repetir {count} verificações de articulações pendentes · estimativa de {gens} gerações ou {usd}. Pode já ter havido cobrança por verificações de resultado desconhecido. Repeti-las pode gerar nova cobrança."
 			},
 			"noRequests": "Nenhuma nova solicitação de corpo ou articulações é enviada.",
-			"items": "Se o corpo passar nas verificações, o equipamento selecionado será posicionado nas poses · estimativa de {gens} gerações adicionais, com possibilidade de novas tentativas e cobrança em dólares."
+			"items": "Se o corpo passar nas verificações, o equipamento selecionado será posicionado nas poses · estimativa de {gens} gerações adicionais."
 		},
 		"color": {
 			"pixels": {
@@ -2800,7 +2800,7 @@
 			"match": "Ajuste {pixels} à paleta da pose em pé em {frames}. A forma do corpo não muda, e as demais cores são mantidas.",
 			"recheck": "Verificar novamente {count} quadros alterados · estimativa de {gens} gerações ou {usd}.",
 			"items": "Se o corpo passar nas verificações, o equipamento selecionado será posicionado nas poses · estimativa de {gens} gerações adicionais.",
-			"billing": "O PixelLab pode cobrar em dólares. Novas tentativas para corrigir problemas de qualidade têm custo extra, e o tempo na fila varia. Se alguma verificação ainda falhar, as vistas existentes do corpo são mantidas."
+			"kept": "Se alguma verificação ainda falhar, as vistas existentes do corpo são mantidas."
 		},
 		"demo": "Animações são adicionadas ao seu próprio personagem.",
 		"needsSetup": "Configure o rig de poses deste personagem para adicionar animações. A arte e as camadas existentes continuam alinhadas.",
@@ -2819,7 +2819,6 @@
 		},
 		"changedDuringEdit": "Esta animação mudou durante a edição. Selecione-a novamente para continuar.",
 		"duplicateOption": "{move} já está na lista de animações. Comece a descrição com outras palavras.",
-		"costNotice": "O PixelLab pode cobrar em dólares. Novas tentativas e métodos alternativos custam mais.",
 		"templates": "Modelos de animação",
 		"suggestionBuiltIn": "Usa a animação integrada deste movimento.",
 		"suggestionDescribed": "O PixelLab anima este movimento a partir do seu texto em vez da animação integrada.",
@@ -2964,7 +2963,7 @@
 		"ideas": "Ideias",
 		"colorHint": "Sugestão de cor",
 		"anyColor": "Qualquer cor",
-		"checksNote": "As verificações de consistência são automáticas. Se houver problemas, você escolhe se quer manter o item ou solicitar uma nova tentativa paga. Nenhuma tentativa ou reparo de qualidade acontece sem sua solicitação. O PixelLab pode cobrar em dólares, e o tempo na fila varia.",
+		"checksNote": "As verificações de consistência são automáticas. Se houver problemas, você escolhe se quer manter o item ou solicitar uma nova tentativa paga. Nenhuma tentativa ou reparo de qualidade acontece sem sua solicitação.",
 		"method": "Método de animação",
 		"automatic": "Automático ({method})",
 		"plan": "{calls} chamadas ao PixelLab · {cells} quadros · {route}. Cada lote planejado roda uma vez. Se houver falhas nas verificações, o resultado aguarda sua revisão.",

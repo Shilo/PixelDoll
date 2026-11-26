@@ -512,8 +512,8 @@
 		"selectAllMoves": "Alle auswählen",
 		"clearSelection": "Auswahl aufheben",
 		"drawMovesHelp": "Füllt nur die fehlenden Frames des Gegenstands.",
-		"repairView": "Diese Ansicht reparieren",
-		"redrawView": "Diese Ansicht neu zeichnen",
+		"repairView": "Ansicht {direction} reparieren",
+		"redrawView": "Ansicht {direction} neu zeichnen",
 		"sendBackward": "Nach hinten",
 		"bringForward": "Nach vorne",
 		"inFrontOf": "Vor {name}",
@@ -597,12 +597,11 @@
 		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
-		"updateNoteMirrors": "Aktualisiert {move} in Blickrichtung {direction} und die gespiegelten Ansichten. Nur der Gegenstand ändert sich.",
+		"updateNoteMirrors": "Aktualisiert {move} in Blickrichtung {directions}. Nur der Gegenstand ändert sich.",
 		"repairFeature": "die Gegenstandsreparatur",
 		"redrawFeature": "das Neuzeichnen des Gegenstands",
 		"repairHelp": "Behält das Design und ändert nur den Gegenstandsbereich.",
 		"redrawHelp": "Ein neuer Versuch, der Form oder Griff ändern kann. Du vergleichst, bevor du ihn behältst.",
-		"billingNote": "Schätzungen in Generierungen. PixelLab berechnet eventuell Dollar. Wartezeiten variieren.",
 		"itemActions": "Gegenstandsaktionen",
 		"statusGenerating": "Wird erstellt",
 		"statusIncomplete": "Unvollständig",
@@ -612,8 +611,8 @@
 		"missingView": "Fehlt",
 		"hiddenWhenWorn": "Beim Tragen von {names} ausgeblendet.",
 		"clipsIncomplete": {
-			"one": "{n} unvollständig",
-			"other": "{n} unvollständig"
+			"one": "{n} Bewegung unvollständig",
+			"other": "{n} Bewegungen unvollständig"
 		},
 		"complete": "Vollständig",
 		"clipNoFrames": "Noch keine Frames",
@@ -626,7 +625,7 @@
 		"passed": "Bestanden",
 		"facing": "Blickrichtung",
 		"matchColorsDetail": "Gleicht {pixels} in {frames} an die Palette des Gegenstands an.",
-		"fixFramesDetail": "Bearbeite die Frames in deinem Grafikprogramm.",
+		"fixFramesDetail": "Bearbeite alle Frames von {move} in deinem Grafikprogramm.",
 		"hiddenState": "Ausgeblendet",
 		"hidesCount": {
 			"one": "Blendet {n} Kategorie aus",
@@ -661,10 +660,11 @@
 			"one": "{n} Generierung mehr als Reparatur.",
 			"other": "{n} Generierungen mehr als Reparatur."
 		},
-		"fixMove": "{move} korrigieren",
 		"turnLeft": "Nach links drehen",
 		"turnRight": "Nach rechts drehen",
-		"facingLabel": "Blickrichtung {direction}"
+		"facingLabel": "Blickrichtung {direction}",
+		"matchViewColors": "Farben der Ansicht {direction} abgleichen",
+		"fixOneView": "Eine Ansicht korrigieren"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Neue Figur",
@@ -2181,7 +2181,7 @@
 		"noCharge": "PixelLab meldet keine Kosten für diesen Versuch.",
 		"newPaidAttempt": "„Erneut generieren“ startet einen neuen kostenpflichtigen Versuch.",
 		"retryFeature": "Diese Ausrüstung neu generieren",
-		"retryNote": "„Erneut generieren“ zeichnet das Design der Standpose in den Blickrichtungen der Figur neu. Die geschätzten Kosten siehst du hier. Generiere weitere Animationen separat, sobald dir das Design gefällt. Weitere Qualitätsversuche oder Reparaturen erfordern eine neue Anfrage. PixelLab kann manche Aufrufe in US-Dollar abrechnen. Die Wartezeit kann variieren.",
+		"retryNote": "„Erneut generieren“ zeichnet das Design der Standpose in den Blickrichtungen der Figur neu. Die geschätzten Kosten siehst du hier. Generiere weitere Animationen separat, sobald dir das Design gefällt. Weitere Qualitätsversuche oder Reparaturen erfordern eine neue Anfrage.",
 		"slotKey": "{slot} · Key-Farbe: {key}",
 		"calls": "Aufrufe",
 		"call": "{index}: {cells} Zellen",
@@ -2773,11 +2773,11 @@
 		"recovery": {
 			"reuse": "Verwende die fertigen Grundkörperframes und Gelenkprüfergebnisse erneut.",
 			"checks": {
-				"one": "{count} offene Gelenkprüfung wiederholen · geschätzt {gens} Generierungen oder {usd}. Prüfungen mit unbekanntem Ergebnis können bereits Kosten verursacht haben. Ein Neuversuch kann erneut Kosten verursachen. Abrechnung und Wartezeit bei PixelLab können variieren.",
-				"other": "{count} offene Gelenkprüfungen wiederholen · geschätzt {gens} Generierungen oder {usd}. Prüfungen mit unbekanntem Ergebnis können bereits Kosten verursacht haben. Ein Neuversuch kann erneut Kosten verursachen. Abrechnung und Wartezeit bei PixelLab können variieren."
+				"one": "{count} offene Gelenkprüfung wiederholen · geschätzt {gens} Generierungen oder {usd}. Prüfungen mit unbekanntem Ergebnis können bereits Kosten verursacht haben. Ein Neuversuch kann erneut Kosten verursachen.",
+				"other": "{count} offene Gelenkprüfungen wiederholen · geschätzt {gens} Generierungen oder {usd}. Prüfungen mit unbekanntem Ergebnis können bereits Kosten verursacht haben. Ein Neuversuch kann erneut Kosten verursachen."
 			},
 			"noRequests": "Es werden keine neuen Anfragen für Grundkörper oder Gelenke gesendet.",
-			"items": "Die ausgewählte Ausrüstung wird in Pose gebracht, sobald der Grundkörper die Prüfung bestanden hat · ca. {gens} zusätzliche Generierungen. Neuversuche und Abrechnung in US-Dollar sind möglich."
+			"items": "Die ausgewählte Ausrüstung wird in Pose gebracht, sobald der Grundkörper die Prüfung bestanden hat · ca. {gens} zusätzliche Generierungen."
 		},
 		"color": {
 			"pixels": {
@@ -2791,7 +2791,7 @@
 			"match": "Gleicht {pixels} in {frames} an die Palette der Standpose an. Die Form des Grundkörpers und die übrigen Farben bleiben unverändert.",
 			"recheck": "{count} geänderte Frames erneut prüfen · geschätzt {gens} Generierungen oder {usd}.",
 			"items": "Die ausgewählte Ausrüstung wird in Pose gebracht, sobald der Grundkörper die Prüfung bestanden hat · ca. {gens} zusätzliche Generierungen.",
-			"billing": "PixelLab kann in US-Dollar abrechnen. Neue Qualitätsversuche kosten extra und die Wartezeit kann variieren. Wenn eine Prüfung weiterhin fehlschlägt, bleiben die bisherigen Ansichten des Grundkörpers erhalten."
+			"kept": "Wenn eine Prüfung weiterhin fehlschlägt, bleiben die bisherigen Ansichten des Grundkörpers erhalten."
 		},
 		"demo": "Animationen werden deiner eigenen Figur hinzugefügt.",
 		"needsSetup": "Richte das Posen-Rig dieser Figur ein, um Animationen hinzuzufügen. Vorhandene Grafiken und Ebenen passen weiterhin zusammen.",
@@ -2810,7 +2810,6 @@
 		},
 		"changedDuringEdit": "Diese Animation hat sich während der Bearbeitung geändert. Wähle sie erneut aus, um fortzufahren.",
 		"duplicateOption": "{move} steht bereits zur Auswahl. Beginne die Beschreibung mit anderen Wörtern.",
-		"costNotice": "PixelLab kann in US-Dollar abrechnen. Erneute Versuche und Ausweichverfahren kosten extra.",
 		"templates": "Animationsvorlagen",
 		"suggestionBuiltIn": "Nutzt die eingebaute Bewegung dieser Animation.",
 		"suggestionDescribed": "PixelLab animiert diese Animation aus deinem Prompt statt aus ihrer eingebauten Bewegung.",
@@ -2955,7 +2954,7 @@
 		"ideas": "Ideen",
 		"colorHint": "Farbvorgabe",
 		"anyColor": "Beliebig",
-		"checksNote": "Die Konsistenz wird automatisch geprüft. Wenn Probleme auffallen, entscheidest du, ob du den Gegenstand behältst oder einen kostenpflichtigen Neuversuch anforderst. Ohne deine Anfrage laufen keine Qualitätsversuche oder Reparaturen. PixelLab kann in US-Dollar abrechnen. Die Wartezeit kann variieren.",
+		"checksNote": "Die Konsistenz wird automatisch geprüft. Wenn Probleme auffallen, entscheidest du, ob du den Gegenstand behältst oder einen kostenpflichtigen Neuversuch anforderst. Ohne deine Anfrage laufen keine Qualitätsversuche oder Reparaturen.",
 		"method": "Animationsmethode",
 		"automatic": "Automatisch ({method})",
 		"plan": "{calls} PixelLab-Aufrufe · {cells} Frames · {route}. Jeder geplante Stapel läuft einmal. Fehlgeschlagene Prüfungen warten auf deine Begutachtung.",

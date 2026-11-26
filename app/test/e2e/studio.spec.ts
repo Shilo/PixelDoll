@@ -3482,7 +3482,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 					sprites = [...strip.querySelectorAll('canvas')];
 				return {
 					strip: box(strip),
-					actions: box(sheet.querySelector('.preview-bar')!),
+					actions: box(sheet.querySelector('.item-move')!),
 					sprites: sprites.map(box),
 					pixels: sprites[0].toDataURL()
 				};
@@ -4209,7 +4209,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await expect(item.getByRole('button', { name: /^Make/ })).toContainText(/~\d+ gens/);
 	await expect(
 		item.getByText(
-			'Consistency checks run automatically. If issues are detected, you choose whether to keep the item or request a paid retry. No quality retries or repairs run without your request. PixelLab may bill dollars and queue time varies.',
+			'Consistency checks run automatically. If issues are detected, you choose whether to keep the item or request a paid retry. No quality retries or repairs run without your request.',
 			{ exact: true }
 		)
 	).toBeVisible();
@@ -4411,7 +4411,7 @@ test('free item color matching is offline, scoped, persistent and preserves save
 		frames: 8
 	});
 	await openItemSection(pane, 'Quality');
-	const action = pane.getByRole('button', { name: 'Match item colors', exact: true });
+	const action = pane.getByRole('button', { name: /^Match colors in \S+ view$/ });
 	await expect(action).toBeVisible();
 	await expect(action).toContainText('Matches 2 pixels in 2 frames to the item’s palette.');
 	await context.setOffline(true);
@@ -4480,7 +4480,7 @@ test('free item color matching is offline, scoped, persistent and preserves save
 	}, fixture.itemId);
 	await selectedItemDetails(page);
 	await expect(pane.locator('.item-status')).toHaveText('Accepted');
-	await expect(pane.getByRole('button', { name: 'Match item colors', exact: true })).toHaveCount(0);
+	await expect(pane.getByRole('button', { name: /^Match colors in \S+ view$/ })).toHaveCount(0);
 	// The saved recolor survives: the item's colors live in the Colors tab, which Recolor in its actions menu opens.
 	await pane.getByRole('button', { name: 'Item actions', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Recolor', exact: true }).click();
@@ -5014,7 +5014,7 @@ test('draft review can inspect every generated move and only its available views
 	await expect(review.getByRole('button', { name: /^Generate again/ })).toContainText('~');
 	await expect(
 		review.getByText(
-			'Generate again redraws the standing design in the character’s directions at the displayed estimate. Generate other moves separately after you like it. Further quality retries or repairs require another request. PixelLab may bill some calls in dollars; queue time varies.',
+			'Generate again redraws the standing design in the character’s directions at the displayed estimate. Generate other moves separately after you like it. Further quality retries or repairs require another request.',
 			{ exact: true }
 		)
 	).toBeVisible();
@@ -8797,8 +8797,8 @@ test('stage makes all missing item views while explicit repair stays on the curr
 	await sheet.getByRole('button', { name: 'Discard', exact: true }).click();
 	await expect(sheet).toBeHidden();
 	await openFrameReplacement(await selectedItemDetails(page));
-	const repair = page.getByRole('button', { name: /^Repair this view/ });
-	const redraw = page.getByRole('button', { name: /^Redraw this view/ });
+	const repair = page.getByRole('button', { name: /^Repair \S+ view/ });
+	const redraw = page.getByRole('button', { name: /^Redraw \S+ view/ });
 	const simulateRepairPlan = (tier: number) =>
 		page.evaluate(async (tier) => {
 			const appPath = '/src/lib/app.svelte.ts',
@@ -8986,7 +8986,7 @@ test('a repair whose later batch fails offers its finished repairs for free and 
 		state.pick(id);
 	}, itemId);
 	await openFrameReplacement(await selectedItemDetails(page));
-	await page.getByRole('button', { name: /^Repair this view/ }).click();
+	await page.getByRole('button', { name: /^Repair \S+ view/ }).click();
 	const review = page.getByRole('dialog', { name: 'Review item repair' });
 	// The note names what is kept and why the later batch stopped.
 	const stoppedNote = review.getByText(
@@ -9070,7 +9070,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
 	const { itemId } = await targetedRepairFixture(page);
-	const openRepair = async (action = /^Repair this view/) => {
+	const openRepair = async (action = /^Repair \S+ view/) => {
 		await page.evaluate(async (id) => {
 			const path = '/src/studio/state.svelte.ts',
 				state = await import(path);
@@ -9139,7 +9139,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 			return put.call(this, value, key);
 		};
 	});
-	await openRepair(/^Redraw this view/);
+	await openRepair(/^Redraw \S+ view/);
 	const redrawReview = page.getByRole('dialog', { name: 'Review item redraw' });
 	await expect(
 		redrawReview.getByRole('img', { name: 'Redrawn frame 1', exact: true })
@@ -9452,7 +9452,7 @@ test('deferred item repair refuses changed artwork and price after Connect', asy
 		s.pick(id);
 	}, fixture.itemId);
 	await openFrameReplacement(await selectedItemDetails(page));
-	const repair = page.getByRole('button', { name: /^Repair this view/ });
+	const repair = page.getByRole('button', { name: /^Repair \S+ view/ });
 	await expect(repair).toContainText('~10 gens');
 	await repair.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
@@ -10431,7 +10431,9 @@ test('standing-first items quote standing and draw selected custom moves togethe
 	// Every move the item lacks is listed as missing, each with what it lacks.
 	for (const move of ['Standing', 'Custom walk', 'Custom cross punch'])
 		await expect(pane.locator('.clip-row[data-missing]').filter({ hasText: move })).toBeVisible();
-	await expect(pane.locator('summary').getByText('3 incomplete', { exact: true })).toBeVisible();
+	await expect(
+		pane.locator('summary').getByText('3 moves incomplete', { exact: true })
+	).toBeVisible();
 	// Two moves need no Select all: each box adds to the one total on the button.
 	await expect(pane.getByRole('button', { name: 'Select all', exact: true })).toHaveCount(0);
 	await punch.check();
@@ -11194,8 +11196,7 @@ for (const changed of ['item', 'rig'] as const)
 			await i18n.selectLanguage('fr');
 		});
 		const action = pane.getByRole('button', {
-			name: 'Harmoniser les couleurs de l’objet',
-			exact: true
+			name: /^Harmoniser les couleurs de la vue \S+$/
 		});
 		await expect(action).toBeVisible();
 		await page.evaluate(
@@ -11990,7 +11991,7 @@ test('item details fill a phone screen and keep Wear pinned while the body scrol
 	const wear = details.getByRole('button', { name: 'Wear', exact: true });
 	await expect(wear).toBeInViewport();
 	await expect(details.locator('summary').filter({ hasText: 'Moves & States' })).toContainText(
-		/\d+ incomplete/
+		/\d+ moves? incomplete/
 	);
 	for (const section of ['Moves & States', 'Quality', 'Outfit', 'About', 'Technical details'])
 		await openItemSection(details, section);

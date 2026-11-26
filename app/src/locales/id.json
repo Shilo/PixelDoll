@@ -503,8 +503,8 @@
 		"selectAllMoves": "Pilih semua",
 		"clearSelection": "Hapus pilihan",
 		"drawMovesHelp": "Hanya mengisi frame item yang hilang.",
-		"repairView": "Perbaiki tampilan ini",
-		"redrawView": "Gambar ulang tampilan ini",
+		"repairView": "Perbaiki tampilan {direction}",
+		"redrawView": "Gambar ulang tampilan {direction}",
 		"sendBackward": "Geser ke belakang",
 		"bringForward": "Geser ke depan",
 		"inFrontOf": "Di depan {name}",
@@ -583,12 +583,11 @@
 		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
-		"updateNoteMirrors": "Memperbarui {move} yang menghadap {direction} dan tampilan cerminnya. Hanya item yang berubah.",
+		"updateNoteMirrors": "Memperbarui {move} yang menghadap {directions}. Hanya item yang berubah.",
 		"repairFeature": "Perbaikan item",
 		"redrawFeature": "Penggambaran ulang item",
 		"repairHelp": "Mempertahankan desain dan hanya mengubah area item.",
 		"redrawHelp": "Percobaan baru yang dapat mengubah bentuk atau genggaman. Anda membandingkan dulu sebelum menyimpannya.",
-		"billingNote": "Estimasi dalam satuan generasi. PixelLab mungkin menagih dalam dolar. Waktu tunggu bervariasi.",
 		"itemActions": "Tindakan item",
 		"statusGenerating": "Sedang dibuat",
 		"statusIncomplete": "Belum lengkap",
@@ -598,7 +597,7 @@
 		"missingView": "Hilang",
 		"hiddenWhenWorn": "Memakai {names} menyembunyikan item ini.",
 		"clipsIncomplete": {
-			"other": "{n} belum lengkap"
+			"other": "{n} gerakan belum lengkap"
 		},
 		"complete": "Lengkap",
 		"clipNoFrames": "Belum ada frame",
@@ -610,7 +609,7 @@
 		"passed": "Lulus",
 		"facing": "Arah",
 		"matchColorsDetail": "Menyesuaikan {pixels} di {frames} dengan palet item.",
-		"fixFramesDetail": "Edit frame di aplikasi gambar Anda.",
+		"fixFramesDetail": "Edit semua frame {move} di aplikasi gambar Anda.",
 		"hiddenState": "Tersembunyi",
 		"hidesCount": {
 			"other": "Menyembunyikan {n} kategori"
@@ -640,10 +639,11 @@
 		"redrawCostsMore": {
 			"other": "{n} generasi lebih banyak daripada Perbaiki."
 		},
-		"fixMove": "Perbaiki {move}",
 		"turnLeft": "Putar ke kiri",
 		"turnRight": "Putar ke kanan",
-		"facingLabel": "Menghadap {direction}"
+		"facingLabel": "Menghadap {direction}",
+		"matchViewColors": "Cocokkan warna tampilan {direction}",
+		"fixOneView": "Perbaiki satu tampilan"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Karakter baru",
@@ -2116,7 +2116,7 @@
 		"noCharge": "PixelLab melaporkan bahwa percobaan ini tidak dikenai biaya.",
 		"newPaidAttempt": "Buat ulang memulai percobaan berbayar baru.",
 		"retryFeature": "Membuat ulang perlengkapan ini",
-		"retryNote": "Buat ulang menggambar ulang desain pose berdiri untuk arah karakter, dengan perkiraan biaya yang ditampilkan. Setelah desainnya sesuai, buat animasi lain secara terpisah. Percobaan ulang untuk kualitas atau perbaikan selanjutnya memerlukan permintaan baru. PixelLab mungkin menagih sebagian panggilan dalam dolar. Waktu antrean bervariasi.",
+		"retryNote": "Buat ulang menggambar ulang desain pose berdiri untuk arah karakter, dengan perkiraan biaya yang ditampilkan. Setelah desainnya sesuai, buat animasi lain secara terpisah. Percobaan ulang untuk kualitas atau perbaikan selanjutnya memerlukan permintaan baru.",
 		"slotKey": "{slot} · warna kunci {key}",
 		"calls": "Panggilan",
 		"call": "{index}: {cells} sel",
@@ -2700,10 +2700,10 @@
 		"recovery": {
 			"reuse": "Pakai ulang frame tubuh dan hasil pemeriksaan sendi yang sudah selesai.",
 			"checks": {
-				"other": "Ulangi {count} pemeriksaan sendi yang belum selesai · perkiraan {gens} generasi atau {usd}. Pemeriksaan dengan hasil tak diketahui mungkin sudah dikenai biaya, dan percobaan ulang dapat dikenai biaya lagi. Tagihan dan waktu antrean PixelLab bervariasi."
+				"other": "Ulangi {count} pemeriksaan sendi yang belum selesai · perkiraan {gens} generasi atau {usd}. Pemeriksaan dengan hasil tak diketahui mungkin sudah dikenai biaya, dan percobaan ulang dapat dikenai biaya lagi."
 			},
 			"noRequests": "Tidak ada permintaan tubuh atau sendi yang baru.",
-			"items": "Pose perlengkapan pilihan dibuat setelah tubuh lulus pemeriksaan · perkiraan {gens} generasi tambahan, dengan kemungkinan percobaan ulang dan tagihan dalam dolar."
+			"items": "Pose perlengkapan pilihan dibuat setelah tubuh lulus pemeriksaan · perkiraan {gens} generasi tambahan."
 		},
 		"color": {
 			"pixels": {
@@ -2715,7 +2715,7 @@
 			"match": "Cocokkan {pixels} dengan palet pose berdiri di seluruh {frames}. Bentuk tubuh tetap sama, dan warna lainnya tidak berubah.",
 			"recheck": "Periksa ulang {count} frame yang berubah · perkiraan {gens} generasi atau {usd}.",
 			"items": "Pose perlengkapan pilihan dibuat setelah tubuh lulus pemeriksaan · perkiraan {gens} generasi tambahan.",
-			"billing": "PixelLab mungkin menagih dalam dolar. Percobaan ulang untuk kualitas memerlukan biaya tambahan dan waktu antrean bervariasi. Tampilan tubuh sebelumnya dipertahankan jika ada pemeriksaan yang masih gagal."
+			"kept": "Tampilan tubuh sebelumnya dipertahankan jika ada pemeriksaan yang masih gagal."
 		},
 		"demo": "Animasi ditambahkan ke karakter Anda sendiri.",
 		"needsSetup": "Siapkan rig pose karakter ini untuk menambahkan animasi. Gambar dan lapisan yang sudah ada tetap sejajar.",
@@ -2734,7 +2734,6 @@
 		},
 		"changedDuringEdit": "Animasi ini berubah saat Anda mengeditnya. Pilih kembali untuk melanjutkan.",
 		"duplicateOption": "{move} sudah ada di pilihan animasi. Awali deskripsi dengan kata-kata lain.",
-		"costNotice": "PixelLab mungkin mengenakan biaya dalam dolar. Percobaan ulang dan metode cadangan dikenai biaya tambahan.",
 		"templates": "Templat animasi",
 		"suggestionBuiltIn": "Memakai animasi bawaan gerakan ini.",
 		"suggestionDescribed": "PixelLab menganimasikan gerakan ini dari teks Anda, bukan dari animasi bawaannya.",
@@ -2875,7 +2874,7 @@
 		"ideas": "Ide",
 		"colorHint": "Petunjuk warna",
 		"anyColor": "Bebas",
-		"checksNote": "Pemeriksaan konsistensi berjalan otomatis. Jika ada masalah, Anda memilih untuk menyimpan item atau meminta percobaan ulang berbayar. Tidak ada percobaan ulang atau perbaikan kualitas tanpa permintaan Anda. PixelLab mungkin menagih dalam dolar dan waktu antrean bervariasi.",
+		"checksNote": "Pemeriksaan konsistensi berjalan otomatis. Jika ada masalah, Anda memilih untuk menyimpan item atau meminta percobaan ulang berbayar. Tidak ada percobaan ulang atau perbaikan kualitas tanpa permintaan Anda.",
 		"method": "Metode animasi",
 		"automatic": "Otomatis ({method})",
 		"plan": "{calls} panggilan PixelLab · {cells} frame · {route}. Setiap batch terencana dijalankan sekali. Jika pemeriksaan gagal, proses menunggu tinjauan Anda.",

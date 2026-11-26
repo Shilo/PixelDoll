@@ -1639,7 +1639,6 @@
 				<span>
 					{t('moveSheet.checkpoint.initialEstimate', { minutes: formatNumber(est.minutes) })}
 				</span>
-				<span>{t('moveSheet.costNotice')}</span>
 			</span>
 		{/if}
 		<span class="api-action move-action">
@@ -2298,7 +2297,7 @@
 									gens: formatNumber(Math.ceil(colorRepair.itemGens))
 								})
 							: '',
-						t('moveSheet.color.billing')
+						t('moveSheet.color.kept')
 					]
 						.filter(Boolean)
 						.join(' ')}

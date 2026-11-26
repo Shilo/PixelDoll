@@ -530,13 +530,17 @@
 {/if}
 
 <style>
-	/* Same 6px dot as the Wardrobe tabs and More, in the tile badge's warning color, before the chevron. */
+	/* Same 6px dot as the Wardrobe tabs and More, in the tile badge's warning color, at the trailing edge just before the
+	   chevron (the dot takes the chevron's auto margin). */
 	.details-dot {
 		flex: none;
 		width: 6px;
 		height: 6px;
-		margin-inline-start: 6px;
+		margin-inline-start: auto;
 		border-radius: 50%;
 		background: var(--warn);
+	}
+	.details-dot ~ :global(svg[data-surface-chevron]) {
+		margin-inline-start: 8px;
 	}
 </style>

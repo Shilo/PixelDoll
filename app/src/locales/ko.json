@@ -503,8 +503,8 @@
 		"selectAllMoves": "모두 선택",
 		"clearSelection": "선택 해제",
 		"drawMovesHelp": "누락된 아이템 프레임만 채워요.",
-		"repairView": "이 방향 복구",
-		"redrawView": "이 방향 다시 그리기",
+		"repairView": "{direction} 방향 복구",
+		"redrawView": "{direction} 방향 다시 그리기",
 		"sendBackward": "뒤로 보내기",
 		"bringForward": "앞으로 가져오기",
 		"inFrontOf": "{name} 앞",
@@ -583,12 +583,11 @@
 		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
-		"updateNoteMirrors": "{move} 동작의 {direction} 방향과 대칭 방향을 업데이트해요. 아이템만 바뀌어요.",
+		"updateNoteMirrors": "{move} 동작의 {directions} 방향을 업데이트해요. 아이템만 바뀌어요.",
 		"repairFeature": "아이템 복구",
 		"redrawFeature": "아이템 다시 그리기",
 		"repairHelp": "디자인은 유지하고 아이템 영역만 바꿔요.",
 		"redrawHelp": "모양이나 쥐는 방식이 바뀔 수 있는 새 시도예요. 비교한 뒤 유지할지 정해요.",
-		"billingNote": "예상치는 생성 횟수예요. PixelLab에서 달러로 청구될 수 있어요. 대기 시간은 달라요.",
 		"itemActions": "아이템 작업",
 		"statusGenerating": "생성 중",
 		"statusIncomplete": "미완성",
@@ -598,7 +597,7 @@
 		"missingView": "없음",
 		"hiddenWhenWorn": "{names}을(를) 착용하면 이 아이템이 숨겨져요.",
 		"clipsIncomplete": {
-			"other": "{n}개 미완성"
+			"other": "동작 {n}개 미완성"
 		},
 		"complete": "완성",
 		"clipNoFrames": "아직 프레임 없음",
@@ -610,7 +609,7 @@
 		"passed": "통과",
 		"facing": "방향",
 		"matchColorsDetail": "{frames}의 {pixels}을(를) 아이템 팔레트에 맞춰요.",
-		"fixFramesDetail": "그림 앱에서 프레임을 편집하세요.",
+		"fixFramesDetail": "그림 앱에서 {move}의 모든 프레임을 편집하세요.",
 		"hiddenState": "숨겨짐",
 		"hidesCount": {
 			"other": "카테고리 {n}개 숨김"
@@ -640,10 +639,11 @@
 		"redrawCostsMore": {
 			"other": "복구보다 생성 {n}회 많아요."
 		},
-		"fixMove": "{move} 수정",
 		"turnLeft": "왼쪽으로 회전",
 		"turnRight": "오른쪽으로 회전",
-		"facingLabel": "{direction} 방향"
+		"facingLabel": "{direction} 방향",
+		"matchViewColors": "{direction} 방향 색상 맞추기",
+		"fixOneView": "한 방향 수정"
 	},
 	"newCharacterButton": {
 		"newCharacter": "새 캐릭터",
@@ -2116,7 +2116,7 @@
 		"noCharge": "PixelLab이 이번 시도에 청구가 없다고 보고했어요.",
 		"newPaidAttempt": "다시 생성하면 새 유료 시도가 시작돼요.",
 		"retryFeature": "이 장비 다시 생성",
-		"retryNote": "다시 생성하면 표시된 예상 비용으로 캐릭터의 방향에 맞춰 서 있는 디자인을 다시 그려요. 마음에 들면 다른 동작은 따로 생성하세요. 추가 품질 재시도나 복구에는 새 요청이 필요해요. PixelLab에서 일부 호출을 달러로 청구할 수 있고 대기 시간은 달라질 수 있어요.",
+		"retryNote": "다시 생성하면 표시된 예상 비용으로 캐릭터의 방향에 맞춰 서 있는 디자인을 다시 그려요. 마음에 들면 다른 동작은 따로 생성하세요. 추가 품질 재시도나 복구에는 새 요청이 필요해요.",
 		"slotKey": "{slot} · {key} 키",
 		"calls": "호출",
 		"call": "{index}: 셀 {cells}개",
@@ -2700,10 +2700,10 @@
 		"recovery": {
 			"reuse": "완료된 몸체 프레임과 관절 결과를 재사용해요.",
 			"checks": {
-				"other": "끝나지 않은 관절 검사 {count}개 다시 시도 · 예상 생성 {gens}회 또는 {usd}. 결과를 알 수 없는 검사는 이미 요금이 청구됐을 수 있고, 다시 시도하면 또 청구될 수 있어요. PixelLab 청구 방식과 대기 시간은 달라질 수 있어요."
+				"other": "끝나지 않은 관절 검사 {count}개 다시 시도 · 예상 생성 {gens}회 또는 {usd}. 결과를 알 수 없는 검사는 이미 요금이 청구됐을 수 있고, 다시 시도하면 또 청구될 수 있어요."
 			},
 			"noRequests": "새 몸체나 관절 요청은 없어요.",
-			"items": "몸체가 통과하면 선택한 장비 포즈가 이어서 진행돼요 · 추가 예상 생성 {gens}회, 재시도와 달러 청구가 발생할 수 있어요."
+			"items": "몸체가 통과하면 선택한 장비 포즈가 이어서 진행돼요 · 추가 예상 생성 {gens}회"
 		},
 		"color": {
 			"pixels": {
@@ -2715,7 +2715,7 @@
 			"match": "서 있는 자세의 팔레트에 맞춰요: {pixels}({frames}). 몸체 모양은 고정되고 다른 색상은 그대로예요.",
 			"recheck": "변경된 프레임 {count}개 다시 확인 · 예상 생성 {gens}회 또는 {usd}.",
 			"items": "몸체가 통과하면 선택한 장비 포즈가 이어서 진행돼요 · 추가 예상 생성 {gens}회.",
-			"billing": "PixelLab에서 달러로 요금이 청구될 수 있고, 품질 재시도에는 추가 비용이 들며 대기 시간은 달라질 수 있어요. 검사가 계속 실패하면 기존 몸체 뷰는 유지돼요."
+			"kept": "검사가 계속 실패하면 기존 몸체 뷰는 유지돼요."
 		},
 		"demo": "동작은 내 캐릭터에 추가돼요.",
 		"needsSetup": "동작을 추가하려면 이 캐릭터의 자세 리그를 설정하세요. 기존 아트워크와 레이어는 정렬된 상태로 유지돼요.",
@@ -2734,7 +2734,6 @@
 		},
 		"changedDuringEdit": "편집하는 동안 이 동작이 바뀌었어요. 계속하려면 다시 선택하세요.",
 		"duplicateOption": "{move}은(는) 이미 동작 목록에 있어요. 설명을 다른 단어로 시작하세요.",
-		"costNotice": "PixelLab에서 달러로 청구할 수 있어요. 재시도와 대체 방식에는 추가 비용이 들어요.",
 		"templates": "동작 템플릿",
 		"suggestionBuiltIn": "이 동작의 내장 애니메이션을 사용해요.",
 		"suggestionDescribed": "PixelLab이 내장 애니메이션이 아닌 입력한 텍스트로 이 동작을 만들어요.",
@@ -2875,7 +2874,7 @@
 		"ideas": "아이디어",
 		"colorHint": "색상 힌트",
 		"anyColor": "상관없음",
-		"checksNote": "일관성 검사는 자동으로 실행돼요. 문제가 감지되면 아이템을 유지할지 유료 재시도를 요청할지 선택해요. 요청하지 않으면 품질 재시도나 복구는 실행되지 않아요. PixelLab에서 달러로 요금이 청구될 수 있고 대기 시간은 달라질 수 있어요.",
+		"checksNote": "일관성 검사는 자동으로 실행돼요. 문제가 감지되면 아이템을 유지할지 유료 재시도를 요청할지 선택해요. 요청하지 않으면 품질 재시도나 복구는 실행되지 않아요.",
 		"method": "애니메이션 방법",
 		"automatic": "자동({method})",
 		"plan": "PixelLab 호출 {calls}회 · 프레임 {cells}개 · {route}. 계획된 배치는 각각 한 번 실행돼요. 실패한 검사는 검토를 기다려요.",

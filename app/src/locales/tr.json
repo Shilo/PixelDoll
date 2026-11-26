@@ -512,8 +512,8 @@
 		"selectAllMoves": "Tümünü seç",
 		"clearSelection": "Seçimi temizle",
 		"drawMovesHelp": "Yalnızca eşyanın eksik karelerini doldurur.",
-		"repairView": "Bu görünümü onar",
-		"redrawView": "Bu görünümü yeniden çiz",
+		"repairView": "{direction} görünümünü onar",
+		"redrawView": "{direction} görünümünü yeniden çiz",
 		"sendBackward": "Arkaya gönder",
 		"bringForward": "Öne getir",
 		"inFrontOf": "{name} önünde",
@@ -597,12 +597,11 @@
 		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
-		"updateNoteMirrors": "{move} hareketinin {direction} yönünü ve aynalı görünümlerini günceller. Yalnızca eşya değişir.",
+		"updateNoteMirrors": "{move} hareketinin {directions} yönlerini günceller. Yalnızca eşya değişir.",
 		"repairFeature": "Eşya onarımı",
 		"redrawFeature": "Eşyayı yeniden çizme",
 		"repairHelp": "Tasarımı korur, yalnızca eşya alanını değiştirir.",
 		"redrawHelp": "Şekli veya tutuşu değiştirebilecek yeni bir deneme. Saklamadan önce karşılaştırırsın.",
-		"billingNote": "Tahminler üretim sayısıdır. PixelLab dolar cinsinden ücret alabilir. Bekleme süreleri değişir.",
 		"itemActions": "Eşya işlemleri",
 		"statusGenerating": "Oluşturuluyor",
 		"statusIncomplete": "Eksik",
@@ -612,8 +611,8 @@
 		"missingView": "Eksik",
 		"hiddenWhenWorn": "{names} giymek bu eşyayı gizler.",
 		"clipsIncomplete": {
-			"one": "{n} eksik",
-			"other": "{n} eksik"
+			"one": "{n} hareket eksik",
+			"other": "{n} hareket eksik"
 		},
 		"complete": "Tamam",
 		"clipNoFrames": "Henüz kare yok",
@@ -626,7 +625,7 @@
 		"passed": "Geçti",
 		"facing": "Yön",
 		"matchColorsDetail": "{frames} içindeki {pixels} eşyanın paletine uydurulur.",
-		"fixFramesDetail": "Kareleri çizim uygulamanda düzenle.",
+		"fixFramesDetail": "{move} hareketinin tüm karelerini çizim uygulamanda düzenle.",
 		"hiddenState": "Gizli",
 		"hidesCount": {
 			"one": "{n} kategoriyi gizler",
@@ -661,10 +660,11 @@
 			"one": "Onarımdan {n} üretim fazla.",
 			"other": "Onarımdan {n} üretim fazla."
 		},
-		"fixMove": "{move} düzelt",
 		"turnLeft": "Sola döndür",
 		"turnRight": "Sağa döndür",
-		"facingLabel": "{direction} yönü"
+		"facingLabel": "{direction} yönü",
+		"matchViewColors": "{direction} görünümünün renklerini eşleştir",
+		"fixOneView": "Tek görünümü düzelt"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Yeni karakter",
@@ -2181,7 +2181,7 @@
 		"noCharge": "PixelLab bu deneme için ücret alınmadığını bildirdi.",
 		"newPaidAttempt": "Yeniden oluştur seçeneği ücretli yeni bir deneme başlatır.",
 		"retryFeature": "Bu ekipmanı yeniden üretme",
-		"retryNote": "Yeniden oluştur seçeneği, ayakta duruş tasarımını karakterin yönlerinde gösterilen tahmini ücretle yeniden çizer. Sonucu beğendiğinizde diğer animasyonlar için ayrı üretim yapın. Kalite için yeni deneme veya onarım ayrı istek gerektirir. PixelLab bazı çağrıları dolar cinsinden ücretlendirebilir; bekleme süresi değişir.",
+		"retryNote": "Yeniden oluştur seçeneği, ayakta duruş tasarımını karakterin yönlerinde gösterilen tahmini ücretle yeniden çizer. Sonucu beğendiğinizde diğer animasyonlar için ayrı üretim yapın. Kalite için yeni deneme veya onarım ayrı istek gerektirir.",
 		"slotKey": "{slot} · Anahtar rengi: {key}",
 		"calls": "Çağrılar",
 		"call": "{index}: {cells} hücre",
@@ -2773,11 +2773,11 @@
 		"recovery": {
 			"reuse": "Tamamlanan gövde karelerini ve eklem sonuçlarını yeniden kullanın.",
 			"checks": {
-				"one": "Tamamlanmamış {count} eklem kontrolünü tekrar deneyin · Tahmini {gens} üretim hakkı veya {usd}. Sonucu bilinmeyen kontroller için ücret alınmış olabilir; tekrar denerseniz yeniden ücret alınabilir. PixelLab ücretlendirmesi ve bekleme süresi değişir.",
-				"other": "Tamamlanmamış {count} eklem kontrolünü tekrar deneyin · Tahmini {gens} üretim hakkı veya {usd}. Sonucu bilinmeyen kontroller için ücret alınmış olabilir; tekrar denerseniz yeniden ücret alınabilir. PixelLab ücretlendirmesi ve bekleme süresi değişir."
+				"one": "Tamamlanmamış {count} eklem kontrolünü tekrar deneyin · Tahmini {gens} üretim hakkı veya {usd}. Sonucu bilinmeyen kontroller için ücret alınmış olabilir; tekrar denerseniz yeniden ücret alınabilir.",
+				"other": "Tamamlanmamış {count} eklem kontrolünü tekrar deneyin · Tahmini {gens} üretim hakkı veya {usd}. Sonucu bilinmeyen kontroller için ücret alınmış olabilir; tekrar denerseniz yeniden ücret alınabilir."
 			},
 			"noRequests": "Gövde veya eklemler için yeni istek gönderilmez.",
-			"items": "Gövde kontrolleri geçerse seçili ekipman pozlanır · Tahmini {gens} ek üretim hakkı. Yeniden deneme gerekebilir ve dolar cinsinden ücret alınabilir."
+			"items": "Gövde kontrolleri geçerse seçili ekipman pozlanır · Tahmini {gens} ek üretim hakkı."
 		},
 		"color": {
 			"pixels": {
@@ -2791,7 +2791,7 @@
 			"match": "{frames} içindeki {pixels} ayakta duruş paletiyle eşleştirilir. Gövdenin şekli sabit kalır, diğer renkler değişmez.",
 			"recheck": "Değişen {count} kareyi yeniden kontrol edin · Tahmini {gens} üretim hakkı veya {usd}.",
 			"items": "Gövde kontrolleri geçerse seçili ekipman pozlanır · Tahmini {gens} ek üretim hakkı.",
-			"billing": "PixelLab dolar cinsinden ücret alabilir. Kalite için yeni denemeler ek ücrete tabidir ve bekleme süresi değişir. Bir kontrol yine başarısız olursa mevcut gövde görünümleri korunur."
+			"kept": "Bir kontrol yine başarısız olursa mevcut gövde görünümleri korunur."
 		},
 		"demo": "Animasyonlar kendi karakterinize eklenir.",
 		"needsSetup": "Animasyon eklemek için bu karakterin poz rig'ini kurun. Mevcut görselleriniz ve katmanlarınız hizalı kalır.",
@@ -2810,7 +2810,6 @@
 		},
 		"changedDuringEdit": "Bu animasyon siz düzenlerken değişti. Devam etmek için yeniden seçin.",
 		"duplicateOption": "Bu animasyon zaten seçenekler arasında: {move}. Açıklamaya başka sözcüklerle başlayın.",
-		"costNotice": "PixelLab dolar üzerinden ücret alabilir. Yeniden denemeler ve alternatif yöntemler ek ücrete tabidir.",
 		"templates": "Animasyon şablonları",
 		"suggestionBuiltIn": "Bu hareketin yerleşik animasyonunu kullanır.",
 		"suggestionDescribed": "PixelLab bu hareketi yerleşik animasyon yerine metninizden canlandırır.",
@@ -2955,7 +2954,7 @@
 		"ideas": "Fikirler",
 		"colorHint": "Renk ipucu",
 		"anyColor": "Fark etmez",
-		"checksNote": "Tutarlılık kontrolleri otomatik çalışır. Sorun bulunursa eşyayı saklamaya veya ücretli yeni bir deneme istemeye siz karar verirsiniz. Siz istemedikçe kalite için yeniden deneme veya onarım yapılmaz. PixelLab dolar cinsinden ücret alabilir ve bekleme süresi değişir.",
+		"checksNote": "Tutarlılık kontrolleri otomatik çalışır. Sorun bulunursa eşyayı saklamaya veya ücretli yeni bir deneme istemeye siz karar verirsiniz. Siz istemedikçe kalite için yeniden deneme veya onarım yapılmaz.",
 		"method": "Animasyon yöntemi",
 		"automatic": "Otomatik ({method})",
 		"plan": "{calls} PixelLab çağrısı · {cells} kare · {route}. Planlanan her parti bir kez çalışır. Başarısız kontroller incelemenizi bekler.",

@@ -503,8 +503,8 @@
 		"selectAllMoves": "全选",
 		"clearSelection": "清除选择",
 		"drawMovesHelp": "仅补全缺失的装备帧。",
-		"repairView": "修复此视角",
-		"redrawView": "重绘此视角",
+		"repairView": "修复朝向{direction}的视角",
+		"redrawView": "重绘朝向{direction}的视角",
 		"sendBackward": "下移一层",
 		"bringForward": "上移一层",
 		"inFrontOf": "位于{name}前方",
@@ -583,12 +583,11 @@
 		},
 		"minimum": "{value}（≥ {threshold}）",
 		"maximum": "{value}（≤ {threshold}）",
-		"updateNoteMirrors": "更新{move}中朝向{direction}及其镜像视图。只会改变装备。",
+		"updateNoteMirrors": "更新{move}中朝向{directions}的视角。只会改变装备。",
 		"repairFeature": "修复装备",
 		"redrawFeature": "重绘装备",
 		"repairHelp": "保留设计，只修改装备区域。",
 		"redrawHelp": "重新尝试，可能改变形状或握持方式。保留前可先对比。",
-		"billingNote": "估算以生成次数计。PixelLab 可能按美元计费。等待时间各异。",
 		"itemActions": "装备操作",
 		"statusGenerating": "生成中",
 		"statusIncomplete": "不完整",
@@ -598,7 +597,7 @@
 		"missingView": "缺失",
 		"hiddenWhenWorn": "穿戴{names}会隐藏此装备。",
 		"clipsIncomplete": {
-			"other": "{n} 个不完整"
+			"other": "{n} 个动作不完整"
 		},
 		"complete": "完整",
 		"clipNoFrames": "尚无帧",
@@ -610,7 +609,7 @@
 		"passed": "通过",
 		"facing": "朝向",
 		"matchColorsDetail": "将{frames}中的{pixels}匹配到装备的调色板。",
-		"fixFramesDetail": "在你的绘图软件中编辑帧。",
+		"fixFramesDetail": "在你的绘图软件中编辑{move}的所有帧。",
 		"hiddenState": "已隐藏",
 		"hidesCount": {
 			"other": "隐藏 {n} 个类别"
@@ -640,10 +639,11 @@
 		"redrawCostsMore": {
 			"other": "比修复多 {n} 次生成。"
 		},
-		"fixMove": "修复{move}",
 		"turnLeft": "向左转",
 		"turnRight": "向右转",
-		"facingLabel": "朝向{direction}"
+		"facingLabel": "朝向{direction}",
+		"matchViewColors": "匹配朝向{direction}视角的颜色",
+		"fixOneView": "修复单个视角"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新建角色",
@@ -2116,7 +2116,7 @@
 		"noCharge": "PixelLab 报告此次尝试未收费。",
 		"newPaidAttempt": "重新生成会开始新的付费尝试。",
 		"retryFeature": "再次生成此装备",
-		"retryNote": "重新生成会按显示的预估费用，在角色的各朝向上重绘站立设计。满意后，请再单独生成其他动作。进一步的质量重试或修复需要另一次请求。PixelLab 可能对部分调用按美元计费；排队时间不定。",
+		"retryNote": "重新生成会按显示的预估费用，在角色的各朝向上重绘站立设计。满意后，请再单独生成其他动作。进一步的质量重试或修复需要另一次请求。",
 		"slotKey": "{slot} · 色键：{key}",
 		"calls": "调用",
 		"call": "{index}：{cells} 个单元格",
@@ -2700,10 +2700,10 @@
 		"recovery": {
 			"reuse": "复用已完成的身体帧和关节结果。",
 			"checks": {
-				"other": "重试 {count} 项未完成的关节检查 · 预计 {gens} 次生成或 {usd}。未知检查可能已经计费；重试可能会再次计费。PixelLab 的计费和排队时间不定。"
+				"other": "重试 {count} 项未完成的关节检查 · 预计 {gens} 次生成或 {usd}。未知检查可能已经计费；重试可能会再次计费。"
 			},
 			"noRequests": "不会发出新的身体或关节请求。",
-			"items": "所选装备姿势会在身体通过后接续 · 预计额外 {gens} 次生成，可能发生重试和美元计费。"
+			"items": "所选装备姿势会在身体通过后接续 · 预计额外 {gens} 次生成。"
 		},
 		"color": {
 			"pixels": {
@@ -2715,7 +2715,7 @@
 			"match": "在 {frames}中，将 {pixels}匹配到站立调色板。身体形状保持固定；其他颜色不受影响。",
 			"recheck": "重新检查 {count} 个已更改帧 · 预计 {gens} 次生成或 {usd}。",
 			"items": "所选装备姿势会在身体通过后接续 · 预计额外 {gens} 次生成。",
-			"billing": "PixelLab 可能按美元计费；质量重试需额外费用，排队时间不定。如果检查仍然失败，现有身体视图会保留。"
+			"kept": "如果检查仍然失败，现有身体视图会保留。"
 		},
 		"demo": "动作会添加到你的角色上。",
 		"needsSetup": "设置此角色的姿势绑定结构以添加动作。现有图像和图层会保持对齐。",
@@ -2734,7 +2734,6 @@
 		},
 		"changedDuringEdit": "编辑期间此动作已更改。请重新选择它以继续。",
 		"duplicateOption": "{move} 已在动作选项中。请用其他词语开头。",
-		"costNotice": "PixelLab 可能以美元收费。重试和备用方案会产生额外费用。",
 		"templates": "动作模板",
 		"suggestionBuiltIn": "使用此动作内置的动画。",
 		"suggestionDescribed": "PixelLab 会根据你的文本而不是内置动画来生成此动作。",
@@ -2875,7 +2874,7 @@
 		"ideas": "灵感",
 		"colorHint": "颜色提示",
 		"anyColor": "任意",
-		"checksNote": "一致性检查会自动运行。如果检测到问题，你可以选择保留装备或请求付费重试。未经你的请求，不会运行质量重试或修复。PixelLab 可能按美元计费，排队时间不定。",
+		"checksNote": "一致性检查会自动运行。如果检测到问题，你可以选择保留装备或请求付费重试。未经你的请求，不会运行质量重试或修复。",
 		"method": "动画方法",
 		"automatic": "自动（{method}）",
 		"plan": "{calls} 次 PixelLab 调用 · {cells} 帧 · {route}。每个计划批次只运行一次。未通过的检查会等待你查看。",
