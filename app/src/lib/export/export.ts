@@ -36,8 +36,8 @@ export interface ExportOptions {
 	baked: boolean;
 	pixelsPerUnit?: number;
 	exportedAt?: string;
-	/** False stores the archive uncompressed: for callers that only need the files, such as project folder publishing. */
-	compress?: boolean;
+	/** Build the files without packing a ZIP (project folder publishing writes them one by one). `zip` is then empty. */
+	filesOnly?: boolean;
 	projectData?: ImportedCharacter['extra'];
 	/** The walk move RPG Maker sheets take their steps from; the first eligible one when unset or not eligible. */
 	rpgWalk?: string;
@@ -345,9 +345,10 @@ export async function exportZip(
 	} catch {
 		return oversized();
 	}
+	if (o.filesOnly) return { ...r, warnings, warningMessages, zip: new Uint8Array() };
 	let bytes: Uint8Array;
 	try {
-		bytes = await zip(r.entries, { deflate: o.compress !== false });
+		bytes = await zip(r.entries, { deflate: true });
 	} catch (error) {
 		console.warn('Could not compress export; saving without ZIP compression', error);
 		bytes = await zip(r.entries);

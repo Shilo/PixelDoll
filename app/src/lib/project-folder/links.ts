@@ -69,8 +69,25 @@ export async function getLink(characterId: string): Promise<FolderLink | null> {
 
 export const putLink = (link: FolderLink) => run<IDBValidKey>('readwrite', (s) => s.put(link));
 
-export const deleteLink = (characterId: string) =>
-	run<undefined>('readwrite', (s) => s.delete(characterId));
+/** Removes the character's link, only while it is still the one made at `linkedAt`. */
+export async function deleteLink(characterId: string, linkedAt: string): Promise<void> {
+	const db = await open();
+	try {
+		await new Promise<void>((resolve, reject) => {
+			const tx = db.transaction(STORE, 'readwrite');
+			const store = tx.objectStore(STORE);
+			const read = store.get(characterId);
+			read.onsuccess = () => {
+				const current: unknown = read.result;
+				if (isLink(current) && current.linkedAt === linkedAt) store.delete(characterId);
+			};
+			tx.oncomplete = () => resolve();
+			tx.onabort = tx.onerror = () => reject(tx.error);
+		});
+	} finally {
+		db.close();
+	}
+}
 
 /** Applies a change to the link in one transaction, only while it is still the link made at `linkedAt`: an older publish
  *  or another tab can then never bring back a stopped link or undo a newer choice. Resolves to the stored result. */

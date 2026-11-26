@@ -4185,12 +4185,14 @@ test('a linked project folder publishes, updates after changes, pauses on game e
 		await state.flushSave();
 	});
 	const toast = page.locator('.toast');
-	await expect(toast).toContainText('Publishing paused: files changed in your game.');
+	await expect(toast).toContainText('Publishing paused: files in the folder changed.');
 	expect(await folderText(page, manifestPath)).toBe('{"edited":"in the game"}');
 	await toast.getByRole('button', { name: 'Review' }).click();
-	await expect(row.getByRole('alert')).toContainText('1 file was changed in your game.');
+	await expect(row.getByRole('alert')).toContainText(
+		'1 file in the folder differs from PixelDoll’s version.'
+	);
 	await expect(row.getByRole('alert')).toContainText('manifest.json');
-	await row.getByRole('button', { name: 'Replace' }).click();
+	await row.getByRole('button', { name: 'Replace files' }).click();
 	await expect(row.getByRole('status')).toHaveText('Up to date');
 	expect(JSON.parse((await folderText(page, manifestPath))!).name).toBe('Export settings test');
 
@@ -4203,13 +4205,13 @@ test('a linked project folder publishes, updates after changes, pauses on game e
 	await row.getByRole('button', { name: 'Reconnect' }).click();
 	await expect(row.getByRole('status')).toHaveText('Up to date');
 
-	// A moved or deleted folder says so; Stop leaves the row ready to choose a folder again.
+	// A moved or deleted folder says so; Unlink leaves the row ready to choose a folder again.
 	await page.evaluate(async () =>
 		(await navigator.storage.getDirectory()).removeEntry('game', { recursive: true })
 	);
 	await row.getByRole('button', { name: 'Publish now' }).click();
 	await expect(row.getByRole('alert')).toContainText('Folder not found.');
-	await row.getByRole('button', { name: 'Stop' }).click();
+	await row.getByRole('button', { name: 'Unlink' }).click();
 	await expect(row.getByRole('button', { name: 'Choose folder' })).toBeVisible();
 });
 

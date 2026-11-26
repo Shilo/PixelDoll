@@ -55,13 +55,14 @@
 	// Each runs synchronously from its click, so the browser still sees the user's gesture.
 	const choose = () => act(() => linkProjectFolder(engine));
 	const reconnect = () => act(() => reconnectProjectFolder());
+	/** Conflicting files that Replace can overwrite; a folder in the way has to be moved by the user. */
+	const replaceable = $derived(
+		status.kind === 'blocked'
+			? status.conflicts.filter((c) => c.reason !== 'folder' && c.found)
+			: []
+	);
 	const replace = () =>
-		status.kind === 'blocked' &&
-		act(() =>
-			publishProjectFolder(
-				new Map(status.conflicts.map((c) => [c.path, c.found ?? '']) as [string, string][])
-			)
-		);
+		act(() => publishProjectFolder(new Map(replaceable.map((c) => [c.path, c.found!]))));
 	const problem = $derived.by(() => {
 		switch (status.kind) {
 			case 'reconnect':
@@ -69,7 +70,9 @@
 			case 'missing':
 				return t('projectFolder.status.missing');
 			case 'blocked':
-				return t('projectFolder.status.blocked', { count: status.conflicts.length });
+				return status.conflicts.some((c) => c.reason === 'folder')
+					? t('projectFolder.status.folder')
+					: t('projectFolder.status.blocked', { count: status.conflicts.length });
 			case 'unavailable':
 				return t('projectFolder.status.unavailable');
 			case 'failed':
@@ -79,7 +82,9 @@
 						? t('projectFolder.status.space')
 						: status.reason === 'permission'
 							? t('projectFolder.status.permission')
-							: t('projectFolder.status.failed');
+							: status.reason === 'taken'
+								? t('projectFolder.status.taken')
+								: t('projectFolder.status.failed');
 			default:
 				return '';
 		}
@@ -149,7 +154,7 @@
 					<button type="button" class="bu-action btn primary" disabled={working} onclick={reconnect}
 						>{t('projectFolder.reconnect')}</button
 					>
-				{:else if status.kind === 'blocked'}
+				{:else if status.kind === 'blocked' && replaceable.length === status.conflicts.length}
 					<button type="button" class="bu-action btn" disabled={working} onclick={replace}
 						>{t('projectFolder.replace')}</button
 					>
@@ -164,13 +169,13 @@
 				{/if}
 				<button
 					type="button"
-					class="bu-action btn plain"
+					class="bu-action btn sm plain"
 					disabled={disabled || working}
 					onclick={choose}>{t('projectFolder.change')}</button
 				>
 				<button
 					type="button"
-					class="bu-action btn plain"
+					class="bu-action btn sm plain"
 					disabled={working}
 					onclick={() => act(() => unlinkProjectFolder())}>{t('projectFolder.stop')}</button
 				>
@@ -180,6 +185,11 @@
 {/if}
 
 <style>
+	.project-folder {
+		display: grid;
+		gap: 8px;
+		justify-items: start;
+	}
 	.project-folder p {
 		margin: 0;
 	}

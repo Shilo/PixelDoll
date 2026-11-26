@@ -3561,15 +3561,15 @@
 	},
 	"projectFolder": {
 		"title": "Folder proyek",
-		"hint": "Simpan file ekspor langsung ke game Anda dan tetap perbarui.",
+		"hint": "Menyimpan ekspor karakter ini ke subfolder game Anda dan tetap memperbaruinya.",
 		"choose": "Pilih folder",
-		"change": "Ganti",
-		"stop": "Hentikan",
+		"change": "Ganti folder",
+		"stop": "Putuskan",
 		"publishNow": "Terbitkan sekarang",
 		"auto": "Perbarui otomatis",
 		"linked": "{path} · {format}",
 		"reconnect": "Hubungkan ulang",
-		"replace": "Ganti",
+		"replace": "Timpa file",
 		"review": "Tinjau",
 		"copy": "Salin",
 		"copied": "Disalin",
@@ -3586,17 +3586,19 @@
 			"reconnect": "Akses folder berakhir. Hubungkan ulang, lalu pilih “Izinkan di setiap kunjungan”.",
 			"missing": "Folder tidak ditemukan. Pilih lagi.",
 			"blocked": {
-				"other": "{count} file diubah di game Anda."
+				"other": "{count} file di folder berbeda dari versi PixelDoll."
 			},
 			"unavailable": "Karakter ini tidak dapat diekspor sekarang.",
 			"locked": "Sebuah file terbuka di aplikasi lain. Tutup, lalu coba lagi.",
 			"space": "Disk penuh.",
 			"permission": "Folder itu tidak diizinkan. Pilih folder lain.",
-			"failed": "Tidak dapat menulis ke folder. Coba lagi."
+			"failed": "Tidak dapat menulis ke folder. Coba lagi.",
+			"folder": "Ada folder di tempat sebuah file. Pindahkan, atau pilih folder lain.",
+			"taken": "Karakter lain sudah memakai folder ini. Pilih folder lain."
 		},
 		"toast": {
 			"reconnect": "Hubungkan ulang {folder} untuk terus menerbitkan.",
-			"paused": "Penerbitan dijeda: file di game Anda berubah.",
+			"paused": "Penerbitan dijeda: file di folder berubah.",
 			"missing": "{folder} tidak ditemukan.",
 			"failed": "Tidak dapat menerbitkan ke {folder}."
 		}

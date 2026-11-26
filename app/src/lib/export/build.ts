@@ -73,7 +73,7 @@ async function requestedExport(
 		actionLayering?: ActionSheetOptions;
 		/** A fixed manifest timestamp, so a project folder republish of an unchanged character writes identical files. */
 		exportedAt?: string;
-		compress?: boolean;
+		filesOnly?: boolean;
 	}
 ): Promise<ExportResult & { zip: Uint8Array | null }> {
 	const current: Preset = {
@@ -210,7 +210,7 @@ async function requestedExport(
 			rpgWalk: o.rpgWalk,
 			actionLayering: o.actionLayering,
 			exportedAt: o.exportedAt,
-			compress: o.compress
+			filesOnly: o.filesOnly
 		},
 		[...warnings],
 		warningMessages

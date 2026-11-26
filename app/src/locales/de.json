@@ -3663,15 +3663,15 @@
 	},
 	"projectFolder": {
 		"title": "Projektordner",
-		"hint": "Speichere Exportdateien direkt in deinem Spiel und halte sie aktuell.",
+		"hint": "Speichert den Export dieser Figur in einem Unterordner deines Spiels und hält ihn aktuell.",
 		"choose": "Ordner wählen",
-		"change": "Ändern",
-		"stop": "Beenden",
+		"change": "Ordner ändern",
+		"stop": "Trennen",
 		"publishNow": "Jetzt veröffentlichen",
 		"auto": "Automatisch aktualisieren",
 		"linked": "{path} · {format}",
 		"reconnect": "Neu verbinden",
-		"replace": "Ersetzen",
+		"replace": "Dateien ersetzen",
 		"review": "Ansehen",
 		"copy": "Kopieren",
 		"copied": "Kopiert",
@@ -3688,18 +3688,20 @@
 			"reconnect": "Der Ordnerzugriff ist abgelaufen. Verbinde neu und wähle „Bei jedem Besuch zulassen“.",
 			"missing": "Ordner nicht gefunden. Wähle ihn erneut.",
 			"blocked": {
-				"one": "{count} Datei wurde in deinem Spiel geändert.",
-				"other": "{count} Dateien wurden in deinem Spiel geändert."
+				"one": "{count} Datei im Ordner weicht von der PixelDoll-Version ab.",
+				"other": "{count} Dateien im Ordner weichen von den PixelDoll-Versionen ab."
 			},
 			"unavailable": "Diese Figur kann gerade nicht exportiert werden.",
 			"locked": "Eine Datei ist in einer anderen App geöffnet. Schließe sie und versuche es erneut.",
 			"space": "Der Datenträger ist voll.",
 			"permission": "Dieser Ordner ist nicht erlaubt. Wähle einen anderen.",
-			"failed": "In den Ordner konnte nicht geschrieben werden. Versuche es erneut."
+			"failed": "In den Ordner konnte nicht geschrieben werden. Versuche es erneut.",
+			"folder": "Ein Ordner ist einer Datei im Weg. Verschiebe ihn oder wähle einen anderen Ordner.",
+			"taken": "Eine andere Figur nutzt diesen Ordner bereits. Wähle einen anderen."
 		},
 		"toast": {
 			"reconnect": "Verbinde {folder} neu, um weiter zu veröffentlichen.",
-			"paused": "Veröffentlichen pausiert: Dateien in deinem Spiel wurden geändert.",
+			"paused": "Veröffentlichen pausiert: Dateien im Ordner wurden geändert.",
 			"missing": "{folder} wurde nicht gefunden.",
 			"failed": "Veröffentlichen in {folder} fehlgeschlagen."
 		}

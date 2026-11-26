@@ -3,6 +3,7 @@
 import {
 	committedIndex,
 	INDEX_NAME,
+	NOT_A_FILE,
 	parseIndex,
 	pendingIndex,
 	planPublish,
@@ -17,7 +18,8 @@ export interface FolderFile {
 	data: Uint8Array;
 }
 
-export type FailureReason = 'permission' | 'missing' | 'locked' | 'space' | 'unsafe' | 'unknown';
+export type FailureReason =
+	'permission' | 'missing' | 'locked' | 'space' | 'unsafe' | 'taken' | 'unknown';
 
 export type PublishOutcome =
 	| {
@@ -30,7 +32,6 @@ export type PublishOutcome =
 	| { kind: 'blocked'; conflicts: PlanAction[] }
 	| { kind: 'failed'; reason: FailureReason; error: unknown; written: number };
 
-const NOT_A_FILE = 'not-a-file';
 const encoder = new TextEncoder();
 
 export async function sha256(data: Uint8Array): Promise<string> {
@@ -97,35 +98,51 @@ export async function matchesPublished(
 	}
 }
 
+/** The hash at a path now: null when missing, NOT_A_FILE when a folder is there. */
+async function hashAt(target: FolderTarget, path: string): Promise<string | null> {
+	try {
+		const data = await target.read(path);
+		return data && (await sha256(data));
+	} catch (error) {
+		if (error instanceof NotAFileError) return NOT_A_FILE;
+		throw error;
+	}
+}
+
+/**
+ * @param owner the character publishing, recorded in the index; a folder owned by another character is refused
+ * @param overwrite conflicting paths approved for replacement, each with the bytes the user saw there
+ * @param adopt take ownership of identical files already there (a publish the user started)
+ */
 export async function publishFiles(
 	target: FolderTarget,
 	files: readonly FolderFile[],
-	o: { overwrite?: ReadonlyMap<string, string>; adopt?: boolean; removeStale?: boolean } = {}
+	o: {
+		owner?: string;
+		overwrite?: ReadonlyMap<string, string>;
+		adopt?: boolean;
+		removeStale?: boolean;
+	} = {}
 ): Promise<PublishOutcome> {
 	let written = 0;
 	try {
 		const bytes = new Map(files.map((f) => [f.name, f.data]));
 		const next = await hashFiles(files);
 		const { index, invalid } = await readIndex(target);
-		if (invalid && o.overwrite?.get(INDEX_NAME) !== invalid)
+		if (index?.owner && o.owner && index.owner !== o.owner)
 			return {
-				kind: 'blocked',
-				conflicts: [{ path: INDEX_NAME, kind: 'conflict', reason: 'not-ours', found: invalid }]
+				kind: 'failed',
+				reason: 'taken',
+				error: new Error('Folder belongs to another character'),
+				written
 			};
 		const disk = new Map<string, string | null>();
 		for (const path of new Set([
 			...next.keys(),
 			...Object.keys(index?.committed ?? {}),
 			...Object.keys(index?.pending ?? {})
-		])) {
-			try {
-				const data = await target.read(path);
-				disk.set(path, data && (await sha256(data)));
-			} catch (error) {
-				if (!(error instanceof NotAFileError)) throw error;
-				disk.set(path, NOT_A_FILE);
-			}
-		}
+		]))
+			disk.set(path, await hashAt(target, path));
 		const plan = planPublish({
 			next,
 			index,
@@ -134,29 +151,54 @@ export async function publishFiles(
 			adopt: o.adopt,
 			removeStale: o.removeStale
 		});
-		if (plan.blocked) return { kind: 'blocked', conflicts: plan.conflicts };
+		// A damaged index is reported with every other conflict, so one approval covers them all.
+		const conflicts = [
+			...(invalid && o.overwrite?.get(INDEX_NAME) !== invalid
+				? [
+						{
+							path: INDEX_NAME,
+							kind: 'conflict' as const,
+							reason: 'not-ours' as const,
+							found: invalid
+						}
+					]
+				: []),
+			...plan.conflicts
+		];
+		if (conflicts.length) return { kind: 'blocked', conflicts };
 		const counts: Partial<Record<PlanKind, number>> = {};
 		for (const a of plan.actions) counts[a.kind] = (counts[a.kind] ?? 0) + 1;
-		if (!plan.writes.length && !plan.removals.length && !plan.recovering && index) {
-			// Adopted or stale entries still need recording; nothing else changed.
+		if (!plan.writes.length && !plan.removals.length && !plan.recovering && index && !invalid) {
+			// Adopted or dropped entries still need recording; nothing else changed.
 			if (!counts.adopt && !counts.gone && !counts['stale-edited']) return { kind: 'unchanged' };
 		}
+		const owner = o.owner ?? index?.owner;
 		await target.write(
 			INDEX_NAME,
-			encoder.encode(JSON.stringify(pendingIndex(index, next, plan, disk)))
+			encoder.encode(JSON.stringify({ ...pendingIndex(index, next, plan, disk), owner }))
 		);
 		// The manifest goes last, so a game that reads it never sees it ahead of its images.
 		const order = [...plan.writes].sort(
 			(a, b) => Number(a.path === 'manifest.json') - Number(b.path === 'manifest.json')
 		);
 		for (const a of order) {
+			// Recheck right before writing: a game edit since planning pauses instead of being replaced. (The browser has
+			// no compare-and-swap, so an edit in the instant between this read and the write can still be lost.)
+			const now = await hashAt(target, a.path);
+			if (now !== (disk.get(a.path) ?? null))
+				return {
+					kind: 'blocked',
+					conflicts: [
+						{ path: a.path, kind: 'conflict', reason: 'edited-outside', found: now ?? undefined }
+					]
+				};
 			await target.write(a.path, bytes.get(a.path)!);
 			written++;
 		}
 		for (const a of plan.removals) await target.remove(a.path);
 		await target.write(
 			INDEX_NAME,
-			encoder.encode(JSON.stringify(committedIndex(next, plan, disk)))
+			encoder.encode(JSON.stringify(committedIndex(next, plan, disk, owner)))
 		);
 		return { kind: 'published', counts, written, recovered: plan.recovering };
 	} catch (error) {

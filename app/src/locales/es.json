@@ -3663,15 +3663,15 @@
 	},
 	"projectFolder": {
 		"title": "Carpeta del proyecto",
-		"hint": "Guarda los archivos exportados directamente en tu juego y mantenlos al día.",
+		"hint": "Guarda la exportación de este personaje en una subcarpeta de tu juego y la mantiene al día.",
 		"choose": "Elegir carpeta",
-		"change": "Cambiar",
-		"stop": "Detener",
+		"change": "Cambiar carpeta",
+		"stop": "Desvincular",
 		"publishNow": "Publicar ahora",
 		"auto": "Actualizar automáticamente",
 		"linked": "{path} · {format}",
 		"reconnect": "Volver a conectar",
-		"replace": "Reemplazar",
+		"replace": "Reemplazar archivos",
 		"review": "Revisar",
 		"copy": "Copiar",
 		"copied": "Copiado",
@@ -3688,18 +3688,20 @@
 			"reconnect": "Terminó el acceso a la carpeta. Vuelve a conectar y elige «Permitir en cada visita».",
 			"missing": "No se encuentra la carpeta. Elígela de nuevo.",
 			"blocked": {
-				"one": "Se cambió {count} archivo en tu juego.",
-				"other": "Se cambiaron {count} archivos en tu juego."
+				"one": "{count} archivo de la carpeta es distinto de la versión de PixelDoll.",
+				"other": "{count} archivos de la carpeta son distintos de las versiones de PixelDoll."
 			},
 			"unavailable": "Este personaje no se puede exportar ahora.",
 			"locked": "Hay un archivo abierto en otra app. Ciérralo e inténtalo de nuevo.",
 			"space": "El disco está lleno.",
 			"permission": "Esa carpeta no está permitida. Elige otra.",
-			"failed": "No se pudo escribir en la carpeta. Inténtalo de nuevo."
+			"failed": "No se pudo escribir en la carpeta. Inténtalo de nuevo.",
+			"folder": "Una carpeta ocupa el lugar de un archivo. Muévela o elige otra carpeta.",
+			"taken": "Otro personaje ya usa esta carpeta. Elige otra."
 		},
 		"toast": {
 			"reconnect": "Vuelve a conectar {folder} para seguir publicando.",
-			"paused": "Publicación en pausa: cambiaron archivos en tu juego.",
+			"paused": "Publicación en pausa: cambiaron archivos de la carpeta.",
 			"missing": "No se encuentra {folder}.",
 			"failed": "No se pudo publicar en {folder}."
 		}

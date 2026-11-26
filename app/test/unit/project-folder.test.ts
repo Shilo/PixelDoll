@@ -103,6 +103,19 @@ describe('planPublish', () => {
 		);
 		const retry = planPublish({ next, index: crashed, disk: m({ 'a.png': EMPTY_HASH }) });
 		expect(kinds(retry)).toEqual({ 'a.png': 'update' });
+		// An existing file emptied by someone else after an interrupted update is not ours to replace.
+		const before = index({ 'b.png': 'B1' });
+		const update = m({ 'b.png': 'B2' }) as Map<string, string>;
+		const disk = m({ 'b.png': 'B1' });
+		const interrupted = pendingIndex(
+			before,
+			update,
+			planPublish({ next: update, index: before, disk }),
+			disk
+		);
+		expect(
+			planPublish({ next: update, index: interrupted, disk: m({ 'b.png': EMPTY_HASH }) }).blocked
+		).toBe(true);
 	});
 
 	it('keeps stale files owned until removal is asked for, and only removes unchanged ones', () => {
@@ -257,17 +270,59 @@ describe('publishFiles', () => {
 		});
 	});
 
-	it('pauses on a damaged index until it is approved, then still blocks on files it does not own', async () => {
+	it('reports a damaged index with every other conflict, so one approval covers them all', async () => {
 		const folder = memoryFolder({ [INDEX_NAME]: 'not json', 'a.png': 'old' });
 		const first = await publishFiles(folder.target, files({ 'a.png': 'new' }));
-		expect(first).toMatchObject({ kind: 'blocked', conflicts: [{ path: INDEX_NAME }] });
-		const approved = new Map([
-			[INDEX_NAME, first.kind === 'blocked' ? first.conflicts[0].found! : '']
-		]);
+		if (first.kind !== 'blocked') throw new Error('expected a pause');
+		expect(first.conflicts.map((c) => c.path)).toEqual([INDEX_NAME, 'a.png']);
+		const approved = new Map(first.conflicts.map((c) => [c.path, c.found!]));
 		expect(
 			await publishFiles(folder.target, files({ 'a.png': 'new' }), { overwrite: approved })
-		).toMatchObject({ kind: 'blocked', conflicts: [{ path: 'a.png' }] });
-		expect(folder.text(INDEX_NAME)).toBe('not json');
+		).toMatchObject({ kind: 'published' });
+		expect(folder.text('a.png')).toBe('new');
+	});
+
+	it('pauses when a file changes between planning and writing', async () => {
+		const folder = memoryFolder();
+		await publishFiles(folder.target, files({ 'a.png': '1', 'b.png': '1' }));
+		let reads = 0;
+		folder.failRead = (path) => {
+			// The second read of b.png is the recheck right before writing: an editor saved it in between.
+			if (path === 'b.png' && ++reads === 2)
+				folder.files.set('b.png', new TextEncoder().encode('game'));
+			return undefined;
+		};
+		const outcome = await publishFiles(folder.target, files({ 'a.png': '2', 'b.png': '2' }));
+		expect(outcome).toMatchObject({ kind: 'blocked', conflicts: [{ path: 'b.png' }] });
+		expect(folder.text('b.png')).toBe('game');
+	});
+
+	it('refuses a folder another character publishes to', async () => {
+		const folder = memoryFolder();
+		await publishFiles(folder.target, files({ 'a.png': '1' }), { owner: 'hero' });
+		expect(
+			await publishFiles(folder.target, files({ 'a.png': '1' }), { owner: 'villain' })
+		).toMatchObject({
+			kind: 'failed',
+			reason: 'taken'
+		});
+		expect(
+			await publishFiles(folder.target, files({ 'a.png': '2' }), { owner: 'hero' })
+		).toMatchObject({
+			kind: 'published'
+		});
+	});
+
+	it('never offers to replace a folder that sits where a file belongs', async () => {
+		const folder = memoryFolder();
+		folder.dirs.add('a.png');
+		const outcome = await publishFiles(folder.target, files({ 'a.png': '1' }), {
+			overwrite: new Map([['a.png', 'not-a-file']])
+		});
+		expect(outcome).toMatchObject({
+			kind: 'blocked',
+			conflicts: [{ path: 'a.png', reason: 'folder' }]
+		});
 	});
 
 	it('checks the disk for game edits when asked to verify', async () => {

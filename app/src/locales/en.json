@@ -3663,15 +3663,15 @@
 	},
 	"projectFolder": {
 		"title": "Project folder",
-		"hint": "Save export files straight into your game and keep them updated.",
+		"hint": "Saves this character’s export into a subfolder of your game and keeps it updated.",
 		"choose": "Choose folder",
-		"change": "Change",
-		"stop": "Stop",
+		"change": "Change folder",
+		"stop": "Unlink",
 		"publishNow": "Publish now",
 		"auto": "Update automatically",
 		"linked": "{path} · {format}",
 		"reconnect": "Reconnect",
-		"replace": "Replace",
+		"replace": "Replace files",
 		"review": "Review",
 		"copy": "Copy",
 		"copied": "Copied",
@@ -3688,18 +3688,20 @@
 			"reconnect": "Folder access ended. Reconnect, and choose “Allow on every visit”.",
 			"missing": "Folder not found. Choose it again.",
 			"blocked": {
-				"one": "{count} file was changed in your game.",
-				"other": "{count} files were changed in your game."
+				"one": "{count} file in the folder differs from PixelDoll’s version.",
+				"other": "{count} files in the folder differ from PixelDoll’s versions."
 			},
 			"unavailable": "This character can’t be exported right now.",
 			"locked": "A file is open in another app. Close it and try again.",
 			"space": "The disk is full.",
 			"permission": "That folder isn’t allowed. Choose another.",
-			"failed": "Couldn’t write to the folder. Try again."
+			"failed": "Couldn’t write to the folder. Try again.",
+			"folder": "A folder is in the way of a file. Move it, or choose another folder.",
+			"taken": "Another character already uses this folder. Choose another one."
 		},
 		"toast": {
 			"reconnect": "Reconnect {folder} to keep publishing.",
-			"paused": "Publishing paused: files changed in your game.",
+			"paused": "Publishing paused: files in the folder changed.",
 			"missing": "Can’t find {folder}.",
 			"failed": "Couldn’t publish to {folder}."
 		}

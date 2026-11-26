@@ -55,7 +55,8 @@ export const projectFolder = new FolderState();
 export const folderNeedsAttention = (status: FolderStatus) =>
 	!['idle', 'publishing', 'done'].includes(status.kind);
 
-type Request = { manual: boolean; overwrite?: ReadonlyMap<string, string> };
+/** A publish request, bound to the link it was made for (`linkedAt`), so it never runs against a different one. */
+type Request = { manual: boolean; linkedAt?: string; overwrite?: ReadonlyMap<string, string> };
 
 const RW = { mode: 'readwrite' } as const;
 const AUTO_DELAY_MS = 1500;
@@ -95,7 +96,9 @@ export async function loadFolderLink(characterId: string) {
 	try {
 		showLink(characterId, await getLink(characterId));
 	} catch (error) {
+		// Shown in Settings, so a storage failure never looks like "no folder".
 		console.warn('Could not read the linked project folder', error);
+		setStatus(characterId, { kind: 'failed', reason: 'unknown' });
 	}
 }
 
@@ -132,7 +135,7 @@ async function buildFiles(
 				? input.actionLayering
 				: undefined,
 		exportedAt,
-		compress: false
+		filesOnly: true
 	});
 	return result.kind === 'requested'
 		? result.entries.map(({ name, data }) => ({ name, data }))
@@ -181,7 +184,9 @@ async function publish(link: FolderLink, request: Request) {
 			try {
 				current = await getLink(id);
 			} catch (error) {
+				// Without a fresh read this tab cannot know whether the folder was stopped elsewhere, so it waits.
 				console.warn('Could not recheck the linked project folder', error);
+				return setStatus(id, { kind: 'failed', reason: 'unknown' });
 			}
 		if (!current || current.linkedAt !== link.linkedAt) {
 			showLink(id, current);
@@ -189,6 +194,9 @@ async function publish(link: FolderLink, request: Request) {
 			return;
 		}
 		link = current;
+		showLink(id, link);
+		// Update automatically may have been turned off in another tab.
+		if (!request.manual && !link.auto) return;
 		if ((await permission(link)) !== 'granted') return lostAccess(link, request.manual);
 		setStatus(id, { kind: 'publishing' });
 		const target = directoryTarget(link.handle, [link.subfolder]);
@@ -203,6 +211,7 @@ async function publish(link: FolderLink, request: Request) {
 		const files = await buildFiles(link, input, settings, now);
 		if (!files) return setStatus(id, { kind: 'unavailable' });
 		const outcome = await publishFiles(target, files, {
+			owner: id,
 			overwrite: request.overwrite,
 			adopt: request.manual
 		});
@@ -263,7 +272,7 @@ function lostAccess(link: FolderLink, manual: boolean) {
 			tone: 'warning',
 			report: false,
 			// A notice's button is a click, so the browser can ask for access straight away.
-			action: () => void reconnectProjectFolder(),
+			action: () => void reconnectProjectFolder(link),
 			actionLabel: message('projectFolder.reconnect')
 		})
 	);
@@ -275,6 +284,7 @@ function run(request: Request): Promise<void> {
 	if (running) {
 		queued = {
 			manual: request.manual || !!queued?.manual,
+			linkedAt: request.linkedAt ?? queued?.linkedAt,
 			overwrite: request.overwrite ?? queued?.overwrite
 		};
 		return running;
@@ -284,7 +294,12 @@ function run(request: Request): Promise<void> {
 		while (next) {
 			const link = projectFolder.link;
 			const current = next;
-			if (usable() && link && link.characterId === doc.id) {
+			if (
+				usable() &&
+				link &&
+				link.characterId === doc.id &&
+				(!current.linkedAt || current.linkedAt === link.linkedAt)
+			) {
 				try {
 					await publish(link, current);
 				} catch (error) {
@@ -310,12 +325,13 @@ function run(request: Request): Promise<void> {
 export function scheduleFolderPublish() {
 	clearTimeout(timer);
 	if (!usable() || !projectFolder.link?.auto) return;
-	timer = setTimeout(() => void run({ manual: false }), AUTO_DELAY_MS);
+	const linkedAt = projectFolder.link.linkedAt;
+	timer = setTimeout(() => void run({ manual: false, linkedAt }), AUTO_DELAY_MS);
 }
 
 /** Publish now, or replace the listed conflicting files when `overwrite` maps each to the bytes the user saw. */
 export const publishProjectFolder = (overwrite?: ReadonlyMap<string, string>) =>
-	run({ manual: true, overwrite });
+	run({ manual: true, linkedAt: projectFolder.link?.linkedAt, overwrite });
 
 /** Must run straight from a click: the folder picker needs the user's gesture. */
 export async function linkProjectFolder(engine: Engine) {
@@ -365,10 +381,18 @@ async function sameFolder(a: FileSystemDirectoryHandle, b: FileSystemDirectoryHa
 	}
 }
 
-/** Must run straight from a click, like linking. */
-export async function reconnectProjectFolder() {
+/** Must run straight from a click, like linking. `expected` is the link a notice was about: if another character or
+ *  folder is open now, Settings opens instead of asking for the wrong folder. */
+export async function reconnectProjectFolder(expected?: FolderLink) {
 	const link = projectFolder.link;
 	if (!usable() || !link) return;
+	if (
+		expected &&
+		(expected.characterId !== link.characterId || expected.linkedAt !== link.linkedAt)
+	) {
+		openSettings('export');
+		return;
+	}
 	try {
 		if ((await link.handle.requestPermission(RW)) !== 'granted') return;
 	} catch (error) {
@@ -399,7 +423,8 @@ export async function unlinkProjectFolder() {
 	if (!link) return;
 	clearTimeout(timer);
 	try {
-		await deleteLink(link.characterId);
+		// Only this link: if another tab chose a new folder meanwhile, that one stays.
+		await deleteLink(link.characterId, link.linkedAt);
 	} catch (error) {
 		console.warn('Could not remove the linked project folder', error);
 		setStatus(link.characterId, { kind: 'failed', reason: 'unknown' });

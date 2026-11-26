@@ -3672,15 +3672,15 @@
 	},
 	"projectFolder": {
 		"title": "Pasta do projeto",
-		"hint": "Salve os arquivos exportados direto no seu jogo e mantenha-os atualizados.",
+		"hint": "Salva a exportação deste personagem numa subpasta do seu jogo e a mantém atualizada.",
 		"choose": "Escolher pasta",
-		"change": "Trocar",
-		"stop": "Parar",
+		"change": "Trocar pasta",
+		"stop": "Desvincular",
 		"publishNow": "Publicar agora",
 		"auto": "Atualizar automaticamente",
 		"linked": "{path} · {format}",
 		"reconnect": "Reconectar",
-		"replace": "Substituir",
+		"replace": "Substituir arquivos",
 		"review": "Revisar",
 		"copy": "Copiar",
 		"copied": "Copiado",
@@ -3697,18 +3697,20 @@
 			"reconnect": "O acesso à pasta terminou. Reconecte e escolha “Permitir em todas as visitas”.",
 			"missing": "Pasta não encontrada. Escolha-a de novo.",
 			"blocked": {
-				"one": "{count} arquivo foi alterado no seu jogo.",
-				"other": "{count} arquivos foram alterados no seu jogo."
+				"one": "{count} arquivo da pasta é diferente da versão do PixelDoll.",
+				"other": "{count} arquivos da pasta são diferentes das versões do PixelDoll."
 			},
 			"unavailable": "Este personagem não pode ser exportado agora.",
 			"locked": "Um arquivo está aberto em outro app. Feche-o e tente de novo.",
 			"space": "O disco está cheio.",
 			"permission": "Essa pasta não é permitida. Escolha outra.",
-			"failed": "Não foi possível gravar na pasta. Tente de novo."
+			"failed": "Não foi possível gravar na pasta. Tente de novo.",
+			"folder": "Uma pasta está no lugar de um arquivo. Mova-a ou escolha outra pasta.",
+			"taken": "Outro personagem já usa esta pasta. Escolha outra."
 		},
 		"toast": {
 			"reconnect": "Reconecte {folder} para continuar publicando.",
-			"paused": "Publicação pausada: arquivos mudaram no seu jogo.",
+			"paused": "Publicação pausada: arquivos da pasta mudaram.",
 			"missing": "Não foi possível encontrar {folder}.",
 			"failed": "Não foi possível publicar em {folder}."
 		}

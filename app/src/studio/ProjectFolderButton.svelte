@@ -38,7 +38,7 @@
 
 <style>
 	.folder-button {
-		justify-self: start;
+		align-self: flex-start;
 	}
 	.folder-state {
 		margin-left: 4px;
