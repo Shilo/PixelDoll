@@ -65,7 +65,13 @@ export async function downloadFrames(itemId: string, anim: string) {
 }
 
 /** The open character as it looks now, or another one as it was last saved. Shared with project folder publishing. */
-export type DownloadSource = { project: Project; look: Look; record?: StoredProject };
+export type DownloadSource = {
+	project: Project;
+	look: Look;
+	record?: StoredProject;
+	/** How many of a saved character's images could not be read. */
+	missingImages?: number;
+};
 
 export async function exportSource(projectId: string): Promise<DownloadSource> {
 	if (projectId === doc.id && store.project && !doc.loading)
@@ -79,7 +85,8 @@ export async function exportSource(projectId: string): Promise<DownloadSource> {
 	return {
 		project: r.project,
 		record: r.record,
-		look: { items: { ...outfit?.items }, variants: { ...outfit?.variants } }
+		look: { items: { ...outfit?.items }, variants: { ...outfit?.variants } },
+		missingImages: 'missingImages' in r ? r.missingImages : undefined
 	};
 }
 

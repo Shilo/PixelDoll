@@ -35,7 +35,15 @@ import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import { characterZipId, editableData, exportSource } from './download.svelte.ts';
 import { exportActionLayering } from './exportLayering.ts';
 import { openSettings } from './settingsNavigation.svelte.ts';
-import { dismissToast, doc, prepareWorkspaceExport, store, toast, ui } from './state.svelte.ts';
+import {
+	dismissToast,
+	doc,
+	openProject,
+	prepareWorkspaceExport,
+	store,
+	toast,
+	ui
+} from './state.svelte.ts';
 import { timeAgo } from './timeAgo.ts';
 import { t } from 'svelte-whisper';
 
@@ -90,10 +98,15 @@ const AUTO_DELAY_MS = 1500;
 let supportCheck: Promise<FolderSupport> | null = null;
 let loadedFor = '';
 /** Pending automatic publishes, one per link, so a change to one character never cancels another's. */
-const timers = new Map<string, ReturnType<typeof setTimeout>>();
-let running: Promise<void> | null = null;
-/** Requests waiting behind the running one, one per link, in arrival order. */
+const timers = new Map<string, { characterId: string; timer: ReturnType<typeof setTimeout> }>();
+/** The publishing running for each link; links publish independently, so one folder waiting for another tab never
+ *  holds up a different folder. */
+const running = new Map<string, Promise<void>>();
+/** The request waiting behind each link's running publish. */
 const queued = new Map<string, Request>();
+/** The problem each character's folder last reported, kept while that character is not open so its pause is neither
+ *  cleared unseen by a quiet background check nor lost when the user comes back to review it. */
+const problems = new Map<string, FolderStatus>();
 /** Background notices already shown this session, so a lasting problem is reported once rather than on every edit. */
 const noticed = new Set<string>();
 
@@ -108,6 +121,8 @@ export function checkFolderSupport(): Promise<FolderSupport> {
 
 const usable = () => projectFolder.support === 'supported';
 const setStatus = (characterId: string, status: FolderStatus) => {
+	if (folderNeedsAttention(status)) problems.set(characterId, status);
+	else if (status.kind !== 'publishing') problems.delete(characterId);
 	if (loadedFor === characterId) projectFolder.status = status;
 };
 /** Counts this tab's own changes to the link (Update automatically), so a read that started before one never shows the
@@ -123,7 +138,7 @@ export async function loadFolderLink(characterId: string) {
 	if (loadedFor === characterId) return;
 	loadedFor = characterId;
 	projectFolder.link = null;
-	projectFolder.status = { kind: 'idle' };
+	projectFolder.status = problems.get(characterId) ?? { kind: 'idle' };
 	if ((await checkFolderSupport()) !== 'supported' || !characterId) return;
 	const readAt = linkChanges;
 	try {
@@ -140,7 +155,9 @@ export async function loadFolderLink(characterId: string) {
 async function snapshot(id: string) {
 	if (doc.id === id) await prepareWorkspaceExport();
 	else if (!store.projects.some((p) => p.id === id)) return null;
-	const { project, look, record } = await exportSource(id);
+	const { project, look, record, missingImages } = await exportSource(id);
+	// A saved character whose artwork cannot all be read would publish a broken export over a working one.
+	if (missingImages) return null;
 	const manifest = structuredClone(project.manifest);
 	return {
 		project: { ...project, manifest },
@@ -206,10 +223,22 @@ function notify(link: FolderLink, kind: string, manual: boolean, show: () => voi
 	show();
 }
 
-const review = {
-	action: () => openSettings('export', 'project-folder'),
+/** A notice's Review: opens that character (it may no longer be the open one) at its Project folder settings. */
+const review = (id: string) => ({
+	action: async () => {
+		if (doc.id !== id) {
+			try {
+				await openProject(id);
+			} catch (error) {
+				console.warn('Could not open the character to review its project folder', error);
+				return;
+			}
+			if (doc.id !== id) return;
+		}
+		openSettings('export', 'project-folder');
+	},
 	actionLabel: message('projectFolder.review')
-};
+});
 /** Notices that need the user stay until dismissed, so a paused publish is never missed. */
 const lasting = { tone: 'warning' as const, report: false, duration: 0 };
 
@@ -243,15 +272,6 @@ async function publish(link: FolderLink, request: Request) {
 	await exclusive(link, async () => {
 		// Taken once this publish holds the folder, so it is as fresh as it can be: one that waited behind another tab's
 		// publish never writes the look from before that wait. Only a saved character is published.
-		const seen = behind;
-		let input: Snapshot | null;
-		try {
-			input = await snapshot(id);
-		} catch (error) {
-			console.warn('Project folder publish waits for a save', error);
-			return setStatus(id, request.manual ? { kind: 'unavailable' } : { kind: 'idle' });
-		}
-		if (!input) return;
 		const settings = await readExportSettings();
 		let readAt = linkChanges;
 		const checked = await stillLinked(link);
@@ -266,8 +286,17 @@ async function publish(link: FolderLink, request: Request) {
 		// Update automatically may have been turned off in another tab.
 		if (!request.manual && !link.auto) return;
 		if ((await permission(link)) !== 'granted') return lostAccess(link, request.manual);
-		// Read before "publishing" replaces it: a problem on screen must be rechecked on disk, never cleared unseen.
-		const showingProblem = loadedFor === id && folderNeedsAttention(projectFolder.status);
+		const seen = behind;
+		let input: Snapshot | null;
+		try {
+			input = await snapshot(id);
+		} catch (error) {
+			console.warn('Project folder publish waits for a save', error);
+			return setStatus(id, request.manual ? { kind: 'unavailable' } : { kind: 'idle' });
+		}
+		if (!input) return;
+		// A problem this character's folder reported must be rechecked on disk, never cleared unseen.
+		const showingProblem = problems.has(id);
 		// Up to date, unless a change made while this ran (with automatic updates off) means it published an older look.
 		const finished = (status: Extract<FolderStatus, { kind: 'done' }>) => {
 			for (const k of [...noticed]) if (k.startsWith(`${id}:`)) noticed.delete(k);
@@ -311,6 +340,7 @@ async function publish(link: FolderLink, request: Request) {
 			onRecord: (path, hash) => recordWritten(key, path, hash),
 			// Planning reads every file, which takes a moment: the last chance to notice a stop before anything is written.
 			proceed: async () => {
+				if (!store.projects.some((p) => p.id === id)) return false; // deleted meanwhile
 				const latest = await stillLinked(link);
 				return typeof latest === 'object' && !!latest && (request.manual || latest.auto);
 			}
@@ -340,7 +370,7 @@ async function publish(link: FolderLink, request: Request) {
 			case 'blocked':
 				setStatus(id, { kind: 'blocked', conflicts: outcome.conflicts, linkedAt: link.linkedAt });
 				return notify(link, 'blocked', request.manual, () =>
-					notice(id, message('projectFolder.toast.paused'), { ...lasting, ...review })
+					notice(id, message('projectFolder.toast.paused'), { ...lasting, ...review(id) })
 				);
 			case 'failed':
 				console.warn('Project folder publish failed', outcome.error);
@@ -350,7 +380,7 @@ async function publish(link: FolderLink, request: Request) {
 					return notify(link, 'missing', request.manual, () =>
 						notice(id, message('projectFolder.toast.missing', { folder: link.handle.name }), {
 							...lasting,
-							...review
+							...review(id)
 						})
 					);
 				}
@@ -361,7 +391,7 @@ async function publish(link: FolderLink, request: Request) {
 						error: outcome.error,
 						// A locked file, a full disk or a refused folder is the user's to fix, not a bug to report.
 						report: outcome.reason === 'unknown' ? undefined : false,
-						...review
+						...review(id)
 					})
 				);
 		}
@@ -387,11 +417,13 @@ function lostAccess(link: FolderLink, manual: boolean) {
 /** Publishes one request at a time; a request arriving meanwhile runs next, keeping a manual request, an approval and
  *  the latest change. Never rejects. */
 function run(request: Request): Promise<void> {
-	if (running) {
+	const key = request.linkedAt;
+	const active = running.get(key);
+	if (active) {
 		// Requests for different links never merge, so an approval can only apply to the folder it was made for.
-		const waiting = queued.get(request.linkedAt);
+		const waiting = queued.get(key);
 		queued.set(
-			request.linkedAt,
+			key,
 			waiting
 				? {
 						manual: request.manual || waiting.manual,
@@ -403,9 +435,9 @@ function run(request: Request): Promise<void> {
 					}
 				: request
 		);
-		return running;
+		return active;
 	}
-	running = (async () => {
+	const chain = (async () => {
 		let next: Request | undefined = request;
 		while (next) {
 			const current: Request = next;
@@ -423,17 +455,18 @@ function run(request: Request): Promise<void> {
 							{
 								tone: 'warning',
 								error,
-								...review
+								...review(link.characterId)
 							}
 						)
 					);
 				}
 			}
-			next = queued.values().next().value;
-			if (next) queued.delete(next.linkedAt);
+			next = queued.get(key);
+			queued.delete(key);
 		}
-	})().finally(() => (running = null));
-	return running;
+	})().finally(() => running.delete(key));
+	running.set(key, chain);
+	return chain;
 }
 
 /** After a change while automatic updates are off: the folder no longer holds the latest look, so it stops reading as
@@ -451,14 +484,14 @@ let behind = 0;
 export function scheduleFolderPublish() {
 	const link = projectFolder.link;
 	if (!usable() || !link?.auto || link.characterId !== doc.id) return;
-	clearTimeout(timers.get(link.linkedAt));
-	timers.set(
-		link.linkedAt,
-		setTimeout(() => {
+	clearTimeout(timers.get(link.linkedAt)?.timer);
+	timers.set(link.linkedAt, {
+		characterId: link.characterId,
+		timer: setTimeout(() => {
 			timers.delete(link.linkedAt);
 			void run({ manual: false, linkedAt: link.linkedAt, link });
 		}, AUTO_DELAY_MS)
-	);
+	});
 }
 
 /** The open link, if it is the one `linkedAt` names (when given): a decision made about one folder never reaches another. */
@@ -537,6 +570,11 @@ export async function linkProjectFolder(engine: Engine) {
 		});
 		if (!saved) return setStatus(characterId, { kind: 'taken' });
 		link = saved;
+		for (const [linkedAt, pending] of timers)
+			if (linkedAt !== link.linkedAt && pending.characterId === characterId) {
+				clearTimeout(pending.timer);
+				timers.delete(linkedAt);
+			}
 	} catch (error) {
 		// Without stored records PixelDoll could not tell its files from the user's, so it publishes nothing.
 		console.warn('Could not save the linked project folder', error);
@@ -597,7 +635,7 @@ export async function setFolderAutoPublish(auto: boolean) {
 export async function unlinkProjectFolder() {
 	const link = projectFolder.link;
 	if (!link) return;
-	clearTimeout(timers.get(link.linkedAt));
+	clearTimeout(timers.get(link.linkedAt)?.timer);
 	timers.delete(link.linkedAt);
 	try {
 		// Waits for a publish into this folder to finish; only this link goes, so a newer one from another tab stays.
