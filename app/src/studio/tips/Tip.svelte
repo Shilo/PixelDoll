@@ -171,7 +171,13 @@
 {#if shown}
 	<p class="sr" role="status">{announced ? `${title}. ${body}` : ''}</p>
 	<!-- Not a popover: the app reads an open popover as an open menu and pauses stage keys and zoom for it. -->
-	<section bind:this={tip} class="tip bu-popover-anchor" aria-labelledby={titleId} data-tip={id}>
+	<section
+		bind:this={tip}
+		class="tip bu-popover-anchor"
+		data-tone="accent"
+		aria-labelledby={titleId}
+		data-tip={id}
+	>
 		<PopoverArrow />
 		<div class="tip-surface bu-popover-surface bu-floating">
 			<span class="tip-icon" aria-hidden="true"><Lightbulb size={18} /></span>
