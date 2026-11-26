@@ -16,6 +16,9 @@ export interface FolderLink {
 	/** The exportedAt written last, reused until the files change so an unchanged character rewrites nothing. */
 	exportedAt?: string;
 	publishedAt?: string;
+	/** A fingerprint of everything the last publish built from, so a background check of an unchanged character skips
+	 *  building altogether. */
+	inputs?: string;
 }
 
 const DB = 'pixeldoll-project-folders';
@@ -109,7 +112,7 @@ export async function deleteLink(characterId: string, linkedAt: string): Promise
 export async function updateLink(
 	characterId: string,
 	linkedAt: string,
-	patch: Partial<Pick<FolderLink, 'auto' | 'exportedAt' | 'publishedAt'>>
+	patch: Partial<Pick<FolderLink, 'auto' | 'exportedAt' | 'publishedAt' | 'inputs'>>
 ): Promise<FolderLink | null> {
 	const db = await open();
 	try {

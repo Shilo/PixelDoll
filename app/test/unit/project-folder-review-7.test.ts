@@ -1,4 +1,4 @@
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { FolderLink } from '../../src/lib/project-folder/links.ts';
 import type { FolderRecord } from '../../src/lib/project-folder/plan.ts';
 import { domError, files, memoryFolder } from './project-folder-memory.ts';
@@ -42,6 +42,12 @@ vi.mock('../../src/lib/project-folder/support.ts', () => ({
 	folderSupport: async () => 'supported'
 }));
 vi.mock('../../src/lib/store/export-settings.ts', () => ({ readExportSettings: async () => ({}) }));
+
+// Build stamps Vite defines for the app; the fingerprint of a publish includes them.
+beforeEach(() => {
+	vi.stubGlobal('__APP_VERSION__', 'test');
+	vi.stubGlobal('__APP_COMMIT__', 'test');
+});
 vi.mock('../../src/lib/project-folder/links.ts', () => ({
 	...studio,
 	allLinks: async () => [],

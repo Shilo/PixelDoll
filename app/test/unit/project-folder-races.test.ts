@@ -1,4 +1,4 @@
-import { expect, it, vi } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 import type { FolderLink } from '../../src/lib/project-folder/links.ts';
 import { publishFiles, sha256 } from '../../src/lib/project-folder/publish.ts';
 import {
@@ -41,6 +41,12 @@ vi.mock('../../src/studio/download.svelte.ts', () => ({
 vi.mock('../../src/studio/exportLayering.ts', () => ({ exportActionLayering: vi.fn() }));
 vi.mock('../../src/lib/export/build.ts', () => ({ buildExport: studio.buildExport }));
 vi.mock('../../src/lib/export/export.ts', () => ({ ACTION_LAYER_ENGINES: [] }));
+
+// Build stamps Vite defines for the app; the fingerprint of a publish includes them.
+beforeEach(() => {
+	vi.stubGlobal('__APP_VERSION__', 'test');
+	vi.stubGlobal('__APP_COMMIT__', 'test');
+});
 vi.mock('../../src/lib/store/export-settings.ts', () => ({ readExportSettings: async () => ({}) }));
 vi.mock('../../src/lib/project-folder/support.ts', () => ({
 	folderSupport: async () => 'supported'

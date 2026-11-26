@@ -207,6 +207,28 @@ async function snapshot(id: string) {
 }
 type Snapshot = NonNullable<Awaited<ReturnType<typeof snapshot>>>;
 
+/** Everything a publish builds from, as one hash: equal fingerprints build equal files (images are named by their
+ *  content hash in the manifest, and the export's own text does not depend on the interface language). */
+const fingerprint = (
+	link: FolderLink,
+	input: Snapshot,
+	settings: Awaited<ReturnType<typeof readExportSettings>>
+) =>
+	sha256(
+		new TextEncoder().encode(
+			JSON.stringify([
+				__APP_VERSION__,
+				__APP_COMMIT__,
+				link.engine,
+				settings,
+				input.project.manifest,
+				input.look,
+				input.projectData,
+				input.actionLayering
+			])
+		)
+	);
+
 /** The export's files, as the Export sheet would build them, or null when no export can be built. */
 async function buildFiles(
 	link: FolderLink,
@@ -397,7 +419,30 @@ async function publish(link: FolderLink, request: Request) {
 		const record = await readRecord(key);
 		const target = directoryTarget(link.handle, [link.subfolder]);
 		// Reusing the last timestamp first means an unchanged character matches what is there and writes nothing.
-		if (link.exportedAt && !request.overwrite) {
+		const inputs = await fingerprint(link, input, settings);
+		/** Stores what this publish learned on its link, unless the link changed meanwhile. */
+		const remember = async (patch: Parameters<typeof updateLink>[2]) => {
+			try {
+				readAt = linkChanges;
+				const stored = await updateLink(id, link.linkedAt, patch);
+				if (stored) showLink(id, stored, readAt);
+			} catch (error) {
+				console.warn('Could not record the project folder publish', error);
+			}
+		};
+		// A quiet background check of a character unchanged since its last publish needs no build: the record says what
+		// is there. A click, an approval or a problem on screen still checks the folder below.
+		if (
+			!request.manual &&
+			!request.overwrite &&
+			!showingProblem &&
+			link.exportedAt &&
+			link.inputs === inputs
+		)
+			return finished({ kind: 'done', kept: record.kept.length, already: false });
+		// Known to have changed, it builds once with a new time; otherwise it first tries the last time, so an unchanged
+		// export matches what is there and writes nothing.
+		if (link.exportedAt && !request.overwrite && !(link.inputs && link.inputs !== inputs)) {
 			const same = await buildFiles(link, input, settings, link.exportedAt);
 			const next = same && (await hashFiles(same));
 			if (
@@ -409,8 +454,10 @@ async function publish(link: FolderLink, request: Request) {
 				(request.manual || showingProblem || !matchesRecord(record, next)
 					? await inSync(target, record, next)
 					: true)
-			)
+			) {
+				await remember({ inputs });
 				return finished({ kind: 'done', kept: record.kept.length, already: request.manual });
+			}
 		}
 		const now = new Date().toISOString();
 		// A folder chosen again over this character's own earlier export: built with that export's time, an unchanged
@@ -471,19 +518,11 @@ async function publish(link: FolderLink, request: Request) {
 			}
 			case 'published':
 			case 'unchanged':
-				if (outcome.kind === 'published' || exportedAt !== now) {
-					try {
-						readAt = linkChanges;
-						const stored = await updateLink(
-							id,
-							link.linkedAt,
-							outcome.kind === 'published' ? { exportedAt, publishedAt: now } : { exportedAt }
-						);
-						if (stored) showLink(id, stored, readAt);
-					} catch (error) {
-						console.warn('Could not record the project folder publish', error);
-					}
-				}
+				await remember(
+					outcome.kind === 'published'
+						? { exportedAt, publishedAt: now, inputs }
+						: { exportedAt, inputs }
+				);
 				return finished({
 					kind: 'done',
 					kept: outcome.kept,

@@ -43,6 +43,12 @@ vi.mock('../../src/studio/download.svelte.ts', () => ({
 vi.mock('../../src/studio/exportLayering.ts', () => ({ exportActionLayering: vi.fn() }));
 vi.mock('../../src/lib/export/build.ts', () => ({ buildExport: studio.buildExport }));
 vi.mock('../../src/lib/export/export.ts', () => ({ ACTION_LAYER_ENGINES: [] }));
+
+// Build stamps Vite defines for the app; the fingerprint of a publish includes them.
+beforeEach(() => {
+	vi.stubGlobal('__APP_VERSION__', 'test');
+	vi.stubGlobal('__APP_COMMIT__', 'test');
+});
 vi.mock('../../src/lib/store/export-settings.ts', () => ({
 	readExportSettings: studio.readExportSettings
 }));

@@ -46,6 +46,12 @@ vi.mock('../../src/studio/download.svelte.ts', () => ({
 vi.mock('../../src/studio/exportLayering.ts', () => ({ exportActionLayering: vi.fn() }));
 vi.mock('../../src/lib/export/build.ts', () => ({ buildExport: studio.buildExport }));
 vi.mock('../../src/lib/export/export.ts', () => ({ ACTION_LAYER_ENGINES: [] }));
+
+// Build stamps Vite defines for the app; the fingerprint of a publish includes them.
+beforeEach(() => {
+	vi.stubGlobal('__APP_VERSION__', 'test');
+	vi.stubGlobal('__APP_COMMIT__', 'test');
+});
 vi.mock('../../src/lib/store/export-settings.ts', () => ({ readExportSettings: async () => ({}) }));
 vi.mock('../../src/lib/project-folder/support.ts', () => ({
 	folderSupport: async () => 'supported'
@@ -262,7 +268,7 @@ it('keeps both debounced publishes when switching between linked characters', as
 });
 
 it('keeps separate queued publishes while a third character is actively publishing', async () => {
-	const { api, destination, open } = await linkedStudio('hero', 'mage', 'guard');
+	const { api, destination, open, settle } = await linkedStudio('hero', 'mage', 'guard');
 	const entered = deferred();
 	const finish = deferred();
 	studio.buildExport.mockImplementationOnce(async () => {
@@ -280,6 +286,8 @@ it('keeps separate queued publishes while a third character is actively publishi
 	await vi.runAllTimersAsync();
 	finish.resolve();
 	await active;
+	// Each folder publishes on its own, so the others may still be finishing.
+	await settle();
 
 	expect([destination('mage').text(), destination('guard').text()]).toEqual([
 		'mage look',
@@ -434,4 +442,23 @@ it('clears a resolved notice when the existing export is already up to date', as
 
 	expect(api.projectFolder.status.kind).toBe('done');
 	expect(studio.ui.toast).toBeNull();
+});
+
+it('skips building when a background check finds the character unchanged since its last publish', async () => {
+	const { api, destination, settle } = await linkedStudio('hero');
+	await api.publishProjectFolder();
+	expect(destination('hero').text()).toBe('hero look');
+	studio.buildExport.mockClear();
+
+	api.scheduleFolderPublish();
+	await settle();
+	expect(studio.buildExport).not.toHaveBeenCalled();
+	expect(api.projectFolder.status.kind).toBe('done');
+
+	// A real change builds once, with a new time, instead of trying the last time first.
+	studio.doc.items.hat = 'new look';
+	api.scheduleFolderPublish();
+	await settle();
+	expect(studio.buildExport).toHaveBeenCalledTimes(1);
+	expect(destination('hero').text()).toBe('new look');
 });
