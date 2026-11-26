@@ -64,9 +64,9 @@ error, review and done. Then sweep the code for anything the journeys missed:
 Record each as a row in the design doc: the player's task, how often it comes up, the friction (with a screenshot path),
 the smallest change that removes it, and the status. Prioritize by how often players meet it and how confusing it is,
 and agree on the order with the subagent. Item details was already reworked; review it only for consistency with the
-rest. Two scope problems there are still open and make good first cases: "Only when facing south" in Outfit reads like a
-visibility setting (it limits layer-order changes), and item-wide Quality findings sit beside one-view fixes without
-saying which view they concern.
+rest. One scope problem there is still open and makes a good first case: item-wide Quality findings
+sit beside one-view fixes without saying which view they concern. (The Outfit facing switch, once read as a visibility
+setting, now reads "Only for facing south" indented under the layer order; check it with fresh eyes.)
 
 **Diagnose before redesigning.** Something that looks broken may work in the data and fail only on screen: layer order
 seemed broken because each step passed entries that changed nothing visible. Reproduce with stored frames and the real

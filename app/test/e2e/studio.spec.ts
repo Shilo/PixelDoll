@@ -11940,7 +11940,7 @@ test('item details reorders layers for an unworn item, gates the ends and resets
 	await expect(backward).toBeEnabled();
 	const before = await headLayerOverrides(page);
 	const [south, east] = await headDepths(page);
-	const direction = details.getByRole('switch', { name: 'Only facing south' });
+	const direction = details.getByRole('switch', { name: 'Only for facing south' });
 	await direction.check();
 	await backward.click();
 	const [southOnly, eastOnly] = await headDepths(page);
@@ -11952,7 +11952,8 @@ test('item details reorders layers for an unworn item, gates the ends and resets
 	await expect(backward).toBeDisabled();
 	const outfitArt = details.locator('.layer-art canvas');
 	const southBox = (await outfitArt.boundingBox())!;
-	const facingEast = details.getByText(/^Facing east$/i);
+	// Hidden copies of every facing label reserve the widest width; only the shown one is visible.
+	const facingEast = details.getByText(/^Facing east$/i).filter({ visible: true });
 	for (let turn = 0; turn < 8 && !(await facingEast.isVisible()); turn++)
 		await details.getByRole('button', { name: 'Turn right', exact: true }).click();
 	await expect(facingEast).toBeVisible();

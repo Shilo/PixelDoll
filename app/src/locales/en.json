@@ -580,7 +580,7 @@
 			"one": "{n} frame",
 			"other": "{n} frames"
 		},
-		"onlyFacing": "Only facing {direction}",
+		"onlyFacing": "Only for facing {direction}",
 		"tuckNote": "This item may partly cover {slots}.",
 		"chromaKey": "{color} key",
 		"qaStatus": {

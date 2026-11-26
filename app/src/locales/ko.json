@@ -566,7 +566,7 @@
 		"frames": {
 			"other": "프레임 {n}개"
 		},
-		"onlyFacing": "{direction} 방향만",
+		"onlyFacing": "{direction} 방향일 때만",
 		"tuckNote": "이 아이템이 {slots}을(를) 일부 가릴 수 있어요.",
 		"chromaKey": "{color} 키",
 		"qaStatus": {

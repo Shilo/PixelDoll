@@ -580,7 +580,7 @@
 			"one": "{n} image",
 			"other": "{n} images"
 		},
-		"onlyFacing": "Seulement orienté {direction}",
+		"onlyFacing": "Uniquement orienté {direction}",
 		"tuckNote": "Cet objet peut en partie recouvrir {slots}.",
 		"chromaKey": "Couleur clé {color}",
 		"qaStatus": {

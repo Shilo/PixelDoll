@@ -580,7 +580,7 @@
 			"one": "{n} kare",
 			"other": "{n} kare"
 		},
-		"onlyFacing": "Yalnızca {direction} yönü",
+		"onlyFacing": "Yalnızca {direction} yönü için",
 		"tuckNote": "Bu eşya {slots} alanını kısmen örtebilir.",
 		"chromaKey": "Anahtar rengi: {color}",
 		"qaStatus": {

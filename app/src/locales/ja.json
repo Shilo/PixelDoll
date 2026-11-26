@@ -566,7 +566,7 @@
 		"frames": {
 			"other": "{n}フレーム"
 		},
-		"onlyFacing": "{direction}向きのみ",
+		"onlyFacing": "{direction}向きのときだけ",
 		"tuckNote": "このアイテムは{slots}に一部重なる場合があります。",
 		"chromaKey": "キー色：{color}",
 		"qaStatus": {

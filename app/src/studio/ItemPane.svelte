@@ -1486,8 +1486,19 @@
 											onclick={() => turnOutfit(-1)}
 											><ChevronLeft size={18} aria-hidden="true" /></button
 										>
-										<span class="layer-facing" aria-live="polite"
-											>{t('itemPane.facingLabel', { direction: directionName(outfitFacing) })}</span
+										<!-- Every facing's label stacked in one cell, hidden but the shown one, so the arrows never move. -->
+										<span class="layer-facing"
+											>{#each m.rig.directions as direction (direction.id)}<span
+													class="layer-facing-sizer"
+													aria-hidden="true"
+													>{t('itemPane.facingLabel', {
+														direction: directionName(direction.id)
+													})}</span
+												>{/each}<span aria-live="polite"
+												>{t('itemPane.facingLabel', {
+													direction: directionName(outfitFacing)
+												})}</span
+											></span
 										>
 										<button
 											class="bu-action btn plain icon"
@@ -1572,20 +1583,23 @@
 											)}{/if}
 									{/if}
 								</p>
-								<!-- Part of the order: which facings a step changes, and what that covers. -->
-								<label class="switch-row bu-check">
-									<span>{t('itemPane.onlyFacing', { direction: directionName(outfitFacing) })}</span
-									>
-									<input class="bu-switch" type="checkbox" role="switch" bind:checked={onlyDir} />
-								</label>
-								<p class="faint small layer-scope">
-									{onlyDir
-										? t('itemPane.layerScopeFacing', {
-												slot: slotName(it.slot),
-												direction: directionName(outfitFacing)
-											})
-										: t('itemPane.layerScope', { slot: slotName(it.slot) })}
-								</p>
+								<!-- Part of the order: which facings a step changes, and what that covers, indented under it. -->
+								<div class="layer-option">
+									<label class="switch-row bu-check">
+										<span
+											>{t('itemPane.onlyFacing', { direction: directionName(outfitFacing) })}</span
+										>
+										<input class="bu-switch" type="checkbox" role="switch" bind:checked={onlyDir} />
+									</label>
+									<p class="faint small layer-scope">
+										{onlyDir
+											? t('itemPane.layerScopeFacing', {
+													slot: slotName(it.slot),
+													direction: directionName(outfitFacing)
+												})
+											: t('itemPane.layerScope', { slot: slotName(it.slot) })}
+									</p>
+								</div>
 							</div>
 						</section>
 						{#if hideChoices.length}
@@ -2378,10 +2392,17 @@
 		gap: 2px;
 	}
 	.layer-facing {
-		min-width: 0;
+		display: grid;
 		font-size: var(--fs-xs, 12px);
 		color: var(--text-2);
 		text-align: center;
+		white-space: nowrap;
+	}
+	.layer-facing > * {
+		grid-area: 1 / 1;
+	}
+	.layer-facing-sizer {
+		visibility: hidden;
 	}
 	.layer-controls {
 		grid-column: 2;
@@ -2407,6 +2428,13 @@
 		margin: 0;
 		min-height: 1.4em;
 		text-align: end;
+	}
+	/* The facing switch and its note belong to the layer order above: a hairline at the left marks them as its option. */
+	.layer-option {
+		display: grid;
+		gap: 8px;
+		padding-inline-start: 12px;
+		border-inline-start: 2px solid var(--bu-line);
 	}
 	.layer-scope {
 		margin: -4px 0 0;

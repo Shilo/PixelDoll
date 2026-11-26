@@ -566,7 +566,7 @@
 		"frames": {
 			"other": "{n} 帧"
 		},
-		"onlyFacing": "仅朝向{direction}",
+		"onlyFacing": "仅限朝向{direction}时",
 		"tuckNote": "此装备可能部分遮挡{slots}。",
 		"chromaKey": "色键：{color}",
 		"qaStatus": {

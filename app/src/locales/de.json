@@ -580,7 +580,7 @@
 			"one": "{n} Frame",
 			"other": "{n} Frames"
 		},
-		"onlyFacing": "Nur Blickrichtung {direction}",
+		"onlyFacing": "Nur für Blickrichtung {direction}",
 		"tuckNote": "Dieser Gegenstand kann {slots} teilweise verdecken.",
 		"chromaKey": "Key-Farbe: {color}",
 		"qaStatus": {

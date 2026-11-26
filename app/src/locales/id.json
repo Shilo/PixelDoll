@@ -566,7 +566,7 @@
 		"frames": {
 			"other": "{n} frame"
 		},
-		"onlyFacing": "Hanya menghadap {direction}",
+		"onlyFacing": "Hanya saat menghadap {direction}",
 		"tuckNote": "Item ini mungkin menutupi sebagian {slots}.",
 		"chromaKey": "Warna kunci {color}",
 		"qaStatus": {
