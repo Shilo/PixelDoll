@@ -9,9 +9,9 @@ import {
 	openPlaybackPicker
 } from './immersive-helpers.ts';
 import './setup-concurrency.ts';
-import { test, expect, type Locator } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import { makeImg } from '../../src/lib/image/png.ts';
+import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import { encodePngBytes, decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { zip, unzip } from '../../src/lib/store/zip.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
@@ -5250,15 +5250,7 @@ test('every character loads its frames once across switching, menus and updates,
 	expect(final.decodes).toBe(imported.decodes);
 });
 
-test('import warns when the standing artwork looks compressed or resampled', async ({ page }) => {
-	// Every pixel a slightly different color, the signature of JPEG damage or a smooth rescale.
-	const art = makeImg(32, 32);
-	for (let y = 0; y < 32; y++)
-		for (let x = 0; x < 32; x++)
-			art.data.set(
-				[(x * 7 + y * 3) & 255, (x * 5 + y * 11) & 255, (x * 13 + y) & 255, 255],
-				(y * 32 + x) * 4
-			);
+async function importArchive(page: Page, art: Img): Promise<void> {
 	const enc = new TextEncoder();
 	const dirs = ['south', 'east', 'west'];
 	const archive = await zip([
@@ -5267,9 +5259,9 @@ test('import warns when the standing artwork looks compressed or resampled', asy
 			data: enc.encode(
 				JSON.stringify({
 					character: {
-						id: 'compressed',
-						name: 'Compressed check',
-						size: { width: 32, height: 32 }
+						id: 'compression-check',
+						name: 'Compression check',
+						size: { width: art.w, height: art.h }
 					},
 					frames: {
 						rotations: Object.fromEntries(dirs.map((dir) => [dir, `rotations/${dir}.png`])),
@@ -5290,9 +5282,42 @@ test('import warns when the standing artwork looks compressed or resampled', asy
 		.click();
 	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
-		name: 'compressed.zip',
+		name: 'character.zip',
 		mimeType: 'application/zip',
 		buffer: Buffer.from(archive)
 	});
+	// The preview is ready once the name field exists; the warning list renders with it.
+	await expect(page.getByLabel('Character name', { exact: true })).toBeVisible();
+}
+
+test('import warns when the standing artwork looks compressed or resampled', async ({ page }) => {
+	// Every pixel a slightly different color, the signature of JPEG damage or a smooth rescale.
+	const noisy = makeImg(32, 32);
+	for (let y = 0; y < 32; y++)
+		for (let x = 0; x < 32; x++)
+			noisy.data.set(
+				[(x * 7 + y * 3) & 255, (x * 5 + y * 11) & 255, (x * 13 + y) & 255, 255],
+				(y * 32 + x) * 4
+			);
+	await importArchive(page, noisy);
 	await expect(page.getByText('looks compressed or resampled', { exact: false })).toBeVisible();
+});
+
+test('import stays quiet for native standing artwork', async ({ page }) => {
+	// Four colors in repeating bands: the palette of real pixel art.
+	const clean = makeImg(32, 32);
+	const colors = [
+		[200, 48, 48, 255],
+		[48, 180, 64, 255],
+		[48, 72, 200, 255],
+		[220, 196, 48, 255]
+	];
+	for (let y = 0; y < 32; y++)
+		for (let x = 0; x < 32; x++)
+			clean.data.set(
+				colors[(Math.floor(x / 8) + Math.floor(y / 8)) % colors.length],
+				(y * 32 + x) * 4
+			);
+	await importArchive(page, clean);
+	await expect(page.getByText('looks compressed or resampled', { exact: false })).toHaveCount(0);
 });

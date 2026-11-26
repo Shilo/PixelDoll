@@ -4,6 +4,16 @@ import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { zip, type ZipEntry } from '../../src/lib/store/zip.ts';
 
 export const DIRS = ['south', 'east', 'west'] as const;
+export const DIRS8 = [
+	'south',
+	'south-east',
+	'east',
+	'north-east',
+	'north',
+	'north-west',
+	'west',
+	'south-west'
+] as const;
 const BANDS = [2, 5, 9, 12, 16, 19, 23, 27, 30];
 const COLORS = [
 	[200, 48, 48, 255],
@@ -17,13 +27,15 @@ const COLORS = [
 ];
 
 /** Irregular band boundaries: native art cannot fit them on one mod-s lattice, while nearest-neighbor upscales can. */
-export function cell(): Img {
-	const im = makeImg(32, 32);
+export function cell(size = 32): Img {
+	const im = makeImg(size, size);
+	const scale = size / 32;
 	for (let j = 0; j < BANDS.length - 1; j++)
 		for (let i = 0; i < BANDS.length - 1; i++) {
 			const color = COLORS[(i + j) % COLORS.length];
-			for (let y = BANDS[j]; y < BANDS[j + 1]; y++)
-				for (let x = BANDS[i]; x < BANDS[i + 1]; x++) im.data.set(color, (y * im.w + x) * 4);
+			for (let y = BANDS[j] * scale; y < BANDS[j + 1] * scale; y++)
+				for (let x = BANDS[i] * scale; x < BANDS[i + 1] * scale; x++)
+					im.data.set(color, (Math.floor(y) * im.w + Math.floor(x)) * 4);
 		}
 	return im;
 }
@@ -55,20 +67,39 @@ export function noisy(size = 32, seed = 0): Img {
 	return im;
 }
 
-/** Native bands with a wide, fully transparent-free halo below the binarization threshold: unique colors the importer drops. */
+/** A cell with exactly `colors` distinct colors, of which exactly `singles` appear once; the rest fill a repeated color. */
+export function paletteImage(colors: number, singles: number, size = 32): Img {
+	const im = makeImg(size, size);
+	const color = (i: number) => [i & 255, (i >> 8) & 255, 0, 255] as const;
+	let p = 0;
+	const put = (i: number) => im.data.set(color(i), p++ * 4);
+	for (let i = 0; i < singles; i++) put(i);
+	for (let i = 0; i < colors - singles; i++) {
+		put(singles + i);
+		put(singles + i);
+	}
+	const fill = colors > singles ? singles : 0; // a repeated color when there is one, so no singleton is consumed
+	while (p < size * size) put(fill);
+	return im;
+}
+
+/** Native bands plus a halo of unique colors at alpha 64: colors the importer drops at its binarization cutoff. */
 export function haloBelowThreshold(): Img {
 	const im = cell();
 	let n = 0;
-	for (let p = 0; p < im.w * im.h && n < 300; p++) {
-		if (im.data[p * 4 + 3]) continue; // only overwrite transparent pixels, so the kept art stays intact
+	for (let p = 0; p < im.w * im.h; p++) {
+		if (im.data[p * 4 + 3]) continue; // only fill transparent pixels, so the kept art stays intact
 		im.data.set([n & 255, (n * 3) & 255, (n * 7) & 255, 64], p * 4);
 		n++;
 	}
 	return im;
 }
 
-/** A PixelLab-character ZIP with one image per standing direction. */
-export async function archive(arts: Img | readonly Img[]): Promise<ZipEntry[]> {
+/** A PixelLab-character ZIP with one image per standing direction (3 by default, 8 on request). */
+export async function archive(
+	arts: Img | readonly Img[],
+	dirs: readonly string[] = DIRS
+): Promise<ZipEntry[]> {
 	const list = Array.isArray(arts) ? [...arts] : [arts as Img];
 	const enc = new TextEncoder();
 	return [
@@ -82,14 +113,14 @@ export async function archive(arts: Img | readonly Img[]): Promise<ZipEntry[]> {
 						size: { width: list[0].w, height: list[0].h }
 					},
 					frames: {
-						rotations: Object.fromEntries(DIRS.map((dir) => [dir, `rotations/${dir}.png`])),
+						rotations: Object.fromEntries(dirs.map((dir) => [dir, `rotations/${dir}.png`])),
 						animations: {}
 					}
 				})
 			)
 		},
 		...(await Promise.all(
-			DIRS.map(async (dir, index) => ({
+			dirs.map(async (dir, index) => ({
 				name: `rotations/${dir}.png`,
 				data: await encodePngBytes(list[index % list.length])
 			}))
@@ -97,4 +128,5 @@ export async function archive(arts: Img | readonly Img[]): Promise<ZipEntry[]> {
 	];
 }
 
-export const archiveZip = async (arts: Img | readonly Img[]) => zip(await archive(arts));
+export const archiveZip = async (arts: Img | readonly Img[], dirs?: readonly string[]) =>
+	zip(await archive(arts, dirs));

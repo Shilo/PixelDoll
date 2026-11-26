@@ -1,10 +1,18 @@
-// Compression/resampling warning on imported standing cells: pooling, the per-cell upscale gate, and dropped alpha.
+// Compression/resampling warning on imported standing cells: per-cell verdicts, alpha handled like the importer does.
 import { expect, test } from 'vitest';
-import { makeImg, type Img } from '../../src/lib/image/png.ts';
+import { makeImg } from '../../src/lib/image/png.ts';
 import { paletteStats } from '../../src/lib/image/resampling.ts';
 import { readCharacterZip } from '../../src/lib/store/import.ts';
 import { detectUpscale } from '../../src/lib/image/upscale.ts';
-import { archiveZip, cell, haloBelowThreshold, noisy, upscale } from './import-fixtures.ts';
+import {
+	archiveZip,
+	cell,
+	DIRS8,
+	haloBelowThreshold,
+	noisy,
+	paletteImage,
+	upscale
+} from './import-fixtures.ts';
 
 const compressionWarnings = (warnings: string[]) =>
 	warnings.filter((warning) => warning.includes('compressed or resampled'));
@@ -23,9 +31,15 @@ test('native standing cells add no compression warning', async () => {
 	expect(hasCompressionWarning(result.warnings)).toBe(false);
 });
 
+test('a clean nearest-neighbor upscale is not reported as compression', async () => {
+	const result = await readCharacterZip(await archiveZip(upscale(cell(), 4)));
+	expect(result.warnings.some((warning) => warning.includes('upscale'))).toBe(true);
+	expect(hasCompressionWarning(result.warnings)).toBe(false);
+});
+
 test('colors the importer drops (alpha below the cutoff) do not count as compression', async () => {
 	const art = haloBelowThreshold();
-	// The halo has 300 unique colors, but all are below the binarization threshold and never imported.
+	// The halo fills every transparent pixel with a unique color, all below the binarization threshold.
 	expect(paletteStats(art).colors).toBeLessThan(64);
 	const result = await readCharacterZip(await archiveZip(art));
 	expect(hasCompressionWarning(result.warnings)).toBe(false);
@@ -34,31 +48,31 @@ test('colors the importer drops (alpha below the cutoff) do not count as compres
 	);
 });
 
-test('one damaged direction is enough to warn', async () => {
-	const art = [cell(), noisy(32, 11), cell()];
-	const result = await readCharacterZip(await archiveZip(art));
+test('one slightly damaged direction among clean ones still warns', async () => {
+	// 30% one-off colors: over the share threshold on its own, invisible once pooled with seven clean palettes.
+	const mild = paletteImage(400, 120);
+	const art = [cell(), cell(), cell(), cell(), cell(), cell(), cell(), mild];
+	const result = await readCharacterZip(await archiveZip(art, DIRS8));
 	expect(hasCompressionWarning(result.warnings)).toBe(true);
 });
 
+test('eight clean directions stay quiet', async () => {
+	const art = Array.from({ length: 8 }, () => cell());
+	const result = await readCharacterZip(await archiveZip(art, DIRS8));
+	expect(hasCompressionWarning(result.warnings)).toBe(false);
+});
+
 test('a mixed upscale and damaged set reports both causes', async () => {
-	// South and east are a clean nearest-neighbor upscale; west is compressed.
 	const art = [upscale(cell(), 4), upscale(cell(), 4), noisy(32, 5)];
 	const result = await readCharacterZip(await archiveZip(art));
 	expect(result.warnings.some((warning) => warning.includes('upscale'))).toBe(true);
 	expect(hasCompressionWarning(result.warnings)).toBe(true);
 });
 
-test('a single clean direction among damaged ones still warns', async () => {
-	const art: Img[] = [cell(), noisy(32, 2), noisy(32, 3)];
-	const result = await readCharacterZip(await archiveZip(art));
-	expect(hasCompressionWarning(result.warnings)).toBe(true);
-});
-
-test('a cell too small to judge never warns on its own', async () => {
+test('a cell too small to judge never warns', async () => {
 	const small = makeImg(8, 8);
 	for (let p = 0; p < small.w * small.h; p++)
 		small.data.set([(p * 11) & 255, (p * 7) & 255, (p * 3) & 255, 255], p * 4);
 	const result = await readCharacterZip(await archiveZip(small));
-	// Three 8x8 cells pool to 192 painted pixels, still below the floor.
 	expect(hasCompressionWarning(result.warnings)).toBe(false);
 });
