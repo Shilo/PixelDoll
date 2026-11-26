@@ -624,7 +624,6 @@
 		},
 		"qualitySection": "Qualität",
 		"passed": "Bestanden",
-		"fixViewTitle": "{move} in Blickrichtung {direction} korrigieren",
 		"facing": "Blickrichtung",
 		"matchColorsDetail": "Gleicht {pixels} in {frames} an die Palette des Gegenstands an.",
 		"fixFramesDetail": "Bearbeite die Frames in deinem Grafikprogramm.",
@@ -661,7 +660,11 @@
 		"redrawCostsMore": {
 			"one": "{n} Generierung mehr als Reparatur.",
 			"other": "{n} Generierungen mehr als Reparatur."
-		}
+		},
+		"fixMove": "{move} korrigieren",
+		"turnLeft": "Nach links drehen",
+		"turnRight": "Nach rechts drehen",
+		"facingLabel": "Blickrichtung {direction}"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Neue Figur",

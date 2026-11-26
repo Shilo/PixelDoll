@@ -624,7 +624,6 @@
 		},
 		"qualitySection": "Calidad",
 		"passed": "Superadas",
-		"fixViewTitle": "Corregir {move} mirando hacia {direction}",
 		"facing": "Dirección",
 		"matchColorsDetail": "Ajusta {pixels} en {frames} a la paleta del objeto.",
 		"fixFramesDetail": "Edita los fotogramas en tu programa de dibujo.",
@@ -661,7 +660,11 @@
 		"redrawCostsMore": {
 			"one": "{n} generación más que Reparar.",
 			"other": "{n} generaciones más que Reparar."
-		}
+		},
+		"fixMove": "Corregir {move}",
+		"turnLeft": "Girar a la izquierda",
+		"turnRight": "Girar a la derecha",
+		"facingLabel": "Mirando hacia {direction}"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nuevo personaje",

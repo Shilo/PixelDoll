@@ -624,7 +624,6 @@
 		},
 		"qualitySection": "Qualidade",
 		"passed": "Aprovado",
-		"fixViewTitle": "Corrigir {move} virado para {direction}",
 		"facing": "Direção",
 		"matchColorsDetail": "Ajusta {pixels} em {frames} à paleta do item.",
 		"fixFramesDetail": "Edite os quadros no seu app de desenho.",
@@ -661,7 +660,11 @@
 		"redrawCostsMore": {
 			"one": "{n} geração a mais que Reparar.",
 			"other": "{n} gerações a mais que Reparar."
-		}
+		},
+		"fixMove": "Corrigir {move}",
+		"turnLeft": "Girar para a esquerda",
+		"turnRight": "Girar para a direita",
+		"facingLabel": "Virado para {direction}"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Novo personagem",

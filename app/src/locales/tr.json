@@ -624,7 +624,6 @@
 		},
 		"qualitySection": "Kalite",
 		"passed": "Geçti",
-		"fixViewTitle": "{direction} yönündeki {move} görünümünü düzelt",
 		"facing": "Yön",
 		"matchColorsDetail": "{frames} içindeki {pixels} eşyanın paletine uydurulur.",
 		"fixFramesDetail": "Kareleri çizim uygulamanda düzenle.",
@@ -661,7 +660,11 @@
 		"redrawCostsMore": {
 			"one": "Onarımdan {n} üretim fazla.",
 			"other": "Onarımdan {n} üretim fazla."
-		}
+		},
+		"fixMove": "{move} düzelt",
+		"turnLeft": "Sola döndür",
+		"turnRight": "Sağa döndür",
+		"facingLabel": "{direction} yönü"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Yeni karakter",

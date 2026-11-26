@@ -11616,6 +11616,9 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await expect(more).toHaveAttribute('aria-expanded', 'true');
 	const items = itemMenu(page).getByRole('menuitem');
 	await expect(items.first()).toHaveAccessibleName('Details...');
+	// The tile's warning is flagged on Details, where it is dealt with: a dot, and the reason as its description.
+	await expect(items.first()).toHaveAccessibleDescription(/^Missing frames in \d+ moves?$/);
+	await expect(items.first().locator('.details-dot')).toBeVisible();
 	await expect(items.first()).toBeFocused();
 	await expect(items.last()).toHaveAccessibleName('Move to Trash…');
 	const iconOffsets = await items.evaluateAll((rows) =>
@@ -11922,9 +11925,12 @@ test('item details reorders layers for an unworn item, gates the ends and resets
 	expect(eastOnly).toBe(east);
 	await direction.uncheck();
 	// A step passes only what the shown facing visibly changes: facing south the hat is already behind everything it
-	// overlaps, so the window turns east, where it still has a layer to pass, and steps for every facing from there.
+	// overlaps, so the Outfit preview turns east, where it still has a layer to pass, and steps for every facing from there.
 	await expect(backward).toBeDisabled();
-	await details.getByRole('radio', { name: 'East', exact: true }).click();
+	const facingEast = details.getByText(/^Facing east$/i);
+	for (let turn = 0; turn < 8 && !(await facingEast.isVisible()); turn++)
+		await details.getByRole('button', { name: 'Turn right', exact: true }).click();
+	await expect(facingEast).toBeVisible();
 	await backward.click();
 	await expect.poll(async () => (await headDepths(page))[1]).toBeLessThan(east);
 	await expect.poll(() => headLayerOverrides(page)).not.toEqual(before);

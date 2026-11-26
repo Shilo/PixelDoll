@@ -624,7 +624,6 @@
 		},
 		"qualitySection": "Quality",
 		"passed": "Passed",
-		"fixViewTitle": "Fix {move} facing {direction}",
 		"facing": "Facing",
 		"matchColorsDetail": "Matches {pixels} in {frames} to the item’s palette.",
 		"fixFramesDetail": "Edit frames in your art app.",
@@ -661,7 +660,11 @@
 		"redrawCostsMore": {
 			"one": "{n} gen more than Repair.",
 			"other": "{n} gens more than Repair."
-		}
+		},
+		"fixMove": "Fix {move}",
+		"turnLeft": "Turn left",
+		"turnRight": "Turn right",
+		"facingLabel": "Facing {direction}"
 	},
 	"newCharacterButton": {
 		"newCharacter": "New character",

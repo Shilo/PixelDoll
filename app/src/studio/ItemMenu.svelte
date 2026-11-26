@@ -11,6 +11,7 @@
 	// anchored to the tile's ⋮ at every size, with Wear as a toggle in its header.
 	import PopoverArrow from './PopoverArrow.svelte';
 	import { downloadItemZip } from './download.svelte.ts';
+	import { HEALTH_LABEL, healthOf, missingFramesNote } from './model.ts';
 	import Thumb from './Thumb.svelte';
 	import SharedThumb from './SharedThumb.svelte';
 	import type { SharedItem } from '../lib/equipment/shared.ts';
@@ -117,6 +118,17 @@
 	}
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
+	// What Details has for the player to review (checks, fit, missing frames): its row shows a dot and describes the reason
+	// (its name stays "Details…"), pointing to where the tile's warning is dealt with. The demo has nothing to act on.
+	const attentionId = $props.id();
+	const attention = $derived.by(() => {
+		if (!m || !it || isDemo()) return '';
+		const health = healthOf(m, it);
+		if (health === 'look' || health === 'stale' || health === 'unfitted')
+			return displayMessage(HEALTH_LABEL[health]);
+		const missing = missingFramesNote(m, it);
+		return missing ? displayMessage(missing) : '';
+	});
 	const otherHand = $derived(m && it ? otherHandOf(m, it.slot) : undefined);
 	const both = $derived(!!m && !!it && twoHanded(m, it));
 	// The header names the category; the lines below it explain each of the tile's icons.
@@ -356,6 +368,7 @@
 						class="row bu-action"
 						data-variant="quiet"
 						role="menuitem"
+						aria-describedby={attention ? attentionId : undefined}
 						onclick={() =>
 							act(() => {
 								ui.selected = it.id;
@@ -363,7 +376,10 @@
 							})}
 						><Info size={16} aria-hidden="true" />{openerLabel(
 							t('common.detailsMenu')
-						)}<SurfaceChevron /></button
+						)}{#if attention}<span class="details-dot" aria-hidden="true"></span><span
+								id={attentionId}
+								hidden>{attention}</span
+							>{/if}<SurfaceChevron /></button
 					>
 					{#if !isDemo() && !it.variantOf}
 						<button
@@ -512,3 +528,15 @@
 		</p></ConfirmDialog
 	>
 {/if}
+
+<style>
+	/* Same 6px dot as the Wardrobe tabs and More, in the tile badge's warning color, before the chevron. */
+	.details-dot {
+		flex: none;
+		width: 6px;
+		height: 6px;
+		margin-inline-start: 6px;
+		border-radius: 50%;
+		background: var(--warn);
+	}
+</style>

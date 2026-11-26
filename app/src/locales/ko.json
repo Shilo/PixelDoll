@@ -608,7 +608,6 @@
 		},
 		"qualitySection": "품질",
 		"passed": "통과",
-		"fixViewTitle": "{direction} 방향 {move} 수정",
 		"facing": "방향",
 		"matchColorsDetail": "{frames}의 {pixels}을(를) 아이템 팔레트에 맞춰요.",
 		"fixFramesDetail": "그림 앱에서 프레임을 편집하세요.",
@@ -640,7 +639,11 @@
 		},
 		"redrawCostsMore": {
 			"other": "복구보다 생성 {n}회 많아요."
-		}
+		},
+		"fixMove": "{move} 수정",
+		"turnLeft": "왼쪽으로 회전",
+		"turnRight": "오른쪽으로 회전",
+		"facingLabel": "{direction} 방향"
 	},
 	"newCharacterButton": {
 		"newCharacter": "새 캐릭터",

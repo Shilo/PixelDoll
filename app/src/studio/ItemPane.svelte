@@ -7,6 +7,7 @@
 		id: string;
 		anim: string;
 		dir: DirectionName;
+		outfitDir: DirectionName;
 		open: Record<Section, boolean>;
 		scroll: number;
 	} | null = null;
@@ -136,6 +137,7 @@
 		Pencil,
 		RefreshCw,
 		RotateCcw,
+		RotateCw,
 		Sparkles,
 		TriangleAlert,
 		WandSparkles,
@@ -182,6 +184,18 @@
 			: (m?.rig.directions[0]?.id ?? ui.dir)
 	);
 	const sourceDir = $derived(m?.rig.directions.find((d) => d.id === facing)?.mirrorOf ?? facing);
+	// Outfit turns its own preview: turning it never moves the view a paid fix in Quality would change.
+	let outfitDir = $state<DirectionName>(resumed?.outfitDir ?? untrack(() => ui.dir));
+	const outfitFacing = $derived<DirectionName>(
+		m?.rig.directions.some((direction) => direction.id === outfitDir)
+			? outfitDir
+			: (m?.rig.directions[0]?.id ?? ui.dir)
+	);
+	function turnOutfit(step: 1 | -1) {
+		const all = m?.rig.directions ?? [];
+		const at = all.findIndex((direction) => direction.id === outfitFacing);
+		if (all.length) outfitDir = all[(at + step + all.length) % all.length].id;
+	}
 	const moveName = $derived(displayMove(animId, moveRefs));
 	const made = $derived(m ? moveDirs(m, animId) : []);
 
@@ -209,16 +223,6 @@
 	);
 	// Short landscape keeps the strip low so the sections start above the fold.
 	const tile = $derived(ui.size === 'landscape' ? 40 : 64);
-	/** Arrow keys move the facing choice (one Tab stop for the group), as in any radio group. */
-	function facingKey(event: KeyboardEvent) {
-		const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
-		if (!step || !directions.length) return;
-		event.preventDefault();
-		const group = (event.currentTarget as HTMLElement).parentElement,
-			at = directions.findIndex((direction) => direction.id === facing);
-		scopeDir = directions[(at + step + directions.length) % directions.length].id;
-		void tick().then(() => group?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus());
-	}
 	let viewer = $state.raw<{ views: SpriteView[]; view: number; frame: number } | null>(null);
 	function openViewer(directionId: string, frame = frameIndex) {
 		if (!m) return;
@@ -559,17 +563,17 @@
 		);
 	});
 	let onlyDir = $state(false);
-	const neighbors = $derived(it ? itemLayerNeighbors(it.id, animId, facing, onlyDir) : null);
+	const neighbors = $derived(it ? itemLayerNeighbors(it.id, animId, outfitFacing, onlyDir) : null);
 	// The outfit preview shows the frame where the last step made a difference, else the first one.
 	let witness = $state(0);
 	$effect(() => {
 		void animId;
-		void facing;
+		void outfitFacing;
 		witness = 0;
 	});
 	const outfitCell = $derived.by(() => {
 		void doc.rev;
-		const cell = it ? placedOutfitCell(it.id, witness, animId, facing) : null;
+		const cell = it ? placedOutfitCell(it.id, witness, animId, outfitFacing) : null;
 		// Cropped to the outfit so a small sprite in a large frame still reads.
 		return cell ? (cropAll([cell])[0] ?? cell) : null;
 	});
@@ -594,7 +598,7 @@
 	let wearButton = $state<HTMLButtonElement>();
 	async function stepLayer(step: 1 | -1) {
 		if (!it) return;
-		const shown = moveLayer(it.id, step, onlyDir, animId, facing);
+		const shown = moveLayer(it.id, step, onlyDir, animId, outfitFacing);
 		if (shown != null) witness = shown;
 		await tick();
 		// Keep the keyboard on a usable layer control when a step reaches an end.
@@ -671,12 +675,24 @@
 	// ---------- sections ----------
 	let open = $state<Record<Section, boolean>>(
 		resumed?.open ??
-			untrack(() => ({
-				moves: (!strip.length && missingMoves.length > 0) || restorable.length > 0 || copyOffer,
-				quality: health === 'look',
-				outfit: false,
-				about: false
-			}))
+			untrack(() => {
+				// At most one section opens on entry, the first that needs the player: an unfitted item's notice already
+				// holds its one action, then a move with nothing to show (or frames to add for free), then failed checks.
+				const first: Section | '' =
+					health === 'unfitted'
+						? ''
+						: (!strip.length && missingMoves.length > 0) || restorable.length > 0 || copyOffer
+							? 'moves'
+							: health === 'look'
+								? 'quality'
+								: '';
+				return {
+					moves: first === 'moves',
+					quality: first === 'quality',
+					outfit: false,
+					about: false
+				};
+			})
 	);
 	const sections = $state<Partial<Record<Section, HTMLDetailsElement>>>({});
 	let body = $state<HTMLElement>();
@@ -690,6 +706,7 @@
 			id,
 			anim: animId,
 			dir: facing,
+			outfitDir: outfitFacing,
 			open: $state.snapshot(open),
 			scroll: scroller()?.scrollTop ?? 0
 		};
@@ -739,9 +756,11 @@
 						(remakeOnly && !isDemo() && !freeFrames
 							? ' ' + t('itemPane.remakeAllMoves', { name: m.name })
 							: ''),
-					action: isDemo()
-						? undefined
-						: { label: t('itemPane.reviewMissingMoves'), run: () => void reveal('moves') }
+					// No link when Moves & States is already open below.
+					action:
+						isDemo() || open.moves
+							? undefined
+							: { label: t('itemPane.reviewMissingMoves'), run: () => void reveal('moves') }
 				};
 			if (health === 'stale') return { tone: 'warn', text: t('itemPane.staleNote') };
 			return null;
@@ -926,24 +945,6 @@
 							{/each}
 						</select>
 					</label>
-					{#if directions.length > 1}
-						<!-- The facing the window reviews, fixes and orders layers in; the tiles below open any facing full size. -->
-						<div class="facing" role="radiogroup" aria-label={t('itemPane.facing')}>
-							{#each directions as direction (direction.id)}
-								<button
-									class="bu-action facing-choice"
-									data-variant="quiet"
-									role="radio"
-									aria-checked={direction.id === facing}
-									aria-label={displayDirection(direction.id)}
-									title={displayDirection(direction.id)}
-									tabindex={direction.id === facing ? 0 : -1}
-									onclick={() => (scopeDir = direction.id)}
-									onkeydown={facingKey}>{displayDirectionShort(direction.id)}</button
-								>
-							{/each}
-						</div>
-					{/if}
 				</div>
 				<div
 					class="item-views"
@@ -961,7 +962,6 @@
 							class="item-view bu-action"
 							data-variant="quiet"
 							data-missing={!has || undefined}
-							data-current={direction.id === facing || undefined}
 							aria-haspopup="dialog"
 							aria-label={has
 								? t('itemPane.openSprite', { title: label })
@@ -971,7 +971,7 @@
 							<span class="view-art" aria-hidden="true">
 								{#if has && image}<Sprite img={image} {k} limit={tile} {label} />{:else}<span
 										class="view-missing"
-										title={t('itemPane.missingView')}><ImageOff size={20} /></span
+										title={t('itemPane.missingView')}><ImageOff size={24} strokeWidth={1.5} /></span
 									>{/if}
 							</span>
 							<span class="view-caption">{displayDirection(direction.id)}</span>
@@ -1301,9 +1301,24 @@
 							{/if}
 
 							<div class="fix-view">
-								<h4>
-									{t('itemPane.fixViewTitle', { move: moveName, direction: directionName(facing) })}
-								</h4>
+								<div class="fix-head">
+									<h4>{t('itemPane.fixMove', { move: moveName })}</h4>
+									{#if !isDemo() && m.rig.directions.length > 1}
+										<label class="fix-facing">
+											<span>{t('itemPane.facing')}</span>
+											<select
+												class="bu-input input"
+												value={facing}
+												onchange={(event) =>
+													(scopeDir = event.currentTarget.value as DirectionName)}
+											>
+												{#each m.rig.directions as direction (direction.id)}
+													<option value={direction.id}>{displayDirection(direction.id)}</option>
+												{/each}
+											</select>
+										</label>
+									{/if}
+								</div>
 								<!-- The heading names the view; a mirrored facing also updates the facings drawn from it. -->
 								{#if mirrored}<p class="faint small" id="item-fix-scope">
 										{t('itemPane.updateNoteMirrors', {
@@ -1419,20 +1434,45 @@
 					<!-- The outfit preview stays beside every control here, so each change shows where it is made. -->
 					<div class="section-body outfit-body">
 						<section class="layer-order" aria-labelledby="layer-order-{it.id}">
-							<div class="layer-preview" aria-hidden={!outfitCell}>
-								{#if outfitCell}<Sprite
-										img={outfitCell}
-										k={outfitK}
-										limit={112}
-										checker
-										label={t('itemPane.outfitPreview', {
-											name: it.name,
-											direction: directionName(facing)
-										})}
-									/>{/if}
-								{#if !on && !hiddenNow}<span class="layer-preview-note"
-										>{t('itemPane.asIfWorn')}</span
-									>{/if}
+							<div class="layer-preview">
+								<div class="layer-art">
+									{#if outfitCell}<Sprite
+											img={outfitCell}
+											k={outfitK}
+											limit={112}
+											checker
+											label={t('itemPane.outfitPreview', {
+												name: it.name,
+												direction: directionName(outfitFacing)
+											})}
+										/>{/if}
+									{#if !on && !hiddenNow}<span class="layer-preview-note"
+											>{t('itemPane.asIfWorn')}</span
+										>{/if}
+								</div>
+								{#if m.rig.directions.length > 1}
+									<div class="layer-turn">
+										<button
+											class="bu-action btn plain icon"
+											data-variant="quiet"
+											aria-label={t('itemPane.turnLeft')}
+											title={t('itemPane.turnLeft')}
+											onclick={() => turnOutfit(-1)}
+											><RotateCcw size={16} aria-hidden="true" /></button
+										>
+										<span class="layer-facing" aria-live="polite"
+											>{t('itemPane.facingLabel', { direction: directionName(outfitFacing) })}</span
+										>
+										<button
+											class="bu-action btn plain icon"
+											data-variant="quiet"
+											aria-label={t('itemPane.turnRight')}
+											title={t('itemPane.turnRight')}
+											onclick={() => turnOutfit(1)}
+											><RotateCw size={16} aria-hidden="true" /></button
+										>
+									</div>
+								{/if}
 							</div>
 							<div class="layer-controls">
 								<h4 id="layer-order-{it.id}">{t('itemPane.layerOrder')}</h4>
@@ -1473,7 +1513,7 @@
 							</div>
 						</section>
 						<label class="switch-row bu-check">
-							<span>{t('itemPane.onlyFacing', { direction: directionName(facing) })}</span>
+							<span>{t('itemPane.onlyFacing', { direction: directionName(outfitFacing) })}</span>
 							<input class="bu-switch" type="checkbox" role="switch" bind:checked={onlyDir} />
 						</label>
 						<p class="faint small layer-scope">
@@ -1852,22 +1892,11 @@
 		width: 100%;
 		height: var(--tile, 64px);
 	}
-	/* A facing with no frames: an empty square the size of the art, marked with a missing-image icon. */
+	/* A facing with no frames: just a missing-image icon where its art would be, so the strip keeps one rhythm. */
 	.view-missing {
 		display: grid;
 		place-items: center;
-		width: min(44px, 80%);
-		aspect-ratio: 1;
-		border: 1px dashed var(--bu-line);
-		border-radius: 8px;
 		color: var(--text-3);
-	}
-	.item-view[data-current] .view-caption {
-		color: var(--accent-text, var(--accent));
-		font-weight: 600;
-	}
-	.item-view[data-current] {
-		box-shadow: inset 0 -2px 0 var(--accent);
 	}
 	.item-view[data-missing] .view-caption {
 		color: var(--warn);
@@ -2156,43 +2185,35 @@
 		display: grid;
 		gap: 8px;
 	}
+	.fix-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+	}
+	.fix-facing {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: var(--fs-sm);
+		color: var(--text-2);
+	}
+	.fix-facing select {
+		width: auto;
+		min-height: 36px;
+		padding-block: 4px;
+		font-size: var(--fs-sm);
+	}
+	@media (pointer: coarse) {
+		.fix-facing select {
+			min-height: 44px;
+			font-size: 16px;
+		}
+	}
 	.fix-view {
 		display: grid;
 		gap: 8px;
-	}
-	/* With a mouse the choices shrink to stay on one row; touch keeps 44px targets and wraps (below). */
-	.facing {
-		display: flex;
-		min-width: 0;
-		max-width: 100%;
-		margin-inline-start: auto;
-		gap: 2px;
-		padding: 2px;
-		border: 1px solid var(--bu-line);
-		border-radius: 10px;
-	}
-	.facing-choice {
-		flex: 1 1 36px;
-		min-width: 28px;
-		min-height: 36px;
-		padding: 0 4px;
-		border-radius: 8px;
-		font-size: var(--fs-sm);
-		font-weight: 600;
-		color: var(--text-2);
-	}
-	@media (pointer: coarse) {
-		.facing {
-			flex-wrap: wrap;
-		}
-		.facing-choice {
-			min-width: 44px;
-			min-height: 44px;
-		}
-	}
-	.facing-choice[aria-checked='true'] {
-		background: var(--bu-selected, var(--sel));
-		color: var(--accent-text, var(--accent));
 	}
 
 	/* Outfit */
@@ -2214,12 +2235,30 @@
 		position: sticky;
 		top: 8px;
 		display: grid;
+		justify-items: center;
+		gap: 4px;
+	}
+	.layer-art {
+		position: relative;
+		display: grid;
 		place-items: center;
 		width: 120px;
 		height: 120px;
 		background: var(--stage);
 		border-radius: var(--r-card);
 		overflow: hidden;
+	}
+	/* Turning the outfit preview, as on a turntable; the facing it shows is named between the arrows. */
+	.layer-turn {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+	}
+	.layer-facing {
+		min-width: 0;
+		font-size: var(--fs-xs, 12px);
+		color: var(--text-2);
+		text-align: center;
 	}
 	.layer-preview-note {
 		position: absolute;

@@ -608,7 +608,6 @@
 		},
 		"qualitySection": "品質",
 		"passed": "合格",
-		"fixViewTitle": "{direction}向きの{move}を修正",
 		"facing": "向き",
 		"matchColorsDetail": "{frames}の{pixels}をアイテムのパレットに合わせます。",
 		"fixFramesDetail": "お使いのお絵かきアプリでフレームを編集します。",
@@ -640,7 +639,11 @@
 		},
 		"redrawCostsMore": {
 			"other": "修復より生成が{n}回多くなります。"
-		}
+		},
+		"fixMove": "{move}を修正",
+		"turnLeft": "左に回転",
+		"turnRight": "右に回転",
+		"facingLabel": "{direction}向き"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新しいキャラクター",

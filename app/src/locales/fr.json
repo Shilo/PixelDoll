@@ -624,7 +624,6 @@
 		},
 		"qualitySection": "Qualité",
 		"passed": "Réussi",
-		"fixViewTitle": "Corriger {move} orienté {direction}",
 		"facing": "Direction",
 		"matchColorsDetail": "Aligne {pixels} dans {frames} sur la palette de l’objet.",
 		"fixFramesDetail": "Modifiez les images dans votre logiciel de dessin.",
@@ -661,7 +660,11 @@
 		"redrawCostsMore": {
 			"one": "{n} génération de plus que Réparer.",
 			"other": "{n} générations de plus que Réparer."
-		}
+		},
+		"fixMove": "Corriger {move}",
+		"turnLeft": "Tourner à gauche",
+		"turnRight": "Tourner à droite",
+		"facingLabel": "Orienté {direction}"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nouveau personnage",

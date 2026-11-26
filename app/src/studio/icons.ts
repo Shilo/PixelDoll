@@ -69,6 +69,7 @@ export { default as Activity } from '@lucide/svelte/icons/activity';
 export { default as Gauge } from '@lucide/svelte/icons/gauge';
 export { default as Coins } from '@lucide/svelte/icons/coins';
 export { default as RotateCcw } from '@lucide/svelte/icons/rotate-ccw';
+export { default as RotateCw } from '@lucide/svelte/icons/rotate-cw';
 export { default as WandSparkles } from '@lucide/svelte/icons/wand-sparkles';
 export { default as ArrowUp } from '@lucide/svelte/icons/arrow-up';
 export { default as ArrowDown } from '@lucide/svelte/icons/arrow-down';

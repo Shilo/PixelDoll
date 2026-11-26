@@ -608,7 +608,6 @@
 		},
 		"qualitySection": "Kualitas",
 		"passed": "Lulus",
-		"fixViewTitle": "Perbaiki {move} menghadap {direction}",
 		"facing": "Arah",
 		"matchColorsDetail": "Menyesuaikan {pixels} di {frames} dengan palet item.",
 		"fixFramesDetail": "Edit frame di aplikasi gambar Anda.",
@@ -640,7 +639,11 @@
 		},
 		"redrawCostsMore": {
 			"other": "{n} generasi lebih banyak daripada Perbaiki."
-		}
+		},
+		"fixMove": "Perbaiki {move}",
+		"turnLeft": "Putar ke kiri",
+		"turnRight": "Putar ke kanan",
+		"facingLabel": "Menghadap {direction}"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Karakter baru",

@@ -608,7 +608,6 @@
 		},
 		"qualitySection": "质量",
 		"passed": "通过",
-		"fixViewTitle": "修复朝向{direction}的{move}",
 		"facing": "朝向",
 		"matchColorsDetail": "将{frames}中的{pixels}匹配到装备的调色板。",
 		"fixFramesDetail": "在你的绘图软件中编辑帧。",
@@ -640,7 +639,11 @@
 		},
 		"redrawCostsMore": {
 			"other": "比修复多 {n} 次生成。"
-		}
+		},
+		"fixMove": "修复{move}",
+		"turnLeft": "向左转",
+		"turnRight": "向右转",
+		"facingLabel": "朝向{direction}"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新建角色",
