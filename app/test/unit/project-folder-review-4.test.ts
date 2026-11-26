@@ -19,6 +19,7 @@ const studio = vi.hoisted(() => ({
 	readCharacterForExport: vi.fn(),
 	openSettings: vi.fn(),
 	openProject: vi.fn(),
+	openingProjectId: () => '',
 	buildExport: vi.fn()
 }));
 

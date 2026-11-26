@@ -38,6 +38,7 @@ import { openSettings } from './settingsNavigation.svelte.ts';
 import {
 	dismissToast,
 	doc,
+	openingProjectId,
 	openProject,
 	prepareWorkspaceExport,
 	store,
@@ -106,7 +107,7 @@ const running = new Map<string, Promise<void>>();
 const queued = new Map<string, Request>();
 /** The problem each character's folder last reported, kept while that character is not open so its pause is neither
  *  cleared unseen by a quiet background check nor lost when the user comes back to review it. */
-const problems = new Map<string, FolderStatus>();
+const problems = new Map<string, { linkedAt: string; status: FolderStatus }>();
 /** Background notices already shown this session, so a lasting problem is reported once rather than on every edit. */
 const noticed = new Set<string>();
 
@@ -120,9 +121,14 @@ export function checkFolderSupport(): Promise<FolderSupport> {
 }
 
 const usable = () => projectFolder.support === 'supported';
-const setStatus = (characterId: string, status: FolderStatus) => {
-	if (folderNeedsAttention(status)) problems.set(characterId, status);
-	else if (status.kind !== 'publishing') problems.delete(characterId);
+/** @param linkedAt the link a publish reported this for: its problem is kept for that link only, so a later link of the
+ *  same character never shows or clears it. */
+const setStatus = (characterId: string, status: FolderStatus, linkedAt?: string) => {
+	if (linkedAt !== undefined) {
+		if (folderNeedsAttention(status)) problems.set(characterId, { linkedAt, status });
+		else if (status.kind !== 'publishing' && problems.get(characterId)?.linkedAt === linkedAt)
+			problems.delete(characterId);
+	}
 	if (loadedFor === characterId) projectFolder.status = status;
 };
 /** Counts this tab's own changes to the link (Update automatically), so a read that started before one never shows the
@@ -138,11 +144,16 @@ export async function loadFolderLink(characterId: string) {
 	if (loadedFor === characterId) return;
 	loadedFor = characterId;
 	projectFolder.link = null;
-	projectFolder.status = problems.get(characterId) ?? { kind: 'idle' };
+	projectFolder.status = { kind: 'idle' };
 	if ((await checkFolderSupport()) !== 'supported' || !characterId) return;
 	const readAt = linkChanges;
 	try {
-		showLink(characterId, await getLink(characterId), readAt);
+		const link = await getLink(characterId);
+		showLink(characterId, link, readAt);
+		// A problem this character's folder reported while another character was open, if it is still the same link.
+		const known = problems.get(characterId);
+		if (known && link && known.linkedAt === link.linkedAt && loadedFor === characterId)
+			projectFolder.status = known.status;
 	} catch (error) {
 		// Shown in Settings, so a storage failure never looks like "no folder".
 		console.warn('Could not read the linked project folder', error);
@@ -215,18 +226,19 @@ function locked<T>(name: string, work: () => Promise<T>): Promise<T> {
 const exclusive = <T>(link: FolderLink, work: () => Promise<T>) =>
 	locked(`folder:${link.subfolder.toLowerCase()}`, work);
 
-function notify(link: FolderLink, kind: string, manual: boolean, show: () => void) {
+function notify(link: FolderLink, kind: string, manual: boolean, show: () => unknown) {
 	const key = `${link.characterId}:${kind}`;
-	// A problem from a click is already on screen in Settings; background ones are reported once per session.
+	// A problem from a click is already on screen in Settings; background ones are reported once per session, counting
+	// only a notice that was shown (a more urgent one on screen holds it back).
 	if (manual || noticed.has(key)) return;
-	noticed.add(key);
-	show();
+	if (show() !== false) noticed.add(key);
 }
 
 /** A notice's Review: opens that character (it may no longer be the open one) at its Project folder settings. */
 const review = (id: string) => ({
 	action: async () => {
-		if (doc.id !== id) {
+		// Another character may be opening right now: this one is opened after it, so Settings shows the right one.
+		if (doc.id !== id || (openingProjectId() && openingProjectId() !== id)) {
 			try {
 				await openProject(id);
 			} catch (error) {
@@ -256,6 +268,19 @@ function clearNotice(id: string) {
 	shownNotice = undefined;
 }
 
+/** A request whose link was stopped or replaced elsewhere: shows what is stored now, and leaves the status alone when a
+ *  newer link has one of its own. */
+async function superseded(id: string, readAt: number) {
+	let current: FolderLink | null;
+	try {
+		current = await getLink(id);
+	} catch {
+		return; // the next publish or reopening reads it again
+	}
+	showLink(id, current, readAt);
+	if (!current) setStatus(id, { kind: 'idle' });
+}
+
 /** The stored link, if it is still the one this request was made for; another tab may have stopped or replaced it. */
 async function stillLinked(link: FolderLink): Promise<FolderLink | null | 'unknown'> {
 	try {
@@ -269,6 +294,7 @@ async function stillLinked(link: FolderLink): Promise<FolderLink | null | 'unkno
 
 async function publish(link: FolderLink, request: Request) {
 	const id = link.characterId;
+	const report = (status: FolderStatus) => setStatus(id, status, link.linkedAt);
 	await exclusive(link, async () => {
 		// Taken once this publish holds the folder, so it is as fresh as it can be: one that waited behind another tab's
 		// publish never writes the look from before that wait. Only a saved character is published.
@@ -276,34 +302,32 @@ async function publish(link: FolderLink, request: Request) {
 		let readAt = linkChanges;
 		const checked = await stillLinked(link);
 		// Without a fresh read this tab cannot know whether the folder was stopped elsewhere, so it waits.
-		if (checked === 'unknown') return setStatus(id, { kind: 'failed', reason: 'unknown' });
-		if (!checked) {
-			showLink(id, await getLink(id).catch(() => null), readAt);
-			return setStatus(id, { kind: 'idle' });
-		}
+		if (checked === 'unknown') return report({ kind: 'failed', reason: 'unknown' });
+		if (!checked) return superseded(id, readAt);
 		link = checked;
 		showLink(id, link, readAt);
 		// Update automatically may have been turned off in another tab.
 		if (!request.manual && !link.auto) return;
 		if ((await permission(link)) !== 'granted') return lostAccess(link, request.manual);
-		const seen = behind;
+		const seen = behind.get(id) ?? 0;
 		let input: Snapshot | null;
 		try {
 			input = await snapshot(id);
 		} catch (error) {
+			// A background attempt waits for the next save quietly, leaving any problem it knows about in place.
 			console.warn('Project folder publish waits for a save', error);
-			return setStatus(id, request.manual ? { kind: 'unavailable' } : { kind: 'idle' });
+			return request.manual ? report({ kind: 'unavailable' }) : undefined;
 		}
 		if (!input) return;
 		// A problem this character's folder reported must be rechecked on disk, never cleared unseen.
-		const showingProblem = problems.has(id);
+		const showingProblem = problems.get(id)?.linkedAt === link.linkedAt;
 		// Up to date, unless a change made while this ran (with automatic updates off) means it published an older look.
 		const finished = (status: Extract<FolderStatus, { kind: 'done' }>) => {
 			for (const k of [...noticed]) if (k.startsWith(`${id}:`)) noticed.delete(k);
 			clearNotice(id);
-			setStatus(id, behind !== seen ? { kind: 'idle' } : status);
+			report((behind.get(id) ?? 0) !== seen ? { kind: 'idle' } : status);
 		};
-		setStatus(id, { kind: 'publishing' });
+		report({ kind: 'publishing' });
 		const key = recordKey(link);
 		if (request.release) await setKept(key, [], false);
 		if (request.keep?.length) await setKept(key, request.keep, true);
@@ -325,15 +349,15 @@ async function publish(link: FolderLink, request: Request) {
 		}
 		const now = new Date().toISOString();
 		const files = await buildFiles(link, input, settings, now);
-		if (!files) return setStatus(id, { kind: 'unavailable' });
+		if (!files) return report({ kind: 'unavailable' });
 		// Building takes a moment: recheck that the link was not stopped or replaced meanwhile.
 		readAt = linkChanges;
 		const recheck = await stillLinked(link);
-		if (recheck === 'unknown') return setStatus(id, { kind: 'failed', reason: 'unknown' });
-		if (!recheck) return setStatus(id, { kind: 'idle' });
+		if (recheck === 'unknown') return report({ kind: 'failed', reason: 'unknown' });
+		if (!recheck) return superseded(id, readAt);
 		showLink(id, recheck, readAt);
 		// Update automatically may also have been turned off meanwhile.
-		if (!request.manual && !recheck.auto) return setStatus(id, { kind: 'idle' });
+		if (!request.manual && !recheck.auto) return report({ kind: 'idle' });
 		const outcome = await publishFiles(target, files, {
 			record,
 			overwrite: request.overwrite,
@@ -346,8 +370,13 @@ async function publish(link: FolderLink, request: Request) {
 			}
 		});
 		switch (outcome.kind) {
-			case 'stopped':
-				return setStatus(id, { kind: 'idle' });
+			case 'stopped': {
+				readAt = linkChanges;
+				const latest = await stillLinked(link);
+				return typeof latest === 'object' && latest
+					? report({ kind: 'idle' })
+					: superseded(id, readAt);
+			}
 			case 'published':
 			case 'unchanged':
 				if (outcome.kind === 'published') {
@@ -368,7 +397,7 @@ async function publish(link: FolderLink, request: Request) {
 					already: request.manual && outcome.kind === 'unchanged'
 				});
 			case 'blocked':
-				setStatus(id, { kind: 'blocked', conflicts: outcome.conflicts, linkedAt: link.linkedAt });
+				report({ kind: 'blocked', conflicts: outcome.conflicts, linkedAt: link.linkedAt });
 				return notify(link, 'blocked', request.manual, () =>
 					notice(id, message('projectFolder.toast.paused'), { ...lasting, ...review(id) })
 				);
@@ -376,7 +405,7 @@ async function publish(link: FolderLink, request: Request) {
 				console.warn('Project folder publish failed', outcome.error);
 				if (outcome.reason === 'permission') return lostAccess(link, request.manual);
 				if (outcome.reason === 'missing') {
-					setStatus(id, { kind: 'missing' });
+					report({ kind: 'missing' });
 					return notify(link, 'missing', request.manual, () =>
 						notice(id, message('projectFolder.toast.missing', { folder: link.handle.name }), {
 							...lasting,
@@ -384,7 +413,7 @@ async function publish(link: FolderLink, request: Request) {
 						})
 					);
 				}
-				setStatus(id, { kind: 'failed', reason: outcome.reason });
+				report({ kind: 'failed', reason: outcome.reason });
 				return notify(link, `failed:${outcome.reason}`, request.manual, () =>
 					notice(id, message('projectFolder.toast.failed', { folder: link.handle.name }), {
 						tone: 'warning',
@@ -399,7 +428,7 @@ async function publish(link: FolderLink, request: Request) {
 }
 
 function lostAccess(link: FolderLink, manual: boolean) {
-	setStatus(link.characterId, { kind: 'reconnect' });
+	setStatus(link.characterId, { kind: 'reconnect' }, link.linkedAt);
 	notify(link, 'reconnect', manual, () =>
 		notice(
 			link.characterId,
@@ -407,7 +436,7 @@ function lostAccess(link: FolderLink, manual: boolean) {
 			{
 				...lasting,
 				// A notice's button is a click, so the browser can ask for access straight away.
-				action: () => void reconnectProjectFolder(link),
+				action: () => reconnectProjectFolder(link),
 				actionLabel: message('projectFolder.reconnect')
 			}
 		)
@@ -474,11 +503,12 @@ function run(request: Request): Promise<void> {
 export function folderFallsBehind() {
 	const link = projectFolder.link;
 	if (!link || link.auto) return;
-	behind++;
+	behind.set(link.characterId, (behind.get(link.characterId) ?? 0) + 1);
 	if (projectFolder.status.kind === 'done') setStatus(link.characterId, { kind: 'idle' });
 }
-/** Counts changes made while automatic updates are off, so a publish that ran across one does not claim Up to date. */
-let behind = 0;
+/** Counts each character's changes made while automatic updates are off, so a publish that ran across one does not
+ *  claim Up to date. */
+const behind = new Map<string, number>();
 
 /** After a change: republish soon if this character publishes automatically. */
 export function scheduleFolderPublish() {
@@ -597,12 +627,13 @@ async function sameFolder(a: FileSystemDirectoryHandle, b: FileSystemDirectoryHa
 /** Must run straight from a click, like linking. `expected` is the link a notice was about: if another character or
  *  folder is open now, Settings opens instead of asking for the wrong folder. */
 export async function reconnectProjectFolder(expected?: FolderLink) {
+	if (!usable()) return;
+	// A notice about another character opens that character's settings, where its Reconnect is one click away.
+	if (expected && (expected.characterId !== doc.id || openingProjectId()))
+		return review(expected.characterId).action();
 	const link = projectFolder.link;
-	if (!usable() || !link) return;
-	if (
-		expected &&
-		(expected.characterId !== link.characterId || expected.linkedAt !== link.linkedAt)
-	) {
+	if (!link) return;
+	if (expected && expected.linkedAt !== link.linkedAt) {
 		openSettings('export', 'project-folder');
 		return;
 	}
@@ -649,5 +680,6 @@ export async function unlinkProjectFolder() {
 		return;
 	}
 	showLink(link.characterId, null);
+	problems.delete(link.characterId);
 	setStatus(link.characterId, { kind: 'idle' });
 }
