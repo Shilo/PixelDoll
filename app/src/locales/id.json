@@ -499,13 +499,6 @@
 			"other": "Dibuat kembali dari desain item yang tersimpan untuk {directions}. Tidak ada yang digenerasi."
 		},
 		"hiddenByAnotherItem": "Tertutup oleh item lain",
-		"hiddenByItem": "Tertutup oleh {name}",
-		"showName": "Tampilkan {name}",
-		"notWorn": "Tidak dipakai",
-		"qualityChecks": "Pemeriksaan kualitas",
-		"customize": "Sesuaikan",
-		"itemActions": "Tindakan item",
-		"layerHiddenHint": "Item lain yang dipakai menutupi item ini, jadi urutan lapisannya tidak dapat diubah di sini. Tampilkan dulu.",
 		"nameInEveryDirection": "{name} dari semua arah",
 		"labelNameFacingId": "{name} menghadap {id}",
 		"acceptedAppearanceWarnings": "Peringatan tampilan yang diterima",

@@ -510,13 +510,6 @@
 			"other": "Vues reconstruites à partir des dessins enregistrés de l’objet pour {directions}. Rien n’est généré."
 		},
 		"hiddenByAnotherItem": "Masqué par un autre objet",
-		"hiddenByItem": "Masqué par {name}",
-		"showName": "Afficher {name}",
-		"notWorn": "Non porté",
-		"qualityChecks": "Contrôles de qualité",
-		"customize": "Personnaliser",
-		"itemActions": "Actions de l’objet",
-		"layerHiddenHint": "Un autre objet porté masque celui-ci, son ordre de calques ne peut donc pas changer ici. Affichez-le d’abord.",
 		"nameInEveryDirection": "{name} dans toutes les directions",
 		"labelNameFacingId": "{name}, orientation {id}",
 		"acceptedAppearanceWarnings": "Avertissements sur le visuel acceptés",

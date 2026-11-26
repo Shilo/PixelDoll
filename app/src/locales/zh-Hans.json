@@ -499,13 +499,6 @@
 			"other": "使用此物品已保存的 {directions} 朝向设计来恢复，不会生成新画面。"
 		},
 		"hiddenByAnotherItem": "被另一件装备遮挡",
-		"hiddenByItem": "被 {name} 遮挡",
-		"showName": "显示 {name}",
-		"notWorn": "未穿戴",
-		"qualityChecks": "质量检查",
-		"customize": "自定义",
-		"itemActions": "物品操作",
-		"layerHiddenHint": "另一件已穿戴装备遮挡了此物品，因此无法在此更改图层顺序。请先显示它。",
 		"nameInEveryDirection": "所有朝向的{name}",
 		"labelNameFacingId": "{name}，朝向{id}",
 		"acceptedAppearanceWarnings": "已接受的外观警告",

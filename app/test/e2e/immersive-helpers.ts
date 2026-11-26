@@ -114,18 +114,6 @@ export async function selectedItemDetails(page: Page) {
 	return dialog;
 }
 
-/** Open one of the Item sheet's disclosure sections, such as Customize or Layer order. */
-export async function openItemSection(dialog: Locator, name: string) {
-	const summary = dialog.locator('summary').filter({ hasText: name }).first();
-	// `xpath=..` takes the summary's own details: a has: filter would look for the named summary inside each candidate,
-	// where a chained dialog locator never matches.
-	const section = summary.locator('xpath=..');
-	if (!(await section.evaluate((element) => (element as HTMLDetailsElement).open)))
-		await summary.click();
-	await expect(section).toHaveAttribute('open', '');
-	return section;
-}
-
 export async function pickItem(page: Page, name: string) {
 	await equipmentMode(page, 'Wardrobe');
 	const item = page.locator('.equipment-scroll .item-tile').getByText(name, { exact: true });

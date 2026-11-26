@@ -510,13 +510,6 @@
 			"other": "Reconstruidas a partir de los diseños guardados del objeto para {directions}. No se genera nada."
 		},
 		"hiddenByAnotherItem": "Oculto por otro objeto",
-		"hiddenByItem": "Oculto por {name}",
-		"showName": "Mostrar {name}",
-		"notWorn": "No puesto",
-		"qualityChecks": "Comprobaciones de calidad",
-		"customize": "Personalizar",
-		"itemActions": "Acciones del objeto",
-		"layerHiddenHint": "Otro objeto puesto oculta este, así que su orden de capas no se puede cambiar aquí. Muéstralo primero.",
 		"nameInEveryDirection": "{name} en todas las direcciones",
 		"labelNameFacingId": "{name} · Dirección: {id}",
 		"acceptedAppearanceWarnings": "Advertencias de apariencia aceptadas",
