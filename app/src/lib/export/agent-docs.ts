@@ -37,8 +37,10 @@ this file first, then the doc for your engine in docs/, then that engine's READM
   per direction, the last matching entry winning. Equal z breaks by slot order in manifest.json, back layer before front
   layer, then item id. Never sort by name instead of z.
 - Palette swaps are exact RGB replacements from materials[].ramp and materials[].variants. Replace those pixels; never
-  scale, rotate, blur or resample the art. Only material variants that exist in manifest.json can be selected, and an
-  unknown material or variant id selects nothing without throwing.
+  scale, rotate, blur or resample the art. Only named variants that exist in manifest.json can be selected, and an
+  unknown material or variant id selects nothing without throwing. When materials is empty, or the material you want
+  lists no variants, this character ships nothing to recolor: skip the recolor step instead of calling it with invented
+  ids.
 - Nearest-neighbor filtering and whole-pixel positions. No atlas packing, rotation or trimming.
 - The base body is always worn. A layer that a move or an item does not provide is simply absent.
 - Mirroring is already baked into the exported views; do not flip a sheet that manifest.json lists on its own.
@@ -76,9 +78,12 @@ Full guide: phaser/README.txt. Data: manifest.json and the TexturePacker atlases
     doll.setVariants({ '<material-id>': '<variant-id>' })             // only ids listed in manifest.json
 
 Use pixelArt: true and roundPixels: true and serve the folder over http: the module fetches manifest.json.
+This export does not bundle Phaser. Load Phaser 3.80+ or 4 yourself (a script tag exposing the global Phaser, or your
+bundler) and import phaser/PaperdollContainer.js as an ES module, as above.
 doll.playAction(move, direction) plays a one-shot action and doll.setDirection(dir) turns the active move.
 An unknown move, direction, slot, item or outfit throws before changing anything; an unknown material or variant id
 in setVariants selects nothing, so check manifest.json's materials before relying on a recolor.
+The constructor starts in model.presets[0], the first outfit in manifest.json.
 Call doll.destroy() when removing the character. Atlas files are phaser/<length>-<item>_<length>-<layer>_<length>-<move>.json
 with frames named <move>_<direction>_<frame>: each atlas JSON lists the frames it holds, and phaser/README.txt states the
 naming pattern.
@@ -95,9 +100,10 @@ Full guide: godot/README.txt.
     var doll = preload("res://characters/<character>/godot/Paperdoll.tscn").instantiate()
     add_child(doll)
     doll.play_anim("walk", "south")
-    doll.equip("main_hand", "sword")     # "" empties a slot
-    doll.set_preset("outfit_id")
+    doll.set_preset("outfit_id")        # items and colors together; it replaces earlier selections
+    doll.equip("main_hand", "sword")    # after a preset; "" empties a slot
 
+The scene starts in presets[0], the first outfit in manifest.json.
 Set Rendering > Textures > Default Texture Filter to Nearest and 2D > Snap 2D Transforms To Pixel on.
 Manifest depths become native z_index ranks; keep the root's z_index to place the character among scene objects.
 `;

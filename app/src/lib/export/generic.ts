@@ -542,8 +542,13 @@ Path segments derived from IDs prefix Windows device names (con, prn, aux, nul, 
 lpt0-lpt9) with an underscore, case-insensitively. IDs in manifest.json stay unchanged.
 For example, outfit aux and move con use baked/_aux/_con.png. Layer sheets have explicit manifest paths.
 
-Outfit colors are exact palette swaps (materials[].ramp and variants, presets[].variants); the runtimes swap them while
-the character plays, so a game can change them.
+${
+	m.materials.length && m.materials.some((mat) => Object.keys(mat.variants ?? {}).length)
+		? `Outfit colors are exact palette swaps (materials[].ramp and variants, presets[].variants); the runtimes swap them
+while the character plays, so a game can change them.`
+		: `This character ships no named color variants, so every sheet already carries its final colors and there is nothing
+to recolor at runtime. Do not call the recolor API with invented material or variant ids.`
+}
 
 Moves: ${moves.join(', ')}.
 A move lists the directions it has in rig.animations[].directions; its other sheet rows are empty.
