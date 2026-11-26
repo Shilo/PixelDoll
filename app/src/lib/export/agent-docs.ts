@@ -37,9 +37,10 @@ this file first, then the doc for your engine in docs/, then that engine's READM
   per direction, the last matching entry winning. Equal z breaks by slot order in manifest.json, back layer before front
   layer, then item id. Never sort by name instead of z.
 - Palette swaps are exact RGB replacements from materials[].ramp and materials[].variants. Replace those pixels; never
-  scale, rotate, blur or resample the art. A ramp is the item's source palette; only entries listed under variants can be
-  selected, and an unknown variant applies no swap. Each engine reference says whether that call also throws, warns or
-  clears other selections. When materials is empty, or the
+  scale, rotate, blur or resample the art. A ramp is the item's source palette, an array of #rrggbb colors; a variant maps
+  a name to a replacement ramp of the same length. Only entries listed under variants can be selected, and an unknown
+  variant applies no swap. Each engine reference says whether that call also throws, warns or clears other selections.
+  When materials is empty, or the
   material you want lists no variants, this character ships nothing to recolor: skip the recolor step instead of calling
   it with invented ids. Supplying your own ramp is not part of this export's API. Variants are the ones saved in PixelDoll
   before the export.
@@ -72,7 +73,9 @@ engine folder has its own README for the file names and runtime API it provides.
 const PHASER = `# Phaser 3.80+ / 4
 
 Entry: phaser/PaperdollContainer.js, an ES module; phaser/types.d.ts types the exported data, not the runtime class.
-Full guide: phaser/README.txt. Data: manifest.json and the TexturePacker atlases in phaser/.
+Full guide: phaser/README.txt. Data: manifest.json and the TexturePacker atlas JSON in phaser/.
+The JSON files in phaser/ are atlas metadata only: their meta.image points at ../layers/<slot>/<item>/<layer>/<move>.png, so
+the exported folder has to stay together.
 
     import { loadPaperdoll, Paperdoll } from './assets/<character>/phaser/PaperdollContainer.js'
     const model = await loadPaperdoll(this, 'assets/<character>/')   // the folder with manifest.json
@@ -83,7 +86,10 @@ Full guide: phaser/README.txt. Data: manifest.json and the TexturePacker atlases
     doll.setVariants({ '<material-id>': '<variant-id>' })             // only ids listed in manifest.json
 
 setVariants replaces the whole selection map, so passing only one material clears the others' choices; pass every material
-you want recolored. An unknown id applies no swap.
+you want recolored. An unknown id applies no swap. Order: play, then applyPreset, then setVariants; applyPreset swaps
+items and colors without calling play, so the active move keeps running.
+A complete game config:
+    new Phaser.Game({ type: Phaser.AUTO, width: 400, height: 300, pixelArt: true, roundPixels: true, scene: [HeroScene] })
 Use pixelArt: true and roundPixels: true and serve the folder over http: the module fetches manifest.json.
 The path you pass is relative to the document's base URL (document.baseURI), not to PaperdollContainer.js.
 This export does not bundle Phaser. Load Phaser 3.80+ or 4 yourself: a script tag that exposes the global Phaser, or your
@@ -117,8 +123,13 @@ Full guide: godot/README.txt.
     doll.equip("main_hand", "sword")    # after a preset; "" empties a slot
 
 The scene starts playing the first move facing the first direction from its own _ready, so nothing has to start it; call
-play_anim to change move or direction. The API is safe once the node is in the tree, and the scene starts in
+play_anim to change move or direction. The API is safe once the node is in the tree (add_child), and the scene starts in
 manifest.presets[0].
+Copy the whole export folder anywhere under res:// and keep it together; a scene outside it references
+godot/Paperdoll.tscn with a res:// path. The scene root is a Node2D running paperdoll.gd, and it exposes manifest and
+equipped as properties, so no other wiring is needed. Read doll.manifest.materials[].variants (or manifest.json) to see
+which variants exist; there is no query API. This targets Godot 4 with format=3 scenes.
+set_preset swaps items and colors without calling play_anim, so the active move keeps running.
 set_variant returns true for a known material even when the variant name is unknown; the unknown name replaces that
 material's selection and applies no swap. An unknown material warns, returns false and changes nothing. equip on a
 variant item warns and returns false.

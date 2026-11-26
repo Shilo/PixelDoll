@@ -107,3 +107,60 @@ test('the agent files cover every engine the app can export', () => {
 	]);
 	for (const file of files) expect(typeof file.data).toBe('string');
 });
+
+// Every path an engine doc sends a reader to must be in that engine's ZIP, and the root README must name the moves and
+// outfits the manifest carries. This is what keeps the shipped docs honest as the exporters change.
+const ENGINE_FILES: Record<string, string[]> = {
+	generic: ['generic/README.txt'],
+	godot: ['godot/Paperdoll.tscn', 'godot/paperdoll.gd', 'godot/library.tres'],
+	unity: ['unity/Runtime/Paperdoll.cs', 'unity/Editor/PixelDollImporter.cs'],
+	phaser: ['phaser/PaperdollContainer.js', 'phaser/types.d.ts'],
+	gdevelop: ['gdevelop/game.json', 'gdevelop/Paperdoll.js'],
+	aseprite: ['aseprite/README.txt']
+};
+
+test('each engine doc names files that the export really contains', async () => {
+	for (const [engine, expected] of Object.entries(ENGINE_FILES)) {
+		const result = await exportFiles(await fixture(), {
+			engines: [engine as (typeof EXPORT_ENGINES)[number]],
+			baked: false
+		});
+		expect(result.errors, engine).toEqual([]);
+		const names = new Set(result.entries.map((entry) => entry.name));
+		for (const path of [
+			'AGENTS.md',
+			'CLAUDE.md',
+			`docs/${engine}.md`,
+			'README.txt',
+			'manifest.json',
+			`${engine}/README.txt`,
+			...expected
+		]) {
+			expect(names.has(path), `${engine}: ${path}`).toBe(true);
+		}
+		const doc = text(result.entries as { name: string; data: unknown }[], `docs/${engine}.md`);
+		expect(doc.length, engine).toBeGreaterThan(200);
+	}
+});
+
+test('the root README names every move and outfit the manifest carries', async () => {
+	const project = await fixture();
+	const result = await exportFiles(project, { engines: ['generic'], baked: false });
+	expect(result.errors).toEqual([]);
+	const readme = text(result.entries as { name: string; data: unknown }[], 'README.txt');
+	const manifest = JSON.parse(
+		text(result.entries as { name: string; data: unknown }[], 'manifest.json')
+	) as {
+		rig: { animations: { id: string }[] };
+		presets: { id: string; name: string }[];
+		materials: unknown[];
+	};
+	for (const move of manifest.rig.animations) expect(readme, move.id).toContain(move.id);
+	const outfits = readme.slice(readme.indexOf('Outfits:'));
+	for (const [index, preset] of manifest.presets.entries()) {
+		expect(outfits, preset.id).toContain(`(${preset.id})`);
+		if (index === 0) expect(outfits).toContain('starts the character');
+	}
+	// A character with no named variants must say so instead of promising a recolor that selects nothing.
+	expect(readme).toContain('no named color variants');
+});
