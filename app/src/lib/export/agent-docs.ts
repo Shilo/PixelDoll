@@ -38,7 +38,8 @@ this file first, then the doc for your engine in docs/, then that engine's READM
   layer, then item id. Never sort by name instead of z.
 - Palette swaps are exact RGB replacements from materials[].ramp and materials[].variants. Replace those pixels; never
   scale, rotate, blur or resample the art. A ramp is the item's source palette, an array of #rrggbb colors; a variant maps
-  a name to a replacement ramp of the same length. Only entries listed under variants can be selected, and an unknown
+  a name to a replacement ramp, applied entry by entry, so keep it as long as ramp (a shorter one recolors only its first
+  entries). Only entries listed under variants can be selected, and an unknown
   variant applies no swap. Each engine reference says whether that call also throws, warns or clears other selections.
   When materials is empty, or the
   material you want lists no variants, this character ships nothing to recolor: skip the recolor step instead of calling
@@ -101,7 +102,8 @@ doll.playAction(move, direction) plays a one-shot action and doll.setDirection(d
 An unknown move, direction, slot, item or outfit throws before changing anything; an unknown material or variant id
 in setVariants selects nothing, so check manifest.json's materials before relying on a recolor.
 The constructor starts in model.presets[0], the first outfit in manifest.json.
-Call doll.destroy() when removing the character, including when the scene shuts down.
+Call doll.destroy() when removing the character, including when the scene shuts down:
+this.events.once('shutdown', () => doll.destroy()).
 With the Canvas renderer, keep integer positions and call scene.cameras.main.setRoundPixels(false) for exact pixels;
 WebGL does not need that. Atlas files are phaser/<length>-<item>_<length>-<layer>_<length>-<move>.json
 with frames named <move>_<direction>_<frame>: each atlas JSON lists the frames it holds, and phaser/README.txt states the
@@ -123,13 +125,14 @@ Full guide: godot/README.txt.
     doll.equip("main_hand", "sword")    # after a preset; "" empties a slot
 
 The scene starts playing the first move facing the first direction from its own _ready, so nothing has to start it; call
-play_anim to change move or direction. The API is safe once the node is in the tree (add_child), and the scene starts in
-manifest.presets[0].
+play_anim to change move or direction. The API is safe once the node is in the tree (add_child); before that the scene has
+no manifest, so calls fail. The scene starts in manifest.presets[0].
 Copy the whole export folder anywhere under res:// and keep it together; a scene outside it references
 godot/Paperdoll.tscn with a res:// path. The scene root is a Node2D running paperdoll.gd, and it exposes manifest and
 equipped as properties, so no other wiring is needed. Read doll.manifest.materials[].variants (or manifest.json) to see
 which variants exist; there is no query API. This targets Godot 4 with format=3 scenes.
-set_preset swaps items and colors without calling play_anim, so the active move keeps running.
+set_preset swaps items and colors without calling play_anim, so the active move keeps running. A later equip changes only
+that slot and leaves the preset's color variants in place.
 set_variant returns true for a known material even when the variant name is unknown; the unknown name replaces that
 material's selection and applies no swap. An unknown material warns, returns false and changes nothing. equip on a
 variant item warns and returns false.
