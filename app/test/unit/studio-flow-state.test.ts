@@ -1569,6 +1569,8 @@ test('a layer step skips layers it does not visibly cross', async () => {
 	s.ui.anim = 'rest';
 	s.ui.dir = 'south';
 	expect(s.itemLayerNeighbors('hat')).toEqual({ behind: undefined, ahead: undefined });
+	// Its place counts only layers it overlaps, so the body it never touches is not part of its order.
+	expect(s.itemLayerPosition('hat')).toEqual({ position: 1, count: 1 });
 	expect(s.moveLayer('hat', -1, false)).toBeUndefined();
 	expect(project.manifest.slots.find((slot) => slot.id === 'head')!.zOverrides).toBeUndefined();
 });
@@ -1591,8 +1593,11 @@ test('an unworn item can be ordered among the worn layers, and a hidden one cann
 	// Not worn: the hat is placed as if worn, so it can be ordered before wearing it.
 	expect(s.itemLayerNeighbors('hat').behind).toBeDefined();
 	expect(s.itemLayerNeighbors('hat').ahead).toBeUndefined();
+	// Each step moves its place among the layers it overlaps by exactly one.
+	expect(s.itemLayerPosition('hat')).toEqual({ position: 2, count: 2 });
 	s.moveLayer('hat', -1, false);
 	expect(head.zOverrides).toEqual([{ layer: 'fg', z: 9 }]);
+	expect(s.itemLayerPosition('hat')).toEqual({ position: 1, count: 2 });
 	expect(s.itemLayerNeighbors('hat').ahead).toBeDefined();
 	// Only this direction keeps the all-direction step and adds a direction-specific one.
 	s.moveLayer('hat', 1, true);

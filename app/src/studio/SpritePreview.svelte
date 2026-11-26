@@ -49,7 +49,25 @@
 	const current = $derived(views.find((entry) => entry.id === facing) ?? views[0]);
 	const count = $derived(current?.frames.length ?? 0);
 	const shown = $derived(count ? Math.min(Math.max(0, frame), count - 1) : 0);
-	const image = $derived(current?.frames[shown] ?? null);
+	// A frame with no visible pixel is as good as missing: the viewer says so instead of showing an empty checker.
+	const blank = new WeakMap<Img, boolean>();
+	const isBlank = (img: Img) => {
+		let known = blank.get(img);
+		if (known === undefined) {
+			known = true;
+			for (let index = 3; index < img.data.length; index += 4)
+				if (img.data[index]) {
+					known = false;
+					break;
+				}
+			blank.set(img, known);
+		}
+		return known;
+	};
+	const image = $derived.by(() => {
+		const img = current?.frames[shown];
+		return img && !isBlank(img) ? img : null;
+	});
 	// Every frame of every facing shares one box, so playing never rescales the sprite.
 	const box = $derived.by(() => {
 		let w = 1,

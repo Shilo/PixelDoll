@@ -667,8 +667,8 @@
 		"outfitPreviewUnworn": "{name} en el atuendo como si lo llevara, mirando hacia {direction}",
 		"openOutfit": "Abrir {name} en el atuendo a tamaño completo",
 		"outfitTitle": "{name} en el atuendo",
-		"layerPosition": "{position} de {count}",
-		"layerPositionHint": "Capa {position} de {count}, contando desde atrás"
+		"layerPosition": "Capa {position} de {count}",
+		"layerPositionHint": "Capa {position} de {count} entre las capas que se superponen, contando desde atrás"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nuevo personaje",

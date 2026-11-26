@@ -646,8 +646,8 @@
 		"outfitPreviewUnworn": "{name}을(를) 착용한 것처럼 본 의상, {direction} 방향",
 		"openOutfit": "{name} 의상을 전체 크기로 열기",
 		"outfitTitle": "{name} 의상",
-		"layerPosition": "{count}개 중 {position}",
-		"layerPositionHint": "뒤에서부터 {count}개 레이어 중 {position}번째"
+		"layerPosition": "레이어 {count}개 중 {position}",
+		"layerPositionHint": "겹치는 레이어 중 뒤에서부터 {count}개 중 {position}번째"
 	},
 	"newCharacterButton": {
 		"newCharacter": "새 캐릭터",

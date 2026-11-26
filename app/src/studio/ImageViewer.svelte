@@ -157,18 +157,21 @@
 	let gesture: { start: Viewport; points: Map<number, { x: number; y: number }> } | null = null;
 	let dragging = $state(false);
 	/** A press that has not moved or met a second pointer yet: releasing it soon is a tap. */
-	let tap: { x: number; y: number; at: number } | null = null;
+	let tap: { x: number; y: number; at: number; button: number } | null = null;
 	const begin = () => {
 		gesture = pointers.size ? { start: viewport, points: new Map(pointers) } : null;
 		dragging = pointers.size > 0;
 	};
 	function pointerDown(event: PointerEvent) {
-		if (event.pointerType === 'mouse' && event.button !== 0) return;
+		// Any mouse button drags: left, middle and right alike (middle also stops the browser's autoscroll).
+		if (event.pointerType === 'mouse' && event.button > 2) return;
+		if (event.button === 1) event.preventDefault();
 		// Pressing a floating control is not a drag or a tap on the image (capturing it would also swallow the click).
 		if ((event.target as Element).closest('.viewer-zoom, .viewer-corner, .viewer-side')) return;
 		pointers.set(event.pointerId, point(event));
 		stage?.setPointerCapture(event.pointerId);
-		tap = pointers.size === 1 ? { ...point(event), at: event.timeStamp } : null;
+		tap =
+			pointers.size === 1 ? { ...point(event), at: event.timeStamp, button: event.button } : null;
 		begin();
 	}
 	function pointerMove(event: PointerEvent) {
@@ -198,8 +201,14 @@
 	}
 	function pointerUp(event: PointerEvent) {
 		if (!pointers.delete(event.pointerId)) return;
-		if (tap && !pointers.size && event.type === 'pointerup' && event.timeStamp - tap.at < 500)
-			ontap?.();
+		// A quick press that did not move: the main button is the host's tap (play and pause), the middle one fits the view.
+		if (tap && !pointers.size && event.type === 'pointerup' && event.timeStamp - tap.at < 500) {
+			if (tap.button === 0) ontap?.();
+			else if (tap.button === 1) {
+				showFit();
+				announce();
+			}
+		}
 		tap = null;
 		const pinched = (gesture?.points.size ?? 0) > 1;
 		if (pinched) {
@@ -278,6 +287,7 @@
 		onpointermove={pointerMove}
 		onpointerup={pointerUp}
 		onpointercancel={pointerUp}
+		oncontextmenu={(event) => event.preventDefault()}
 	>
 		{#if image}
 			<canvas
@@ -290,7 +300,7 @@
 			></canvas>
 		{:else}
 			<p class="viewer-missing">
-				<ImageOff size={28} aria-hidden="true" /><span>{missing}</span>
+				<ImageOff size={48} strokeWidth={1.5} aria-hidden="true" /><span>{missing}</span>
 			</p>
 		{/if}
 		<!-- Bottom right: the host's control (play and pause), then previous and next at the edge, where they stay put
@@ -314,24 +324,25 @@
 						>
 					</div>{/if}
 			</div>{/if}
-		<div class="viewer-zoom">
-			<ZoomControls
-				{zoom}
-				step={viewerZoomStep}
-				labels={{
-					group: t('imageViewer.zoom'),
-					hint: t('imageViewer.hint'),
-					reset: t('imageViewer.fit'),
-					resetHint: t('imageViewer.fitHint'),
-					percent: t('imageViewer.percent', { percent: percent(zoom.scale) })
-				}}
-				onchange={(scale) => {
-					if (scale === null) showFit();
-					else zoomTo(scale);
-					announce();
-				}}
-			/>
-		</div>
+		<!-- Nothing to zoom while the frame is missing. -->
+		{#if image}<div class="viewer-zoom">
+				<ZoomControls
+					{zoom}
+					step={viewerZoomStep}
+					labels={{
+						group: t('imageViewer.zoom'),
+						hint: t('imageViewer.hint'),
+						reset: t('imageViewer.fit'),
+						resetHint: t('imageViewer.fitHint'),
+						percent: t('imageViewer.percent', { percent: percent(zoom.scale) })
+					}}
+					onchange={(scale) => {
+						if (scale === null) showFit();
+						else zoomTo(scale);
+						announce();
+					}}
+				/>
+			</div>{/if}
 		<p class="sr" aria-live="polite">{announcement}</p>
 	</div>
 </dialog>
@@ -405,11 +416,11 @@
 		display: grid;
 		place-content: center;
 		justify-items: center;
-		gap: 8px;
+		gap: 12px;
 		margin: 0;
 		color: var(--text-3);
+		font-size: var(--fs);
 	}
-	/* The zoom controls float at the bottom right, clear of the image's center. */
 	/* Zoom floats at the bottom left and the host's control (play and pause) at the bottom right, clear of the image's
 	   center. */
 	.viewer-zoom :global(.scene-zoom) {

@@ -646,8 +646,8 @@
 		"outfitPreviewUnworn": "假设穿上{name}的整套装扮，朝向{direction}",
 		"openOutfit": "全尺寸打开{name}的整套装扮",
 		"outfitTitle": "{name}的整套装扮",
-		"layerPosition": "第 {position} / {count}",
-		"layerPositionHint": "从后往前数，第 {position} 层，共 {count} 层"
+		"layerPosition": "第 {position} 层，共 {count} 层",
+		"layerPositionHint": "在重叠的图层中从后往前数，第 {position} 层，共 {count} 层"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新建角色",

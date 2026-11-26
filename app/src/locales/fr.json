@@ -667,8 +667,8 @@
 		"outfitPreviewUnworn": "{name} dans la tenue comme s’il était porté, orienté {direction}",
 		"openOutfit": "Ouvrir {name} dans la tenue en plein écran",
 		"outfitTitle": "{name} dans la tenue",
-		"layerPosition": "{position} sur {count}",
-		"layerPositionHint": "Calque {position} sur {count}, en partant de l’arrière"
+		"layerPosition": "Calque {position} sur {count}",
+		"layerPositionHint": "Calque {position} sur {count} parmi les calques qu’il chevauche, en partant de l’arrière"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nouveau personnage",

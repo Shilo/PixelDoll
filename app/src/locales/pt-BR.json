@@ -667,8 +667,8 @@
 		"outfitPreviewUnworn": "{name} no visual como se estivesse vestido, virado para {direction}",
 		"openOutfit": "Abrir {name} no visual em tamanho real",
 		"outfitTitle": "{name} no visual",
-		"layerPosition": "{position} de {count}",
-		"layerPositionHint": "Camada {position} de {count}, contando de trás"
+		"layerPosition": "Camada {position} de {count}",
+		"layerPositionHint": "Camada {position} de {count} entre as camadas que se sobrepõem, contando de trás"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Novo personagem",

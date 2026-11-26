@@ -646,8 +646,8 @@
 		"outfitPreviewUnworn": "装備したと仮定した{name}のコーディネート、{direction}向き",
 		"openOutfit": "{name}のコーディネートを全画面で開く",
 		"outfitTitle": "{name}のコーディネート",
-		"layerPosition": "{count}中{position}",
-		"layerPositionHint": "後ろから数えて{count}レイヤー中{position}番目"
+		"layerPosition": "レイヤー {count}中{position}",
+		"layerPositionHint": "重なるレイヤーのうち、後ろから数えて{count}中{position}番目"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新しいキャラクター",

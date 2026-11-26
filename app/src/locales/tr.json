@@ -667,8 +667,8 @@
 		"outfitPreviewUnworn": "Giyilmiş gibi kombinde {name}, {direction} yönü",
 		"openOutfit": "{name} kombinini tam boyutta aç",
 		"outfitTitle": "Kombinde {name}",
-		"layerPosition": "{count} içinde {position}",
-		"layerPositionHint": "Arkadan sayınca {count} katmandan {position}."
+		"layerPosition": "Katman {position}/{count}",
+		"layerPositionHint": "Çakıştığı katmanlar arasında arkadan sayınca {count} katmandan {position}."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Yeni karakter",

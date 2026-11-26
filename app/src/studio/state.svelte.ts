@@ -2869,21 +2869,57 @@ export function itemLayerNeighbors(
 		};
 	return { behind: named(place?.behind), ahead: named(place?.ahead) };
 }
-/** Where the item's front layer sits in the shown move and facing, counted from the back among the layers that draw
- *  something there (empty layers are not part of what anyone sees): `position` of `count`. */
-export function itemLayerPosition(itemId: string, animId = ui.anim, dir: DirectionName = ui.dir) {
+/** Where the item's front layer sits among the layers it visibly overlaps in the shown move and facing, counted from the
+ *  back: `position` of `count` (the item included). A layer counts when putting the item just in front of it rather than
+ *  just behind it changes the real composite in some frame, the same test a layer step uses, so each step moves the
+ *  position by exactly one; layers it never overlaps are not part of its order. */
+export function itemLayerPosition(
+	itemId: string,
+	animId = ui.anim,
+	dir: DirectionName = ui.dir,
+	onlyDir = false
+) {
 	void doc.rev;
 	const p = store.project,
 		anim = p?.manifest.rig.animations.find((x) => x.id === animId);
 	const placed = p && anim?.frames.length ? placedOutfit(p, itemId) : null;
 	if (!placed || !anim) return null;
 	const { project, items } = placed,
+		m = project.manifest,
 		cells = [...new Set(anim.frames.map((frame) => frame.cell))];
-	const drawn = drawList(project.manifest, items, animId, dir, cells[0]).filter((entry) =>
-		cells.some((cell) => cellImg(project, entry.layer, animId, dir, cell))
-	);
-	const at = drawn.findIndex((entry) => entry.item.id === itemId && entry.layer.role === 'fg');
-	return at < 0 ? null : { position: at + 1, count: drawn.length };
+	const order = drawList(m, items, animId, dir, cells[0]);
+	const i = order.findIndex((d) => d.item.id === itemId && d.layer.role === 'fg');
+	if (i < 0) return null;
+	const { slot, layer, z } = order[i];
+	const placedAt = (offset: number) => {
+		const zOverrides = steppedOverrides(
+			slot.zOverrides ?? [],
+			layer.z,
+			offset,
+			onlyDir ? dir : undefined
+		);
+		const trial = {
+			...project,
+			manifest: {
+				...m,
+				slots: m.slots.map((entry) => (entry === slot ? { ...entry, zOverrides } : entry))
+			}
+		};
+		return cells.map((cell) => composeCell(trial, items, animId, dir, cell).data);
+	};
+	const overlaps = (j: number) => {
+		const behind = placedAt(order[j].z - 1 - z),
+			ahead = placedAt(order[j].z + 1 - z);
+		return behind.some((data, k) => data.some((value, index) => value !== ahead[k][index]));
+	};
+	let below = 0,
+		above = 0;
+	order.forEach((entry, j) => {
+		if (j === i || entry.item.id === itemId || !overlaps(j)) return;
+		if (j < i) below++;
+		else above++;
+	});
+	return { position: below + 1, count: below + above + 1 };
 }
 /** Move the item's front layer past the next layer it visibly crosses (all directions, or only the current one). Returns
  *  the playback frame where the change shows. */

@@ -667,8 +667,8 @@
 		"outfitPreviewUnworn": "{name} im Outfit, als ob getragen, Blickrichtung {direction}",
 		"openOutfit": "{name} im Outfit in voller Größe öffnen",
 		"outfitTitle": "{name} im Outfit",
-		"layerPosition": "{position} von {count}",
-		"layerPositionHint": "Ebene {position} von {count}, von hinten gezählt"
+		"layerPosition": "Ebene {position} von {count}",
+		"layerPositionHint": "Ebene {position} von {count} unter den überlappenden Ebenen, von hinten gezählt"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Neue Figur",

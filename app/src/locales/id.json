@@ -646,8 +646,8 @@
 		"outfitPreviewUnworn": "{name} di pakaian seolah dipakai, menghadap {direction}",
 		"openOutfit": "Buka {name} di pakaian dalam ukuran penuh",
 		"outfitTitle": "{name} di pakaian",
-		"layerPosition": "{position} dari {count}",
-		"layerPositionHint": "Lapisan {position} dari {count}, dihitung dari belakang"
+		"layerPosition": "Lapisan {position} dari {count}",
+		"layerPositionHint": "Lapisan {position} dari {count} di antara lapisan yang tumpang tindih, dihitung dari belakang"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Karakter baru",

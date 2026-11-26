@@ -667,8 +667,8 @@
 		"outfitPreviewUnworn": "{name} in the outfit as if worn, facing {direction}",
 		"openOutfit": "Open {name} in the outfit full size",
 		"outfitTitle": "{name} in the outfit",
-		"layerPosition": "{position} of {count}",
-		"layerPositionHint": "Layer {position} of {count}, counted from the back"
+		"layerPosition": "Layer {position} of {count}",
+		"layerPositionHint": "Layer {position} of {count} among the layers it overlaps, counted from the back"
 	},
 	"newCharacterButton": {
 		"newCharacter": "New character",

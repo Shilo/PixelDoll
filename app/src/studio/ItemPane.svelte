@@ -593,7 +593,9 @@
 	});
 	let onlyDir = $state(false);
 	const neighbors = $derived(it ? itemLayerNeighbors(it.id, animId, outfitFacing, onlyDir) : null);
-	const layerPosition = $derived(it ? itemLayerPosition(it.id, animId, outfitFacing) : null);
+	const layerPosition = $derived(
+		it ? itemLayerPosition(it.id, animId, outfitFacing, onlyDir) : null
+	);
 	// The outfit preview shows the frame where the last step made a difference, else the first one.
 	let witness = $state(0);
 	$effect(() => {
@@ -1520,22 +1522,36 @@
 											></span
 										>{/if}
 								</div>
+								<!-- Reset (only when there is an order to undo), then down and up as icons: the words would not fit a phone
+									 beside each other, and the arrows read in this row. -->
 								<div class="layer-actions">
+									{#if customOrder}<button
+											class="bu-action btn icon"
+											data-variant="outline"
+											aria-label={t('itemPane.resetOrder')}
+											title={t('itemPane.resetOrder')}
+											onclick={() => void resetOrder()}
+											><RotateCcw size={18} aria-hidden="true" /></button
+										>{/if}
 									<button
 										bind:this={backwardButton}
-										class="bu-action btn"
+										class="bu-action btn icon"
 										data-variant="outline"
+										aria-label={t('itemPane.sendBackward')}
+										title={t('itemPane.sendBackward')}
 										disabled={!neighbors?.behind || hiddenNow}
 										onclick={() => void stepLayer(-1)}
-										><ArrowDown size={16} aria-hidden="true" />{t('itemPane.sendBackward')}</button
+										><ArrowDown size={18} aria-hidden="true" /></button
 									>
 									<button
 										bind:this={forwardButton}
-										class="bu-action btn"
+										class="bu-action btn icon"
 										data-variant="outline"
+										aria-label={t('itemPane.bringForward')}
+										title={t('itemPane.bringForward')}
 										disabled={!neighbors?.ahead || hiddenNow}
 										onclick={() => void stepLayer(1)}
-										><ArrowUp size={16} aria-hidden="true" />{t('itemPane.bringForward')}</button
+										><ArrowUp size={18} aria-hidden="true" /></button
 									>
 								</div>
 								<p class="layer-position muted small" aria-live="polite">
@@ -1562,11 +1578,6 @@
 						</label>
 						<p class="faint small layer-scope">
 							<span>{t('itemPane.layerScope', { slot: slotName(it.slot) })}</span>
-							{#if customOrder}<button
-									class="bu-action btn plain callout-link"
-									data-variant="quiet"
-									onclick={() => void resetOrder()}>{t('itemPane.resetOrder')}</button
-								>{/if}
 						</p>
 						{#if hideChoices.length}
 							<section class="hide-rules" aria-labelledby="hide-rules-{it.id}">
@@ -2309,6 +2320,21 @@
 	.layer-art:active:not(:disabled) :global(.sprite-box) {
 		transform: scale(0.96);
 	}
+	/* Hover and press tint the whole box with the theme's action tints, as on the facing tiles (the checker covers the
+	   button's own background, so the tint sits on top). */
+	.layer-art::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		transition: background-color var(--dur);
+	}
+	.layer-art:hover:not(:disabled)::after {
+		background-color: var(--bu-action-hover);
+	}
+	.layer-art:active:not(:disabled)::after {
+		background-color: var(--bu-action-press);
+	}
 	.layer-art :global(.sprite-box) {
 		position: relative;
 		transition: transform var(--dur);
@@ -2363,6 +2389,10 @@
 	}
 	.layer-actions .btn {
 		min-height: 44px;
+	}
+	.layer-actions .btn.icon {
+		width: 44px;
+		padding: 0;
 	}
 	.layer-position {
 		margin: 0;
