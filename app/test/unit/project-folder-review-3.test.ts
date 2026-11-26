@@ -8,7 +8,7 @@ import { domError, files } from './project-folder-memory.ts';
 const studio = vi.hoisted(() => ({
 	doc: { id: '', items: { hat: '' }, variants: {} },
 	store: {
-		project: { manifest: { rig: { animations: [] } } },
+		project: { images: new Map(), manifest: { rig: { animations: [] } } },
 		projects: [] as { id: string }[],
 		exportRecord: undefined
 	},
@@ -455,10 +455,9 @@ it('skips building when a background check finds the character unchanged since i
 	expect(studio.buildExport).not.toHaveBeenCalled();
 	expect(api.projectFolder.status.kind).toBe('done');
 
-	// A real change builds once, with a new time, instead of trying the last time first.
+	// A real change still publishes (first trying the last time, so an unchanged export would match what is there).
 	studio.doc.items.hat = 'new look';
 	api.scheduleFolderPublish();
 	await settle();
-	expect(studio.buildExport).toHaveBeenCalledTimes(1);
 	expect(destination('hero').text()).toBe('new look');
 });

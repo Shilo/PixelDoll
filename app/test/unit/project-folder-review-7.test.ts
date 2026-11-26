@@ -19,7 +19,7 @@ const studio = vi.hoisted(() => ({
 
 vi.mock('../../src/studio/state.svelte.ts', () => ({
 	...studio,
-	store: { ...studio.store, project: { manifest: { rig: { animations: [] } } } },
+	store: { ...studio.store, project: { images: new Map(), manifest: { rig: { animations: [] } } } },
 	dismissToast: vi.fn(),
 	ui: {},
 	prepareWorkspaceExport: async () => {}
@@ -28,7 +28,7 @@ vi.mock('../../src/studio/download.svelte.ts', () => ({
 	characterZipId: () => 'hero',
 	editableData: vi.fn(),
 	exportSource: async (id: string) => ({
-		project: { manifest: { name: id, rig: { animations: [] } } },
+		project: { images: new Map(), manifest: { name: id, rig: { animations: [] } } },
 		look: {
 			items: { hat: id === studio.doc.id ? studio.doc.items.hat : 'original' },
 			variants: {}

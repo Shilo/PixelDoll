@@ -7,7 +7,7 @@ import { domError, files, memoryFolder } from './project-folder-memory.ts';
 const studio = vi.hoisted(() => ({
 	doc: { id: 'hero', items: { hat: 'saved' }, variants: {} },
 	store: {
-		project: { manifest: { rig: { animations: [] } } },
+		project: { images: new Map(), manifest: { rig: { animations: [] } } },
 		projects: [{ id: 'hero' }],
 		exportRecord: undefined
 	},

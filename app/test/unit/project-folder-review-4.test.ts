@@ -5,7 +5,7 @@ import { domError, files, memoryFolder } from './project-folder-memory.ts';
 const studio = vi.hoisted(() => ({
 	doc: { id: '', items: { hat: '' }, variants: {}, loading: false },
 	store: {
-		project: { manifest: { rig: { animations: [] } } },
+		project: { images: new Map(), manifest: { rig: { animations: [] } } },
 		projects: [] as { id: string }[],
 		exportRecord: undefined
 	},
@@ -147,7 +147,7 @@ async function linkedStudio() {
 	});
 	const hero = destination('hero');
 	const mage = destination('mage');
-	studio.store.project = { manifest: { rig: { animations: [] } } };
+	studio.store.project = { images: new Map(), manifest: { rig: { animations: [] } } };
 	const destinations = new Map([
 		['hero', hero],
 		['mage', mage]

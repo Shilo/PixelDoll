@@ -6,7 +6,7 @@ import { domError, files, memoryFolder } from './project-folder-memory.ts';
 const studio = vi.hoisted(() => ({
 	doc: { id: '', items: { hat: '' }, variants: {}, loading: false },
 	store: {
-		project: { manifest: { name: '', rig: { animations: [] } } },
+		project: { images: new Map(), manifest: { name: '', rig: { animations: [] } } },
 		projects: [{ id: 'hero' }, { id: 'mage' }]
 	},
 	ui: { toast: null as unknown },
@@ -186,7 +186,7 @@ async function linkedStudio() {
 	};
 	studio.recordWritten.mockImplementation(recordWritten);
 	studio.readCharacterForExport.mockImplementation(async (id: string) => ({
-		project: { manifest: { name: id, rig: { animations: [] } } },
+		project: { images: new Map(), manifest: { name: id, rig: { animations: [] } } },
 		current: { items: { hat: id }, variants: {} }
 	}));
 	studio.buildExport.mockImplementation(async (_, options: { look: { items: { hat: string } } }) =>
@@ -196,7 +196,7 @@ async function linkedStudio() {
 	const open = async (id: string) => {
 		studio.doc.id = id;
 		studio.doc.items = { hat: id };
-		studio.store.project = { manifest: { name: id, rig: { animations: [] } } };
+		studio.store.project = { images: new Map(), manifest: { name: id, rig: { animations: [] } } };
 		await api.loadFolderLink(id);
 	};
 	studio.openProject.mockImplementation(open);

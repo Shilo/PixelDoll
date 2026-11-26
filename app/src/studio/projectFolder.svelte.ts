@@ -207,8 +207,8 @@ async function snapshot(id: string) {
 }
 type Snapshot = NonNullable<Awaited<ReturnType<typeof snapshot>>>;
 
-/** Everything a publish builds from, as one hash: equal fingerprints build equal files (images are named by their
- *  content hash in the manifest, and the export's own text does not depend on the interface language). */
+/** Everything a publish builds from, as one hash: equal fingerprints build equal files (the manifest names images by a
+ *  hash of their pixels, so their sizes are added; the export's own text does not depend on the interface language). */
 const fingerprint = (
 	link: FolderLink,
 	input: Snapshot,
@@ -222,6 +222,7 @@ const fingerprint = (
 				link.engine,
 				settings,
 				input.project.manifest,
+				[...input.project.images].map(([hash, image]) => [hash, image.w, image.h]),
 				input.look,
 				input.projectData,
 				input.actionLayering
@@ -398,7 +399,10 @@ async function publish(link: FolderLink, request: Request) {
 		} catch (error) {
 			// A background attempt waits for the next save quietly, leaving any problem it knows about in place.
 			console.warn('Project folder publish waits for a save', error);
-			return request.manual ? report({ kind: 'unavailable' }) : undefined;
+			if (request.manual) return report({ kind: 'unavailable' });
+			// A finished publish may have shown this one as coming; it is not, so the status stops saying so.
+			if (loadedFor === id && projectFolder.status.kind === 'publishing') report({ kind: 'idle' });
+			return;
 		}
 		if (!input) return;
 		// A problem this character's folder reported must be rechecked on disk, never cleared unseen.
@@ -430,19 +434,22 @@ async function publish(link: FolderLink, request: Request) {
 				console.warn('Could not record the project folder publish', error);
 			}
 		};
-		// A quiet background check of a character unchanged since its last publish needs no build: the record says what
-		// is there. A click, an approval or a problem on screen still checks the folder below.
+		// A quiet background check of a character unchanged since its last complete publish needs no build: that
+		// publish's files are checked against the record, exactly as a fresh build's would be. Anything the record does
+		// not show as PixelDoll's current bytes (a partial publish, a released keep, files not adopted) goes the full way
+		// below, which also reads the folder. A click, an approval or a problem on screen always does.
 		if (
 			!request.manual &&
 			!request.overwrite &&
 			!showingProblem &&
 			link.exportedAt &&
-			link.inputs === inputs
+			link.files &&
+			link.inputs === inputs &&
+			matchesRecord(record, new Map(Object.entries(link.files)))
 		)
 			return finished({ kind: 'done', kept: record.kept.length, already: false });
-		// Known to have changed, it builds once with a new time; otherwise it first tries the last time, so an unchanged
-		// export matches what is there and writes nothing.
-		if (link.exportedAt && !request.overwrite && !(link.inputs && link.inputs !== inputs)) {
+		// It first tries the last time, so an export whose files did not change matches what is there and writes nothing.
+		if (link.exportedAt && !request.overwrite) {
 			const same = await buildFiles(link, input, settings, link.exportedAt);
 			const next = same && (await hashFiles(same));
 			if (
@@ -455,7 +462,7 @@ async function publish(link: FolderLink, request: Request) {
 					? await inSync(target, record, next)
 					: true)
 			) {
-				await remember({ inputs });
+				await remember({ inputs, files: Object.fromEntries(next) });
 				return finished({ kind: 'done', kept: record.kept.length, already: request.manual });
 			}
 		}
@@ -518,11 +525,14 @@ async function publish(link: FolderLink, request: Request) {
 			}
 			case 'published':
 			case 'unchanged':
-				await remember(
-					outcome.kind === 'published'
-						? { exportedAt, publishedAt: now, inputs }
-						: { exportedAt, inputs }
-				);
+				{
+					const produced = Object.fromEntries(await hashFiles(files));
+					await remember(
+						outcome.kind === 'published'
+							? { exportedAt, publishedAt: now, inputs, files: produced }
+							: { exportedAt, inputs, files: produced }
+					);
+				}
 				return finished({
 					kind: 'done',
 					kept: outcome.kept,
@@ -691,7 +701,7 @@ export async function adoptMatchingFiles() {
 		});
 		// Gone once they are recorded, so the offer's disappearing means it took effect.
 		offers.delete(offer.linkedAt);
-		if (projectFolder.offer === offer) projectFolder.offer = null;
+		if (projectFolder.offer?.linkedAt === offer.linkedAt) projectFolder.offer = null;
 	} catch (error) {
 		console.warn('Could not keep the matching project folder files updated', error);
 		setStatus(link.characterId, { kind: 'failed', reason: 'unknown' }, link.linkedAt);
