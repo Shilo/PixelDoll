@@ -69,6 +69,7 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import Sprite from './Sprite.svelte';
 	import SpritePreview, { type SpriteView } from './SpritePreview.svelte';
+	import GroupIcon from './GroupIcon.svelte';
 	import {
 		HEALTH_LABEL,
 		cropAll,
@@ -127,6 +128,7 @@
 		Download,
 		EllipsisVertical,
 		EyeOff,
+		ImageOff,
 		Grid2x2,
 		LoaderCircle,
 		Maximize,
@@ -827,6 +829,10 @@
 >
 	{#snippet heading()}
 		{#if it}
+			<!-- Shown before the name (CSS order): the category's icon, as on its Wardrobe rail. -->
+			<span class="item-icon" title={slotName(it.slot)}
+				><GroupIcon group={it.slot} size={18} /></span
+			>
 			<span class="item-slot">{slotName(it.slot)}</span>
 			{#if status}<span class="item-status" data-tone={status.tone}
 					>{#if status.tone === 'warn'}<TriangleAlert
@@ -964,7 +970,8 @@
 						>
 							<span class="view-art" aria-hidden="true">
 								{#if has && image}<Sprite img={image} {k} limit={tile} {label} />{:else}<span
-										class="view-missing">{t('itemPane.missingView')}</span
+										class="view-missing"
+										title={t('itemPane.missingView')}><ImageOff size={20} /></span
 									>{/if}
 							</span>
 							<span class="view-caption">{displayDirection(direction.id)}</span>
@@ -1291,8 +1298,6 @@
 								</div>
 							{:else if health === 'accepted'}
 								<p class="muted small">{t('itemPane.youAcceptedThisArtworkWithItsRecorded')}</p>
-							{:else if !hasQuality && it.qa?.status === 'pass'}
-								<p class="muted small">{t('itemPane.checksPassed')}</p>
 							{/if}
 
 							<div class="fix-view">
@@ -1696,17 +1701,46 @@
 </Sheet>
 
 <style>
+	/* Every grid here keeps its column to the sheet's width, so long rows wrap instead of widening the sheet. */
 	.item-body {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 12px;
 	}
-	/* Header: name, then category and one status on the same line. */
+	/* Header: one line of category icon, name, category and one status. The name truncates first; its heading keeps the
+	   full name. It starts at the edge (an identity row, not a centered title) so the line has the room it needs. */
+	:global(dialog.item-detail .sheet-head) {
+		grid-template-columns: 0 minmax(0, 1fr) auto;
+	}
+	:global(.item-detail .sheet-heading) {
+		display: flex;
+		flex-wrap: nowrap;
+		align-items: center;
+		justify-content: flex-start;
+		gap: 8px;
+		min-width: 0;
+	}
+	:global(.item-detail .sheet-heading .sheet-title) {
+		flex: 0 1 auto;
+		min-width: 0;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+	.item-icon {
+		order: -1;
+		flex: none;
+		display: grid;
+		color: var(--text-2);
+	}
 	.item-slot {
+		flex: none;
 		color: var(--text-2);
 		font-size: var(--fs-sm);
 		white-space: nowrap;
 	}
 	.item-status {
+		flex: none;
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
@@ -1726,40 +1760,11 @@
 		color: var(--ok);
 		border-color: color-mix(in srgb, var(--ok) 45%, transparent);
 	}
-	:global(.item-detail .sheet-heading) {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		justify-content: center;
-		gap: 2px 10px;
-		min-width: 0;
-	}
-	:global(.item-detail .sheet-heading .sheet-title) {
-		min-width: 0;
-		overflow-wrap: anywhere;
-	}
-	/* Both header buttons keep their room, so the title stays centered without running under them. */
-	:global(dialog.item-detail .sheet-head) {
-		grid-template-columns: minmax(96px, 1fr) minmax(0, auto) minmax(96px, 1fr);
-	}
-	/* A phone starts the title at the edge and keeps the name on one line beside the menu and Close: it truncates, and
-	   the heading keeps the full name. */
-	:global(dialog.item-detail.bottom .sheet-head) {
-		grid-template-columns: 0 minmax(0, 1fr) auto;
-	}
-	:global(dialog.item-detail.bottom .sheet-heading) {
-		flex-wrap: nowrap;
-		justify-content: flex-start;
-		min-width: 0;
-	}
-	:global(dialog.item-detail.bottom .sheet-heading .sheet-title) {
-		flex: 0 1 auto;
-		overflow: hidden;
-		white-space: nowrap;
-		text-overflow: ellipsis;
-	}
-	:global(dialog.item-detail.bottom .sheet-heading .item-slot) {
-		flex: none;
+	/* A phone keeps the icon for the category: its name would take the room the item's name needs. */
+	@media (max-width: 480px) {
+		.item-slot {
+			display: none;
+		}
 	}
 	:global(dialog.sheet.bottom.item-detail) {
 		box-sizing: border-box;
@@ -1777,10 +1782,13 @@
 	/* Preview */
 	.item-preview {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 6px;
 	}
+	/* Eight facings beside the move picker do not fit a phone: the facing choice then takes its own row. */
 	.preview-bar {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		justify-content: space-between;
 		gap: 8px;
@@ -1844,15 +1852,15 @@
 		width: 100%;
 		height: var(--tile, 64px);
 	}
+	/* A facing with no frames: an empty square the size of the art, marked with a missing-image icon. */
 	.view-missing {
 		display: grid;
 		place-items: center;
-		width: min(48px, 80%);
-		height: 48px;
+		width: min(44px, 80%);
+		aspect-ratio: 1;
 		border: 1px dashed var(--bu-line);
 		border-radius: 8px;
 		color: var(--text-3);
-		font-size: var(--fs-xs, 11px);
 	}
 	.item-view[data-current] .view-caption {
 		color: var(--accent-text, var(--accent));
@@ -1884,6 +1892,10 @@
 		color: var(--text-2);
 	}
 	.hidden-row .btn {
+		max-width: 100%;
+		height: auto;
+		white-space: normal;
+		text-align: start;
 		margin-inline-start: auto;
 		min-height: 44px;
 	}
@@ -1896,7 +1908,13 @@
 	.item-callout > span {
 		flex: 1 1 16rem;
 	}
+	/* A character's name can be long: the link wraps instead of widening the sheet. */
 	.callout-link {
+		max-width: 100%;
+		height: auto;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		text-align: start;
 		min-height: 36px;
 		padding-inline: 8px;
 		font-size: var(--fs-sm);
@@ -1906,6 +1924,7 @@
 	/* Sections: one row each, chevron, name, state on the right (as in the API calls popover). */
 	.item-sections {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		border-block-start: 1px solid var(--bu-line);
 	}
 	.item-section {
@@ -1969,6 +1988,7 @@
 	}
 	.section-body {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 12px;
 		padding: 4px 4px 16px 28px;
 	}
@@ -2010,6 +2030,7 @@
 		min-width: 0;
 	}
 	.tool-label {
+		overflow-wrap: anywhere;
 		font-weight: 600;
 	}
 	.tool-detail {
@@ -2114,7 +2135,14 @@
 		margin-block-start: 2px;
 		color: var(--warn);
 	}
+	/* A note can be long: it wraps instead of widening the section. */
 	.finding-link {
+		width: 100%;
+		max-width: 100%;
+		min-width: 0;
+		height: auto;
+		white-space: normal;
+		overflow-wrap: anywhere;
 		justify-content: start;
 		gap: 8px;
 		min-height: 36px;
@@ -2132,23 +2160,31 @@
 		display: grid;
 		gap: 8px;
 	}
+	/* With a mouse the choices shrink to stay on one row; touch keeps 44px targets and wraps (below). */
 	.facing {
 		display: flex;
+		min-width: 0;
+		max-width: 100%;
+		margin-inline-start: auto;
 		gap: 2px;
 		padding: 2px;
 		border: 1px solid var(--bu-line);
 		border-radius: 10px;
 	}
 	.facing-choice {
-		min-width: 36px;
+		flex: 1 1 36px;
+		min-width: 28px;
 		min-height: 36px;
-		padding: 0 6px;
+		padding: 0 4px;
 		border-radius: 8px;
 		font-size: var(--fs-sm);
 		font-weight: 600;
 		color: var(--text-2);
 	}
 	@media (pointer: coarse) {
+		.facing {
+			flex-wrap: wrap;
+		}
 		.facing-choice {
 			min-width: 44px;
 			min-height: 44px;

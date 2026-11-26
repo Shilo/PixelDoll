@@ -4915,7 +4915,7 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
 	const pane = await selectedItemDetails(page);
 	await expect(pane.locator('.item-status')).toContainText('Accepted');
 	await openItemSection(pane, 'Quality');
-	await expect(pane.getByText('Accepted appearance warnings', { exact: true })).toBeVisible();
+	await expect(pane.getByText('Accepted design warnings', { exact: true })).toBeVisible();
 	await expect(pane.getByText('The design has gray smudges', { exact: true })).toBeVisible();
 	await expect(
 		pane.getByText('Some body pixels were changed by the model', { exact: true })

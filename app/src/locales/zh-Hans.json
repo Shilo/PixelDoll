@@ -497,67 +497,67 @@
 		"technicalDetails": "技术详情",
 		"openSprite": "放大{title}",
 		"availableDirectionsFor": "{name}的可用朝向",
-		"drawForMoves": "为缺失的动作生成",
+		"drawForMoves": "生成缺失的帧",
 		"reviewMissingMoves": "查看缺失的动作",
-		"drawMovesSelect": "请至少选择一个动作。",
+		"drawMovesSelect": "选择要生成的动作。",
 		"selectAllMoves": "全选",
 		"clearSelection": "清除选择",
-		"drawMovesHelp": "仅绘制缺失的装备帧。PixelLab 可能收取生成费用。",
+		"drawMovesHelp": "仅补全缺失的装备帧。",
 		"repairView": "修复此视角",
 		"redrawView": "重绘此视角",
 		"sendBackward": "下移一层",
 		"bringForward": "上移一层",
 		"inFrontOf": "位于{name}前方",
 		"behind": "位于{name}后方",
-		"previewUnavailable": "此动作没有装备图像。",
+		"previewUnavailable": "没有可预览的装备帧。",
 		"restoreStanding": {
 			"other": "恢复站立视图"
 		},
 		"restoreStandingHint": {
-			"other": "使用此物品已保存的 {directions} 朝向设计来恢复，不会生成新画面。"
+			"other": "使用已保存的 {directions} 朝向设计，无需生成。"
 		},
 		"hiddenByAnotherItem": "被另一件装备遮挡",
 		"hiddenByItem": "被 {name} 遮挡",
-		"layerHiddenHint": "另一件已穿戴装备遮挡了此物品，因此无法在此更改图层顺序。请先显示它。",
+		"layerHiddenHint": "显示此装备后才能更改图层顺序。",
 		"labelNameFacingId": "{name}，朝向{id}",
-		"acceptedAppearanceWarnings": "已接受的外观警告",
-		"titleShowThisFrame": "显示此帧",
+		"acceptedAppearanceWarnings": "已接受的设计警告",
+		"titleShowThisFrame": "在舞台上显示",
 		"acceptAsIs": "按现状接受",
-		"pendingWorkBusy": "有动作或设置正在运行或已停止。请完成或放弃它以使用这些操作。",
-		"acceptsTheCurrentArtworkWithoutSpendingCredits": "按现状接受当前图像，不消耗点数。检测到的问题仍保留在详情中。",
-		"keepWithoutMovesDetail": "不花费积分，仅保留该装备在完整动作中的帧。它在{moves}中隐藏，这些动作仍标为缺失，你可以稍后按各自的价格制作。",
-		"youAcceptedThisArtworkWithItsRecorded": "你已接受此图像及其记录的质量说明。",
+		"pendingWorkBusy": "有动作或设置正在阻止这些操作。请先完成或放弃。",
+		"acceptsTheCurrentArtworkWithoutSpendingCredits": "保留此图像，其警告仍会列出。",
+		"keepWithoutMovesDetail": "丢弃{moves}中的部分帧，生成前它会保持隐藏。",
+		"youAcceptedThisArtworkWithItsRecorded": "你已接受此图像，其备注仍会列出。",
 		"matchingColors": "匹配颜色…",
 		"matchItemColors": "匹配装备颜色",
 		"recolor": "重新上色",
 		"layerOrder": "图层顺序",
-		"whenWornHide": "穿戴时隐藏",
+		"whenWornHide": "穿戴时隐藏其他装备",
 		"iD": "ID",
 		"slot": "装备栏",
-		"route": "生成路线",
-		"qA": "质检",
-		"rawBodyDifferences": "原始身体差异",
-		"rawKeyReviewFramesFramesHaveNewBodyColoredPixels": "对齐前，有 {rawKeyReviewFrames} 帧出现新的身体颜色像素。普通重绘偏移可能导致此现象；质量状态不变。",
+		"route": "生成方式",
+		"qA": "检查结果",
+		"rawBodyDifferences": "对齐前的身体像素",
+		"rawKeyReviewFramesFramesHaveNewBodyColoredPixels": "对齐前出现新身体颜色像素的帧：{rawKeyReviewFrames}。普通重绘可能导致此现象。检查结果不变。",
 		"partialChecks": "部分检查",
-		"copiedChecksCoverWholeMovesTotalsMay": "复制的检查覆盖整个动作；总计可能包含被替换的帧。",
+		"copiedChecksCoverWholeMovesTotalsMay": "整个动作的检查总计可能包含被替换的帧。",
 		"someMovesHaveNotBeenChecked": "部分动作尚未检查。",
 		"measurements": "测量",
-		"reusedCellsWereNotMeasuredByPixelLab": "复用的单元格未由 PixelLab 测量。此装备无法提供汇总检查。",
+		"reusedCellsWereNotMeasuredByPixelLab": "复用的帧没有 PixelLab 测量数据，因此无法进行整件装备检查。",
 		"keyKept": "色键保留率",
 		"keyOutside": "范围外色键",
 		"area": "面积",
 		"paletteDrift": "调色板偏移",
-		"edgePx": "边缘像素",
+		"edgePx": "帧边缘像素",
 		"hands": "手部",
-		"reRolls": "重抽",
-		"missingFrames": "缺失帧键",
-		"refitIntro": "已免费从{from}的装备适配。请检查这些帧：",
-		"remakeToFit": "为{name}制作一件以适配。",
-		"moveGaps": "朝向{directions}的{move}帧部分或全部缺失。这些帧中不会显示它。",
-		"remakeAllMoves": "为{name}制作一件，以便在所有动作中穿戴。",
+		"reRolls": "重试",
+		"missingFrames": "缺失的帧 ID",
+		"refitIntro": "已从{from}的装备免费适配。请检查这些帧：",
+		"remakeToFit": "为{name}创建适配版本。",
+		"moveGaps": "朝向{directions}的部分{move}帧中不会显示该装备。",
+		"remakeAllMoves": "为{name}创建可在所有动作中穿戴的版本。",
 		"copyFrom": "从{name}复制",
 		"copyFrames": {
-			"other": "{name}缺少此装备的 {n} 帧，可从{from}复制。不会生成任何内容。"
+			"other": "从{from}为{name}补充 {n} 个缺失帧，无需生成。"
 		},
 		"makingMoreMoves": "正在为更多动作制作装备",
 		"colorsMatched": "已在 {frames}中匹配 {pixels}。",
@@ -568,7 +568,7 @@
 			"other": "{n} 帧"
 		},
 		"onlyFacing": "仅在朝向{direction}时",
-		"tuckNote": "{slots}中可见的装备可能会被部分遮挡。",
+		"tuckNote": "此装备可能部分遮挡{slots}。",
 		"chromaKey": "色键：{color}",
 		"qaStatus": {
 			"pass": "通过",
@@ -578,25 +578,25 @@
 		},
 		"areaStats": "最小为中位数的 {ratio} · CV {cv}",
 		"handedness": {
-			"ok": "正常",
-			"switched": "已换手"
+			"ok": "一致",
+			"switched": "会换手"
 		},
 		"minimum": "{value}（≥ {threshold}）",
 		"maximum": "{value}（≤ {threshold}）",
-		"updateNoteMirrors": "更新此装备在{move}中朝向{direction}及其镜像朝向的帧。角色身体保持不变。",
+		"updateNoteMirrors": "更新{move}中朝向{direction}及其镜像视图。只会改变装备。",
 		"repairFeature": "修复装备",
 		"redrawFeature": "重绘装备",
-		"repairHelp": "适合在你喜欢当前设计时使用。只修改装备所在区域。",
-		"redrawHelp": "可能改变形状或握持方式。是否保留由你决定。",
-		"billingNote": "这些估算比较的是生成次数，不是美元价格。PixelLab 可能按美元计费，排队时间可能不同。",
+		"repairHelp": "保留设计，只修改装备区域。",
+		"redrawHelp": "重新尝试，可能改变形状或握持方式。保留前可先对比。",
+		"billingNote": "估算以生成次数计。PixelLab 可能按美元计费。等待时间各异。",
 		"itemActions": "装备操作",
 		"statusGenerating": "生成中",
 		"statusIncomplete": "不完整",
-		"staleNote": "为另一个身体制作，可能无法对齐。",
+		"staleNote": "为另一个身体制作。请检查适配。",
 		"previewMove": "动作",
-		"openMissingView": "打开{direction}（尚无帧）",
+		"openMissingView": "打开{direction}（缺失）",
 		"missingView": "缺失",
-		"hiddenWhenWorn": "穿戴{names}时隐藏",
+		"hiddenWhenWorn": "穿戴{names}会隐藏此装备。",
 		"clipsIncomplete": {
 			"other": "{n} 个不完整"
 		},
@@ -608,39 +608,38 @@
 		},
 		"qualitySection": "质量",
 		"passed": "通过",
-		"checksPassed": "所有质量检查均已通过。",
 		"fixViewTitle": "修复朝向{direction}的{move}",
 		"facing": "朝向",
-		"matchColorsDetail": "将{frames}中的{pixels}校正为装备本身的颜色。",
-		"fixFramesDetail": "在你自己的绘图软件中编辑帧。",
+		"matchColorsDetail": "将{frames}中的{pixels}匹配到装备的调色板。",
+		"fixFramesDetail": "在你的绘图软件中编辑帧。",
 		"hiddenState": "已隐藏",
 		"hidesCount": {
 			"other": "隐藏 {n} 个类别"
 		},
 		"outfitPreview": "套装中的{name}，朝向{direction}",
 		"asIfWorn": "穿戴时",
-		"layerScope": "更改所有{slot}装备的顺序。",
-		"layerNothingToCross": "此视图中没有与它重叠的内容。",
+		"layerScope": "适用于所有{slot}装备。",
+		"layerNothingToCross": "此视图中没有重叠的图层。",
 		"layerBack": "{name}（背面）",
 		"layerWithSlot": "{name}（{slot}）",
 		"resetOrder": "重置顺序",
 		"hideRulesLater": "穿戴{name}时生效。",
 		"aboutSection": "关于",
 		"generateMovesNone": "生成",
-		"stopHiding": "关闭{names}的隐藏",
+		"stopHiding": "不再让{names}隐藏它",
 		"keepWithoutNamed": "保留，不含{moves}",
-		"checksFoundIssuesNoPaidRetryWas": "检查发现问题。未启动付费重试。你可以请求另一次尝试，或按现状接受此装备。",
+		"checksFoundIssuesNoPaidRetryWas": "未启动付费重试。",
 		"repairRequests": {
-			"other": "此次修复会使用 {n} 次 PixelLab 生成请求。"
+			"other": "{n} 次 PixelLab 请求。"
 		},
 		"redrawRequests": {
-			"other": "此次重绘会使用 {n} 次 PixelLab 生成请求。"
+			"other": "{n} 次 PixelLab 请求。"
 		},
 		"redrawSaves": {
-			"other": "预计比修复少 {n} 次生成。"
+			"other": "比修复少 {n} 次生成。"
 		},
 		"redrawCostsMore": {
-			"other": "预计比修复多 {n} 次生成。"
+			"other": "比修复多 {n} 次生成。"
 		}
 	},
 	"newCharacterButton": {
@@ -3583,7 +3582,7 @@
 	},
 	"spriteViewer": {
 		"frameOf": "第 {frame} 帧，共 {count} 帧",
-		"missing": "此处没有帧",
+		"missing": "没有可显示的帧",
 		"direction": "朝向",
 		"frames": "帧"
 	}

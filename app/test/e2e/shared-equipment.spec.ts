@@ -962,7 +962,7 @@ test('a copy missing frames its source item has copies them for free into the sa
 	const copy = details.getByRole('button', { name: 'Copy from Twin', exact: true });
 	await expect(copy).toBeVisible();
 	await expect(details).toContainText(
-		`Twin has ${dropped} frames of this item that Adventurer copy lacks. Nothing is generated.`
+		`Adds ${dropped} missing frames to Adventurer copy from Twin. No generation needed.`
 	);
 	await expect(details.getByRole('button', { name: /^Generate \d+ moves?/ })).toHaveCount(0);
 	await copy.click();
@@ -1141,7 +1141,7 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 		/^Needs a look/
 	);
 	const details = await selectedItemDetails(page);
-	await expect(details).toContainText('Fitted for free from Lefty’s item. Check these frames:');
+	await expect(details).toContainText('Fitted for free from Lefty’s item. Review these frames:');
 	// A re-fit's issues are its fit: nothing to accept as is; a new item for this body is offered instead.
 	await expect(details.getByRole('button', { name: 'Accept as is', exact: true })).toHaveCount(0);
 	await expect(

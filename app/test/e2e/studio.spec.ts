@@ -4413,7 +4413,7 @@ test('free item color matching is offline, scoped, persistent and preserves save
 	await openItemSection(pane, 'Quality');
 	const action = pane.getByRole('button', { name: 'Match item colors', exact: true });
 	await expect(action).toBeVisible();
-	await expect(action).toContainText('Snaps 2 pixels in 2 frames to the item’s own colors.');
+	await expect(action).toContainText('Matches 2 pixels in 2 frames to the item’s palette.');
 	await context.setOffline(true);
 	await action.click();
 	await expect(pane.getByText('Matched 2 pixels in 2 frames.', { exact: true })).toBeVisible();
@@ -5852,8 +5852,8 @@ test('a stopped item draft keeps its available frames for free, and an unreadabl
 	});
 	// The saved item lists the view it still lacks among its missing frames.
 	const details = await selectedItemDetails(page);
-	await expect(details.locator('dl', { hasText: 'Missing frame keys' })).toContainText(
-		/Missing frame keys.*cross-punch\/south/
+	await expect(details.locator('dl', { hasText: 'Missing frame IDs' })).toContainText(
+		/Missing frame IDs.*cross-punch\/south/
 	);
 	expect(requests.filter((method) => method === 'POST')).toEqual([]);
 });
@@ -8054,9 +8054,7 @@ test('an item missing a standing view restores it from its saved design for free
 	const details = await selectedItemDetails(page);
 	const restore = details.getByRole('button', { name: /^Restore standing view/ });
 	await expect(restore).toContainText('Free');
-	await expect(details).toContainText(
-		'Rebuilt from this item’s saved south design. Nothing is generated.'
-	);
+	await expect(details).toContainText('Uses the saved design for south. No generation needed.');
 	await restore.click();
 	await expect(page.locator('.bu-toast').last()).toContainText(
 		`Restored ${itemName} facing south. No generations used.`
@@ -8834,7 +8832,7 @@ test('stage makes all missing item views while explicit repair stays on the curr
 			await expect(redraw).toContainText(`~${redrawGens} gens`);
 			await expect(repair).toContainText(`~${gens} gens`);
 			await expect(page.locator('#item-repair-tier')).toHaveCount(0);
-			const requests = page.getByText('This repair uses 3 PixelLab generation requests.', {
+			const requests = page.getByText('3 PixelLab requests.', {
 				exact: false
 			});
 			if (gens === 30) await expect(requests).toBeVisible();
@@ -10441,7 +10439,7 @@ test('standing-first items quote standing and draw selected custom moves togethe
 	await walk.uncheck();
 	await punch.uncheck();
 	await expect(pane.getByRole('button', { name: 'Generate', exact: true })).toBeDisabled();
-	await expect(pane.locator('#item-missing-help')).toHaveText('Select at least one move.');
+	await expect(pane.locator('#item-missing-help')).toHaveText('Select a move to generate.');
 	await walk.check();
 	await punch.check();
 	await draw.click();
@@ -11768,7 +11766,7 @@ test('tile status shows on the tile and in its name, and Recolor opens the item�
 	let details = await selectedItemDetails(page);
 	await openItemSection(details, 'Outfit');
 	const hairChip = details
-		.getByRole('group', { name: 'Hide while worn', exact: true })
+		.getByRole('group', { name: 'Hide other items while worn', exact: true })
 		.getByRole('switch', { name: 'Hair', exact: true });
 	await expect(hairChip).not.toBeChecked();
 	await hairChip.click();
@@ -11854,13 +11852,13 @@ const headDepths = (page: Page) =>
 		);
 	});
 
-/** The worn helmet hides the worn hair through its Hide while worn switch. */
+/** The worn helmet hides the worn hair through its Hide other items while worn switch. */
 async function hideHairWithHelmet(page: Page) {
 	await pickItem(page, 'Steel helmet');
 	const details = await selectedItemDetails(page);
 	await openItemSection(details, 'Outfit');
 	await details
-		.getByRole('group', { name: 'Hide while worn', exact: true })
+		.getByRole('group', { name: 'Hide other items while worn', exact: true })
 		.getByRole('switch', { name: 'Hair', exact: true })
 		.check();
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
@@ -11893,7 +11891,7 @@ test('item details names what hides an item and shows it again', async ({ page }
 		/^Hidden by (Red cape and Steel helmet|Steel helmet and Red cape)$/
 	);
 	await expect(hidden).toBeVisible();
-	await details.getByRole('button', { name: /^Turn off hiding by / }).click();
+	await details.getByRole('button', { name: /^Stop .+ from hiding it$/ }).click();
 	await expect(hidden).toHaveCount(0);
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentGroup(page, 'Hair');
@@ -11954,9 +11952,7 @@ test('layer order explains why a hidden item cannot be reordered', async ({ page
 	await openItemSection(details, 'Outfit');
 	await expect(details.getByRole('button', { name: 'Bring forward', exact: true })).toBeDisabled();
 	await expect(details.getByRole('button', { name: 'Send backward', exact: true })).toBeDisabled();
-	await expect(
-		details.getByText(/Another worn item hides this one, so its layer order cannot change here/)
-	).toBeVisible();
+	await expect(details.getByText('Show this item to change its layer order.')).toBeVisible();
 });
 
 test('an unworn item in a hidden category is not called hidden and keeps its order controls', async ({
@@ -11972,7 +11968,7 @@ test('an unworn item in a hidden category is not called hidden and keeps its ord
 	await openItemSection(details, 'Outfit');
 	// Tucked under the helmet, the hair has nothing visible to cross in front of it, but it can still go further back.
 	await expect(details.getByRole('button', { name: 'Send backward', exact: true })).toBeEnabled();
-	await expect(details.getByText(/Another worn item hides this one/)).toHaveCount(0);
+	await expect(details.getByText('Show this item to change its layer order.')).toHaveCount(0);
 });
 
 test('item details fill a phone screen and keep Wear pinned while the body scrolls', async ({
