@@ -19,14 +19,12 @@
 	// says how it was made. Wear is the only footer action; the rest of the item's verbs live in the ⋮ menu, as on its tile.
 	import { tick, untrack } from 'svelte';
 	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
-	import { canRecolor, recolorItem } from './recolorItem.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import Sheet from './Sheet.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
-	import DeleteRow from './DeleteRow.svelte';
+	import ItemActions from './ItemActions.svelte';
 	import { openerLabel } from './openerLabel.ts';
-	import { canEditItemAppearance } from './appearanceSource.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
 	import { displayMessage, displayNestedMessage, errorMessage } from '../lib/i18n.ts';
@@ -57,7 +55,6 @@
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { app } from '../lib/app.svelte.ts';
 	import { accountTier, tierDecision } from '../lib/pixellab/plans.ts';
-	import { downloadItemZip } from './download.svelte.ts';
 	import TierNotice from './TierNotice.svelte';
 	import PoseIssues from './PoseIssues.svelte';
 	import GenerationDetails from './GenerationDetails.svelte';
@@ -102,8 +99,7 @@
 		removeItem,
 		isDemo,
 		openNewItem,
-		openRename,
-		openAppearance,
+		moveItemToSlot,
 		withKey,
 		startMove,
 		queueMoves,
@@ -126,7 +122,6 @@
 		ChevronRight,
 		CircleCheck,
 		CopyPlus,
-		Download,
 		EllipsisVertical,
 		EyeOff,
 		ImageOff,
@@ -134,10 +129,8 @@
 		LoaderCircle,
 		Maximize,
 		Palette,
-		Pencil,
 		RefreshCw,
 		RotateCcw,
-		Sparkles,
 		TriangleAlert,
 		WandSparkles,
 		Wrench
@@ -806,6 +799,7 @@
 	const menuId = $props.id();
 	let menu = $state<HTMLElement>();
 	let confirmRemove = $state(false);
+	let pickingSlot = $state(false);
 	// Only worn items (and the body) have a section in the Colors tab.
 	function act(fn: () => void) {
 		menu?.hidePopover();
@@ -1607,6 +1601,24 @@
 								<p class="faint small">
 									{t('itemPane.twoHandedNote', { slot: slotName(otherHand) })}
 								</p>
+								{#if !isDemo() && it.prompt && !twoHanded(m, it)}
+									<!-- The same description drawn for the other hand; the New item sheet prices it first. -->
+									<div class="tool-list">
+										<ToolRow
+											{...{
+												icon: CopyPlus,
+												label: openerLabel(
+													t('itemMenu.makeForSlot', { slot: slotName(otherHand) })
+												),
+												detail: t('itemPane.makeForSlotDetail', { slot: slotName(otherHand) }),
+												aside: '',
+												opens: true,
+												onclick: () =>
+													openNewItem(otherHand, { slot: otherHand, prompt: it.prompt })
+											}}
+										/>
+									</div>
+								{/if}
 							</section>
 						{/if}
 						{#if hideChoices.length}
@@ -1728,87 +1740,26 @@
 			data-placement="bottom-end"
 			popover
 			bind:this={menu}
-			ontoggle={(event) => popoverFocus(event, true)}
+			ontoggle={(event) => {
+				if (event.newState === 'closed') pickingSlot = false;
+				popoverFocus(event, true);
+			}}
 		>
 			<PopoverArrow />
 			<div class="menu-surface bu-popover-surface bu-floating">
-				<div role="menu" aria-label={t('itemPane.itemActions')}>
-					<!-- The tile menu's rows in its order (Details aside), plus the other hand's copy, which is rare enough to live here. -->
-					{#if canRecolor(m, it.id, on)}
-						<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							onclick={() => act(() => recolorItem(it.id))}
-							><Palette size={16} aria-hidden="true" />{t('itemPane.recolor')}</button
-						>
-					{/if}
-					{#if !isDemo() && !it.variantOf && canEditItemAppearance(m, it)}<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							aria-haspopup="dialog"
-							onclick={() => act(() => leaveFor(() => openAppearance(doc.id, it.id, 'item')))}
-							><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron
-							/></button
-						>{/if}
-					{#if !isDemo() && it.prompt}
-						<!-- The New item sheet that opens next prices the attempt before anything is spent. -->
-						<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							onclick={() =>
-								act(() =>
-									openNewItem(it.slot, { slot: it.slot, prompt: it.prompt, route: it.route })
-								)}
-							><RefreshCw size={16} aria-hidden="true" />{openerLabel(
-								remakeOnly ? t('itemMenu.remake', { name: m.name }) : t('itemMenu.createVariant')
-							)}<SurfaceChevron /></button
-						>
-						{#if otherHand && !twoHanded(m, it)}
-							<!-- The same description drawn for the other hand. -->
-							<button
-								class="row bu-action"
-								data-variant="quiet"
-								role="menuitem"
-								onclick={() =>
-									act(() => openNewItem(otherHand, { slot: otherHand, prompt: it.prompt }))}
-								><CopyPlus size={16} aria-hidden="true" />{openerLabel(
-									t('itemMenu.makeForSlot', { slot: slotName(otherHand) })
-								)}<SurfaceChevron /></button
-							>
-						{/if}
-					{/if}
-					{#if !isDemo() && !it.variantOf}
-						<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							onclick={() =>
-								act(() => leaveFor(() => openRename(doc.id, { itemId: it.id, back: 'item' })))}
-							><Pencil size={16} aria-hidden="true" />{openerLabel(
-								t('toolbar.rename')
-							)}<SurfaceChevron /></button
-						>
-					{/if}
-					<button
-						class="row bu-action"
-						data-variant="quiet"
-						role="menuitem"
-						onclick={() => act(() => void downloadItemZip(it.id))}
-						><Download size={16} aria-hidden="true" />{t('common.downloadZip')}</button
-					>
-					{#if !isDemo()}
-						<hr class="bu-separator" />
-						<DeleteRow
-							opens
-							class="bu-action"
-							label={t('itemMenu.labelDeleteItem')}
-							onclick={() => act(() => (confirmRemove = true))}
-						/>
-					{/if}
-				</div>
+				<!-- The tile menu's actions, without Details: one menu for the item wherever its ⋮ opens. -->
+				<ItemActions
+					{m}
+					{it}
+					worn={on}
+					inDetails
+					label={t('itemPane.itemActions')}
+					bind:picking={pickingSlot}
+					{act}
+					leave={leaveFor}
+					onmove={(target) => void moveItemToSlot(it.id, target, { showDestination: true })}
+					ondelete={() => (confirmRemove = true)}
+				/>
 			</div>
 		</div>
 	{/if}

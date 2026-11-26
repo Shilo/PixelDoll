@@ -12332,12 +12332,9 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await openItemSection(details, 'Outfit');
 	let twoHanded = details.getByRole('switch', { name: 'Two-handed', exact: true });
 	await expect(twoHanded).not.toBeChecked();
-	const itemActions = () => details.getByRole('button', { name: 'Item actions', exact: true });
-	await itemActions().click();
-	await expect(
-		page.getByRole('menuitem', { name: 'Make one for the Off hand...', exact: true })
-	).toBeVisible();
-	await page.keyboard.press('Escape');
+	const otherHandCopy = (slot: string) =>
+		details.getByRole('button', { name: new RegExp(`^Make one for the ${slot}`) });
+	await expect(otherHandCopy('Off hand')).toBeVisible();
 
 	// Switching it on while worn takes the other hand's item off, says so, and Undo brings it back.
 	await twoHanded.check();
@@ -12345,9 +12342,7 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await expect(
 		page.getByText('Took off Round shield: Steel longsword is two-handed')
 	).toBeVisible();
-	await itemActions().click();
-	await expect(page.getByRole('menuitem', { name: /^Make one for the/ })).toHaveCount(0);
-	await page.keyboard.press('Escape');
+	await expect(otherHandCopy('Off hand')).toHaveCount(0);
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(shield).toHaveAttribute('aria-pressed', 'false');
 	await expect(sword).toHaveAttribute('aria-pressed', 'true');
@@ -12374,15 +12369,12 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	// Make one for the other hand opens New item for that hand with the same description; the Off hand item offers
 	// the Main hand.
 	details = await openItemDetails(page, 'Round shield');
-	await itemActions().click();
-	await expect(
-		page.getByRole('menuitem', { name: 'Make one for the Main hand...', exact: true })
-	).toBeVisible();
-	await page.keyboard.press('Escape');
+	await openItemSection(details, 'Outfit');
+	await expect(otherHandCopy('Main hand')).toBeVisible();
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	details = await openItemDetails(page, 'Steel longsword');
-	await itemActions().click();
-	await page.getByRole('menuitem', { name: 'Make one for the Off hand...', exact: true }).click();
+	await openItemSection(details, 'Outfit');
+	await otherHandCopy('Off hand').click();
 	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
 	await expect(
 		sheet.getByRole('button', { name: 'Where does it go?: Off hand', exact: true })
@@ -12497,9 +12489,14 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 			[anim, itemId]
 		);
 	const original = await pixels('walk', 'helmet_steel');
+	// An item's Fix frames is in its details, under Quality.
+	const openItemFixFrames = async () => {
+		const details = await openItemDetails(page, 'Steel helmet');
+		await openItemSection(details, 'Quality');
+		await details.getByRole('button', { name: /^Fix frames/ }).click();
+	};
 
-	await page.getByRole('button', { name: 'More options for Steel helmet' }).click();
-	await page.getByRole('menuitem', { name: /^Fix frames/ }).click();
+	await openItemFixFrames();
 	const sheet = page.getByRole('dialog', { name: 'Fix frames' });
 	await sheet.getByRole('combobox', { name: 'Move' }).selectOption('walk');
 	const [download] = await Promise.all([
@@ -12555,8 +12552,7 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	await expect.poll(() => pixels('walk', 'helmet_steel')).not.toEqual(original);
 	await page.locator('.header-undo').click();
 	await expect.poll(() => pixels('walk', 'helmet_steel')).toEqual(original);
-	await page.getByRole('button', { name: 'More options for Steel helmet' }).click();
-	await page.getByRole('menuitem', { name: /^Fix frames/ }).click();
+	await openItemFixFrames();
 	await sheet.getByRole('combobox', { name: 'Move' }).selectOption('walk');
 
 	await importPng(await edit(3 * 64 + 31, 12));

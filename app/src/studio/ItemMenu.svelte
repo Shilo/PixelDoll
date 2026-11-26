@@ -1,29 +1,23 @@
 <script lang="ts">
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
-	import { canEditItemAppearance } from './appearanceSource.ts';
 	import { t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
-	import { tick } from 'svelte';
 	import { displayMessage, displayNestedMessage, errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
 	// One shared per-tile item menu (approved in docs/design/2026-11-11-ui-refinement/ui-lab-7.html): an arrowed popover
 	// anchored to the tile's ⋮ at every size, with Wear as a toggle in its header.
 	import PopoverArrow from './PopoverArrow.svelte';
-	import { downloadItemZip } from './download.svelte.ts';
-	import { HEALTH_LABEL, healthOf, missingFramesNote } from './model.ts';
+	import ItemActions from './ItemActions.svelte';
 	import Thumb from './Thumb.svelte';
 	import SharedThumb from './SharedThumb.svelte';
 	import type { SharedItem } from '../lib/equipment/shared.ts';
 	import TileMarks, { type Mark } from './TileMarks.svelte';
-	import DeleteRow from './DeleteRow.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import { swallowTilePress } from './tilePress.ts';
-	import { extendable } from './movePricing.ts';
 	import { slotLabelMessage } from './slots.ts';
 	import { twoHanded } from '../lib/compose/compose.ts';
-	import { canRecolor, recolorItem } from './recolorItem.ts';
 	import type { generationStatus } from './generationStatus.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import {
@@ -34,30 +28,12 @@
 		wear,
 		isDemo,
 		openNewItem,
-		openRename,
-		openAppearance,
 		cancelGen,
 		openGenerationReview,
 		addShared,
-		itemSlotTargets,
-		openFrames,
 		type Gen
 	} from './state.svelte.ts';
-	import {
-		Check,
-		Circle,
-		Download,
-		CircleCheck,
-		Grid2x2,
-		Info,
-		ArrowRightLeft,
-		ChevronLeft,
-		Palette,
-		Pencil,
-		Sparkles,
-		RefreshCw,
-		Trash
-	} from './icons.ts';
+	import { Check, Circle, CircleCheck, Info, RefreshCw, Trash } from './icons.ts';
 
 	let {
 		id,
@@ -107,26 +83,8 @@
 	}
 	const m = $derived(store.project?.manifest);
 	const it = $derived(m?.items.find((i) => i.id === id));
-	const targets = $derived(m && it ? itemSlotTargets(m, it) : []);
 	let pickingSlot = $state(false);
-	async function showTargets(show: boolean) {
-		pickingSlot = show;
-		await tick();
-		menu?.querySelector<HTMLElement>(show ? '[data-move-target]' : '[data-move-trigger]')?.focus();
-	}
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
-	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
-	// What Details has for the player to review (checks, fit, missing frames): its row shows a dot and describes the reason
-	// (its name stays "Details…"), pointing to where the tile's warning is dealt with. The demo has nothing to act on.
-	const attentionId = $props.id();
-	const attention = $derived.by(() => {
-		if (!m || !it || isDemo()) return '';
-		const health = healthOf(m, it);
-		if (health === 'look' || health === 'stale' || health === 'unfitted')
-			return displayMessage(HEALTH_LABEL[health]);
-		const missing = missingFramesNote(m, it);
-		return missing ? displayMessage(missing) : '';
-	});
 	const both = $derived(!!m && !!it && twoHanded(m, it));
 	// The header names the category; the lines below it explain each of the tile's icons.
 	const sentence = $derived(
@@ -328,144 +286,16 @@
 				>
 			</div>
 			<TileMarks {marks} list />
-			{#if pickingSlot}
-				<div
-					role="menu"
-					aria-label={t('wardrobe.moveItemTo')}
-					tabindex="-1"
-					onkeydown={(event) => {
-						if (event.key !== 'Escape') return;
-						event.preventDefault();
-						void showTargets(false);
-					}}
-				>
-					<button
-						class="row bu-action"
-						data-variant="quiet"
-						role="menuitem"
-						onclick={() => void showTargets(false)}
-					>
-						<ChevronLeft size={16} aria-hidden="true" />{t('export.sheet.back')}
-					</button>
-					{#each targets as target (target.key)}
-						<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							data-move-target
-							onclick={() => act(() => onmove(it.id, target.key))}
-						>
-							{displayMessage(slotLabelMessage(m, target.key))}
-						</button>
-					{/each}
-				</div>
-			{:else}
-				<div role="menu" aria-labelledby="item-menu-name">
-					<button
-						class="row bu-action"
-						data-variant="quiet"
-						role="menuitem"
-						aria-describedby={attention ? attentionId : undefined}
-						onclick={() =>
-							act(() => {
-								ui.selected = it.id;
-								ui.sheet = 'item';
-							})}
-						><Info size={16} aria-hidden="true" />{openerLabel(
-							t('common.detailsMenu')
-						)}{#if attention}<span class="details-dot" aria-hidden="true"></span><span
-								id={attentionId}
-								hidden>{attention}</span
-							>{/if}<SurfaceChevron /></button
-					>
-					<!-- The everyday changes first (free, then priced in the sheet that opens), then upkeep. Rare setup (two hands,
-					     the other hand's copy) is in Details. Fix frames sits here as in every move's menu. -->
-					{#if canRecolor(m, it.id, on)}<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							onclick={() => act(() => recolorItem(it.id))}
-							><Palette size={16} aria-hidden="true" />{t('itemPane.recolor')}</button
-						>{/if}
-					{#if !isDemo() && !it.variantOf && canEditItemAppearance(m, it)}<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							aria-haspopup="dialog"
-							onclick={() => act(() => openAppearance(doc.id, it.id))}
-							><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron
-							/></button
-						>{/if}
-					{#if !isDemo() && it.prompt}
-						<!-- The New item sheet that opens next prices the attempt before anything is spent. -->
-						<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							onclick={() =>
-								act(() =>
-									openNewItem(it.slot, {
-										slot: it.slot,
-										prompt: it.prompt,
-										route: it.route
-									})
-								)}
-							><RefreshCw size={16} aria-hidden="true" />{openerLabel(
-								remakeOnly ? t('itemMenu.remake', { name: m.name }) : t('itemMenu.createVariant')
-							)}<SurfaceChevron /></button
-						>
-					{/if}
-					{#if !isDemo() && !it.variantOf}
-						<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							onclick={() => act(() => openRename(doc.id, { itemId: it.id }))}
-						>
-							<Pencil size={16} aria-hidden="true" />{openerLabel(
-								t('toolbar.rename')
-							)}<SurfaceChevron />
-						</button>
-					{/if}
-					{#if targets.length}
-						<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							data-move-trigger
-							onclick={() => void showTargets(true)}
-						>
-							<ArrowRightLeft size={16} aria-hidden="true" />{openerLabel(
-								t('wardrobe.moveItemTo')
-							)}<SurfaceChevron />
-						</button>
-					{/if}
-					<button
-						class="row bu-action"
-						data-variant="quiet"
-						role="menuitem"
-						onclick={() => act(() => openFrames(it.id))}
-						><Grid2x2 size={16} aria-hidden="true" />{openerLabel(
-							t('fixFrames.open')
-						)}<SurfaceChevron /></button
-					>
-					<button
-						class="row bu-action"
-						data-variant="quiet"
-						role="menuitem"
-						onclick={() => act(() => void downloadItemZip(it.id))}
-						><Download size={16} />{t('common.downloadZip')}</button
-					>
-					<hr class="bu-separator" />
-					<DeleteRow
-						opens
-						class="bu-action"
-						label={t('itemMenu.labelDeleteItem')}
-						locked={isDemo() ? t('itemMenu.demoDeleteLocked') : ''}
-						onclick={() => ask(() => (deleting = { id: it.id, name: it.name }))}
-					/>
-				</div>
-			{/if}
+			<ItemActions
+				{m}
+				{it}
+				worn={on}
+				labelledby="item-menu-name"
+				bind:picking={pickingSlot}
+				{act}
+				onmove={(target) => onmove(it.id, target)}
+				ondelete={() => (deleting = { id: it.id, name: it.name })}
+			/>
 		</div>
 	{/if}
 </div>
@@ -501,19 +331,3 @@
 		</p></ConfirmDialog
 	>
 {/if}
-
-<style>
-	/* Same 6px dot as the Wardrobe tabs and More, in the tile badge's warning color, at the trailing edge just before the
-	   chevron (the dot takes the chevron's auto margin). */
-	.details-dot {
-		flex: none;
-		width: 6px;
-		height: 6px;
-		margin-inline-start: auto;
-		border-radius: 50%;
-		background: var(--warn);
-	}
-	.details-dot ~ :global(svg[data-surface-chevron]) {
-		margin-inline-start: 8px;
-	}
-</style>

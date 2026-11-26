@@ -670,7 +670,8 @@
 		"layerPositionHint": "Çakıştığı katmanlar arasında arkadan sayınca {count} katmandan {position}.",
 		"slotLayerOrder": "{slot} yuvası katman sırası",
 		"layerScopeFacing": "{direction} yönündeki tüm {slot} eşyalarına uygulanır.",
-		"twoHandedNote": "İki eli de kullanır; giyildiğinde {slot} eşyası çıkarılır."
+		"twoHandedNote": "İki eli de kullanır; giyildiğinde {slot} eşyası çıkarılır.",
+		"makeForSlotDetail": "Bu eşyayı {slot} için yeniden çiz."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Yeni karakter",
