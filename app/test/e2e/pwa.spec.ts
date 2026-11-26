@@ -508,8 +508,8 @@ test('updates in an already-used tab require an explicit click, preserve its rel
 		other = await context.newPage();
 		await other.goto(server.url);
 		await expect(other.locator('.customize-action')).toBeVisible();
-		await other.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await other.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await other.getByRole('button', { name: 'Add character', exact: true }).first().click();
+		await other.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		const prompt = other.getByRole('dialog').getByRole('textbox', { name: 'Name', exact: true });
 		await prompt.fill('Do not discard this unfinished form');
 		await page.evaluate(() => {
@@ -752,8 +752,8 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await page.clock.fastForward(20000);
 		await aboutSettings.getByRole('button', { name: 'Close', exact: true }).click();
 		await expect(notice).toBeVisible();
-		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await page.getByRole('button', { name: 'Add character', exact: true }).first().click();
+		await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
 		// A hovered Help tooltip would receive Escape before the sheet.
 		await page.mouse.move(0, 0);
@@ -776,8 +776,8 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await expect(reopenedAbout.getByRole('button', { name: 'Update to v8.9.2' })).toBeEnabled();
 		await reopenedAbout.getByRole('button', { name: 'Close', exact: true }).click();
 		await expect(notice).toHaveCount(0);
-		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await page.getByRole('button', { name: 'Add character', exact: true }).first().click();
+		await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
 		await expect(notice).toHaveCount(0);
 		await page.mouse.move(0, 0);
@@ -1228,8 +1228,8 @@ test('Update now preserves the draft when verification fails and opens the verif
 		server = await pwaServer(a);
 	try {
 		await openInstalled(page, server.url, a);
-		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await page.getByRole('button', { name: 'Add character', exact: true }).first().click();
+		await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		const draft = page
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });
@@ -1282,8 +1282,8 @@ test('slow or blocked updates stay in Studio and offer a direct link to the veri
 		server = await pwaServer(a);
 	try {
 		await openInstalled(page, server.url, a);
-		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await page.getByRole('button', { name: 'Add character', exact: true }).first().click();
+		await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		const draft = page
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });

@@ -644,10 +644,11 @@
 		"billingNote": "Las estimaciones comparan generaciones, no precios en dólares. PixelLab puede cobrar en dólares y el tiempo en cola puede variar."
 	},
 	"newCharacterButton": {
+		"addCharacter": "Añadir personaje",
 		"newCharacter": "Nuevo personaje",
-		"createFromScratch": "Crear desde cero…",
-		"importFromDevice": "Importar desde el dispositivo…",
-		"importFromPixelLab": "Importar desde PixelLab…"
+		"createFromScratch": "Crear…",
+		"fromFile": "Desde archivo…",
+		"fromPixelLab": "Desde PixelLab…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(se abre en una pestaña nueva)"
@@ -1403,7 +1404,7 @@
 		"posesTitle": "Importar también como estados",
 		"posesHint": "Elige poses del mismo cuerpo que no tengan equipamiento dibujado. Si el aspecto es distinto, impórtalo como un personaje aparte. Elige las animaciones más abajo.",
 		"poseMismatch": "Este estado tiene otras dimensiones de imagen, direcciones o ajustes de cámara. Impórtalo como un personaje aparte.",
-		"titleDevice": "Importar desde el dispositivo",
+		"titleFile": "Importar desde archivo",
 		"titlePixelLab": "Importar desde PixelLab",
 		"browseLibrary": "Explorar personajes de PixelLab",
 		"standingState": "Estado para la pose de pie",

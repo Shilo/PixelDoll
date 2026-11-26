@@ -436,7 +436,7 @@
 <svelte:window ondragover={preventFileNavigation} ondrop={preventFileNavigation} />
 
 <Sheet
-	title={source === 'device' ? t('import.titleDevice') : t('import.titlePixelLab')}
+	title={source === 'device' ? t('import.titleFile') : t('import.titlePixelLab')}
 	onclose={close}
 	locked={saving}
 	back={prepared && !busy ? reset : undefined}

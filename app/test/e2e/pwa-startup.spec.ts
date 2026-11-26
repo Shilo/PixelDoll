@@ -270,8 +270,8 @@ FetchEvent.prototype.respondWith = function (response) {
 	let fresh: Page | undefined, held: ReturnType<typeof server.hold> | undefined;
 	try {
 		await cachedApp(page, server.url, a);
-		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await page.getByRole('button', { name: 'Add character', exact: true }).first().click();
+		await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		const draft = page
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });
@@ -638,8 +638,8 @@ test('trusted interaction during the startup opportunity preserves an unfinished
 		await expect(fresh.locator('.customize-action')).toBeVisible();
 		await held.requested;
 		await fresh.clock.fastForward(4_000);
-		await fresh.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await fresh.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await fresh.getByRole('button', { name: 'Add character', exact: true }).first().click();
+		await fresh.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		const name = fresh
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });
@@ -721,8 +721,8 @@ test('an offline cached launch is interactive without waiting for an update chec
 		await context.setOffline(true);
 		await page.reload();
 		await expect(page.locator('.customize-action')).toBeVisible();
-		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await page.getByRole('button', { name: 'Add character', exact: true }).first().click();
+		await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		const name = page
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });

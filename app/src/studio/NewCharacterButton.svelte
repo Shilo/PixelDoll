@@ -3,7 +3,7 @@
 	import { openerLabel } from './openerLabel.ts';
 	import { t } from 'svelte-whisper';
 	import { ui } from './state.svelte.ts';
-	import { Plus, Download, Sparkles } from './icons.ts';
+	import { Plus, FileArchive, CloudDownload, Sparkles } from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	let { row = false }: { row?: boolean } = $props();
@@ -21,13 +21,13 @@
 <button
 	class={['bu-action', { 'new-character-row': row, 'selection-create': !row }]}
 	data-variant={row ? 'row' : 'outline'}
-	aria-label={t('newCharacterButton.newCharacter')}
-	title={row ? undefined : t('newCharacterButton.newCharacter')}
+	aria-label={t('newCharacterButton.addCharacter')}
+	title={row ? undefined : t('newCharacterButton.addCharacter')}
 	aria-haspopup="menu"
 	popovertarget={id}
 >
 	<span class={{ 'new-character-icon': row }}><Plus size={row ? 24 : 16} aria-hidden="true" /></span
-	><span class="new-character-label">{openerLabel(t('newCharacterButton.newCharacter'))}</span>
+	><span class="new-character-label">{openerLabel(t('newCharacterButton.addCharacter'))}</span>
 	<SurfaceChevron /></button
 >
 <div
@@ -37,7 +37,7 @@
 	popover
 	bind:this={menu}
 	role="menu"
-	aria-label={t('newCharacterButton.newCharacter')}
+	aria-label={t('newCharacterButton.addCharacter')}
 	ontoggle={popoverFocus}
 >
 	<PopoverArrow />
@@ -47,13 +47,12 @@
 			/></button
 		>
 		<button class="row" role="menuitem" onclick={() => choose('importZip')}
-			><Download size={16} />{openerLabel(t('newCharacterButton.importFromDevice'))}<SurfaceChevron
+			><FileArchive size={16} />{openerLabel(t('newCharacterButton.fromFile'))}<SurfaceChevron
 			/></button
 		>
 		<button class="row" role="menuitem" onclick={() => choose('importPixelLab')}
-			><Download size={16} />{openerLabel(
-				t('newCharacterButton.importFromPixelLab')
-			)}<SurfaceChevron /></button
+			><CloudDownload size={16} />{openerLabel(t('newCharacterButton.fromPixelLab'))}<SurfaceChevron
+			/></button
 		>
 	</div>
 </div>

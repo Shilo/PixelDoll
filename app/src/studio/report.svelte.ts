@@ -42,7 +42,7 @@ const AREAS: Record<NonNullable<SheetId>, string> = {
 	appearance: 'Edit appearance',
 	rename: 'Rename',
 	directions: 'Directions',
-	importZip: 'Import from device',
+	importZip: 'Import from file',
 	importPixelLab: 'Import from PixelLab',
 	delete: 'Delete',
 	details: 'Character details',

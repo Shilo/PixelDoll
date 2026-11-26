@@ -141,7 +141,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await expect(customize).toBeVisible();
 	await customize.dispatchEvent('pointerdown', { pointerType: 'mouse' });
 	await expect(shortcut).toBeVisible();
-	const newCharacter = topBar.getByRole('button', { name: 'New character', exact: true });
+	const newCharacter = topBar.getByRole('button', { name: 'Add character', exact: true });
 	await expect(newCharacter).toBeVisible();
 	expect((await shortcut.boundingBox())!.x).toBeLessThan((await newCharacter.boundingBox())!.x);
 	expect(await calls()).toMatchObject({ opened: 0, loops: 0 });
@@ -288,8 +288,8 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await master.check();
 	await expect(shortcut).toBeVisible();
 	await settings.getByRole('button', { name: 'Close', exact: true }).click();
-	await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('button', { name: 'Add character', exact: true }).first().click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	const draftName = creator.getByRole('textbox', { name: 'Name', exact: true });
 	const creatorScreen = page.locator('dialog.character-sheet:modal');
@@ -2985,9 +2985,9 @@ test('studio demo: base colors, Create size and direction pricing, stripped dev 
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const cost = async () => {
 		const value = await page.locator('dialog .foot-note').textContent();
 		assert.ok(value, 'Create cost is shown');
@@ -3039,9 +3039,9 @@ test('studio demo: New character fits an HD window and smaller screens scroll to
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	const body = creator.locator('.sheet-body');
 	const foot = creator.locator('.sheet-foot');
@@ -3098,9 +3098,9 @@ test('studio demo: Create without a key opens Connect, Escape restores focus and
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	await expect(page.locator('dialog').getByLabel('Name', { exact: true })).toBeFocused(); // first field focused, not Cancel (checked before fill() moves focus)
 	await page.locator('dialog textarea').fill('a cheerful elf archer');
 	await page
@@ -3544,9 +3544,9 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'eight-directions.zip',
 		mimeType: 'application/zip',
@@ -4195,9 +4195,9 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const character = page.getByRole('dialog', { name: 'New character', exact: true });
 	await character
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -4301,9 +4301,9 @@ test('closing Connect before its code loads still discards the pending action', 
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const character = page.getByRole('dialog', { name: 'New character', exact: true });
 	await character
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -4614,9 +4614,9 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'draft-fixture.zip',
 		mimeType: 'application/zip',
@@ -4888,9 +4888,9 @@ test('radio groups and tabs use one Tab stop and arrow selection', async ({ page
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const editor = page.getByRole('tablist', { name: 'Prompt editor', exact: true });
 	await expect(editor.locator('[tabindex="0"]')).toHaveCount(1);
 	await editor.getByRole('tab', { name: 'Appearance', exact: true }).focus();
@@ -5270,9 +5270,9 @@ async function busyFirstTab(
 	await second.locator('.project-btn').click();
 	await second
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await second.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await second.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const create = second.getByRole('dialog', { name: 'New character', exact: true });
 	await create
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -5402,9 +5402,9 @@ test('Create in a second tab takes the jobs from the idle first tab at once and 
 		await follower.locator('.project-btn').click();
 		await follower
 			.locator('#project-menu')
-			.getByRole('button', { name: 'New character', exact: true })
+			.getByRole('button', { name: 'Add character', exact: true })
 			.click();
-		await follower.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await follower.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		return follower.getByRole('dialog', { name: 'New character', exact: true });
 	}
 	let create = await openCreate();
@@ -5850,9 +5850,9 @@ test('a stopped character creation whose paid review cannot be read offers a fre
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'New character', exact: true });
 	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A plain human');
 	await sheet.getByRole('button', { name: 'Side-scroller 2', exact: true }).click();

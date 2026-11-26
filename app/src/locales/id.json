@@ -622,10 +622,11 @@
 		"billingNote": "Estimasi ini membandingkan generasi, bukan harga dalam dolar. PixelLab mungkin menagih dalam dolar, dan waktu antrean bisa berbeda."
 	},
 	"newCharacterButton": {
+		"addCharacter": "Tambahkan karakter",
 		"newCharacter": "Karakter baru",
-		"createFromScratch": "Buat dari awal…",
-		"importFromDevice": "Impor dari perangkat…",
-		"importFromPixelLab": "Impor dari PixelLab…"
+		"createFromScratch": "Buat…",
+		"fromFile": "Dari file…",
+		"fromPixelLab": "Dari PixelLab…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(terbuka di tab baru)"
@@ -1357,7 +1358,7 @@
 		"posesTitle": "Impor juga sebagai varian",
 		"posesHint": "Pilih pose dari tubuh yang sama tanpa perlengkapan yang menyatu dengan gambar. Impor tampilan yang berbeda sebagai karakter terpisah. Pilih animasinya di bawah.",
 		"poseMismatch": "Varian ini memiliki ukuran gambar, arah hadap, atau pengaturan kamera yang berbeda. Impor sebagai karakter terpisah.",
-		"titleDevice": "Impor dari perangkat",
+		"titleFile": "Impor dari file",
 		"titlePixelLab": "Impor dari PixelLab",
 		"browseLibrary": "Jelajahi karakter PixelLab",
 		"standingState": "Varian pose berdiri",

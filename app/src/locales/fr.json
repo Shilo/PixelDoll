@@ -644,10 +644,11 @@
 		"billingNote": "Les estimations comparent des générations, pas des prix en dollars. PixelLab peut facturer en dollars américains ; le temps d’attente peut varier."
 	},
 	"newCharacterButton": {
+		"addCharacter": "Ajouter un personnage",
 		"newCharacter": "Nouveau personnage",
-		"createFromScratch": "Créer à partir de zéro…",
-		"importFromDevice": "Importer depuis l’appareil…",
-		"importFromPixelLab": "Importer depuis PixelLab…"
+		"createFromScratch": "Créer…",
+		"fromFile": "Depuis un fichier…",
+		"fromPixelLab": "Depuis PixelLab…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(s’ouvre dans un nouvel onglet)"
@@ -1403,7 +1404,7 @@
 		"posesTitle": "Importer aussi comme états",
 		"posesHint": "Choisissez des poses du même corps sans équipement intégré au dessin. Importez une apparence différente comme personnage distinct. Sélectionnez les animations plus bas.",
 		"poseMismatch": "Les dimensions des images, les directions ou les réglages de caméra de cet état diffèrent. Importez-le comme personnage distinct.",
-		"titleDevice": "Importer depuis l’appareil",
+		"titleFile": "Importer depuis un fichier",
 		"titlePixelLab": "Importer depuis PixelLab",
 		"browseLibrary": "Parcourir les personnages PixelLab",
 		"standingState": "État à utiliser pour la pose debout",

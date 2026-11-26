@@ -622,10 +622,11 @@
 		"billingNote": "예상치는 생성 횟수를 비교한 것이며 달러 가격이 아니에요. PixelLab에서 달러로 요금이 청구될 수 있고 대기 시간은 달라질 수 있어요."
 	},
 	"newCharacterButton": {
+		"addCharacter": "캐릭터 추가",
 		"newCharacter": "새 캐릭터",
-		"createFromScratch": "처음부터 만들기…",
-		"importFromDevice": "기기에서 가져오기…",
-		"importFromPixelLab": "PixelLab에서 가져오기…"
+		"createFromScratch": "만들기…",
+		"fromFile": "파일에서…",
+		"fromPixelLab": "PixelLab에서…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(새 탭에서 열림)"
@@ -1357,7 +1358,7 @@
 		"posesTitle": "상태로도 가져오기",
 		"posesHint": "장비가 함께 그려져 있지 않은 같은 몸체의 자세를 선택하세요. 외형이 다르면 별도의 캐릭터로 가져오세요. 동작은 아래에서 선택할 수 있어요.",
 		"poseMismatch": "이 상태는 이미지 크기, 방향 또는 카메라 설정이 달라요. 별도의 캐릭터로 가져오세요.",
-		"titleDevice": "기기에서 가져오기",
+		"titleFile": "파일에서 가져오기",
 		"titlePixelLab": "PixelLab에서 가져오기",
 		"browseLibrary": "PixelLab 캐릭터 둘러보기",
 		"standingState": "서 있는 자세 상태",
