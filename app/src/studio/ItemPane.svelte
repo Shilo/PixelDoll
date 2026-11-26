@@ -1,3 +1,17 @@
+<script lang="ts" module>
+	import type { DirectionName } from '../lib/store/manifest.ts';
+	type Section = 'moves' | 'quality' | 'outfit' | 'about';
+	/** Where the window was when it handed over to a sheet with a way back (Fix frames, Edit appearance), so coming back
+	 *  shows the same move, facing, sections and scroll position instead of starting over. */
+	let resume: {
+		id: string;
+		anim: string;
+		dir: DirectionName;
+		open: Record<Section, boolean>;
+		scroll: number;
+	} | null = null;
+</script>
+
 <script lang="ts">
 	// Item details (docs/design/production-experience.md): what the item is, what it looks like, and one place per job.
 	// Moves & States adds missing artwork, Quality reviews and fixes one view, Outfit sets layer order and hiding, About
@@ -26,7 +40,6 @@
 	import { coverageGaps, moveDirs } from '../lib/dress/dress.ts';
 	import { hidesOf, oppositeHands, twoHanded } from '../lib/compose/compose.ts';
 	import { SLOTS } from '../lib/items/items.ts';
-	import type { DirectionName } from '../lib/store/manifest.ts';
 	import {
 		gapMoves,
 		keepWithoutRefusal,
@@ -126,7 +139,6 @@
 		Wrench
 	} from './icons.ts';
 
-	type Section = 'moves' | 'quality' | 'outfit' | 'about';
 	type Tone = 'warn' | 'ok' | 'neutral';
 
 	let { id }: { id: string } = $props();
@@ -151,8 +163,10 @@
 
 	// Details looks at its own move and facing, starting from the stage's: reviewing another view here leaves the outfit
 	// the player was comparing on the stage as it was.
-	let scopeAnim = $state(untrack(() => ui.anim));
-	let scopeDir = $state<DirectionName>(untrack(() => ui.dir));
+	const resumed = untrack(() => (resume?.id === id ? resume : null));
+	resume = null;
+	let scopeAnim = $state(resumed?.anim ?? untrack(() => ui.anim));
+	let scopeDir = $state<DirectionName>(resumed?.dir ?? untrack(() => ui.dir));
 	const anim = $derived(
 		m?.rig.animations.find((a) => a.id === scopeAnim) ??
 			m?.rig.animations.find((a) => a.id === ui.anim) ??
@@ -329,6 +343,30 @@
 					redo
 				)
 			: null
+	);
+	// Fixing a facing that others mirror updates those too.
+	const mirrored = $derived(
+		!isDemo() && !!repairSpec && !!m?.rig.directions.some((d) => d.mirrorOf === sourceDir)
+	);
+	const fixChoices = $derived(
+		[
+			{
+				id: 'repair',
+				icon: Wrench,
+				label: t('itemPane.repairView'),
+				feature: t('itemPane.repairFeature'),
+				offer: repairOffer,
+				help: t('itemPane.repairHelp')
+			},
+			{
+				id: 'redraw',
+				icon: WandSparkles,
+				label: t('itemPane.redrawView'),
+				feature: t('itemPane.redrawFeature'),
+				offer: redrawOffer,
+				help: t('itemPane.redrawHelp')
+			}
+		].map((choice) => ({ ...choice, tier: offerTier(choice.offer) }))
 	);
 	const repairBusy = $derived(
 		(!!moving.spec && !moving.done) || (!!settingUp.spec && !settingUp.done)
@@ -586,14 +624,31 @@
 
 	// ---------- sections ----------
 	let open = $state<Record<Section, boolean>>(
-		untrack(() => ({
-			moves: !strip.length && missingMoves.length > 0,
-			quality: health === 'look',
-			outfit: false,
-			about: false
-		}))
+		resumed?.open ??
+			untrack(() => ({
+				moves: !strip.length && missingMoves.length > 0,
+				quality: health === 'look',
+				outfit: false,
+				about: false
+			}))
 	);
 	const sections: Partial<Record<Section, HTMLDetailsElement>> = {};
+	let body = $state<HTMLElement>();
+	const scroller = () => body?.closest<HTMLElement>('.sheet-body');
+	$effect(() => {
+		if (resumed && body) scroller()?.scrollTo({ top: resumed.scroll });
+	});
+	/** Hand over to a sheet that comes back here, remembering where the window was. */
+	function leaveFor(go: () => void) {
+		resume = {
+			id,
+			anim: animId,
+			dir: facing,
+			open: $state.snapshot(open),
+			scroll: scroller()?.scrollTop ?? 0
+		};
+		go();
+	}
 	async function reveal(section: Section) {
 		open[section] = true;
 		await tick();
@@ -777,7 +832,7 @@
 	{/snippet}
 
 	{#if m && it && view.project}
-		<div class="item-body">
+		<div class="item-body" bind:this={body}>
 			<!-- Preview: every facing of the chosen move; any view opens full size. -->
 			<section
 				class="item-preview"
@@ -796,12 +851,23 @@
 							{/each}
 						</select>
 					</label>
-					{#if previews.length > 1}<span class="preview-frame"
-							>{t('spriteViewer.frameOf', {
-								frame: number(frameIndex + 1),
-								count: number(previews.length)
-							})}</span
-						>{/if}
+					{#if directions.length > 1}
+						<!-- The facing the window reviews, fixes and orders layers in; the tiles below open any facing full size. -->
+						<div class="facing" role="radiogroup" aria-label={t('itemPane.facing')}>
+							{#each directions as direction (direction.id)}
+								<button
+									class="bu-action facing-choice"
+									data-variant="quiet"
+									role="radio"
+									aria-checked={direction.id === facing}
+									aria-label={displayDirection(direction.id)}
+									title={displayDirection(direction.id)}
+									onclick={() => (scopeDir = direction.id)}
+									>{displayDirectionShort(direction.id)}</button
+								>
+							{/each}
+						</div>
+					{/if}
 				</div>
 				<div class="item-views" style:--cols={Math.min(4, directions.length || 1)}>
 					{#each directions as direction (direction.id)}
@@ -815,6 +881,7 @@
 							class="item-view bu-action"
 							data-variant="quiet"
 							data-missing={!has || undefined}
+							data-current={direction.id === facing || undefined}
 							aria-haspopup="dialog"
 							aria-label={has
 								? t('itemPane.openSprite', { title: label })
@@ -852,7 +919,10 @@
 							onclick={() => {
 								showHiddenItem(it.slot);
 								wearButton?.focus({ preventScroll: true });
-							}}>{t('itemPane.showName', { name: it.name })}</button
+							}}
+							>{t('itemPane.stopHiding', {
+								names: formatList(hiders.map((hider) => hider.name))
+							})}</button
 						>{/if}
 				</div>
 			{/if}
@@ -1014,10 +1084,12 @@
 											: 'item-missing-help'}
 										onclick={generateMoves}
 									>
-										{t('itemPane.generateMoves', {
-											count: selected.length,
-											n: number(selected.length)
-										})}
+										{selected.length
+											? t('itemPane.generateMoves', {
+													count: selected.length,
+													n: number(selected.length)
+												})
+											: t('itemPane.generateMovesNone')}
 										{#if missingOffer?.gens != null}<span class="cost"
 												>{t('moves.estimate', { gens: number(Math.ceil(missingOffer.gens)) })}</span
 											>{/if}
@@ -1101,7 +1173,11 @@
 											{@render toolRow({
 												icon: Check,
 												label: gaps.length
-													? t('itemPane.keepWithoutMoves')
+													? t('itemPane.keepWithoutNamed', {
+															moves: formatList(
+																keepWithout.map((move) => displayMove(move, moveRefs))
+															)
+														})
 													: t('itemPane.acceptAsIs'),
 												detail: gaps.length
 													? t('itemPane.keepWithoutMovesDetail', {
@@ -1127,54 +1203,18 @@
 							{/if}
 
 							<div class="fix-view">
-								<div class="fix-head">
-									<h4>{t('itemPane.fixViewTitle', { move: moveName })}</h4>
-									{#if hasFixTools && m.rig.directions.length > 1}
-										<div class="facing" role="radiogroup" aria-label={t('itemPane.facing')}>
-											{#each m.rig.directions as direction (direction.id)}
-												<button
-													class="bu-action facing-choice"
-													data-variant="quiet"
-													role="radio"
-													aria-checked={direction.id === facing}
-													aria-label={displayDirection(direction.id)}
-													title={displayDirection(direction.id)}
-													onclick={() => (scopeDir = direction.id)}
-													>{displayDirectionShort(direction.id)}</button
-												>
-											{/each}
-										</div>
-									{/if}
-								</div>
+								<h4>
+									{t('itemPane.fixViewTitle', { move: moveName, direction: directionName(facing) })}
+								</h4>
+								<!-- The heading names the view; a mirrored facing also updates the facings drawn from it. -->
+								{#if mirrored}<p class="faint small" id="item-fix-scope">
+										{t('itemPane.updateNoteMirrors', {
+											move: moveName,
+											direction: directionName(sourceDir)
+										})}
+									</p>{/if}
+								<!-- Free first: the item's own colors and hand edits, then the paid redraws of this view. -->
 								<div class="tool-list">
-									{#if !isDemo() && repairSpec}
-										{#each [{ id: 'repair', icon: Wrench, label: t('itemPane.repairView'), feature: t('itemPane.repairFeature'), offer: repairOffer, help: t('itemPane.repairHelp') }, { id: 'redraw', icon: WandSparkles, label: t('itemPane.redrawView'), feature: t('itemPane.redrawFeature'), offer: redrawOffer, help: t('itemPane.redrawHelp') }] as choice (choice.id)}
-											{@const tier = offerTier(choice.offer)}
-											{@render toolRow({
-												icon: choice.icon,
-												label: choice.label,
-												detail: choice.help,
-												aside:
-													choice.offer?.gens == null
-														? t('common.unavailable')
-														: t('moves.estimate', { gens: number(Math.ceil(choice.offer.gens)) }),
-												paid: true,
-												disabled: repairBusy || choice.offer?.gens == null || tierBlocked(tier),
-												describedby: tierBlocked(tier)
-													? `item-${choice.id}-tier`
-													: 'item-fix-scope',
-												onclick: () => repairFrames(choice.offer, tier)
-											})}
-											{#if choice.offer?.error}<p class="notice warn small" role="status">
-													{displayMessage(choice.offer.error)}
-												</p>{/if}
-											{#if tier}<TierNotice
-													id={`item-${choice.id}-tier`}
-													minimumTier={tier}
-													feature={choice.feature}
-												/>{/if}
-										{/each}
-									{/if}
 									{#if !isDemo() && colorPlan}{@render toolRow({
 											icon: Palette,
 											label: colorBusy
@@ -1200,9 +1240,43 @@
 										detail: t('itemPane.fixFramesDetail'),
 										aside: t('common.free'),
 										opens: true,
-										onclick: () => openFrames(it.id)
+										onclick: () => leaveFor(() => openFrames(it.id, animId, 'item'))
 									})}
+									{#if !isDemo() && repairSpec}
+										{#each fixChoices as choice (choice.id)}
+											{@render toolRow({
+												icon: choice.icon,
+												label: choice.label,
+												detail: choice.help,
+												aside:
+													choice.offer?.gens == null
+														? t('common.unavailable')
+														: t('moves.estimate', { gens: number(Math.ceil(choice.offer.gens)) }),
+												paid: true,
+												disabled:
+													repairBusy || choice.offer?.gens == null || tierBlocked(choice.tier),
+												describedby: tierBlocked(choice.tier)
+													? `item-${choice.id}-tier`
+													: mirrored
+														? 'item-fix-scope'
+														: undefined,
+												onclick: () => repairFrames(choice.offer, choice.tier)
+											})}
+										{/each}
+									{/if}
 								</div>
+								{#if !isDemo() && repairSpec}
+									{#each fixChoices as choice (choice.id)}
+										{#if choice.offer?.error}<p class="notice warn small" role="status">
+												{displayMessage(choice.offer.error)}
+											</p>{/if}
+										{#if choice.tier}<TierNotice
+												id={`item-${choice.id}-tier`}
+												minimumTier={choice.tier}
+												feature={choice.feature}
+											/>{/if}
+									{/each}
+								{/if}
 								{#if colorError}<p class="notice bad small">
 										<TriangleAlert size={14} />{displayMessage(colorError)}<ReportButton
 											error={colorError}
@@ -1220,13 +1294,7 @@
 											})
 										})}
 									</p>{/if}
-								{#if !isDemo() && repairSpec}<p class="faint small" id="item-fix-scope">
-										{t(
-											m.rig.directions.some((direction) => direction.mirrorOf === sourceDir)
-												? 'itemPane.updateNoteMirrors'
-												: 'itemPane.updateNote',
-											{ move: moveName, direction: directionName(sourceDir) }
-										)}
+								{#if !isDemo() && repairSpec}<p class="faint small">
 										{t('itemPane.billingNote')}
 									</p>{/if}
 							</div>
@@ -1464,7 +1532,7 @@
 								data-variant="quiet"
 								role="menuitem"
 								aria-haspopup="dialog"
-								onclick={() => act(() => openAppearance(doc.id, it.id, 'item'))}
+								onclick={() => act(() => leaveFor(() => openAppearance(doc.id, it.id, 'item')))}
 								><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron
 								/></button
 							>{/if}
@@ -1572,6 +1640,21 @@
 		min-width: 0;
 		overflow-wrap: anywhere;
 	}
+	/* A phone keeps the name on one line beside the menu and Close: it truncates, its heading keeps the full name. */
+	:global(dialog.item-detail.bottom .sheet-heading) {
+		flex-wrap: nowrap;
+		justify-content: flex-start;
+		min-width: 0;
+	}
+	:global(dialog.item-detail.bottom .sheet-heading .sheet-title) {
+		flex: 0 1 auto;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+	:global(dialog.item-detail.bottom .sheet-heading .item-slot) {
+		flex: none;
+	}
 	:global(dialog.sheet.bottom.item-detail) {
 		box-sizing: border-box;
 		height: 100dvh;
@@ -1596,17 +1679,21 @@
 		justify-content: space-between;
 		gap: 8px;
 	}
+	.preview-move {
+		min-width: 0;
+	}
 	.preview-move select {
-		min-height: 36px;
-		padding-block: 4px;
-		font-size: var(--fs-sm);
+		min-height: 40px;
+		padding-block: 6px;
+		font-size: var(--fs);
 		width: auto;
 		max-width: 100%;
 	}
-	.preview-frame {
-		color: var(--text-3);
-		font-size: var(--fs-sm);
-		font-variant-numeric: tabular-nums;
+	@media (pointer: coarse) {
+		.preview-move select {
+			min-height: 44px;
+			font-size: 16px;
+		}
 	}
 	.item-views {
 		position: relative;
@@ -1652,6 +1739,13 @@
 		border-radius: 8px;
 		color: var(--text-3);
 		font-size: var(--fs-xs, 11px);
+	}
+	.item-view[data-current] .view-caption {
+		color: var(--accent-text, var(--accent));
+		font-weight: 600;
+	}
+	.item-view[data-current] {
+		box-shadow: inset 0 -2px 0 var(--accent);
 	}
 	.item-view[data-missing] .view-caption {
 		color: var(--warn);
@@ -1924,13 +2018,6 @@
 		display: grid;
 		gap: 8px;
 	}
-	.fix-head {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-	}
 	.facing {
 		display: flex;
 		gap: 2px;
@@ -1946,6 +2033,12 @@
 		font-size: var(--fs-sm);
 		font-weight: 600;
 		color: var(--text-2);
+	}
+	@media (pointer: coarse) {
+		.facing-choice {
+			min-width: 44px;
+			min-height: 44px;
+		}
 	}
 	.facing-choice[aria-checked='true'] {
 		background: var(--bu-selected, var(--sel));

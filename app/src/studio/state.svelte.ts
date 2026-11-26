@@ -42,7 +42,6 @@ import {
 	storeVariants
 } from '../lib/dress/dress.ts';
 import {
-	cellImg,
 	composeCell,
 	drawList,
 	equipped,
@@ -50,12 +49,8 @@ import {
 	handSide,
 	hiddenSlots,
 	hidesOf,
-	layerFrame,
 	oppositeHands,
-	over,
-	rigFrame,
 	settleHands,
-	tucked,
 	twoHanded,
 	type Draw
 } from '../lib/compose/compose.ts';
@@ -2772,50 +2767,34 @@ function layerCrossings(itemId: string, animId: string, dir: DirectionName) {
 	const placed = p && anim?.frames.length ? placedOutfit(p, itemId) : null;
 	if (!placed || !anim) return null;
 	const { project, items } = placed,
-		rig = project.manifest.rig,
-		canvas = rigFrame(rig),
+		m = project.manifest,
 		cells = [...new Set(anim.frames.map((frame) => frame.cell))];
-	const order = drawList(project.manifest, items, animId, dir, cells[0]);
+	const order = drawList(m, items, animId, dir, cells[0]);
 	const i = order.findIndex((d) => d.item.id === itemId && d.layer.role === 'fg');
 	if (i < 0) return null;
-	// Each draw's image in each cell, after tucking under the items it tucks under, placed on the rig canvas.
-	const placedImages = cells.map((cell) =>
-		order.map((draw) => {
-			const image = tucked(
-				project,
-				cellImg(project, draw.layer, animId, dir, cell),
-				draw.layer,
-				draw.under,
-				animId,
-				dir,
-				cell
-			);
-			const frame = layerFrame(rig, draw.layer);
-			return image && { image, x: canvas.x - frame.x, y: canvas.y - frame.y };
-		})
-	);
-	const paint = (k: number, sequence: number[]) => {
-		const out = { w: canvas.w, h: canvas.h, data: new Uint8ClampedArray(canvas.w * canvas.h * 4) };
-		for (const index of sequence) {
-			const layer = placedImages[k][index];
-			if (layer) over(out, layer.image, layer.x, layer.y);
-		}
-		return out.data;
-	};
-	const natural = order.map((_, index) => index);
-	// The draw order with the item's front moved just past `j`.
-	const movedPast = (j: number) => {
-		const rest = natural.filter((index) => index !== i),
-			at = rest.indexOf(j);
-		return [...rest.slice(0, j > i ? at + 1 : at), i, ...rest.slice(j > i ? at + 1 : at)];
-	};
-	const changedCell = (j: number) =>
-		cells.findIndex((_, k) => {
-			if (!placedImages[k][i] || !placedImages[k][j]) return false;
-			const before = paint(k, natural),
-				after = paint(k, movedPast(j));
-			return before.some((value, index) => value !== after[index]);
+	const { slot, layer, z } = order[i];
+	// The real composite of every cell, before and with the overrides a step past `j` would save: per-cell depths, body cuts
+	// and tucking all count, so a step is offered only where the outfit really changes.
+	const composite = (p: Project, cell: number) => composeCell(p, items, animId, dir, cell).data;
+	const before = cells.map((cell) => composite(project, cell));
+	const changedCell = (j: number) => {
+		const zOverrides = steppedOverrides(
+			slot.zOverrides ?? [],
+			layer.z,
+			order[j].z + Math.sign(j - i) - z
+		);
+		const trial = {
+			...project,
+			manifest: {
+				...m,
+				slots: m.slots.map((entry) => (entry === slot ? { ...entry, zOverrides } : entry))
+			}
+		};
+		return cells.findIndex((cell, k) => {
+			const after = composite(trial, cell);
+			return after.some((value, index) => value !== before[k][index]);
 		});
+	};
 	const find = (step: 1 | -1): Crossing | undefined => {
 		for (let j = i + step; j >= 0 && j < order.length; j += step) {
 			if (order[j].item.id === itemId) continue;
@@ -2829,6 +2808,38 @@ function layerCrossings(itemId: string, animId: string, dir: DirectionName) {
 		}
 	};
 	return { order, i, behind: find(-1), ahead: find(1) };
+}
+/** A slot's overrides with its item's front moved by `offset` as a unit, including finer overrides that take precedence
+ *  over the base depth: for every facing, or only `dir` (which keeps the all-facing rules and adds its own). */
+function steppedOverrides(
+	overrides: ZOverride[],
+	layerZ: number,
+	offset: number,
+	dir?: DirectionName
+) {
+	const isBase = (o: ZOverride) => o.layer === 'fg' && o.dir === dir && !o.anim && o.cell == null;
+	const base =
+		overrides.findLast(isBase)?.z ??
+		overrides.findLast((o) => o.layer === 'fg' && !o.dir && !o.anim && o.cell == null)?.z ??
+		layerZ;
+	return [
+		...overrides.flatMap((o, index) => {
+			if (isBase(o)) return [];
+			if (o.layer !== 'fg' || (dir && o.dir && o.dir !== dir)) return [o];
+			const shifted = { ...o, z: o.z + offset };
+			if (!dir || o.dir) return [shifted];
+			const replaced = overrides.some(
+				(next, i) =>
+					i > index &&
+					next.layer === o.layer &&
+					next.dir === dir &&
+					next.anim === o.anim &&
+					next.cell === o.cell
+			);
+			return (!o.anim && o.cell == null) || replaced ? [o] : [o, { ...shifted, dir }];
+		}),
+		{ layer: 'fg' as const, z: base + offset, ...(dir ? { dir } : {}) }
+	];
 }
 /** The layers the item's front would cross with Send backward and Bring forward in the shown move and facing. */
 export function itemLayerNeighbors(itemId: string, animId = ui.anim, dir: DirectionName = ui.dir) {
@@ -2856,34 +2867,13 @@ export function moveLayer(
 		target = step > 0 ? place?.ahead : place?.behind;
 	if (!place || !target) return;
 	const { slot, layer, z } = place.order[place.i];
-	// Move the front as a unit, including any finer overrides that take precedence over the base depth.
-	const offset = target.draw.z + step - z;
-	const dir = onlyDir ? facing : undefined;
-	const overrides = slot.zOverrides ?? [];
-	const isBase = (o: ZOverride) => o.layer === 'fg' && o.dir === dir && !o.anim && o.cell == null;
-	const base =
-		overrides.findLast(isBase)?.z ??
-		overrides.findLast((o) => o.layer === 'fg' && !o.dir && !o.anim && o.cell == null)?.z ??
-		layer.z;
 	commit(message(step > 0 ? 'history.bringForward' : 'history.sendBackward'), () => {
-		slot.zOverrides = [
-			...overrides.flatMap((o, index) => {
-				if (isBase(o)) return [];
-				if (o.layer !== 'fg' || (dir && o.dir && o.dir !== dir)) return [o];
-				const shifted = { ...o, z: o.z + offset };
-				if (!dir || o.dir) return [shifted];
-				const replaced = overrides.some(
-					(next, i) =>
-						i > index &&
-						next.layer === o.layer &&
-						next.dir === dir &&
-						next.anim === o.anim &&
-						next.cell === o.cell
-				);
-				return (!o.anim && o.cell == null) || replaced ? [o] : [o, { ...shifted, dir }];
-			}),
-			{ layer: 'fg', z: base + offset, ...(dir ? { dir } : {}) }
-		];
+		slot.zOverrides = steppedOverrides(
+			slot.zOverrides ?? [],
+			layer.z,
+			target.draw.z + step - z,
+			onlyDir ? facing : undefined
+		);
 	});
 	return target.frame;
 }
@@ -3023,12 +3013,14 @@ export async function matchItemPalette(
 }
 
 // ---------- Fix frames ----------
-export const frames = $state({ item: '', anim: '' });
+export const frames = $state<{ item: string; anim: string; back?: 'item' }>({ item: '', anim: '' });
 const framesModule = () => lazy(() => import('../lib/frames/save.ts'));
-/** Open Fix frames for an item (the body when empty) and a move (the one playing when empty). */
-export function openFrames(itemId = '', anim = '') {
+/** Open Fix frames for an item (the body when empty) and a move (the one playing when empty). `back` is the sheet it was
+ *  opened from, which its Back returns to. */
+export function openFrames(itemId = '', anim = '', back?: 'item') {
 	const m = store.project?.manifest;
 	if (!m) return;
+	frames.back = back;
 	frames.item = itemId || m.rig.baseItem;
 	frames.anim =
 		anim || (m.rig.animations.some((a) => a.id === ui.anim) ? ui.anim : m.rig.animations[0].id);
