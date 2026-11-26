@@ -319,20 +319,6 @@
 						onpick={(idea) => details(idea.prompt)}
 					/>
 				</div>
-				{#each TRAIT_KEYS as key (key)}
-					<div class="trait-row">
-						<Help title={t(TRAIT_TEXT[key].label)} text={t(TRAIT_TEXT[key].help)} /><select
-							class="bu-input input"
-							aria-label={t(TRAIT_TEXT[key].label)}
-							value={d[key]}
-							onchange={(e) => trait(key, e.currentTarget.value)}
-							><option value={UNSET}>{t('create.form.notSet')}</option
-							>{#each TRAITS[key].options as option (option)}<option value={option}
-									>{optionText(option)}</option
-								>{/each}</select
-						>
-					</div>
-				{/each}
 				<div class="base-clothing compact-segments">
 					<Help title={t('create.form.baseClothing')} text={t('create.form.baseClothingHelp')} />
 					<SegmentedControl
@@ -349,6 +335,20 @@
 						}}
 					/>
 				</div>
+				{#each TRAIT_KEYS as key (key)}
+					<div class="trait-row">
+						<Help title={t(TRAIT_TEXT[key].label)} text={t(TRAIT_TEXT[key].help)} /><select
+							class="bu-input input"
+							aria-label={t(TRAIT_TEXT[key].label)}
+							value={d[key]}
+							onchange={(e) => trait(key, e.currentTarget.value)}
+							><option value={UNSET}>{t('create.form.notSet')}</option
+							>{#each TRAITS[key].options as option (option)}<option value={option}
+									>{optionText(option)}</option
+								>{/each}</select
+						>
+					</div>
+				{/each}
 				<div class="prompt-note">
 					<button
 						class="prompt-excerpt"

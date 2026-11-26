@@ -1717,9 +1717,13 @@
 	align-self: flex-start;
 	font-size: 14px;
 }
-/* On desktop widths two traits share a row, so Appearance clears the floating footer at 1440x900 with the prompt
-   excerpt and guidance visible. Narrower screens keep one per row for readable labels and 44 px targets. */
-@media (min-width: 1001px) {
+/* Two traits share a row whenever the appearance column has room for two readable fields, so the form clears the
+   floating footer on desktops and gets two rows shorter on phones, tablets and short landscape. The column is what
+   matters, not the window: a wide phone holds two 179 px fields, while a 320 px phone keeps one per row. */
+.studio-app .character-sheet .appearance {
+	container: appearance / inline-size;
+}
+@container appearance (min-width: 340px) {
 	.studio-app .character-sheet .appearance .editor-panel {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
