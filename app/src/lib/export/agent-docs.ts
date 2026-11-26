@@ -99,6 +99,7 @@ Phaser does not await an async create(): nothing may use the doll until loadPape
 this.doll or create it in a scene that starts after loading. loadPaperdoll caches per game, so one scene may load it and
 another may create the doll.
 doll.playAction(move, direction) plays a one-shot action and doll.setDirection(dir) turns the active move.
+A move's loop flag from manifest.json decides whether play repeats it; a move with loop false stops on its last frame.
 An unknown move, direction, slot, item or outfit throws before changing anything; an unknown material or variant id
 in setVariants selects nothing, so check manifest.json's materials before relying on a recolor.
 The constructor starts in model.presets[0], the first outfit in manifest.json.
@@ -132,7 +133,8 @@ godot/Paperdoll.tscn with a res:// path. The scene root is a Node2D running pape
 equipped as properties, so no other wiring is needed. Read doll.manifest.materials[].variants (or manifest.json) to see
 which variants exist; there is no query API. This targets Godot 4 with format=3 scenes.
 set_preset swaps items and colors without calling play_anim, so the active move keeps running. A later equip changes only
-that slot and leaves the preset's color variants in place.
+that slot and leaves the preset's color variants in place. Each move loops only when its loop flag in manifest.json is
+true.
 set_variant returns true for a known material even when the variant name is unknown; the unknown name replaces that
 material's selection and applies no swap. An unknown material warns, returns false and changes nothing. equip on a
 variant item warns and returns false.
@@ -154,6 +156,8 @@ run Tools > PixelDoll > <export id> > Import. Then in play mode:
     doll.ApplyPreset("outfit_id");
 
 The namespace is PixelDoll.<export id>. Use a Pixel Perfect Camera, and keep the source sheets unpacked.
+The importer takes pixels per unit from export.pixelsPerUnit in manifest.json, or from the rig size when that is absent,
+and keeps it across oversize layers so their world scale matches the body.
 `;
 
 const GDEVELOP = `# GDevelop 5.6.285+
