@@ -115,6 +115,13 @@ const queued = new Map<string, Request>();
 /** The problem each character's folder last reported, kept while that character is not open so its pause is neither
  *  cleared unseen by a quiet background check nor lost when the user comes back to review it. */
 const problems = new Map<string, { linkedAt: string; status: FolderStatus }>();
+/** Each new link's offer of already matching files, kept until answered so it also waits for a character that was not
+ *  open when its first publish finished. */
+const offers = new Map<string, PlanAction[]>();
+const offerFor = (link: FolderLink | null) => {
+	const files = link && offers.get(link.linkedAt);
+	return files ? { linkedAt: link.linkedAt, files } : null;
+};
 /** Background notices already shown this session, so a lasting problem is reported once rather than on every edit. */
 const noticed = new Set<string>();
 
@@ -171,7 +178,10 @@ export async function loadFolderLink(characterId: string) {
 		const changed = !again || projectFolder.link?.linkedAt !== link?.linkedAt;
 		showLink(characterId, link, readAt);
 		// A problem this character's folder reported while another character was open, if it is still the same link.
-		if (changed) projectFolder.status = statusFor(characterId, link);
+		if (changed) {
+			projectFolder.status = statusFor(characterId, link);
+			projectFolder.offer = offerFor(link);
+		}
 	} catch (error) {
 		// Shown in Settings, so a storage failure never looks like "no folder".
 		console.warn('Could not read the linked project folder', error);
@@ -320,6 +330,13 @@ async function sameEarlierExport(target: FolderTarget) {
 	}
 }
 
+/** Whether a publish for this link is already waiting that will run: a click's always does, an automatic one only while
+ *  automatic updates are on. */
+function willPublish(link: FolderLink) {
+	const waiting = queued.get(link.linkedAt);
+	return !!waiting && (waiting.manual || link.auto) ? true : link.auto && timers.has(link.linkedAt);
+}
+
 /** The stored link, if it is still the one this request was made for; another tab may have stopped or replaced it. */
 async function stillLinked(link: FolderLink): Promise<FolderLink | null | 'unknown'> {
 	try {
@@ -345,8 +362,12 @@ async function publish(link: FolderLink, request: Request) {
 		if (!checked) return superseded(id, readAt, link.linkedAt);
 		link = checked;
 		showLink(id, link, readAt);
-		// Update automatically may have been turned off in another tab.
-		if (!request.manual && !link.auto) return;
+		// Update automatically may have been turned off in another tab. A finished publish may have shown this one as
+		// coming; it is not, so the status stops saying so.
+		if (!request.manual && !link.auto) {
+			if (loadedFor === id && projectFolder.status.kind === 'publishing') report({ kind: 'idle' });
+			return;
+		}
 		if ((await permission(link)) !== 'granted') return lostAccess(link, request.manual);
 		const seen = behind.get(id) ?? 0;
 		let input: Snapshot | null;
@@ -366,6 +387,8 @@ async function publish(link: FolderLink, request: Request) {
 			clearNotice(id);
 			report(status); // clears this link's problem: the folder was just checked
 			if ((behind.get(id) ?? 0) !== seen) report({ kind: 'idle' });
+			// A newer change already waiting to publish means this one is not the latest look.
+			else if (willPublish(link)) report({ kind: 'publishing' });
 		};
 		report({ kind: 'publishing' });
 		const key = recordKey(link);
@@ -428,10 +451,16 @@ async function publish(link: FolderLink, request: Request) {
 			request.fresh &&
 			outcome.kind !== 'stopped' &&
 			outcome.kind !== 'failed' &&
-			outcome.matching?.length &&
-			loadedFor === id
-		)
-			projectFolder.offer = { linkedAt: link.linkedAt, files: outcome.matching };
+			outcome.matching?.length
+		) {
+			offers.set(link.linkedAt, outcome.matching);
+			if (loadedFor === id) projectFolder.offer = offerFor(link);
+		}
+		// The earlier export's time stays in use (also while paused), so a retry still matches its files.
+		if (exportedAt !== now && outcome.kind !== 'published' && outcome.kind !== 'unchanged')
+			await updateLink(id, link.linkedAt, { exportedAt }).catch((error: unknown) =>
+				console.warn('Could not record the project folder export time', error)
+			);
 		switch (outcome.kind) {
 			case 'stopped': {
 				readAt = linkChanges;
@@ -611,7 +640,10 @@ export async function adoptMatchingFiles() {
 	if (!offer || !link) return;
 	try {
 		await exclusive(link, async () => {
-			if (typeof (await stillLinked(link)) !== 'object') return;
+			const latest = await stillLinked(link);
+			// Unknown is retried by clicking again; a link stopped or replaced elsewhere has nothing left to adopt.
+			if (latest === 'unknown') throw new Error('Could not recheck the linked project folder');
+			if (!latest) return;
 			const target = directoryTarget(link.handle, [link.subfolder]);
 			const key = recordKey(link);
 			for (const file of offer.files)
@@ -619,6 +651,7 @@ export async function adoptMatchingFiles() {
 					await recordWritten(key, file.path, file.found);
 		});
 		// Gone once they are recorded, so the offer's disappearing means it took effect.
+		offers.delete(offer.linkedAt);
 		if (projectFolder.offer === offer) projectFolder.offer = null;
 	} catch (error) {
 		console.warn('Could not keep the matching project folder files updated', error);
@@ -628,6 +661,7 @@ export async function adoptMatchingFiles() {
 
 /** Leaves the offered matching files as the user's. */
 export function leaveMatchingFiles() {
+	if (projectFolder.offer) offers.delete(projectFolder.offer.linkedAt);
 	projectFolder.offer = null;
 }
 
@@ -766,6 +800,7 @@ export async function unlinkProjectFolder() {
 		return;
 	}
 	showLink(link.characterId, null);
+	offers.delete(link.linkedAt);
 	if (loadedFor === link.characterId) projectFolder.offer = null;
 	problems.delete(link.characterId);
 	clearNotice(link.characterId);
