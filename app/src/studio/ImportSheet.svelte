@@ -45,7 +45,6 @@
 		ui,
 		doc,
 		store,
-		dismissWelcome,
 		openAppearance,
 		refreshProjects,
 		openProject,
@@ -397,7 +396,6 @@
 			if (!alive) return;
 			await openProject(projectId);
 			if (!alive) return;
-			dismissWelcome();
 			customize();
 			ui.sheet =
 				setupNext && !rigReady({ manifest: imported.project.manifest, ...imported.extra })

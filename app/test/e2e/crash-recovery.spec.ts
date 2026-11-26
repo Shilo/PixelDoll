@@ -26,7 +26,7 @@ test('Export choices survive abrupt browser termination and restart', async ({},
 		});
 		await context.addInitScript(() => {
 			localStorage.setItem('pixeldoll.agentKey', 'off');
-			localStorage.setItem('pixeldoll.welcomed', '1');
+			localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 		});
 		await context.route('https://*.pixellab.ai/**', async (route) => {
 			requests.push(route.request().method() + ' ' + new URL(route.request().url()).pathname);

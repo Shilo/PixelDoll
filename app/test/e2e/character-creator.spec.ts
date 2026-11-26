@@ -25,7 +25,7 @@ const fulfill = async (route: Route, response: Response) =>
 test.beforeEach(async ({ context }) => {
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 		Object.defineProperty(navigator, 'clipboard', {
 			configurable: true,
 			value: { writeText: async (text: string) => sessionStorage.setItem('creator-copy', text) }

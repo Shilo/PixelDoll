@@ -3649,14 +3649,16 @@
 		"clear": "Clear search",
 		"results": "{count} of {total}"
 	},
-	"demoTips": {
+	"tips": {
 		"intro": "Try on gear, then export it for your game. No PixelLab key needed.",
 		"gearTitle": "Try on gear",
 		"gearBody": "Choose an item in the Wardrobe to put it on or take it off.",
 		"exportTitle": "Take it into your game",
 		"exportBody": "Export can save the body and each item as separate spritesheets.",
 		"exportInMoreBody": "Find Export in More options. It can save the body and each item as separate spritesheets.",
-		"dismiss": "Dismiss tips",
-		"replay": "Demo tips"
+		"close": "Close tip",
+		"showAgain": "Show tips again",
+		"pixellabTitle": "What is PixelLab?",
+		"pixellabBody": "An AI pixel art service that draws the characters and gear you create here, using generations from your PixelLab account."
 	}
 }

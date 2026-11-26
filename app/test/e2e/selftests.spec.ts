@@ -989,7 +989,7 @@ test('copying a demo publishes its images atomically against concurrent garbage 
 }) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 	await page.route('https://*.pixellab.ai/**', (route) => route.abort());
 	await openStudio(page, '/');
@@ -1120,7 +1120,7 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 		errors: string[] = [];
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 	await page.route('https://*.pixellab.ai/**', (route) => {
 		requests.push(route.request().method());

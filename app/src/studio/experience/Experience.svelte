@@ -13,8 +13,8 @@
 	import CharacterActions from '../CharacterActions.svelte';
 	import CharacterName from '../CharacterName.svelte';
 	import PhonePanel from '../PhonePanel.svelte';
-	import DemoTip from './DemoTip.svelte';
-	import { demoTips, finishDemoTips, type DemoTip as DemoTipStep } from './demoTips.svelte.ts';
+	import DemoTips from './DemoTips.svelte';
+	import { tipDone, tips, tipsEnabled } from '../tips/tips.svelte.ts';
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import CharacterThumb from './CharacterThumb.svelte';
@@ -152,66 +152,40 @@
 		)
 	);
 	const list = $derived(saved.filter((p) => matchesSearch([p.name], query)));
-	/** A newcomer: nothing saved or being created yet, and the demo tips not yet finished or dismissed. */
-	const newcomer = $derived(
-		!workspaceCopy && ui.welcome && saved.length === 1 && !allPending.length
-	);
+	/** A newcomer: nothing saved or being created yet. */
+	const newcomer = $derived(tipsEnabled && saved.length === 1 && !allPending.length);
 	// First run with only the demo: one line beside Customize says what the demo offers and that it is free.
-	const showIntro = $derived(newcomer && doc.id === DEMO && !!m);
+	const showIntro = $derived(newcomer && !tipDone('export') && doc.id === DEMO && !!m);
 	const introId = $props.id();
-	/** Items with frames in every move, which a tip may suggest (the demo's Wizard hat lacks some on purpose). */
-	const completeItems = $derived(
-		new Set((m?.items ?? []).filter((it) => !missingMoves(m!, it).length).map((it) => it.id))
+	/** The demo's Customize, where its tips live. */
+	const inDemo = $derived(
+		tipsEnabled && experience.screen === 'studio' && doc.id === DEMO && !doc.loading && !!m
 	);
-	const outfit = () =>
-		JSON.stringify(
-			Object.entries(doc.items)
-				.filter(([, id]) => id)
-				.sort()
-		);
-	/** The outfit when the gear tip appeared: any change to it means the person has tried on gear. */
-	let tipOutfit = '';
-	function startTips(step: DemoTipStep) {
-		panel('wardrobe');
-		setPanelOpen(true);
-		tipOutfit = outfit();
-		demoTips.step = step;
-	}
-	// The demo tips run only in the demo's Customize, on their own only for a newcomer; leaving suspends them until
-	// the next visit.
+	/** Items with frames for the move on screen: a tip never suggests one that would vanish or warn when put on. */
+	const tryable = $derived(
+		new Set(
+			(m?.items ?? []).filter((it) => !missingMoves(m!, it).includes(ui.anim)).map((it) => it.id)
+		)
+	);
+	// Help > Show tips again: open the demo's Customize in Preview with the Wardrobe, where the first tip lives. Each
+	// request is used up at once, so it can never act later, such as on a press of Characters.
+	let tipsRequest = tips.request;
 	$effect(() => {
-		const inDemo =
-			!workspaceCopy && experience.screen === 'studio' && doc.id === DEMO && !doc.loading && !!m;
-		if (!inDemo) {
-			if (demoTips.step) demoTips.step = null;
-			return;
-		}
-		if (!demoTips.step && newcomer) untrack(() => startTips('gear'));
-	});
-	$effect(() => {
-		if (demoTips.step === 'gear' && outfit() !== tipOutfit) demoTips.step = 'export';
-	});
-	$effect(() => {
-		if (demoTips.step && ui.sheet === 'export') finishDemoTips();
-	});
-	// Help > Demo tips: open the demo if needed, then its Customize in Preview, and start over. The request is used up
-	// at once so it can never act later, such as on a press of Characters.
-	$effect(() => {
-		if (!demoTips.replay || doc.loading || openingProjectId()) return;
-		if (!workspaceCopy && !doc.error && doc.id !== DEMO) {
+		if (tips.request === tipsRequest || doc.loading || openingProjectId()) return;
+		if (!doc.error && doc.id !== DEMO) {
 			void openProject(DEMO);
 			return;
 		}
 		untrack(() => {
-			demoTips.replay = false;
-			if (workspaceCopy || doc.error || doc.id !== DEMO || !m || ui.sheet) return;
+			tipsRequest = tips.request;
+			if (doc.error || doc.id !== DEMO || !m || ui.sheet) return;
 			if (experience.screen === 'characters') {
 				showStanding();
 				applyRiderPose();
 				enterCustomize();
 			} else changeMode('preview');
-			// Over a bottom sheet the gear tip never shows (DemoTip.svelte), so a replay there starts at Export.
-			startTips(g.sheet ? 'export' : 'gear');
+			panel('wardrobe');
+			setPanelOpen(true);
 		});
 	});
 	const pending = $derived(allPending.filter((run) => matchesSearch([run.spec.name], query)));
@@ -1060,7 +1034,7 @@
 				{/each}
 			</div>
 			{#if showIntro}<p class="demo-intro bu-muted" id={introId}>
-					{t('demoTips.intro')}
+					{t('tips.intro')}
 				</p>{/if}
 			<button
 				class="bu-action customize-action"
@@ -1233,13 +1207,7 @@
 			</div>
 		{/if}
 		<!-- Before the panel, so keyboard users reach the tip's close button before the gear it is about. -->
-		{#if demoTips.step}<DemoTip
-				step={demoTips.step}
-				dock={dockEdge}
-				{panelOpen}
-				complete={completeItems}
-				ondismiss={finishDemoTips}
-			/>{/if}
+		{#if inDemo}<DemoTips show={newcomer || tips.requested} {tryable} />{/if}
 		<aside
 			id="customization-rail"
 			class="equipment-rail"

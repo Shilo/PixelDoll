@@ -2884,6 +2884,10 @@ async function pause(page: Page) {
 test('phone More preserves Redo and closes after restoring a taken-off item state', async ({
 	page
 }) => {
+	// Not about onboarding: the first-visit tips are already done.
+	await page.addInitScript(() =>
+		localStorage.setItem('pixeldoll.tips', '["export","gear","pixellab"]')
+	);
 	await page.setViewportSize({ width: 360, height: 844 });
 	await customize(page);
 	await pause(page);
@@ -3279,6 +3283,10 @@ test.describe('two-finger equipment input', () => {
 		page,
 		context
 	}) => {
+		// Not about onboarding: the first-visit tips are already done.
+		await page.addInitScript(() =>
+			localStorage.setItem('pixeldoll.tips', '["export","gear","pixellab"]')
+		);
 		await landing(page);
 		await page.locator('.customize-action').click();
 		await equipmentGroup(page, 'Head');
@@ -3489,6 +3497,10 @@ for (const screen of [
 test('category Random is one named undo step and Random look stays reachable on a 320 px phone', async ({
 	page
 }) => {
+	// Not about onboarding: the first-visit tips are already done.
+	await page.addInitScript(() =>
+		localStorage.setItem('pixeldoll.tips', '["export","gear","pixellab"]')
+	);
 	await page.setViewportSize({ width: 1440, height: 900 });
 	await customize(page);
 	await pause(page);
@@ -4572,6 +4584,10 @@ test.describe('Preview facing lineup', () => {
 	});
 
 	test('wrapped Preview controls reserve their actual height above the panel', async ({ page }) => {
+		// Not about onboarding: the first-visit tips are already done.
+		await page.addInitScript(() =>
+			localStorage.setItem('pixeldoll.tips', '["export","gear","pixellab"]')
+		);
 		await customize(page);
 		await pause(page);
 		await page.evaluate(async (directions) => {

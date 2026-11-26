@@ -209,9 +209,11 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
     trimmed.
   - Add more templates only after the same blind protocol
     ([template study](docs/research/2026-11-24-template-study/README.md)).
-- D33 (2026-11-26, user-requested): first-run onboarding is at most two self-ending tips in the demo's Customize (try on gear,
-  then Export), a one-line note on Characters and no pre-release toast while nothing is saved; no welcome screen,
-  slideshow or tour. Replay from **Help > Demo tips** ([record](docs/design/onboarding.md)).
+- D33 (2026-11-26, user-requested): first-run onboarding is a few self-ending tips, each an arrow callout on its control
+  (try on gear and Export in the demo's Customize, What is PixelLab? in Connect), a one-line note on Characters and no
+  pre-release toast while a newcomer tries the demo; no welcome screen, slideshow or tour. A reusable module
+  (`app/src/studio/tips/`) saves done tips per id; **Help > Show tips again** clears them
+  ([record](docs/design/onboarding.md)).
 
 ## Progressive equipment generation (2026-11-03)
 

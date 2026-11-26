@@ -23,7 +23,7 @@ test.beforeEach(async ({ page, context }) => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.removeItem('pixellabApiKey');
 		if (!localStorage.getItem('pixeldoll.theme')) localStorage.setItem('pixeldoll.theme', 'dark');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 });
 

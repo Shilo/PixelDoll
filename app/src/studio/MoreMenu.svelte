@@ -12,7 +12,7 @@
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import { experience } from './experience/state.svelte.ts';
-	import { replayDemoTips } from './experience/demoTips.svelte.ts';
+	import { showTipsAgain, tipsEnabled } from './tips/tips.svelte.ts';
 	import DemoCopyRow from './DemoCopyRow.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import FullscreenButton from './FullscreenButton.svelte';
@@ -269,15 +269,15 @@
 		>
 			<PopoverArrow />
 			<div class="menu-surface bu-popover-surface bu-floating">
-				{#if !workspaceCopy}<button
+				{#if tipsEnabled}<button
 						class="row bu-action"
 						data-variant="quiet"
 						onclick={() => {
 							closeOptions();
-							replayDemoTips();
+							showTipsAgain();
 						}}
 						><Lightbulb size={18} aria-hidden="true" /><span class="row-name"
-							>{t('demoTips.replay')}</span
+							>{t('tips.showAgain')}</span
 						></button
 					>{/if}
 				<a

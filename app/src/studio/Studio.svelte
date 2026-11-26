@@ -71,6 +71,7 @@
 	import LibraryBackupButton from './LibraryBackupButton.svelte';
 	import { downloadLibraryBackupWithFeedback } from './downloadLibraryBackup.ts';
 	import PwaRuntime from './PwaRuntime.svelte';
+	import { tipDone } from './tips/tips.svelte.ts';
 
 	// On-demand parts, out of the startup bundle.
 	const parts = {
@@ -129,13 +130,12 @@
 				reviewFailedCreate,
 				loadGens
 			};
-		if (workspaceCopy) ui.welcome = false;
 		const off = initUi();
 		const previewNotice = () =>
 			toast(previewNoticeDetails, { ...PREVIEW_NOTICE, action: downloadLibraryBackupWithFeedback });
-		// A first visit with nothing saved has no work at risk yet, so the warning waits for a later visit instead of
-		// greeting a newcomer with it. Any saved character brings it back at once.
-		const firstVisit = ui.welcome;
+		// A newcomer still trying the demo (its tips not done) has no work at risk yet, so the warning waits instead of
+		// greeting them with it. Any saved character brings it back at once.
+		const firstVisit = !tipDone('export');
 		if (PRE_RELEASE && !workspaceCopy && !firstVisit) previewNotice();
 		void (async () => {
 			const listed = await refreshProjects();

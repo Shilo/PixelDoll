@@ -24,7 +24,7 @@ async function setup(page: Page) {
 		unexpected: string[] = [];
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 		localStorage.setItem('pixeldoll.developerMode', '1');
 		Object.defineProperty(navigator, 'clipboard', {
 			configurable: true,

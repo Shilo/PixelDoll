@@ -151,7 +151,7 @@ test('Free/Trial is a valid connection, and equipment shows Tier 1 required with
 	);
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 	await context.route('https://api.pixellab.ai/**', async (route) => {
 		if (route.request().method() === 'GET')
@@ -223,7 +223,7 @@ test('a Free/Trial connection resumes a permitted pending enhancement', async ({
 	const posts: string[] = [];
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 	await context.route('https://api.pixellab.ai/**', async (route) => {
 		if (route.request().method() === 'GET')
@@ -312,7 +312,7 @@ test('a follower tab lists the move another tab is running in Moves, read-only',
 	const requests: string[] = [];
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 	await context.route('https://api.pixellab.ai/**', (route) => {
 		requests.push(route.request().url());

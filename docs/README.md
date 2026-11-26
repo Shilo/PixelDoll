@@ -65,9 +65,9 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 - [PixelLab Character Creator states and animations](research/2026-11-18-character-creator-states.md) describes the website workflow, public endpoint lifecycle, and how PixelDoll currently imports and uses standing references.
 - [PixelDoll state authoring study](research/2026-11-18-pixeldoll-states/README.md) proposes reusable poses, shared playback, state-derived move generation and independent removal. It includes an interactive layout comparison and runtime probe.
 
-- [First-run onboarding: demo tips](design/onboarding.md): why PixelDoll onboards with two self-ending tips in the real
-  demo instead of a welcome screen, slideshow or tour; placement per layout, accessibility, the research and the
-  two-agent debate behind it.
+- [First-run onboarding: tips](design/onboarding.md): why PixelDoll onboards with a few self-ending tips pointed at real
+  controls instead of a welcome screen, slideshow or tour; the reusable tips module, per-tip saved state, placement,
+  accessibility, and best practices for future onboarding.
 
 - [Modular visual-slot workshop](design/2026-11-16-slot-system/README.md): council-challenged slot inventory, identity, hiding, customization and export proposal with an isolated interactive comparison. Awaiting prototype review; no production behavior change.
 

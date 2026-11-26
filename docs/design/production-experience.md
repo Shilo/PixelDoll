@@ -35,7 +35,7 @@ tone and title/body content for plan notices without nested controls.
 Connect relies on its form gap rather than extra notice padding; More has no extra bottom padding. In Connect it appears immediately
 above the Get Secret API Key / Connect action row; in More it follows the app actions. The same wording stays on one line in the
 README, website metadata and GitHub description. No notice is overlaid on the character scene. First-run onboarding
-follows the [demo tips record](onboarding.md).
+follows the [tips record](onboarding.md).
 
 Context-menu gestures share the typed attachment in `app/src/lib/input/contextMenu.ts`. Apply `{@attach contextMenu(open)}` to a row or tile wrapper; the callback receives that element, while the caller owns the actual menu. The attachment owns gesture detection, release-click suppression and listener/timer cleanup. Character rows and item tiles use this same API without their own gesture handlers.
 

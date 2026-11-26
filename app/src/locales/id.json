@@ -3547,14 +3547,16 @@
 		"clear": "Hapus pencarian",
 		"results": "{count} dari {total}"
 	},
-	"demoTips": {
+	"tips": {
 		"intro": "Coba perlengkapan, lalu ekspor untuk game Anda. Tidak perlu kunci PixelLab.",
 		"gearTitle": "Coba perlengkapan",
 		"gearBody": "Pilih item di Lemari untuk memakainya atau melepasnya.",
 		"exportTitle": "Bawa ke game Anda",
 		"exportBody": "Ekspor dapat menyimpan tubuh dasar dan setiap item sebagai sprite sheet terpisah.",
 		"exportInMoreBody": "Ekspor ada di Opsi lainnya. Ekspor dapat menyimpan tubuh dasar dan setiap item sebagai sprite sheet terpisah.",
-		"dismiss": "Tutup tips",
-		"replay": "Tips demo"
+		"close": "Tutup tips",
+		"showAgain": "Tampilkan tips lagi",
+		"pixellabTitle": "Apa itu PixelLab?",
+		"pixellabBody": "Layanan pixel art AI yang menggambar karakter dan perlengkapan yang Anda buat di sini, memakai generasi dari akun PixelLab Anda."
 	}
 }

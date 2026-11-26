@@ -3649,14 +3649,16 @@
 		"clear": "Aramayı temizle",
 		"results": "{total} içinden {count}"
 	},
-	"demoTips": {
+	"tips": {
 		"intro": "Ekipman deneyin, sonra oyununuz için dışa aktarın. PixelLab anahtarı gerekmez.",
 		"gearTitle": "Ekipman deneyin",
 		"gearBody": "Giymek veya çıkarmak için Gardırop’tan bir eşya seçin.",
 		"exportTitle": "Oyununuza taşıyın",
 		"exportBody": "Dışa aktarma, temel gövdeyi ve her eşyayı ayrı sprite sayfaları olarak kaydedebilir.",
 		"exportInMoreBody": "Dışa aktarma, Diğer seçenekler içindedir. Temel gövdeyi ve her eşyayı ayrı sprite sayfaları olarak kaydedebilir.",
-		"dismiss": "İpuçlarını kapatın",
-		"replay": "Demo ipuçları"
+		"close": "İpucunu kapat",
+		"showAgain": "İpuçlarını yeniden göster",
+		"pixellabTitle": "PixelLab nedir?",
+		"pixellabBody": "Burada oluşturduğun karakterleri ve eşyaları çizen bir yapay zekâ piksel sanatı hizmeti. PixelLab hesabındaki üretimleri kullanır."
 	}
 }

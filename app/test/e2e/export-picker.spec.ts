@@ -739,7 +739,7 @@ async function savedExport(page: Page, dev: string) {
 	await page.setViewportSize({ width: 800, height: 600 }); // Eight parallel settings runs do not need eight full-size animated worlds.
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 	await page.route('https://*.pixellab.ai/**', (route) => route.abort());
 	await openStudio(page, dev);
@@ -1013,7 +1013,7 @@ test('global Export choices survive a browser restart, character changes and dyn
 		});
 		await context.addInitScript(() => {
 			localStorage.setItem('pixeldoll.agentKey', 'off');
-			localStorage.setItem('pixeldoll.welcomed', '1');
+			localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 		});
 		await context.route('https://*.pixellab.ai/**', (route) => route.abort());
 		return context;
@@ -1196,7 +1196,7 @@ test('global Export choices persist through demo reload, editable copying and ch
 	await page.setViewportSize({ width: 800, height: 600 });
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 	await page.route('https://*.pixellab.ai/**', (route) => route.abort());
 	await openStudio(
@@ -1323,7 +1323,7 @@ test('two tabs merge independent Export saves and refresh on reactivation withou
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort());
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 	await savedExport(page, dev);
 	const second = await context.newPage();
@@ -1643,7 +1643,7 @@ test('the UI exports the canonical JavaScript runtime with full dressed demo she
 }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 	await page.route('https://*.pixellab.ai/**', (route) => route.abort());
 	await openStudio(page, info.project.use.baseURL!);
@@ -2576,7 +2576,7 @@ test('Preview, Top-down and Side-scroller always loop with global Play once both
 	await page.setViewportSize({ width: 800, height: 600 });
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 	await page.route('https://*.pixellab.ai/**', (route) => route.abort());
 	await openStudio(
@@ -2672,7 +2672,7 @@ for (const auto of [false, true])
 		await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 		await page.addInitScript(() => {
 			localStorage.setItem('pixeldoll.agentKey', 'off');
-			localStorage.setItem('pixeldoll.welcomed', '1');
+			localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 			Object.defineProperty(Navigator.prototype, 'canShare', {
 				configurable: true,
 				value: () => true
@@ -3137,7 +3137,7 @@ test('Share preview and downloaded GIF loop continuously for a one-shot move', a
 	await context.route('https://api.pixellab.ai/**', (route) => route.abort());
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 	const dev = testInfo.config.projects.find((project) => project.name === 'browser-selftests')!.use
 		.baseURL!;
@@ -3218,7 +3218,7 @@ test('Copy PNG writes a readable image through the real browser clipboard in ani
 	await context.route('https://api.pixellab.ai/**', (route) => route.abort());
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 	await openStudio(page, testInfo.project.use.baseURL! + '/#/', { waitUntil: 'networkidle' });
 	await page.getByRole('button', { name: 'Share character' }).click();
@@ -3270,7 +3270,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	});
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 		Object.defineProperty(Navigator.prototype, 'clipboard', {
 			configurable: true,
 			value: {
@@ -3723,7 +3723,7 @@ test('Share resets to Standing when switching characters', async ({ page, contex
 	await context.route('https://api.pixellab.ai/**', (route) => route.abort());
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 	await openStudio(page, testInfo.project.use.baseURL! + '/#/', { waitUntil: 'networkidle' });
 	const trigger = page.getByRole('button', { name: 'Share character' });
@@ -3802,7 +3802,7 @@ test('export picker has accessible categories, local icons and a native GDevelop
 	});
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 		localStorage.setItem('pixeldoll.export.engine', 'unknown-engine');
 	});
 	const errors: string[] = [];
@@ -3997,7 +3997,7 @@ test('RPG Maker walk choice updates the downloaded omissions note', async ({ pag
 		.baseURL!;
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 	});
 	await page.route('https://*.pixellab.ai/**', (route) => route.abort());
 	await openStudio(page, dev);
@@ -4055,7 +4055,7 @@ test('a sheet whose code fails to load closes, says so in French and can be trie
 	});
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.tips', '["gear","export","pixellab"]');
 		localStorage.setItem('pixeldoll.locale', 'fr');
 	});
 	await page.goto(testInfo.project.use.baseURL! + '/#/');

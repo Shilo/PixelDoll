@@ -3649,14 +3649,16 @@
 		"clear": "Suche leeren",
 		"results": "{count} von {total}"
 	},
-	"demoTips": {
+	"tips": {
 		"intro": "Probiere Ausrüstung an und exportiere sie für dein Spiel. Kein PixelLab-Schlüssel nötig.",
 		"gearTitle": "Ausrüstung anprobieren",
 		"gearBody": "Wähle in der Garderobe einen Gegenstand, um ihn anzulegen oder abzulegen.",
 		"exportTitle": "Ab in dein Spiel",
 		"exportBody": "Exportieren kann den Grundkörper und jeden Gegenstand als eigenes Spritesheet speichern.",
 		"exportInMoreBody": "Exportieren findest du unter Weitere Optionen. Es kann den Grundkörper und jeden Gegenstand als eigenes Spritesheet speichern.",
-		"dismiss": "Tipps ausblenden",
-		"replay": "Demo-Tipps"
+		"close": "Tipp schließen",
+		"showAgain": "Tipps erneut anzeigen",
+		"pixellabTitle": "Was ist PixelLab?",
+		"pixellabBody": "Ein KI-Dienst für Pixel-Art, der die Figuren und Ausrüstung zeichnet, die du hier erstellst. Dafür nutzt er Generierungen deines PixelLab-Kontos."
 	}
 }

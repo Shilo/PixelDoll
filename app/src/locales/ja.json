@@ -3547,14 +3547,16 @@
 		"clear": "検索をクリア",
 		"results": "{total} 件中 {count} 件"
 	},
-	"demoTips": {
+	"tips": {
 		"intro": "装備を試着して、ゲーム用にエクスポートしましょう。PixelLabのキーは不要です。",
 		"gearTitle": "装備を試着",
 		"gearBody": "「装備」でアイテムを選ぶと、着けたり外したりできます。",
 		"exportTitle": "ゲームに持っていく",
 		"exportBody": "エクスポートでは、素体と各アイテムを別々のスプライトシートとして保存できます。",
 		"exportInMoreBody": "エクスポートは「その他のオプション」にあります。素体と各アイテムを別々のスプライトシートとして保存できます。",
-		"dismiss": "ヒントを閉じる",
-		"replay": "デモのヒント"
+		"close": "ヒントを閉じる",
+		"showAgain": "ヒントをもう一度表示",
+		"pixellabTitle": "PixelLabとは？",
+		"pixellabBody": "ここで作るキャラクターと装備を描く、AIピクセルアートサービスです。PixelLabアカウントの生成を使います。"
 	}
 }

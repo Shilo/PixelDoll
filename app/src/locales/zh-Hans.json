@@ -3547,14 +3547,16 @@
 		"clear": "清除搜索",
 		"results": "{total} 项中显示 {count} 项"
 	},
-	"demoTips": {
+	"tips": {
 		"intro": "试穿装备，然后导出到你的游戏。无需 PixelLab 密钥。",
 		"gearTitle": "试穿装备",
 		"gearBody": "在“衣橱”中选择一件装备来穿上或卸下。",
 		"exportTitle": "带进你的游戏",
 		"exportBody": "导出可以把基础身体和每件装备保存为单独的精灵图集。",
 		"exportInMoreBody": "“导出”在“更多选项”中，可以把基础身体和每件装备保存为单独的精灵图集。",
-		"dismiss": "关闭提示",
-		"replay": "演示提示"
+		"close": "关闭提示",
+		"showAgain": "重新显示提示",
+		"pixellabTitle": "PixelLab 是什么？",
+		"pixellabBody": "一款 AI 像素画服务，负责绘制你在这里创建的角色和装备，会使用你 PixelLab 账户的生成次数。"
 	}
 }

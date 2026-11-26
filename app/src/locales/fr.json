@@ -3649,14 +3649,16 @@
 		"clear": "Effacer la recherche",
 		"results": "{count} sur {total}"
 	},
-	"demoTips": {
+	"tips": {
 		"intro": "Essayez de l’équipement, puis exportez-le pour votre jeu. Aucune clé PixelLab requise.",
 		"gearTitle": "Essayez de l’équipement",
 		"gearBody": "Choisissez un objet dans la Garde-robe pour l’équiper ou le retirer.",
 		"exportTitle": "Emmenez-le dans votre jeu",
 		"exportBody": "Exporter peut enregistrer le corps de base et chaque objet dans des feuilles de sprites séparées.",
 		"exportInMoreBody": "Exporter se trouve dans Plus d’options. Il peut enregistrer le corps de base et chaque objet dans des feuilles de sprites séparées.",
-		"dismiss": "Masquer les conseils",
-		"replay": "Conseils de la démo"
+		"close": "Fermer le conseil",
+		"showAgain": "Réafficher les conseils",
+		"pixellabTitle": "Qu’est-ce que PixelLab ?",
+		"pixellabBody": "Un service de pixel art par IA qui dessine les personnages et l’équipement que vous créez ici, avec les générations de votre compte PixelLab."
 	}
 }
