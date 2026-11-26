@@ -615,7 +615,6 @@
 			"other": "카테고리 {n}개 숨김"
 		},
 		"outfitPreview": "코디 속 {name}, {direction} 방향",
-		"asIfWorn": "착용 시",
 		"layerScope": "{slot}의 모든 아이템에 적용돼요.",
 		"layerNothingToCross": "이 보기에는 겹치는 레이어가 없어요.",
 		"layerBack": "{name}(뒤)",
@@ -643,7 +642,10 @@
 		"turnRight": "오른쪽으로 회전",
 		"facingLabel": "{direction} 방향",
 		"matchViewColors": "{direction} 방향 색상 맞추기",
-		"fixOneView": "한 방향 수정"
+		"fixOneView": "한 방향 수정",
+		"outfitPreviewUnworn": "{name}을(를) 착용한 것처럼 본 의상, {direction} 방향",
+		"openOutfit": "{name} 의상을 전체 크기로 열기",
+		"outfitTitle": "{name} 의상"
 	},
 	"newCharacterButton": {
 		"newCharacter": "새 캐릭터",
@@ -3587,5 +3589,16 @@
 		"missing": "표시할 프레임이 없습니다",
 		"direction": "방향",
 		"frames": "프레임"
+	},
+	"imageViewer": {
+		"role": "이미지 뷰어",
+		"keys": "화살표로 이동, 플러스와 마이너스로 확대·축소, 0으로 맞춤.",
+		"zoom": "이미지 확대/축소",
+		"hint": "휠이나 핀치로 확대/축소하세요. 드래그해서 이동하세요.",
+		"fit": "창에 맞추기",
+		"fitHint": "창에 맞추기 (0 또는 두 번 클릭)",
+		"percent": "실제 크기의 {percent}%",
+		"zoomed": "{percent}% 확대",
+		"missing": "표시할 이미지 없음"
 	}
 }

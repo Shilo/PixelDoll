@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Component } from 'svelte';
+	import { fitSelects } from '@shilo/bronze-ui/svelte';
 	import Studio from './studio/Studio.svelte';
 	import { workspaceCopy } from './lib/store/workspace-mode.ts';
 	import { localDeveloperToolsEnabled, watchDeveloperMode } from './studio/developerMode.svelte.ts';
@@ -41,6 +42,9 @@
 	$effect(watchLivePreferences);
 	$effect(watchAudio);
 	$effect(syncAudio);
+	// Every theme select, including ones in sheets and popovers added later, keeps the width of its longest option, so
+	// choosing never resizes it.
+	$effect(() => fitSelects()(document.body));
 	$effect(() => {
 		if (!import.meta.env.DEV || workspaceCopy || localDeveloperToolsEnabled() || route === '/')
 			return;

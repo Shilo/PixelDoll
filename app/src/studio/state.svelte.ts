@@ -120,6 +120,7 @@ import type {
 } from './create.ts';
 import {
 	characterFacts,
+	cropAll,
 	displayMoveJob,
 	missingMoves,
 	wearClip,
@@ -2741,19 +2742,26 @@ function placedOutfit(p: Project, itemId: string) {
 				};
 	return { it, project: { ...p, manifest }, items: { ...doc.items, [it.slot]: itemId } };
 }
-/** The outfit with the item placed as if worn, in the shown move, facing and frame: what layer order and hiding change. */
-export function placedOutfitCell(
-	itemId: string,
-	frame: number,
-	animId = ui.anim,
-	dir: DirectionName = ui.dir
-) {
+/** The outfit with the item placed as if worn (what layer order and hiding change) in every playback frame of a move and
+ *  every facing, cropped to one shared box so the outfit holds still while frames and facings change:
+ *  [frame][facing, in rig order]. */
+export function placedOutfitFrames(itemId: string, animId = ui.anim): Img[][] {
 	const p = view.project,
 		anim = p?.manifest.rig.animations.find((x) => x.id === animId);
 	const placed = p && anim?.frames.length ? placedOutfit(p, itemId) : null;
-	if (!placed || !anim) return null;
-	const cell = anim.frames[frame % anim.frames.length].cell;
-	return composeCell(placed.project, placed.items, animId, dir, cell);
+	if (!p || !placed || !anim) return [];
+	const dirs = p.manifest.rig.directions;
+	const byCell = new Map<number, Img[]>();
+	for (const { cell } of anim.frames)
+		if (!byCell.has(cell))
+			byCell.set(
+				cell,
+				dirs.map((dir) => composeCell(placed.project, placed.items, animId, dir.id, cell))
+			);
+	const cropped = cropAll(anim.frames.flatMap(({ cell }) => byCell.get(cell)!));
+	return anim.frames.map((_, index) =>
+		cropped.slice(index * dirs.length, (index + 1) * dirs.length)
+	);
 }
 type Crossing = { draw: Draw; back: boolean; frame: number };
 /** The nearest layer each way that the item's front can cross in the shown move and facing so that the composite

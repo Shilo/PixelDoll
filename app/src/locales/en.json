@@ -632,7 +632,6 @@
 			"other": "Hides {n} categories"
 		},
 		"outfitPreview": "{name} in the outfit, facing {direction}",
-		"asIfWorn": "As if worn",
 		"layerScope": "Applies to all {slot} items.",
 		"layerNothingToCross": "No overlapping layers in this view.",
 		"layerBack": "{name} (back)",
@@ -664,7 +663,10 @@
 		"turnRight": "Turn right",
 		"facingLabel": "Facing {direction}",
 		"matchViewColors": "Match colors in {direction} view",
-		"fixOneView": "Fix one view"
+		"fixOneView": "Fix one view",
+		"outfitPreviewUnworn": "{name} in the outfit as if worn, facing {direction}",
+		"openOutfit": "Open {name} in the outfit full size",
+		"outfitTitle": "{name} in the outfit"
 	},
 	"newCharacterButton": {
 		"newCharacter": "New character",
@@ -3688,5 +3690,16 @@
 		"missing": "No frame to show",
 		"direction": "Direction",
 		"frames": "Frames"
+	},
+	"imageViewer": {
+		"role": "image viewer",
+		"keys": "Arrows move, plus and minus zoom, 0 fits.",
+		"zoom": "Image zoom",
+		"hint": "Wheel or pinch to zoom. Drag to move.",
+		"fit": "Fit to window",
+		"fitHint": "Fit to window (0 or double-click)",
+		"percent": "{percent}% of actual size",
+		"zoomed": "Zoom {percent}%",
+		"missing": "No image to show"
 	}
 }

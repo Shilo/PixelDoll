@@ -615,7 +615,6 @@
 			"other": "隐藏 {n} 个类别"
 		},
 		"outfitPreview": "套装中的{name}，朝向{direction}",
-		"asIfWorn": "穿戴时",
 		"layerScope": "适用于所有{slot}装备。",
 		"layerNothingToCross": "此视图中没有重叠的图层。",
 		"layerBack": "{name}（背面）",
@@ -643,7 +642,10 @@
 		"turnRight": "向右转",
 		"facingLabel": "朝向{direction}",
 		"matchViewColors": "匹配朝向{direction}视角的颜色",
-		"fixOneView": "修复单个视角"
+		"fixOneView": "修复单个视角",
+		"outfitPreviewUnworn": "假设穿上{name}的整套装扮，朝向{direction}",
+		"openOutfit": "全尺寸打开{name}的整套装扮",
+		"outfitTitle": "{name}的整套装扮"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新建角色",
@@ -3587,5 +3589,16 @@
 		"missing": "没有可显示的帧",
 		"direction": "朝向",
 		"frames": "帧"
+	},
+	"imageViewer": {
+		"role": "图片查看器",
+		"keys": "方向键移动，加号和减号缩放，0 适应窗口。",
+		"zoom": "图片缩放",
+		"hint": "滚动滚轮或双指捏合缩放。拖动以移动。",
+		"fit": "适应窗口",
+		"fitHint": "适应窗口（0 或双击）",
+		"percent": "实际大小的 {percent}%",
+		"zoomed": "缩放 {percent}%",
+		"missing": "没有可显示的图片"
 	}
 }

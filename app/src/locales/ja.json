@@ -615,7 +615,6 @@
 			"other": "{n}カテゴリを非表示"
 		},
 		"outfitPreview": "コーディネート中の{name}（{direction}向き）",
-		"asIfWorn": "装備した場合",
 		"layerScope": "{slot}のすべてのアイテムに適用されます。",
 		"layerNothingToCross": "この表示では重なるレイヤーがありません。",
 		"layerBack": "{name}（後ろ）",
@@ -643,7 +642,10 @@
 		"turnRight": "右に回転",
 		"facingLabel": "{direction}向き",
 		"matchViewColors": "{direction}向きの色を合わせる",
-		"fixOneView": "1つの向きを修正"
+		"fixOneView": "1つの向きを修正",
+		"outfitPreviewUnworn": "装備したと仮定した{name}のコーディネート、{direction}向き",
+		"openOutfit": "{name}のコーディネートを全画面で開く",
+		"outfitTitle": "{name}のコーディネート"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新しいキャラクター",
@@ -3587,5 +3589,16 @@
 		"missing": "表示するフレームがありません",
 		"direction": "向き",
 		"frames": "フレーム"
+	},
+	"imageViewer": {
+		"role": "画像ビューアー",
+		"keys": "矢印キーで移動、プラスとマイナスで拡大縮小、0で全体表示。",
+		"zoom": "画像の拡大縮小",
+		"hint": "ホイールかピンチで拡大縮小。ドラッグで移動。",
+		"fit": "ウィンドウに合わせる",
+		"fitHint": "ウィンドウに合わせる（0 またはダブルクリック）",
+		"percent": "実寸の{percent}%",
+		"zoomed": "{percent}%に拡大",
+		"missing": "表示する画像がありません"
 	}
 }

@@ -615,7 +615,6 @@
 			"other": "Menyembunyikan {n} kategori"
 		},
 		"outfitPreview": "{name} dalam setelan, menghadap {direction}",
-		"asIfWorn": "Seolah dipakai",
 		"layerScope": "Berlaku untuk semua item {slot}.",
 		"layerNothingToCross": "Tidak ada lapisan yang tumpang tindih di tampilan ini.",
 		"layerBack": "{name} (belakang)",
@@ -643,7 +642,10 @@
 		"turnRight": "Putar ke kanan",
 		"facingLabel": "Menghadap {direction}",
 		"matchViewColors": "Cocokkan warna tampilan {direction}",
-		"fixOneView": "Perbaiki satu tampilan"
+		"fixOneView": "Perbaiki satu tampilan",
+		"outfitPreviewUnworn": "{name} di pakaian seolah dipakai, menghadap {direction}",
+		"openOutfit": "Buka {name} di pakaian dalam ukuran penuh",
+		"outfitTitle": "{name} di pakaian"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Karakter baru",
@@ -3587,5 +3589,16 @@
 		"missing": "Tidak ada frame untuk ditampilkan",
 		"direction": "Arah",
 		"frames": "Frame"
+	},
+	"imageViewer": {
+		"role": "penampil gambar",
+		"keys": "Panah menggeser, plus dan minus memperbesar atau memperkecil, 0 menyesuaikan.",
+		"zoom": "Zoom gambar",
+		"hint": "Gulir atau cubit untuk zoom. Seret untuk menggeser.",
+		"fit": "Sesuaikan dengan jendela",
+		"fitHint": "Sesuaikan dengan jendela (0 atau klik dua kali)",
+		"percent": "{percent}% dari ukuran asli",
+		"zoomed": "Zoom {percent}%",
+		"missing": "Tidak ada gambar"
 	}
 }

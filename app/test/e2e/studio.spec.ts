@@ -3507,14 +3507,29 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	const southView = inspector.getByRole('button', { name: 'Enlarge Red cape facing South' });
 	await southView.focus();
 	await page.keyboard.press('Enter');
-	const spritePreview = page.locator('dialog.sprite-preview');
-	await expect(spritePreview.getByRole('img')).toBeVisible();
-	const frameNote = spritePreview.locator('.viewer-caption');
-	await expect(frameNote).toContainText(/^Walk · South · Frame \d+ of 8$/);
+	const spritePreview = page.locator('dialog.image-viewer');
+	await expect(spritePreview.locator('canvas')).toBeVisible();
+	// The move and the direction are pickers in the header; the frame steps in the footer and with the arrows.
+	await expect(spritePreview.getByRole('button', { name: /^Move: Walk/ })).toBeVisible();
+	const facing = spritePreview.getByRole('combobox', { name: 'Direction', exact: true });
+	await expect(facing).toHaveValue('south');
+	const frameNote = spritePreview.locator('.viewer-count');
+	await expect(frameNote).toHaveText(/^\d+ \/ 8$/);
 	const firstNote = await frameNote.textContent();
 	await page.keyboard.press('ArrowRight');
 	await expect(frameNote).not.toHaveText(firstNote!);
-	await expect(frameNote).toContainText(/of 8$/);
+	const stepped = await frameNote.textContent();
+	await facing.selectOption('east');
+	await expect(spritePreview.getByRole('application')).toHaveAccessibleName(/^Red cape · East · /);
+	await expect(frameNote).toHaveText(stepped!);
+	// The image zooms from the keyboard and returns to its fit.
+	const zoomShown = spritePreview.getByRole('button', { name: 'Fit to window', exact: true });
+	const fitted = await zoomShown.textContent();
+	await spritePreview.getByRole('application').focus();
+	await page.keyboard.press('+');
+	await expect(zoomShown).not.toHaveText(fitted!);
+	await page.keyboard.press('0');
+	await expect(zoomShown).toHaveText(fitted!);
 	await expect(inspector).toBeVisible();
 	const viewport = page.viewportSize()!;
 	const previewBox = (await spritePreview.boundingBox())!;
@@ -11928,10 +11943,22 @@ test('item details reorders layers for an unworn item, gates the ends and resets
 	// A step passes only what the shown facing visibly changes: facing south the hat is already behind everything it
 	// overlaps, so the Outfit preview turns east, where it still has a layer to pass, and steps for every facing from there.
 	await expect(backward).toBeDisabled();
+	const outfitArt = details.locator('.layer-art canvas');
+	const southBox = (await outfitArt.boundingBox())!;
 	const facingEast = details.getByText(/^Facing east$/i);
 	for (let turn = 0; turn < 8 && !(await facingEast.isVisible()); turn++)
 		await details.getByRole('button', { name: 'Turn right', exact: true }).click();
 	await expect(facingEast).toBeVisible();
+	// Framed once for every facing, the outfit preview keeps its size as it turns, and opens full size in the viewer.
+	const eastBox = (await outfitArt.boundingBox())!;
+	expect([eastBox.width, eastBox.height]).toEqual([southBox.width, southBox.height]);
+	await details.getByRole('button', { name: /^Open .+ in the outfit full size$/ }).click();
+	const outfitViewer = page.locator('dialog.image-viewer');
+	await expect(outfitViewer.getByRole('combobox', { name: 'Direction', exact: true })).toHaveValue(
+		'east'
+	);
+	await page.keyboard.press('Escape');
+	await expect(outfitViewer).toHaveCount(0);
 	await backward.click();
 	await expect.poll(async () => (await headDepths(page))[1]).toBeLessThan(east);
 	await expect.poll(() => headLayerOverrides(page)).not.toEqual(before);

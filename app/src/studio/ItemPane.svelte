@@ -31,11 +31,7 @@
 	import ReportButton from './ReportButton.svelte';
 	import { displayMessage, displayNestedMessage, errorMessage } from '../lib/i18n.ts';
 	import type { Message } from '../lib/message.ts';
-	import {
-		displayDirection,
-		displayDirectionInSentence,
-		displayDirectionShort
-	} from './displayDirection.ts';
+	import { displayDirection, displayDirectionInSentence } from './displayDirection.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayKey } from './displayKey.ts';
 	import { coverageGaps, moveDirs } from '../lib/dress/dress.ts';
@@ -70,6 +66,7 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import Sprite from './Sprite.svelte';
 	import SpritePreview, { type SpriteView } from './SpritePreview.svelte';
+	import ToolRow from './ToolRow.svelte';
 	import GroupIcon from './GroupIcon.svelte';
 	import {
 		HEALTH_LABEL,
@@ -99,7 +96,7 @@
 		showFrame,
 		moveLayer,
 		itemLayerNeighbors,
-		placedOutfitCell,
+		placedOutfitFrames,
 		resetLayer,
 		removeItem,
 		isDemo,
@@ -205,12 +202,16 @@
 	const frameIndex = $derived(previews.length ? ui.frame % previews.length : 0);
 	const strip = $derived(previews[frameIndex] ?? []);
 	/** Whether the item has its own (or mirrored) artwork in a direction and playback frame of the shown move. */
-	const drawnAt = (direction: { id: DirectionName; mirrorOf?: DirectionName }, frame: number) => {
-		const cell = anim?.frames[frame]?.cell;
+	const drawnAt = (
+		direction: { id: DirectionName; mirrorOf?: DirectionName },
+		frame: number,
+		clip = animId
+	) => {
+		const cell = m?.rig.animations.find((a) => a.id === clip)?.frames[frame]?.cell;
 		return (
 			cell != null &&
 			!!it?.layers.some((layer) => {
-				const cells = layer.cells?.[animId];
+				const cells = layer.cells?.[clip];
 				return !!(cells?.[direction.id] ?? cells?.[direction.mirrorOf ?? direction.id])?.[cell];
 			})
 		);
@@ -223,26 +224,43 @@
 	);
 	// Short landscape keeps the strip low so the sections start above the fold.
 	const tile = $derived(ui.size === 'landscape' ? 40 : 64);
-	let viewer = $state.raw<{ views: SpriteView[]; view: number; frame: number } | null>(null);
+	/** The full-size viewer: the item's own frames or the outfit with it on, in a move of its own (it starts on the window's
+	 *  and its picker changes only the viewer). */
+	let viewer = $state<{
+		kind: 'item' | 'outfit';
+		anim: string;
+		view: string;
+		frame: number;
+	} | null>(null);
 	function openViewer(directionId: string, frame = frameIndex) {
-		if (!m) return;
-		const views = directions.map((direction) => ({
-			id: direction.id,
-			label: displayDirection(direction.id),
-			short: displayDirectionShort(direction.id),
-			frames: previews.map((row, index) =>
-				drawnAt(direction, index) ? (row[m.rig.directions.indexOf(direction)] ?? null) : null
-			)
-		}));
-		viewer = {
-			views,
-			view: Math.max(
-				0,
-				views.findIndex((entry) => entry.id === directionId)
-			),
-			frame
-		};
+		viewer = { kind: 'item', anim: animId, view: directionId, frame };
 	}
+	const viewerViews = $derived.by((): SpriteView[] => {
+		if (!viewer || !m || !it || !view.project) return [];
+		const clip = viewer.anim;
+		if (viewer.kind === 'outfit') {
+			void doc.rev;
+			const rows = placedOutfitFrames(it.id, clip);
+			return m.rig.directions.map((direction, index) => ({
+				id: direction.id,
+				label: displayDirection(direction.id),
+				frames: rows.map((row) => row[index] ?? null)
+			}));
+		}
+		const rows = itemPreviewFrames(view.project, it, clip);
+		const drawn = moveDirs(m, clip);
+		return m.rig.directions
+			.filter((direction) => drawn.includes(direction.id))
+			.map((direction) => ({
+				id: direction.id,
+				label: displayDirection(direction.id),
+				frames: rows.map((row, index) =>
+					drawnAt(direction, index, clip)
+						? (row[m.rig.directions.indexOf(direction)] ?? null)
+						: null
+				)
+			}));
+	});
 
 	// ---------- visibility ----------
 	const hiders = $derived(it ? itemHiders(it.slot) : []);
@@ -325,6 +343,10 @@
 					];
 				})
 			: []
+	);
+	/** Moves the item has no frames in: the viewer's picker says so instead of opening an empty view. */
+	const noFrames = $derived(
+		new Map(clips.filter((clip) => clip.none).map((clip) => [clip.id, t('itemPane.clipNoFrames')]))
 	);
 	const incomplete = $derived(clips.filter((clip) => !clip.drawn).length);
 	const freeFrames = $derived(it ? (shared.free[it.id] ?? 0) : 0);
@@ -577,17 +599,6 @@
 		void outfitFacing;
 		witness = 0;
 	});
-	const outfitCell = $derived.by(() => {
-		void doc.rev;
-		const cell = it ? placedOutfitCell(it.id, witness, animId, outfitFacing) : null;
-		// Cropped to the outfit so a small sprite in a large frame still reads.
-		return cell ? (cropAll([cell])[0] ?? cell) : null;
-	});
-	const outfitK = $derived(
-		outfitCell
-			? Math.max(1, Math.floor(Math.min(112 / outfitCell.w, 112 / outfitCell.h, 4) * ui.dpr))
-			: 1
-	);
 	const layerName = (entry?: { name: string; slot: string; back: boolean; itemId: string }) => {
 		if (!entry || !m) return '';
 		const twin = equippedNames.filter((name) => name === entry.name).length > 1;
@@ -703,6 +714,20 @@
 				};
 			})
 	);
+	const outfitFrames = $derived.by(() => {
+		void doc.rev;
+		return it && open.outfit ? placedOutfitFrames(it.id, animId) : [];
+	});
+	const outfitCell = $derived(
+		outfitFrames.length && m
+			? (outfitFrames[witness % outfitFrames.length]?.[
+					m.rig.directions.findIndex((direction) => direction.id === outfitFacing)
+				] ?? null)
+			: null
+	);
+	const outfitK = $derived(
+		outfitCell ? Math.max(1, Math.ceil((112 / Math.max(outfitCell.w, outfitCell.h)) * ui.dpr)) : 1
+	);
 	const sections = $state<Partial<Record<Section, HTMLDetailsElement>>>({});
 	let body = $state<HTMLElement>();
 	const scroller = () => body?.closest<HTMLElement>('.sheet-body');
@@ -777,9 +802,7 @@
 	);
 
 	// ---------- menu ----------
-	// One id serves the menu and, as a prefix, the tool rows' label and description ids.
-	const menuId = $props.id(),
-		uid = menuId;
+	const menuId = $props.id();
 	let menu = $state<HTMLElement>();
 	let confirmRemove = $state(false);
 	// Only worn items (and the body) have a section in the Colors tab.
@@ -811,43 +834,6 @@
 					/>{/if}{state.text}</span
 			>{/if}
 	</summary>
-{/snippet}
-
-{#snippet toolRow(tool: {
-	id: string;
-	icon: typeof Wrench;
-	label: string;
-	detail: string;
-	aside: string;
-	paid?: boolean;
-	disabled?: boolean;
-	describedby?: string;
-	opens?: boolean;
-	onclick: () => void;
-})}
-	<button
-		class="tool-row bu-action"
-		data-variant="quiet"
-		disabled={tool.disabled}
-		aria-labelledby="{uid}-{tool.id}-label"
-		aria-describedby={[tool.describedby, `${uid}-${tool.id}-detail`, `${uid}-${tool.id}-aside`]
-			.filter(Boolean)
-			.join(' ')}
-		aria-haspopup={tool.opens ? 'dialog' : undefined}
-		onclick={tool.onclick}
-	>
-		<tool.icon size={18} aria-hidden="true" />
-		<span class="tool-text"
-			><span class="tool-label" id="{uid}-{tool.id}-label">{tool.label}</span><span
-				class="tool-detail"
-				id="{uid}-{tool.id}-detail">{tool.detail}</span
-			></span
-		>
-		<span class="tool-aside" id="{uid}-{tool.id}-aside" data-paid={tool.paid || undefined}
-			>{tool.aside}</span
-		>
-		{#if tool.opens}<SurfaceChevron />{/if}
-	</button>
 {/snippet}
 
 <Sheet
@@ -1066,32 +1052,34 @@
 						<div class="section-body">
 							{#if restorable.length || copyOffer}
 								<div class="tool-list">
-									{#if restorable.length}{@render toolRow({
-											id: 'restore',
-											icon: RotateCcw,
-											label: t('itemPane.restoreStanding', { count: restorable.length }),
-											detail: t('itemPane.restoreStandingHint', {
-												count: restorable.length,
-												directions: formatList(restorable.map(directionName))
-											}),
-											aside: t('common.free'),
-											disabled: !!shared.adding,
-											onclick: () => restoreFromDesign(it.id)
-										})}{/if}
-									{#if copyOffer && it.copiedFrom}{@render toolRow({
-											id: 'copy',
-											icon: RotateCcw,
-											label: t('itemPane.copyFrom', { name: it.copiedFrom.name }),
-											detail: t('itemPane.copyFrames', {
-												from: it.copiedFrom.name,
-												name: m.name,
-												count: freeFrames,
-												n: number(freeFrames)
-											}),
-											aside: t('common.free'),
-											disabled: !!shared.adding,
-											onclick: () => copyFromSource(it.id)
-										})}{/if}
+									{#if restorable.length}<ToolRow
+											{...{
+												icon: RotateCcw,
+												label: t('itemPane.restoreStanding', { count: restorable.length }),
+												detail: t('itemPane.restoreStandingHint', {
+													count: restorable.length,
+													directions: formatList(restorable.map(directionName))
+												}),
+												aside: t('common.free'),
+												disabled: !!shared.adding,
+												onclick: () => restoreFromDesign(it.id)
+											}}
+										/>{/if}
+									{#if copyOffer && it.copiedFrom}<ToolRow
+											{...{
+												icon: RotateCcw,
+												label: t('itemPane.copyFrom', { name: it.copiedFrom.name }),
+												detail: t('itemPane.copyFrames', {
+													from: it.copiedFrom.name,
+													name: m.name,
+													count: freeFrames,
+													n: number(freeFrames)
+												}),
+												aside: t('common.free'),
+												disabled: !!shared.adding,
+												onclick: () => copyFromSource(it.id)
+											}}
+										/>{/if}
 								</div>
 							{/if}
 							{#each unposedMoves as { note }, i (i)}<p class="notice warn small">
@@ -1252,16 +1240,17 @@
 							{#if !isDemo() && it.prompt && !it.unfitted && (it.refit || remakeOnly)}
 								<!-- A re-fit's issues are its fit: a new item for this body fixes them, priced in the sheet that opens. -->
 								<div class="tool-list">
-									{@render toolRow({
-										id: 'remake',
-										icon: RefreshCw,
-										label: openerLabel(t('itemMenu.remake', { name: m.name })),
-										detail: t('itemPane.remakeAllMoves', { name: m.name }),
-										aside: '',
-										opens: true,
-										onclick: () =>
-											openNewItem(it.slot, { slot: it.slot, prompt: it.prompt, route: it.route })
-									})}
+									<ToolRow
+										{...{
+											icon: RefreshCw,
+											label: openerLabel(t('itemMenu.remake', { name: m.name })),
+											detail: t('itemPane.remakeAllMoves', { name: m.name }),
+											aside: '',
+											opens: true,
+											onclick: () =>
+												openNewItem(it.slot, { slot: it.slot, prompt: it.prompt, route: it.route })
+										}}
+									/>
 								</div>
 							{/if}
 							{#if canAccept}
@@ -1280,27 +1269,28 @@
 									{:else}
 										<p class="faint small">{t('itemPane.checksFoundIssuesNoPaidRetryWas')}</p>
 										<div class="tool-list">
-											{@render toolRow({
-												id: 'accept',
-												icon: Check,
-												label: gaps.length
-													? t('itemPane.keepWithoutNamed', {
-															moves: formatList(
-																keepWithout.map((move) => displayMove(move, moveRefs))
-															)
-														})
-													: t('itemPane.acceptAsIs'),
-												detail: gaps.length
-													? t('itemPane.keepWithoutMovesDetail', {
-															moves: formatList(
-																keepWithout.map((move) => displayMove(move, moveRefs))
-															)
-														})
-													: t('itemPane.acceptsTheCurrentArtworkWithoutSpendingCredits'),
-												aside: t('common.free'),
-												disabled: acceptingIssues || acceptWaits,
-												onclick: () => void acceptIssues(!!gaps.length)
-											})}
+											<ToolRow
+												{...{
+													icon: Check,
+													label: gaps.length
+														? t('itemPane.keepWithoutNamed', {
+																moves: formatList(
+																	keepWithout.map((move) => displayMove(move, moveRefs))
+																)
+															})
+														: t('itemPane.acceptAsIs'),
+													detail: gaps.length
+														? t('itemPane.keepWithoutMovesDetail', {
+																moves: formatList(
+																	keepWithout.map((move) => displayMove(move, moveRefs))
+																)
+															})
+														: t('itemPane.acceptsTheCurrentArtworkWithoutSpendingCredits'),
+													aside: t('common.free'),
+													disabled: acceptingIssues || acceptWaits,
+													onclick: () => void acceptIssues(!!gaps.length)
+												}}
+											/>
 										</div>
 									{/if}
 									{#if acceptanceError}<p class="notice bad small" role="alert">
@@ -1312,15 +1302,16 @@
 							{/if}
 
 							<div class="tool-list">
-								{@render toolRow({
-									id: 'frames',
-									icon: Grid2x2,
-									label: t('fixFrames.open'),
-									detail: t('itemPane.fixFramesDetail', { move: moveName }),
-									aside: t('common.free'),
-									opens: true,
-									onclick: () => leaveFor(() => openFrames(it.id, animId, 'item'))
-								})}
+								<ToolRow
+									{...{
+										icon: Grid2x2,
+										label: t('fixFrames.open'),
+										detail: t('itemPane.fixFramesDetail', { move: moveName }),
+										aside: t('common.free'),
+										opens: true,
+										onclick: () => leaveFor(() => openFrames(it.id, animId, 'item'))
+									}}
+								/>
 							</div>
 							{#if hasFixTools}<div class="fix-view">
 									<div class="fix-head">
@@ -1350,48 +1341,52 @@
 										</p>{/if}
 									<!-- Free first: the item's own colors and hand edits, then the paid redraws of this view. -->
 									<div class="tool-list">
-										{#if !isDemo() && colorPlan}{@render toolRow({
-												id: 'match',
-												icon: Palette,
-												label: colorBusy
-													? t('itemPane.matchingColors')
-													: t('itemPane.matchViewColors', { direction: directionName(facing) }),
-												detail: t('itemPane.matchColorsDetail', {
-													pixels: t('itemPane.pixels', {
-														count: colorPlan.changedPixels,
-														n: number(colorPlan.changedPixels)
+										{#if !isDemo() && colorPlan}<ToolRow
+												{...{
+													icon: Palette,
+													label: colorBusy
+														? t('itemPane.matchingColors')
+														: t('itemPane.matchViewColors', { direction: directionName(facing) }),
+													detail: t('itemPane.matchColorsDetail', {
+														pixels: t('itemPane.pixels', {
+															count: colorPlan.changedPixels,
+															n: number(colorPlan.changedPixels)
+														}),
+														frames: t('itemPane.frames', {
+															count: colorPlan.changedFrames.length,
+															n: number(colorPlan.changedFrames.length)
+														})
 													}),
-													frames: t('itemPane.frames', {
-														count: colorPlan.changedFrames.length,
-														n: number(colorPlan.changedFrames.length)
-													})
-												}),
-												aside: t('common.free'),
-												disabled: colorBusy || repairBusy,
-												describedby: mirrored ? 'item-fix-scope' : undefined,
-												onclick: () => void matchColors()
-											})}{/if}
+													aside: t('common.free'),
+													disabled: colorBusy || repairBusy,
+													describedby: mirrored ? 'item-fix-scope' : undefined,
+													onclick: () => void matchColors()
+												}}
+											/>{/if}
 										{#if !isDemo() && repairSpec}
 											{#each fixChoices as choice (choice.id)}
-												{@render toolRow({
-													id: choice.id,
-													icon: choice.icon,
-													label: choice.label,
-													detail: choice.help,
-													aside:
-														choice.offer?.gens == null
-															? t('common.unavailable')
-															: t('moves.estimate', { gens: number(Math.ceil(choice.offer.gens)) }),
-													paid: true,
-													disabled:
-														repairBusy || choice.offer?.gens == null || tierBlocked(choice.tier),
-													describedby: tierBlocked(choice.tier)
-														? `item-${choice.id}-tier`
-														: mirrored
-															? 'item-fix-scope'
-															: undefined,
-													onclick: () => repairFrames(choice.offer, choice.tier)
-												})}
+												<ToolRow
+													{...{
+														icon: choice.icon,
+														label: choice.label,
+														detail: choice.help,
+														aside:
+															choice.offer?.gens == null
+																? t('common.unavailable')
+																: t('moves.estimate', {
+																		gens: number(Math.ceil(choice.offer.gens))
+																	}),
+														paid: true,
+														disabled:
+															repairBusy || choice.offer?.gens == null || tierBlocked(choice.tier),
+														describedby: tierBlocked(choice.tier)
+															? `item-${choice.id}-tier`
+															: mirrored
+																? 'item-fix-scope'
+																: undefined,
+														onclick: () => repairFrames(choice.offer, choice.tier)
+													}}
+												/>
 											{/each}
 										{/if}
 									</div>
@@ -1446,21 +1441,37 @@
 					<div class="section-body outfit-body">
 						<section class="layer-order" aria-labelledby="layer-order-{it.id}">
 							<div class="layer-preview">
-								<div class="layer-art">
+								<button
+									class="layer-art bu-action"
+									data-variant="quiet"
+									aria-haspopup="dialog"
+									aria-label={t('itemPane.openOutfit', { name: it.name })}
+									disabled={!outfitCell}
+									onclick={() =>
+										(viewer = {
+											kind: 'outfit',
+											anim: animId,
+											view: outfitFacing,
+											frame: witness
+										})}
+								>
 									{#if outfitCell}<Sprite
 											img={outfitCell}
 											k={outfitK}
-											limit={112}
+											fitToBox
 											checker
-											label={t('itemPane.outfitPreview', {
-												name: it.name,
-												direction: directionName(outfitFacing)
-											})}
+											label={on || hiddenNow
+												? t('itemPane.outfitPreview', {
+														name: it.name,
+														direction: directionName(outfitFacing)
+													})
+												: t('itemPane.outfitPreviewUnworn', {
+														name: it.name,
+														direction: directionName(outfitFacing)
+													})}
 										/>{/if}
-									{#if !on && !hiddenNow}<span class="layer-preview-note"
-											>{t('itemPane.asIfWorn')}</span
-										>{/if}
-								</div>
+									<span class="view-enlarge" aria-hidden="true"><Maximize size={14} /></span>
+								</button>
 								{#if m.rig.directions.length > 1}
 									<div class="layer-turn">
 										<button
@@ -1528,7 +1539,7 @@
 							<input class="bu-switch" type="checkbox" role="switch" bind:checked={onlyDir} />
 						</label>
 						<p class="faint small layer-scope">
-							{t('itemPane.layerScope', { slot: slotName(it.slot) })}
+							<span>{t('itemPane.layerScope', { slot: slotName(it.slot) })}</span>
 							{#if customOrder}<button
 									class="bu-action btn plain callout-link"
 									data-variant="quiet"
@@ -1739,13 +1750,21 @@
 		>
 	{/if}
 
-	{#if viewer && it}
+	{#if viewer && it && m}
 		<SpritePreview
-			title={it.name}
-			context={moveName}
-			views={viewer.views}
+			title={viewer.kind === 'outfit' ? t('itemPane.outfitTitle', { name: it.name }) : it.name}
+			views={viewerViews}
 			view={viewer.view}
 			frame={viewer.frame}
+			moves={{
+				clips: playbackClips(m.rig.animations),
+				moveRefs,
+				selected: viewer.anim,
+				unavailable: viewer.kind === 'item' ? noFrames : undefined,
+				onselect: (key) => {
+					if (viewer) viewer = { ...viewer, anim: key };
+				}
+			}}
 			onclose={() => (viewer = null)}
 		/>
 	{/if}
@@ -1758,12 +1777,13 @@
 		grid-template-columns: minmax(0, 1fr);
 		gap: 12px;
 	}
-	/* Header: one line of category icon, name, one status and the move picker. The name truncates first; its heading keeps
+	/* Header (only the window's own: the viewer opens inside this dialog): one line of category icon, name, one status and
+	   the move picker. The name truncates first; its heading keeps
 	   the full name. It starts at the edge (an identity row, not a centered title) so the line has the room it needs. */
-	:global(dialog.item-detail .sheet-head) {
+	:global(dialog.item-detail > .sheet-head) {
 		grid-template-columns: 0 minmax(0, 1fr) auto;
 	}
-	:global(.item-detail .sheet-heading) {
+	:global(dialog.item-detail > .sheet-head .sheet-heading) {
 		display: flex;
 		flex-wrap: nowrap;
 		align-items: center;
@@ -1771,7 +1791,7 @@
 		gap: 8px;
 		min-width: 0;
 	}
-	:global(.item-detail .sheet-heading .sheet-title) {
+	:global(dialog.item-detail > .sheet-head .sheet-heading .sheet-title) {
 		flex: 0 1 auto;
 		min-width: 0;
 		overflow: hidden;
@@ -1822,26 +1842,26 @@
 	/* A phone gives the item's name the whole first row beside the menu and Close; the second row holds its status and the
 	   move picker, full width at touch size. */
 	@media (max-width: 480px) {
-		:global(dialog.item-detail .sheet-head) {
+		:global(dialog.item-detail > .sheet-head) {
 			grid-template-columns: auto auto minmax(0, 1fr) auto;
 			row-gap: 6px;
 		}
-		:global(dialog.item-detail .sheet-start) {
+		:global(dialog.item-detail > .sheet-head .sheet-start) {
 			display: none;
 		}
-		:global(dialog.item-detail .sheet-heading) {
+		:global(dialog.item-detail > .sheet-head .sheet-heading) {
 			display: contents;
 		}
 		.item-icon {
 			grid-area: 1 / 1;
 		}
-		:global(dialog.item-detail .sheet-heading .sheet-title) {
+		:global(dialog.item-detail > .sheet-head .sheet-heading .sheet-title) {
 			grid-area: 1 / 2 / 2 / 4;
 			justify-self: start;
 			max-width: 100%;
 			text-align: start;
 		}
-		:global(dialog.item-detail .sheet-end) {
+		:global(dialog.item-detail > .sheet-head .sheet-end) {
 			grid-area: 1 / 4;
 		}
 		.item-status {
@@ -1853,7 +1873,7 @@
 			max-width: none;
 			margin: 0;
 		}
-		:global(dialog.item-detail .sheet-head:not(:has(.item-status))) .item-move {
+		:global(dialog.item-detail > .sheet-head:not(:has(.item-status))) .item-move {
 			grid-column: 1 / -1;
 		}
 		.item-move select {
@@ -2080,46 +2100,6 @@
 		border-radius: 10px;
 		overflow: hidden;
 	}
-	.tool-row {
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr) auto auto;
-		align-items: center;
-		gap: 12px;
-		min-height: 56px;
-		padding: 8px 12px;
-		text-align: start;
-		border-radius: 0;
-	}
-	.tool-row + .tool-row {
-		border-block-start: 1px solid var(--bu-line);
-	}
-	.tool-row > :global(svg:first-child) {
-		color: var(--text-2);
-	}
-	.tool-text {
-		display: grid;
-		gap: 2px;
-		min-width: 0;
-	}
-	.tool-label {
-		overflow-wrap: anywhere;
-		font-weight: 600;
-	}
-	.tool-detail {
-		color: var(--text-2);
-		font-size: var(--fs-sm);
-		overflow-wrap: anywhere;
-	}
-	.tool-aside {
-		font-size: var(--fs-sm);
-		color: var(--ok);
-		white-space: nowrap;
-	}
-	.tool-aside[data-paid] {
-		color: var(--text);
-		font-variant-numeric: tabular-nums;
-	}
-
 	/* Moves & States */
 	.clip-list {
 		display: grid;
@@ -2281,15 +2261,29 @@
 		justify-items: center;
 		gap: 4px;
 	}
+	/* The outfit fills one fixed box, framed once for every frame and facing, so turning never resizes it. The whole box
+	   opens it full size, as a facing tile does. */
 	.layer-art {
 		position: relative;
 		display: grid;
 		place-items: center;
 		width: 120px;
 		height: 120px;
+		padding: 8px;
 		background: var(--stage);
 		border-radius: var(--r-card);
 		overflow: hidden;
+		cursor: zoom-in;
+	}
+	.layer-art:disabled {
+		cursor: default;
+	}
+	.layer-art :global(.sprite-box) {
+		width: 100%;
+		height: 100%;
+	}
+	.layer-art:is(:hover, :focus-visible) .view-enlarge {
+		color: var(--text);
 	}
 	/* Turning the outfit preview, as on a turntable; the facing it shows is named between the arrows. */
 	.layer-turn {
@@ -2302,20 +2296,6 @@
 		font-size: var(--fs-xs, 12px);
 		color: var(--text-2);
 		text-align: center;
-	}
-	/* The "as if worn" note gets its own strip under the art instead of covering the feet. */
-	.layer-art:has(.layer-preview-note) {
-		height: 140px;
-		padding-block-end: 20px;
-		box-sizing: border-box;
-	}
-	.layer-preview-note {
-		position: absolute;
-		inset-inline: 0;
-		inset-block-end: 4px;
-		text-align: center;
-		font-size: var(--fs-xs, 11px);
-		color: var(--text-3);
 	}
 	.layer-controls {
 		grid-column: 2;
@@ -2335,10 +2315,12 @@
 		margin: 0;
 		min-height: 1.4em;
 	}
+	/* Reset order ends the row, at the trailing edge like the rows above. */
 	.layer-scope {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
+		justify-content: space-between;
 		gap: 4px 8px;
 		margin: -4px 0 0;
 	}

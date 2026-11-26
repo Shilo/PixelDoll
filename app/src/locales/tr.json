@@ -632,7 +632,6 @@
 			"other": "{n} kategoriyi gizler"
 		},
 		"outfitPreview": "Kıyafette {name}, {direction} yönüne bakıyor",
-		"asIfWorn": "Giyilmiş gibi",
 		"layerScope": "Tüm {slot} eşyaları için geçerlidir.",
 		"layerNothingToCross": "Bu görünümde üst üste binen katman yok.",
 		"layerBack": "{name} (arka)",
@@ -664,7 +663,10 @@
 		"turnRight": "Sağa döndür",
 		"facingLabel": "{direction} yönü",
 		"matchViewColors": "{direction} görünümünün renklerini eşleştir",
-		"fixOneView": "Tek görünümü düzelt"
+		"fixOneView": "Tek görünümü düzelt",
+		"outfitPreviewUnworn": "Giyilmiş gibi kombinde {name}, {direction} yönü",
+		"openOutfit": "{name} kombinini tam boyutta aç",
+		"outfitTitle": "Kombinde {name}"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Yeni karakter",
@@ -3688,5 +3690,16 @@
 		"missing": "Gösterilecek kare yok",
 		"direction": "Yön",
 		"frames": "Kareler"
+	},
+	"imageViewer": {
+		"role": "görüntü görüntüleyici",
+		"keys": "Oklar taşır, artı ve eksi yakınlaştırır, 0 sığdırır.",
+		"zoom": "Görüntü yakınlaştırma",
+		"hint": "Yakınlaştırmak için tekerleği kullanın veya iki parmakla sıkıştırın. Taşımak için sürükleyin.",
+		"fit": "Pencereye sığdır",
+		"fitHint": "Pencereye sığdır (0 veya çift tıklama)",
+		"percent": "Gerçek boyutun %{percent} kadarı",
+		"zoomed": "Yakınlaştırma %{percent}",
+		"missing": "Gösterilecek görüntü yok"
 	}
 }

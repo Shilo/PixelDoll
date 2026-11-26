@@ -632,7 +632,6 @@
 			"other": "Oculta {n} categorías"
 		},
 		"outfitPreview": "{name} en el atuendo, mirando hacia {direction}",
-		"asIfWorn": "Como si lo llevara",
 		"layerScope": "Se aplica a todos los objetos de {slot}.",
 		"layerNothingToCross": "No hay capas superpuestas en esta vista.",
 		"layerBack": "{name} (detrás)",
@@ -664,7 +663,10 @@
 		"turnRight": "Girar a la derecha",
 		"facingLabel": "Mirando hacia {direction}",
 		"matchViewColors": "Igualar colores de la vista {direction}",
-		"fixOneView": "Corregir una vista"
+		"fixOneView": "Corregir una vista",
+		"outfitPreviewUnworn": "{name} en el atuendo como si lo llevara, mirando hacia {direction}",
+		"openOutfit": "Abrir {name} en el atuendo a tamaño completo",
+		"outfitTitle": "{name} en el atuendo"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nuevo personaje",
@@ -3688,5 +3690,16 @@
 		"missing": "No hay fotograma para mostrar",
 		"direction": "Dirección",
 		"frames": "Fotogramas"
+	},
+	"imageViewer": {
+		"role": "visor de imágenes",
+		"keys": "Las flechas mueven, más y menos acercan o alejan, 0 ajusta.",
+		"zoom": "Zoom de la imagen",
+		"hint": "Usa la rueda o pellizca para hacer zoom. Arrastra para mover.",
+		"fit": "Ajustar a la ventana",
+		"fitHint": "Ajustar a la ventana (0 o doble clic)",
+		"percent": "{percent} % del tamaño real",
+		"zoomed": "Zoom {percent} %",
+		"missing": "No hay imagen"
 	}
 }

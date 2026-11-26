@@ -632,7 +632,6 @@
 			"other": "Masque {n} catégories"
 		},
 		"outfitPreview": "{name} dans la tenue, orienté {direction}",
-		"asIfWorn": "Comme s’il était porté",
 		"layerScope": "S’applique à tous les objets de {slot}.",
 		"layerNothingToCross": "Aucun calque ne se chevauche dans cette vue.",
 		"layerBack": "{name} (arrière)",
@@ -664,7 +663,10 @@
 		"turnRight": "Tourner à droite",
 		"facingLabel": "Orienté {direction}",
 		"matchViewColors": "Harmoniser les couleurs de la vue {direction}",
-		"fixOneView": "Corriger une vue"
+		"fixOneView": "Corriger une vue",
+		"outfitPreviewUnworn": "{name} dans la tenue comme s’il était porté, orienté {direction}",
+		"openOutfit": "Ouvrir {name} dans la tenue en plein écran",
+		"outfitTitle": "{name} dans la tenue"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nouveau personnage",
@@ -3688,5 +3690,16 @@
 		"missing": "Aucune image à afficher",
 		"direction": "Direction",
 		"frames": "Images"
+	},
+	"imageViewer": {
+		"role": "visionneuse d’images",
+		"keys": "Les flèches déplacent, plus et moins zooment, 0 ajuste.",
+		"zoom": "Zoom de l’image",
+		"hint": "Molette ou pincement pour zoomer. Faites glisser pour déplacer.",
+		"fit": "Ajuster à la fenêtre",
+		"fitHint": "Ajuster à la fenêtre (0 ou double-clic)",
+		"percent": "{percent} % de la taille réelle",
+		"zoomed": "Zoom {percent} %",
+		"missing": "Aucune image"
 	}
 }

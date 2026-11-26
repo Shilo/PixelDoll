@@ -632,7 +632,6 @@
 			"other": "Blendet {n} Kategorien aus"
 		},
 		"outfitPreview": "{name} im Outfit, Blickrichtung {direction}",
-		"asIfWorn": "Wie getragen",
 		"layerScope": "Gilt für alle Gegenstände in {slot}.",
 		"layerNothingToCross": "Keine überlappenden Ebenen in dieser Ansicht.",
 		"layerBack": "{name} (hinten)",
@@ -664,7 +663,10 @@
 		"turnRight": "Nach rechts drehen",
 		"facingLabel": "Blickrichtung {direction}",
 		"matchViewColors": "Farben der Ansicht {direction} abgleichen",
-		"fixOneView": "Eine Ansicht korrigieren"
+		"fixOneView": "Eine Ansicht korrigieren",
+		"outfitPreviewUnworn": "{name} im Outfit, als ob getragen, Blickrichtung {direction}",
+		"openOutfit": "{name} im Outfit in voller Größe öffnen",
+		"outfitTitle": "{name} im Outfit"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Neue Figur",
@@ -3688,5 +3690,16 @@
 		"missing": "Kein Frame zum Anzeigen",
 		"direction": "Blickrichtung",
 		"frames": "Frames"
+	},
+	"imageViewer": {
+		"role": "Bildbetrachter",
+		"keys": "Pfeiltasten verschieben, Plus und Minus zoomen, 0 passt ein.",
+		"zoom": "Bildzoom",
+		"hint": "Zum Zoomen scrollen oder mit zwei Fingern ziehen. Zum Verschieben ziehen.",
+		"fit": "An Fenster anpassen",
+		"fitHint": "An Fenster anpassen (0 oder Doppelklick)",
+		"percent": "{percent} % der Originalgröße",
+		"zoomed": "Zoom {percent} %",
+		"missing": "Kein Bild vorhanden"
 	}
 }

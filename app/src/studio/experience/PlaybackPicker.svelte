@@ -28,6 +28,8 @@
 		valueLabel,
 		disabled = false,
 		thumbnail,
+		placement,
+		boxed = false,
 		onselect
 	}: {
 		clips: readonly Pick<ReturnType<typeof playbackClips>[number], 'id' | 'key' | 'kind'>[];
@@ -50,6 +52,10 @@
 		disabled?: boolean;
 		/** Row artwork; the trigger itself never shows a thumbnail because its context already previews the choice. */
 		thumbnail?: (key: string) => Img | null;
+		/** Where the menu opens; the toolbar's opens above it, a header's below. */
+		placement?: 'top' | 'bottom-start' | 'bottom-end';
+		/** A boxed trigger like a select, for a header that pairs it with select boxes; the toolbar's is quiet. */
+		boxed?: boolean;
 		onselect: (clip: string) => void;
 	} = $props();
 
@@ -76,8 +82,8 @@
 {#snippet trigger()}
 	<button
 		type="button"
-		class={['clip-trigger bu-action', { compact }]}
-		data-variant={bulk || field ? 'field' : 'quiet'}
+		class={['clip-trigger bu-action', { compact, boxed }]}
+		data-variant={bulk || field || boxed ? 'field' : 'quiet'}
 		aria-label={bulk || field || label ? `${menuLabel}: ${value}` : undefined}
 		aria-haspopup="menu"
 		aria-expanded={expanded}
@@ -95,7 +101,11 @@
 		{#if bulk}<PersonStanding size={16} aria-hidden="true" />{:else if !field && !label}<span
 				class="sr">{menuLabel}:</span
 			>{/if}
-		<span class="clip-value">{value}</span>
+		{#if boxed}<span class="clip-values"
+				>{#each clips as clip (clip.id)}<span class="clip-sizer" aria-hidden="true"
+						>{clipLabel(clip.key)}</span
+					>{/each}<span class="clip-value">{value}</span></span
+			>{:else}<span class="clip-value">{value}</span>{/if}
 		<ChevronDown size={field ? 16 : 14} aria-hidden="true" />
 	</button>
 {/snippet}
@@ -138,7 +148,7 @@
 			fit: settings
 		}
 	]}
-	data-placement={field ? 'bottom-start' : settings ? 'bottom-end' : 'top'}
+	data-placement={placement ?? (field ? 'bottom-start' : settings ? 'bottom-end' : 'top')}
 	popover
 	role="menu"
 	aria-label={menuLabel}
@@ -267,6 +277,35 @@
 		max-width: 100%;
 		padding-inline: 6px;
 		font-size: 14px;
+	}
+	.playback-move .clip-trigger.boxed {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		max-width: 100%;
+		min-height: 40px;
+		padding: 6px 10px 6px 12px;
+		/* The size of the select boxes beside it, not the toolbar's. */
+		font-size: var(--bu-text-size);
+	}
+	/* Every choice sits in the same cell, hidden but for the chosen one, so the box keeps its longest choice's width. */
+	.clip-values {
+		display: grid;
+		min-width: 0;
+		text-align: start;
+	}
+	.clip-values > * {
+		grid-area: 1 / 1;
+	}
+	.clip-sizer {
+		visibility: hidden;
+		white-space: nowrap;
+		overflow: hidden;
+	}
+	@media (pointer: coarse) {
+		.playback-move .clip-trigger.boxed {
+			min-height: 44px;
+		}
 	}
 	.clip-value {
 		min-width: 0;
