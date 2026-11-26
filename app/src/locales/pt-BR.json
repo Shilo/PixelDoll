@@ -501,16 +501,12 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
-		"artworkSection": "Arte",
 		"movesSection": "Movimentos e estados",
-		"outfitSection": "Comportamento do traje",
-		"replaceFrames": "Reparar ou redesenhar esta vista",
+		"outfitSection": "Traje",
 		"technicalDetails": "Detalhes técnicos",
 		"openSprite": "Ampliar {title}",
 		"availableDirectionsFor": "Direções disponíveis para {name}",
-		"previewContext": "{move} · quadro {frame} de {count}",
 		"drawForMoves": "Gerar para movimentos ausentes",
-		"drawSelected": "Gerar movimentos selecionados",
 		"reviewMissingMoves": "Revisar movimentos ausentes",
 		"drawMovesSelect": "Selecione pelo menos um movimento.",
 		"selectAllMoves": "Selecionar tudo",
@@ -520,8 +516,6 @@
 		"redrawView": "Redesenhar esta vista",
 		"sendBackward": "Enviar para trás",
 		"bringForward": "Trazer para frente",
-		"makeAnother": "Criar um novo item",
-		"layerCategory": "A ordem das camadas se aplica à categoria {slot}.",
 		"inFrontOf": "Na frente de {name}",
 		"behind": "Atrás de {name}",
 		"previewUnavailable": "Não há arte deste item para este movimento.",
@@ -536,34 +530,21 @@
 		"hiddenByAnotherItem": "Oculto por outro item",
 		"hiddenByItem": "Oculto por {name}",
 		"showName": "Mostrar {name}",
-		"qualityChecks": "Verificações de qualidade",
 		"layerHiddenHint": "Outro item equipado oculta este, então a ordem das camadas não pode mudar aqui. Mostre-o primeiro.",
 		"labelNameFacingId": "{name} na direção {id}",
 		"acceptedAppearanceWarnings": "Alertas visuais aceitos",
 		"titleShowThisFrame": "Mostrar este quadro",
-		"checksFoundIssuesNoPaidRetryWas": "As verificações encontraram problemas. Nenhuma nova tentativa paga foi iniciada. Você pode solicitar outra tentativa ou aceitar o item como está.",
 		"acceptAsIs": "Aceitar como está",
 		"pendingWorkBusy": "Há uma animação ou configuração em andamento ou parada. Conclua ou descarte para usar estas ações.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Aceita a arte atual sem gastar créditos. Os problemas detectados continuam nos detalhes do item.",
 		"keepWithoutMoves": "Manter sem essas animações",
 		"keepWithoutMovesDetail": "Mantém o item com suas animações completas sem gastar créditos. Ele fica oculto em {moves}, que continuam listadas como faltando para você criá-las depois pelo próprio preço.",
 		"youAcceptedThisArtworkWithItsRecorded": "Você aceitou esta arte com as observações de qualidade registradas.",
-		"coverageTitle": "Cobertura de animações",
-		"coverageAllDrawn": "Desenhado em todas as animações e estados",
-		"coverageMissing": {
-			"one": "{n} animação faltando",
-			"other": "{n} animações faltando"
-		},
-		"coverageClipDrawn": "{move}: desenhado",
-		"coverageClipMissing": "{move}: faltando",
-		"itsMirroredViewsUpdateToo": "As vistas espelhadas também são atualizadas.",
 		"matchingColors": "Ajustando cores…",
 		"matchItemColors": "Ajustar cores do item",
 		"recolor": "Mudar cores",
 		"layerOrder": "Ordem das camadas",
-		"reset": "Restaurar",
-		"whenWornHide": "Ocultar categorias ao equipar",
-		"howItWasMade": "Como foi feito",
+		"whenWornHide": "Ocultar ao usar",
 		"iD": "ID",
 		"slot": "Espaço",
 		"route": "Método",
@@ -593,17 +574,6 @@
 			"other": "{from} tem {n} quadros deste item que faltam em {name}. Nada é gerado."
 		},
 		"makingMoreMoves": "Gerando itens para mais animações",
-		"colorMatchNote": {
-			"one": "Ajuste {pixels} em {n} quadro salvo de {move} na direção {direction} à paleta atual do item.",
-			"other": "Ajuste {pixels} em {n} quadros salvos de {move} na direção {direction} à paleta atual do item."
-		},
-		"colorMatchFixed": "As demais vistas, animações, materiais e alterações de cor salvas não mudam.",
-		"colorMatchMissing": "Os quadros {frames} ainda não têm arte, então ficam de fora.",
-		"colorMatchUnmatched": {
-			"one": "{n} pixel elegível sem cor correspondente permanece como está.",
-			"other": "{n} pixels elegíveis sem cor correspondente permanecem como estão."
-		},
-		"colorMatchFree": "Os alertas de qualidade existentes são mantidos. Nenhuma solicitação é enviada ao PixelLab.",
 		"colorsMatched": "Cores ajustadas: {pixels} em {frames}.",
 		"pixels": {
 			"one": "{n} pixel",
@@ -613,7 +583,7 @@
 			"one": "{n} quadro",
 			"other": "{n} quadros"
 		},
-		"onlyFacing": "Mover a camada só na direção {direction}",
+		"onlyFacing": "Só quando virado para {direction}",
 		"tuckNote": "Itens visíveis em {slots} podem ficar parcialmente cobertos.",
 		"chromaKey": "cor-chave {color}",
 		"qaStatus": {
@@ -631,29 +601,53 @@
 		"maximum": "{value} (≤ {threshold})",
 		"updateNote": "Atualiza este item na animação {move}, na direção {direction}. O corpo do personagem não muda.",
 		"updateNoteMirrors": "Atualiza este item na animação {move}, na direção {direction} e nas direções espelhadas. O corpo do personagem não muda.",
-		"repairItem": "Reparar item",
-		"redrawItem": "Redesenhar item",
 		"repairFeature": "O reparo do item",
 		"redrawFeature": "O redesenho do item",
 		"repairHelp": "Ideal quando você gosta do visual. Limita as mudanças à área do item.",
 		"redrawHelp": "Pode mudar o formato ou a empunhadura. Você decide se quer manter.",
-		"repairRequests": {
-			"one": "Este reparo usa {n} solicitação de geração do PixelLab.",
-			"other": "Este reparo usa {n} solicitações de geração do PixelLab."
+		"billingNote": "As estimativas comparam gerações, não preços em dólares. O PixelLab pode cobrar em dólares, e o tempo na fila pode variar.",
+		"itemActions": "Ações do item",
+		"statusGenerating": "Gerando",
+		"statusIncomplete": "Incompleto",
+		"calloutLook": "As verificações encontraram problemas neste item.",
+		"review": "Revisar",
+		"staleNote": "Feito para outro corpo. Pode não se alinhar.",
+		"previewMove": "Animação",
+		"openMissingView": "Abrir {direction} (ainda sem quadros)",
+		"missingView": "Nenhum",
+		"hiddenWhenWorn": "Oculto enquanto {names} estiver em uso",
+		"clipsIncomplete": {
+			"one": "{n} incompleta",
+			"other": "{n} incompletas"
 		},
-		"redrawRequests": {
-			"one": "Este redesenho usa {n} solicitação de geração do PixelLab.",
-			"other": "Este redesenho usa {n} solicitações de geração do PixelLab."
+		"complete": "Completo",
+		"clipNoFrames": "Ainda sem quadros",
+		"clipMissingViews": "Falta: {directions}",
+		"generateMoves": {
+			"one": "Gerar {n} animação",
+			"other": "Gerar {n} animações"
 		},
-		"redrawSaves": {
-			"one": "{n} geração estimada a menos que o reparo.",
-			"other": "{n} gerações estimadas a menos que o reparo."
+		"qualitySection": "Qualidade",
+		"passed": "Aprovado",
+		"checksPassed": "Todas as verificações de qualidade foram aprovadas.",
+		"fixViewTitle": "Corrigir a vista de {move}",
+		"facing": "Direção",
+		"matchColorsDetail": "Ajusta {pixels} em {frames} às cores do próprio item.",
+		"fixFramesDetail": "Edite os quadros no seu próprio app de desenho.",
+		"hiddenState": "Oculto",
+		"hidesCount": {
+			"one": "Oculta {n} categoria",
+			"other": "Oculta {n} categorias"
 		},
-		"redrawCostsMore": {
-			"one": "{n} geração estimada a mais que o reparo.",
-			"other": "{n} gerações estimadas a mais que o reparo."
-		},
-		"billingNote": "As estimativas comparam gerações, não preços em dólares. O PixelLab pode cobrar em dólares, e o tempo na fila pode variar."
+		"outfitPreview": "{name} no traje, virado para {direction}",
+		"asIfWorn": "Como se estivesse em uso",
+		"layerScope": "Muda a ordem de todos os itens de {slot}.",
+		"layerNothingToCross": "Nada se sobrepõe nesta vista.",
+		"layerBack": "{name} (atrás)",
+		"layerWithSlot": "{name} ({slot})",
+		"resetOrder": "Redefinir ordem",
+		"hideRulesLater": "Vale quando você usar {name}.",
+		"aboutSection": "Sobre"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Novo personagem",
@@ -3681,5 +3675,11 @@
 		"colors": "Buscar cores",
 		"clear": "Limpar busca",
 		"results": "{count} de {total}"
+	},
+	"spriteViewer": {
+		"frameOf": "Quadro {frame} de {count}",
+		"missing": "Não há quadro aqui",
+		"direction": "Direção",
+		"frames": "Quadros"
 	}
 }

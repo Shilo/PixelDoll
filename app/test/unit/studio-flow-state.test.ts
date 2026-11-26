@@ -1559,8 +1559,27 @@ test('putting on an item the shown move has no frames for shows it standing inst
 	expect([s.doc.items.head, s.ui.anim]).toEqual(['hat', 'walk']);
 });
 
+test('a layer step skips layers it does not visibly cross', async () => {
+	// The fixture's hat and body share no pixel, so moving the hat past the body would change nothing anyone sees.
+	const project = await equipmentFixture();
+	const s = await import('../../src/studio/state.svelte.ts');
+	s.store.project = project;
+	s.doc.id = 'layer-order-apart';
+	s.doc.items = { body: 'base', head: 'hat' };
+	s.ui.anim = 'rest';
+	s.ui.dir = 'south';
+	expect(s.itemLayerNeighbors('hat')).toEqual({ behind: undefined, ahead: undefined });
+	expect(s.moveLayer('hat', -1, false)).toBeUndefined();
+	expect(project.manifest.slots.find((slot) => slot.id === 'head')!.zOverrides).toBeUndefined();
+});
+
 test('an unworn item can be ordered among the worn layers, and a hidden one cannot', async () => {
 	const project = await equipmentFixture();
+	// The body reaches under the hat, so crossing it changes the picture.
+	const base = project.manifest.items.find((item) => item.id === 'base')!;
+	project.images
+		.get(base.layers[0].cells!.rest!.south![0]!)!
+		.data.set([180, 120, 90, 255], (18 * 64 + 20) * 4);
 	const s = await import('../../src/studio/state.svelte.ts');
 	s.store.project = project;
 	s.doc.id = 'layer-order';

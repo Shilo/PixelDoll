@@ -501,16 +501,12 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
-		"artworkSection": "Görseller",
 		"movesSection": "Hareketler ve durumlar",
-		"outfitSection": "Kıyafet davranışı",
-		"replaceFrames": "Bu görünümü onar veya yeniden çiz",
+		"outfitSection": "Kıyafet",
 		"technicalDetails": "Teknik ayrıntılar",
 		"openSprite": "{title} görselini büyüt",
 		"availableDirectionsFor": "{name} için kullanılabilir yönler",
-		"previewContext": "{move} · kare {frame}/{count}",
 		"drawForMoves": "Eksik hareketler için üret",
-		"drawSelected": "Seçili hareketleri üret",
 		"reviewMissingMoves": "Eksik hareketleri incele",
 		"drawMovesSelect": "En az bir hareket seç.",
 		"selectAllMoves": "Tümünü seç",
@@ -520,8 +516,6 @@
 		"redrawView": "Bu görünümü yeniden çiz",
 		"sendBackward": "Arkaya gönder",
 		"bringForward": "Öne getir",
-		"makeAnother": "Yeni eşya oluştur",
-		"layerCategory": "Katman sırası {slot} kategorisine uygulanır.",
 		"inFrontOf": "{name} önünde",
 		"behind": "{name} arkasında",
 		"previewUnavailable": "Bu hareket için eşya görseli yok.",
@@ -536,34 +530,21 @@
 		"hiddenByAnotherItem": "Başka bir eşya tarafından gizleniyor",
 		"hiddenByItem": "{name} tarafından gizleniyor",
 		"showName": "{name} öğesini göster",
-		"qualityChecks": "Kalite kontrolleri",
 		"layerHiddenHint": "Giyilen başka bir eşya bunu gizliyor, bu yüzden katman sırası burada değiştirilemez. Önce gösterin.",
 		"labelNameFacingId": "{name}, yön: {id}",
 		"acceptedAppearanceWarnings": "Kabul edilen görünüm uyarıları",
 		"titleShowThisFrame": "Bu kareyi gösterin",
-		"checksFoundIssuesNoPaidRetryWas": "Kontroller sorun buldu. Ücretli bir deneme başlatılmadı. Yeni bir deneme isteyebilir veya eşyayı olduğu gibi kabul edebilirsiniz.",
 		"acceptAsIs": "Olduğu gibi kabul edin",
 		"pendingWorkBusy": "Bir animasyon veya kurulum çalışıyor ya da durdu. Bu işlemleri kullanmak için tamamlayın veya atın.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Kredi harcamadan mevcut görseli kabul eder. Bulunan sorunlar eşya ayrıntılarında kalır.",
 		"keepWithoutMoves": "Bu animasyonlar olmadan tut",
 		"keepWithoutMovesDetail": "Kredi harcamadan eşyayı tamamlanmış animasyonlarıyla tutar. {moves} içinde gizlenir; bunlar, daha sonra kendi fiyatlarıyla oluşturabilmeniz için eksik olarak listelenmeye devam eder.",
 		"youAcceptedThisArtworkWithItsRecorded": "Bu görseli kayıtlı kalite notlarıyla birlikte kabul ettiniz.",
-		"coverageTitle": "Animasyon kapsamı",
-		"coverageAllDrawn": "Her animasyon ve durumda çizildi",
-		"coverageMissing": {
-			"one": "{n} animasyon eksik",
-			"other": "{n} animasyon eksik"
-		},
-		"coverageClipDrawn": "{move}: çizildi",
-		"coverageClipMissing": "{move}: eksik",
-		"itsMirroredViewsUpdateToo": "Aynalanmış görünümler de güncellenir.",
 		"matchingColors": "Renkler eşleştiriliyor…",
 		"matchItemColors": "Eşya renklerini eşleştirin",
 		"recolor": "Renkleri değiştirin",
 		"layerOrder": "Katman sırası",
-		"reset": "Sıfırlayın",
-		"whenWornHide": "Takıldığında kategorileri gizle",
-		"howItWasMade": "Nasıl yapıldı?",
+		"whenWornHide": "Giyilince gizle",
 		"iD": "ID",
 		"slot": "Ekipman yuvası",
 		"route": "Yöntem",
@@ -593,17 +574,6 @@
 			"other": "{from} karakterinde bu eşyaya ait, {name} karakterinde eksik olan {n} kare var. Yeni üretim yapılmaz."
 		},
 		"makingMoreMoves": "Eşya başka animasyonlar için hazırlanıyor",
-		"colorMatchNote": {
-			"one": "{move} animasyonunun {direction} yönünde kayıtlı {n} karedeki şu pikselleri eşyanın mevcut paletiyle eşleştirin: {pixels}.",
-			"other": "{move} animasyonunun {direction} yönünde kayıtlı {n} karedeki şu pikselleri eşyanın mevcut paletiyle eşleştirin: {pixels}."
-		},
-		"colorMatchFixed": "Diğer görünümler, animasyonlar, malzemeler ve kayıtlı renk değişiklikleri korunur.",
-		"colorMatchMissing": "{frames} karelerinde henüz çizim yok, bu yüzden dışarıda bırakıldı.",
-		"colorMatchUnmatched": {
-			"one": "Eşleşmeyen {n} uygun piksel değişmez.",
-			"other": "Eşleşmeyen {n} uygun piksel değişmez."
-		},
-		"colorMatchFree": "Mevcut kalite uyarıları korunur. PixelLab hizmetine istek gönderilmez.",
 		"colorsMatched": "{frames} için renk eşleştirmesi tamamlandı: {pixels}.",
 		"pixels": {
 			"one": "{n} piksel",
@@ -613,7 +583,7 @@
 			"one": "{n} kare",
 			"other": "{n} kare"
 		},
-		"onlyFacing": "Katmanı yalnızca {direction} yönünde taşı",
+		"onlyFacing": "Yalnızca {direction} yönüne bakarken",
 		"tuckNote": "{slots} içindeki görünür eşyalar kısmen örtülebilir.",
 		"chromaKey": "Anahtar rengi: {color}",
 		"qaStatus": {
@@ -631,29 +601,53 @@
 		"maximum": "{value} (≤ {threshold})",
 		"updateNote": "Bu eşyayı {move} animasyonunun {direction} yönü için günceller. Karakterin gövdesi değişmez.",
 		"updateNoteMirrors": "Bu eşyayı {move} animasyonunun {direction} yönü ve aynalanmış yönleri için günceller. Karakterin gövdesi değişmez.",
-		"repairItem": "Eşyayı onarın",
-		"redrawItem": "Eşyayı yeniden çizin",
 		"repairFeature": "Eşya onarımı",
 		"redrawFeature": "Eşyayı yeniden çizme",
 		"repairHelp": "Tasarımı beğendiyseniz en iyi seçenektir. Değişiklikleri eşyanın alanıyla sınırlar.",
 		"redrawHelp": "Şekil veya tutuş değişebilir. Saklayıp saklamayacağınıza siz karar verirsiniz.",
-		"repairRequests": {
-			"one": "Bu onarım {n} PixelLab üretim isteği kullanır.",
-			"other": "Bu onarım {n} PixelLab üretim isteği kullanır."
+		"billingNote": "Tahminler üretim sayısını karşılaştırır, dolar fiyatlarını değil. PixelLab dolar cinsinden ücret alabilir ve bekleme süresi değişebilir.",
+		"itemActions": "Eşya işlemleri",
+		"statusGenerating": "Oluşturuluyor",
+		"statusIncomplete": "Eksik",
+		"calloutLook": "Kontroller bu eşyada sorun buldu.",
+		"review": "İncele",
+		"staleNote": "Başka bir gövde için yapıldı. Hizalanmayabilir.",
+		"previewMove": "Animasyon",
+		"openMissingView": "{direction} yönünü aç (henüz kare yok)",
+		"missingView": "Yok",
+		"hiddenWhenWorn": "{names} giyiliyken gizli",
+		"clipsIncomplete": {
+			"one": "{n} eksik",
+			"other": "{n} eksik"
 		},
-		"redrawRequests": {
-			"one": "Bu yeniden çizim {n} PixelLab üretim isteği kullanır.",
-			"other": "Bu yeniden çizim {n} PixelLab üretim isteği kullanır."
+		"complete": "Tamam",
+		"clipNoFrames": "Henüz kare yok",
+		"clipMissingViews": "Eksik: {directions}",
+		"generateMoves": {
+			"one": "{n} animasyon oluştur",
+			"other": "{n} animasyon oluştur"
 		},
-		"redrawSaves": {
-			"one": "Onarıma göre tahmini {n} üretim hakkı daha az.",
-			"other": "Onarıma göre tahmini {n} üretim hakkı daha az."
+		"qualitySection": "Kalite",
+		"passed": "Geçti",
+		"checksPassed": "Tüm kalite kontrolleri geçti.",
+		"fixViewTitle": "{move} görünümünü düzelt",
+		"facing": "Yön",
+		"matchColorsDetail": "{frames} içindeki {pixels} eşyanın kendi renklerine uydurulur.",
+		"fixFramesDetail": "Kareleri kendi çizim uygulamanda düzenle.",
+		"hiddenState": "Gizli",
+		"hidesCount": {
+			"one": "{n} kategoriyi gizler",
+			"other": "{n} kategoriyi gizler"
 		},
-		"redrawCostsMore": {
-			"one": "Onarıma göre tahmini {n} üretim hakkı daha fazla.",
-			"other": "Onarıma göre tahmini {n} üretim hakkı daha fazla."
-		},
-		"billingNote": "Tahminler üretim sayısını karşılaştırır, dolar fiyatlarını değil. PixelLab dolar cinsinden ücret alabilir ve bekleme süresi değişebilir."
+		"outfitPreview": "Kıyafette {name}, {direction} yönüne bakıyor",
+		"asIfWorn": "Giyilmiş gibi",
+		"layerScope": "{slot} içindeki tüm eşyaların sırasını değiştirir.",
+		"layerNothingToCross": "Bu görünümde üst üste binen bir şey yok.",
+		"layerBack": "{name} (arka)",
+		"layerWithSlot": "{name} ({slot})",
+		"resetOrder": "Sırayı sıfırla",
+		"hideRulesLater": "{name} giydiğinde uygulanır.",
+		"aboutSection": "Hakkında"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Yeni karakter",
@@ -3672,5 +3666,11 @@
 		"colors": "Renklerde ara",
 		"clear": "Aramayı temizle",
 		"results": "{total} içinden {count}"
+	},
+	"spriteViewer": {
+		"frameOf": "Kare {frame} / {count}",
+		"missing": "Burada kare yok",
+		"direction": "Yön",
+		"frames": "Kareler"
 	}
 }

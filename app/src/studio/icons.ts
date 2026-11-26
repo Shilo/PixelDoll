@@ -102,6 +102,7 @@ export { default as EllipsisVertical } from '@lucide/svelte/icons/ellipsis-verti
 export { default as GitCommitHorizontal } from '@lucide/svelte/icons/git-commit-horizontal';
 export { default as GripVertical } from '@lucide/svelte/icons/grip-vertical';
 export { default as EyeOff } from '@lucide/svelte/icons/eye-off';
+export { default as ImageOff } from '@lucide/svelte/icons/image-off';
 export { default as HandGrab } from '@lucide/svelte/icons/hand-grab';
 export { default as CopyPlus } from '@lucide/svelte/icons/copy-plus';
 export { default as UsersRound } from '@lucide/svelte/icons/users-round';

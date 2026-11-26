@@ -501,16 +501,12 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
-		"artworkSection": "Artwork",
 		"movesSection": "Moves & States",
-		"outfitSection": "Outfit behavior",
-		"replaceFrames": "Repair or redraw this view",
+		"outfitSection": "Outfit",
 		"technicalDetails": "Technical details",
 		"openSprite": "Enlarge {title}",
 		"availableDirectionsFor": "Available directions for {name}",
-		"previewContext": "{move} · frame {frame} of {count}",
 		"drawForMoves": "Generate for missing moves",
-		"drawSelected": "Generate selected moves",
 		"reviewMissingMoves": "Review missing moves",
 		"drawMovesSelect": "Select at least one move.",
 		"selectAllMoves": "Select all",
@@ -520,8 +516,6 @@
 		"redrawView": "Redraw this view",
 		"sendBackward": "Send backward",
 		"bringForward": "Bring forward",
-		"makeAnother": "Make a new item",
-		"layerCategory": "Layer order applies to the {slot} category.",
 		"inFrontOf": "In front of {name}",
 		"behind": "Behind {name}",
 		"previewUnavailable": "No item artwork for this move.",
@@ -536,34 +530,21 @@
 		"hiddenByAnotherItem": "Hidden by another item",
 		"hiddenByItem": "Hidden by {name}",
 		"showName": "Show {name}",
-		"qualityChecks": "Quality checks",
 		"layerHiddenHint": "Another worn item hides this one, so its layer order cannot change here. Show it first.",
 		"labelNameFacingId": "{name} facing {id}",
 		"acceptedAppearanceWarnings": "Accepted appearance warnings",
 		"titleShowThisFrame": "Show this frame",
-		"checksFoundIssuesNoPaidRetryWas": "Checks found issues. No paid retry was started. You can request another attempt or accept this item as it is.",
 		"acceptAsIs": "Accept as is",
 		"pendingWorkBusy": "A move or setup is running or stopped. Finish or dismiss it to use these actions.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Accepts the current artwork without spending credits. The detected issues remain in its details.",
 		"keepWithoutMoves": "Keep without those moves",
 		"keepWithoutMovesDetail": "Keeps the item from its complete moves without spending credits. It is hidden in {moves}, which stay listed as missing so you can make them later at their own price.",
 		"youAcceptedThisArtworkWithItsRecorded": "You accepted this artwork with its recorded quality notes.",
-		"coverageTitle": "Move coverage",
-		"coverageAllDrawn": "Drawn in every move and State",
-		"coverageMissing": {
-			"one": "Missing {n} move",
-			"other": "Missing {n} moves"
-		},
-		"coverageClipDrawn": "{move}: drawn",
-		"coverageClipMissing": "{move}: missing",
-		"itsMirroredViewsUpdateToo": "Its mirrored views update too.",
 		"matchingColors": "Matching colors…",
 		"matchItemColors": "Match item colors",
 		"recolor": "Recolor",
 		"layerOrder": "Layer order",
-		"reset": "Reset",
-		"whenWornHide": "Hide categories when worn",
-		"howItWasMade": "How it was made",
+		"whenWornHide": "Hide while worn",
 		"iD": "ID",
 		"slot": "Slot",
 		"route": "Route",
@@ -593,17 +574,6 @@
 			"other": "{from} has {n} frames of this item that {name} lacks. Nothing is generated."
 		},
 		"makingMoreMoves": "Making items for more moves",
-		"colorMatchNote": {
-			"one": "Match {pixels} in {n} saved {move} frame facing {direction} to the item’s existing color palette.",
-			"other": "Match {pixels} in {n} saved {move} frames facing {direction} to the item’s existing color palette."
-		},
-		"colorMatchFixed": "Other views, moves, materials and saved recolors stay fixed.",
-		"colorMatchMissing": "Frames {frames} have no art yet, so they are left out.",
-		"colorMatchUnmatched": {
-			"one": "{n} unmatched eligible pixel stays unchanged.",
-			"other": "{n} unmatched eligible pixels stay unchanged."
-		},
-		"colorMatchFree": "Existing quality warnings are kept. No PixelLab call is made.",
 		"colorsMatched": "Matched {pixels} in {frames}.",
 		"pixels": {
 			"one": "{n} pixel",
@@ -613,7 +583,7 @@
 			"one": "{n} frame",
 			"other": "{n} frames"
 		},
-		"onlyFacing": "Only move the layer when facing {direction}",
+		"onlyFacing": "Only when facing {direction}",
 		"tuckNote": "Visible items in {slots} may be partly covered.",
 		"chromaKey": "{color} key",
 		"qaStatus": {
@@ -631,29 +601,53 @@
 		"maximum": "{value} (≤ {threshold})",
 		"updateNote": "Updates this item for {move} facing {direction}. The character body stays unchanged.",
 		"updateNoteMirrors": "Updates this item for {move} facing {direction} and its mirrors. The character body stays unchanged.",
-		"repairItem": "Repair item",
-		"redrawItem": "Redraw item",
 		"repairFeature": "Repair item",
 		"redrawFeature": "Redraw item",
 		"repairHelp": "Best when you like the design. Limits changes to the item area.",
 		"redrawHelp": "May change the shape or grip. You choose whether to keep it.",
-		"repairRequests": {
-			"one": "This repair uses {n} PixelLab generation request.",
-			"other": "This repair uses {n} PixelLab generation requests."
+		"billingNote": "Estimates compare generations, not dollar prices. PixelLab may bill dollars, and queue time may vary.",
+		"itemActions": "Item actions",
+		"statusGenerating": "Generating",
+		"statusIncomplete": "Incomplete",
+		"calloutLook": "Checks found issues with this item.",
+		"review": "Review",
+		"staleNote": "Made for another body. It may not line up.",
+		"previewMove": "Move",
+		"openMissingView": "Open {direction} (no frames yet)",
+		"missingView": "None",
+		"hiddenWhenWorn": "Hidden while {names} is worn",
+		"clipsIncomplete": {
+			"one": "{n} incomplete",
+			"other": "{n} incomplete"
 		},
-		"redrawRequests": {
-			"one": "This redraw uses {n} PixelLab generation request.",
-			"other": "This redraw uses {n} PixelLab generation requests."
+		"complete": "Complete",
+		"clipNoFrames": "No frames yet",
+		"clipMissingViews": "Missing {directions}",
+		"generateMoves": {
+			"one": "Generate {n} move",
+			"other": "Generate {n} moves"
 		},
-		"redrawSaves": {
-			"one": "{n} fewer estimated generation than Repair.",
-			"other": "{n} fewer estimated generations than Repair."
+		"qualitySection": "Quality",
+		"passed": "Passed",
+		"checksPassed": "All quality checks passed.",
+		"fixViewTitle": "Fix the {move} view",
+		"facing": "Facing",
+		"matchColorsDetail": "Snaps {pixels} in {frames} to the item’s own colors.",
+		"fixFramesDetail": "Edit the frames in your own art app.",
+		"hiddenState": "Hidden",
+		"hidesCount": {
+			"one": "Hides {n} category",
+			"other": "Hides {n} categories"
 		},
-		"redrawCostsMore": {
-			"one": "{n} more estimated generation than Repair.",
-			"other": "{n} more estimated generations than Repair."
-		},
-		"billingNote": "Estimates compare generations, not dollar prices. PixelLab may bill dollars, and queue time may vary."
+		"outfitPreview": "{name} in the outfit, facing {direction}",
+		"asIfWorn": "As if worn",
+		"layerScope": "Changes the order of every {slot} item.",
+		"layerNothingToCross": "Nothing overlaps it in this view.",
+		"layerBack": "{name} (back)",
+		"layerWithSlot": "{name} ({slot})",
+		"resetOrder": "Reset order",
+		"hideRulesLater": "Applies when you wear {name}.",
+		"aboutSection": "About"
 	},
 	"newCharacterButton": {
 		"newCharacter": "New character",
@@ -3672,5 +3666,11 @@
 		"colors": "Search colors",
 		"clear": "Clear search",
 		"results": "{count} of {total}"
+	},
+	"spriteViewer": {
+		"frameOf": "Frame {frame} of {count}",
+		"missing": "No frame here",
+		"direction": "Direction",
+		"frames": "Frames"
 	}
 }

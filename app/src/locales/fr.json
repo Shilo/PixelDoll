@@ -501,16 +501,12 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
-		"artworkSection": "Graphismes",
 		"movesSection": "Mouvements et états",
-		"outfitSection": "Comportement de la tenue",
-		"replaceFrames": "Réparer ou redessiner cette vue",
+		"outfitSection": "Tenue",
 		"technicalDetails": "Détails techniques",
 		"openSprite": "Agrandir {title}",
 		"availableDirectionsFor": "Directions disponibles pour {name}",
-		"previewContext": "{move} · image {frame} sur {count}",
 		"drawForMoves": "Générer pour les mouvements manquants",
-		"drawSelected": "Générer les mouvements sélectionnés",
 		"reviewMissingMoves": "Examiner les mouvements manquants",
 		"drawMovesSelect": "Sélectionnez au moins un mouvement.",
 		"selectAllMoves": "Tout sélectionner",
@@ -520,8 +516,6 @@
 		"redrawView": "Redessiner cette vue",
 		"sendBackward": "Reculer",
 		"bringForward": "Avancer",
-		"makeAnother": "Créer un nouvel objet",
-		"layerCategory": "L’ordre des calques s’applique à la catégorie {slot}.",
 		"inFrontOf": "Devant {name}",
 		"behind": "Derrière {name}",
 		"previewUnavailable": "Aucun graphisme pour cet objet dans ce mouvement.",
@@ -536,34 +530,21 @@
 		"hiddenByAnotherItem": "Masqué par un autre objet",
 		"hiddenByItem": "Masqué par {name}",
 		"showName": "Afficher {name}",
-		"qualityChecks": "Contrôles de qualité",
 		"layerHiddenHint": "Un autre objet porté masque celui-ci, son ordre de calques ne peut donc pas changer ici. Affichez-le d’abord.",
 		"labelNameFacingId": "{name}, orientation {id}",
 		"acceptedAppearanceWarnings": "Avertissements sur le visuel acceptés",
 		"titleShowThisFrame": "Afficher cette image",
-		"checksFoundIssuesNoPaidRetryWas": "Les vérifications ont détecté des problèmes. Aucune nouvelle tentative payante n’a été lancée. Vous pouvez demander une autre tentative ou accepter cet objet tel quel.",
 		"acceptAsIs": "Accepter tel quel",
 		"pendingWorkBusy": "Une animation ou configuration est en cours ou arrêtée. Terminez-la ou abandonnez-la pour utiliser ces actions.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Conserve le visuel actuel sans dépenser de crédits. Les problèmes détectés restent indiqués dans les détails de l’objet.",
 		"keepWithoutMoves": "Garder sans ces animations",
 		"keepWithoutMovesDetail": "Garde l’objet dans ses animations complètes sans dépenser de crédits. Il est masqué dans {moves}, qui restent indiquées comme manquantes pour que vous puissiez les créer plus tard à leur propre prix.",
 		"youAcceptedThisArtworkWithItsRecorded": "Vous avez accepté ce visuel. Les remarques sur sa qualité restent enregistrées.",
-		"coverageTitle": "Couverture des animations",
-		"coverageAllDrawn": "Dessiné dans toutes les animations et tous les états",
-		"coverageMissing": {
-			"one": "{n} animation manquante",
-			"other": "{n} animations manquantes"
-		},
-		"coverageClipDrawn": "{move} : dessiné",
-		"coverageClipMissing": "{move} : manquant",
-		"itsMirroredViewsUpdateToo": "Ses vues en miroir sont aussi mises à jour.",
 		"matchingColors": "Harmonisation des couleurs…",
 		"matchItemColors": "Harmoniser les couleurs de l’objet",
 		"recolor": "Recolorer",
 		"layerOrder": "Ordre des calques",
-		"reset": "Réinitialiser",
-		"whenWornHide": "Masquer les catégories quand équipé",
-		"howItWasMade": "Comment il a été créé",
+		"whenWornHide": "Masquer quand il est porté",
 		"iD": "ID",
 		"slot": "Emplacement",
 		"route": "Méthode",
@@ -593,17 +574,6 @@
 			"other": "{from} a {n} images de cet objet qui manquent à {name}. Rien n’est généré."
 		},
 		"makingMoreMoves": "Génération des images de l’objet pour d’autres animations",
-		"colorMatchNote": {
-			"one": "Harmoniser {pixels} avec la palette de l’objet dans {n} image enregistrée de {move} (direction : {direction}).",
-			"other": "Harmoniser {pixels} avec la palette de l’objet dans {n} images enregistrées de {move} (direction : {direction})."
-		},
-		"colorMatchFixed": "Les autres vues, animations, matières et recolorations enregistrées restent inchangées.",
-		"colorMatchMissing": "Les images {frames} n’ont pas encore de dessin, elles sont donc ignorées.",
-		"colorMatchUnmatched": {
-			"one": "{n} pixel éligible sans correspondance reste inchangé.",
-			"other": "{n} pixels éligibles sans correspondance restent inchangés."
-		},
-		"colorMatchFree": "Les avertissements de qualité existants sont conservés. Aucun appel à PixelLab n’est effectué.",
 		"colorsMatched": "Harmonisation terminée : {pixels} sur {frames}.",
 		"pixels": {
 			"one": "{n} pixel",
@@ -613,7 +583,7 @@
 			"one": "{n} image",
 			"other": "{n} images"
 		},
-		"onlyFacing": "Déplacer la couche uniquement en orientation {direction}",
+		"onlyFacing": "Seulement orienté {direction}",
 		"tuckNote": "Les objets visibles dans {slots} peuvent être partiellement recouverts.",
 		"chromaKey": "Couleur clé {color}",
 		"qaStatus": {
@@ -631,29 +601,53 @@
 		"maximum": "{value} (≤ {threshold})",
 		"updateNote": "Met à jour cet objet pour {move} (direction : {direction}). Le corps du personnage reste inchangé.",
 		"updateNoteMirrors": "Met à jour cet objet pour {move} (direction : {direction}) et ses vues en miroir. Le corps du personnage reste inchangé.",
-		"repairItem": "Réparer l’objet",
-		"redrawItem": "Redessiner l’objet",
 		"repairFeature": "Réparation de l’objet",
 		"redrawFeature": "Redessin de l’objet",
 		"repairHelp": "Idéal si le design vous plaît. Limite les modifications à la zone de l’objet.",
 		"redrawHelp": "La forme ou la prise en main peuvent changer. Vous choisissez de conserver le résultat ou non.",
-		"repairRequests": {
-			"one": "Cette réparation utilise {n} requête de génération PixelLab.",
-			"other": "Cette réparation utilise {n} requêtes de génération PixelLab."
+		"billingNote": "Les estimations comparent des générations, pas des prix en dollars. PixelLab peut facturer en dollars américains ; le temps d’attente peut varier.",
+		"itemActions": "Actions de l’objet",
+		"statusGenerating": "Génération",
+		"statusIncomplete": "Incomplet",
+		"calloutLook": "Les vérifications ont trouvé des problèmes sur cet objet.",
+		"review": "Vérifier",
+		"staleNote": "Fait pour un autre corps. Il risque de ne pas s’aligner.",
+		"previewMove": "Animation",
+		"openMissingView": "Ouvrir {direction} (pas encore d’images)",
+		"missingView": "Aucune",
+		"hiddenWhenWorn": "Masqué quand {names} est porté",
+		"clipsIncomplete": {
+			"one": "{n} incomplète",
+			"other": "{n} incomplètes"
 		},
-		"redrawRequests": {
-			"one": "Ce redessin utilise {n} requête de génération PixelLab.",
-			"other": "Ce redessin utilise {n} requêtes de génération PixelLab."
+		"complete": "Complet",
+		"clipNoFrames": "Pas encore d’images",
+		"clipMissingViews": "Manque : {directions}",
+		"generateMoves": {
+			"one": "Générer {n} animation",
+			"other": "Générer {n} animations"
 		},
-		"redrawSaves": {
-			"one": "{n} génération estimée de moins que la réparation.",
-			"other": "{n} générations estimées de moins que la réparation."
+		"qualitySection": "Qualité",
+		"passed": "Réussi",
+		"checksPassed": "Toutes les vérifications de qualité sont réussies.",
+		"fixViewTitle": "Corriger la vue {move}",
+		"facing": "Direction",
+		"matchColorsDetail": "Ramène {pixels} dans {frames} aux couleurs propres de l’objet.",
+		"fixFramesDetail": "Modifiez les images dans votre propre logiciel de dessin.",
+		"hiddenState": "Masqué",
+		"hidesCount": {
+			"one": "Masque {n} catégorie",
+			"other": "Masque {n} catégories"
 		},
-		"redrawCostsMore": {
-			"one": "{n} génération estimée de plus que la réparation.",
-			"other": "{n} générations estimées de plus que la réparation."
-		},
-		"billingNote": "Les estimations comparent des générations, pas des prix en dollars. PixelLab peut facturer en dollars américains ; le temps d’attente peut varier."
+		"outfitPreview": "{name} dans la tenue, orienté {direction}",
+		"asIfWorn": "Comme s’il était porté",
+		"layerScope": "Change l’ordre de tous les objets de {slot}.",
+		"layerNothingToCross": "Rien ne le chevauche dans cette vue.",
+		"layerBack": "{name} (arrière)",
+		"layerWithSlot": "{name} ({slot})",
+		"resetOrder": "Réinitialiser l’ordre",
+		"hideRulesLater": "S’applique quand vous portez {name}.",
+		"aboutSection": "À propos"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nouveau personnage",
@@ -3672,5 +3666,11 @@
 		"colors": "Rechercher des couleurs",
 		"clear": "Effacer la recherche",
 		"results": "{count} sur {total}"
+	},
+	"spriteViewer": {
+		"frameOf": "Image {frame} sur {count}",
+		"missing": "Aucune image ici",
+		"direction": "Direction",
+		"frames": "Images"
 	}
 }

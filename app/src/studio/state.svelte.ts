@@ -42,15 +42,22 @@ import {
 	storeVariants
 } from '../lib/dress/dress.ts';
 import {
+	cellImg,
+	composeCell,
 	drawList,
 	equipped,
 	handHides,
 	handSide,
 	hiddenSlots,
 	hidesOf,
+	layerFrame,
 	oppositeHands,
+	over,
+	rigFrame,
 	settleHands,
-	twoHanded
+	tucked,
+	twoHanded,
+	type Draw
 } from '../lib/compose/compose.ts';
 import {
 	deleteItem,
@@ -2719,19 +2726,13 @@ export function toggleTwoHanded(itemId: string) {
 	);
 }
 
-/** The draw order of the current frame and the item's front layer in it. An item that is not worn is placed as if it
- *  were, so its order can be set before it is worn. An item hidden by another worn item is not drawn anywhere. */
-function layerPlacement(itemId: string) {
-	void doc.rev;
-	const m = store.project!.manifest,
-		it = itemById(itemId);
+/** The project with the item worn. An unworn item is placed as if it were worn, even when a worn item hides its category,
+ *  so its order can be set and seen before it is worn. The manifest is lent only for this draw: saved hides stay as they are. */
+function placedOutfit(p: Project, itemId: string) {
+	const m = p.manifest,
+		it = m.items.find((entry) => entry.id === itemId);
 	if (!it) return null;
-	const anim = m.rig.animations.find((x) => x.id === ui.anim);
-	if (!anim?.frames.length) return null;
-	const cell = anim.frames[ui.frame % anim.frames.length].cell;
-	// An unworn item is placed as if it were worn, even when a worn item hides its category: its order can still be set
-	// before it is shown. Lend the manifest only for this draw so the saved hides stay untouched.
-	const placed =
+	const manifest =
 		doc.items[it.slot] === itemId
 			? m
 			: {
@@ -2743,29 +2744,121 @@ function layerPlacement(itemId: string) {
 							: entry;
 					})
 				};
-	const order = drawList(placed, { ...doc.items, [it.slot]: itemId }, ui.anim, ui.dir, cell);
-	const i = order.findIndex((d) => d.item.slot === it.slot && d.layer.role === 'fg');
-	return i < 0 ? null : { order, i };
+	return { it, project: { ...p, manifest }, items: { ...doc.items, [it.slot]: itemId } };
 }
-/** The layers the item's front can cross in the current view. */
-export function itemLayerNeighbors(itemId: string) {
-	const place = layerPlacement(itemId);
-	return {
-		behind: place?.order[place.i - 1]?.item.name,
-		ahead: place?.order[place.i + 1]?.item.name
+/** The outfit with the item placed as if worn, in the shown move, facing and frame: what layer order and hiding change. */
+export function placedOutfitCell(
+	itemId: string,
+	frame: number,
+	animId = ui.anim,
+	dir: DirectionName = ui.dir
+) {
+	const p = view.project,
+		anim = p?.manifest.rig.animations.find((x) => x.id === animId);
+	const placed = p && anim?.frames.length ? placedOutfit(p, itemId) : null;
+	if (!placed || !anim) return null;
+	const cell = anim.frames[frame % anim.frames.length].cell;
+	return composeCell(placed.project, placed.items, animId, dir, cell);
+}
+type Crossing = { draw: Draw; back: boolean; frame: number };
+/** The nearest layer each way that the item's front can cross in the shown move and facing so that the composite
+ *  changes in at least one frame (`frame`, the first such playback frame). Stepping past anything else (another item's
+ *  back part far away, layers both covered by a hood, an empty layer) changes nothing anyone can see, so it is not a
+ *  step. The order is read on the move's first frame, so it holds still while the move plays. */
+function layerCrossings(itemId: string, animId: string, dir: DirectionName) {
+	void doc.rev;
+	const p = store.project,
+		anim = p?.manifest.rig.animations.find((x) => x.id === animId);
+	const placed = p && anim?.frames.length ? placedOutfit(p, itemId) : null;
+	if (!placed || !anim) return null;
+	const { project, items } = placed,
+		rig = project.manifest.rig,
+		canvas = rigFrame(rig),
+		cells = [...new Set(anim.frames.map((frame) => frame.cell))];
+	const order = drawList(project.manifest, items, animId, dir, cells[0]);
+	const i = order.findIndex((d) => d.item.id === itemId && d.layer.role === 'fg');
+	if (i < 0) return null;
+	// Each draw's image in each cell, after tucking under the items it tucks under, placed on the rig canvas.
+	const placedImages = cells.map((cell) =>
+		order.map((draw) => {
+			const image = tucked(
+				project,
+				cellImg(project, draw.layer, animId, dir, cell),
+				draw.layer,
+				draw.under,
+				animId,
+				dir,
+				cell
+			);
+			const frame = layerFrame(rig, draw.layer);
+			return image && { image, x: canvas.x - frame.x, y: canvas.y - frame.y };
+		})
+	);
+	const paint = (k: number, sequence: number[]) => {
+		const out = { w: canvas.w, h: canvas.h, data: new Uint8ClampedArray(canvas.w * canvas.h * 4) };
+		for (const index of sequence) {
+			const layer = placedImages[k][index];
+			if (layer) over(out, layer.image, layer.x, layer.y);
+		}
+		return out.data;
 	};
+	const natural = order.map((_, index) => index);
+	// The draw order with the item's front moved just past `j`.
+	const movedPast = (j: number) => {
+		const rest = natural.filter((index) => index !== i),
+			at = rest.indexOf(j);
+		return [...rest.slice(0, j > i ? at + 1 : at), i, ...rest.slice(j > i ? at + 1 : at)];
+	};
+	const changedCell = (j: number) =>
+		cells.findIndex((_, k) => {
+			if (!placedImages[k][i] || !placedImages[k][j]) return false;
+			const before = paint(k, natural),
+				after = paint(k, movedPast(j));
+			return before.some((value, index) => value !== after[index]);
+		});
+	const find = (step: 1 | -1): Crossing | undefined => {
+		for (let j = i + step; j >= 0 && j < order.length; j += step) {
+			if (order[j].item.id === itemId) continue;
+			const k = changedCell(j);
+			if (k >= 0)
+				return {
+					draw: order[j],
+					back: order[j].layer.role === 'bg',
+					frame: anim.frames.findIndex((frame) => frame.cell === cells[k])
+				};
+		}
+	};
+	return { order, i, behind: find(-1), ahead: find(1) };
 }
-/** Move the item's front layer one step in the draw order of the current frame (all directions, or only the current one). */
-export function moveLayer(itemId: string, step: 1 | -1, onlyDir: boolean) {
-	const place = layerPlacement(itemId);
-	if (!place) return;
-	const { order, i } = place,
-		j = i + step;
-	if (j < 0 || j >= order.length) return;
-	const { slot, layer, z } = order[i];
+/** The layers the item's front would cross with Send backward and Bring forward in the shown move and facing. */
+export function itemLayerNeighbors(itemId: string, animId = ui.anim, dir: DirectionName = ui.dir) {
+	const place = layerCrossings(itemId, animId, dir);
+	const named = (crossing?: Crossing) =>
+		crossing && {
+			itemId: crossing.draw.item.id,
+			name: crossing.draw.item.name,
+			slot: crossing.draw.item.slot,
+			back: crossing.back,
+			frame: crossing.frame
+		};
+	return { behind: named(place?.behind), ahead: named(place?.ahead) };
+}
+/** Move the item's front layer past the next layer it visibly crosses (all directions, or only the current one). Returns
+ *  the playback frame where the change shows. */
+export function moveLayer(
+	itemId: string,
+	step: 1 | -1,
+	onlyDir: boolean,
+	animId = ui.anim,
+	facing: DirectionName = ui.dir
+): number | undefined {
+	const place = layerCrossings(itemId, animId, facing),
+		target = step > 0 ? place?.ahead : place?.behind;
+	if (!place || !target) return;
+	const { slot, layer, z } = place.order[place.i];
 	// Move the front as a unit, including any finer overrides that take precedence over the base depth.
-	const offset = order[j].z + step - z;
-	const dir = onlyDir ? ui.dir : undefined;
+	const offset = target.draw.z + step - z;
+	const dir = onlyDir ? facing : undefined;
 	const overrides = slot.zOverrides ?? [];
 	const isBase = (o: ZOverride) => o.layer === 'fg' && o.dir === dir && !o.anim && o.cell == null;
 	const base =
@@ -2792,6 +2885,7 @@ export function moveLayer(itemId: string, step: 1 | -1, onlyDir: boolean) {
 			{ layer: 'fg', z: base + offset, ...(dir ? { dir } : {}) }
 		];
 	});
+	return target.frame;
 }
 /** Restore the foreground ladder. Back layers have their own authored positions. */
 export function resetLayer(itemId: string, ladder: ZOverride[]) {

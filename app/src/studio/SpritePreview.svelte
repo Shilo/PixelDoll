@@ -1,25 +1,35 @@
-<script lang="ts">
-	import { onMount, untrack } from 'svelte';
+<script lang="ts" module>
 	import type { Img } from '../lib/image/png.ts';
+	/** One facing of the artwork: its frames in playback order, `null` where a frame is missing. */
+	export type SpriteView = { id: string; label: string; short?: string; frames: (Img | null)[] };
+</script>
+
+<script lang="ts">
+	// A full-window look at whole sprite frames over the sheet that opened it: Close, Escape and browser Back dismiss only
+	// this viewer and give focus back to its opener. Frames keep their real numbers, and a missing frame says so in place.
+	import { onMount, untrack } from 'svelte';
 	import Sprite from './Sprite.svelte';
 	import SurfaceHeader from './SurfaceHeader.svelte';
-	import { ChevronLeft, ChevronRight } from './icons.ts';
+	import { ChevronLeft, ChevronRight, ImageOff } from './icons.ts';
 	import { openingTrigger, restoreTrigger } from './experience/focus.ts';
 	import { claimSheetExit } from './sheetExit.ts';
 	import { ui } from './state.svelte.ts';
-	import { t } from 'svelte-whisper';
+	import { formatNumber, t } from 'svelte-whisper';
 
 	let {
-		images,
-		notes,
 		title,
-		index: initialIndex,
+		context = '',
+		views,
+		view: initialView = 0,
+		frame: initialFrame = 0,
 		onclose
 	}: {
-		images: Img[];
-		notes: string[];
 		title: string;
-		index: number;
+		/** What the frames show, such as the move's name. */
+		context?: string;
+		views: SpriteView[];
+		view?: number;
+		frame?: number;
 		onclose: () => void;
 	} = $props();
 	const titleId = $props.id();
@@ -27,15 +37,51 @@
 	let heading = $state<HTMLHeadingElement>();
 	let width = $state(0);
 	let height = $state(0);
-	let at = $state(untrack(() => Math.max(0, Math.min(initialIndex, images.length - 1))));
-	const image = $derived(images[at]);
-	const note = $derived(notes[at]);
-	const fit = $derived(Math.min(width / image.w, height / image.h));
+	const clamp = (value: number, count: number) => Math.max(0, Math.min(value, count - 1));
+	let at = $state(untrack(() => clamp(initialView, views.length)));
+	let frame = $state(
+		untrack(() => clamp(initialFrame, views[clamp(initialView, views.length)].frames.length))
+	);
+	const current = $derived(views[at]);
+	const count = $derived(current.frames.length);
+	const image = $derived(current.frames[clamp(frame, count)]);
+	// Every frame of every facing shares one box, so stepping never rescales the sprite.
+	const box = $derived.by(() => {
+		let w = 1,
+			h = 1;
+		for (const entry of views)
+			for (const img of entry.frames)
+				if (img) {
+					w = Math.max(w, img.w);
+					h = Math.max(h, img.h);
+				}
+		return { w, h };
+	});
+	const fit = $derived(Math.min(width / box.w, height / box.h));
 	const scale = $derived(Math.max(1, Math.floor(fit * ui.dpr)));
+	const number = (value: number) => formatNumber(value, { useGrouping: false });
+	const caption = $derived(
+		[
+			context,
+			current.label,
+			count > 1
+				? t('spriteViewer.frameOf', {
+						frame: number(clamp(frame, count) + 1),
+						count: number(count)
+					})
+				: ''
+		]
+			.filter(Boolean)
+			.join(' · ')
+	);
 
 	function step(delta: 1 | -1) {
-		if (images.length < 2) return;
-		at = (at + delta + images.length) % images.length;
+		if (count < 2) return;
+		frame = (clamp(frame, count) + delta + count) % count;
+	}
+	function show(index: number) {
+		at = index;
+		frame = clamp(frame, views[index].frames.length);
 	}
 
 	onMount(() => {
@@ -56,13 +102,11 @@
 	bind:this={dialog}
 	aria-labelledby={titleId}
 	onkeydown={(event) => {
-		if (event.key === 'ArrowLeft') {
-			event.preventDefault();
-			step(-1);
-		} else if (event.key === 'ArrowRight') {
-			event.preventDefault();
-			step(1);
-		}
+		if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+		const delta = event.key === 'ArrowLeft' ? -1 : 1;
+		event.preventDefault();
+		if (count > 1) step(delta);
+		else if (views.length > 1) show((at + delta + views.length) % views.length);
 	}}
 	oncancel={(event) => {
 		event.preventDefault();
@@ -70,38 +114,58 @@
 	}}
 >
 	<SurfaceHeader {title} {titleId} {onclose} bind:titleElement={heading} />
-	<div class="preview-stage">
-		<p class="preview-context" aria-live="polite">{note}</p>
-		<div class="preview-fit" bind:clientWidth={width} bind:clientHeight={height}>
-			{#if width && height}
+	<div class="viewer-stage">
+		<p class="viewer-caption" aria-live="polite">{caption}</p>
+		<div class="viewer-fit" bind:clientWidth={width} bind:clientHeight={height}>
+			{#if image && width && height}
 				<Sprite
 					img={image}
 					k={scale}
-					limit={fit * Math.max(image.w, image.h)}
+					w={box.w}
+					h={box.h}
+					limit={fit * Math.max(box.w, box.h)}
 					checker
 					checkerSize={24}
-					label={title}
+					label={`${title} · ${caption}`}
 				/>
+			{:else if !image}
+				<p class="viewer-missing">
+					<ImageOff size={28} aria-hidden="true" /><span>{t('spriteViewer.missing')}</span>
+				</p>
 			{/if}
 		</div>
-		{#if images.length > 1}
-			<div class="preview-transport">
-				<button
-					class="bu-action btn icon"
-					data-variant="outline"
-					aria-label={t('stage.previousFrame')}
-					onclick={() => step(-1)}
-				>
-					<ChevronLeft size={18} aria-hidden="true" />
-				</button>
-				<button
-					class="bu-action btn icon"
-					data-variant="outline"
-					aria-label={t('stage.nextFrame')}
-					onclick={() => step(1)}
-				>
-					<ChevronRight size={18} aria-hidden="true" />
-				</button>
+		{#if views.length > 1 || count > 1}
+			<div class="viewer-controls">
+				{#if views.length > 1}
+					<div class="viewer-views" role="group" aria-label={t('spriteViewer.direction')}>
+						{#each views as entry, index (entry.id)}
+							<button
+								class="bu-action btn"
+								data-variant={index === at ? 'primary' : 'outline'}
+								aria-pressed={index === at}
+								aria-label={entry.short ? entry.label : undefined}
+								onclick={() => show(index)}>{entry.short ?? entry.label}</button
+							>
+						{/each}
+					</div>
+				{/if}
+				{#if count > 1}
+					<div class="viewer-frames" role="group" aria-label={t('spriteViewer.frames')}>
+						<button
+							class="bu-action btn icon"
+							data-variant="outline"
+							aria-label={t('stage.previousFrame')}
+							onclick={() => step(-1)}><ChevronLeft size={18} aria-hidden="true" /></button
+						>
+						<span class="viewer-count">{number(clamp(frame, count) + 1)} / {number(count)}</span>
+						<button
+							class="bu-action btn icon"
+							data-variant="outline"
+							aria-label={t('stage.nextFrame')}
+							onclick={() => step(1)}><ChevronRight size={18} aria-hidden="true" /></button
+						>
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</div>
@@ -119,36 +183,62 @@
 		padding-block: env(safe-area-inset-top) env(safe-area-inset-bottom);
 		border-radius: 0;
 	}
-	.preview-stage {
+	.viewer-stage {
 		flex: 1;
 		min-height: 0;
 		padding: clamp(12px, 4vmin, 32px);
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 12px;
 	}
-	.preview-context {
+	.viewer-caption {
 		flex: none;
+		margin: 0;
 		color: var(--text-2);
 		font-size: var(--fs-sm);
 		text-align: center;
 	}
-	.preview-fit {
+	.viewer-fit {
 		flex: 1;
 		min-height: 0;
 		display: grid;
 		grid-template: minmax(0, 1fr) / minmax(0, 1fr);
 		place-items: safe center;
 	}
-	.preview-transport {
+	.viewer-missing {
+		display: grid;
+		justify-items: center;
+		gap: 8px;
+		margin: 0;
+		color: var(--text-3);
+	}
+	.viewer-controls {
 		flex: none;
 		display: flex;
+		flex-wrap: wrap;
 		justify-content: center;
-		gap: 12px;
+		align-items: center;
+		gap: 12px 24px;
 	}
-	.preview-transport :global(.btn) {
+	.viewer-views,
+	.viewer-frames {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.viewer-views :global(.btn) {
+		min-width: 44px;
+		min-height: 44px;
+	}
+	.viewer-frames :global(.btn) {
 		width: 44px;
 		height: 44px;
 		min-height: 44px;
+	}
+	.viewer-count {
+		min-width: 4.5ch;
+		text-align: center;
+		font-variant-numeric: tabular-nums;
+		color: var(--text-2);
 	}
 </style>

@@ -501,16 +501,12 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
-		"artworkSection": "Grafik",
 		"movesSection": "Bewegungen und Zustände",
-		"outfitSection": "Outfit-Verhalten",
-		"replaceFrames": "Diese Ansicht reparieren oder neu zeichnen",
+		"outfitSection": "Outfit",
 		"technicalDetails": "Technische Details",
 		"openSprite": "{title} vergrößern",
 		"availableDirectionsFor": "Verfügbare Blickrichtungen für {name}",
-		"previewContext": "{move} · Frame {frame} von {count}",
 		"drawForMoves": "Für fehlende Bewegungen generieren",
-		"drawSelected": "Ausgewählte Bewegungen generieren",
 		"reviewMissingMoves": "Fehlende Bewegungen prüfen",
 		"drawMovesSelect": "Wähle mindestens eine Bewegung aus.",
 		"selectAllMoves": "Alle auswählen",
@@ -520,8 +516,6 @@
 		"redrawView": "Diese Ansicht neu zeichnen",
 		"sendBackward": "Nach hinten",
 		"bringForward": "Nach vorne",
-		"makeAnother": "Neues Objekt erstellen",
-		"layerCategory": "Die Ebenenreihenfolge gilt für die Kategorie {slot}.",
 		"inFrontOf": "Vor {name}",
 		"behind": "Hinter {name}",
 		"previewUnavailable": "Keine Objektgrafik für diese Bewegung.",
@@ -536,34 +530,21 @@
 		"hiddenByAnotherItem": "Von einem anderen Gegenstand verdeckt",
 		"hiddenByItem": "Verdeckt von {name}",
 		"showName": "{name} anzeigen",
-		"qualityChecks": "Qualitätsprüfungen",
 		"layerHiddenHint": "Ein anderer getragener Gegenstand verdeckt diesen, daher lässt sich die Ebenenreihenfolge hier nicht ändern. Zeige ihn zuerst an.",
 		"labelNameFacingId": "{name}, Blickrichtung: {id}",
 		"acceptedAppearanceWarnings": "Akzeptierte Hinweise zur Darstellung",
 		"titleShowThisFrame": "Diesen Frame anzeigen",
-		"checksFoundIssuesNoPaidRetryWas": "Bei der Prüfung sind Probleme aufgefallen. Es wurde kein kostenpflichtiger Neuversuch gestartet. Du kannst einen weiteren Versuch anfordern oder den Gegenstand unverändert übernehmen.",
 		"acceptAsIs": "Unverändert übernehmen",
 		"pendingWorkBusy": "Eine Animation oder Einrichtung läuft oder wurde gestoppt. Schließe sie ab oder verwirf sie, um diese Aktionen zu nutzen.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Übernimmt die aktuelle Grafik, ohne Credits zu verbrauchen. Die festgestellten Probleme bleiben in den Details vermerkt.",
 		"keepWithoutMoves": "Ohne diese Animationen behalten",
 		"keepWithoutMovesDetail": "Behält den Gegenstand aus seinen vollständigen Animationen, ohne Guthaben zu verbrauchen. In {moves} ist er ausgeblendet; diese bleiben als fehlend aufgeführt, damit du sie später zu ihrem eigenen Preis erstellen kannst.",
 		"youAcceptedThisArtworkWithItsRecorded": "Du hast diese Grafik mit den festgehaltenen Qualitätshinweisen übernommen.",
-		"coverageTitle": "Animationsabdeckung",
-		"coverageAllDrawn": "In jeder Animation und jedem Zustand gezeichnet",
-		"coverageMissing": {
-			"one": "{n} Animation fehlt",
-			"other": "{n} Animationen fehlen"
-		},
-		"coverageClipDrawn": "{move}: gezeichnet",
-		"coverageClipMissing": "{move}: fehlt",
-		"itsMirroredViewsUpdateToo": "Die gespiegelten Ansichten werden ebenfalls aktualisiert.",
 		"matchingColors": "Farben werden abgeglichen…",
 		"matchItemColors": "Gegenstandsfarben abgleichen",
 		"recolor": "Umfärben",
 		"layerOrder": "Ebenenreihenfolge",
-		"reset": "Zurücksetzen",
-		"whenWornHide": "Kategorien beim Tragen ausblenden",
-		"howItWasMade": "So wurde der Gegenstand erstellt",
+		"whenWornHide": "Beim Tragen ausblenden",
 		"iD": "ID",
 		"slot": "Ausrüstungsplatz",
 		"route": "Verfahren",
@@ -593,17 +574,6 @@
 			"other": "{from} hat {n} Frames dieses Gegenstands, die bei {name} fehlen. Es wird nichts generiert."
 		},
 		"makingMoreMoves": "Gegenstände werden für weitere Animationen erstellt",
-		"colorMatchNote": {
-			"one": "Gleicht {pixels} an die bestehende Palette des Gegenstands an. Betroffen: {n} gespeicherter Frame in {move}, Blickrichtung {direction}.",
-			"other": "Gleicht {pixels} an die bestehende Palette des Gegenstands an. Betroffen: {n} gespeicherte Frames in {move}, Blickrichtung {direction}."
-		},
-		"colorMatchFixed": "Andere Ansichten, Animationen, Materialien und gespeicherte Farbänderungen bleiben unverändert.",
-		"colorMatchMissing": "Die Frames {frames} haben noch keine Grafik und werden ausgelassen.",
-		"colorMatchUnmatched": {
-			"one": "{n} geeigneter Pixel ohne passende Farbe bleibt unverändert.",
-			"other": "{n} geeignete Pixel ohne passende Farbe bleiben unverändert."
-		},
-		"colorMatchFree": "Vorhandene Qualitätshinweise bleiben erhalten. Es wird keine Anfrage an PixelLab gesendet.",
 		"colorsMatched": "Farbabgleich: {pixels} in {frames}.",
 		"pixels": {
 			"one": "{n} Pixel",
@@ -613,7 +583,7 @@
 			"one": "{n} Frame",
 			"other": "{n} Frames"
 		},
-		"onlyFacing": "Ebene nur bei Blickrichtung {direction} bewegen",
+		"onlyFacing": "Nur in Blickrichtung {direction}",
 		"tuckNote": "Sichtbare Objekte in {slots} können teilweise bedeckt sein.",
 		"chromaKey": "Key-Farbe: {color}",
 		"qaStatus": {
@@ -631,29 +601,53 @@
 		"maximum": "{value} (≤ {threshold})",
 		"updateNote": "Aktualisiert diesen Gegenstand für {move} in Blickrichtung {direction}. Der Körper der Figur bleibt unverändert.",
 		"updateNoteMirrors": "Aktualisiert diesen Gegenstand für {move} in Blickrichtung {direction} und in den gespiegelten Ansichten. Der Körper der Figur bleibt unverändert.",
-		"repairItem": "Gegenstand reparieren",
-		"redrawItem": "Gegenstand neu zeichnen",
 		"repairFeature": "die Gegenstandsreparatur",
 		"redrawFeature": "das Neuzeichnen des Gegenstands",
 		"repairHelp": "Ideal, wenn dir das Design gefällt. Änderungen bleiben auf den Bereich des Gegenstands beschränkt.",
 		"redrawHelp": "Form oder Griff können sich ändern. Du entscheidest, ob du das Ergebnis behältst.",
-		"repairRequests": {
-			"one": "Diese Reparatur nutzt {n} PixelLab-Generierungsanfrage.",
-			"other": "Diese Reparatur nutzt {n} PixelLab-Generierungsanfragen."
+		"billingNote": "Die Schätzungen vergleichen Generierungen, nicht Dollarpreise. PixelLab kann US-Dollar berechnen, und die Wartezeit kann variieren.",
+		"itemActions": "Gegenstandsaktionen",
+		"statusGenerating": "Wird erstellt",
+		"statusIncomplete": "Unvollständig",
+		"calloutLook": "Die Prüfungen haben Probleme bei diesem Gegenstand gefunden.",
+		"review": "Prüfen",
+		"staleNote": "Für einen anderen Körper erstellt. Er passt eventuell nicht.",
+		"previewMove": "Animation",
+		"openMissingView": "{direction} öffnen (noch keine Frames)",
+		"missingView": "Keine",
+		"hiddenWhenWorn": "Ausgeblendet, solange {names} getragen wird",
+		"clipsIncomplete": {
+			"one": "{n} unvollständig",
+			"other": "{n} unvollständig"
 		},
-		"redrawRequests": {
-			"one": "Das Neuzeichnen nutzt {n} PixelLab-Generierungsanfrage.",
-			"other": "Das Neuzeichnen nutzt {n} PixelLab-Generierungsanfragen."
+		"complete": "Vollständig",
+		"clipNoFrames": "Noch keine Frames",
+		"clipMissingViews": "Fehlt: {directions}",
+		"generateMoves": {
+			"one": "{n} Animation erstellen",
+			"other": "{n} Animationen erstellen"
 		},
-		"redrawSaves": {
-			"one": "{n} geschätzte Generierung weniger als bei der Reparatur.",
-			"other": "{n} geschätzte Generierungen weniger als bei der Reparatur."
+		"qualitySection": "Qualität",
+		"passed": "Bestanden",
+		"checksPassed": "Alle Qualitätsprüfungen bestanden.",
+		"fixViewTitle": "Ansicht „{move}“ korrigieren",
+		"facing": "Blickrichtung",
+		"matchColorsDetail": "Setzt {pixels} in {frames} auf die eigenen Farben des Gegenstands.",
+		"fixFramesDetail": "Bearbeite die Frames in deinem eigenen Grafikprogramm.",
+		"hiddenState": "Ausgeblendet",
+		"hidesCount": {
+			"one": "Blendet {n} Kategorie aus",
+			"other": "Blendet {n} Kategorien aus"
 		},
-		"redrawCostsMore": {
-			"one": "{n} geschätzte Generierung mehr als bei der Reparatur.",
-			"other": "{n} geschätzte Generierungen mehr als bei der Reparatur."
-		},
-		"billingNote": "Die Schätzungen vergleichen Generierungen, nicht Dollarpreise. PixelLab kann US-Dollar berechnen, und die Wartezeit kann variieren."
+		"outfitPreview": "{name} im Outfit, Blickrichtung {direction}",
+		"asIfWorn": "Wie getragen",
+		"layerScope": "Ändert die Reihenfolge aller Gegenstände in {slot}.",
+		"layerNothingToCross": "In dieser Ansicht überlappt nichts.",
+		"layerBack": "{name} (hinten)",
+		"layerWithSlot": "{name} ({slot})",
+		"resetOrder": "Reihenfolge zurücksetzen",
+		"hideRulesLater": "Gilt, wenn du {name} trägst.",
+		"aboutSection": "Info"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Neue Figur",
@@ -3672,5 +3666,11 @@
 		"colors": "Farben durchsuchen",
 		"clear": "Suche leeren",
 		"results": "{count} von {total}"
+	},
+	"spriteViewer": {
+		"frameOf": "Frame {frame} von {count}",
+		"missing": "Hier gibt es keinen Frame",
+		"direction": "Blickrichtung",
+		"frames": "Frames"
 	}
 }

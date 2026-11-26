@@ -492,16 +492,12 @@
 		"runningDetail": "{status}・{prompt}"
 	},
 	"itemPane": {
-		"artworkSection": "画像",
 		"movesSection": "動きと状態",
-		"outfitSection": "装備時の設定",
-		"replaceFrames": "この向きを修復または再描画",
+		"outfitSection": "コーディネート",
 		"technicalDetails": "技術詳細",
 		"openSprite": "{title}を拡大",
 		"availableDirectionsFor": "{name}の利用可能な向き",
-		"previewContext": "{move} · {frame}/{count} フレーム",
 		"drawForMoves": "不足しているモーション用に生成",
-		"drawSelected": "選択したモーションを生成",
 		"reviewMissingMoves": "不足しているモーションを確認",
 		"drawMovesSelect": "モーションを1つ以上選択してください。",
 		"selectAllMoves": "すべて選択",
@@ -511,8 +507,6 @@
 		"redrawView": "この向きを描き直す",
 		"sendBackward": "背面へ",
 		"bringForward": "前面へ",
-		"makeAnother": "新しいアイテムを作成",
-		"layerCategory": "レイヤー順は「{slot}」カテゴリ全体に適用されます。",
 		"inFrontOf": "{name}の前",
 		"behind": "{name}の後ろ",
 		"previewUnavailable": "この動きにはアイテム画像がありません。",
@@ -525,33 +519,21 @@
 		"hiddenByAnotherItem": "他のアイテムで隠れています",
 		"hiddenByItem": "{name} によって隠れています",
 		"showName": "{name} を表示",
-		"qualityChecks": "品質チェック",
 		"layerHiddenHint": "別の装着中アイテムがこれを隠しているため、ここではレイヤー順を変更できません。先に表示してください。",
 		"labelNameFacingId": "{id}向きの{name}",
 		"acceptedAppearanceWarnings": "承認済みの外観に関する警告",
 		"titleShowThisFrame": "このフレームを表示",
-		"checksFoundIssuesNoPaidRetryWas": "チェックで問題が見つかりました。有料の再試行は開始していません。もう一度生成をリクエストするか、このアイテムをそのまま承認できます。",
 		"acceptAsIs": "このまま承認",
 		"pendingWorkBusy": "モーションまたはセットアップが実行中か停止しています。これらの操作を使うには、完了するか破棄してください。",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "クレジットを消費せずに現在のアートワークを承認します。検出された問題は詳細に残ります。",
 		"keepWithoutMoves": "そのモーションなしで残す",
 		"keepWithoutMovesDetail": "クレジットを使わずに、そろっているモーションだけでアイテムを残します。{moves}では非表示になり、後で個別の価格で作れるよう不足として表示されたままになります。",
 		"youAcceptedThisArtworkWithItsRecorded": "記録された品質メモとともに、このアートワークを承認しました。",
-		"coverageTitle": "モーションの網羅状況",
-		"coverageAllDrawn": "すべてのモーションとステートに描画済み",
-		"coverageMissing": {
-			"other": "{n}件のモーションが未描画"
-		},
-		"coverageClipDrawn": "{move}: 描画済み",
-		"coverageClipMissing": "{move}: 未描画",
-		"itsMirroredViewsUpdateToo": "反転で作った向きのフレームも更新されます。",
 		"matchingColors": "色を合わせています…",
 		"matchItemColors": "アイテムの色を合わせる",
 		"recolor": "色を変更",
 		"layerOrder": "レイヤーの順序",
-		"reset": "リセット",
-		"whenWornHide": "装備時に隠すカテゴリ",
-		"howItWasMade": "作成方法",
+		"whenWornHide": "装備中に非表示",
 		"iD": "ID",
 		"slot": "装備スロット",
 		"route": "ルート",
@@ -580,15 +562,6 @@
 			"other": "{from}には、{name}にないこのアイテムのフレームが{n}枚あります。新しく生成せずにコピーできます。"
 		},
 		"makingMoreMoves": "追加のモーション用にアイテムのフレームを作成中",
-		"colorMatchNote": {
-			"other": "{direction}向きの保存済み{move}の{n}フレームで、{pixels}をアイテムの既存のカラーパレットに合わせます。"
-		},
-		"colorMatchFixed": "他の向きやモーション、素材、保存済みの配色は変わりません。",
-		"colorMatchMissing": "フレーム {frames} にはまだ絵がないため、対象外です。",
-		"colorMatchUnmatched": {
-			"other": "対象のうち一致しなかった{n}ピクセルは変更されません。"
-		},
-		"colorMatchFree": "既存の品質警告は残ります。PixelLabにリクエストは送信しません。",
 		"colorsMatched": "{frames}で{pixels}の色を合わせました。",
 		"pixels": {
 			"other": "{n}ピクセル"
@@ -596,7 +569,7 @@
 		"frames": {
 			"other": "{n}フレーム"
 		},
-		"onlyFacing": "{direction}向きのときだけレイヤーを移動",
+		"onlyFacing": "{direction}向きのときだけ",
 		"tuckNote": "{slots}が表示されていても、一部が重なって見えないことがあります。",
 		"chromaKey": "キー色：{color}",
 		"qaStatus": {
@@ -614,25 +587,50 @@
 		"maximum": "{value}（≤ {threshold}）",
 		"updateNote": "{move}の{direction}向きで、このアイテムを更新します。キャラクターの素体は変わりません。",
 		"updateNoteMirrors": "{move}の{direction}向きと、その反転で作る向きで、このアイテムを更新します。キャラクターの素体は変わりません。",
-		"repairItem": "アイテムを修復",
-		"redrawItem": "アイテムを描き直す",
 		"repairFeature": "アイテムの修復",
 		"redrawFeature": "アイテムの描き直し",
 		"repairHelp": "デザインが気に入っている場合に最適です。変更はアイテムの範囲内に限られます。",
 		"redrawHelp": "形や持ち方が変わる場合があります。残すかどうかは自分で選べます。",
-		"repairRequests": {
-			"other": "この修復ではPixelLabの生成リクエストを{n}回使います。"
+		"billingNote": "推定値は生成数を比較したもので、ドル価格ではありません。PixelLabから米ドルで請求される場合があり、待ち時間は状況によって異なります。",
+		"itemActions": "アイテムの操作",
+		"statusGenerating": "生成中",
+		"statusIncomplete": "未完成",
+		"calloutLook": "チェックでこのアイテムに問題が見つかりました。",
+		"review": "確認する",
+		"staleNote": "別の素体用に作られています。ずれる場合があります。",
+		"previewMove": "モーション",
+		"openMissingView": "{direction}を開く（フレームなし）",
+		"missingView": "なし",
+		"hiddenWhenWorn": "{names}の装備中は非表示",
+		"clipsIncomplete": {
+			"other": "{n}件が未完成"
 		},
-		"redrawRequests": {
-			"other": "この描き直しではPixelLabの生成リクエストを{n}回使います。"
+		"complete": "完成",
+		"clipNoFrames": "フレームなし",
+		"clipMissingViews": "不足：{directions}",
+		"generateMoves": {
+			"other": "{n}件のモーションを生成"
 		},
-		"redrawSaves": {
-			"other": "推定生成数は修復より{n}回少なくなります。"
+		"qualitySection": "品質",
+		"passed": "合格",
+		"checksPassed": "すべての品質チェックに合格しました。",
+		"fixViewTitle": "{move}の表示を修正",
+		"facing": "向き",
+		"matchColorsDetail": "{frames}の{pixels}をアイテム本来の色に合わせます。",
+		"fixFramesDetail": "お使いのお絵かきアプリでフレームを編集します。",
+		"hiddenState": "非表示",
+		"hidesCount": {
+			"other": "{n}カテゴリを非表示"
 		},
-		"redrawCostsMore": {
-			"other": "推定生成数は修復より{n}回多くなります。"
-		},
-		"billingNote": "推定値は生成数を比較したもので、ドル価格ではありません。PixelLabから米ドルで請求される場合があり、待ち時間は状況によって異なります。"
+		"outfitPreview": "コーディネート中の{name}（{direction}向き）",
+		"asIfWorn": "装備した場合",
+		"layerScope": "{slot}のすべてのアイテムの順番を変えます。",
+		"layerNothingToCross": "この表示では重なるものがありません。",
+		"layerBack": "{name}（後ろ）",
+		"layerWithSlot": "{name}（{slot}）",
+		"resetOrder": "順番をリセット",
+		"hideRulesLater": "{name}を装備したときに適用されます。",
+		"aboutSection": "詳細"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新しいキャラクター",
@@ -3571,5 +3569,11 @@
 		"colors": "カラーを検索",
 		"clear": "検索をクリア",
 		"results": "{total} 件中 {count} 件"
+	},
+	"spriteViewer": {
+		"frameOf": "フレーム {frame} / {count}",
+		"missing": "ここにフレームはありません",
+		"direction": "向き",
+		"frames": "フレーム"
 	}
 }

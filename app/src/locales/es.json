@@ -501,16 +501,12 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
-		"artworkSection": "Gráficos",
 		"movesSection": "Movimientos y estados",
-		"outfitSection": "Comportamiento del atuendo",
-		"replaceFrames": "Reparar o redibujar esta vista",
+		"outfitSection": "Atuendo",
 		"technicalDetails": "Detalles técnicos",
 		"openSprite": "Ampliar {title}",
 		"availableDirectionsFor": "Direcciones disponibles para {name}",
-		"previewContext": "{move} · fotograma {frame} de {count}",
 		"drawForMoves": "Generar para movimientos faltantes",
-		"drawSelected": "Generar movimientos seleccionados",
 		"reviewMissingMoves": "Revisar movimientos faltantes",
 		"drawMovesSelect": "Selecciona al menos un movimiento.",
 		"selectAllMoves": "Seleccionar todo",
@@ -520,8 +516,6 @@
 		"redrawView": "Redibujar esta vista",
 		"sendBackward": "Enviar atrás",
 		"bringForward": "Traer adelante",
-		"makeAnother": "Crear un objeto nuevo",
-		"layerCategory": "El orden de capas se aplica a la categoría {slot}.",
 		"inFrontOf": "Delante de {name}",
 		"behind": "Detrás de {name}",
 		"previewUnavailable": "Este objeto no tiene gráficos para este movimiento.",
@@ -536,34 +530,21 @@
 		"hiddenByAnotherItem": "Oculto por otro objeto",
 		"hiddenByItem": "Oculto por {name}",
 		"showName": "Mostrar {name}",
-		"qualityChecks": "Comprobaciones de calidad",
 		"layerHiddenHint": "Otro objeto puesto oculta este, así que su orden de capas no se puede cambiar aquí. Muéstralo primero.",
 		"labelNameFacingId": "{name} · Dirección: {id}",
 		"acceptedAppearanceWarnings": "Advertencias de apariencia aceptadas",
 		"titleShowThisFrame": "Mostrar este fotograma",
-		"checksFoundIssuesNoPaidRetryWas": "Las comprobaciones detectaron problemas. No se inició ningún reintento de pago. Puedes solicitar otro intento o aceptar el objeto tal cual.",
 		"acceptAsIs": "Aceptar tal cual",
 		"pendingWorkBusy": "Hay una animación o configuración en curso o detenida. Termínala o descártala para usar estas acciones.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Acepta el diseño actual sin gastar créditos. Los problemas detectados quedan en los detalles del objeto.",
 		"keepWithoutMoves": "Conservar sin esas animaciones",
 		"keepWithoutMovesDetail": "Conserva el objeto con sus animaciones completas sin gastar créditos. Se oculta en {moves}, que siguen marcadas como faltantes para que puedas crearlas después por su propio precio.",
 		"youAcceptedThisArtworkWithItsRecorded": "Aceptaste este diseño con las observaciones de calidad registradas.",
-		"coverageTitle": "Cobertura de animaciones",
-		"coverageAllDrawn": "Dibujado en todas las animaciones y estados",
-		"coverageMissing": {
-			"one": "Falta {n} animación",
-			"other": "Faltan {n} animaciones"
-		},
-		"coverageClipDrawn": "{move}: dibujado",
-		"coverageClipMissing": "{move}: falta",
-		"itsMirroredViewsUpdateToo": "Sus vistas reflejadas también se actualizan.",
 		"matchingColors": "Igualando colores…",
 		"matchItemColors": "Igualar colores del objeto",
 		"recolor": "Cambiar colores",
 		"layerOrder": "Orden de capas",
-		"reset": "Restablecer",
-		"whenWornHide": "Ocultar categorías al equipar",
-		"howItWasMade": "Cómo se hizo",
+		"whenWornHide": "Ocultar al llevarlo",
 		"iD": "ID",
 		"slot": "Ranura",
 		"route": "Ruta",
@@ -593,17 +574,6 @@
 			"other": "{from} tiene {n} fotogramas de este objeto que a {name} le faltan. No se genera nada."
 		},
 		"makingMoreMoves": "Creando objetos para más animaciones",
-		"colorMatchNote": {
-			"one": "Ajusta {pixels} a la paleta actual del objeto en {n} fotograma guardado de {move} en dirección {direction}.",
-			"other": "Ajusta {pixels} a la paleta actual del objeto en {n} fotogramas guardados de {move} en dirección {direction}."
-		},
-		"colorMatchFixed": "Las demás vistas, animaciones, materiales y cambios de color guardados no cambian.",
-		"colorMatchMissing": "Los fotogramas {frames} aún no tienen arte, así que se omiten.",
-		"colorMatchUnmatched": {
-			"one": "{n} píxel apto sin coincidencia se queda igual.",
-			"other": "{n} píxeles aptos sin coincidencia se quedan igual."
-		},
-		"colorMatchFree": "Se conservan las advertencias de calidad existentes. No se hace ninguna llamada a PixelLab.",
 		"colorsMatched": "Se igualaron {pixels} en {frames}.",
 		"pixels": {
 			"one": "{n} píxel",
@@ -613,7 +583,7 @@
 			"one": "{n} fotograma",
 			"other": "{n} fotogramas"
 		},
-		"onlyFacing": "Mover la capa solo en dirección {direction}",
+		"onlyFacing": "Solo mirando hacia {direction}",
 		"tuckNote": "Los objetos visibles en {slots} pueden quedar parcialmente cubiertos.",
 		"chromaKey": "Color clave: {color}",
 		"qaStatus": {
@@ -631,29 +601,53 @@
 		"maximum": "{value} (≤ {threshold})",
 		"updateNote": "Actualiza este objeto en {move} en dirección {direction}. El cuerpo del personaje no cambia.",
 		"updateNoteMirrors": "Actualiza este objeto en {move} en dirección {direction} y en sus vistas reflejadas. El cuerpo del personaje no cambia.",
-		"repairItem": "Reparar objeto",
-		"redrawItem": "Redibujar objeto",
 		"repairFeature": "La reparación del objeto",
 		"redrawFeature": "El redibujado del objeto",
 		"repairHelp": "Ideal si te gusta el diseño. Limita los cambios a la zona del objeto.",
 		"redrawHelp": "Puede cambiar la forma o el agarre. Tú decides si lo conservas.",
-		"repairRequests": {
-			"one": "Esta reparación usa {n} solicitud de generación de PixelLab.",
-			"other": "Esta reparación usa {n} solicitudes de generación de PixelLab."
+		"billingNote": "Las estimaciones comparan generaciones, no precios en dólares. PixelLab puede cobrar en dólares y el tiempo en cola puede variar.",
+		"itemActions": "Acciones del objeto",
+		"statusGenerating": "Generando",
+		"statusIncomplete": "Incompleto",
+		"calloutLook": "Las comprobaciones encontraron problemas en este objeto.",
+		"review": "Revisar",
+		"staleNote": "Hecho para otro cuerpo. Puede que no encaje.",
+		"previewMove": "Animación",
+		"openMissingView": "Abrir {direction} (aún sin fotogramas)",
+		"missingView": "Ninguno",
+		"hiddenWhenWorn": "Oculto mientras se lleva {names}",
+		"clipsIncomplete": {
+			"one": "{n} incompleta",
+			"other": "{n} incompletas"
 		},
-		"redrawRequests": {
-			"one": "Este redibujado usa {n} solicitud de generación de PixelLab.",
-			"other": "Este redibujado usa {n} solicitudes de generación de PixelLab."
+		"complete": "Completo",
+		"clipNoFrames": "Aún sin fotogramas",
+		"clipMissingViews": "Falta: {directions}",
+		"generateMoves": {
+			"one": "Generar {n} animación",
+			"other": "Generar {n} animaciones"
 		},
-		"redrawSaves": {
-			"one": "{n} generación estimada menos que la reparación.",
-			"other": "{n} generaciones estimadas menos que la reparación."
+		"qualitySection": "Calidad",
+		"passed": "Superadas",
+		"checksPassed": "Todas las comprobaciones de calidad se superaron.",
+		"fixViewTitle": "Corregir la vista de {move}",
+		"facing": "Dirección",
+		"matchColorsDetail": "Ajusta {pixels} en {frames} a los colores propios del objeto.",
+		"fixFramesDetail": "Edita los fotogramas en tu propio programa de dibujo.",
+		"hiddenState": "Oculto",
+		"hidesCount": {
+			"one": "Oculta {n} categoría",
+			"other": "Oculta {n} categorías"
 		},
-		"redrawCostsMore": {
-			"one": "{n} generación estimada más que la reparación.",
-			"other": "{n} generaciones estimadas más que la reparación."
-		},
-		"billingNote": "Las estimaciones comparan generaciones, no precios en dólares. PixelLab puede cobrar en dólares y el tiempo en cola puede variar."
+		"outfitPreview": "{name} en el atuendo, mirando hacia {direction}",
+		"asIfWorn": "Como si lo llevara",
+		"layerScope": "Cambia el orden de todos los objetos de {slot}.",
+		"layerNothingToCross": "Nada se superpone en esta vista.",
+		"layerBack": "{name} (detrás)",
+		"layerWithSlot": "{name} ({slot})",
+		"resetOrder": "Restablecer orden",
+		"hideRulesLater": "Se aplica cuando te pones {name}.",
+		"aboutSection": "Información"
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nuevo personaje",
@@ -3672,5 +3666,11 @@
 		"colors": "Buscar colores",
 		"clear": "Borrar búsqueda",
 		"results": "{count} de {total}"
+	},
+	"spriteViewer": {
+		"frameOf": "Fotograma {frame} de {count}",
+		"missing": "No hay fotograma aquí",
+		"direction": "Dirección",
+		"frames": "Fotogramas"
 	}
 }

@@ -53,6 +53,7 @@ export {
 	settleHands,
 	tuckers,
 	tuckedId,
+	tucked,
 	variantCovers,
 	shownItems,
 	cutAt,
