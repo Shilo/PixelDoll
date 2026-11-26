@@ -394,7 +394,6 @@ test('full screen stays reachable beside More on narrow and landscape screens', 
 	page
 }) => {
 	await landing(page);
-	await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click();
 	for (const viewport of [
 		{ width: 320, height: 568 },
 		{ width: 360, height: 800 },
@@ -3281,8 +3280,6 @@ test.describe('two-finger equipment input', () => {
 		context
 	}) => {
 		await landing(page);
-		// The startup warning overlays part of the world until explicitly dismissed.
-		await page.locator('.toast').getByRole('button', { name: 'Dismiss notification' }).click();
 		await page.locator('.customize-action').click();
 		await equipmentGroup(page, 'Head');
 		await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();

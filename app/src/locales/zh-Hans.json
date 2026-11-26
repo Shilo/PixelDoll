@@ -632,7 +632,8 @@
 		"newCharacter": "新建角色",
 		"createFromScratch": "从零创建…",
 		"importFromDevice": "从设备导入…",
-		"importFromPixelLab": "从 PixelLab 导入…"
+		"importFromPixelLab": "从 PixelLab 导入…",
+		"createNeedsKey": "需要 PixelLab 密钥，并会使用付费生成次数"
 	},
 	"noticeLink": {
 		"opensInANewTab": "（在新标签页中打开）"
@@ -904,25 +905,7 @@
 		"itemQueued": "排队中，将为{move}绘制"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "演示无需账户。创建会消耗你的 {pixelLab} 生成次数。",
-		"steps": {
-			"create": "创建",
-			"describeBody": "描述身体",
-			"addItems": "添加装备",
-			"examples": "帽子、上衣、武器",
-			"dressUp": "换装",
-			"wearRecolorPlay": "穿戴、重新上色、试玩",
-			"export": "导出",
-			"anyEngine": "任意游戏引擎"
-		},
-		"switchToLightMode": "切换到浅色模式",
-		"switchToDarkMode": "切换到深色模式",
-		"labelDemoCharacterWalking": "演示角色行走",
-		"dressUpYour2DGameCharactersWith": "用像素级完美的纸娃娃换装，装扮你的 2D 游戏角色",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "使用 PixelLab AI 生成可替换、帧对齐的装备图层，并导出到任意游戏引擎。",
-		"createYourCharacter": "创建你的角色",
-		"tryTheDemo": "试用演示",
-		"importAnExistingCharacter": "导入现有角色"
+		"createYourCharacter": "创建你的角色"
 	},
 	"experience": {
 		"movesOffMounted": "动作在预览中选择。骑乘移动会遵循坐骑设置中的骑乘姿势。",
@@ -3370,9 +3353,7 @@
 			"other": "{n} 次调用价格未知"
 		}
 	},
-	"shortcut": {
-		"control": "Ctrl"
-	},
+	"shortcut": { "control": "Ctrl" },
 	"report": {
 		"action": "报告",
 		"actionLabel": "报告此问题",
@@ -3565,5 +3546,15 @@
 		"colors": "搜索颜色",
 		"clear": "清除搜索",
 		"results": "{total} 项中显示 {count} 项"
+	},
+	"demoTips": {
+		"intro": "试穿装备，然后导出到你的游戏。无需 PixelLab 密钥。",
+		"gearTitle": "试穿装备",
+		"gearBody": "在“衣橱”中选择一件装备来穿上或卸下。",
+		"exportTitle": "带进你的游戏",
+		"exportBody": "导出会把基础身体和每件装备保存为单独的精灵图集。",
+		"exportInMoreBody": "打开“更多选项”，再选“导出”，即可把基础身体和每件装备保存为单独的精灵图集。",
+		"dismiss": "关闭提示",
+		"replay": "演示提示"
 	}
 }

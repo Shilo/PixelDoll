@@ -41,7 +41,6 @@ const menu = async (p, name) => {
 };
 const phoneLike = (d) => d === 'phone' || d === 'landscape' || d === 'tablet' || d === 'narrow'; // tablet portrait stacks like a phone (B10)
 const SCREENS = {
-	welcome: null,
 	studio: async () => {},
 	alldirs: async (p) => p.getByRole('button', { name: 'All directions' }).click(),
 	colors: async (p, d) => p.getByRole('tab', { name: 'Colors' }).first().click(),
@@ -82,20 +81,15 @@ const todo = shots.filter((s) => !filters.length || filters.every((f) => name(s)
 const browser = await chromium.launch();
 for (const s of todo) {
 	const ctx = await browser.newContext({ ...DEVICES[s.device], reducedMotion: 'reduce' });
-	await ctx.addInitScript(
-		([theme, welcome]) => {
-			localStorage.setItem('pixeldoll.theme', theme);
-			localStorage.setItem('pixeldoll.agentKey', 'off');
-			if (!welcome) localStorage.setItem('pixeldoll.welcomed', '1');
-		},
-		[s.theme, s.screen === 'welcome']
-	);
+	await ctx.addInitScript((theme) => {
+		localStorage.setItem('pixeldoll.theme', theme);
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	}, s.theme);
 	const page = await ctx.newPage();
 	page.on('pageerror', (e) => console.error('pageerror', name(s), e.message));
 	await page.goto(`${BASE}/#/`, { waitUntil: 'networkidle' });
-	await page.waitForSelector(s.screen === 'welcome' ? '.welcome canvas' : '.stage canvas', {
-		timeout: 15000
-	});
+	await page.waitForSelector('.stage canvas', { timeout: 15000 });
 	await page.waitForTimeout(300);
 	try {
 		await SCREENS[s.screen]?.(page, s.device);

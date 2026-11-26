@@ -632,7 +632,8 @@
 		"newCharacter": "新しいキャラクター",
 		"createFromScratch": "一から作成…",
 		"importFromDevice": "デバイスからインポート…",
-		"importFromPixelLab": "PixelLabからインポート…"
+		"importFromPixelLab": "PixelLabからインポート…",
+		"createNeedsKey": "PixelLabのキーが必要で、有料の生成を使います"
 	},
 	"noticeLink": {
 		"opensInANewTab": "（新しいタブで開きます）"
@@ -904,25 +905,7 @@
 		"itemQueued": "{move}用に待機中"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "デモはアカウントなしで使えます。作成には、お使いの{pixelLab}アカウントの生成回数を使います。",
-		"steps": {
-			"create": "作成",
-			"describeBody": "素体の特徴を入力",
-			"addItems": "アイテムを追加",
-			"examples": "帽子、トップス、武器",
-			"dressUp": "着せ替え",
-			"wearRecolorPlay": "装備、色の変更、プレイ",
-			"export": "エクスポート",
-			"anyEngine": "あらゆるゲームエンジンに"
-		},
-		"switchToLightMode": "ライトモードに切り替え",
-		"switchToDarkMode": "ダークモードに切り替え",
-		"labelDemoCharacterWalking": "歩いているデモキャラクター",
-		"dressUpYour2DGameCharactersWith": "2Dゲームのキャラクターを、ピクセル単位でぴったり合う装備で着せ替え",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "PixelLab AIで各フレームにぴったり合う、交換可能な装備レイヤーを生成し、どのゲームエンジンにもエクスポートできます。",
-		"createYourCharacter": "キャラクターを作成",
-		"tryTheDemo": "デモを試す",
-		"importAnExistingCharacter": "既存のキャラクターをインポート"
+		"createYourCharacter": "キャラクターを作成"
 	},
 	"experience": {
 		"movesOffMounted": "モーションはプレビューで選びます。騎乗中の移動は、乗り物の設定の騎乗ポーズに従います。",
@@ -3370,9 +3353,7 @@
 			"other": "料金不明の呼び出し{n}件"
 		}
 	},
-	"shortcut": {
-		"control": "Ctrl"
-	},
+	"shortcut": { "control": "Ctrl" },
 	"report": {
 		"action": "報告",
 		"actionLabel": "この問題を報告",
@@ -3565,5 +3546,15 @@
 		"colors": "カラーを検索",
 		"clear": "検索をクリア",
 		"results": "{total} 件中 {count} 件"
+	},
+	"demoTips": {
+		"intro": "装備を試着して、ゲーム用にエクスポートしましょう。PixelLabのキーは不要です。",
+		"gearTitle": "装備を試着",
+		"gearBody": "「装備」でアイテムを選ぶと、着けたり外したりできます。",
+		"exportTitle": "ゲームに持っていく",
+		"exportBody": "エクスポートすると、素体と各アイテムが別々のスプライトシートとして保存されます。",
+		"exportInMoreBody": "「その他のオプション」から「エクスポート」を選ぶと、素体と各アイテムが別々のスプライトシートとして保存されます。",
+		"dismiss": "ヒントを閉じる",
+		"replay": "デモのヒント"
 	}
 }

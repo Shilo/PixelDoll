@@ -12,6 +12,7 @@
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import { experience } from './experience/state.svelte.ts';
+	import { replayDemoTips } from './experience/demoTips.svelte.ts';
 	import DemoCopyRow from './DemoCopyRow.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import FullscreenButton from './FullscreenButton.svelte';
@@ -34,6 +35,7 @@
 		Bug,
 		ExternalLink,
 		CircleHelp,
+		Lightbulb,
 		RefreshCw,
 		Share2,
 		Settings2,
@@ -267,6 +269,17 @@
 		>
 			<PopoverArrow />
 			<div class="menu-surface bu-popover-surface bu-floating">
+				{#if !workspaceCopy}<button
+						class="row bu-action"
+						data-variant="quiet"
+						onclick={() => {
+							closeOptions();
+							replayDemoTips();
+						}}
+						><Lightbulb size={18} aria-hidden="true" /><span class="row-name"
+							>{t('demoTips.replay')}</span
+						></button
+					>{/if}
 				<a
 					class="row bu-action"
 					data-variant="quiet"

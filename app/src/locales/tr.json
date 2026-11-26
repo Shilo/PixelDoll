@@ -654,7 +654,8 @@
 		"newCharacter": "Yeni karakter",
 		"createFromScratch": "Sıfırdan oluşturun…",
 		"importFromDevice": "Cihazdan içe aktarın…",
-		"importFromPixelLab": "PixelLab üzerinden içe aktarın…"
+		"importFromPixelLab": "PixelLab üzerinden içe aktarın…",
+		"createNeedsKey": "PixelLab anahtarı gerekir ve ücretli üretimler kullanır"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(yeni sekmede açılır)"
@@ -930,25 +931,7 @@
 		"itemQueued": "{move} için sırada"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "Demo için hesap gerekmez. Üretim, {pixelLab} hesabınızdaki üretim haklarını kullanır.",
-		"steps": {
-			"create": "Oluşturun",
-			"describeBody": "Gövdeyi tarif edin",
-			"addItems": "Eşya ekleyin",
-			"examples": "Şapkalar, üst giysiler, silahlar",
-			"dressUp": "Karakteri giydirin",
-			"wearRecolorPlay": "Giydirin, renklendirin, oynayın",
-			"export": "Dışa aktarın",
-			"anyEngine": "Herhangi bir oyun motoru"
-		},
-		"switchToLightMode": "Açık moda geçin",
-		"switchToDarkMode": "Koyu moda geçin",
-		"labelDemoCharacterWalking": "Yürüyen demo karakteri",
-		"dressUpYour2DGameCharactersWith": "2B oyun karakterlerinizi piksel piksel hizalanmış kâğıt bebek katmanlarıyla giydirin",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "PixelLab yapay zekâsıyla karelere hizalanmış, değiştirilebilir ekipman katmanları üretin ve dilediğiniz oyun motoruna aktarın.",
-		"createYourCharacter": "Karakterinizi oluşturun",
-		"tryTheDemo": "Demoyu deneyin",
-		"importAnExistingCharacter": "Mevcut bir karakteri içe aktarın"
+		"createYourCharacter": "Karakterinizi oluşturun"
 	},
 	"experience": {
 		"movesOffMounted": "Animasyonlar Önizleme'de seçilir. Binek üzerinde hareket, binek ayarlarındaki Binici pozunu izler.",
@@ -3470,9 +3453,7 @@
 			"other": "Fiyatı bilinmeyen çağrı: {n}"
 		}
 	},
-	"shortcut": {
-		"control": "Ctrl"
-	},
+	"shortcut": { "control": "Ctrl" },
 	"report": {
 		"action": "Bildir",
 		"actionLabel": "Bu sorunu bildir",
@@ -3667,5 +3648,15 @@
 		"colors": "Renklerde ara",
 		"clear": "Aramayı temizle",
 		"results": "{total} içinden {count}"
+	},
+	"demoTips": {
+		"intro": "Ekipman deneyin, sonra oyununuz için dışa aktarın. PixelLab anahtarı gerekmez.",
+		"gearTitle": "Ekipman deneyin",
+		"gearBody": "Giymek veya çıkarmak için Gardırop’tan bir eşya seçin.",
+		"exportTitle": "Oyununuza taşıyın",
+		"exportBody": "Dışa aktarma, temel gövdeyi ve her eşyayı ayrı sprite sayfaları olarak kaydeder.",
+		"exportInMoreBody": "Temel gövdeyi ve her eşyayı ayrı sprite sayfaları olarak kaydetmek için Diğer seçenekler’i, ardından Dışa aktarın’ı açın.",
+		"dismiss": "İpuçlarını kapatın",
+		"replay": "Demo ipuçları"
 	}
 }

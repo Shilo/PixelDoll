@@ -131,10 +131,21 @@
 			};
 		if (workspaceCopy) ui.welcome = false;
 		const off = initUi();
-		if (PRE_RELEASE && !workspaceCopy)
+		const previewNotice = () =>
 			toast(previewNoticeDetails, { ...PREVIEW_NOTICE, action: downloadLibraryBackupWithFeedback });
+		// A first visit with nothing saved has no work at risk yet, so the warning waits for a later visit instead of
+		// greeting a newcomer with it. Any saved character brings it back at once.
+		const firstVisit = ui.welcome;
+		if (PRE_RELEASE && !workspaceCopy && !firstVisit) previewNotice();
 		void (async () => {
 			const listed = await refreshProjects();
+			if (
+				PRE_RELEASE &&
+				!workspaceCopy &&
+				firstVisit &&
+				(!listed || store.projects.some((p) => !p.demo))
+			)
+				previewNotice();
 			const initial = lastProject();
 			const initialProject = store.projects.find((project) => project.id === initial);
 			await openProject(

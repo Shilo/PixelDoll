@@ -632,7 +632,8 @@
 		"newCharacter": "Karakter baru",
 		"createFromScratch": "Buat dari awal…",
 		"importFromDevice": "Impor dari perangkat…",
-		"importFromPixelLab": "Impor dari PixelLab…"
+		"importFromPixelLab": "Impor dari PixelLab…",
+		"createNeedsKey": "Perlu kunci PixelLab dan memakai generasi berbayar"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(terbuka di tab baru)"
@@ -904,25 +905,7 @@
 		"itemQueued": "dalam antrean untuk {move}"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "Demo tidak memerlukan akun. Pembuatan menggunakan jatah generasi {pixelLab} Anda.",
-		"steps": {
-			"create": "Buat",
-			"describeBody": "Deskripsikan tubuh",
-			"addItems": "Tambah item",
-			"examples": "Topi, atasan, senjata",
-			"dressUp": "Dandani",
-			"wearRecolorPlay": "Kenakan, warnai ulang, putar animasi",
-			"export": "Ekspor",
-			"anyEngine": "Ke game engine apa pun"
-		},
-		"switchToLightMode": "Beralih ke mode terang",
-		"switchToDarkMode": "Beralih ke mode gelap",
-		"labelDemoCharacterWalking": "Karakter demo sedang berjalan",
-		"dressUpYour2DGameCharactersWith": "Dandani karakter game 2D Anda dengan teknik boneka kertas yang presisi hingga tiap piksel",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "Buat lapisan perlengkapan yang bisa ditukar dan sejajar di setiap frame dengan PixelLab AI, lalu ekspor ke game engine apa pun.",
-		"createYourCharacter": "Buat karakter Anda",
-		"tryTheDemo": "Coba demo",
-		"importAnExistingCharacter": "Impor karakter yang sudah ada"
+		"createYourCharacter": "Buat karakter Anda"
 	},
 	"experience": {
 		"movesOffMounted": "Pilih animasi di Pratinjau. Saat menunggang, gerakan mengikuti Pose penunggang di pengaturan tunggangan.",
@@ -3370,9 +3353,7 @@
 			"other": "{n} panggilan tanpa harga"
 		}
 	},
-	"shortcut": {
-		"control": "Ctrl"
-	},
+	"shortcut": { "control": "Ctrl" },
 	"report": {
 		"action": "Laporkan",
 		"actionLabel": "Laporkan masalah ini",
@@ -3565,5 +3546,15 @@
 		"colors": "Cari warna",
 		"clear": "Hapus pencarian",
 		"results": "{count} dari {total}"
+	},
+	"demoTips": {
+		"intro": "Coba perlengkapan, lalu ekspor untuk game Anda. Tidak perlu kunci PixelLab.",
+		"gearTitle": "Coba perlengkapan",
+		"gearBody": "Pilih item di Lemari untuk memakainya atau melepasnya.",
+		"exportTitle": "Bawa ke game Anda",
+		"exportBody": "Ekspor menyimpan tubuh dasar dan setiap item sebagai sprite sheet terpisah.",
+		"exportInMoreBody": "Buka Opsi lainnya, lalu Ekspor, untuk menyimpan tubuh dasar dan setiap item sebagai sprite sheet terpisah.",
+		"dismiss": "Tutup tips",
+		"replay": "Tips demo"
 	}
 }

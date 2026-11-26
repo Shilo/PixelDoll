@@ -654,7 +654,8 @@
 		"newCharacter": "New character",
 		"createFromScratch": "Create from scratch…",
 		"importFromDevice": "Import from device…",
-		"importFromPixelLab": "Import from PixelLab…"
+		"importFromPixelLab": "Import from PixelLab…",
+		"createNeedsKey": "Needs a PixelLab key and uses paid generations"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(opens in a new tab)"
@@ -930,25 +931,7 @@
 		"itemQueued": "queued for {move}"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "The demo needs no account. Creating uses your {pixelLab} generations.",
-		"steps": {
-			"create": "Create",
-			"describeBody": "Describe the body",
-			"addItems": "Add items",
-			"examples": "Hats, tops, weapons",
-			"dressUp": "Dress up",
-			"wearRecolorPlay": "Wear, recolor, play",
-			"export": "Export",
-			"anyEngine": "Any game engine"
-		},
-		"switchToLightMode": "Switch to light mode",
-		"switchToDarkMode": "Switch to dark mode",
-		"labelDemoCharacterWalking": "Demo character walking",
-		"dressUpYour2DGameCharactersWith": "Dress up your 2D game characters with pixel‑perfect paper dolling",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine.",
-		"createYourCharacter": "Create your character",
-		"tryTheDemo": "Try the demo",
-		"importAnExistingCharacter": "Import an existing character"
+		"createYourCharacter": "Create your character"
 	},
 	"experience": {
 		"movesOffMounted": "Moves are picked in Preview. Mounted movement follows the Riding pose in Mount settings.",
@@ -3665,5 +3648,15 @@
 		"colors": "Search colors",
 		"clear": "Clear search",
 		"results": "{count} of {total}"
+	},
+	"demoTips": {
+		"intro": "Try on gear, then export it for your game. No PixelLab key needed.",
+		"gearTitle": "Try on gear",
+		"gearBody": "Choose an item in the Wardrobe to put it on or take it off.",
+		"exportTitle": "Take it into your game",
+		"exportBody": "Export saves the body and each item as separate spritesheets.",
+		"exportInMoreBody": "Open More options, then Export, to save the body and each item as separate spritesheets.",
+		"dismiss": "Dismiss tips",
+		"replay": "Demo tips"
 	}
 }

@@ -654,7 +654,8 @@
 		"newCharacter": "Nuevo personaje",
 		"createFromScratch": "Crear desde cero…",
 		"importFromDevice": "Importar desde el dispositivo…",
-		"importFromPixelLab": "Importar desde PixelLab…"
+		"importFromPixelLab": "Importar desde PixelLab…",
+		"createNeedsKey": "Necesita una clave de PixelLab y usa generaciones de pago"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(se abre en una pestaña nueva)"
@@ -930,25 +931,7 @@
 		"itemQueued": "en cola para {move}"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "La demo no necesita cuenta. Crear usa tus generaciones de {pixelLab}.",
-		"steps": {
-			"create": "Crea",
-			"describeBody": "Describe el cuerpo",
-			"addItems": "Agrega objetos",
-			"examples": "Sombreros, camisas, armas",
-			"dressUp": "Viste al personaje",
-			"wearRecolorPlay": "Equipa, cambia colores y juega",
-			"export": "Exporta",
-			"anyEngine": "Cualquier motor de juego"
-		},
-		"switchToLightMode": "Cambiar a modo claro",
-		"switchToDarkMode": "Cambiar a modo oscuro",
-		"labelDemoCharacterWalking": "Personaje de demo caminando",
-		"dressUpYour2DGameCharactersWith": "Viste a tus personajes 2D con capas de muñeco recortable que encajan píxel a píxel",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "Genera capas de equipamiento intercambiables y alineadas por fotograma con PixelLab AI y expórtalas a cualquier motor de juego.",
-		"createYourCharacter": "Crea tu personaje",
-		"tryTheDemo": "Prueba la demo",
-		"importAnExistingCharacter": "Importa un personaje existente"
+		"createYourCharacter": "Crea tu personaje"
 	},
 	"experience": {
 		"movesOffMounted": "Las animaciones se eligen en Vista previa. Al moverte con montura se sigue la pose de jinete de los ajustes de montura.",
@@ -3470,9 +3453,7 @@
 			"other": "{n} llamadas sin precio"
 		}
 	},
-	"shortcut": {
-		"control": "Ctrl"
-	},
+	"shortcut": { "control": "Ctrl" },
 	"report": {
 		"action": "Informar",
 		"actionLabel": "Informar de este problema",
@@ -3667,5 +3648,15 @@
 		"colors": "Buscar colores",
 		"clear": "Borrar búsqueda",
 		"results": "{count} de {total}"
+	},
+	"demoTips": {
+		"intro": "Pruébate equipo y expórtalo para tu juego. No necesitas clave de PixelLab.",
+		"gearTitle": "Pruébate equipo",
+		"gearBody": "Elige un objeto del Armario para ponértelo o quitártelo.",
+		"exportTitle": "Llévalo a tu juego",
+		"exportBody": "Exportar guarda el cuerpo base y cada objeto en hojas de sprites separadas.",
+		"exportInMoreBody": "Abre Más opciones y luego Exportar para guardar el cuerpo base y cada objeto en hojas de sprites separadas.",
+		"dismiss": "Ocultar consejos",
+		"replay": "Consejos de la demo"
 	}
 }

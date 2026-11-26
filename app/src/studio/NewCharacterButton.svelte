@@ -42,9 +42,19 @@
 >
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
-		<button class="row" role="menuitem" onclick={() => choose('create')}
-			><Sparkles size={16} />{openerLabel(t('newCharacterButton.createFromScratch'))}<SurfaceChevron
-			/></button
+		<!-- Creating is the one paid path here: say so before the form, not after it is filled in. -->
+		<button
+			class="row"
+			role="menuitem"
+			aria-labelledby="{id}-create"
+			aria-describedby="{id}-paid"
+			onclick={() => choose('create')}
+			><Sparkles size={16} /><span class="row-name"
+				><span id="{id}-create">{openerLabel(t('newCharacterButton.createFromScratch'))}</span><span
+					id="{id}-paid"
+					class="row-reason bu-muted">{t('newCharacterButton.createNeedsKey')}</span
+				></span
+			><SurfaceChevron /></button
 		>
 		<button class="row" role="menuitem" onclick={() => choose('importZip')}
 			><Download size={16} />{openerLabel(t('newCharacterButton.importFromDevice'))}<SurfaceChevron

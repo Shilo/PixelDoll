@@ -578,6 +578,7 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	page
 }, info) => {
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
+	await page.addInitScript(() => localStorage.setItem('pixeldoll.welcomed', '1'));
 	await page.goto(dev);
 	const notice = page.locator('.toast');
 	await expect(notice.locator('.bu-notice-content > strong')).toHaveText(
@@ -714,12 +715,55 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	await expect(notice).toHaveCount(0);
 });
 
+test('first-visit demo tips teach gear and Export, then stay away until Help replays them', async ({
+	page,
+	baseURL
+}) => {
+	await page.goto(baseURL!);
+	const customize = page.locator('.customize-action');
+	await expect(customize).toBeVisible({ timeout: 20_000 });
+	await expect(
+		page.getByText('Try on gear, then export it for your game. No PixelLab key needed.')
+	).toBeVisible();
+	// Nothing is saved on a first visit, so the pre-release warning waits for a later one.
+	const preview = page.getByRole('status').filter({ hasText: /Pre-release · v/ });
+	await expect(preview).toHaveCount(0);
+	await page.getByRole('button', { name: 'New character', exact: true }).click();
+	await expect(
+		page.getByRole('menuitem', { name: 'Create from scratch...', exact: true })
+	).toHaveAccessibleDescription('Needs a PixelLab key and uses paid generations');
+	await page.keyboard.press('Escape');
+	await customize.click();
+	const tip = page.locator('.demo-tip');
+	await expect(tip.getByRole('heading', { name: 'Try on gear' })).toBeVisible();
+	const helmet = page.locator('#customization-panel [data-tile="helmet_steel"]');
+	await helmet.click();
+	await expect(tip.getByRole('heading', { name: 'Take it into your game' })).toBeVisible();
+	// Tips never take focus from the work.
+	await expect(helmet).toBeFocused();
+	await page.getByRole('button', { name: 'Export', exact: true }).click();
+	await expect(page.locator('dialog[open]')).toBeVisible();
+	await expect(tip).toHaveCount(0);
+	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.welcomed'))).toBe('1');
+	await page.reload();
+	await expect(preview).toBeVisible();
+	await enterStudio(page);
+	await expect(tip).toHaveCount(0);
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: /^Help/ }).click();
+	await page.getByRole('button', { name: 'Demo tips', exact: true }).click();
+	await expect(tip.getByRole('heading', { name: 'Try on gear' })).toBeVisible();
+	await tip.getByRole('button', { name: 'Dismiss tips' }).click();
+	await expect(tip).toHaveCount(0);
+});
+
 test('the startup preview notice expires after eight seconds', async ({ page }, info) => {
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
 	const time = new Date('2026-11-02T12:00:00Z');
 	// Pause after the installed time: the installed clock runs until the pause, and pausing in its past throws (seen under load).
 	await page.clock.install({ time });
 	await page.clock.pauseAt(new Date(time.getTime() + 1000));
+	await page.addInitScript(() => localStorage.setItem('pixeldoll.welcomed', '1'));
 	await page.goto(dev);
 	const preview = page.getByRole('status').filter({ hasText: /Pre-release · v/ });
 	await expect(preview).toBeVisible();
@@ -741,6 +785,7 @@ test('the startup notice and More menu download a library backup with archives',
 		await fixtureHeld;
 		await route.continue();
 	});
+	await page.addInitScript(() => localStorage.setItem('pixeldoll.welcomed', '1'));
 	await page.goto(dev);
 	const notice = page.getByRole('status').filter({ hasText: /Pre-release · v/ });
 	const backupButton = notice.getByRole('button', { name: 'Back up library', exact: true });
@@ -1489,6 +1534,8 @@ for (const [width, height] of [
 			page
 		}, info) => {
 			const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
+			// A returning visitor: the startup warning only shows once something could be at risk.
+			await page.addInitScript(() => localStorage.setItem('pixeldoll.welcomed', '1'));
 			await page.goto(dev);
 			const notice = page.locator('.toast'),
 				gesture = width < 1000 ? 'tap' : 'click';

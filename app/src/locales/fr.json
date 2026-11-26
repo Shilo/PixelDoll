@@ -654,7 +654,8 @@
 		"newCharacter": "Nouveau personnage",
 		"createFromScratch": "Créer à partir de zéro…",
 		"importFromDevice": "Importer depuis l’appareil…",
-		"importFromPixelLab": "Importer depuis PixelLab…"
+		"importFromPixelLab": "Importer depuis PixelLab…",
+		"createNeedsKey": "Nécessite une clé PixelLab et utilise des générations payantes"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(s’ouvre dans un nouvel onglet)"
@@ -930,25 +931,7 @@
 		"itemQueued": "en attente pour {move}"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "Aucun compte n’est nécessaire pour essayer la démo. Créer des visuels utilise des générations de votre compte {pixelLab}.",
-		"steps": {
-			"create": "Créer",
-			"describeBody": "Décrivez le corps",
-			"addItems": "Ajouter des objets",
-			"examples": "Chapeaux, hauts, armes",
-			"dressUp": "Habiller",
-			"wearRecolorPlay": "Porter, recolorer, jouer",
-			"export": "Exporter",
-			"anyEngine": "N’importe quel moteur de jeu"
-		},
-		"switchToLightMode": "Passer en mode clair",
-		"switchToDarkMode": "Passer en mode sombre",
-		"labelDemoCharacterWalking": "Personnage de démo en train de marcher",
-		"dressUpYour2DGameCharactersWith": "Habillez vos personnages de jeu 2D au pixel près, comme des poupées à habiller",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "Générez avec PixelLab AI des calques d’équipement interchangeables, alignés image par image, et exportez-les vers n’importe quel moteur de jeu.",
-		"createYourCharacter": "Créer votre personnage",
-		"tryTheDemo": "Essayer la démo",
-		"importAnExistingCharacter": "Importer un personnage existant"
+		"createYourCharacter": "Créer votre personnage"
 	},
 	"experience": {
 		"movesOffMounted": "Choisissez les animations dans « Aperçu ». Le déplacement à dos de monture suit la pose du cavalier des réglages de la monture.",
@@ -3470,9 +3453,7 @@
 			"other": "{n} appels sans prix"
 		}
 	},
-	"shortcut": {
-		"control": "Ctrl"
-	},
+	"shortcut": { "control": "Ctrl" },
 	"report": {
 		"action": "Signaler",
 		"actionLabel": "Signaler ce problème",
@@ -3667,5 +3648,15 @@
 		"colors": "Rechercher des couleurs",
 		"clear": "Effacer la recherche",
 		"results": "{count} sur {total}"
+	},
+	"demoTips": {
+		"intro": "Essayez de l’équipement, puis exportez-le pour votre jeu. Aucune clé PixelLab requise.",
+		"gearTitle": "Essayez de l’équipement",
+		"gearBody": "Choisissez un objet dans la Garde-robe pour l’équiper ou le retirer.",
+		"exportTitle": "Emmenez-le dans votre jeu",
+		"exportBody": "Exporter enregistre le corps de base et chaque objet dans des feuilles de sprites séparées.",
+		"exportInMoreBody": "Ouvrez Plus d’options, puis Exporter, pour enregistrer le corps de base et chaque objet dans des feuilles de sprites séparées.",
+		"dismiss": "Masquer les conseils",
+		"replay": "Conseils de la démo"
 	}
 }

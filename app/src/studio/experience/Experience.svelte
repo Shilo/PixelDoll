@@ -13,6 +13,8 @@
 	import CharacterActions from '../CharacterActions.svelte';
 	import CharacterName from '../CharacterName.svelte';
 	import PhonePanel from '../PhonePanel.svelte';
+	import DemoTip from './DemoTip.svelte';
+	import { demoTips, finishDemoTips } from './demoTips.svelte.ts';
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import CharacterThumb from './CharacterThumb.svelte';
@@ -35,6 +37,7 @@
 	import {
 		ui,
 		doc,
+		DEMO,
 		store,
 		creates,
 		openProject,
@@ -81,7 +84,7 @@
 	} from '../displayDirection.ts';
 	import { displayMove } from '../displayMove.ts';
 	import { playbackClips } from '../../lib/runtime/timeline.js';
-	import { pixelSize } from '../model.ts';
+	import { missingMoves, pixelSize } from '../model.ts';
 	import { popoverFocus } from './focus.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { workspaceCopy } from '../../lib/store/workspace-mode.ts';
@@ -149,6 +152,69 @@
 		)
 	);
 	const list = $derived(saved.filter((p) => matchesSearch([p.name], query)));
+	// First run with only the demo: one line beside Customize says what the demo offers and that it is free.
+	const showIntro = $derived(
+		!workspaceCopy &&
+			ui.welcome &&
+			doc.id === DEMO &&
+			!!m &&
+			saved.length === 1 &&
+			!allPending.length
+	);
+	const introId = $props.id();
+	/** Items with frames in every move, which a tip may suggest (the demo's Wizard hat lacks some on purpose). */
+	const completeItems = $derived(
+		new Set((m?.items ?? []).filter((it) => !missingMoves(m!, it).length).map((it) => it.id))
+	);
+	const outfit = () =>
+		JSON.stringify(
+			Object.entries(doc.items)
+				.filter(([, id]) => id)
+				.sort()
+		);
+	/** The outfit when the gear tip appeared: any change to it means the person has tried on gear. */
+	let tipOutfit = '';
+	// The demo tips run only in the demo's Customize; leaving it suspends them until the next visit.
+	$effect(() => {
+		const inDemo =
+			!workspaceCopy && experience.screen === 'studio' && doc.id === DEMO && !doc.loading && !!m;
+		if (!inDemo) {
+			if (demoTips.step) demoTips.step = null;
+			return;
+		}
+		if (demoTips.step || !(ui.welcome || demoTips.replay)) return;
+		untrack(() => {
+			demoTips.replay = false;
+			panel('wardrobe');
+			setPanelOpen(true);
+			tipOutfit = outfit();
+			demoTips.step = 'gear';
+		});
+	});
+	$effect(() => {
+		if (demoTips.step === 'gear' && outfit() !== tipOutfit) demoTips.step = 'export';
+	});
+	$effect(() => {
+		if (demoTips.step && ui.sheet === 'export') finishDemoTips();
+	});
+	// Help > Demo tips: open the demo if needed, then its Customize, where the effect above starts the tips.
+	$effect(() => {
+		if (!demoTips.replay || doc.loading || openingProjectId()) return;
+		if (workspaceCopy || doc.error) {
+			demoTips.replay = false;
+			return;
+		}
+		if (doc.id !== DEMO) {
+			void openProject(DEMO);
+			return;
+		}
+		if (experience.screen === 'characters' && m && !ui.sheet)
+			untrack(() => {
+				showStanding();
+				applyRiderPose();
+				enterCustomize();
+			});
+	});
 	const pending = $derived(allPending.filter((run) => matchesSearch([run.spec.name], query)));
 	const searchTotal = $derived(saved.length + allPending.length);
 	const searchVisibility = createSearchVisibility({
@@ -994,10 +1060,14 @@
 					</CharacterActions>
 				{/each}
 			</div>
+			{#if showIntro}<p class="demo-intro bu-muted" id={introId}>
+					{t('demoTips.intro')}
+				</p>{/if}
 			<button
 				class="bu-action customize-action"
 				data-variant="primary"
 				onclick={customize}
+				aria-describedby={showIntro ? introId : undefined}
 				aria-label={t('experience.customizeName', { name })}
 				title={t('experience.customizeName', { name })}
 				aria-busy={doc.loading || !!openingProjectId() || !!wheelTarget}
@@ -1211,6 +1281,13 @@
 			<span hidden id="tab-work-stopped">{t('experience.tabWorkAttention')}</span>
 			<PhonePanel {wardrobeScroll} />
 		</aside>
+		{#if demoTips.step}<DemoTip
+				step={demoTips.step}
+				dock={dockEdge}
+				{panelOpen}
+				complete={completeItems}
+				ondismiss={finishDemoTips}
+			/>{/if}
 	{/if}
 	{#if doc.error && experience.screen !== 'studio'}
 		<p class="experience-error" role="alert">{displayNestedMessage(doc.error)}</p>
@@ -1218,6 +1295,12 @@
 </div>
 
 <style>
+	.demo-intro {
+		margin: 0;
+		font-size: var(--fs-sm);
+		line-height: 1.4;
+		text-wrap: pretty;
+	}
 	.pending-character > .character-thumbnail {
 		width: 64px;
 		flex: none;

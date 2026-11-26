@@ -654,7 +654,8 @@
 		"newCharacter": "Neue Figur",
 		"createFromScratch": "Neu erstellen…",
 		"importFromDevice": "Vom Gerät importieren…",
-		"importFromPixelLab": "Aus PixelLab importieren…"
+		"importFromPixelLab": "Aus PixelLab importieren…",
+		"createNeedsKey": "Braucht einen PixelLab-Schlüssel und kostenpflichtige Generierungen"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(öffnet in einem neuen Tab)"
@@ -930,25 +931,7 @@
 		"itemQueued": "wartet darauf, für {move} gezeichnet zu werden"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "Für die Demo brauchst du kein Konto. Beim Erstellen verbrauchst du Generierungen von {pixelLab}.",
-		"steps": {
-			"create": "Erstellen",
-			"describeBody": "Grundkörper beschreiben",
-			"addItems": "Gegenstände hinzufügen",
-			"examples": "Hüte, Oberteile, Waffen",
-			"dressUp": "Ausstatten",
-			"wearRecolorPlay": "Anlegen, umfärben, abspielen",
-			"export": "Exportieren",
-			"anyEngine": "Für jede Game-Engine"
-		},
-		"switchToLightMode": "Zum hellen Modus wechseln",
-		"switchToDarkMode": "Zum dunklen Modus wechseln",
-		"labelDemoCharacterWalking": "Gehende Demofigur",
-		"dressUpYour2DGameCharactersWith": "Mach deine 2D-Spielfiguren zu pixelgenauen Anziehfiguren",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "Generiere mit der KI von PixelLab austauschbare Ausrüstungsebenen, die in jedem Frame passen. Exportiere sie für jede Game-Engine.",
-		"createYourCharacter": "Erstelle deine Figur",
-		"tryTheDemo": "Demo ausprobieren",
-		"importAnExistingCharacter": "Vorhandene Figur importieren"
+		"createYourCharacter": "Erstelle deine Figur"
 	},
 	"experience": {
 		"movesOffMounted": "Wähle Animationen in der Vorschau. Beim Reiten gilt die Reitpose aus den Reittier-Einstellungen.",
@@ -3470,9 +3453,7 @@
 			"other": "{n} Aufrufe ohne Preis"
 		}
 	},
-	"shortcut": {
-		"control": "Strg"
-	},
+	"shortcut": { "control": "Strg" },
 	"report": {
 		"action": "Melden",
 		"actionLabel": "Dieses Problem melden",
@@ -3667,5 +3648,15 @@
 		"colors": "Farben durchsuchen",
 		"clear": "Suche leeren",
 		"results": "{count} von {total}"
+	},
+	"demoTips": {
+		"intro": "Probiere Ausrüstung an und exportiere sie für dein Spiel. Kein PixelLab-Schlüssel nötig.",
+		"gearTitle": "Ausrüstung anprobieren",
+		"gearBody": "Wähle in der Garderobe einen Gegenstand, um ihn anzulegen oder abzulegen.",
+		"exportTitle": "Ab in dein Spiel",
+		"exportBody": "Exportieren speichert den Grundkörper und jeden Gegenstand als eigenes Spritesheet.",
+		"exportInMoreBody": "Öffne Weitere Optionen und dann Exportieren, um den Grundkörper und jeden Gegenstand als eigenes Spritesheet zu speichern.",
+		"dismiss": "Tipps ausblenden",
+		"replay": "Demo-Tipps"
 	}
 }
