@@ -3691,13 +3691,12 @@
 		"frameOf": "Fotograma {frame} de {count}",
 		"missing": "No hay fotograma para mostrar",
 		"direction": "Dirección",
-		"frames": "Fotogramas",
 		"previousView": "Vista anterior",
 		"previousViewHint": "Vista anterior (flecha izquierda)",
 		"nextView": "Vista siguiente",
 		"nextViewHint": "Vista siguiente (flecha derecha)",
-		"previousFrameHint": "Fotograma anterior (,)",
-		"nextFrameHint": "Fotograma siguiente (.)"
+		"frame": "Fotograma",
+		"frameOption": "Fotograma {n}"
 	},
 	"imageViewer": {
 		"role": "visor de imágenes",

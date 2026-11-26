@@ -1,8 +1,8 @@
 <script lang="ts">
 	// A full-window look at one image over whatever opened it. It opens fitted; the wheel, a trackpad pinch and a two-finger
 	// pinch zoom around the pointer, dragging pans, and the focused image takes +, -, 0 and the arrows. Close, Escape and
-	// browser Back dismiss only this viewer and give focus back to its opener. Hosts add their own header controls and
-	// footer (a sprite's move, direction and frame). Zoom and pan stay while the image changes within the same box, so the
+	// browser Back dismiss only this viewer and give focus back to its opener. Hosts add their own header controls (a
+	// sprite's move, direction and frame). Zoom and pan stay while the image changes within the same box, so the
 	// same spot can be compared across frames; a different box fits again.
 	import { onMount, untrack, type Snippet } from 'svelte';
 	import { on } from 'svelte/events';
@@ -32,7 +32,6 @@
 		label,
 		missing = t('imageViewer.missing'),
 		controls,
-		footer,
 		onkeydown,
 		onclose
 	}: {
@@ -47,7 +46,6 @@
 		missing?: string;
 		/** Controls in the header beside the title, such as pickers. */
 		controls?: Snippet;
-		footer?: Snippet;
 		/** Keys the image area did not use, such as frame stepping. */
 		onkeydown?: (event: KeyboardEvent) => void;
 		onclose: () => void;
@@ -294,7 +292,6 @@
 		</div>
 		<p class="sr" aria-live="polite">{announcement}</p>
 	</div>
-	{#if footer}<div class="viewer-foot">{@render footer()}</div>{/if}
 </dialog>
 
 <style>
@@ -321,10 +318,6 @@
 		text-overflow: ellipsis;
 	}
 	/* Pickers sit in the header's middle; a phone gives them their own row under the title and Close. */
-	dialog.image-viewer :global(.sheet-heading > *) {
-		flex: none;
-		max-width: 100%;
-	}
 	dialog.image-viewer :global(.sheet-heading) {
 		display: flex;
 		flex-wrap: nowrap;
@@ -383,15 +376,5 @@
 	}
 	.viewer-zoom {
 		cursor: auto;
-	}
-	.viewer-foot {
-		flex: none;
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-		align-items: center;
-		gap: 12px 24px;
-		padding: 8px 16px 12px;
-		border-block-start: 1px solid var(--line);
 	}
 </style>

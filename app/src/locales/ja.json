@@ -3590,13 +3590,12 @@
 		"frameOf": "フレーム {frame} / {count}",
 		"missing": "表示するフレームがありません",
 		"direction": "向き",
-		"frames": "フレーム",
 		"previousView": "前の表示",
 		"previousViewHint": "前の表示（左矢印）",
 		"nextView": "次の表示",
 		"nextViewHint": "次の表示（右矢印）",
-		"previousFrameHint": "前のフレーム（,）",
-		"nextFrameHint": "次のフレーム（.）"
+		"frame": "フレーム",
+		"frameOption": "フレーム {n}"
 	},
 	"imageViewer": {
 		"role": "画像ビューアー",

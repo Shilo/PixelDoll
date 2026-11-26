@@ -3700,13 +3700,12 @@
 		"frameOf": "Quadro {frame} de {count}",
 		"missing": "Nenhum quadro para mostrar",
 		"direction": "Direção",
-		"frames": "Quadros",
 		"previousView": "Vista anterior",
 		"previousViewHint": "Vista anterior (seta para a esquerda)",
 		"nextView": "Próxima vista",
 		"nextViewHint": "Próxima vista (seta para a direita)",
-		"previousFrameHint": "Quadro anterior (,)",
-		"nextFrameHint": "Próximo quadro (.)"
+		"frame": "Quadro",
+		"frameOption": "Quadro {n}"
 	},
 	"imageViewer": {
 		"role": "visualizador de imagens",

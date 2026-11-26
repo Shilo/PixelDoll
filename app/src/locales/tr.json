@@ -3691,13 +3691,12 @@
 		"frameOf": "Kare {frame} / {count}",
 		"missing": "Gösterilecek kare yok",
 		"direction": "Yön",
-		"frames": "Kareler",
 		"previousView": "Önceki görünüm",
 		"previousViewHint": "Önceki görünüm (sol ok)",
 		"nextView": "Sonraki görünüm",
 		"nextViewHint": "Sonraki görünüm (sağ ok)",
-		"previousFrameHint": "Önceki kare (,)",
-		"nextFrameHint": "Sonraki kare (.)"
+		"frame": "Kare",
+		"frameOption": "Kare {n}"
 	},
 	"imageViewer": {
 		"role": "görüntü görüntüleyici",

@@ -3513,12 +3513,13 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await expect(spritePreview.getByRole('button', { name: /^Move: Walk/ })).toBeVisible();
 	const facing = spritePreview.getByRole('combobox', { name: 'Direction', exact: true });
 	await expect(facing).toHaveValue('south');
-	const frameNote = spritePreview.locator('.viewer-count');
-	await expect(frameNote).toHaveText(/^\d+ \/ 8$/);
-	const firstNote = await frameNote.textContent();
+	// The frame is a picker too: every view of the move, and , and . step it.
+	const frameNote = spritePreview.getByRole('combobox', { name: 'Frame', exact: true });
+	await expect(frameNote.locator('option')).toHaveCount(8);
+	const firstNote = await frameNote.inputValue();
 	await page.keyboard.press('.');
-	await expect(frameNote).not.toHaveText(firstNote!);
-	const stepped = await frameNote.textContent();
+	await expect(frameNote).not.toHaveValue(firstNote);
+	const stepped = await frameNote.inputValue();
 	// The arrows walk every direction, then on into the next move or state.
 	await page.keyboard.press('ArrowRight');
 	await expect(facing).toHaveValue('east');
@@ -3526,7 +3527,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await expect(facing).toHaveValue('south');
 	await facing.selectOption('east');
 	await expect(spritePreview.getByRole('application')).toHaveAccessibleName(/^Red cape · East · /);
-	await expect(frameNote).toHaveText(stepped!);
+	await expect(frameNote).toHaveValue(stepped);
 	// The image zooms from the keyboard and returns to its fit.
 	const zoomShown = spritePreview.getByRole('button', { name: 'Fit to window', exact: true });
 	const fitted = await zoomShown.textContent();

@@ -1502,7 +1502,7 @@
 								<div class="layer-head">
 									<h4 id="layer-order-{it.id}">{t('itemPane.layerOrder')}</h4>
 									{#if layerPosition}<span
-											class="layer-position"
+											class="layer-rank"
 											title={t('itemPane.layerPositionHint', {
 												position: number(layerPosition.position),
 												count: number(layerPosition.count)
@@ -2324,7 +2324,7 @@
 		justify-content: space-between;
 		gap: 8px;
 	}
-	.layer-position {
+	.layer-rank {
 		color: var(--text-2);
 		font-size: var(--fs-sm);
 		font-variant-numeric: tabular-nums;
@@ -2351,9 +2351,11 @@
 		gap: 8px;
 		min-width: 0;
 	}
+	/* The order buttons and what the item sits between end at the trailing edge, under the item's place in the stack. */
 	.layer-actions {
 		display: flex;
 		flex-wrap: wrap;
+		justify-content: flex-end;
 		gap: 8px;
 	}
 	.layer-actions .btn {
@@ -2362,6 +2364,7 @@
 	.layer-position {
 		margin: 0;
 		min-height: 1.4em;
+		text-align: end;
 	}
 	/* Reset order ends the row, at the trailing edge like the rows above. */
 	.layer-scope {

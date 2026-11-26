@@ -3691,13 +3691,12 @@
 		"frameOf": "Frame {frame} von {count}",
 		"missing": "Kein Frame zum Anzeigen",
 		"direction": "Blickrichtung",
-		"frames": "Frames",
 		"previousView": "Vorherige Ansicht",
 		"previousViewHint": "Vorherige Ansicht (Pfeil nach links)",
 		"nextView": "Nächste Ansicht",
 		"nextViewHint": "Nächste Ansicht (Pfeil nach rechts)",
-		"previousFrameHint": "Vorheriger Frame (,)",
-		"nextFrameHint": "Nächster Frame (.)"
+		"frame": "Frame",
+		"frameOption": "Frame {n}"
 	},
 	"imageViewer": {
 		"role": "Bildbetrachter",

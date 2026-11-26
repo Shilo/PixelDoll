@@ -3590,13 +3590,12 @@
 		"frameOf": "第 {frame} 帧，共 {count} 帧",
 		"missing": "没有可显示的帧",
 		"direction": "朝向",
-		"frames": "帧",
 		"previousView": "上一个视图",
 		"previousViewHint": "上一个视图（左方向键）",
 		"nextView": "下一个视图",
 		"nextViewHint": "下一个视图（右方向键）",
-		"previousFrameHint": "上一帧（,）",
-		"nextFrameHint": "下一帧（.）"
+		"frame": "帧",
+		"frameOption": "第 {n} 帧"
 	},
 	"imageViewer": {
 		"role": "图片查看器",

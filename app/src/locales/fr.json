@@ -3691,13 +3691,12 @@
 		"frameOf": "Image {frame} sur {count}",
 		"missing": "Aucune image à afficher",
 		"direction": "Direction",
-		"frames": "Images",
 		"previousView": "Vue précédente",
 		"previousViewHint": "Vue précédente (flèche gauche)",
 		"nextView": "Vue suivante",
 		"nextViewHint": "Vue suivante (flèche droite)",
-		"previousFrameHint": "Image précédente (,)",
-		"nextFrameHint": "Image suivante (.)"
+		"frame": "Image",
+		"frameOption": "Image {n}"
 	},
 	"imageViewer": {
 		"role": "visionneuse d’images",

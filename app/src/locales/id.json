@@ -3590,13 +3590,12 @@
 		"frameOf": "Frame {frame} dari {count}",
 		"missing": "Tidak ada frame untuk ditampilkan",
 		"direction": "Arah",
-		"frames": "Frame",
 		"previousView": "Tampilan sebelumnya",
 		"previousViewHint": "Tampilan sebelumnya (panah kiri)",
 		"nextView": "Tampilan berikutnya",
 		"nextViewHint": "Tampilan berikutnya (panah kanan)",
-		"previousFrameHint": "Frame sebelumnya (,)",
-		"nextFrameHint": "Frame berikutnya (.)"
+		"frame": "Frame",
+		"frameOption": "Frame {n}"
 	},
 	"imageViewer": {
 		"role": "penampil gambar",

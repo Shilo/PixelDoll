@@ -3691,13 +3691,12 @@
 		"frameOf": "Frame {frame} of {count}",
 		"missing": "No frame to show",
 		"direction": "Direction",
-		"frames": "Frames",
 		"previousView": "Previous view",
 		"previousViewHint": "Previous view (Left arrow)",
 		"nextView": "Next view",
 		"nextViewHint": "Next view (Right arrow)",
-		"previousFrameHint": "Previous frame (,)",
-		"nextFrameHint": "Next frame (.)"
+		"frame": "Frame",
+		"frameOption": "Frame {n}"
 	},
 	"imageViewer": {
 		"role": "image viewer",

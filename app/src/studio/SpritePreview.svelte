@@ -112,28 +112,6 @@
 	const canCycle = $derived(views.length > 1 || sequence.length > 1);
 </script>
 
-{#snippet frames()}
-	{#if count > 1}
-		<div class="viewer-frames" role="group" aria-label={t('spriteViewer.frames')}>
-			<button
-				class="bu-action btn icon"
-				data-variant="outline"
-				aria-label={t('stage.previousFrame')}
-				title={t('spriteViewer.previousFrameHint')}
-				onclick={() => step(-1)}><ChevronLeft size={18} aria-hidden="true" /></button
-			>
-			<span class="viewer-count" aria-live="polite">{number(shown + 1)} / {number(count)}</span>
-			<button
-				class="bu-action btn icon"
-				data-variant="outline"
-				aria-label={t('stage.nextFrame')}
-				title={t('spriteViewer.nextFrameHint')}
-				onclick={() => step(1)}><ChevronRight size={18} aria-hidden="true" /></button
-			>
-		</div>
-	{/if}
-{/snippet}
-
 <ImageViewer
 	{title}
 	{image}
@@ -141,7 +119,6 @@
 	label={[title, current?.label, frameText].filter(Boolean).join(' · ')}
 	missing={t('spriteViewer.missing')}
 	{onclose}
-	footer={count > 1 ? frames : undefined}
 	onkeydown={(event) => {
 		// Left and Right walk the views and , and . step frames, anywhere but the pickers and the image (where the arrows
 		// pan).
@@ -164,25 +141,37 @@
 				title={t('spriteViewer.previousViewHint')}
 				onclick={() => cycle(-1)}><ChevronLeft size={18} aria-hidden="true" /></button
 			>{/if}
-		{#if moves}<PlaybackPicker
-				clips={moves.clips}
-				moveRefs={moves.moveRefs}
-				selected={moves.selected}
-				unavailable={moves.unavailable}
-				placement="bottom-start"
-				boxed
-				onselect={moves.onselect}
-			/>{/if}
-		{#if views.length > 1}<select
-				class="bu-input viewer-direction"
-				aria-label={t('spriteViewer.direction')}
-				value={current?.id}
-				onchange={(event) => (facing = event.currentTarget.value)}
-			>
-				{#each views as entry (entry.id)}
-					<option value={entry.id}>{entry.label}</option>
-				{/each}
-			</select>{/if}
+		<div class="viewer-pickers">
+			{#if moves}<PlaybackPicker
+					clips={moves.clips}
+					moveRefs={moves.moveRefs}
+					selected={moves.selected}
+					unavailable={moves.unavailable}
+					placement="bottom-start"
+					boxed
+					onselect={moves.onselect}
+				/>{/if}
+			{#if views.length > 1}<select
+					class="bu-input viewer-direction"
+					aria-label={t('spriteViewer.direction')}
+					value={current?.id}
+					onchange={(event) => (facing = event.currentTarget.value)}
+				>
+					{#each views as entry (entry.id)}
+						<option value={entry.id}>{entry.label}</option>
+					{/each}
+				</select>{/if}
+			{#if count > 1}<select
+					class="bu-input viewer-direction"
+					aria-label={t('spriteViewer.frame')}
+					value={shown}
+					onchange={(event) => (frame = Number(event.currentTarget.value))}
+				>
+					{#each current?.frames ?? [] as _, index (index)}
+						<option value={index}>{t('spriteViewer.frameOption', { n: number(index + 1) })}</option>
+					{/each}
+				</select>{/if}
+		</div>
 		{#if canCycle}<button
 				class="bu-action btn icon viewer-cycle"
 				data-variant="outline"
@@ -205,7 +194,42 @@
 			font-size: 16px;
 		}
 	}
+	/* The pickers stay on one line between the arrows; a phone wraps them on their own row. */
+	.viewer-pickers {
+		display: flex;
+		flex: none;
+		flex-wrap: nowrap;
+		justify-content: center;
+		gap: 8px;
+		min-width: 0;
+	}
+	/* A phone moves the arrows up beside Close and gives the pickers the whole second row. */
+	@media (max-width: 600px) {
+		:global(dialog.image-viewer .sheet-head) {
+			grid-template-columns: minmax(0, 1fr) auto auto auto;
+		}
+		:global(dialog.image-viewer .sheet-head .sheet-heading) {
+			display: contents;
+		}
+		:global(dialog.image-viewer .sheet-head .sheet-start) {
+			grid-area: 1 / 1;
+		}
+		.viewer-cycle:first-child {
+			grid-area: 1 / 2;
+		}
+		.viewer-cycle:last-child {
+			grid-area: 1 / 3;
+		}
+		:global(dialog.image-viewer .sheet-head .sheet-end) {
+			grid-area: 1 / 4;
+		}
+		.viewer-pickers {
+			grid-area: 2 / 1 / 3 / -1;
+			flex-wrap: wrap;
+		}
+	}
 	.viewer-cycle {
+		flex: none;
 		width: 40px;
 		height: 40px;
 		min-height: 40px;
@@ -217,21 +241,5 @@
 			height: 44px;
 			min-height: 44px;
 		}
-	}
-	.viewer-frames {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-	.viewer-frames :global(.btn) {
-		width: 44px;
-		height: 44px;
-		min-height: 44px;
-	}
-	.viewer-count {
-		min-width: 4.5ch;
-		text-align: center;
-		font-variant-numeric: tabular-nums;
-		color: var(--text-2);
 	}
 </style>
