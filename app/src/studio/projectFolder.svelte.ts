@@ -7,14 +7,13 @@ import { walkMoves } from '../lib/export/rpgmaker.ts';
 import { message } from '../lib/message.ts';
 import {
 	allLinks,
-	copyRecord,
 	deleteLink,
 	deleteRecord,
 	getLink,
-	putLink,
 	readRecord,
 	recordKey,
 	recordWritten,
+	replaceLink,
 	setKept,
 	updateLink,
 	type FolderLink
@@ -259,6 +258,9 @@ async function publish(link: FolderLink, request: Request) {
 		const recheck = await stillLinked(link);
 		if (recheck === 'unknown') return setStatus(id, { kind: 'failed', reason: 'unknown' });
 		if (!recheck) return setStatus(id, { kind: 'idle' });
+		showLink(id, recheck);
+		// Update automatically may also have been turned off meanwhile.
+		if (!request.manual && !recheck.auto) return setStatus(id, { kind: 'idle' });
 		const outcome = await publishFiles(target, files, {
 			record,
 			overwrite: request.overwrite,
@@ -418,38 +420,37 @@ export async function linkProjectFolder(engine: Engine) {
 		return;
 	}
 	if (doc.id !== characterId) return;
-	const previous = projectFolder.link;
-	const same = !!previous && (await sameFolder(previous.handle, handle));
-	const link: FolderLink = {
-		characterId,
-		handle,
-		subfolder: same ? previous!.subfolder : characterZipId(project.manifest),
-		engine,
-		auto: previous?.auto ?? true,
-		// Unique even when two tabs link in the same millisecond: it identifies this link and its approvals.
-		linkedAt: `${new Date().toISOString()} ${crypto.randomUUID()}`
-	};
+	let link: FolderLink;
 	try {
 		// Claiming a folder happens one tab at a time, and waits for any publish into the previous folder to finish.
 		const saved = await locked('links', async () => {
+			// Read fresh: another tab may have linked or stopped this character since this tab last looked.
+			const previous = await getLink(characterId);
+			const same = !!previous && (await sameFolder(previous.handle, handle));
+			const fresh: FolderLink = {
+				characterId,
+				handle,
+				subfolder: same ? previous.subfolder : characterZipId(project.manifest),
+				engine,
+				auto: previous?.auto ?? true,
+				// Unique even when two tabs link in the same millisecond: it identifies this link and its approvals.
+				linkedAt: `${new Date().toISOString()} ${crypto.randomUUID()}`
+			};
 			// One folder per character: another character's files there are never touched.
 			for (const other of await allLinks())
 				if (
 					other.characterId !== characterId &&
-					other.subfolder.toLowerCase() === link.subfolder.toLowerCase() &&
+					other.subfolder.toLowerCase() === fresh.subfolder.toLowerCase() &&
 					(await sameFolder(other.handle, handle))
 				)
-					return false;
-			const replace = async () => {
-				await putLink(link);
-				// Picking the same folder again keeps what PixelDoll knows it wrote there.
-				if (same) await copyRecord(recordKey(previous!), recordKey(link));
-				if (previous) await deleteRecord(recordKey(previous));
-			};
+					return null;
+			// Picking the same folder again keeps what PixelDoll knows it wrote there.
+			const replace = () => replaceLink(fresh, previous, same);
 			await (previous ? exclusive(previous, replace) : replace());
-			return true;
+			return fresh;
 		});
 		if (!saved) return setStatus(characterId, { kind: 'taken' });
+		link = saved;
 	} catch (error) {
 		// Without stored records PixelDoll could not tell its files from the user's, so it publishes nothing.
 		console.warn('Could not save the linked project folder', error);

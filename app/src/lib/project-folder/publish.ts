@@ -68,13 +68,13 @@ export function matchesRecord(record: FolderRecord, next: ReadonlyMap<string, st
 	return [...next].every(([path, hash]) => kept.has(path) || record.written[path] === hash);
 }
 
-/** Like matchesRecord, but also checks the folder, so a file edited or deleted in the game is noticed. */
+/** Whether the folder already holds exactly these files (kept ones aside), so a file edited or deleted in the game is
+ *  noticed. Bytes already equal need no write even when the record does not show them, such as after a fresh link. */
 export async function inSync(
 	target: FolderTarget,
 	record: FolderRecord,
 	next: ReadonlyMap<string, string>
 ): Promise<boolean> {
-	if (!matchesRecord(record, next)) return false;
 	const kept = new Set(record.kept);
 	try {
 		await target.check();
@@ -109,7 +109,9 @@ export async function publishFiles(
 		const bytes = new Map(files.map((f) => [f.name, f.data]));
 		const next = await hashFiles(files);
 		const disk = new Map<string, string | null>();
-		for (const path of next.keys()) disk.set(path, await hashAt(target, path));
+		// Kept files are the user's and never written, so they are not read either (one may be locked or unreadable).
+		const kept = new Set(o.record.kept);
+		for (const path of next.keys()) if (!kept.has(path)) disk.set(path, await hashAt(target, path));
 		const plan = planPublish({ next, record: o.record, disk, overwrite: o.overwrite });
 		if (plan.conflicts.length) return { kind: 'blocked', conflicts: plan.conflicts };
 		if (!plan.writes.length) return { kind: 'unchanged', kept: o.record.kept.length };
@@ -125,10 +127,15 @@ export async function publishFiles(
 			const previous = Object.hasOwn(o.record.written, a.path) ? o.record.written[a.path] : null;
 			if (previous) await o.onRecord(a.path, null);
 			try {
-				await target.write(a.path, bytes.get(a.path)!, async (createdHere) => {
-					const now = await hashAt(target, a.path);
-					return now === expected || (expected === null && createdHere && now === EMPTY_HASH);
-				});
+				await target.write(
+					a.path,
+					bytes.get(a.path)!,
+					async (createdHere) => {
+						const now = await hashAt(target, a.path);
+						return now === expected || (expected === null && createdHere && now === EMPTY_HASH);
+					},
+					expected !== null
+				);
 			} catch (error) {
 				// The swap only happens when a write completes, so the file still holds its previous bytes.
 				if (previous)

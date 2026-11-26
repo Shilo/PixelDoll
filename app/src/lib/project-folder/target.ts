@@ -8,11 +8,14 @@ export interface FolderTarget {
 	read(path: string): Promise<Uint8Array | null>;
 	/** Replaces the file in one step: readers see the old or the new bytes, never a mix. `unchanged` runs once the new
 	 *  bytes are staged, just before they replace the file, and learns whether this write created the (still empty) file;
-	 *  false cancels the write and throws ChangedError, leaving the file as it was. There is deliberately no delete. */
+	 *  false cancels the write and throws ChangedError, leaving the file as it was. `existing` says the caller saw a file
+	 *  there, so a file that has gone since throws ChangedError instead of being created again. There is deliberately
+	 *  no delete. */
 	write(
 		path: string,
 		data: Uint8Array,
-		unchanged?: (createdHere: boolean) => Promise<boolean>
+		unchanged?: (createdHere: boolean) => Promise<boolean>,
+		existing?: boolean
 	): Promise<void>;
 }
 
@@ -38,6 +41,8 @@ export class UnsafePathError extends Error {
 	}
 }
 
+import { reservedPathSegment } from '../export/paths.ts';
+
 // eslint-disable-next-line no-control-regex
 const BAD = /[\u0000-\u001f<>:"\\|?*]/;
 
@@ -47,7 +52,13 @@ export function pathParts(path: string): string[] {
 	if (
 		!path ||
 		parts.some(
-			(part) => !part || part === '.' || part === '..' || BAD.test(part) || /[. ]$/.test(part)
+			(part) =>
+				!part ||
+				part === '.' ||
+				part === '..' ||
+				BAD.test(part) ||
+				/[. ]$/.test(part) ||
+				reservedPathSegment(part)
 		)
 	)
 		throw new UnsafePathError(path);
@@ -83,7 +94,7 @@ export function directoryTarget(
 				throw error;
 			}
 		},
-		async write(path, data, unchanged) {
+		async write(path, data, unchanged, existing) {
 			const parts = pathParts(path);
 			const dir = await folder(parts.slice(0, -1), true);
 			const name = parts.at(-1)!;
@@ -97,6 +108,7 @@ export function directoryTarget(
 						throw new NotAFileError(path);
 					throw error;
 				}
+				if (existing) throw new ChangedError(path);
 				// Opening for writing creates the file empty; knowing this write made it lets the check below tell it
 				// apart from an empty file someone else saved there.
 				file = await dir.getFileHandle(name, { create: true });

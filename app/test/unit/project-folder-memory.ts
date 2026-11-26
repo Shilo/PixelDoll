@@ -31,12 +31,13 @@ export function memoryFolder(initial: Record<string, string> = {}) {
 			if (dirs.has(path)) throw new NotAFileError(path);
 			return files.get(path) ?? null;
 		},
-		async write(path, data, unchanged) {
+		async write(path, data, unchanged, existing) {
 			const e = failWrite?.(path);
 			if (e) throw e;
 			if (dirs.has(path)) throw new NotAFileError(path);
 			// Like the browser, opening a missing file for writing creates it empty.
 			const createdHere = !files.has(path);
+			if (createdHere && existing) throw new ChangedError(path);
 			if (createdHere) files.set(path, new Uint8Array());
 			onStage?.(path);
 			if (unchanged && !(await unchanged(createdHere))) throw new ChangedError(path);

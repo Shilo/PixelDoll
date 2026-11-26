@@ -84,8 +84,6 @@ export async function getLink(characterId: string): Promise<FolderLink | null> {
 	return isLink(value) ? value : null;
 }
 
-export const putLink = (link: FolderLink) => run<IDBValidKey>('readwrite', (s) => s.put(link));
-
 /** Removes the character's link, only while it is still the one made at `linkedAt`. */
 export async function deleteLink(characterId: string, linkedAt: string): Promise<void> {
 	const db = await open();
@@ -212,18 +210,37 @@ export function setKept(key: string, paths: readonly string[], keep: boolean): P
 	});
 }
 
-/** Copies one link's record to another, when the user picks the same folder again. */
-export async function copyRecord(from: string, to: string): Promise<void> {
-	const record = await readRecord(from);
-	await inFiles('readwrite', (store, done) => {
-		for (const [path, hash] of Object.entries(record.written)) store.put({ link: to, path, hash });
-		for (const path of record.kept) {
-			const read = store.get([to, path]);
-			read.onsuccess = () =>
-				store.put({ ...(read.result as FileEntry | undefined), link: to, path, kept: true });
-		}
-		done(undefined);
-	});
+/** Stores a new link for its character in one transaction with its record: it starts empty, or, with `keepRecord`,
+ *  carries over what PixelDoll knew it wrote under `previous` (the same folder picked again). The previous record goes,
+ *  so a crash can never leave a link whose record is missing or belongs to another folder. */
+export async function replaceLink(
+	link: FolderLink,
+	previous: FolderLink | null,
+	keepRecord: boolean
+): Promise<void> {
+	const db = await open();
+	try {
+		await new Promise<void>((resolve, reject) => {
+			const tx = db.transaction([STORE, FILES], 'readwrite');
+			tx.objectStore(STORE).put(link);
+			if (previous) {
+				const files = tx.objectStore(FILES);
+				const to = recordKey(link);
+				const cursor = files.index('link').openCursor(recordKey(previous));
+				cursor.onsuccess = () => {
+					const c = cursor.result;
+					if (!c) return;
+					if (keepRecord) files.put({ ...(c.value as FileEntry), link: to });
+					c.delete();
+					c.continue();
+				};
+			}
+			tx.oncomplete = () => resolve();
+			tx.onabort = tx.onerror = () => reject(tx.error);
+		});
+	} finally {
+		db.close();
+	}
 }
 
 /** Drops one link's record. */
