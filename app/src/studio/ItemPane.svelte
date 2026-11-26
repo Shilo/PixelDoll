@@ -619,7 +619,7 @@
 	let wearButton = $state<HTMLButtonElement>();
 	async function stepLayer(step: 1 | -1) {
 		if (!it) return;
-		const shown = moveLayer(it.id, step, onlyDir, animId, outfitFacing);
+		const shown = moveLayer(it.id, step, onlyDir, animId, outfitFacing, ladder);
 		if (shown != null) witness = shown;
 		await tick();
 		// Keep the keyboard on a usable layer control when a step reaches an end.
@@ -1502,7 +1502,9 @@
 							</div>
 							<div class="layer-controls">
 								<div class="layer-head">
-									<h4 id="layer-order-{it.id}">{t('itemPane.layerOrder')}</h4>
+									<h4 id="layer-order-{it.id}">
+										{t('itemPane.slotLayerOrder', { slot: slotName(it.slot) })}
+									</h4>
 									{#if layerPosition}<span
 											class="layer-rank"
 											title={t('itemPane.layerPositionHint', {
@@ -1570,15 +1572,22 @@
 											)}{/if}
 									{/if}
 								</p>
+								<!-- Part of the order: which facings a step changes, and what that covers. -->
+								<label class="switch-row bu-check">
+									<span>{t('itemPane.onlyFacing', { direction: directionName(outfitFacing) })}</span
+									>
+									<input class="bu-switch" type="checkbox" role="switch" bind:checked={onlyDir} />
+								</label>
+								<p class="faint small layer-scope">
+									{onlyDir
+										? t('itemPane.layerScopeFacing', {
+												slot: slotName(it.slot),
+												direction: directionName(outfitFacing)
+											})
+										: t('itemPane.layerScope', { slot: slotName(it.slot) })}
+								</p>
 							</div>
 						</section>
-						<label class="switch-row bu-check">
-							<span>{t('itemPane.onlyFacing', { direction: directionName(outfitFacing) })}</span>
-							<input class="bu-switch" type="checkbox" role="switch" bind:checked={onlyDir} />
-						</label>
-						<p class="faint small layer-scope">
-							<span>{t('itemPane.layerScope', { slot: slotName(it.slot) })}</span>
-						</p>
 						{#if hideChoices.length}
 							<section class="hide-rules" aria-labelledby="hide-rules-{it.id}">
 								<h4 id="hide-rules-{it.id}">{t('itemPane.whenWornHide')}</h4>
@@ -2399,13 +2408,7 @@
 		min-height: 1.4em;
 		text-align: end;
 	}
-	/* Reset order ends the row, at the trailing edge like the rows above. */
 	.layer-scope {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 4px 8px;
 		margin: -4px 0 0;
 	}
 	.switch-row {

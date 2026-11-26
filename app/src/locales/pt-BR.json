@@ -541,7 +541,6 @@
 		"matchingColors": "Ajustando cores…",
 		"matchItemColors": "Ajustar cores do item",
 		"recolor": "Mudar cores",
-		"layerOrder": "Ordem das camadas",
 		"whenWornHide": "Ocultar outros itens ao usar",
 		"iD": "ID",
 		"slot": "Espaço",
@@ -581,7 +580,7 @@
 			"one": "{n} quadro",
 			"other": "{n} quadros"
 		},
-		"onlyFacing": "Só quando virado para {direction}",
+		"onlyFacing": "Só virado para {direction}",
 		"tuckNote": "Este item pode cobrir parcialmente {slots}.",
 		"chromaKey": "cor-chave {color}",
 		"qaStatus": {
@@ -668,7 +667,9 @@
 		"openOutfit": "Abrir {name} no visual em tamanho real",
 		"outfitTitle": "{name} no visual",
 		"layerPosition": "Camada {position} de {count}",
-		"layerPositionHint": "Camada {position} de {count} entre as camadas que se sobrepõem, contando de trás"
+		"layerPositionHint": "Camada {position} de {count} entre as camadas que se sobrepõem, contando de trás",
+		"slotLayerOrder": "Ordem das camadas do espaço {slot}",
+		"layerScopeFacing": "Vale para todos os itens de {slot} virados para {direction}."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Novo personagem",

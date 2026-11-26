@@ -530,7 +530,6 @@
 		"matchingColors": "匹配颜色…",
 		"matchItemColors": "匹配装备颜色",
 		"recolor": "重新上色",
-		"layerOrder": "图层顺序",
 		"whenWornHide": "穿戴时隐藏其他装备",
 		"iD": "ID",
 		"slot": "装备栏",
@@ -567,7 +566,7 @@
 		"frames": {
 			"other": "{n} 帧"
 		},
-		"onlyFacing": "仅在朝向{direction}时",
+		"onlyFacing": "仅朝向{direction}",
 		"tuckNote": "此装备可能部分遮挡{slots}。",
 		"chromaKey": "色键：{color}",
 		"qaStatus": {
@@ -647,7 +646,9 @@
 		"openOutfit": "全尺寸打开{name}的整套装扮",
 		"outfitTitle": "{name}的整套装扮",
 		"layerPosition": "第 {position} 层，共 {count} 层",
-		"layerPositionHint": "在重叠的图层中从后往前数，第 {position} 层，共 {count} 层"
+		"layerPositionHint": "在重叠的图层中从后往前数，第 {position} 层，共 {count} 层",
+		"slotLayerOrder": "{slot}槽位图层顺序",
+		"layerScopeFacing": "适用于所有朝向{direction}的{slot}物品。"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新建角色",

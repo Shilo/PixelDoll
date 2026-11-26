@@ -11940,7 +11940,7 @@ test('item details reorders layers for an unworn item, gates the ends and resets
 	await expect(backward).toBeEnabled();
 	const before = await headLayerOverrides(page);
 	const [south, east] = await headDepths(page);
-	const direction = details.getByRole('switch', { name: 'Only when facing south' });
+	const direction = details.getByRole('switch', { name: 'Only facing south' });
 	await direction.check();
 	await backward.click();
 	const [southOnly, eastOnly] = await headDepths(page);

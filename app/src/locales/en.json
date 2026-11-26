@@ -541,7 +541,6 @@
 		"matchingColors": "Matching colors…",
 		"matchItemColors": "Match item colors",
 		"recolor": "Recolor",
-		"layerOrder": "Layer order",
 		"whenWornHide": "Hide other items while worn",
 		"iD": "ID",
 		"slot": "Slot",
@@ -581,7 +580,7 @@
 			"one": "{n} frame",
 			"other": "{n} frames"
 		},
-		"onlyFacing": "Only when facing {direction}",
+		"onlyFacing": "Only facing {direction}",
 		"tuckNote": "This item may partly cover {slots}.",
 		"chromaKey": "{color} key",
 		"qaStatus": {
@@ -668,7 +667,9 @@
 		"openOutfit": "Open {name} in the outfit full size",
 		"outfitTitle": "{name} in the outfit",
 		"layerPosition": "Layer {position} of {count}",
-		"layerPositionHint": "Layer {position} of {count} among the layers it overlaps, counted from the back"
+		"layerPositionHint": "Layer {position} of {count} among the layers it overlaps, counted from the back",
+		"slotLayerOrder": "{slot} slot layer order",
+		"layerScopeFacing": "Applies to all {slot} items facing {direction}."
 	},
 	"newCharacterButton": {
 		"newCharacter": "New character",

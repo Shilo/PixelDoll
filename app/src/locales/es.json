@@ -541,7 +541,6 @@
 		"matchingColors": "Igualando colores…",
 		"matchItemColors": "Igualar colores del objeto",
 		"recolor": "Cambiar colores",
-		"layerOrder": "Orden de capas",
 		"whenWornHide": "Ocultar otros objetos al llevarlo",
 		"iD": "ID",
 		"slot": "Ranura",
@@ -668,7 +667,9 @@
 		"openOutfit": "Abrir {name} en el atuendo a tamaño completo",
 		"outfitTitle": "{name} en el atuendo",
 		"layerPosition": "Capa {position} de {count}",
-		"layerPositionHint": "Capa {position} de {count} entre las capas que se superponen, contando desde atrás"
+		"layerPositionHint": "Capa {position} de {count} entre las capas que se superponen, contando desde atrás",
+		"slotLayerOrder": "Orden de capas de la ranura {slot}",
+		"layerScopeFacing": "Se aplica a todos los objetos de {slot} mirando hacia {direction}."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nuevo personaje",

@@ -541,7 +541,6 @@
 		"matchingColors": "Renkler eşleştiriliyor…",
 		"matchItemColors": "Eşya renklerini eşleştirin",
 		"recolor": "Renkleri değiştirin",
-		"layerOrder": "Katman sırası",
 		"whenWornHide": "Giyilirken diğer eşyaları gizle",
 		"iD": "ID",
 		"slot": "Ekipman yuvası",
@@ -581,7 +580,7 @@
 			"one": "{n} kare",
 			"other": "{n} kare"
 		},
-		"onlyFacing": "Yalnızca {direction} yönüne bakarken",
+		"onlyFacing": "Yalnızca {direction} yönü",
 		"tuckNote": "Bu eşya {slots} alanını kısmen örtebilir.",
 		"chromaKey": "Anahtar rengi: {color}",
 		"qaStatus": {
@@ -668,7 +667,9 @@
 		"openOutfit": "{name} kombinini tam boyutta aç",
 		"outfitTitle": "Kombinde {name}",
 		"layerPosition": "Katman {position}/{count}",
-		"layerPositionHint": "Çakıştığı katmanlar arasında arkadan sayınca {count} katmandan {position}."
+		"layerPositionHint": "Çakıştığı katmanlar arasında arkadan sayınca {count} katmandan {position}.",
+		"slotLayerOrder": "{slot} yuvası katman sırası",
+		"layerScopeFacing": "{direction} yönündeki tüm {slot} eşyalarına uygulanır."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Yeni karakter",

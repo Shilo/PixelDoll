@@ -2765,12 +2765,40 @@ export function placedOutfitFrames(itemId: string, animId = ui.anim): Img[][] {
 	);
 }
 type Crossing = { draw: Draw; back: boolean; frame: number };
-/** The nearest layer each way that the item's front can cross in the shown move and facing so that the composite
- *  changes in at least one frame (`frame`, the first such playback frame). Stepping past anything else (another item's
- *  back part far away, layers both covered by a hood, an empty layer) changes nothing anyone can see, so it is not a
- *  step. The order is read on the move's first frame, so it holds still while the move plays. */
-function layerCrossings(itemId: string, animId: string, dir: DirectionName, onlyDir = false) {
+/** The item's front layer among the other layers of the shown move, judged in every facing a step would change (all of
+ *  them, or only `dir`) and every cell: the real composite (per-cell depths, body cuts and tucking count) with the item
+ *  placed in each gap between the other layers. A layer counts when the gaps on its two sides draw differently, so steps
+ *  and the item's place skip layers it never visibly overlaps, and Back then Forward returns. Cached per project
+ *  revision, since the place and the neighbors read the same work. */
+type LayerStack = {
+	order: Draw[];
+	i: number;
+	behind?: Crossing;
+	ahead?: Crossing;
+	position: number;
+	count: number;
+};
+let stackCache: { key: string; project: Project; value: LayerStack | null } | null = null;
+function layerStack(
+	itemId: string,
+	animId: string,
+	dir: DirectionName,
+	onlyDir = false
+): LayerStack | null {
 	void doc.rev;
+	const p = store.project;
+	const key = `${doc.rev}|${itemId}|${animId}|${dir}|${onlyDir}`;
+	if (p && stackCache?.key === key && stackCache.project === p) return stackCache.value;
+	const value = buildLayerStack(itemId, animId, dir, onlyDir);
+	if (p) stackCache = { key, project: p, value };
+	return value;
+}
+function buildLayerStack(
+	itemId: string,
+	animId: string,
+	dir: DirectionName,
+	onlyDir: boolean
+): LayerStack | null {
 	const p = store.project,
 		anim = p?.manifest.rig.animations.find((x) => x.id === animId);
 	const placed = p && anim?.frames.length ? placedOutfit(p, itemId) : null;
@@ -2782,15 +2810,24 @@ function layerCrossings(itemId: string, animId: string, dir: DirectionName, only
 	const i = order.findIndex((d) => d.item.id === itemId && d.layer.role === 'fg');
 	if (i < 0) return null;
 	const { slot, layer, z } = order[i];
-	// The real composite of every cell, before and with the overrides a step past `j` would save: per-cell depths, body cuts
-	// and tucking all count, so a step is offered only where the outfit really changes.
-	const composite = (p: Project, cell: number) => composeCell(p, items, animId, dir, cell).data;
-	const before = cells.map((cell) => composite(project, cell));
-	const changedCell = (j: number) => {
+	// A view where the item has no pixel cannot change with its place, so it is not drawn.
+	const views = (onlyDir ? [dir] : m.rig.directions.map((d) => d.id))
+		.flatMap((facing) => cells.map((cell) => ({ facing, cell })))
+		.filter(({ facing, cell }) =>
+			cellImg(project, layer, animId, facing, cell)?.data.some(
+				(value, index) => index % 4 === 3 && value > 0
+			)
+		);
+	// Every other layer, back to front; the item sits in gap `at` (after the others behind it).
+	const others = order
+		.map((draw, index) => ({ draw, index }))
+		.filter(({ draw }) => draw.item.id !== itemId);
+	const at = others.filter(({ index }) => index < i).length;
+	const drawnAt = (targetZ: number) => {
 		const zOverrides = steppedOverrides(
 			slot.zOverrides ?? [],
 			layer.z,
-			order[j].z + Math.sign(j - i) - z,
+			targetZ - z,
 			onlyDir ? dir : undefined
 		);
 		const trial = {
@@ -2800,24 +2837,36 @@ function layerCrossings(itemId: string, animId: string, dir: DirectionName, only
 				slots: m.slots.map((entry) => (entry === slot ? { ...entry, zOverrides } : entry))
 			}
 		};
-		return cells.findIndex((cell, k) => {
-			const after = composite(trial, cell);
-			return after.some((value, index) => value !== before[k][index]);
-		});
+		return views.map((view) => composeCell(trial, items, animId, view.facing, view.cell).data);
 	};
-	const find = (step: 1 | -1): Crossing | undefined => {
-		for (let j = i + step; j >= 0 && j < order.length; j += step) {
-			if (order[j].item.id === itemId) continue;
-			const k = changedCell(j);
-			if (k >= 0)
-				return {
-					draw: order[j],
-					back: order[j].layer.role === 'bg',
-					frame: anim.frames.findIndex((frame) => frame.cell === cells[k])
-				};
-		}
+	// Gap k sits just behind others[k] (the last gap just in front of the front-most layer).
+	const gaps = others.map(({ draw }) => drawnAt(draw.z - 1));
+	gaps.push(drawnAt((others.at(-1)?.draw.z ?? z) + 1));
+	const firstChange = (k: number) =>
+		views.findIndex((_, v) => gaps[k][v].some((value, index) => value !== gaps[k + 1][v][index]));
+	const crossing = (k: number): Crossing | undefined => {
+		const v = firstChange(k);
+		if (v < 0) return;
+		const { draw } = others[k];
+		return {
+			draw,
+			back: draw.layer.role === 'bg',
+			frame: anim.frames.findIndex((frame) => frame.cell === views[v].cell)
+		};
 	};
-	return { order, i, behind: find(-1), ahead: find(1) };
+	const overlapping = others.map((_, k) => firstChange(k) >= 0);
+	let behind: Crossing | undefined, ahead: Crossing | undefined;
+	for (let k = at - 1; k >= 0 && !behind; k--) if (overlapping[k]) behind = crossing(k);
+	for (let k = at; k < others.length && !ahead; k++) if (overlapping[k]) ahead = crossing(k);
+	const below = overlapping.slice(0, at).filter(Boolean).length;
+	return {
+		order,
+		i,
+		behind,
+		ahead,
+		position: below + 1,
+		count: overlapping.filter(Boolean).length + 1
+	};
 }
 /** A slot's overrides with its item's front moved by `offset` as a unit, including finer overrides that take precedence
  *  over the base depth: for every facing, or only `dir` (which keeps the all-facing rules and adds its own). */
@@ -2858,7 +2907,7 @@ export function itemLayerNeighbors(
 	dir: DirectionName = ui.dir,
 	onlyDir = false
 ) {
-	const place = layerCrossings(itemId, animId, dir, onlyDir);
+	const place = layerStack(itemId, animId, dir, onlyDir);
 	const named = (crossing?: Crossing) =>
 		crossing && {
 			itemId: crossing.draw.item.id,
@@ -2869,57 +2918,16 @@ export function itemLayerNeighbors(
 		};
 	return { behind: named(place?.behind), ahead: named(place?.ahead) };
 }
-/** Where the item's front layer sits among the layers it visibly overlaps in the shown move and facing, counted from the
- *  back: `position` of `count` (the item included). A layer counts when putting the item just in front of it rather than
- *  just behind it changes the real composite in some frame, the same test a layer step uses, so each step moves the
- *  position by exactly one; layers it never overlaps are not part of its order. */
+/** Where the item's front layer sits among the layers it visibly overlaps in the shown move (in every facing a step
+ *  changes), counted from the back: `position` of `count`, the item included. Each step moves it by exactly one. */
 export function itemLayerPosition(
 	itemId: string,
 	animId = ui.anim,
 	dir: DirectionName = ui.dir,
 	onlyDir = false
 ) {
-	void doc.rev;
-	const p = store.project,
-		anim = p?.manifest.rig.animations.find((x) => x.id === animId);
-	const placed = p && anim?.frames.length ? placedOutfit(p, itemId) : null;
-	if (!placed || !anim) return null;
-	const { project, items } = placed,
-		m = project.manifest,
-		cells = [...new Set(anim.frames.map((frame) => frame.cell))];
-	const order = drawList(m, items, animId, dir, cells[0]);
-	const i = order.findIndex((d) => d.item.id === itemId && d.layer.role === 'fg');
-	if (i < 0) return null;
-	const { slot, layer, z } = order[i];
-	const placedAt = (offset: number) => {
-		const zOverrides = steppedOverrides(
-			slot.zOverrides ?? [],
-			layer.z,
-			offset,
-			onlyDir ? dir : undefined
-		);
-		const trial = {
-			...project,
-			manifest: {
-				...m,
-				slots: m.slots.map((entry) => (entry === slot ? { ...entry, zOverrides } : entry))
-			}
-		};
-		return cells.map((cell) => composeCell(trial, items, animId, dir, cell).data);
-	};
-	const overlaps = (j: number) => {
-		const behind = placedAt(order[j].z - 1 - z),
-			ahead = placedAt(order[j].z + 1 - z);
-		return behind.some((data, k) => data.some((value, index) => value !== ahead[k][index]));
-	};
-	let below = 0,
-		above = 0;
-	order.forEach((entry, j) => {
-		if (j === i || entry.item.id === itemId || !overlaps(j)) return;
-		if (j < i) below++;
-		else above++;
-	});
-	return { position: below + 1, count: below + above + 1 };
+	const stack = layerStack(itemId, animId, dir, onlyDir);
+	return stack && { position: stack.position, count: stack.count };
 }
 /** Move the item's front layer past the next layer it visibly crosses (all directions, or only the current one). Returns
  *  the playback frame where the change shows. */
@@ -2928,21 +2936,53 @@ export function moveLayer(
 	step: 1 | -1,
 	onlyDir: boolean,
 	animId = ui.anim,
-	facing: DirectionName = ui.dir
+	facing: DirectionName = ui.dir,
+	ladder: ZOverride[] = []
 ): number | undefined {
-	const place = layerCrossings(itemId, animId, facing, onlyDir),
+	const place = layerStack(itemId, animId, facing, onlyDir),
 		target = step > 0 ? place?.ahead : place?.behind;
 	if (!place || !target) return;
 	const { slot, layer, z } = place.order[place.i];
+	const stepped = steppedOverrides(
+		slot.zOverrides ?? [],
+		layer.z,
+		target.draw.z + step - z,
+		onlyDir ? facing : undefined
+	);
+	// A step back to a look the default order already draws (Back, then Forward) saves the default itself, so the order
+	// reads as unchanged (no Reset) and exports clean.
+	const defaults = [...stepped.filter((rule) => rule.layer !== 'fg'), ...structuredClone(ladder)];
+	const next = drawsAlike(itemId, slot, stepped, defaults) ? defaults : stepped;
 	commit(message(step > 0 ? 'history.bringForward' : 'history.sendBackward'), () => {
-		slot.zOverrides = steppedOverrides(
-			slot.zOverrides ?? [],
-			layer.z,
-			target.draw.z + step - z,
-			onlyDir ? facing : undefined
-		);
+		slot.zOverrides = next;
 	});
 	return target.frame;
+}
+/** Whether two override sets for the item's slot draw the outfit with the item placed identically in every move,
+ *  facing and frame. */
+function drawsAlike(itemId: string, slot: Slot, a: ZOverride[], b: ZOverride[]) {
+	const p = store.project;
+	const placed = p ? placedOutfit(p, itemId) : null;
+	if (!placed) return false;
+	const { project, items } = placed,
+		m = project.manifest;
+	const withRules = (zOverrides: ZOverride[]) => ({
+		...project,
+		manifest: {
+			...m,
+			slots: m.slots.map((entry) => (entry.id === slot.id ? { ...entry, zOverrides } : entry))
+		}
+	});
+	const first = withRules(a),
+		second = withRules(b);
+	for (const anim of m.rig.animations)
+		for (const dir of m.rig.directions)
+			for (const cell of new Set(anim.frames.map((frame) => frame.cell))) {
+				const left = composeCell(first, items, anim.id, dir.id, cell).data,
+					right = composeCell(second, items, anim.id, dir.id, cell).data;
+				if (left.some((value, index) => value !== right[index])) return false;
+			}
+	return true;
 }
 /** Restore the foreground ladder. Back layers have their own authored positions. */
 export function resetLayer(itemId: string, ladder: ZOverride[]) {

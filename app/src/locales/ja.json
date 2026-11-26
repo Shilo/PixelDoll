@@ -530,7 +530,6 @@
 		"matchingColors": "色を合わせています…",
 		"matchItemColors": "アイテムの色を合わせる",
 		"recolor": "色を変更",
-		"layerOrder": "レイヤーの順序",
 		"whenWornHide": "装備中は他のアイテムを非表示",
 		"iD": "ID",
 		"slot": "装備スロット",
@@ -567,7 +566,7 @@
 		"frames": {
 			"other": "{n}フレーム"
 		},
-		"onlyFacing": "{direction}向きのときだけ",
+		"onlyFacing": "{direction}向きのみ",
 		"tuckNote": "このアイテムは{slots}に一部重なる場合があります。",
 		"chromaKey": "キー色：{color}",
 		"qaStatus": {
@@ -647,7 +646,9 @@
 		"openOutfit": "{name}のコーディネートを全画面で開く",
 		"outfitTitle": "{name}のコーディネート",
 		"layerPosition": "レイヤー {count}中{position}",
-		"layerPositionHint": "重なるレイヤーのうち、後ろから数えて{count}中{position}番目"
+		"layerPositionHint": "重なるレイヤーのうち、後ろから数えて{count}中{position}番目",
+		"slotLayerOrder": "{slot}スロットのレイヤー順",
+		"layerScopeFacing": "{direction}向きのすべての{slot}アイテムに適用されます。"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新しいキャラクター",

@@ -541,7 +541,6 @@
 		"matchingColors": "Harmonisation des couleurs…",
 		"matchItemColors": "Harmoniser les couleurs de l’objet",
 		"recolor": "Recolorer",
-		"layerOrder": "Ordre des calques",
 		"whenWornHide": "Masquer les autres objets quand il est porté",
 		"iD": "ID",
 		"slot": "Emplacement",
@@ -668,7 +667,9 @@
 		"openOutfit": "Ouvrir {name} dans la tenue en plein écran",
 		"outfitTitle": "{name} dans la tenue",
 		"layerPosition": "Calque {position} sur {count}",
-		"layerPositionHint": "Calque {position} sur {count} parmi les calques qu’il chevauche, en partant de l’arrière"
+		"layerPositionHint": "Calque {position} sur {count} parmi les calques qu’il chevauche, en partant de l’arrière",
+		"slotLayerOrder": "Ordre des calques de l’emplacement {slot}",
+		"layerScopeFacing": "S’applique à tous les objets {slot} orientés {direction}."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nouveau personnage",

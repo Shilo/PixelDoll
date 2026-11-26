@@ -530,7 +530,6 @@
 		"matchingColors": "색상 맞추는 중…",
 		"matchItemColors": "아이템 색상 맞추기",
 		"recolor": "색상 변경",
-		"layerOrder": "레이어 순서",
 		"whenWornHide": "착용 중 다른 아이템 숨기기",
 		"iD": "ID",
 		"slot": "장착 슬롯",
@@ -567,7 +566,7 @@
 		"frames": {
 			"other": "프레임 {n}개"
 		},
-		"onlyFacing": "{direction} 방향일 때만",
+		"onlyFacing": "{direction} 방향만",
 		"tuckNote": "이 아이템이 {slots}을(를) 일부 가릴 수 있어요.",
 		"chromaKey": "{color} 키",
 		"qaStatus": {
@@ -647,7 +646,9 @@
 		"openOutfit": "{name} 의상을 전체 크기로 열기",
 		"outfitTitle": "{name} 의상",
 		"layerPosition": "레이어 {count}개 중 {position}",
-		"layerPositionHint": "겹치는 레이어 중 뒤에서부터 {count}개 중 {position}번째"
+		"layerPositionHint": "겹치는 레이어 중 뒤에서부터 {count}개 중 {position}번째",
+		"slotLayerOrder": "{slot} 슬롯 레이어 순서",
+		"layerScopeFacing": "{direction} 방향의 모든 {slot} 아이템에 적용돼요."
 	},
 	"newCharacterButton": {
 		"newCharacter": "새 캐릭터",

@@ -1599,18 +1599,13 @@ test('an unworn item can be ordered among the worn layers, and a hidden one cann
 	expect(head.zOverrides).toEqual([{ layer: 'fg', z: 9 }]);
 	expect(s.itemLayerPosition('hat')).toEqual({ position: 1, count: 2 });
 	expect(s.itemLayerNeighbors('hat').ahead).toBeDefined();
-	// Only this direction keeps the all-direction step and adds a direction-specific one.
+	// Forward again draws exactly what the default order draws (the hat only shows facing south here), so the step saves
+	// the default order instead of a rule that changes nothing.
 	s.moveLayer('hat', 1, true);
-	expect(head.zOverrides).toEqual([
-		{ layer: 'fg', z: 9 },
-		{ layer: 'fg', z: 11, dir: 'south' }
-	]);
-	// An all-direction step still moves the facing that already has a more specific rule.
-	s.moveLayer('hat', -1, false);
-	expect(head.zOverrides).toEqual([
-		{ layer: 'fg', z: 9, dir: 'south' },
-		{ layer: 'fg', z: 7 }
-	]);
+	expect(head.zOverrides).toEqual([]);
+	// A step for this facing only adds a rule for it alone.
+	s.moveLayer('hat', -1, true);
+	expect(head.zOverrides).toEqual([{ layer: 'fg', z: expect.any(Number), dir: 'south' }]);
 	expect(s.itemLayerNeighbors('hat').behind).toBeUndefined();
 	expect(s.itemLayerNeighbors('hat').ahead).toBeDefined();
 	// A worn item that hides the body's slot leaves it out of the draw order: its arrows do nothing.
@@ -1620,6 +1615,33 @@ test('an unworn item can be ordered among the worn layers, and a hidden one cann
 	expect(s.itemLayerNeighbors('base').behind).toBeUndefined();
 	s.moveLayer('base', -1, false);
 	expect(project.manifest.slots.find((slot) => slot.id === 'body')!.zOverrides).toBeUndefined();
+});
+
+test('a step back to the default look saves the default order', async () => {
+	const project = await equipmentFixture();
+	// The body reaches under the hat, so the hat has a place behind it and one in front.
+	const base = project.manifest.items.find((item) => item.id === 'base')!;
+	project.images
+		.get(base.layers[0].cells!.rest!.south![0]!)!
+		.data.set([180, 120, 90, 255], (18 * 64 + 20) * 4);
+	const s = await import('../../src/studio/state.svelte.ts');
+	const { defaultFrontOrder } = await import('../../src/studio/slots.ts');
+	s.store.project = project;
+	s.doc.id = 'layer-order-default';
+	s.doc.items = { body: 'base', head: 'hat' };
+	s.ui.anim = 'rest';
+	s.ui.dir = 'south';
+	const hat = project.manifest.items.find((item) => item.id === 'hat')!;
+	const head = project.manifest.slots.find((slot) => slot.id === 'head')!;
+	const ladder = defaultFrontOrder(project.manifest, hat);
+	const front = () => (head.zOverrides ?? []).filter((rule) => rule.layer === 'fg');
+	s.moveLayer('hat', -1, false, 'rest', 'south', ladder);
+	expect(front()).not.toEqual(ladder);
+	// Back, then Forward again: the same picture as the default, so the order reads as unchanged.
+	s.moveLayer('hat', 1, false, 'rest', 'south', ladder);
+	expect(front()).toEqual(ladder);
+	// Leave no save pending for the tests that follow.
+	await s.flushSave();
 });
 
 const draftsSaved = () => mocks.put.mock.calls.filter(([, key]) => key === 'studio-drafts');

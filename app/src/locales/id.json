@@ -530,7 +530,6 @@
 		"matchingColors": "Mencocokkan warna…",
 		"matchItemColors": "Cocokkan warna item",
 		"recolor": "Warnai ulang",
-		"layerOrder": "Urutan lapisan",
 		"whenWornHide": "Sembunyikan item lain saat dipakai",
 		"iD": "ID",
 		"slot": "Slot perlengkapan",
@@ -567,7 +566,7 @@
 		"frames": {
 			"other": "{n} frame"
 		},
-		"onlyFacing": "Hanya saat menghadap {direction}",
+		"onlyFacing": "Hanya menghadap {direction}",
 		"tuckNote": "Item ini mungkin menutupi sebagian {slots}.",
 		"chromaKey": "Warna kunci {color}",
 		"qaStatus": {
@@ -647,7 +646,9 @@
 		"openOutfit": "Buka {name} di pakaian dalam ukuran penuh",
 		"outfitTitle": "{name} di pakaian",
 		"layerPosition": "Lapisan {position} dari {count}",
-		"layerPositionHint": "Lapisan {position} dari {count} di antara lapisan yang tumpang tindih, dihitung dari belakang"
+		"layerPositionHint": "Lapisan {position} dari {count} di antara lapisan yang tumpang tindih, dihitung dari belakang",
+		"slotLayerOrder": "Urutan lapisan slot {slot}",
+		"layerScopeFacing": "Berlaku untuk semua item {slot} yang menghadap {direction}."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Karakter baru",
