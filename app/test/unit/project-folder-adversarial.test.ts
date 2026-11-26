@@ -166,12 +166,13 @@ describe('approvals', () => {
 
 	it('never applies an approval to the same bytes at another path', async () => {
 		const folder = memoryFolder({ [sprite]: userEdit, [other]: userEdit });
+		// The approved file is listed again with the pause, so one approval can cover both.
 		expect(
 			await folder.publish(
 				{ [sprite]: after, [other]: after },
 				new Map([[other, await hash(userEdit)]])
 			)
-		).toMatchObject({ kind: 'blocked', conflicts: [{ path: sprite }] });
+		).toMatchObject({ kind: 'blocked', conflicts: [{ path: sprite }, { path: other }] });
 		expect(folder.text(sprite)).toBe(userEdit);
 		expect(folder.text(other)).toBe(userEdit);
 	});
@@ -296,7 +297,7 @@ describe('kept files, paths and scale', () => {
 				{ 'hero.png': after, 'Hero.png': after },
 				new Map([['Hero.png', await hash(userEdit)]])
 			)
-		).toMatchObject({ kind: 'blocked', conflicts: [{ path: 'hero.png' }] });
+		).toMatchObject({ kind: 'blocked', conflicts: [{ path: 'hero.png' }, { path: 'Hero.png' }] });
 		expect(folder.text('Hero.png')).toBe(userEdit);
 		expect(folder.text('hero.png')).toBe(userEdit);
 	});

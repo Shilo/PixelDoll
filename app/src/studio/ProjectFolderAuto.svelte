@@ -3,7 +3,12 @@
 	// moment after each change. Mounted only in browsers that can write folders.
 	import { untrack } from 'svelte';
 	import { subscribeExportSettings } from '../lib/store/export-settings.ts';
-	import { loadFolderLink, projectFolder, scheduleFolderPublish } from './projectFolder.svelte.ts';
+	import {
+		folderFallsBehind,
+		loadFolderLink,
+		projectFolder,
+		scheduleFolderPublish
+	} from './projectFolder.svelte.ts';
 	import { doc, store } from './state.svelte.ts';
 	import { experience } from './experience/state.svelte.ts';
 
@@ -19,6 +24,7 @@
 		!!projectFolder.link?.auto && projectFolder.link.characterId === doc.id
 	);
 
+	let wasAutomatic = false;
 	$effect(() => {
 		// Anything an export reads: the saved character, its record and the worn look.
 		void store.project;
@@ -28,8 +34,13 @@
 		// The live views' waist and clip choices shape moving-attack fragments.
 		void JSON.stringify(experience.liveRoles[doc.id]);
 		void JSON.stringify(experience.liveLayering[doc.id]);
-		if (doc.loading || !automatic) return;
-		untrack(scheduleFolderPublish);
+		const on = automatic;
+		// Turning automatic updates off changes nothing in the folder, so only a real change leaves it behind.
+		const turnedOff = wasAutomatic && !on;
+		wasAutomatic = on;
+		if (doc.loading) return;
+		if (on) untrack(scheduleFolderPublish);
+		else if (!turnedOff) untrack(folderFallsBehind);
 	});
 
 	$effect(() => subscribeExportSettings(scheduleFolderPublish));

@@ -105,8 +105,12 @@ const usable = () => projectFolder.support === 'supported';
 const setStatus = (characterId: string, status: FolderStatus) => {
 	if (loadedFor === characterId) projectFolder.status = status;
 };
-const showLink = (characterId: string, link: FolderLink | null) => {
-	if (loadedFor === characterId) projectFolder.link = link;
+/** Counts this tab's own changes to the link (Update automatically), so a read that started before one never shows the
+ *  older value over it. */
+let linkChanges = 0;
+/** @param readAt linkChanges when the shown value was read; a change made since wins. */
+const showLink = (characterId: string, link: FolderLink | null, readAt = linkChanges) => {
+	if (loadedFor === characterId && readAt === linkChanges) projectFolder.link = link;
 };
 
 /** Reads the open character's link when the character changes. */
@@ -217,15 +221,16 @@ async function publish(link: FolderLink, request: Request) {
 	if (!input) return;
 	const settings = await readExportSettings();
 	await exclusive(link, async () => {
+		let readAt = linkChanges;
 		const checked = await stillLinked(link);
 		// Without a fresh read this tab cannot know whether the folder was stopped elsewhere, so it waits.
 		if (checked === 'unknown') return setStatus(id, { kind: 'failed', reason: 'unknown' });
 		if (!checked) {
-			showLink(id, await getLink(id).catch(() => null));
+			showLink(id, await getLink(id).catch(() => null), readAt);
 			return setStatus(id, { kind: 'idle' });
 		}
 		link = checked;
-		showLink(id, link);
+		showLink(id, link, readAt);
 		// Update automatically may have been turned off in another tab.
 		if (!request.manual && !link.auto) return;
 		if ((await permission(link)) !== 'granted') return lostAccess(link, request.manual);
@@ -255,10 +260,11 @@ async function publish(link: FolderLink, request: Request) {
 		const files = await buildFiles(link, input, settings, now);
 		if (!files) return setStatus(id, { kind: 'unavailable' });
 		// Building takes a moment: recheck that the link was not stopped or replaced meanwhile.
+		readAt = linkChanges;
 		const recheck = await stillLinked(link);
 		if (recheck === 'unknown') return setStatus(id, { kind: 'failed', reason: 'unknown' });
 		if (!recheck) return setStatus(id, { kind: 'idle' });
-		showLink(id, recheck);
+		showLink(id, recheck, readAt);
 		// Update automatically may also have been turned off meanwhile.
 		if (!request.manual && !recheck.auto) return setStatus(id, { kind: 'idle' });
 		const outcome = await publishFiles(target, files, {
@@ -272,11 +278,12 @@ async function publish(link: FolderLink, request: Request) {
 				for (const k of [...noticed]) if (k.startsWith(`${id}:`)) noticed.delete(k);
 				if (outcome.kind === 'published') {
 					try {
+						readAt = linkChanges;
 						const stored = await updateLink(id, link.linkedAt, {
 							exportedAt: now,
 							publishedAt: now
 						});
-						if (stored) showLink(id, stored);
+						if (stored) showLink(id, stored, readAt);
 					} catch (error) {
 						console.warn('Could not record the project folder publish', error);
 					}
@@ -308,6 +315,8 @@ async function publish(link: FolderLink, request: Request) {
 					toast(message('projectFolder.toast.failed', { folder: link.handle.name }), {
 						tone: 'warning',
 						error: outcome.error,
+						// A locked file, a full disk or a refused folder is the user's to fix, not a bug to report.
+						report: outcome.reason === 'unknown' ? undefined : false,
 						...review
 					})
 				);
@@ -369,6 +378,14 @@ function run(request: Request): Promise<void> {
 		}
 	})().finally(() => (running = null));
 	return running;
+}
+
+/** After a change while automatic updates are off: the folder no longer holds the latest look, so it stops reading as
+ *  up to date until the next Update now. */
+export function folderFallsBehind() {
+	const link = projectFolder.link;
+	if (link && !link.auto && projectFolder.status.kind === 'done')
+		setStatus(link.characterId, { kind: 'idle' });
 }
 
 /** After a change: republish soon if this character publishes automatically. */
@@ -507,9 +524,10 @@ export async function reconnectProjectFolder(expected?: FolderLink) {
 export async function setFolderAutoPublish(auto: boolean) {
 	const link = projectFolder.link;
 	if (!link) return;
+	const change = ++linkChanges;
 	try {
 		// Null means another tab stopped or replaced this link.
-		showLink(link.characterId, await updateLink(link.characterId, link.linkedAt, { auto }));
+		showLink(link.characterId, await updateLink(link.characterId, link.linkedAt, { auto }), change);
 	} catch (error) {
 		console.warn('Could not save Update automatically', error);
 		setStatus(link.characterId, { kind: 'failed', reason: 'unknown' });

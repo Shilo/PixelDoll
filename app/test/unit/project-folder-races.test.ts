@@ -161,3 +161,31 @@ it('honors automatic updates being turned off before an in-flight build reaches 
 		vi.unstubAllGlobals();
 	}
 });
+
+// Approving a pause while another listed file changes again must not drop the other approvals, or Replace alternates
+// between two partial lists forever.
+it('keeps earlier approvals when a pause comes back for one of the files', async () => {
+	const folder = memoryFolder({});
+	await folder.publish({ 'a.png': 'one', 'b.png': 'one' });
+	folder.set('a.png', 'user a');
+	folder.set('b.png', 'user b');
+	const approve = (outcome: Awaited<ReturnType<typeof folder.publish>>) => {
+		if (outcome.kind !== 'blocked') throw new Error(`expected a pause, got ${outcome.kind}`);
+		return new Map(outcome.conflicts.map((c) => [c.path, c.found!]));
+	};
+	const first = approve(await folder.publish({ 'a.png': 'two', 'b.png': 'two' }));
+	folder.set('a.png', 'user a again');
+
+	const again = await folder.publish({ 'a.png': 'two', 'b.png': 'two' }, first);
+	expect(again.kind === 'blocked' && again.conflicts.map((c) => c.path).sort()).toEqual([
+		'a.png',
+		'b.png'
+	]);
+	expect(folder.text('b.png')).toBe('user b');
+
+	expect(await folder.publish({ 'a.png': 'two', 'b.png': 'two' }, approve(again))).toMatchObject({
+		kind: 'published',
+		written: 2
+	});
+	expect([folder.text('a.png'), folder.text('b.png')]).toEqual(['two', 'two']);
+});

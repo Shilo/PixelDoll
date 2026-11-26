@@ -27,8 +27,12 @@ export interface FolderRecord {
 
 export interface Plan {
 	actions: PlanAction[];
+	/** Everything that pauses this publish. While any remain, it also lists the files the user already approved, so
+	 *  one approval covers the whole set instead of each pause dropping the approvals of the one before. */
 	conflicts: PlanAction[];
 	writes: PlanAction[];
+	/** Writes that happen only because the user approved them, as the conflicts they were. */
+	approved: PlanAction[];
 }
 
 /** What an approval records for a published file the user deleted: approving it puts the file back. */
@@ -49,6 +53,7 @@ export function planPublish(o: {
 }): Plan {
 	const kept = new Set(o.record.kept);
 	const actions: PlanAction[] = [];
+	const approved: PlanAction[] = [];
 	for (const [path, hash] of o.next) {
 		if (kept.has(path)) {
 			actions.push({ path, kind: 'kept' });
@@ -56,7 +61,7 @@ export function planPublish(o: {
 		}
 		const current = o.disk.get(path) ?? null;
 		const mine = Object.hasOwn(o.record.written, path) ? o.record.written[path] : undefined;
-		const approved = o.overwrite?.get(path);
+		const approval = o.overwrite?.get(path);
 		if (current === NOT_A_FILE)
 			actions.push({ path, kind: 'conflict', reason: 'folder', found: current });
 		// Already right. Identical bytes PixelDoll did not write stay the user's: nothing is recorded for them.
@@ -65,21 +70,29 @@ export function planPublish(o: {
 		else if (current === null) {
 			// A file PixelDoll published that is now gone was deleted by the user: a change like any other.
 			if (mine === undefined) actions.push({ path, kind: 'create' });
-			else if (approved === DELETED) actions.push({ path, kind: 'restore' });
-			else actions.push({ path, kind: 'conflict', reason: 'deleted', found: DELETED });
-		} else if (mine === current || approved === current) actions.push({ path, kind: 'update' });
-		else
-			actions.push({
+			else if (approval === DELETED) {
+				actions.push({ path, kind: 'restore' });
+				approved.push({ path, kind: 'conflict', reason: 'deleted', found: DELETED });
+			} else actions.push({ path, kind: 'conflict', reason: 'deleted', found: DELETED });
+		} else {
+			const conflict: PlanAction = {
 				path,
 				kind: 'conflict',
 				reason: mine === undefined ? 'not-ours' : 'edited-outside',
 				found: current
-			});
+			};
+			if (mine === current) actions.push({ path, kind: 'update' });
+			else if (approval === current) {
+				actions.push({ path, kind: 'update' });
+				approved.push(conflict);
+			} else actions.push(conflict);
+		}
 	}
 	const conflicts = actions.filter((a) => a.kind === 'conflict');
 	return {
 		actions,
-		conflicts,
+		approved,
+		conflicts: conflicts.length ? [...conflicts, ...approved] : [],
 		writes: actions.filter(
 			(a) => a.kind === 'create' || a.kind === 'update' || a.kind === 'restore'
 		)

@@ -4109,7 +4109,7 @@ test('a linked project folder publishes, updates after changes, pauses on game e
 	expect(await folderText(page, manifestPath)).toBe('{"edited":"in the game"}');
 	await toast.getByRole('button', { name: 'Review' }).click();
 	await expect(row.getByRole('alert')).toContainText(
-		'These files differ from what PixelDoll last wrote'
+		'PixelDoll won’t replace these files without your OK'
 	);
 	await expect(row.getByRole('alert')).toContainText('manifest.json');
 	await row.getByRole('button', { name: 'Replace listed files' }).click();
@@ -4186,7 +4186,7 @@ test('a project folder never replaces files changed outside PixelDoll without ap
 	const row = dialog.locator('[data-setting="project-folder"]');
 	await row.getByRole('button', { name: 'Choose folder…' }).click();
 	await expect(row.getByRole('alert')).toContainText(
-		'These files differ from what PixelDoll last wrote'
+		'PixelDoll won’t replace these files without your OK'
 	);
 	expect(await folderText(page, at('manifest.json'))).toBe('my own manifest');
 	expect(await folderText(page, at('.pixeldoll-publish.json'))).toBeNull();

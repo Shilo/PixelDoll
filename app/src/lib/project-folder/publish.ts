@@ -104,6 +104,8 @@ export async function publishFiles(
 	}
 ): Promise<PublishOutcome> {
 	let written = 0;
+	// Approved files not yet written, listed again if a later file pauses this publish.
+	let approved: PlanAction[] = [];
 	try {
 		await target.check();
 		const bytes = new Map(files.map((f) => [f.name, f.data]));
@@ -114,6 +116,7 @@ export async function publishFiles(
 		for (const path of next.keys()) if (!kept.has(path)) disk.set(path, await hashAt(target, path));
 		const plan = planPublish({ next, record: o.record, disk, overwrite: o.overwrite });
 		if (plan.conflicts.length) return { kind: 'blocked', conflicts: plan.conflicts };
+		approved = plan.approved;
 		if (!plan.writes.length) return { kind: 'unchanged', kept: o.record.kept.length };
 		// The manifest goes last, so a game that reads it never sees it ahead of its images.
 		const order = [...plan.writes].sort(
@@ -145,6 +148,7 @@ export async function publishFiles(
 				throw error;
 			}
 			written++;
+			approved = approved.filter((c) => c.path !== a.path);
 			await o.onRecord(a.path, next.get(a.path)!);
 		}
 		return { kind: 'published', written, kept: o.record.kept.length };
@@ -170,7 +174,8 @@ export async function publishFiles(
 						kind: 'conflict',
 						reason: 'edited-outside',
 						found: found ?? DELETED
-					}
+					},
+					...approved.filter((c) => c.path !== error.path)
 				]
 			};
 		}

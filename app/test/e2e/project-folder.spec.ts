@@ -217,6 +217,10 @@ test('two tabs: turning off Update automatically in one tab blocks the other, an
 	// The status already read Up to date before the click, so wait for the file itself.
 	await expect.poll(() => inSyncVariant(page, manifestPath, material)).toBe('review-red');
 	await expect(row.getByRole('status')).toHaveText('Up to date');
+	// A later change leaves the folder behind, so it stops claiming to be up to date.
+	await setLookVariant(page, material, null);
+	await expect(row.getByRole('status')).toHaveText('');
+	expect(await inSyncVariant(page, manifestPath, material)).toBe('review-red');
 	expect(errors).toEqual([]);
 	expect(otherErrors).toEqual([]);
 });
