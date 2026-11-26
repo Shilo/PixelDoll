@@ -749,12 +749,19 @@ test('first-visit demo tips teach gear and Export, then stay away until Help rep
 	await expect(preview).toBeVisible();
 	await enterStudio(page);
 	await expect(tip).toHaveCount(0);
+	// Asked for from a live view, the replay returns to Preview at once rather than acting on a later press.
+	const previewView = page.getByRole('button', { name: 'Preview', exact: true });
+	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: /^Help/ }).click();
 	await page.getByRole('button', { name: 'Demo tips', exact: true }).click();
+	await expect(previewView).toHaveAttribute('aria-pressed', 'true');
 	await expect(tip.getByRole('heading', { name: 'Try on gear' })).toBeVisible();
-	await tip.getByRole('button', { name: 'Dismiss tips' }).click();
+	// Closed by keyboard, focus goes to the Wardrobe the tip was about instead of the page.
+	await tip.getByRole('button', { name: 'Dismiss tips' }).focus();
+	await page.keyboard.press('Enter');
 	await expect(tip).toHaveCount(0);
+	await expect(page.getByRole('tab', { name: 'Wardrobe', exact: true })).toBeFocused();
 });
 
 test('the startup preview notice expires after eight seconds', async ({ page }, info) => {

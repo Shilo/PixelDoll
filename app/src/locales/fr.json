@@ -3654,8 +3654,8 @@
 		"gearTitle": "Essayez de l’équipement",
 		"gearBody": "Choisissez un objet dans la Garde-robe pour l’équiper ou le retirer.",
 		"exportTitle": "Emmenez-le dans votre jeu",
-		"exportBody": "Exporter enregistre le corps de base et chaque objet dans des feuilles de sprites séparées.",
-		"exportInMoreBody": "Ouvrez Plus d’options, puis Exporter, pour enregistrer le corps de base et chaque objet dans des feuilles de sprites séparées.",
+		"exportBody": "Exporter peut enregistrer le corps de base et chaque objet dans des feuilles de sprites séparées.",
+		"exportInMoreBody": "Exporter se trouve dans Plus d’options. Il peut enregistrer le corps de base et chaque objet dans des feuilles de sprites séparées.",
 		"dismiss": "Masquer les conseils",
 		"replay": "Conseils de la démo"
 	}

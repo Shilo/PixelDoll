@@ -3654,8 +3654,8 @@
 		"gearTitle": "Ausrüstung anprobieren",
 		"gearBody": "Wähle in der Garderobe einen Gegenstand, um ihn anzulegen oder abzulegen.",
 		"exportTitle": "Ab in dein Spiel",
-		"exportBody": "Exportieren speichert den Grundkörper und jeden Gegenstand als eigenes Spritesheet.",
-		"exportInMoreBody": "Öffne Weitere Optionen und dann Exportieren, um den Grundkörper und jeden Gegenstand als eigenes Spritesheet zu speichern.",
+		"exportBody": "Exportieren kann den Grundkörper und jeden Gegenstand als eigenes Spritesheet speichern.",
+		"exportInMoreBody": "Exportieren findest du unter Weitere Optionen. Es kann den Grundkörper und jeden Gegenstand als eigenes Spritesheet speichern.",
 		"dismiss": "Tipps ausblenden",
 		"replay": "Demo-Tipps"
 	}

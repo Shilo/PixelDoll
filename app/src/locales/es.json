@@ -3654,8 +3654,8 @@
 		"gearTitle": "Pruébate equipo",
 		"gearBody": "Elige un objeto del Armario para ponértelo o quitártelo.",
 		"exportTitle": "Llévalo a tu juego",
-		"exportBody": "Exportar guarda el cuerpo base y cada objeto en hojas de sprites separadas.",
-		"exportInMoreBody": "Abre Más opciones y luego Exportar para guardar el cuerpo base y cada objeto en hojas de sprites separadas.",
+		"exportBody": "Exportar puede guardar el cuerpo base y cada objeto en hojas de sprites separadas.",
+		"exportInMoreBody": "Encontrarás Exportar en Más opciones. Puede guardar el cuerpo base y cada objeto en hojas de sprites separadas.",
 		"dismiss": "Ocultar consejos",
 		"replay": "Consejos de la demo"
 	}

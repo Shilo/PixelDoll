@@ -13,34 +13,39 @@ hint-card attempt on `t3/quickstart-onboarding` (commits `e4254ec57`, `83cbc9022
    character, an unreadable library, or a later visit shows it as before.
 3. **Create from scratch says it is paid before the form.** The New character menu row reads "Needs a PixelLab key and
    uses paid generations" under its label (its accessible description).
-4. **Two tips in the demo's Customize, one at a time.** Bronze popover surface with an arrow, a lightbulb, a title, one
-   sentence and an X. No Next buttons, progress dots or scrim. Each tip ends by itself when the person does what it
-   suggests (Apple TipKit's model):
-   - **Try on gear:** "Choose an item in the Wardrobe to put it on or take it off." Points at the first fully visible tile of a complete
-     item (frames in every move; never the demo's Wizard hat), preferring one not worn yet; on a screen too short to show a
-     whole tile, at the list. Ends on any outfit change.
-   - **Take it into your game:** "Export saves the body and each item as separate spritesheets." Points at Export, or at
-     More options with "Open More options, then Export, ..." when the bar has moved Export into More. Ends when Export
-     opens (opening Export at the first tip also ends both).
-5. **Dismiss and replay.** The X ("Dismiss tips") ends both. Finishing or dismissing writes `pixeldoll.welcomed`.
-   Leaving the demo's Customize suspends the tips until the next visit. **More options > Help > Demo tips** opens the
-   demo's Customize and starts them again. Workspace copies never show them.
+4. **At most two tips in the demo's Customize, one at a time,** for a newcomer only (nothing saved or being created).
+   Bronze popover surface with an arrow, a lightbulb, a title, one sentence and an X. No Next buttons, progress dots or
+   scrim. Each tip ends by itself when the person does what it suggests (Apple TipKit's model):
+   - **Try on gear:** "Choose an item in the Wardrobe to put it on or take it off." Only beside a docked panel. Points
+     at the first fully visible tile of a complete item (frames in every move; never the demo's Wizard hat), preferring
+     one not worn yet; with no whole tile in view, at the list without an arrow; with none at all (a search with no
+     match), nowhere. Ends on any outfit change.
+   - **Take it into your game:** "Export can save the body and each item as separate spritesheets." ("can": some formats
+     combine layers.) Points at Export, or at More options with "Find Export in More options. ..." when the bar has
+     moved Export into More. Ends when Export opens (opening Export at the first tip also ends both).
+5. **Dismiss and replay.** The X ("Dismiss tips") ends both; closed by keyboard, focus goes to the Wardrobe tab or the
+   Export control rather than the page. Finishing or dismissing writes `pixeldoll.welcomed`. Leaving the demo's
+   Customize suspends the tips until the next visit. **More options > Help > Demo tips** opens the demo's Customize in
+   Preview at once and starts over (at Export over a bottom sheet). The request is used up immediately, so it can never
+   act on a later press. Workspace copies never show them.
 
 ## Placement and access
 
 - Tips cover no control. They stay inside the open scene: below the top bar, view switch and zoom controls, above the
   Preview controls, beside the panel (floating-ui `boundary`). A tip that cannot fit there (a phone held sideways) waits
-  instead of covering something, and tips wait in Top-down and Side-scroller, whose stage has its own game controls.
+  instead of covering something. Tips also wait in Top-down and Side-scroller, whose stage has its own game controls,
+  and while the scene is zoomed away from its fit, when the character fills it.
 - Desktop docks: the gear tip sits just outside the panel edge, level with its tile. The Export tip sits under the top
   bar at the scene's edge and drops its arrow when it cannot line up with Export without covering the panel.
-- Phone bottom sheet: the gear tip waits at the top of the scene (no arrow; the copy names the Wardrobe) so the
-  character, playback bar and gear stay clear. The Export tip sits below the view switch, its arrow toward More options.
-  Checked at 1280 x 800, 390 x 844 and 320 x 568, dark and light.
+- Phone bottom sheet: no gear tip. There is no room beside the gear that keeps the character clear, the Characters note
+  just said to try gear on, and the Wardrobe fills the sheet. After the first outfit change the Export tip sits below
+  the view switch, its arrow toward More options, only when the scene has room for it and the character (at least three
+  tip heights); at 320 x 568 it waits. Checked at 1280 x 800, 390 x 844 and 320 x 568, dark and light.
 - The tip is a plain fixed layer, not a popover: the app treats any open popover as an open menu and pauses stage keys,
   scene zoom and refocusing for it.
 - Tips never take focus: focus stays on the tile the person used, and WASD keeps driving the stage. Each tip is
-  announced once through a polite status region; the X is a real 44 px button in the page's tab order. Escape keeps its
-  existing meanings. Reduced motion removes the short fade-in.
+  announced once through a polite status region; the X is a real 44 px button placed before the panel in the tab
+  order. Escape keeps its existing meanings. Reduced motion removes the short fade-in.
 
 ## Why this form
 
@@ -73,8 +78,20 @@ session, then a debate round. Sol's points adopted: two tips not three, complete
 open-not-download completion, deferring the warning only while nothing is saved, the paid note on Create. Sol's
 preset-helmet, tile relabel and temporary toolbar reshuffle were rejected as changes to the product itself.
 
+## Independent review
+
+GPT 6.2 Sol reviewed `ba177d921` in a browser at five sizes, both themes and docks. Fixed: a Help replay requested in
+a live view stayed pending and later sent Characters back into Customize; the X sat 66 Tab presses away and dropped
+focus on close; after scrolling, the arrow could stay on the list midpoint; the Export copy overpromised separate
+layers; at 320 x 568 the phone gear tip covered the character's head. Also adopted: tips start on their own only for
+a newcomer. Challenged and kept: Sol proposed dropping the gear tip everywhere and testing it against an Export-only
+flow. It stays where it can point at its tile without covering anything (docked panels), because the editor opens on a
+dense panel and the tip names the one action to start with; over a bottom sheet it is dropped. Not changed: at
+320 x 568 the Wardrobe sheet opens with only part of its first tile in view, an existing layout limit outside this
+record.
+
 ## Untested assumptions
 
 - No first-time-user study; the flow was checked by agents in the browser and by end-to-end tests.
 - Screen-reader announcement was checked through the accessibility tree, not with a live screen reader.
-- On phones the gear tip has no arrow; the copy names the Wardrobe instead.
+- Whether the gear tip helps on desktop was argued, not measured; an Export-only flow is the alternative to test.

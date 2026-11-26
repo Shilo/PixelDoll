@@ -3552,8 +3552,8 @@
 		"gearTitle": "Coba perlengkapan",
 		"gearBody": "Pilih item di Lemari untuk memakainya atau melepasnya.",
 		"exportTitle": "Bawa ke game Anda",
-		"exportBody": "Ekspor menyimpan tubuh dasar dan setiap item sebagai sprite sheet terpisah.",
-		"exportInMoreBody": "Buka Opsi lainnya, lalu Ekspor, untuk menyimpan tubuh dasar dan setiap item sebagai sprite sheet terpisah.",
+		"exportBody": "Ekspor dapat menyimpan tubuh dasar dan setiap item sebagai sprite sheet terpisah.",
+		"exportInMoreBody": "Ekspor ada di Opsi lainnya. Ekspor dapat menyimpan tubuh dasar dan setiap item sebagai sprite sheet terpisah.",
 		"dismiss": "Tutup tips",
 		"replay": "Tips demo"
 	}

@@ -14,7 +14,7 @@
 	import CharacterName from '../CharacterName.svelte';
 	import PhonePanel from '../PhonePanel.svelte';
 	import DemoTip from './DemoTip.svelte';
-	import { demoTips, finishDemoTips } from './demoTips.svelte.ts';
+	import { demoTips, finishDemoTips, type DemoTip as DemoTipStep } from './demoTips.svelte.ts';
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import CharacterThumb from './CharacterThumb.svelte';
@@ -152,15 +152,12 @@
 		)
 	);
 	const list = $derived(saved.filter((p) => matchesSearch([p.name], query)));
-	// First run with only the demo: one line beside Customize says what the demo offers and that it is free.
-	const showIntro = $derived(
-		!workspaceCopy &&
-			ui.welcome &&
-			doc.id === DEMO &&
-			!!m &&
-			saved.length === 1 &&
-			!allPending.length
+	/** A newcomer: nothing saved or being created yet, and the demo tips not yet finished or dismissed. */
+	const newcomer = $derived(
+		!workspaceCopy && ui.welcome && saved.length === 1 && !allPending.length
 	);
+	// First run with only the demo: one line beside Customize says what the demo offers and that it is free.
+	const showIntro = $derived(newcomer && doc.id === DEMO && !!m);
 	const introId = $props.id();
 	/** Items with frames in every move, which a tip may suggest (the demo's Wizard hat lacks some on purpose). */
 	const completeItems = $derived(
@@ -174,7 +171,14 @@
 		);
 	/** The outfit when the gear tip appeared: any change to it means the person has tried on gear. */
 	let tipOutfit = '';
-	// The demo tips run only in the demo's Customize; leaving it suspends them until the next visit.
+	function startTips(step: DemoTipStep) {
+		panel('wardrobe');
+		setPanelOpen(true);
+		tipOutfit = outfit();
+		demoTips.step = step;
+	}
+	// The demo tips run only in the demo's Customize, on their own only for a newcomer; leaving suspends them until
+	// the next visit.
 	$effect(() => {
 		const inDemo =
 			!workspaceCopy && experience.screen === 'studio' && doc.id === DEMO && !doc.loading && !!m;
@@ -182,14 +186,7 @@
 			if (demoTips.step) demoTips.step = null;
 			return;
 		}
-		if (demoTips.step || !(ui.welcome || demoTips.replay)) return;
-		untrack(() => {
-			demoTips.replay = false;
-			panel('wardrobe');
-			setPanelOpen(true);
-			tipOutfit = outfit();
-			demoTips.step = 'gear';
-		});
+		if (!demoTips.step && newcomer) untrack(() => startTips('gear'));
 	});
 	$effect(() => {
 		if (demoTips.step === 'gear' && outfit() !== tipOutfit) demoTips.step = 'export';
@@ -197,23 +194,25 @@
 	$effect(() => {
 		if (demoTips.step && ui.sheet === 'export') finishDemoTips();
 	});
-	// Help > Demo tips: open the demo if needed, then its Customize, where the effect above starts the tips.
+	// Help > Demo tips: open the demo if needed, then its Customize in Preview, and start over. The request is used up
+	// at once so it can never act later, such as on a press of Characters.
 	$effect(() => {
 		if (!demoTips.replay || doc.loading || openingProjectId()) return;
-		if (workspaceCopy || doc.error) {
-			demoTips.replay = false;
-			return;
-		}
-		if (doc.id !== DEMO) {
+		if (!workspaceCopy && !doc.error && doc.id !== DEMO) {
 			void openProject(DEMO);
 			return;
 		}
-		if (experience.screen === 'characters' && m && !ui.sheet)
-			untrack(() => {
+		untrack(() => {
+			demoTips.replay = false;
+			if (workspaceCopy || doc.error || doc.id !== DEMO || !m || ui.sheet) return;
+			if (experience.screen === 'characters') {
 				showStanding();
 				applyRiderPose();
 				enterCustomize();
-			});
+			} else changeMode('preview');
+			// Over a bottom sheet the gear tip never shows (DemoTip.svelte), so a replay there starts at Export.
+			startTips(g.sheet ? 'export' : 'gear');
+		});
 	});
 	const pending = $derived(allPending.filter((run) => matchesSearch([run.spec.name], query)));
 	const searchTotal = $derived(saved.length + allPending.length);
@@ -1233,6 +1232,14 @@
 				</div>
 			</div>
 		{/if}
+		<!-- Before the panel, so keyboard users reach the tip's close button before the gear it is about. -->
+		{#if demoTips.step}<DemoTip
+				step={demoTips.step}
+				dock={dockEdge}
+				{panelOpen}
+				complete={completeItems}
+				ondismiss={finishDemoTips}
+			/>{/if}
 		<aside
 			id="customization-rail"
 			class="equipment-rail"
@@ -1281,13 +1288,6 @@
 			<span hidden id="tab-work-stopped">{t('experience.tabWorkAttention')}</span>
 			<PhonePanel {wardrobeScroll} />
 		</aside>
-		{#if demoTips.step}<DemoTip
-				step={demoTips.step}
-				dock={dockEdge}
-				{panelOpen}
-				complete={completeItems}
-				ondismiss={finishDemoTips}
-			/>{/if}
 	{/if}
 	{#if doc.error && experience.screen !== 'studio'}
 		<p class="experience-error" role="alert">{displayNestedMessage(doc.error)}</p>

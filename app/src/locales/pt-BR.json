@@ -3663,8 +3663,8 @@
 		"gearTitle": "Experimente equipamentos",
 		"gearBody": "Escolha um item no Guarda-roupa para vesti-lo ou tirá-lo.",
 		"exportTitle": "Leve para o seu jogo",
-		"exportBody": "Exportar salva o corpo base e cada item em folhas de sprites separadas.",
-		"exportInMoreBody": "Abra Mais opções e depois Exportar para salvar o corpo base e cada item em folhas de sprites separadas.",
+		"exportBody": "Exportar pode salvar o corpo base e cada item em folhas de sprites separadas.",
+		"exportInMoreBody": "Exportar fica em Mais opções. Ele pode salvar o corpo base e cada item em folhas de sprites separadas.",
 		"dismiss": "Ocultar dicas",
 		"replay": "Dicas da demo"
 	}

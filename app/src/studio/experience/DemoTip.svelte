@@ -35,6 +35,8 @@
 	let tip: HTMLElement;
 	let anchor = $state.raw<HTMLElement | null>(null);
 	let inMore = $state(false);
+	/** Pointing at the whole list (no whole tile in view): the arrow would point at nothing in particular. */
+	let atList = false;
 	let announced = $state<DemoTip | null>(null);
 
 	const visibleIn = (el: HTMLElement) => {
@@ -45,17 +47,19 @@
 		};
 		return r.height > 0 && r.top >= box.top && r.bottom <= box.bottom;
 	};
-	/** The first fully visible tile of a complete item, preferring one not worn yet; on a screen too short to show one
-	 *  whole, the list itself. */
+	/** The first fully visible tile of a complete item, preferring one not worn yet; when none is whole in view, the
+	 *  list itself; when the list shows none at all (a search with no match), nothing. */
 	function gearAnchor() {
 		const tiles = [
 			...document.querySelectorAll<HTMLElement>('#customization-panel [data-tile]')
-		].filter((tile) => complete.has(tile.dataset.tile!) && visibleIn(tile));
-		return (
-			tiles.find((tile) => tile.getAttribute('aria-pressed') === 'false') ??
-			tiles[0] ??
-			document.querySelector<HTMLElement>('#customization-panel .equipment-scroll')
-		);
+		].filter((tile) => complete.has(tile.dataset.tile!));
+		const whole = tiles.filter(visibleIn);
+		const tile = whole.find((el) => el.getAttribute('aria-pressed') === 'false') ?? whole[0];
+		atList = !tile;
+		if (tile) return tile;
+		return tiles.length
+			? document.querySelector<HTMLElement>('#customization-panel .equipment-scroll')
+			: null;
 	}
 	/** Export in the top bar, or More once the bar has moved Export into it (Toolbar.svelte fitting). */
 	function exportAnchor() {
@@ -67,7 +71,9 @@
 	}
 	function resolve() {
 		if (step === 'gear') {
-			anchor = ui.tab === 'wardrobe' && panelOpen ? gearAnchor() : null;
+			// Over a bottom sheet there is no room beside the gear that keeps the character clear: the Characters note
+			// already says to try gear on, so this tip only shows beside a docked panel.
+			anchor = ui.tab === 'wardrobe' && panelOpen && dock !== 'bottom' ? gearAnchor() : null;
 			inMore = false;
 		} else {
 			const found = exportAnchor();
@@ -81,6 +87,21 @@
 		const frame = requestAnimationFrame(resolve);
 		return () => cancelAnimationFrame(frame);
 	});
+	// Scrolling the Wardrobe can bring a whole tile back into view, or take the pointed one out.
+	$effect(() => {
+		if (step !== 'gear') return;
+		let frame = 0;
+		const scrolled = (event: Event) => {
+			if (!(event.target instanceof Element) || !event.target.matches('.equipment-scroll')) return;
+			cancelAnimationFrame(frame);
+			frame = requestAnimationFrame(resolve);
+		};
+		document.addEventListener('scroll', scrolled, true);
+		return () => {
+			cancelAnimationFrame(frame);
+			document.removeEventListener('scroll', scrolled, true);
+		};
+	});
 	$effect(() => {
 		const root = document.querySelector('.experience');
 		if (!root) return;
@@ -89,8 +110,11 @@
 		return () => observer.disconnect();
 	});
 
-	// Live views are a game with their own on-screen controls: the tips wait for Preview.
-	const shown = $derived(!!anchor && !ui.sheet && experience.mode === 'preview');
+	// Live views are a game with their own on-screen controls, and a zoomed scene is being inspected: tips wait for
+	// Preview at its normal fit.
+	const shown = $derived(
+		!!anchor && !ui.sheet && experience.mode === 'preview' && experience.sceneZoom === null
+	);
 	/** The open part of the scene: below the top bar and view switch, above the Preview controls, beside the panel.
 	 *  Tips stay inside it so they never cover a control or the panel's gear. */
 	function openScene() {
@@ -98,44 +122,30 @@
 		if (!stage) return;
 		const below = (selector: string) =>
 			document.querySelector(selector)?.getBoundingClientRect().bottom ?? 0;
-		const top = Math.max(
-			stage.top,
-			below('.experience-header'),
-			below('.view-modes'),
-			below('.scene-zoom')
-		);
+		const top = Math.max(stage.top, below('.experience-header'), below('.view-modes'));
 		const bar = document.querySelector('.playback-bar')?.getBoundingClientRect();
 		const bottom = bar?.height ? Math.min(stage.bottom, bar.top) : stage.bottom;
 		return { x: stage.left, y: top, width: stage.width, height: Math.max(0, bottom - top) };
 	}
-	/** Beside a docked panel the gear tip points at its tile from the panel's edge, level with it. Over a bottom sheet
-	 *  there is no room beside the gear, so it waits at the top of the scene instead. Export is pointed at directly. */
+	/** The gear tip points at its tile from the docked panel's edge, level with it; Export is pointed at directly. */
 	function reference(el: HTMLElement): { target: Element | VirtualElement; placement: Placement } {
 		const rail = step === 'gear' ? el.closest<HTMLElement>('.equipment-rail') : null;
 		if (!rail) return { target: el, placement: 'bottom-end' };
 		const rect = () => {
 			const tile = el.getBoundingClientRect(),
-				edge = rail.getBoundingClientRect(),
-				scene = openScene();
-			if (dock !== 'bottom')
-				return new DOMRect(dock === 'left' ? edge.right : edge.left, tile.y, 0, tile.height);
-			return scene
-				? new DOMRect(scene.x, scene.y, scene.width, 0)
-				: new DOMRect(0, 0, innerWidth, 0);
+				edge = rail.getBoundingClientRect();
+			return new DOMRect(dock === 'left' ? edge.right : edge.left, tile.y, 0, tile.height);
 		};
 		return {
 			target: { contextElement: el, getBoundingClientRect: rect },
-			placement: dock === 'bottom' ? 'bottom' : dock === 'left' ? 'right' : 'left'
+			placement: dock === 'left' ? 'right' : 'left'
 		};
 	}
 	$effect(() => {
 		const el = anchor;
-		// Zooming shows the zoom controls, which the open scene then starts below.
-		void (experience.sceneZoom === null);
 		if (!shown || !el) return;
 		const { target, placement } = reference(el);
 		const pointer = tip.querySelector<HTMLElement>(':scope > .bu-popover-arrow')!;
-		const pointless = step === 'gear' && dock === 'bottom';
 		let sequence = 0;
 		const place = () => {
 			const current = ++sequence;
@@ -165,13 +175,18 @@
 				// Kept inside the open scene, a tip may no longer line up with its control: drop the arrow then.
 				tip.toggleAttribute(
 					'data-arrow-hidden',
-					pointless || !point || Math.abs(point.centerOffset) > 1
+					atList || !point || Math.abs(point.centerOffset) > 1
 				);
 				// A tile scrolled out of the list hands the tip to another one (or the list); a hidden Export pauses it.
 				if (step === 'gear' && !visibleIn(el)) return resolve();
-				// A scene too short to hold the tip clear of every control (a phone held sideways) gets no tip.
+				// A scene too short to hold the tip clear of every control (a phone held sideways) gets no tip. Over a
+				// bottom sheet the character stands mid-scene, so the tip needs room for both above it.
+				const height = tip.offsetHeight;
 				const fits =
-					!scene || (y >= scene.y - 1 && y + tip.offsetHeight <= scene.y + scene.height + 1);
+					!scene ||
+					(y >= scene.y - 1 &&
+						y + height <= scene.y + scene.height + 1 &&
+						(dock !== 'bottom' || scene.height >= 3 * height));
 				const away = !fits || (step === 'export' && !!middlewareData.hide?.referenceHidden);
 				tip.toggleAttribute('data-away', away);
 				tip.dataset.positioned = '';
@@ -197,6 +212,16 @@
 		)
 	);
 	const titleId = $props.id();
+	/** Closing by keyboard hands focus to what the tip was about rather than dropping it on the page. */
+	function dismiss() {
+		const next = tip.contains(document.activeElement)
+			? step === 'gear'
+				? document.getElementById('customization-tab-wardrobe')
+				: anchor
+			: null;
+		ondismiss();
+		next?.focus({ preventScroll: true });
+	}
 </script>
 
 <p class="sr" role="status">{announced === step ? `${title}. ${body}` : ''}</p>
@@ -215,7 +240,7 @@
 			data-variant="quiet"
 			aria-label={t('demoTips.dismiss')}
 			title={t('demoTips.dismiss')}
-			onclick={ondismiss}><X size={16} aria-hidden="true" /></button
+			onclick={dismiss}><X size={16} aria-hidden="true" /></button
 		>
 	</div>
 </section>

@@ -3654,8 +3654,8 @@
 		"gearTitle": "Ekipman deneyin",
 		"gearBody": "Giymek veya çıkarmak için Gardırop’tan bir eşya seçin.",
 		"exportTitle": "Oyununuza taşıyın",
-		"exportBody": "Dışa aktarma, temel gövdeyi ve her eşyayı ayrı sprite sayfaları olarak kaydeder.",
-		"exportInMoreBody": "Temel gövdeyi ve her eşyayı ayrı sprite sayfaları olarak kaydetmek için Diğer seçenekler’i, ardından Dışa aktarın’ı açın.",
+		"exportBody": "Dışa aktarma, temel gövdeyi ve her eşyayı ayrı sprite sayfaları olarak kaydedebilir.",
+		"exportInMoreBody": "Dışa aktarma, Diğer seçenekler içindedir. Temel gövdeyi ve her eşyayı ayrı sprite sayfaları olarak kaydedebilir.",
 		"dismiss": "İpuçlarını kapatın",
 		"replay": "Demo ipuçları"
 	}
