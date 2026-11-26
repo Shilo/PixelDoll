@@ -96,6 +96,30 @@ at the default mix on headphones and speakers. Listen for a predictable restart,
 phrase, or the urge to mute. Sustained listening fatigue still needs validation in Studio.
 [Instrumental music and cognitive tasks](https://pmc.ncbi.nlm.nih.gov/articles/PMC10162369/)
 
+## Live view controls
+
+Top-down and Side-scroller play the short press cue when an on-screen action accepts the input.
+Jump and Attack acknowledge the start of the hold, including when a second thumb presses while
+the first is moving. Sprint and Mount acknowledge their toggle as it happens. A Mount press in
+the air stays silent. Joystick travel, aiming, automatic repeats, and release stay quiet. Regular
+interface buttons continue to cue on click, which lets a user drag away before committing.
+[W3C pointer cancellation](https://www.w3.org/WAI/WCAG22/Understanding/pointer-cancellation.html)
+· [W3C Pointer Events](https://www.w3.org/TR/pointerevents/)
+
+The game cue uses the existing Sound effects setting. Browser autoplay rules still apply. On a
+fresh or suspended page, the browser may require a touch release to unlock audio. A press that
+happened before audio was ready is skipped so it cannot sound after release.
+[HTML user activation](https://html.spec.whatwg.org/multipage/interaction.html#tracking-user-activation)
+
+PixelDoll keeps touch feedback visual and audible. A tactile click would be useful at the same
+discrete action boundaries, with a separate opt-in and no pulses during holds. The web Vibration
+API takes durations and cannot select a light, device-tuned effect. It also has no WebKit support.
+Android's design guidance favors a crisp click and recommends omitting buzzy touch feedback, so
+PixelDoll does not offer a vibration setting with this API.
+[Apple haptics guidance](https://developer.apple.com/design/human-interface-guidelines/playing-haptics)
+· [Android haptics principles](https://developer.android.com/develop/ui/views/haptics/haptics-principles)
+· [W3C Vibration API support](https://www.w3.org/2026/10/das-wg-charter.html)
+
 ## Looping and additional tracks
 
 **Apply playback fades in the app.** Use a 650 ms gain ramp when the listener starts or resumes

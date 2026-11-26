@@ -181,7 +181,10 @@ function control(target: EventTarget | null): Element | undefined {
 	const candidate = target.closest(controlSelector);
 	if (
 		candidate &&
-		!candidate.closest(':disabled, [aria-disabled="true"], [inert], [data-audio-controls]') &&
+		// Live action buttons play their cue when their input goes down.
+		!candidate.closest(
+			':disabled, [aria-disabled="true"], [inert], [data-audio-controls], [data-game-action]'
+		) &&
 		!candidate.querySelector('input:disabled')
 	)
 		return candidate;
