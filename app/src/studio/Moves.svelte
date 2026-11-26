@@ -417,11 +417,13 @@
 				{#if kind === 'move' && !isDemo()}<button
 						class="bu-action add-row cta"
 						data-variant="outline"
+						data-tip-anchor="add-move"
 						onclick={() => (ui.sheet = 'move')}
 						><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
 					>{:else if kind === 'state' && onaddstate}<button
 						class="bu-action add-row cta"
 						data-variant="outline"
+						data-tip-anchor="add-state"
 						onclick={onaddstate}
 						><Plus size={16} />{openerLabel(t('moves.addState'))}<SurfaceChevron /></button
 					>{/if}

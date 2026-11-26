@@ -49,6 +49,7 @@
 	import LibrarySettings from './LibrarySettings.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import {
+		closeSettings,
 		settingsLabels,
 		settingsNavigation,
 		takeSettingsReturnFocus,
@@ -611,8 +612,7 @@
 					<SettingsItemButton
 						data-setting="tips"
 						onclick={() => {
-							// Tips start on Characters, under this sheet.
-							ui.sheet = null;
+							closeSettings();
 							showTipsAgain();
 						}}
 						><Lightbulb size={18} aria-hidden="true" /><span class="row-name"

@@ -3660,6 +3660,16 @@
 		"close": "Close tip",
 		"showAgain": "Show tips again",
 		"pixellabTitle": "What is PixelLab?",
-		"pixellabBody": "An AI pixel art service that draws the characters and gear you create here, using generations from your PixelLab account."
+		"pixellabBody": "An AI pixel art service that draws the characters and gear you create here, using generations from your PixelLab account.",
+		"newCharacterTitle": "Make your own",
+		"newCharacterBody": "Create a character from a description, or import one you already have.",
+		"addItemTitle": "Add gear",
+		"addItemBody": "Describe an item and PixelLab draws it to fit this character in every frame.",
+		"generateItemsTitle": "Fit gear to this move",
+		"generateItemsBody": "Open this move's menu and choose Generate items to draw your gear's missing frames.",
+		"addMoveTitle": "Add a move",
+		"addMoveBody": "Animate your character, such as Idle, Walk or Attack.",
+		"addStateTitle": "Add a state",
+		"addStateBody": "Make a new still pose or look, such as sitting or a costume, to start moves from."
 	}
 }

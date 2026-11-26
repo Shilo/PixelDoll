@@ -57,7 +57,11 @@ for (const [width, height, touch] of [
 			});
 			await context.addInitScript(() => {
 				localStorage.setItem('pixeldoll.agentKey', 'off');
-				localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+				localStorage.setItem(
+					'pixeldoll.tips',
+					'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+				);
+				localStorage.setItem('pixeldoll.visited', '1');
 			});
 			const session = touch ? await context.newCDPSession(page) : null;
 			async function drag(from: { x: number; y: number }, to: { x: number; y: number }) {
@@ -199,7 +203,11 @@ test('intentional dialog dismissal respects nested API popovers and bare dialog 
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.developerMode', '1');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, '/');
 	await openAccount(page);
@@ -249,7 +257,11 @@ test('intentional dialog dismissal preserves native Share popovers during conten
 }) => {
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, '/');
 	const trigger = page.getByRole('button', { name: 'Share character', exact: true });

@@ -184,7 +184,11 @@
 				});
 			await saveItem(id, built.item, built.images, SLOTS);
 			localStorage.setItem('pixeldoll.studio.project', id);
-			localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+			localStorage.setItem(
+				'pixeldoll.tips',
+				'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+			);
+			localStorage.setItem('pixeldoll.visited', '1');
 			return reload();
 		}
 		async function replace(selected, bad = false) {

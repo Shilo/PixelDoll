@@ -26,8 +26,6 @@
 	import TierNotice from './TierNotice.svelte';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { readSavedKey, SAVED_KEY } from '../lib/shared-auth.ts';
-	import Tip from './tips/Tip.svelte';
-	import { tips } from './tips/tips.svelte.ts';
 
 	// Settings > Replace key opens straight into the replacement form and returns to Settings when it ends.
 	const replaceOnly =
@@ -51,7 +49,6 @@
 	let guideIntro = $state<HTMLParagraphElement>();
 	let keyInput = $state<HTMLInputElement>();
 	let replaceButton = $state<HTMLButtonElement>();
-	let keyForm = $state<HTMLFormElement>();
 	const needsKey = $derived(!app.key || app.keyRejected);
 	const showForm = $derived(needsKey || replacing || checking || connectionFailed);
 	const title = $derived(
@@ -311,21 +308,6 @@
 				<span>{t('connectSheet.trialNotEnough')}</span>
 			</NoticeLink>
 		{/if}
-		<!-- Newcomers meet PixelLab on its sign-up button (or, asked for again, its key link). Following any PixelLab
-		     link, typing or pasting a key, or connecting means they have. -->
-		<Tip
-			id="pixellab"
-			when={(firstOpen || tips.requested) && !replacing && !checking}
-			anchor={() =>
-				document.querySelector<HTMLElement>('.trial-guide > a') ??
-				keyForm?.querySelector<HTMLElement>('a[href$="/account"].btn') ??
-				null}
-			doneWhen={!needsKey}
-			doneOn="dialog[open] :is(a[href*='pixellab.ai'], input[type='password'])"
-			title={t('tips.pixellabTitle')}
-			body={t('tips.pixellabBody')}
-			placement="top"
-		/>
 		{#if firstOpen && !replacing}
 			<div class="field trial-guide">
 				<p tabindex="-1" bind:this={guideIntro}>{t('connectSheet.generationProvider')}</p>
@@ -372,7 +354,6 @@
 		{/if}
 		<form
 			class="form"
-			bind:this={keyForm}
 			onsubmit={(e) => {
 				e.preventDefault();
 				if (!checking && key.trim()) void use(key, remember);

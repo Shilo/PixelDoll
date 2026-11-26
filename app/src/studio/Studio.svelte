@@ -42,6 +42,7 @@
 		reviewFailedCreate,
 		settingUp,
 		initUi,
+		claimFirstVisit,
 		generationPending,
 		refreshProjects,
 		openProject,
@@ -71,7 +72,7 @@
 	import LibraryBackupButton from './LibraryBackupButton.svelte';
 	import { downloadLibraryBackupWithFeedback } from './downloadLibraryBackup.ts';
 	import PwaRuntime from './PwaRuntime.svelte';
-	import { tipDone } from './tips/tips.svelte.ts';
+	import TipsHost from './tips/TipsHost.svelte';
 
 	// On-demand parts, out of the startup bundle.
 	const parts = {
@@ -133,9 +134,9 @@
 		const off = initUi();
 		const previewNotice = () =>
 			toast(previewNoticeDetails, { ...PREVIEW_NOTICE, action: downloadLibraryBackupWithFeedback });
-		// A newcomer still trying the demo (its tips not done) has no work at risk yet, so the warning waits instead of
-		// greeting them with it. Any saved character brings it back at once.
-		const firstVisit = !tipDone('export');
+		// A first visit has no work at risk yet, so the warning waits for a later visit instead of greeting a newcomer
+		// with it. Any saved character brings it back at once.
+		const firstVisit = claimFirstVisit();
 		if (PRE_RELEASE && !workspaceCopy && !firstVisit) previewNotice();
 		void (async () => {
 			const listed = await refreshProjects();
@@ -410,6 +411,7 @@
 <div class="studio-app" onclickcapture={rememberActivation}>
 	{#if !workspaceCopy}<PwaRuntime />{/if}
 	<Experience />
+	<TipsHost />
 	{#if !workspaceCopy && offline}<div class="offline-banner" role="status">
 			<WifiOff size={14} aria-hidden="true" />{t('studio.youReOfflineEditAndExportLocally')}
 		</div>{/if}

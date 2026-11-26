@@ -1,9 +1,7 @@
 <script lang="ts">
-	// One tip: a small arrow callout on the control it is about. It shows while it is not done, its `after` tips are
-	// done, `when` holds and the anchor is on screen; at most one tip at a time, and it never takes focus. It is done
-	// when `doneWhen` turns true, when the person uses a control matching `doneOn`, or on its X. Place it in the layer of
-	// its anchor (inside a sheet for a control in that sheet), just before that control so the X comes first in tab
-	// order. See docs/design/onboarding.md.
+	// One tip on screen: a small arrow callout on its control, drawn in that control's layer (inside an open dialog when
+	// the control is in one). TipsHost decides which tip shows and when; this only places and announces it. It never
+	// takes focus. See docs/design/onboarding.md.
 	import {
 		arrow,
 		autoUpdate,
@@ -17,7 +15,7 @@
 	import { t } from 'svelte-whisper';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import { Lightbulb, X } from '../icons.ts';
-	import { completeTip, tipDone, tips, type TipId } from './tips.svelte.ts';
+	import type { Side } from './catalog.svelte.ts';
 
 	let {
 		id,
@@ -25,100 +23,30 @@
 		title,
 		body,
 		placement = 'bottom',
-		when = true,
-		after = [],
-		doneWhen = false,
-		doneOn
+		ondismiss
 	}: {
-		id: TipId;
-		/** The control the tip points at: a selector, or a function returning it (null while there is none on screen).
-		 *  Found again whenever the page may have changed: reactive state it reads, DOM changes, scrolling and resizing. */
-		anchor: string | (() => HTMLElement | null);
+		id: string;
+		anchor: HTMLElement;
 		title: string;
 		body: string;
-		/** The preferred side. With no room there it tries the opposite side, then the other two. */
-		placement?: 'bottom' | 'top' | 'left' | 'right';
-		/** The app's own condition, such as being in the right view. */
-		when?: boolean;
-		/** Tips that must be done first: a sequence shows in order. */
-		after?: TipId[];
-		/** The suggested action happened (state the app already has): done, even if never shown. */
-		doneWhen?: boolean;
-		/** A selector for controls whose use (press, typing, paste) means the person did what the tip suggests. */
-		doneOn?: string;
+		placement?: Side;
+		ondismiss: () => void;
 	} = $props();
-	const find = () => {
-		const el = typeof anchor === 'string' ? document.querySelector<HTMLElement>(anchor) : anchor();
-		return el?.checkVisibility() ? el : null;
-	};
 
 	let tip = $state<HTMLElement>();
-	let target = $state.raw<HTMLElement | null>(null);
 	let announced = $state(false);
 
-	const eligible = $derived(when && !tipDone(id) && after.every(tipDone));
-
-	$effect(() => {
-		if (doneWhen) completeTip(id);
-	});
-	$effect(() => {
-		if (!doneOn || tipDone(id)) return;
-		const used = (event: Event) => {
-			if (event.target instanceof Element && event.target.closest(doneOn)) completeTip(id);
-		};
-		const events = ['click', 'input', 'paste'] as const;
-		for (const type of events) addEventListener(type, used, true);
-		return () => {
-			for (const type of events) removeEventListener(type, used, true);
-		};
-	});
-	const mine = $derived(tips.showing === null || tips.showing === id);
-	const shown = $derived(eligible && mine && !!target);
-
-	// Find the anchor: now (tracking what `anchor` reads), and after DOM changes, scrolling or resizing.
-	$effect(() => {
-		if (!eligible) {
-			target = null;
-			return;
-		}
-		target = find();
-		let frame = 0;
-		const later = () => {
-			cancelAnimationFrame(frame);
-			frame = requestAnimationFrame(() => (target = find()));
-		};
-		const observer = new MutationObserver(later);
-		observer.observe(document.body, {
-			subtree: true,
-			childList: true,
-			attributes: true,
-			attributeFilter: ['hidden', 'aria-pressed', 'aria-selected', 'data-overflow', 'open']
-		});
-		addEventListener('scroll', later, true);
-		addEventListener('resize', later);
-		return () => {
-			cancelAnimationFrame(frame);
-			observer.disconnect();
-			removeEventListener('scroll', later, true);
-			removeEventListener('resize', later);
-		};
-	});
-	// One tip at a time: the first to be ready holds the screen until it is done or leaves.
-	$effect(() => {
-		if (!eligible || !target || tips.showing) return;
-		tips.showing = id;
-	});
-	$effect(() => () => {
-		if (tips.showing === id) tips.showing = null;
-	});
-	$effect(() => {
-		if (!(eligible && target) && tips.showing === id) tips.showing = null;
-	});
+	/** Draw in the anchor's layer: an open modal dialog sits in the top layer, above anything outside it. */
+	function inLayer(node: HTMLElement) {
+		(anchor.closest('dialog') ?? document.body).append(node);
+		// Moved out of the place Svelte rendered it, so Svelte cannot remove it on its own.
+		return () => node.remove();
+	}
 
 	const opposite = { bottom: 'top', top: 'bottom', left: 'right', right: 'left' } as const;
 	$effect(() => {
-		const el = target;
-		if (!shown || !el || !tip) return;
+		const el = anchor;
+		if (!tip) return;
 		const floating = tip;
 		const pointer = floating.querySelector<HTMLElement>(':scope > .bu-popover-arrow')!;
 		const across: Placement[] =
@@ -159,16 +87,54 @@
 		};
 	});
 
+	// The tip is drawn at the end of its layer, so its X leaves the natural tab order and is placed by hand right after
+	// the control: Tab from the control reaches it, Tab from it carries on after the control, and Shift+Tab walks back
+	// the same way.
+	let close = $state<HTMLButtonElement>();
+	const tabbable =
+		'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), summary, [tabindex]';
+	function after(el: HTMLElement) {
+		const scope = el.closest('dialog') ?? document;
+		const all = [...scope.querySelectorAll<HTMLElement>(tabbable)].filter(
+			(n) => n.tabIndex >= 0 && !n.closest('[inert], .tip-layer') && n.checkVisibility() && n !== el
+		);
+		return all.find((n) => el.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING);
+	}
+	$effect(() => {
+		const el = anchor;
+		const button = close;
+		if (!button) return;
+		const fromControl = (event: KeyboardEvent) => {
+			if (event.key !== 'Tab') return;
+			const into = event.shiftKey
+				? document.activeElement === after(el)
+				: document.activeElement === el;
+			if (!into) return;
+			event.preventDefault();
+			button.focus();
+		};
+		addEventListener('keydown', fromControl, true);
+		return () => removeEventListener('keydown', fromControl, true);
+	});
+	function closeKeys(event: KeyboardEvent) {
+		if (event.key !== 'Tab') return;
+		const next = event.shiftKey ? anchor : after(anchor);
+		// Past the last control, Tab leaves the page as usual.
+		if (!next) return;
+		event.preventDefault();
+		next.focus();
+	}
+
 	const titleId = $props.id();
 	/** Closing by keyboard hands focus to the control the tip was about rather than dropping it on the page. */
 	function dismiss() {
-		const next = tip?.contains(document.activeElement) ? target : null;
-		completeTip(id);
+		const next = tip?.contains(document.activeElement) ? anchor : null;
+		ondismiss();
 		next?.focus({ preventScroll: true });
 	}
 </script>
 
-{#if shown}
+<div class="tip-layer" {@attach inLayer}>
 	<p class="sr" role="status">{announced ? `${title}. ${body}` : ''}</p>
 	<!-- Not a popover: the app reads an open popover as an open menu and pauses stage keys and zoom for it. -->
 	<section
@@ -188,6 +154,9 @@
 			<button
 				type="button"
 				class="bu-action tip-close"
+				bind:this={close}
+				tabindex="-1"
+				onkeydown={closeKeys}
 				data-variant="quiet"
 				aria-label={t('tips.close')}
 				title={t('tips.close')}
@@ -195,13 +164,20 @@
 			>
 		</div>
 	</section>
-{/if}
+</div>
 
 <style>
+	/* Out of the page flow and above the app, below the top layer (open dialogs and menus). */
+	.tip-layer {
+		position: fixed;
+		inset: 0 auto auto 0;
+		width: 0;
+		height: 0;
+		z-index: 31;
+	}
 	.tip {
 		position: fixed;
 		inset: 0 auto auto 0;
-		z-index: 7;
 		width: min(288px, calc(100vw - 16px));
 		margin: 0;
 	}

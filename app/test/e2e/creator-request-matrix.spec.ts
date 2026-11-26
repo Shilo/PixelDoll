@@ -24,7 +24,11 @@ async function setup(page: Page) {
 		unexpected: string[] = [];
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixeldoll.developerMode', '1');
 		Object.defineProperty(navigator, 'clipboard', {
 			configurable: true,

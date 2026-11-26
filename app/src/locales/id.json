@@ -3558,6 +3558,16 @@
 		"close": "Tutup tips",
 		"showAgain": "Tampilkan tips lagi",
 		"pixellabTitle": "Apa itu PixelLab?",
-		"pixellabBody": "Layanan pixel art AI yang menggambar karakter dan perlengkapan yang Anda buat di sini, memakai generasi dari akun PixelLab Anda."
+		"pixellabBody": "Layanan pixel art AI yang menggambar karakter dan perlengkapan yang Anda buat di sini, memakai generasi dari akun PixelLab Anda.",
+		"newCharacterTitle": "Buat milik Anda",
+		"newCharacterBody": "Buat karakter dari deskripsi, atau impor karakter yang sudah Anda miliki.",
+		"addItemTitle": "Tambah perlengkapan",
+		"addItemBody": "Jelaskan sebuah item dan PixelLab menggambarnya agar pas dengan karakter ini di setiap frame.",
+		"generateItemsTitle": "Sesuaikan perlengkapan dengan animasi ini",
+		"generateItemsBody": "Buka menu animasi ini dan pilih Buat item untuk menggambar frame perlengkapan yang belum ada.",
+		"addMoveTitle": "Tambah animasi",
+		"addMoveBody": "Animasikan karakter Anda, misalnya Idle, Walk, atau Attack.",
+		"addStateTitle": "Tambah status",
+		"addStateBody": "Buat pose diam atau tampilan baru, seperti duduk atau kostum, sebagai awal animasi."
 	}
 }

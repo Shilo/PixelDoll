@@ -1,6 +1,10 @@
 // Only served by Vite's dev server. All PixelLab traffic is replaced before the application loads.
 localStorage.setItem('pixeldoll.agentKey', 'off');
-localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+localStorage.setItem(
+	'pixeldoll.tips',
+	'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+);
+localStorage.setItem('pixeldoll.visited', '1');
 // Never read or replace a person's remembered token. The app receives only the memory fixture key below.
 const originalFetch = window.fetch.bind(window);
 const stateKey = 'pixeldoll.capacityFixture';

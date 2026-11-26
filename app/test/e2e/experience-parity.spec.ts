@@ -2885,9 +2885,13 @@ test('phone More preserves Redo and closes after restoring a taken-off item stat
 	page
 }) => {
 	// Not about onboarding: the first-visit tips are already done.
-	await page.addInitScript(() =>
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]')
-	);
+	await page.addInitScript(() => {
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
+	});
 	await page.setViewportSize({ width: 360, height: 844 });
 	await customize(page);
 	await pause(page);
@@ -3284,9 +3288,13 @@ test.describe('two-finger equipment input', () => {
 		context
 	}) => {
 		// Not about onboarding: the first-visit tips are already done.
-		await page.addInitScript(() =>
-			localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]')
-		);
+		await page.addInitScript(() => {
+			localStorage.setItem(
+				'pixeldoll.tips',
+				'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+			);
+			localStorage.setItem('pixeldoll.visited', '1');
+		});
 		await landing(page);
 		await page.locator('.customize-action').click();
 		await equipmentGroup(page, 'Head');
@@ -3498,9 +3506,13 @@ test('category Random is one named undo step and Random look stays reachable on 
 	page
 }) => {
 	// Not about onboarding: the first-visit tips are already done.
-	await page.addInitScript(() =>
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]')
-	);
+	await page.addInitScript(() => {
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
+	});
 	await page.setViewportSize({ width: 1440, height: 900 });
 	await customize(page);
 	await pause(page);
@@ -4585,9 +4597,13 @@ test.describe('Preview facing lineup', () => {
 
 	test('wrapped Preview controls reserve their actual height above the panel', async ({ page }) => {
 		// Not about onboarding: the first-visit tips are already done.
-		await page.addInitScript(() =>
-			localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]')
-		);
+		await page.addInitScript(() => {
+			localStorage.setItem(
+				'pixeldoll.tips',
+				'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+			);
+			localStorage.setItem('pixeldoll.visited', '1');
+		});
 		await customize(page);
 		await pause(page);
 		await page.evaluate(async (directions) => {

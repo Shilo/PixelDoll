@@ -3660,6 +3660,16 @@
 		"close": "İpucunu kapat",
 		"showAgain": "İpuçlarını yeniden göster",
 		"pixellabTitle": "PixelLab nedir?",
-		"pixellabBody": "Burada oluşturduğun karakterleri ve eşyaları çizen bir yapay zekâ piksel sanatı hizmeti. PixelLab hesabındaki üretimleri kullanır."
+		"pixellabBody": "Burada oluşturduğun karakterleri ve eşyaları çizen bir yapay zekâ piksel sanatı hizmeti. PixelLab hesabındaki üretimleri kullanır.",
+		"newCharacterTitle": "Kendininkini yap",
+		"newCharacterBody": "Bir açıklamadan karakter oluştur ya da elindeki bir karakteri içe aktar.",
+		"addItemTitle": "Eşya ekle",
+		"addItemBody": "Bir eşyayı tarif et, PixelLab onu her karede bu karaktere uyacak şekilde çizsin.",
+		"generateItemsTitle": "Eşyaları bu animasyona uydur",
+		"generateItemsBody": "Bu animasyonun menüsünü aç ve eşyaların eksik karelerini çizmek için Eşya üret'i seç.",
+		"addMoveTitle": "Animasyon ekle",
+		"addMoveBody": "Karakterini Idle, Walk veya Attack gibi hareketlerle canlandır.",
+		"addStateTitle": "Durum ekle",
+		"addStateBody": "Animasyonlara başlangıç olacak, oturma ya da kostüm gibi yeni bir poz veya görünüm oluştur."
 	}
 }

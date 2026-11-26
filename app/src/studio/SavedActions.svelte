@@ -77,6 +77,7 @@
 			<button
 				class="row"
 				role="menuitem"
+				data-tip-anchor="generate-items"
 				onclick={() => {
 					close();
 					ongenerateitems();

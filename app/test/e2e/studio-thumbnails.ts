@@ -7,7 +7,11 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		let draws = 0;
 		const canvases = new WeakSet<HTMLCanvasElement>();
 		const original = CanvasRenderingContext2D.prototype.drawImage;
@@ -373,7 +377,11 @@ test('draft item artwork appears before wearing, keeps running progress, and sto
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -601,7 +609,11 @@ test.describe('responsive item thumbnail fitting', () => {
 		page.on('pageerror', (error) => errors.push(error.message));
 		await page.addInitScript(() => {
 			localStorage.setItem('pixeldoll.agentKey', 'off');
-			localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+			localStorage.setItem(
+				'pixeldoll.tips',
+				'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+			);
+			localStorage.setItem('pixeldoll.visited', '1');
 		});
 		await openStudio(
 			page,

@@ -463,7 +463,11 @@ test.describe('first Studio render with a stalled Japanese catalog', () => {
 test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await page.goto(
 		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
@@ -604,7 +608,11 @@ test('character actions download and delete an unopened character without select
 }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await page.goto(
 		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
@@ -678,7 +686,11 @@ test('character rows keep their ⋮ out of sight until hover or keyboard focus o
 }) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await page.goto('/');
 	const row = page.locator('.cast-library .character-entry').first();
@@ -716,7 +728,11 @@ test.describe('character actions on a touch screen', () => {
 	test('the ⋮ stays visible without hover', async ({ page }) => {
 		await page.addInitScript(() => {
 			localStorage.setItem('pixeldoll.agentKey', 'off');
-			localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+			localStorage.setItem(
+				'pixeldoll.tips',
+				'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+			);
+			localStorage.setItem('pixeldoll.visited', '1');
 		});
 		await page.goto('/');
 		const more = page.locator('.cast-library .character-more').first();
@@ -731,9 +747,13 @@ test.describe('character actions on a touch screen', () => {
 test('the New character header button offers separate import sources on desktop and phone', async ({
 	page
 }) => {
-	await page.addInitScript(() =>
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]')
-	);
+	await page.addInitScript(() => {
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
+	});
 	await page.goto('/');
 	for (const width of [1440, 390]) {
 		await page.setViewportSize({ width, height: 850 });
@@ -1027,7 +1047,11 @@ test('experimental native attack imports with warnings and exact frame stepping 
 test.beforeEach(async ({ context }) => {
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort()); // stay offline by default; a test's own route overrides this
 });

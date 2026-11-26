@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { TIP_IDS } from '../../src/studio/tips/ids.ts';
 
 export const playbackPicker = (page: Page) =>
 	page
@@ -51,7 +52,23 @@ export async function enterStudio(page: Page) {
 	await equipmentGroup(page, 'Head');
 }
 
+/** Marks every tip done unless the test set tips itself: tips sit over controls that unrelated tests press. */
+export async function skipTips(page: Page) {
+	await page.addInitScript(
+		(done) => {
+			try {
+				if (localStorage.getItem('pixeldoll.tips') === null)
+					localStorage.setItem('pixeldoll.tips', done);
+			} catch {
+				/* Opaque initial pages have no storage. */
+			}
+		},
+		JSON.stringify([...TIP_IDS].sort())
+	);
+}
+
 export async function openStudio(page: Page, url: string, options?: Parameters<Page['goto']>[1]) {
+	await skipTips(page);
 	const response = await page.goto(url, options);
 	await enterStudio(page);
 	return response;

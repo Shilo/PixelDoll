@@ -268,6 +268,14 @@ const lsSet = (k: string, v: string | null) => {
 export const DEMO = 'fixture:s2';
 const DEMO_NAME = 'Adventurer';
 
+/** Set on the first startup: later startups are return visits. */
+const visited = 'pixeldoll.visited';
+/** True only on the first startup on this device (or while storage is blocked). */
+export function claimFirstVisit(): boolean {
+	if (lsGet(visited) === '1') return false;
+	lsSet(visited, '1');
+	return true;
+}
 const pixelLabConnectOpened = 'pixeldoll.pixelLabConnectOpened';
 let pixelLabConnectOpenedInTab = false;
 

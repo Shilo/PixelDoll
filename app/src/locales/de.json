@@ -3660,6 +3660,16 @@
 		"close": "Tipp schließen",
 		"showAgain": "Tipps erneut anzeigen",
 		"pixellabTitle": "Was ist PixelLab?",
-		"pixellabBody": "Ein KI-Dienst für Pixel-Art, der die Figuren und Ausrüstung zeichnet, die du hier erstellst. Dafür nutzt er Generierungen deines PixelLab-Kontos."
+		"pixellabBody": "Ein KI-Dienst für Pixel-Art, der die Figuren und Ausrüstung zeichnet, die du hier erstellst. Dafür nutzt er Generierungen deines PixelLab-Kontos.",
+		"newCharacterTitle": "Eigene Figur",
+		"newCharacterBody": "Erstelle eine Figur aus einer Beschreibung oder importiere eine vorhandene.",
+		"addItemTitle": "Ausrüstung hinzufügen",
+		"addItemBody": "Beschreibe einen Gegenstand, und PixelLab zeichnet ihn passend zu dieser Figur in jedem Frame.",
+		"generateItemsTitle": "Ausrüstung an diese Animation anpassen",
+		"generateItemsBody": "Öffne das Menü dieser Animation und wähle „Gegenstände generieren“, um die fehlenden Frames deiner Ausrüstung zu zeichnen.",
+		"addMoveTitle": "Animation hinzufügen",
+		"addMoveBody": "Animiere deine Figur, zum Beispiel mit Idle, Walk oder Attack.",
+		"addStateTitle": "Zustand hinzufügen",
+		"addStateBody": "Erstelle eine neue Pose oder einen neuen Look, etwa sitzend oder im Kostüm, als Start für Animationen."
 	}
 }

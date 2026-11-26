@@ -23,7 +23,11 @@ test.beforeEach(async ({ page, context }) => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.removeItem('pixellabApiKey');
 		if (!localStorage.getItem('pixeldoll.theme')) localStorage.setItem('pixeldoll.theme', 'dark');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 });
 

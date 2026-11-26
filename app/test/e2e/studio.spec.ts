@@ -43,9 +43,13 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	baseURL
 }) => {
 	// Not about onboarding: the first-visit tips are already done.
-	await page.addInitScript(() =>
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]')
-	);
+	await page.addInitScript(() => {
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
+	});
 	const audioRequests: string[] = [];
 	page.on('request', (request) => {
 		if (/audioPlayback|studio-ambient-[^/]+\.flac/.test(request.url()))
@@ -582,9 +586,13 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	page
 }, info) => {
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
-	await page.addInitScript(() =>
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]')
-	);
+	await page.addInitScript(() => {
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
+	});
 	await page.goto(dev);
 	const notice = page.locator('.toast');
 	await expect(notice.locator('.bu-notice-content > strong')).toHaveText(
@@ -721,7 +729,7 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	await expect(notice).toHaveCount(0);
 });
 
-test('first-visit tips point at Customize, gear, Export and PixelLab, remember each one, and come back', async ({
+test('tips point at each control in order, end on their action, and come back in place', async ({
 	page,
 	baseURL
 }) => {
@@ -729,7 +737,7 @@ test('first-visit tips point at Customize, gear, Export and PixelLab, remember e
 	const customize = page.locator('.customize-action');
 	await expect(customize).toBeVisible({ timeout: 20_000 });
 	const tip = page.locator('[data-tip]');
-	await expect(tip.getByRole('heading', { name: 'Dress up the demo' })).toBeVisible();
+	const heading = (name: string) => tip.getByRole('heading', { name, exact: true });
 	// The arrow lands on the control the tip is about.
 	const pointsAt = async (target: Locator) => {
 		const arrow = (await tip.locator('.bu-popover-arrow').boundingBox())!;
@@ -738,55 +746,81 @@ test('first-visit tips point at Customize, gear, Export and PixelLab, remember e
 		expect(x).toBeGreaterThan(box.x);
 		expect(x).toBeLessThan(box.x + box.width);
 	};
+	await expect(heading('Dress up the demo')).toBeVisible();
 	await pointsAt(customize);
-	// Nothing is saved on a first visit, so the pre-release warning waits for a later one.
+	// A first visit has no saved work at risk, so the pre-release warning waits for a later one.
 	const preview = page.getByRole('status').filter({ hasText: /Pre-release · v/ });
 	await expect(preview).toHaveCount(0);
-	await page.getByRole('button', { name: 'New character', exact: true }).click();
-	await expect(
-		page.getByRole('menuitem', { name: 'Create from scratch...', exact: true })
-	).toHaveAccessibleDescription('Needs a PixelLab key and uses paid generations');
-	await page.keyboard.press('Escape');
+	// By keyboard, Tab from the control reaches the tip's close button. Closing returns focus to the control and never
+	// brings up the next tip in its place.
+	await customize.focus();
+	await page.keyboard.press('Tab');
+	await expect(tip.getByRole('button', { name: 'Close tip' })).toBeFocused();
+	await page.keyboard.press('Enter');
+	await expect(tip).toHaveCount(0);
+	await expect(customize).toBeFocused();
 	await customize.click();
 	// Gear not worn yet comes first.
 	const hat = page.locator('#customization-panel [data-tile="hat_wizard"]');
-	await expect(tip.getByRole('heading', { name: 'Try on gear' })).toBeVisible();
+	await expect(heading('Try on gear')).toBeVisible();
 	await pointsAt(hat);
 	await hat.click();
-	await expect(tip.getByRole('heading', { name: 'Take it into your game' })).toBeVisible();
+	await expect(heading('Take it into your game')).toBeVisible();
 	// Tips never take focus from the work.
 	await expect(hat).toBeFocused();
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	await expect(tip).toHaveCount(0);
-	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toBe(
-		'["customize","export","gear"]'
-	);
 	await page.keyboard.press('Escape');
-	// Connect explains PixelLab on its sign-up button the first time; typing a key means they have met it.
+	// Back on Characters, the other path.
+	await page.getByRole('button', { name: 'Characters', exact: true }).click();
+	await expect(heading('Make your own')).toBeVisible();
+	const newCharacter = page.getByRole('button', { name: 'New character', exact: true });
+	await pointsAt(newCharacter);
+	// Opening the menu is the action: the tip ends, and the paid route says so before its form.
+	await newCharacter.click();
+	await expect(tip).toHaveCount(0);
+	await expect(
+		page.getByRole('menuitem', { name: 'Create from scratch...', exact: true })
+	).toHaveAccessibleDescription('Needs a PixelLab key and uses paid generations');
+	await page.keyboard.press('Escape');
+	// Connect explains PixelLab on its sign-up button the first time, inside the dialog; typing a key means they have met it.
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
-	await expect(tip.getByRole('heading', { name: 'What is PixelLab?' })).toBeVisible();
+	await expect(heading('What is PixelLab?')).toBeVisible();
+	await expect(page.locator('dialog[open] [data-tip]')).toHaveCount(1);
 	await pointsAt(page.getByRole('link', { name: 'Start free trial' }));
-	await page.getByLabel('Paste your Secret API key').fill('x');
+	const key = page.getByLabel('Paste your Secret API key');
+	await key.fill('x');
 	await expect(tip).toHaveCount(0);
-	await page.getByLabel('Paste your Secret API key').fill('');
+	await key.fill('');
 	await page.keyboard.press('Escape');
+	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toBe(
+		'["customize","export","gear","new-character","pixellab"]'
+	);
 	await page.reload();
 	await expect(preview).toBeVisible();
 	await enterStudio(page);
+	// An own character: Make your own ends by itself, and its own tips appear where they apply.
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await expect(page.locator('h1')).toHaveText('Adventurer copy');
+	await expect(heading('Add gear')).toBeVisible();
+	await page.getByRole('tab', { name: 'Moves', exact: true }).click();
+	await expect(heading('Fit gear to this move')).toBeVisible();
+	await tip.getByRole('button', { name: 'Close tip' }).click();
 	await expect(tip).toHaveCount(0);
-	// Asked for again, the tips start over on Characters with the demo.
-	await page.getByRole('button', { name: 'Top-down', exact: true }).click();
+	await page.getByRole('tab', { name: 'States', exact: true }).click();
+	await expect(heading('Add a state')).toBeVisible();
+	await pointsAt(page.locator('[data-tip-anchor="add-state"]'));
+	await page.getByRole('tab', { name: 'Moves', exact: true }).click();
+	await expect(heading('Add a move')).toBeVisible();
+	// Asked for again, tips start over where the person is.
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: /^Help/ }).click();
 	await page.getByRole('button', { name: 'Show tips again', exact: true }).click();
-	await expect(tip.getByRole('heading', { name: 'Dress up the demo' })).toBeVisible();
-	// Closed by keyboard, only that tip ends and focus goes to the control it pointed at.
-	await tip.getByRole('button', { name: 'Close tip' }).focus();
-	await page.keyboard.press('Enter');
-	await expect(tip).toHaveCount(0);
-	await expect(customize).toBeFocused();
-	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toBe('["customize"]');
+	await expect(heading('Fit gear to this move')).toBeVisible();
+	await expect(page.locator('h1')).toHaveText('Adventurer copy');
+	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toBe('[]');
 });
 
 test('the startup preview notice expires after eight seconds', async ({ page }, info) => {
@@ -795,9 +829,13 @@ test('the startup preview notice expires after eight seconds', async ({ page }, 
 	// Pause after the installed time: the installed clock runs until the pause, and pausing in its past throws (seen under load).
 	await page.clock.install({ time });
 	await page.clock.pauseAt(new Date(time.getTime() + 1000));
-	await page.addInitScript(() =>
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]')
-	);
+	await page.addInitScript(() => {
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
+	});
 	await page.goto(dev);
 	const preview = page.getByRole('status').filter({ hasText: /Pre-release · v/ });
 	await expect(preview).toBeVisible();
@@ -819,9 +857,13 @@ test('the startup notice and More menu download a library backup with archives',
 		await fixtureHeld;
 		await route.continue();
 	});
-	await page.addInitScript(() =>
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]')
-	);
+	await page.addInitScript(() => {
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
+	});
 	await page.goto(dev);
 	const notice = page.getByRole('status').filter({ hasText: /Pre-release · v/ });
 	const backupButton = notice.getByRole('button', { name: 'Back up library', exact: true });
@@ -1053,9 +1095,13 @@ test('Library says when no original generations are kept', async ({ page }, info
 test('Settings saves creation choices across reload and resets them by scope', async ({ page }) => {
 	await page.setViewportSize({ width: 1280, height: 800 });
 	// Not about onboarding: the first-visit tips are already done.
-	await page.addInitScript(() =>
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]')
-	);
+	await page.addInitScript(() => {
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
+	});
 	const sheet = (tab: Page) => tab.getByRole('dialog', { name: 'Settings', exact: true });
 	const openSettings = async (tab = page) => {
 		await tab.getByRole('button', { name: 'More options', exact: true }).click();
@@ -1575,9 +1621,13 @@ for (const [width, height] of [
 		}, info) => {
 			const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
 			// A returning visitor: the startup warning only shows once something could be at risk.
-			await page.addInitScript(() =>
-				localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]')
-			);
+			await page.addInitScript(() => {
+				localStorage.setItem(
+					'pixeldoll.tips',
+					'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+				);
+				localStorage.setItem('pixeldoll.visited', '1');
+			});
 			await page.goto(dev);
 			const notice = page.locator('.toast'),
 				gesture = width < 1000 ? 'tap' : 'click';
@@ -1915,7 +1965,11 @@ async function demoGuard(context: BrowserContext) {
 		await route.abort();
 	});
 	await context.addInitScript(() => {
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 	});
 	context.on('weberror', (e) => {
@@ -3474,7 +3528,11 @@ test('an outfit edit survives an immediate reload inside the autosave delay', as
 	await page.route('https://*.pixellab.ai/**', (route) => route.abort());
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, '/#/');
 	const hat = page.locator('.equipment-scroll').getByRole('button', { name: /^Wizard hat(,|$)/ });
@@ -3503,7 +3561,11 @@ test('a color reset survives an immediate reload inside the autosave delay', asy
 	await page.route('https://*.pixellab.ai/**', (route) => route.abort());
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, '/#/');
 	const azure = () =>
@@ -3542,7 +3604,11 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await page.route('https://api.pixellab.ai/**', (route) => route.abort());
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, '/#/');
 	await newItem(page, 'Head');
@@ -3745,7 +3811,11 @@ test('desktop resize keeps preview controls and customization reachable across p
 }) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, '/#/');
 	for (const viewport of [
@@ -3796,7 +3866,11 @@ test('New item Enhance describes the item alone at its canvas size, then Undo re
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key');
 	});
 	await openStudio(page, '/#/');
@@ -3877,7 +3951,11 @@ test('Enhance keeps the template a new move opened with, and its settings', asyn
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key');
 	});
 	await openStudio(
@@ -3913,7 +3991,11 @@ test('New move opens on the customized template prompt, and an added suggestion 
 }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		const ids = ['idle', 'walk', 'run', 'slash', 'hurt', 'death', 'cast'];
 		localStorage.setItem(
 			'pixeldoll.promptSuggestions.v1',
@@ -3951,7 +4033,11 @@ test('picking the opening gait template after turning Loop off keeps the templat
 }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		// Run first, so the sheet opens on it without it being picked.
 		localStorage.setItem(
 			'pixeldoll.promptSuggestions.v1',
@@ -4000,7 +4086,11 @@ test('Advanced picks a qualified template for a registered character and shows i
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key');
 	});
 	await openStudio(
@@ -4069,7 +4159,11 @@ test('a picked template reaches PixelLab as a template request', async ({
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key');
 	});
 	await openStudio(
@@ -4103,7 +4197,11 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 }) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixeldoll.creation.items', JSON.stringify({ method: 'skel' }));
 	});
 	await openStudio(page, '/#/');
@@ -4252,7 +4350,11 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, '/#/');
 	await newItem(page, 'Head');
@@ -4393,7 +4495,11 @@ test('closing Connect before its code loads still discards the pending action', 
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, '/#/');
 	await page.locator('.project-btn').click();
@@ -4443,7 +4549,11 @@ test('free item color matching is offline, scoped, persistent and preserves save
 	await context.route('https://api.pixellab.ai/**', (r) => r.abort());
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -4592,7 +4702,11 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
 			await page.addInitScript(
 				({ initial, shared, legacy }) => {
 					localStorage.setItem('pixeldoll.agentKey', 'off');
-					localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+					localStorage.setItem(
+						'pixeldoll.tips',
+						'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+					);
+					localStorage.setItem('pixeldoll.visited', '1');
 					if (sessionStorage.getItem('seeded')) return;
 					sessionStorage.setItem('seeded', '1');
 					if (initial === 'shared' || initial === 'both')
@@ -4663,7 +4777,11 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, '/');
 	await page.locator('.world-actors').first().waitFor();
@@ -4947,7 +5065,11 @@ test('radio groups and tabs use one Tab stop and arrow selection', async ({ page
 	await context.route('https://api.pixellab.ai/**', (r) => r.abort());
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixeldoll.export.engine', 'unknown-engine');
 	});
 	await openStudio(page, '/');
@@ -5020,7 +5142,11 @@ test('draft review can inspect every generated move and only its available views
 	await context.route('https://api.pixellab.ai/**', (r) => r.abort());
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -5178,7 +5304,11 @@ test('a draft can be worn while it loads: landed views show, pending ones say lo
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -5325,7 +5455,11 @@ async function busyFirstTab(
 	});
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, '/');
 	await expect(page.locator('.world-actors').first()).toBeVisible();
@@ -5481,7 +5615,11 @@ test('Create in a second tab takes the jobs from the idle first tab at once and 
 	});
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, '/');
 	await expect(page.locator('.world-actors').first()).toBeVisible();
@@ -5542,7 +5680,11 @@ test('mixed malformed draft calls cannot claim Clean when surviving frame checks
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -5702,7 +5844,11 @@ test('a stopped item draft keeps its available frames for free, and an unreadabl
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -5940,7 +6086,11 @@ test('a stopped character creation whose paid review cannot be read offers a fre
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -6029,7 +6179,11 @@ test('long item and outfit names leave wardrobe controls inside the desktop side
 	await context.route('https://api.pixellab.ai/**', (r) => r.abort());
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await page.setViewportSize({ width: 1280, height: 720 });
 	await openStudio(
@@ -6115,7 +6269,11 @@ test('interrupted character specifications retain their own estimates', async ({
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -6203,7 +6361,11 @@ test('character retry preserves the direction plan and allocates a fresh publica
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -6303,7 +6465,11 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -6640,7 +6806,11 @@ test('item tile cancellation confirms cost, retries failed saves and stays cance
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'synthetic-cancel-item-key');
 	});
 	await openStudio(
@@ -6757,7 +6927,11 @@ test('item tile cancellation confirms cost, retries failed saves and stays cance
 test('cancel during the initial item save never starts a paid runner', async ({ page }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -6826,7 +7000,11 @@ test('an accepted item failure shows the reported charge and saved job without a
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'synthetic-dress-failure-key');
 	});
 	await openStudio(
@@ -6923,7 +7101,11 @@ test('new item progress, previews and completion survive reload without submitti
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'synthetic-item-progress-key');
 	});
 	await openStudio(
@@ -7045,7 +7227,11 @@ test('reload restores failed create, move and setup for review without paid subm
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'synthetic-failed-flow-key');
 	});
 	await openStudio(
@@ -7177,7 +7363,11 @@ test('reload restores failed create, move and setup for review without paid subm
 test('moves waiting behind another character’s failed move point to it', async ({ page }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -7250,7 +7440,11 @@ test('a move rig setup skipped is marked in the Moves list to make again', async
 }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -7288,7 +7482,11 @@ test('the priced rig setup preflight names a move it will skip for an empty fram
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -7346,7 +7544,11 @@ test('Activity shows plan-derived capacity without a manual override or network 
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -7383,7 +7585,11 @@ test('accepted held-item review reasons survive actual reload without claiming a
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -7463,7 +7669,11 @@ test('Export discloses saved item and body review flags without blocking analysi
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -7645,7 +7855,11 @@ test('failed anchored moves offer cache-only recovery without an API key or a ne
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -7839,7 +8053,11 @@ test('a new move whose one view stopped saves its finished views for free and en
 }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'synthetic-finished-views-key');
 	});
 	await openStudio(
@@ -7892,7 +8110,11 @@ test('a replacement missing only numeric body checks lands in the staged review 
 }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'synthetic-numbers-only-key');
 	});
 	await openStudio(
@@ -7948,7 +8170,11 @@ test('a view kept without poses names the move and view to make again before equ
 }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'synthetic-keep-unposed-key');
 	});
 	await openStudio(
@@ -8066,7 +8292,11 @@ test('an item missing a standing view restores it from its saved design for free
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -8131,7 +8361,11 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -8452,7 +8686,11 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	page.on('pageerror', (e) => errors.push(e.message));
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -8747,7 +8985,11 @@ test('stage makes all missing item views while explicit repair stays on the curr
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -8964,7 +9206,11 @@ test('a repair whose later batch fails offers its finished repairs for free and 
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'synthetic-partial-repair-key');
 	});
 	await openStudio(
@@ -9118,7 +9364,11 @@ test('paid item repair review survives reload and both decisions send no extra r
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'synthetic-repair-review-key');
 	});
 	await openStudio(
@@ -9279,7 +9529,11 @@ test('the item sheet offers one priced edit-images-v2 request and holds its resu
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'synthetic-item-sheet-key');
 		localStorage.setItem('pixeldoll.developerMode', '1');
 		localStorage.setItem(
@@ -9367,7 +9621,11 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -9489,7 +9747,11 @@ test('deferred item repair refuses changed artwork and price after Connect', asy
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -9541,7 +9803,11 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 	page.on('pageerror', (e) => errors.push(e.message));
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -9977,7 +10243,11 @@ test('bounded body color correction discloses changed checks and equipment cost 
 	page.on('pageerror', (e) => errors.push(e.message));
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -10206,7 +10476,11 @@ test('standing-first items quote only standing and offer actual custom moves one
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		// Priced as posed on a separate body until Settings switches to drawing on the move frames below.
 		localStorage.setItem(
 			'pixeldoll.creation.moves',
@@ -10563,7 +10837,11 @@ test('move review gates item selection and shows live estimates without spending
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -10850,7 +11128,11 @@ test('reviewed move animates the chosen item and exports layered frames using of
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'offline-move-smoke-key');
 	});
 	await openStudio(
@@ -10991,7 +11273,11 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -11218,7 +11504,11 @@ for (const changed of ['item', 'rig'] as const)
 		});
 		await page.addInitScript(() => {
 			localStorage.setItem('pixeldoll.agentKey', 'off');
-			localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+			localStorage.setItem(
+				'pixeldoll.tips',
+				'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+			);
+			localStorage.setItem('pixeldoll.visited', '1');
 		});
 		await openStudio(
 			page,
@@ -11274,7 +11564,11 @@ for (const changed of ['item', 'rig'] as const)
 async function editableCopy(page: Page, url = '/#/') {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, url);
 	await newItem(page, 'Head');
@@ -11964,7 +12258,11 @@ for (const width of [1280, 390])
 		await page.emulateMedia({ reducedMotion: 'reduce' });
 		await page.addInitScript(() => {
 			localStorage.setItem('pixeldoll.agentKey', 'off');
-			localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+			localStorage.setItem(
+				'pixeldoll.tips',
+				'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+			);
+			localStorage.setItem('pixeldoll.visited', '1');
 		});
 		await page.setViewportSize({ width, height: 844 });
 		const url = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
@@ -12043,7 +12341,11 @@ test('explicit item opens reveal shared IDs and quiet refresh keeps the selected
 	await page.emulateMedia({ reducedMotion: 'reduce' });
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -12129,7 +12431,11 @@ test('Wardrobe lands on a category picked while closed and reveals tiles below t
 }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await page.setViewportSize({ width: 1280, height: 720 });
 	// The dev server exposes the studio state (window.__studio) used to pick a category from elsewhere.
@@ -12193,7 +12499,11 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	});
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixellabApiKey', 'synthetic-two-handed-key');
 	});
 	await openStudio(
@@ -12343,7 +12653,11 @@ test.describe('row and tile actions on a touch screen', () => {
 	test('the ⋮ stays visible without hover', async ({ page }) => {
 		await page.addInitScript(() => {
 			localStorage.setItem('pixeldoll.agentKey', 'off');
-			localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+			localStorage.setItem(
+				'pixeldoll.tips',
+				'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+			);
+			localStorage.setItem('pixeldoll.visited', '1');
 		});
 		await openStudio(page, '/#/');
 		const tile = section(page, 'Head')
@@ -12367,7 +12681,11 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort());
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(
 		page,
@@ -12499,7 +12817,11 @@ test('a deleted item comes back from the notice, the history and the Trash after
 }) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.tips', '["customize","export","gear","pixellab"]');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, '/#/');
 	await newItem(page, 'Head');

@@ -13,9 +13,6 @@
 	import CharacterActions from '../CharacterActions.svelte';
 	import CharacterName from '../CharacterName.svelte';
 	import PhonePanel from '../PhonePanel.svelte';
-	import DemoTips from './DemoTips.svelte';
-	import Tip from '../tips/Tip.svelte';
-	import { completeTip, tips, tipsEnabled } from '../tips/tips.svelte.ts';
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import CharacterThumb from './CharacterThumb.svelte';
@@ -38,7 +35,6 @@
 	import {
 		ui,
 		doc,
-		DEMO,
 		store,
 		creates,
 		openProject,
@@ -85,7 +81,7 @@
 	} from '../displayDirection.ts';
 	import { displayMove } from '../displayMove.ts';
 	import { playbackClips } from '../../lib/runtime/timeline.js';
-	import { missingMoves, pixelSize } from '../model.ts';
+	import { pixelSize } from '../model.ts';
 	import { popoverFocus } from './focus.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { workspaceCopy } from '../../lib/store/workspace-mode.ts';
@@ -153,38 +149,6 @@
 		)
 	);
 	const list = $derived(saved.filter((p) => matchesSearch([p.name], query)));
-	/** A newcomer: nothing saved or being created yet. */
-	const newcomer = $derived(tipsEnabled && saved.length === 1 && !allPending.length);
-	/** Tips that otherwise only greet a newcomer show for anyone who asked for them again. */
-	const showTips = $derived(newcomer || tips.requested);
-	// Opening any character's Customize, by any control, is what the first tip asks for.
-	$effect(() => {
-		if (experience.screen === 'studio') completeTip('customize');
-	});
-	/** The demo's Customize, where its tips live. */
-	const inDemo = $derived(
-		tipsEnabled && experience.screen === 'studio' && doc.id === DEMO && !doc.loading && !!m
-	);
-	/** Items with frames for the move on screen: a tip never suggests one that would vanish or warn when put on. */
-	const tryable = $derived(
-		new Set(
-			(m?.items ?? []).filter((it) => !missingMoves(m!, it).includes(ui.anim)).map((it) => it.id)
-		)
-	);
-	// Show tips again: back to Characters with the demo, where the first tip lives. Each request is used up at once, so
-	// it can never act later.
-	let tipsRequest = tips.request;
-	$effect(() => {
-		if (tips.request === tipsRequest || doc.loading || openingProjectId()) return;
-		if (!doc.error && doc.id !== DEMO) {
-			void openProject(DEMO);
-			return;
-		}
-		untrack(() => {
-			tipsRequest = tips.request;
-			if (!doc.error && doc.id === DEMO) characters();
-		});
-	});
 	const pending = $derived(allPending.filter((run) => matchesSearch([run.spec.name], query)));
 	const searchTotal = $derived(saved.length + allPending.length);
 	const searchVisibility = createSearchVisibility({
@@ -1030,13 +994,6 @@
 					</CharacterActions>
 				{/each}
 			</div>
-			<Tip
-				id="customize"
-				when={showTips && doc.id === DEMO && !!m && !ui.sheet}
-				anchor=".customize-action"
-				title={t('tips.customizeTitle')}
-				body={t('tips.customizeBody')}
-			/>
 			<button
 				class="bu-action customize-action"
 				data-variant="primary"
@@ -1206,8 +1163,6 @@
 				</div>
 			</div>
 		{/if}
-		<!-- Before the panel, so keyboard users reach the tip's close button before the gear it is about. -->
-		{#if inDemo}<DemoTips show={showTips} {tryable} />{/if}
 		<aside
 			id="customization-rail"
 			class="equipment-rail"

@@ -1139,6 +1139,7 @@
 								<button
 									class="bu-action section-action"
 									data-variant="quiet"
+									data-tip-anchor="new-item"
 									aria-label={t('wardrobe.newLowerItem', { lower })}
 									title={t('wardrobe.newLowerItem', { lower })}
 									onclick={() => openNewItem(s.key)}><Plus size={18} /></button

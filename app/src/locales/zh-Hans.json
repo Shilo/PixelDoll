@@ -3558,6 +3558,16 @@
 		"close": "关闭提示",
 		"showAgain": "重新显示提示",
 		"pixellabTitle": "PixelLab 是什么？",
-		"pixellabBody": "一款 AI 像素画服务，负责绘制你在这里创建的角色和装备，会使用你 PixelLab 账户的生成次数。"
+		"pixellabBody": "一款 AI 像素画服务，负责绘制你在这里创建的角色和装备，会使用你 PixelLab 账户的生成次数。",
+		"newCharacterTitle": "创建你自己的角色",
+		"newCharacterBody": "根据描述创建角色，或导入你已有的角色。",
+		"addItemTitle": "添加装备",
+		"addItemBody": "描述一件物品，PixelLab 会把它画得在每一帧都贴合这个角色。",
+		"generateItemsTitle": "让装备适配这个动作",
+		"generateItemsBody": "打开这个动作的菜单并选择“生成装备”，为装备补画缺少的帧。",
+		"addMoveTitle": "添加动作",
+		"addMoveBody": "为角色加入动画，例如 Idle、Walk 或 Attack。",
+		"addStateTitle": "添加状态",
+		"addStateBody": "创建新的静止姿势或造型，例如坐姿或服装，作为动作的起点。"
 	}
 }

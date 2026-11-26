@@ -3660,6 +3660,16 @@
 		"close": "Fermer le conseil",
 		"showAgain": "Réafficher les conseils",
 		"pixellabTitle": "Qu’est-ce que PixelLab ?",
-		"pixellabBody": "Un service de pixel art par IA qui dessine les personnages et l’équipement que vous créez ici, avec les générations de votre compte PixelLab."
+		"pixellabBody": "Un service de pixel art par IA qui dessine les personnages et l’équipement que vous créez ici, avec les générations de votre compte PixelLab.",
+		"newCharacterTitle": "Créez le vôtre",
+		"newCharacterBody": "Créez un personnage à partir d’une description, ou importez-en un que vous avez déjà.",
+		"addItemTitle": "Ajoutez de l’équipement",
+		"addItemBody": "Décrivez un objet et PixelLab le dessine pour qu’il s’adapte à ce personnage dans chaque image.",
+		"generateItemsTitle": "Adaptez l’équipement à cette animation",
+		"generateItemsBody": "Ouvrez le menu de cette animation et choisissez Générer des objets pour dessiner les images manquantes de votre équipement.",
+		"addMoveTitle": "Ajoutez une animation",
+		"addMoveBody": "Animez votre personnage, par exemple avec Idle, Walk ou Attack.",
+		"addStateTitle": "Ajoutez un état",
+		"addStateBody": "Créez une nouvelle pose ou apparence, assise ou costumée par exemple, d’où partiront des animations."
 	}
 }
