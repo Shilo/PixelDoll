@@ -105,8 +105,11 @@
 		RefreshCw,
 		Trash,
 		TriangleAlert,
+		Wrench,
 		Puzzle
 	} from './icons.ts';
+
+	type SectionAttention = { kind: 'warn' | 'fix'; label: string };
 
 	let { id }: { id: string } = $props();
 	const m = $derived(store.project?.manifest);
@@ -484,6 +487,34 @@
 	const keepWithout = $derived(m && it ? gapMoves(m, it) : []);
 	// Never without the move the item is designed or anchored from: those gaps take the paid redraw.
 	const keepRefusal = $derived(m && it ? keepWithoutRefusal(m, it, keepWithout) : undefined);
+	// One status per disclosure that has a real next action, so a collapsed section still says why it matters.
+	const qualityAttention: SectionAttention | undefined = $derived(
+		health === 'look' ? { kind: 'warn', label: t('studioModel.health.look') } : undefined
+	);
+	const artworkAttention: SectionAttention | undefined = $derived(
+		gaps.length || restorable.length || repairSpec
+			? {
+					kind: 'fix',
+					label: restorable.length
+						? t('itemPane.restoreStanding', {
+								count: restorable.length,
+								n: number(restorable.length)
+							})
+						: t('fixFrames.open')
+				}
+			: undefined
+	);
+	const movesAttention: SectionAttention | undefined = $derived(
+		coverageMissing
+			? {
+					kind: 'warn',
+					label: t('itemPane.coverageMissing', {
+						count: coverageMissing,
+						n: number(coverageMissing)
+					})
+				}
+			: undefined
+	);
 	async function acceptIssues(withoutGaps = false) {
 		if (!it || acceptingIssues) return;
 		const projectId = doc.id,
@@ -524,11 +555,17 @@
 	}
 </script>
 
-{#snippet sectionTitle(label: string, note?: string)}
+{#snippet sectionTitle(label: string, attention?: SectionAttention)}
 	<summary>
 		<ChevronRight size={16} aria-hidden="true" />
 		<h3 class="section-name">{label}</h3>
-		{#if note}<span class="section-note muted">{note}</span>{/if}
+		{#if attention}<span class="section-status {attention.kind}">
+				{#if attention.kind === 'fix'}<Wrench size={12} aria-hidden="true" />{:else}<TriangleAlert
+						size={12}
+						aria-hidden="true"
+					/>{/if}
+				{attention.label}
+			</span>{/if}
 	</summary>
 {/snippet}
 
@@ -693,7 +730,7 @@
 			<div class="item-sections">
 				{#if designReasons.length || reasons.length || notes.length || health === 'look' || health === 'accepted'}
 					<details class="bu-details item-disclosure" bind:open={qualityOpen}>
-						{@render sectionTitle(t('itemPane.qualityChecks'))}
+						{@render sectionTitle(t('itemPane.qualityChecks'), qualityAttention)}
 						<div class="stack">
 							<!-- A re-fit names its source's design findings among its fit notes, on this body's frames. -->
 							<!-- An unfitted copy keeps its source's pixels, so the source's accepted design findings still describe them. -->
@@ -783,7 +820,7 @@
 					</details>
 				{/if}
 				<details class="bu-details item-disclosure" bind:open={artworkOpen}>
-					{@render sectionTitle(t('itemPane.artworkSection'))}
+					{@render sectionTitle(t('itemPane.artworkSection'), artworkAttention)}
 					<div class="stack">
 						<div class="editor-actions">
 							{#if recolorable}
@@ -994,15 +1031,7 @@
 						bind:this={movesSection}
 						bind:open={movesOpen}
 					>
-						{@render sectionTitle(
-							t('itemPane.movesSection'),
-							coverageMissing
-								? t('itemPane.coverageMissing', {
-										count: coverageMissing,
-										n: number(coverageMissing)
-									})
-								: undefined
-						)}
+						{@render sectionTitle(t('itemPane.movesSection'), movesAttention)}
 						<div class="stack">
 							{#if freeFrames && it.copiedFrom && !isDemo()}
 								<!-- An exact copy whose source item gained frames for this body since: copied over for free, not made again. -->
@@ -1309,7 +1338,7 @@
 							aria-haspopup="dialog"
 							onclick={() => (confirmRemove = true)}
 						>
-							<Trash size={16} />{openerLabel(t('itemMenu.labelDeleteItem'))}<SurfaceChevron />
+							<Trash size={16} />{t('common.moveToTrash')}<SurfaceChevron />
 						</button>
 					</div>
 				{/if}
@@ -1385,6 +1414,7 @@
 		padding-inline: 8px;
 	}
 	.item-disclosure :global(summary .section-name) {
+		min-width: 0;
 		margin: 0;
 		font: inherit;
 	}
@@ -1495,10 +1525,21 @@
 	.item-disclosure :global(> div) {
 		padding: 4px 0 12px;
 	}
-	.item-disclosure .section-note {
+	.item-disclosure .section-status {
 		margin-inline-start: auto;
+		display: inline-flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 4px;
+		min-width: 0;
 		font-size: var(--fs-sm);
 		font-weight: 400;
+		color: var(--warn);
+		text-align: end;
+		overflow-wrap: anywhere;
+	}
+	.item-disclosure .section-status :global(svg) {
+		flex: none;
 	}
 	.editor-actions,
 	.visibility-list {

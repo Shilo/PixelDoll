@@ -3533,7 +3533,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await expect(spritePreview).toHaveCount(0);
 	await expect(southView).toBeFocused();
 	// Delete asks in an alert over the details; Cancel keeps the item and the details open.
-	await inspector.getByRole('button', { name: 'Move to Trash...', exact: true }).click();
+	await inspector.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 	const deleteAlert = page.getByRole('alertdialog', { name: /^Move .+ to Trash\?$/ });
 	await expect(deleteAlert.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
 	await page.keyboard.press('Escape');
@@ -11991,6 +11991,12 @@ test('item details fill a phone screen and keep Wear pinned while the body scrol
 	expect(Math.round(bounds.height)).toBe(viewport.height);
 	const wear = details.getByRole('button', { name: 'Wear', exact: true });
 	await expect(wear).toBeInViewport();
+	await expect(details.locator('summary').filter({ hasText: 'Artwork' })).toContainText(
+		'Fix frames'
+	);
+	await expect(details.locator('summary').filter({ hasText: 'Moves & States' })).toContainText(
+		/Missing \d+ moves?/
+	);
 	for (const section of [
 		'Artwork',
 		'Moves & States',
@@ -12578,7 +12584,7 @@ test('a deleted item comes back from the notice, the history and the Trash after
 
 	async function deleteItem() {
 		const inspector = await selectedItemDetails(page);
-		await inspector.getByRole('button', { name: 'Move to Trash...', exact: true }).click();
+		await inspector.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 		const alert = page.getByRole('alertdialog', { name: /^Move .+ to Trash\?$/ });
 		await alert.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 		await expect(alert).toHaveCount(0);

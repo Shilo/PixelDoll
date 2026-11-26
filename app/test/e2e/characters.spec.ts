@@ -2199,6 +2199,9 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 	// Review comes first and is already open when checks found an issue.
 	const itemPane = page.locator('dialog.item-detail[open]');
 	await expect(itemPane.locator('summary').first()).toContainText('Quality checks');
+	await expect(itemPane.locator('summary').filter({ hasText: 'Quality checks' })).toContainText(
+		'Needs a look'
+	);
 	const quality = itemPane
 		.locator('summary')
 		.filter({ hasText: 'Quality checks' })
