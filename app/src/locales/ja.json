@@ -628,7 +628,20 @@
 		"aboutSection": "詳細",
 		"generateMovesNone": "生成",
 		"stopHiding": "{names}による非表示をオフ",
-		"keepWithoutNamed": "{moves}なしで残す"
+		"keepWithoutNamed": "{moves}なしで残す",
+		"checksFoundIssuesNoPaidRetryWas": "チェックで問題が見つかりました。有料の再試行は開始していません。もう一度生成をリクエストするか、このアイテムをそのまま承認できます。",
+		"repairRequests": {
+			"other": "この修復ではPixelLabの生成リクエストを{n}回使います。"
+		},
+		"redrawRequests": {
+			"other": "この描き直しではPixelLabの生成リクエストを{n}回使います。"
+		},
+		"redrawSaves": {
+			"other": "推定生成数は修復より{n}回少なくなります。"
+		},
+		"redrawCostsMore": {
+			"other": "推定生成数は修復より{n}回多くなります。"
+		}
 	},
 	"newCharacterButton": {
 		"newCharacter": "新しいキャラクター",

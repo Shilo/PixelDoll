@@ -645,7 +645,24 @@
 		"aboutSection": "Info",
 		"generateMovesNone": "Erstellen",
 		"stopHiding": "Ausblenden durch {names} beenden",
-		"keepWithoutNamed": "Ohne {moves} behalten"
+		"keepWithoutNamed": "Ohne {moves} behalten",
+		"checksFoundIssuesNoPaidRetryWas": "Bei der Prüfung sind Probleme aufgefallen. Es wurde kein kostenpflichtiger Neuversuch gestartet. Du kannst einen weiteren Versuch anfordern oder den Gegenstand unverändert übernehmen.",
+		"repairRequests": {
+			"one": "Diese Reparatur nutzt {n} PixelLab-Generierungsanfrage.",
+			"other": "Diese Reparatur nutzt {n} PixelLab-Generierungsanfragen."
+		},
+		"redrawRequests": {
+			"one": "Das Neuzeichnen nutzt {n} PixelLab-Generierungsanfrage.",
+			"other": "Das Neuzeichnen nutzt {n} PixelLab-Generierungsanfragen."
+		},
+		"redrawSaves": {
+			"one": "{n} geschätzte Generierung weniger als bei der Reparatur.",
+			"other": "{n} geschätzte Generierungen weniger als bei der Reparatur."
+		},
+		"redrawCostsMore": {
+			"one": "{n} geschätzte Generierung mehr als bei der Reparatur.",
+			"other": "{n} geschätzte Generierungen mehr als bei der Reparatur."
+		}
 	},
 	"newCharacterButton": {
 		"newCharacter": "Neue Figur",

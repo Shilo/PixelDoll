@@ -281,8 +281,10 @@ compare the weapon on the original body: removing the model's temporary body col
 - Tap an item in the wardrobe to wear it. One item per slot: wearing a new hat takes the old one off. Tap **None** to empty
   a slot.
 - **Random look** (shuffle icon) picks a random outfit.
-- The **details** button beside the selected item opens the **Item** sheet. You can change its layer order, choose which items it hides when worn
-  ("When worn, hide"), take it off, or remove it for good.
+- **Details** in an item's ⋮ menu opens the item window. Pick a move and facing at the top; tap any facing to see it full
+  size. **Moves & States** draws the item for missing moves (tick several to generate them together), **Quality** shows
+  what the checks found and fixes one view, and **Outfit** sets its layer order and which categories it hides while worn,
+  with a preview of the outfit beside them. Its own ⋮ has Recolor, Rename, Create a variant and Move to Trash.
 - **Undo** and **Redo** are in the toolbar (Ctrl+Z, Ctrl+Shift+Z). Besides dressing, they cover renames, moving an item to
   another slot, the move description, Adjust frame, Directions, Fix frames and Match item colors. Each character keeps its
   own history while the page is open. A step that something newer has changed since (in this tab or another) is refused
@@ -353,9 +355,9 @@ checks are selected initially. The current move and its fitted equipment stay in
 Only the replaced views lose their old equipment frames. Animate selected items there or use **Make it** later.
 Visual warnings don't stop you from saving or replacing a move. Missing frames or invalid joints still prevent saving.
 
-For an accepted item that has bad frames, select the move and facing direction in the preview, then use **Try new item
-frames** in the Item sheet. This redraws that item's frames on the frozen body, preserving its saved design and the other
-views and moves. Review the displayed estimate before starting. Failed quality checks keep the previous item frames;
+For an accepted item that has bad frames, pick the move and facing at the top of the item window, then use **Repair this
+view** (keeps the design) or **Redraw this view** (a new attempt you compare before keeping) under **Quality**. Both
+redraw that item's frames on the frozen body, leaving the other views and moves alone. Review the displayed estimate before starting. Failed quality checks keep the previous item frames;
 successful generation still needs a visual check for grip, missing parts and extra blades. Grid estimates include
 protected design references and the actual submitted canvas size; large 96px grids can cost more than small 64px grids.
 

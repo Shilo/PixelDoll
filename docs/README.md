@@ -65,6 +65,7 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 - [PixelLab Character Creator states and animations](research/2026-11-18-character-creator-states.md) describes the website workflow, public endpoint lifecycle, and how PixelDoll currently imports and uses standing references.
 - [PixelDoll state authoring study](research/2026-11-18-pixeldoll-states/README.md) proposes reusable poses, shared playback, state-derived move generation and independent removal. It includes an interactive layout comparison and runtime probe.
 
+- [Item details rework](design/2026-11-26-item-details/README.md): study of two earlier attempts, the layer-order and hide findings, the decisions with rejected alternatives, and live verification behind the current item window.
 - [Modular visual-slot workshop](design/2026-11-16-slot-system/README.md): council-challenged slot inventory, identity, hiding, customization and export proposal with an isolated interactive comparison. Awaiting prototype review; no production behavior change.
 
 - [Intersect Engine paper-doll architecture](research/2026-11-25-intersect-engine-paperdoll/README.md): source review of its five positional slots, per-direction draw order, implicit 4 x 4 sheets and name-only asset transport, with measured cell sizes. Confirms PixelDoll's slot ladder, explicit pivots, fg/bg split and coverage; no pipeline change.

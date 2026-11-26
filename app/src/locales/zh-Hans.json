@@ -628,7 +628,20 @@
 		"aboutSection": "关于",
 		"generateMovesNone": "生成",
 		"stopHiding": "关闭{names}的隐藏",
-		"keepWithoutNamed": "保留，不含{moves}"
+		"keepWithoutNamed": "保留，不含{moves}",
+		"checksFoundIssuesNoPaidRetryWas": "检查发现问题。未启动付费重试。你可以请求另一次尝试，或按现状接受此装备。",
+		"repairRequests": {
+			"other": "此次修复会使用 {n} 次 PixelLab 生成请求。"
+		},
+		"redrawRequests": {
+			"other": "此次重绘会使用 {n} 次 PixelLab 生成请求。"
+		},
+		"redrawSaves": {
+			"other": "预计比修复少 {n} 次生成。"
+		},
+		"redrawCostsMore": {
+			"other": "预计比修复多 {n} 次生成。"
+		}
 	},
 	"newCharacterButton": {
 		"newCharacter": "新建角色",

@@ -3804,7 +3804,8 @@ export async function copyDemo(): Promise<string> {
 }
 
 /** What a Rename sheet names: the character itself, or one of its items, outfits or moves. */
-export type RenameOf = { itemId?: string; outfitId?: string; moveId?: string };
+/** `back`: the sheet Rename was opened from, which Back and a saved rename return to. */
+export type RenameOf = { itemId?: string; outfitId?: string; moveId?: string; back?: 'item' };
 
 /** Saved characters only, except outfits: a demo's outfits are part of its saved dress-up state. */
 export function openRename(projectId: string, of: RenameOf = {}) {

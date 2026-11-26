@@ -628,7 +628,20 @@
 		"aboutSection": "Tentang",
 		"generateMovesNone": "Buat",
 		"stopHiding": "Matikan penyembunyian oleh {names}",
-		"keepWithoutNamed": "Simpan tanpa {moves}"
+		"keepWithoutNamed": "Simpan tanpa {moves}",
+		"checksFoundIssuesNoPaidRetryWas": "Pemeriksaan menemukan masalah. Tidak ada percobaan ulang berbayar yang dimulai. Anda dapat meminta percobaan lain atau menerima item ini apa adanya.",
+		"repairRequests": {
+			"other": "Perbaikan ini menggunakan {n} permintaan generasi PixelLab."
+		},
+		"redrawRequests": {
+			"other": "Penggambaran ulang ini menggunakan {n} permintaan generasi PixelLab."
+		},
+		"redrawSaves": {
+			"other": "{n} estimasi generasi lebih sedikit daripada perbaikan."
+		},
+		"redrawCostsMore": {
+			"other": "{n} estimasi generasi lebih banyak daripada perbaikan."
+		}
 	},
 	"newCharacterButton": {
 		"newCharacter": "Karakter baru",

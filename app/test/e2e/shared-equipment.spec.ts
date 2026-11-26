@@ -780,7 +780,7 @@ test('an item drawn for another body on the same canvas is worn as drawn for fre
 		.click();
 	const details = await selectedItemDetails(page);
 	await expect(details).toContainText(
-		'Drawn for Stout’s body, so it may float, clip or leave gaps. Make one for Adventurer copy to fit it.'
+		'Drawn for Stout’s body, so it may float, clip or leave gaps.'
 	);
 	await expect(details).toContainText('Not fitted');
 	await expect(
@@ -959,7 +959,7 @@ test('a copy missing frames its source item has copies them for free into the sa
 	await expect(worn).not.toHaveAccessibleName(/not shown in this move/);
 	const details = await selectedItemDetails(page);
 	await openItemSection(details, 'Moves & States');
-	const copy = details.getByRole('button', { name: 'Copy from Twin · Free', exact: true });
+	const copy = details.getByRole('button', { name: 'Copy from Twin', exact: true });
 	await expect(copy).toBeVisible();
 	await expect(details).toContainText(
 		`Twin has ${dropped} frames of this item that Adventurer copy lacks. Nothing is generated.`
@@ -978,7 +978,7 @@ test('a copy missing frames its source item has copies them for free into the sa
 	await expect(hats).toHaveCount(1);
 	await hats.click();
 	await expect(
-		(await selectedItemDetails(page)).getByRole('button', { name: 'Copy from Twin · Free' })
+		(await selectedItemDetails(page)).getByRole('button', { name: 'Copy from Twin', exact: true })
 	).toHaveCount(0);
 	expect(requests).toEqual([]);
 });

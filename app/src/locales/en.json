@@ -645,7 +645,24 @@
 		"aboutSection": "About",
 		"generateMovesNone": "Generate",
 		"stopHiding": "Turn off hiding by {names}",
-		"keepWithoutNamed": "Keep without {moves}"
+		"keepWithoutNamed": "Keep without {moves}",
+		"checksFoundIssuesNoPaidRetryWas": "Checks found issues. No paid retry was started. You can request another attempt or accept this item as it is.",
+		"repairRequests": {
+			"one": "This repair uses {n} PixelLab generation request.",
+			"other": "This repair uses {n} PixelLab generation requests."
+		},
+		"redrawRequests": {
+			"one": "This redraw uses {n} PixelLab generation request.",
+			"other": "This redraw uses {n} PixelLab generation requests."
+		},
+		"redrawSaves": {
+			"one": "{n} fewer estimated generation than Repair.",
+			"other": "{n} fewer estimated generations than Repair."
+		},
+		"redrawCostsMore": {
+			"one": "{n} more estimated generation than Repair.",
+			"other": "{n} more estimated generations than Repair."
+		}
 	},
 	"newCharacterButton": {
 		"newCharacter": "New character",

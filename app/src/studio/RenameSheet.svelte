@@ -92,6 +92,12 @@
 		ui.renameTarget = null;
 		ui.sheet = null;
 	}
+	/** Back to the sheet Rename was opened from (item details), as after a save. */
+	function back() {
+		const to = target.back;
+		ui.renameTarget = null;
+		ui.sheet = to ?? null;
+	}
 	async function save() {
 		if (!canSave) return;
 		busy = true;
@@ -107,7 +113,7 @@
 					newName,
 					newId
 				);
-			if (ui.sheet === 'rename' && ui.renameTarget === target) close();
+			if (ui.sheet === 'rename' && ui.renameTarget === target) back();
 		} catch (e) {
 			error = message('renameSheet.couldNotRename', { reason: errorMessage(e) });
 		} finally {
@@ -125,6 +131,9 @@
 				? t('renameSheet.titleRenameMove')
 				: t('renameSheet.titleRenameCharacter')}
 	locked={busy}
+	back={target.back ? back : undefined}
+	backDiscards
+	backTo={target.back ? t('studio.titleItem') : undefined}
 	dirty={nameChanged || idChanged}
 	onclose={close}
 >

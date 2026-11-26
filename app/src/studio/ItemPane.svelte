@@ -272,10 +272,13 @@
 	const eligible = $derived(
 		missingMoves.filter((spec) => moveOffers.get(spec.id)?.gens != null).map((spec) => spec.id)
 	);
-	// The staged move is picked once when it is missing; a selection never spends, and the button names the total first.
+	// The staged move starts picked when it is missing, else the first one: a selection never spends, and the button names
+	// the total before anything is bought.
 	let chosen = $state<string[] | null>(null);
 	const selected = $derived(
-		(chosen ?? (eligible.includes(ui.anim) ? [ui.anim] : [])).filter((id) => eligible.includes(id))
+		(chosen ?? (eligible.includes(ui.anim) ? [ui.anim] : eligible.slice(0, 1))).filter((id) =>
+			eligible.includes(id)
+		)
 	);
 	const selectedSpecs = $derived(missingMoves.filter((spec) => selected.includes(spec.id)));
 	const missingOffer = $derived(
@@ -379,7 +382,35 @@
 				offer: redrawOffer,
 				help: t('itemPane.redrawHelp')
 			}
-		].map((choice) => ({ ...choice, tier: offerTier(choice.offer) }))
+		].map((choice) => {
+			const spec = choice.offer?.specs[0],
+				requests =
+					m && spec
+						? movePlan({ manifest: m }, spec).filter((call) => call.method === 'POST').length
+						: 0,
+				repairGens = repairOffer?.gens,
+				redrawGens = redrawOffer?.gens;
+			// Several requests, and how the redraw compares with the repair, are said before anything is bought.
+			const notes = [
+				choice.help,
+				requests > 1
+					? t(choice.id === 'repair' ? 'itemPane.repairRequests' : 'itemPane.redrawRequests', {
+							count: requests,
+							n: number(requests)
+						})
+					: '',
+				choice.id === 'redraw' &&
+				repairGens != null &&
+				redrawGens != null &&
+				redrawGens !== repairGens
+					? t(redrawGens < repairGens ? 'itemPane.redrawSaves' : 'itemPane.redrawCostsMore', {
+							count: Math.abs(Math.ceil(repairGens) - Math.ceil(redrawGens)),
+							n: number(Math.abs(Math.ceil(repairGens) - Math.ceil(redrawGens)))
+						})
+					: ''
+			];
+			return { ...choice, help: notes.filter(Boolean).join(' '), tier: offerTier(choice.offer) };
+		})
 	);
 	const repairBusy = $derived(
 		(!!moving.spec && !moving.done) || (!!settingUp.spec && !settingUp.done)
@@ -639,13 +670,13 @@
 	let open = $state<Record<Section, boolean>>(
 		resumed?.open ??
 			untrack(() => ({
-				moves: !strip.length && missingMoves.length > 0,
+				moves: (!strip.length && missingMoves.length > 0) || restorable.length > 0 || copyOffer,
 				quality: health === 'look',
 				outfit: false,
 				about: false
 			}))
 	);
-	const sections: Partial<Record<Section, HTMLDetailsElement>> = {};
+	const sections = $state<Partial<Record<Section, HTMLDetailsElement>>>({});
 	let body = $state<HTMLElement>();
 	const scroller = () => body?.closest<HTMLElement>('.sheet-body');
 	$effect(() => {
@@ -716,7 +747,9 @@
 	);
 
 	// ---------- menu ----------
-	const menuId = $props.id();
+	// One id serves the menu and, as a prefix, the tool rows' label and description ids.
+	const menuId = $props.id(),
+		uid = menuId;
 	let menu = $state<HTMLElement>();
 	let confirmRemove = $state(false);
 	// Only worn items (and the body) have a section in the Colors tab.
@@ -751,6 +784,7 @@
 {/snippet}
 
 {#snippet toolRow(tool: {
+	id: string;
 	icon: typeof Wrench;
 	label: string;
 	detail: string;
@@ -765,16 +799,23 @@
 		class="tool-row bu-action"
 		data-variant="quiet"
 		disabled={tool.disabled}
-		aria-describedby={tool.describedby}
+		aria-labelledby="{uid}-{tool.id}-label"
+		aria-describedby={[tool.describedby, `${uid}-${tool.id}-detail`, `${uid}-${tool.id}-aside`]
+			.filter(Boolean)
+			.join(' ')}
 		aria-haspopup={tool.opens ? 'dialog' : undefined}
 		onclick={tool.onclick}
 	>
 		<tool.icon size={18} aria-hidden="true" />
 		<span class="tool-text"
-			><span class="tool-label">{tool.label}</span><span class="tool-detail">{tool.detail}</span
+			><span class="tool-label" id="{uid}-{tool.id}-label">{tool.label}</span><span
+				class="tool-detail"
+				id="{uid}-{tool.id}-detail">{tool.detail}</span
 			></span
 		>
-		<span class="tool-aside" data-paid={tool.paid || undefined}>{tool.aside}</span>
+		<span class="tool-aside" id="{uid}-{tool.id}-aside" data-paid={tool.paid || undefined}
+			>{tool.aside}</span
+		>
 		{#if tool.opens}<SurfaceChevron />{/if}
 	</button>
 {/snippet}
@@ -927,12 +968,12 @@
 									>{/if}
 							</span>
 							<span class="view-caption">{displayDirection(direction.id)}</span>
+							<span class="view-enlarge" aria-hidden="true"><Maximize size={12} /></span>
 						</button>
 					{/each}
 					{#if !directions.length}<p class="muted small preview-empty">
 							{t('itemPane.previewUnavailable')}
 						</p>{/if}
-					<Maximize class="views-expand" size={14} aria-hidden="true" />
 				</div>
 			</section>
 
@@ -1008,6 +1049,7 @@
 							{#if restorable.length || copyOffer}
 								<div class="tool-list">
 									{#if restorable.length}{@render toolRow({
+											id: 'restore',
 											icon: RotateCcw,
 											label: t('itemPane.restoreStanding', { count: restorable.length }),
 											detail: t('itemPane.restoreStandingHint', {
@@ -1019,6 +1061,7 @@
 											onclick: () => restoreFromDesign(it.id)
 										})}{/if}
 									{#if copyOffer && it.copiedFrom}{@render toolRow({
+											id: 'copy',
 											icon: RotateCcw,
 											label: t('itemPane.copyFrom', { name: it.copiedFrom.name }),
 											detail: t('itemPane.copyFrames', {
@@ -1188,6 +1231,21 @@
 									</ul>
 								</div>
 							{/if}
+							{#if !isDemo() && it.prompt && !it.unfitted && (it.refit || remakeOnly)}
+								<!-- A re-fit's issues are its fit: a new item for this body fixes them, priced in the sheet that opens. -->
+								<div class="tool-list">
+									{@render toolRow({
+										id: 'remake',
+										icon: RefreshCw,
+										label: openerLabel(t('itemMenu.remake', { name: m.name })),
+										detail: t('itemPane.remakeAllMoves', { name: m.name }),
+										aside: '',
+										opens: true,
+										onclick: () =>
+											openNewItem(it.slot, { slot: it.slot, prompt: it.prompt, route: it.route })
+									})}
+								</div>
+							{/if}
 							{#if canAccept}
 								<div class="accept">
 									{#if gaps.length && keepRefusal}
@@ -1202,8 +1260,10 @@
 											>
 										</p>
 									{:else}
+										<p class="faint small">{t('itemPane.checksFoundIssuesNoPaidRetryWas')}</p>
 										<div class="tool-list">
 											{@render toolRow({
+												id: 'accept',
 												icon: Check,
 												label: gaps.length
 													? t('itemPane.keepWithoutNamed', {
@@ -1249,6 +1309,7 @@
 								<!-- Free first: the item's own colors and hand edits, then the paid redraws of this view. -->
 								<div class="tool-list">
 									{#if !isDemo() && colorPlan}{@render toolRow({
+											id: 'match',
 											icon: Palette,
 											label: colorBusy
 												? t('itemPane.matchingColors')
@@ -1268,6 +1329,7 @@
 											onclick: () => void matchColors()
 										})}{/if}
 									{@render toolRow({
+										id: 'frames',
 										icon: Grid2x2,
 										label: t('fixFrames.open'),
 										detail: t('itemPane.fixFramesDetail'),
@@ -1278,6 +1340,7 @@
 									{#if !isDemo() && repairSpec}
 										{#each fixChoices as choice (choice.id)}
 											{@render toolRow({
+												id: choice.id,
 												icon: choice.icon,
 												label: choice.label,
 												detail: choice.help,
@@ -1348,7 +1411,8 @@
 									}
 								: undefined
 					)}
-					<div class="section-body">
+					<!-- The outfit preview stays beside every control here, so each change shows where it is made. -->
+					<div class="section-body outfit-body">
 						<section class="layer-order" aria-labelledby="layer-order-{it.id}">
 							<div class="layer-preview" aria-hidden={!outfitCell}>
 								{#if outfitCell}<Sprite
@@ -1555,7 +1619,8 @@
 							class="row bu-action"
 							data-variant="quiet"
 							role="menuitem"
-							onclick={() => act(() => openRename(doc.id, { itemId: it.id }))}
+							onclick={() =>
+								act(() => leaveFor(() => openRename(doc.id, { itemId: it.id, back: 'item' })))}
 							><Pencil size={16} aria-hidden="true" />{openerLabel(
 								t('toolbar.rename')
 							)}<SurfaceChevron /></button
@@ -1596,7 +1661,7 @@
 						<hr class="bu-separator" />
 						<DeleteRow
 							class="bu-action"
-							label={t('itemMenu.labelDeleteItem')}
+							label={t('common.moveToTrash')}
 							onclick={() => act(() => (confirmRemove = true))}
 						/>
 					{/if}
@@ -1745,14 +1810,8 @@
 		background: var(--stage);
 		border-radius: var(--r-card);
 	}
-	.item-views :global(.views-expand) {
-		position: absolute;
-		inset-block-start: 8px;
-		inset-inline-end: 8px;
-		color: var(--text-3);
-		pointer-events: none;
-	}
 	.item-view {
+		position: relative;
 		display: grid;
 		grid-template-rows: var(--tile, 64px) auto;
 		justify-items: center;
@@ -1764,6 +1823,20 @@
 		font-size: var(--fs-sm);
 		color: var(--text-2);
 		cursor: zoom-in;
+	}
+	/* Each tile says it opens bigger, so the strip does not read as a second facing picker. */
+	.view-enlarge {
+		position: absolute;
+		inset-block-start: 6px;
+		inset-inline-end: 6px;
+		display: grid;
+		color: var(--text-3);
+		opacity: 0.7;
+		transition: opacity var(--dur);
+	}
+	.item-view:is(:hover, :focus-visible) .view-enlarge {
+		opacity: 1;
+		color: var(--text);
 	}
 	.view-art {
 		display: grid;
@@ -2087,14 +2160,23 @@
 	}
 
 	/* Outfit */
-	.layer-order {
-		display: grid;
+	.outfit-body {
 		grid-template-columns: auto minmax(0, 1fr);
-		gap: 12px 16px;
-		align-items: center;
+		column-gap: 16px;
+		align-items: start;
+	}
+	.outfit-body > :global(*) {
+		grid-column: 2;
+	}
+	/* Its preview and controls join the body's grid: the preview spans the rows and stays in view while they scroll. */
+	.outfit-body > .layer-order {
+		display: contents;
 	}
 	.layer-preview {
-		position: relative;
+		grid-column: 1;
+		grid-row: 1 / span 4;
+		position: sticky;
+		top: 8px;
 		display: grid;
 		place-items: center;
 		width: 120px;
@@ -2112,6 +2194,7 @@
 		color: var(--text-3);
 	}
 	.layer-controls {
+		grid-column: 2;
 		display: grid;
 		gap: 8px;
 		min-width: 0;
@@ -2155,17 +2238,18 @@
 	.switch-list {
 		display: grid;
 	}
-	@container (max-width: 360px) {
-		.layer-order {
-			grid-template-columns: minmax(0, 1fr);
-			justify-items: center;
-		}
-	}
 	@media (max-width: 420px) {
-		.layer-order {
+		.outfit-body {
 			grid-template-columns: minmax(0, 1fr);
+		}
+		.outfit-body > :global(*),
+		.layer-preview {
+			grid-column: 1;
 		}
 		.layer-preview {
+			grid-row: auto;
+			position: relative;
+			top: auto;
 			justify-self: center;
 		}
 		.section-body {

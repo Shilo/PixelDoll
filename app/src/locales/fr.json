@@ -645,7 +645,24 @@
 		"aboutSection": "À propos",
 		"generateMovesNone": "Générer",
 		"stopHiding": "Ne plus masquer avec {names}",
-		"keepWithoutNamed": "Garder sans {moves}"
+		"keepWithoutNamed": "Garder sans {moves}",
+		"checksFoundIssuesNoPaidRetryWas": "Les vérifications ont détecté des problèmes. Aucune nouvelle tentative payante n’a été lancée. Vous pouvez demander une autre tentative ou accepter cet objet tel quel.",
+		"repairRequests": {
+			"one": "Cette réparation utilise {n} requête de génération PixelLab.",
+			"other": "Cette réparation utilise {n} requêtes de génération PixelLab."
+		},
+		"redrawRequests": {
+			"one": "Ce redessin utilise {n} requête de génération PixelLab.",
+			"other": "Ce redessin utilise {n} requêtes de génération PixelLab."
+		},
+		"redrawSaves": {
+			"one": "{n} génération estimée de moins que la réparation.",
+			"other": "{n} générations estimées de moins que la réparation."
+		},
+		"redrawCostsMore": {
+			"one": "{n} génération estimée de plus que la réparation.",
+			"other": "{n} générations estimées de plus que la réparation."
+		}
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nouveau personnage",

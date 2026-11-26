@@ -645,7 +645,24 @@
 		"aboutSection": "Hakkında",
 		"generateMovesNone": "Oluştur",
 		"stopHiding": "{names} ile gizlemeyi kapat",
-		"keepWithoutNamed": "{moves} olmadan sakla"
+		"keepWithoutNamed": "{moves} olmadan sakla",
+		"checksFoundIssuesNoPaidRetryWas": "Kontroller sorun buldu. Ücretli bir deneme başlatılmadı. Yeni bir deneme isteyebilir veya eşyayı olduğu gibi kabul edebilirsiniz.",
+		"repairRequests": {
+			"one": "Bu onarım {n} PixelLab üretim isteği kullanır.",
+			"other": "Bu onarım {n} PixelLab üretim isteği kullanır."
+		},
+		"redrawRequests": {
+			"one": "Bu yeniden çizim {n} PixelLab üretim isteği kullanır.",
+			"other": "Bu yeniden çizim {n} PixelLab üretim isteği kullanır."
+		},
+		"redrawSaves": {
+			"one": "Onarıma göre tahmini {n} üretim hakkı daha az.",
+			"other": "Onarıma göre tahmini {n} üretim hakkı daha az."
+		},
+		"redrawCostsMore": {
+			"one": "Onarıma göre tahmini {n} üretim hakkı daha fazla.",
+			"other": "Onarıma göre tahmini {n} üretim hakkı daha fazla."
+		}
 	},
 	"newCharacterButton": {
 		"newCharacter": "Yeni karakter",

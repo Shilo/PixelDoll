@@ -3507,7 +3507,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	const southView = inspector.getByRole('button', { name: 'Enlarge Red cape facing South' });
 	await southView.focus();
 	await page.keyboard.press('Enter');
-	const spritePreview = page.getByRole('dialog', { name: 'Red cape', exact: true });
+	const spritePreview = page.locator('dialog.sprite-preview');
 	await expect(spritePreview.getByRole('img')).toBeVisible();
 	const frameNote = spritePreview.locator('.viewer-caption');
 	await expect(frameNote).toContainText(/^Walk · South · Frame \d+ of 8$/);
@@ -4411,7 +4411,7 @@ test('free item color matching is offline, scoped, persistent and preserves save
 		frames: 8
 	});
 	await openItemSection(pane, 'Quality');
-	const action = pane.getByRole('button', { name: /^Match item colors.*Free$/ });
+	const action = pane.getByRole('button', { name: 'Match item colors', exact: true });
 	await expect(action).toBeVisible();
 	await expect(action).toContainText('Snaps 2 pixels in 2 frames to the item’s own colors.');
 	await context.setOffline(true);
@@ -4480,7 +4480,7 @@ test('free item color matching is offline, scoped, persistent and preserves save
 	}, fixture.itemId);
 	await selectedItemDetails(page);
 	await expect(pane.locator('.item-status')).toHaveText('Accepted');
-	await expect(pane.getByRole('button', { name: /^Match item colors.*Free$/ })).toHaveCount(0);
+	await expect(pane.getByRole('button', { name: 'Match item colors', exact: true })).toHaveCount(0);
 	// The saved recolor survives: the item's colors live in the Colors tab, which Recolor in its actions menu opens.
 	await pane.getByRole('button', { name: 'Item actions', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Recolor', exact: true }).click();
@@ -8822,7 +8822,7 @@ test('stage makes all missing item views while explicit repair stays on the curr
 		await simulateRepairPlan(0);
 		await expect(repair).toBeDisabled();
 		await expect(redraw).toBeDisabled();
-		await expect(repair).toHaveAttribute('aria-describedby', 'item-repair-tier');
+		await expect(repair).toHaveAttribute('aria-describedby', /(^| )item-repair-tier( |$)/);
 		await expect(page.locator('#item-repair-tier')).toContainText('Tier 1 required');
 		for (const [tier, gens] of [
 			[1, tierOneGens],
@@ -10430,19 +10430,17 @@ test('standing-first items quote standing and draw selected custom moves togethe
 	await expect(walk).toBeChecked();
 	await expect(punch).not.toBeChecked();
 	await expect(draw).toContainText('~12 gens');
-	const coverageList = pane.getByRole('list', { name: 'Move coverage', exact: true });
-	await expect(coverageList.getByRole('listitem', { name: 'Standing: missing' })).toBeVisible();
-	await expect(coverageList.getByRole('listitem', { name: 'Custom walk: missing' })).toBeVisible();
-	await expect(
-		coverageList.getByRole('listitem', { name: 'Custom cross punch: missing' })
-	).toBeVisible();
-	await expect(pane.locator('summary').getByText('Missing 3 moves', { exact: true })).toBeVisible();
-	await pane.getByRole('button', { name: 'Select all', exact: true }).click();
-	await expect(walk).toBeChecked();
-	await expect(punch).toBeChecked();
+	// Every move the item lacks is listed as missing, each with what it lacks.
+	for (const move of ['Standing', 'Custom walk', 'Custom cross punch'])
+		await expect(pane.locator('.clip-row[data-missing]').filter({ hasText: move })).toBeVisible();
+	await expect(pane.locator('summary').getByText('3 incomplete', { exact: true })).toBeVisible();
+	// Two moves need no Select all: each box adds to the one total on the button.
+	await expect(pane.getByRole('button', { name: 'Select all', exact: true })).toHaveCount(0);
+	await punch.check();
 	await expect(draw).toContainText('~15 gens');
-	await pane.getByRole('button', { name: 'Clear selection', exact: true }).click();
-	await expect(draw).toBeDisabled();
+	await walk.uncheck();
+	await punch.uncheck();
+	await expect(pane.getByRole('button', { name: 'Generate', exact: true })).toBeDisabled();
 	await expect(pane.locator('#item-missing-help')).toHaveText('Select at least one move.');
 	await walk.check();
 	await punch.check();
@@ -11198,7 +11196,8 @@ for (const changed of ['item', 'rig'] as const)
 			await i18n.selectLanguage('fr');
 		});
 		const action = pane.getByRole('button', {
-			name: /^Harmoniser les couleurs de l’objet.*Gratuit$/
+			name: 'Harmoniser les couleurs de l’objet',
+			exact: true
 		});
 		await expect(action).toBeVisible();
 		await page.evaluate(
@@ -11924,8 +11923,11 @@ test('item details reorders layers for an unworn item, gates the ends and resets
 	expect(southOnly).toBeLessThan(south);
 	expect(eastOnly).toBe(east);
 	await direction.uncheck();
+	// A step passes only what the shown facing visibly changes: facing south the hat is already behind everything it
+	// overlaps, so the window turns east, where it still has a layer to pass, and steps for every facing from there.
+	await expect(backward).toBeDisabled();
+	await details.getByRole('radio', { name: 'East', exact: true }).click();
 	await backward.click();
-	await expect.poll(async () => (await headDepths(page))[0]).toBeLessThan(southOnly);
 	await expect.poll(async () => (await headDepths(page))[1]).toBeLessThan(east);
 	await expect.poll(() => headLayerOverrides(page)).not.toEqual(before);
 	await expect(details.getByRole('button', { name: 'Reset order', exact: true })).toBeVisible();
@@ -11968,7 +11970,7 @@ test('an unworn item in a hidden category is not called hidden and keeps its ord
 	const details = await openItemDetails(page, 'Messy brown hair');
 	await expect(details.getByText(/^Hidden by /)).toHaveCount(0);
 	await openItemSection(details, 'Outfit');
-	await expect(details.getByRole('button', { name: 'Bring forward', exact: true })).toBeEnabled();
+	// Tucked under the helmet, the hair has nothing visible to cross in front of it, but it can still go further back.
 	await expect(details.getByRole('button', { name: 'Send backward', exact: true })).toBeEnabled();
 	await expect(details.getByText(/Another worn item hides this one/)).toHaveCount(0);
 });
@@ -12569,7 +12571,8 @@ test('a deleted item comes back from the notice, the history and the Trash after
 
 	async function deleteItem() {
 		const inspector = await selectedItemDetails(page);
-		await inspector.getByRole('button', { name: 'Move to Trash', exact: true }).click();
+		await inspector.getByRole('button', { name: 'Item actions', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Move to Trash', exact: true }).click();
 		const alert = page.getByRole('alertdialog', { name: /^Move .+ to Trash\?$/ });
 		await alert.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 		await expect(alert).toHaveCount(0);
