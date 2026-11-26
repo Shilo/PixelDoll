@@ -3583,7 +3583,7 @@
 		"updated": "{time}に更新",
 		"tryAgain": "もう一度試す",
 		"state": {
-			"off": "未リンク",
+			"off": "未リンク · ゲーム内のファイルを自動で最新に保ちます",
 			"on": "自動更新オン",
 			"manual": "自動更新オフ",
 			"updating": "更新中…",
@@ -3615,6 +3615,7 @@
 			"missing": "{folder} が見つかりません。",
 			"failed": "{folder} を更新できませんでした。"
 		},
-		"justUpdated": "たった今更新"
+		"justUpdated": "たった今更新",
+		"section": "ゲームプロジェクト"
 	}
 }

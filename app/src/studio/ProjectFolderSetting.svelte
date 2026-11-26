@@ -6,7 +6,19 @@
 	import type { PlanAction } from '../lib/project-folder/plan.ts';
 	import { BRAVE_FLAG } from '../lib/project-folder/support.ts';
 	import { exportFormatNames } from './exportFormatNames.ts';
-	import { Copy, FolderOpen, TriangleAlert } from './icons.ts';
+	import {
+		Check,
+		Copy,
+		FileCheck,
+		FolderOpen,
+		Link,
+		ListChecks,
+		RefreshCw,
+		Replace,
+		RotateCcw,
+		TriangleAlert,
+		Unlink
+	} from './icons.ts';
 	import {
 		checkFolderSupport,
 		keepProjectFolderFiles,
@@ -215,16 +227,21 @@
 										<span class="conflict-reason">{reason(conflict)}</span>
 										<button
 											type="button"
-											class="bu-action btn sm plain"
+											class="bu-action btn sm plain icon"
+											aria-label={copied === conflict.path
+												? t('projectFolder.pathCopied')
+												: t('projectFolder.copyPath')}
+											title={t('projectFolder.copyPath')}
 											onclick={(e) =>
 												copy(
 													fullPath(conflict.path),
 													conflict.path,
 													e.currentTarget.parentElement?.querySelector('.conflict-path')
 												)}
-											><Copy size={14} aria-hidden="true" />{copied === conflict.path
-												? t('projectFolder.pathCopied')
-												: t('projectFolder.copyPath')}</button
+											>{#if copied === conflict.path}<Check
+													size={14}
+													aria-hidden="true"
+												/>{:else}<Copy size={14} aria-hidden="true" />{/if}</button
 										>
 									</li>
 								{/each}
@@ -235,7 +252,7 @@
 			<div class="primary-action">
 				{#if status.kind === 'reconnect'}
 					<button type="button" class="bu-action btn primary" disabled={working} onclick={reconnect}
-						>{t('projectFolder.reconnect')}</button
+						><Link size={16} aria-hidden="true" />{t('projectFolder.reconnect')}</button
 					>
 				{:else if status.kind === 'blocked'}
 					{#if replaceable}
@@ -244,7 +261,8 @@
 							class="bu-action btn"
 							data-variant="outline"
 							disabled={working}
-							onclick={replace}>{t('projectFolder.replace')}</button
+							onclick={replace}
+							><Replace size={16} aria-hidden="true" />{t('projectFolder.replace')}</button
 						>
 					{:else}
 						<button
@@ -252,7 +270,8 @@
 							class="bu-action btn"
 							data-variant="outline"
 							disabled={disabled || working}
-							onclick={update}>{t('projectFolder.tryAgain')}</button
+							onclick={update}
+							><RotateCcw size={16} aria-hidden="true" />{t('projectFolder.tryAgain')}</button
 						>
 					{/if}
 					<button
@@ -260,7 +279,8 @@
 						class="bu-action btn"
 						data-variant="outline"
 						disabled={working}
-						onclick={keep}>{t('projectFolder.keep')}</button
+						onclick={keep}
+						><FileCheck size={16} aria-hidden="true" />{t('projectFolder.keep')}</button
 					>
 				{:else if status.kind !== 'missing'}
 					<button
@@ -268,7 +288,8 @@
 						class="bu-action btn"
 						data-variant="outline"
 						disabled={disabled || working}
-						onclick={update}>{t('projectFolder.publishNow')}</button
+						onclick={update}
+						><RefreshCw size={16} aria-hidden="true" />{t('projectFolder.publishNow')}</button
 					>
 					{#if status.kind === 'done' && status.kept}
 						<button
@@ -276,7 +297,8 @@
 							class="bu-action btn"
 							data-variant="outline"
 							disabled={working}
-							onclick={() => act(() => releaseKeptFiles())}>{t('projectFolder.updateKept')}</button
+							onclick={() => act(() => releaseKeptFiles())}
+							><ListChecks size={16} aria-hidden="true" />{t('projectFolder.updateKept')}</button
 						>
 					{/if}
 				{/if}
@@ -286,13 +308,15 @@
 					type="button"
 					class="bu-action btn sm plain"
 					disabled={disabled || working}
-					onclick={choose}>{t('projectFolder.change')}</button
+					onclick={choose}
+					><FolderOpen size={14} aria-hidden="true" />{t('projectFolder.change')}</button
 				>
 				<button
 					type="button"
 					class="bu-action btn sm plain"
 					disabled={working}
-					onclick={() => act(() => unlinkProjectFolder())}>{t('projectFolder.stop')}</button
+					onclick={() => act(() => unlinkProjectFolder())}
+					><Unlink size={14} aria-hidden="true" />{t('projectFolder.stop')}</button
 				>
 			</div>
 		{/if}
@@ -308,9 +332,6 @@
 	.project-folder h3,
 	.project-folder p {
 		margin: 0;
-	}
-	.project-folder h3:focus {
-		outline-offset: 2px;
 	}
 	.destination {
 		display: flex;

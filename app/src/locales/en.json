@@ -3686,7 +3686,7 @@
 		"updated": "Updated {time}",
 		"tryAgain": "Try again",
 		"state": {
-			"off": "Not linked",
+			"off": "Not linked · Keeps files in your game updated automatically",
 			"on": "Automatic updates on",
 			"manual": "Automatic updates off",
 			"updating": "Updating…",
@@ -3718,6 +3718,7 @@
 			"missing": "Can’t find {folder}.",
 			"failed": "Couldn’t update {folder}."
 		},
-		"justUpdated": "Updated just now"
+		"justUpdated": "Updated just now",
+		"section": "Game project"
 	}
 }

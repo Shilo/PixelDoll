@@ -4116,7 +4116,7 @@ test('a linked project folder publishes, updates after changes, pauses on game e
 	await dialog.getByRole('radio', { name: 'PNG + JSON', exact: true }).check();
 	// Export keeps one button; the folder is chosen and managed in Settings > Export.
 	const folderButton = dialog.getByRole('button', { name: 'Project folder', exact: true });
-	await expect(folderButton).toHaveAccessibleDescription('Not linked');
+	await expect(folderButton).toHaveAccessibleDescription(/^Not linked/);
 	await folderButton.click();
 	const row = dialog.locator('[data-setting="project-folder"]');
 	// Export's button opens Settings at the Project folder section: in view and focused, so Tab enters its controls.

@@ -3583,7 +3583,7 @@
 		"updated": "{time}에 업데이트됨",
 		"tryAgain": "다시 시도",
 		"state": {
-			"off": "연결 안 됨",
+			"off": "연결 안 됨 · 게임의 파일을 자동으로 최신 상태로 유지해요",
 			"on": "자동 업데이트 켜짐",
 			"manual": "자동 업데이트 꺼짐",
 			"updating": "업데이트 중…",
@@ -3615,6 +3615,7 @@
 			"missing": "다음 폴더를 찾을 수 없어요: {folder}",
 			"failed": "다음 폴더를 업데이트하지 못했어요: {folder}"
 		},
-		"justUpdated": "방금 업데이트됨"
+		"justUpdated": "방금 업데이트됨",
+		"section": "게임 프로젝트"
 	}
 }

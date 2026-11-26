@@ -1,8 +1,8 @@
 <script lang="ts">
-	// Export's Project folder control: one clear button above the formats that shows the folder's state and opens
+	// Export's Project folder control: one clear button below the formats, under its own heading, that shows the folder's state and opens
 	// Settings > Export at the Project folder section. Absent where the browser cannot write folders.
 	import { t } from 'svelte-whisper';
-	import { ChevronRight, FolderOpen } from './icons.ts';
+	import { ChevronRight, FolderSync } from './icons.ts';
 	import {
 		checkFolderSupport,
 		folderNeedsAttention,
@@ -38,25 +38,35 @@
 </script>
 
 {#if projectFolder.support === 'supported' || projectFolder.support === 'brave-disabled'}
-	<!-- A stable name with the changing state as its description, so a ticking timestamp is not re-announced as a new name. -->
-	<button
-		type="button"
-		class="bu-action btn folder-button"
-		data-variant="field"
-		aria-label={t('projectFolder.title')}
-		aria-describedby="project-folder-summary"
-		onclick={onopen}
-	>
-		<FolderOpen size={18} aria-hidden="true" />
-		<span class="folder-text">
-			<span class="folder-title">{t('projectFolder.title')}</span>
-			<span class="folder-state" id="project-folder-summary" class:attention>{summary}</span>
-		</span>
-		<ChevronRight size={16} aria-hidden="true" />
-	</button>
+	<section class="folder-section" aria-labelledby="project-folder-section">
+		<h3 class="label" id="project-folder-section">{t('projectFolder.section')}</h3>
+		<!-- A stable name with the changing state as its description, so a ticking timestamp is not re-announced as a new name. -->
+		<button
+			type="button"
+			class="bu-action btn folder-button"
+			data-variant="field"
+			aria-label={t('projectFolder.title')}
+			aria-describedby="project-folder-summary"
+			onclick={onopen}
+		>
+			<FolderSync size={18} aria-hidden="true" />
+			<span class="folder-text">
+				<span class="folder-title">{t('projectFolder.title')}</span>
+				<span class="folder-state" id="project-folder-summary" class:attention>{summary}</span>
+			</span>
+			<ChevronRight size={16} aria-hidden="true" />
+		</button>
+	</section>
 {/if}
 
 <style>
+	.folder-section {
+		display: grid;
+		gap: 8px;
+	}
+	.folder-section h3 {
+		margin: 0;
+	}
 	.folder-button {
 		display: flex;
 		align-items: center;

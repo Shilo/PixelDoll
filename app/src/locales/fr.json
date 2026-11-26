@@ -3686,7 +3686,7 @@
 		"updated": "Mis à jour {time}",
 		"tryAgain": "Réessayer",
 		"state": {
-			"off": "Non lié",
+			"off": "Non lié · Garde automatiquement à jour les fichiers de votre jeu",
 			"on": "Mises à jour automatiques activées",
 			"manual": "Mises à jour automatiques désactivées",
 			"updating": "Mise à jour…",
@@ -3718,6 +3718,7 @@
 			"missing": "{folder} est introuvable.",
 			"failed": "Impossible de mettre à jour {folder}."
 		},
-		"justUpdated": "Mis à jour à l’instant"
+		"justUpdated": "Mis à jour à l’instant",
+		"section": "Projet de jeu"
 	}
 }

@@ -3686,7 +3686,7 @@
 		"updated": "Güncellendi: {time}",
 		"tryAgain": "Yeniden dene",
 		"state": {
-			"off": "Bağlı değil",
+			"off": "Bağlı değil · Oyununuzdaki dosyaları otomatik olarak güncel tutar",
 			"on": "Otomatik güncelleme açık",
 			"manual": "Otomatik güncelleme kapalı",
 			"updating": "Güncelleniyor…",
@@ -3718,6 +3718,7 @@
 			"missing": "Şu klasör bulunamadı: {folder}",
 			"failed": "Şu klasör güncellenemedi: {folder}"
 		},
-		"justUpdated": "Az önce güncellendi"
+		"justUpdated": "Az önce güncellendi",
+		"section": "Oyun projesi"
 	}
 }

@@ -3686,7 +3686,7 @@
 		"updated": "Aktualisiert {time}",
 		"tryAgain": "Erneut versuchen",
 		"state": {
-			"off": "Nicht verbunden",
+			"off": "Nicht verbunden · Hält Dateien in deinem Spiel automatisch aktuell",
 			"on": "Automatische Updates an",
 			"manual": "Automatische Updates aus",
 			"updating": "Wird aktualisiert…",
@@ -3718,6 +3718,7 @@
 			"missing": "{folder} wurde nicht gefunden.",
 			"failed": "{folder} konnte nicht aktualisiert werden."
 		},
-		"justUpdated": "Gerade aktualisiert"
+		"justUpdated": "Gerade aktualisiert",
+		"section": "Spielprojekt"
 	}
 }

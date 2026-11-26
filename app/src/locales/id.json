@@ -3583,7 +3583,7 @@
 		"updated": "Diperbarui {time}",
 		"tryAgain": "Coba lagi",
 		"state": {
-			"off": "Belum ditautkan",
+			"off": "Belum ditautkan · Menjaga file di game Anda tetap terbaru secara otomatis",
 			"on": "Pembaruan otomatis aktif",
 			"manual": "Pembaruan otomatis mati",
 			"updating": "Memperbarui…",
@@ -3615,6 +3615,7 @@
 			"missing": "{folder} tidak ditemukan.",
 			"failed": "Tidak dapat memperbarui {folder}."
 		},
-		"justUpdated": "Baru saja diperbarui"
+		"justUpdated": "Baru saja diperbarui",
+		"section": "Proyek game"
 	}
 }

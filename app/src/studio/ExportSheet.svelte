@@ -842,7 +842,6 @@
 			{:else}
 				<div class="export-page" bind:this={content}>
 					{@render preferencesStatus()}
-					<ProjectFolderButton onopen={() => openSettings('export', 'project-folder')} />
 					<fieldset class="export-picker" aria-label={t('export.settings.format')}>
 						{#each GROUPS as group (group.id)}
 							<section aria-labelledby={`export-${group.id}`}>
@@ -971,6 +970,8 @@
 									>{/each}</select
 							></label
 						>{/if}
+					<!-- Optional and separate from downloading: its own heading, after the formats it publishes. -->
+					<ProjectFolderButton onopen={() => openSettings('export', 'project-folder')} />
 					{#if ready && !pendingExport && (result?.kind === 'recovery' || result?.kind === 'failed')}
 						<p
 							class="notice {result.kind === 'recovery' ? 'warn' : 'bad'} small"

@@ -3583,7 +3583,7 @@
 		"updated": "{time}更新",
 		"tryAgain": "重试",
 		"state": {
-			"off": "未关联",
+			"off": "未关联 · 自动保持游戏中的文件为最新",
 			"on": "自动更新已开启",
 			"manual": "自动更新已关闭",
 			"updating": "正在更新…",
@@ -3615,6 +3615,7 @@
 			"missing": "找不到 {folder}。",
 			"failed": "无法更新 {folder}。"
 		},
-		"justUpdated": "刚刚更新"
+		"justUpdated": "刚刚更新",
+		"section": "游戏项目"
 	}
 }
