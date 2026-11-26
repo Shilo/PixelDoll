@@ -551,6 +551,11 @@ to recolor at runtime. Do not call the recolor API with invented material or var
 }
 
 Moves: ${moves.join(', ')}.
+Outfits: ${m.presets
+		.map((p, i) => `${p.name} (${p.id})${i === 0 ? ' starts the character' : ''}`)
+		.join(', ')}.
+An item id containing ~ is a baked tuck variant (for example hair under a helmet); wear it instead of the plain item when
+that headwear is worn.
 A move lists the directions it has in rig.animations[].directions; its other sheet rows are empty.
 Pixel art: use nearest-neighbor filtering and whole-pixel positions.
 `;

@@ -37,10 +37,12 @@ this file first, then the doc for your engine in docs/, then that engine's READM
   per direction, the last matching entry winning. Equal z breaks by slot order in manifest.json, back layer before front
   layer, then item id. Never sort by name instead of z.
 - Palette swaps are exact RGB replacements from materials[].ramp and materials[].variants. Replace those pixels; never
-  scale, rotate, blur or resample the art. Only named variants that exist in manifest.json can be selected, and an
-  unknown material or variant id selects nothing without throwing. When materials is empty, or the material you want
-  lists no variants, this character ships nothing to recolor: skip the recolor step instead of calling it with invented
-  ids.
+  scale, rotate, blur or resample the art. A ramp is the item's source palette; only entries listed under variants can be
+  selected, and an unknown material or variant id selects nothing without throwing. When materials is empty, or the
+  material you want lists no variants, this character ships nothing to recolor: skip the recolor step instead of calling
+  it with invented ids. Supplying your own ramp is not part of this export's API.
+- An item id containing "~", such as hair_brown~helmet_steel, is a baked tuck variant: the hair redrawn to sit under that
+  helmet. Wear the tuck item instead of the plain item whenever that headwear is worn.
 - Nearest-neighbor filtering and whole-pixel positions. No atlas packing, rotation or trimming.
 - The base body is always worn. A layer that a move or an item does not provide is simply absent.
 - Mirroring is already baked into the exported views; do not flip a sheet that manifest.json lists on its own.
@@ -78,8 +80,11 @@ Full guide: phaser/README.txt. Data: manifest.json and the TexturePacker atlases
     doll.setVariants({ '<material-id>': '<variant-id>' })             // only ids listed in manifest.json
 
 Use pixelArt: true and roundPixels: true and serve the folder over http: the module fetches manifest.json.
+The path you pass is relative to the page that loads the game, not to PaperdollContainer.js.
 This export does not bundle Phaser. Load Phaser 3.80+ or 4 yourself (a script tag exposing the global Phaser, or your
-bundler) and import phaser/PaperdollContainer.js as an ES module, as above.
+bundler with an explicit import) and import phaser/PaperdollContainer.js as an ES module, as above.
+Phaser does not await an async create(): nothing may use the doll until loadPaperdoll resolves, so guard update() on
+this.doll or create it in a scene that starts after loading.
 doll.playAction(move, direction) plays a one-shot action and doll.setDirection(dir) turns the active move.
 An unknown move, direction, slot, item or outfit throws before changing anything; an unknown material or variant id
 in setVariants selects nothing, so check manifest.json's materials before relying on a recolor.
