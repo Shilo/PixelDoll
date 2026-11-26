@@ -648,7 +648,8 @@
 		"layerPosition": "第 {position} 层，共 {count} 层",
 		"layerPositionHint": "在重叠的图层中从后往前数，第 {position} 层，共 {count} 层",
 		"slotLayerOrder": "{slot}槽位图层顺序",
-		"layerScopeFacing": "适用于所有朝向{direction}的{slot}物品。"
+		"layerScopeFacing": "适用于所有朝向{direction}的{slot}物品。",
+		"twoHandedNote": "需要双手，穿戴时会卸下{slot}的物品。"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新建角色",

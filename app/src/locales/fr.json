@@ -669,7 +669,8 @@
 		"layerPosition": "Calque {position} sur {count}",
 		"layerPositionHint": "Calque {position} sur {count} parmi les calques qu’il chevauche, en partant de l’arrière",
 		"slotLayerOrder": "Ordre des calques de l’emplacement {slot}",
-		"layerScopeFacing": "S’applique à tous les objets {slot} orientés {direction}."
+		"layerScopeFacing": "S’applique à tous les objets {slot} orientés {direction}.",
+		"twoHandedNote": "Utilise les deux mains : le porter retire l’objet de {slot}."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nouveau personnage",

@@ -648,7 +648,8 @@
 		"layerPosition": "Lapisan {position} dari {count}",
 		"layerPositionHint": "Lapisan {position} dari {count} di antara lapisan yang tumpang tindih, dihitung dari belakang",
 		"slotLayerOrder": "Urutan lapisan slot {slot}",
-		"layerScopeFacing": "Berlaku untuk semua item {slot} yang menghadap {direction}."
+		"layerScopeFacing": "Berlaku untuk semua item {slot} yang menghadap {direction}.",
+		"twoHandedNote": "Memakai kedua tangan, jadi memakainya melepas item {slot}."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Karakter baru",

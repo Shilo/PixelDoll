@@ -23,6 +23,7 @@
 	import { extendable } from './movePricing.ts';
 	import { slotLabelMessage } from './slots.ts';
 	import { twoHanded } from '../lib/compose/compose.ts';
+	import { canRecolor, recolorItem } from './recolorItem.ts';
 	import type { generationStatus } from './generationStatus.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import {
@@ -35,8 +36,6 @@
 		openNewItem,
 		openRename,
 		openAppearance,
-		toggleTwoHanded,
-		otherHandOf,
 		cancelGen,
 		openGenerationReview,
 		addShared,
@@ -49,12 +48,11 @@
 		Circle,
 		Download,
 		CircleCheck,
-		CopyPlus,
 		Grid2x2,
-		HandGrab,
 		Info,
 		ArrowRightLeft,
 		ChevronLeft,
+		Palette,
 		Pencil,
 		Sparkles,
 		RefreshCw,
@@ -129,7 +127,6 @@
 		const missing = missingFramesNote(m, it);
 		return missing ? displayMessage(missing) : '';
 	});
-	const otherHand = $derived(m && it ? otherHandOf(m, it.slot) : undefined);
 	const both = $derived(!!m && !!it && twoHanded(m, it));
 	// The header names the category; the lines below it explain each of the tile's icons.
 	const sentence = $derived(
@@ -381,75 +378,24 @@
 								hidden>{attention}</span
 							>{/if}<SurfaceChevron /></button
 					>
-					{#if !isDemo() && !it.variantOf}
-						<button
+					<!-- The everyday changes first (free, then priced in the sheet that opens), then upkeep. Rare setup (two hands,
+					     the other hand's copy) is in Details. Fix frames sits here as in every move's menu. -->
+					{#if canRecolor(m, it.id, on)}<button
 							class="row bu-action"
 							data-variant="quiet"
 							role="menuitem"
-							onclick={() => act(() => openRename(doc.id, { itemId: it.id }))}
-						>
-							<Pencil size={16} aria-hidden="true" />{openerLabel(
-								t('toolbar.rename')
-							)}<SurfaceChevron />
-						</button>
-						{#if canEditItemAppearance(m, it)}<button
-								class="row bu-action"
-								data-variant="quiet"
-								role="menuitem"
-								aria-haspopup="dialog"
-								onclick={() => act(() => openAppearance(doc.id, it.id))}
-								><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron
-								/></button
-							>{/if}
-					{/if}
-					{#if targets.length}
-						<button
+							onclick={() => act(() => recolorItem(it.id))}
+							><Palette size={16} aria-hidden="true" />{t('itemPane.recolor')}</button
+						>{/if}
+					{#if !isDemo() && !it.variantOf && canEditItemAppearance(m, it)}<button
 							class="row bu-action"
 							data-variant="quiet"
 							role="menuitem"
-							data-move-trigger
-							onclick={() => void showTargets(true)}
-						>
-							<ArrowRightLeft size={16} aria-hidden="true" />{openerLabel(
-								t('wardrobe.moveItemTo')
-							)}<SurfaceChevron />
-						</button>
-					{/if}
-					{#if otherHand}
-						<!-- Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
-						<label class="row bu-action bu-check item-menu-switch" data-variant="quiet">
-							<span><HandGrab size={16} aria-hidden="true" />{t('itemMenu.twoHanded')}</span>
-							<input
-								class="bu-switch"
-								type="checkbox"
-								role="menuitemcheckbox"
-								aria-checked={both}
-								checked={both}
-								onchange={() => toggleTwoHanded(it.id)}
-								onkeydown={(e) => {
-									// a menu item takes Enter as well as Space (a native checkbox only toggles on Space)
-									if (e.key !== 'Enter') return;
-									e.preventDefault();
-									toggleTwoHanded(it.id);
-								}}
-							/>
-						</label>
-						{#if !isDemo() && it.prompt && !both}
-							<!-- The same description drawn for the other hand; the New item sheet prices it first. -->
-							<button
-								class="row bu-action"
-								data-variant="quiet"
-								role="menuitem"
-								onclick={() =>
-									act(() => openNewItem(otherHand, { slot: otherHand, prompt: it.prompt }))}
-								><CopyPlus size={16} aria-hidden="true" />{openerLabel(
-									t('itemMenu.makeForSlot', {
-										slot: displayMessage(slotLabelMessage(m, otherHand))
-									})
-								)}<SurfaceChevron /></button
-							>
-						{/if}
-					{/if}
+							aria-haspopup="dialog"
+							onclick={() => act(() => openAppearance(doc.id, it.id))}
+							><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron
+							/></button
+						>{/if}
 					{#if !isDemo() && it.prompt}
 						<!-- The New item sheet that opens next prices the attempt before anything is spent. -->
 						<button
@@ -469,12 +415,39 @@
 							)}<SurfaceChevron /></button
 						>
 					{/if}
+					{#if !isDemo() && !it.variantOf}
+						<button
+							class="row bu-action"
+							data-variant="quiet"
+							role="menuitem"
+							onclick={() => act(() => openRename(doc.id, { itemId: it.id }))}
+						>
+							<Pencil size={16} aria-hidden="true" />{openerLabel(
+								t('toolbar.rename')
+							)}<SurfaceChevron />
+						</button>
+					{/if}
+					{#if targets.length}
+						<button
+							class="row bu-action"
+							data-variant="quiet"
+							role="menuitem"
+							data-move-trigger
+							onclick={() => void showTargets(true)}
+						>
+							<ArrowRightLeft size={16} aria-hidden="true" />{openerLabel(
+								t('wardrobe.moveItemTo')
+							)}<SurfaceChevron />
+						</button>
+					{/if}
 					<button
 						class="row bu-action"
 						data-variant="quiet"
 						role="menuitem"
 						onclick={() => act(() => openFrames(it.id))}
-						><Grid2x2 size={16} />{openerLabel(t('fixFrames.open'))}<SurfaceChevron /></button
+						><Grid2x2 size={16} aria-hidden="true" />{openerLabel(
+							t('fixFrames.open')
+						)}<SurfaceChevron /></button
 					>
 					<button
 						class="row bu-action"

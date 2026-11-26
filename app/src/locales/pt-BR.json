@@ -669,7 +669,8 @@
 		"layerPosition": "Camada {position} de {count}",
 		"layerPositionHint": "Camada {position} de {count} entre as camadas que se sobrepõem, contando de trás",
 		"slotLayerOrder": "Ordem das camadas do espaço {slot}",
-		"layerScopeFacing": "Vale para todos os itens de {slot} virados para {direction}."
+		"layerScopeFacing": "Vale para todos os itens de {slot} virados para {direction}.",
+		"twoHandedNote": "Usa as duas mãos, então usá-lo tira o item de {slot}."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Novo personagem",

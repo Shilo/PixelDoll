@@ -648,7 +648,8 @@
 		"layerPosition": "레이어 {count}개 중 {position}",
 		"layerPositionHint": "겹치는 레이어 중 뒤에서부터 {count}개 중 {position}번째",
 		"slotLayerOrder": "{slot} 슬롯 레이어 순서",
-		"layerScopeFacing": "{direction} 방향의 모든 {slot} 아이템에 적용돼요."
+		"layerScopeFacing": "{direction} 방향의 모든 {slot} 아이템에 적용돼요.",
+		"twoHandedNote": "양손을 사용하므로 착용하면 {slot} 아이템이 해제됩니다."
 	},
 	"newCharacterButton": {
 		"newCharacter": "새 캐릭터",

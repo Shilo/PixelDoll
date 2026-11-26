@@ -19,7 +19,7 @@
 	// says how it was made. Wear is the only footer action; the rest of the item's verbs live in the ⋮ menu, as on its tile.
 	import { tick, untrack } from 'svelte';
 	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
-	import { setPanelOpen } from './experience/state.svelte.ts';
+	import { canRecolor, recolorItem } from './recolorItem.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import Sheet from './Sheet.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
@@ -125,6 +125,7 @@
 		ChevronLeft,
 		ChevronRight,
 		CircleCheck,
+		CopyPlus,
 		Download,
 		EllipsisVertical,
 		EyeOff,
@@ -652,20 +653,16 @@
 					.map((slot) => slot.id)
 			: []
 	);
-	// Two-handed equipment excludes the whole opposite hand, including custom categories assigned to it.
-	const hideChoices = $derived([
-		...others.filter((slot) => !oppositeSlots.includes(slot)),
-		...(otherHand && others.some((slot) => oppositeSlots.includes(slot)) ? [otherHand] : [])
-	]);
+	// The opposite hand, custom categories assigned to it included, is the Two-handed switch's, not a hiding choice.
+	const hideChoices = $derived(others.filter((slot) => !oppositeSlots.includes(slot)));
 	// The project manifest is raw state: an edit to an item's or slot's fields is announced by `bump()` through doc.rev.
 	const hides = $derived.by(() => {
 		void doc.rev;
 		return m && it ? hidesOf(m, it) : [];
 	});
 	const hideCount = $derived(
-		hideChoices.filter((slot) =>
-			slot === otherHand && m && it ? twoHanded(m, it) : hides.includes(slot)
-		).length
+		hideChoices.filter((slot) => hides.includes(slot)).length +
+			(m && it && twoHanded(m, it) ? 1 : 0)
 	);
 	const tucks = $derived.by(() => {
 		void doc.rev;
@@ -810,17 +807,9 @@
 	let menu = $state<HTMLElement>();
 	let confirmRemove = $state(false);
 	// Only worn items (and the body) have a section in the Colors tab.
-	const recolorable = $derived(!!m && !!it && on && m.materials.some((x) => x.owner === it.id));
 	function act(fn: () => void) {
 		menu?.hidePopover();
 		fn();
-	}
-	function recolor() {
-		if (!it) return;
-		ui.colorsFocus = it.id;
-		ui.tab = 'colors';
-		setPanelOpen(true);
-		ui.sheet = null;
 	}
 </script>
 
@@ -1602,21 +1591,37 @@
 								</div>
 							</div>
 						</section>
+						{#if otherHand}
+							<!-- Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
+							<section class="hide-rules">
+								<label class="switch-row bu-check">
+									<span>{t('itemMenu.twoHanded')}</span>
+									<input
+										class="bu-switch"
+										type="checkbox"
+										role="switch"
+										checked={twoHanded(m, it)}
+										onchange={() => toggleTwoHanded(it.id)}
+									/>
+								</label>
+								<p class="faint small">
+									{t('itemPane.twoHandedNote', { slot: slotName(otherHand) })}
+								</p>
+							</section>
+						{/if}
 						{#if hideChoices.length}
 							<section class="hide-rules" aria-labelledby="hide-rules-{it.id}">
 								<h4 id="hide-rules-{it.id}">{t('itemPane.whenWornHide')}</h4>
 								<div class="switch-list" role="group" aria-labelledby="hide-rules-{it.id}">
 									{#each hideChoices as slot (slot)}
-										{@const isOtherHand = slot === otherHand}
 										<label class="switch-row bu-check">
 											<span>{slotName(slot)}</span>
 											<input
 												class="bu-switch"
 												type="checkbox"
 												role="switch"
-												checked={isOtherHand ? twoHanded(m, it) : hides.includes(slot)}
-												onchange={() =>
-													isOtherHand ? toggleTwoHanded(it.id) : toggleHide(it.id, slot)}
+												checked={hides.includes(slot)}
+												onchange={() => toggleHide(it.id, slot)}
 											/>
 										</label>
 									{/each}
@@ -1728,36 +1733,25 @@
 			<PopoverArrow />
 			<div class="menu-surface bu-popover-surface bu-floating">
 				<div role="menu" aria-label={t('itemPane.itemActions')}>
-					{#if recolorable}
+					<!-- The tile menu's rows in its order (Details aside), plus the other hand's copy, which is rare enough to live here. -->
+					{#if canRecolor(m, it.id, on)}
 						<button
 							class="row bu-action"
 							data-variant="quiet"
 							role="menuitem"
-							onclick={() => act(recolor)}
+							onclick={() => act(() => recolorItem(it.id))}
 							><Palette size={16} aria-hidden="true" />{t('itemPane.recolor')}</button
 						>
 					{/if}
-					{#if !isDemo() && !it.variantOf}
-						<button
+					{#if !isDemo() && !it.variantOf && canEditItemAppearance(m, it)}<button
 							class="row bu-action"
 							data-variant="quiet"
 							role="menuitem"
-							onclick={() =>
-								act(() => leaveFor(() => openRename(doc.id, { itemId: it.id, back: 'item' })))}
-							><Pencil size={16} aria-hidden="true" />{openerLabel(
-								t('toolbar.rename')
-							)}<SurfaceChevron /></button
-						>
-						{#if canEditItemAppearance(m, it)}<button
-								class="row bu-action"
-								data-variant="quiet"
-								role="menuitem"
-								aria-haspopup="dialog"
-								onclick={() => act(() => leaveFor(() => openAppearance(doc.id, it.id, 'item')))}
-								><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron
-								/></button
-							>{/if}
-					{/if}
+							aria-haspopup="dialog"
+							onclick={() => act(() => leaveFor(() => openAppearance(doc.id, it.id, 'item')))}
+							><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron
+							/></button
+						>{/if}
 					{#if !isDemo() && it.prompt}
 						<!-- The New item sheet that opens next prices the attempt before anything is spent. -->
 						<button
@@ -1772,6 +1766,31 @@
 								remakeOnly ? t('itemMenu.remake', { name: m.name }) : t('itemMenu.createVariant')
 							)}<SurfaceChevron /></button
 						>
+						{#if otherHand && !twoHanded(m, it)}
+							<!-- The same description drawn for the other hand. -->
+							<button
+								class="row bu-action"
+								data-variant="quiet"
+								role="menuitem"
+								onclick={() =>
+									act(() => openNewItem(otherHand, { slot: otherHand, prompt: it.prompt }))}
+								><CopyPlus size={16} aria-hidden="true" />{openerLabel(
+									t('itemMenu.makeForSlot', { slot: slotName(otherHand) })
+								)}<SurfaceChevron /></button
+							>
+						{/if}
+					{/if}
+					{#if !isDemo() && !it.variantOf}
+						<button
+							class="row bu-action"
+							data-variant="quiet"
+							role="menuitem"
+							onclick={() =>
+								act(() => leaveFor(() => openRename(doc.id, { itemId: it.id, back: 'item' })))}
+							><Pencil size={16} aria-hidden="true" />{openerLabel(
+								t('toolbar.rename')
+							)}<SurfaceChevron /></button
+						>
 					{/if}
 					<button
 						class="row bu-action"
@@ -1783,8 +1802,9 @@
 					{#if !isDemo()}
 						<hr class="bu-separator" />
 						<DeleteRow
+							opens
 							class="bu-action"
-							label={t('common.moveToTrash')}
+							label={t('itemMenu.labelDeleteItem')}
 							onclick={() => act(() => (confirmRemove = true))}
 						/>
 					{/if}

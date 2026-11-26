@@ -3556,7 +3556,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await expect(southView).toBeFocused();
 	// Delete, in the item actions menu, asks in an alert over the details; Cancel keeps the item and the details open.
 	await inspector.getByRole('button', { name: 'Item actions', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Move to Trash', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 	const deleteAlert = page.getByRole('alertdialog', { name: /^Move .+ to Trash\?$/ });
 	await expect(deleteAlert.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
 	await page.keyboard.press('Escape');
@@ -11653,10 +11653,10 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	expect(iconOffsets).toEqual(Array(iconOffsets.length).fill(iconOffsets.at(-1)));
 	await expect(itemMenu(page).getByRole('menuitem', { name: /Wear|Take off/ })).toHaveCount(0);
 	await page.keyboard.press('ArrowDown');
-	await expect(items.nth(1)).toHaveAccessibleName('Rename...');
+	await expect(items.nth(1)).toHaveAccessibleName('Edit appearance…');
 	await expect(items.nth(1)).toBeFocused();
 	await page.keyboard.press('ArrowDown');
-	await expect(items.nth(2)).toHaveAccessibleName('Edit appearance…');
+	await expect(items.nth(2)).toHaveAccessibleName('Create a variant...');
 	await expect(items.nth(2)).toBeFocused();
 	await page.keyboard.press('Escape');
 	await expect.poll(() => menuOpen(page)).toBe(false);
@@ -12322,26 +12322,39 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await expect(sword).toHaveAttribute('aria-pressed', 'true');
 	await expect(shield).toHaveAttribute('aria-pressed', 'true');
 
+	// Two hands and the other hand's copy are rare setup: Details has them, not the tile menu.
 	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
 	await expectAnchoredMenu(page);
-	const twoHanded = itemMenu(page).getByRole('menuitemcheckbox', { name: 'Two-handed' });
+	await expect(itemMenu(page).getByRole('menuitemcheckbox', { name: 'Two-handed' })).toHaveCount(0);
+	await expect(itemMenu(page).getByRole('menuitem', { name: /^Make one for the/ })).toHaveCount(0);
+	await page.keyboard.press('Escape');
+	let details = await openItemDetails(page, 'Steel longsword');
+	await openItemSection(details, 'Outfit');
+	let twoHanded = details.getByRole('switch', { name: 'Two-handed', exact: true });
 	await expect(twoHanded).not.toBeChecked();
+	const itemActions = () => details.getByRole('button', { name: 'Item actions', exact: true });
+	await itemActions().click();
 	await expect(
-		itemMenu(page).getByRole('menuitem', { name: 'Make one for the Off hand...', exact: true })
+		page.getByRole('menuitem', { name: 'Make one for the Off hand...', exact: true })
 	).toBeVisible();
+	await page.keyboard.press('Escape');
 
 	// Switching it on while worn takes the other hand's item off, says so, and Undo brings it back.
-	await twoHanded.click();
+	await twoHanded.check();
 	await expect(twoHanded).toBeChecked();
-	await expect(itemMenu(page).locator('.item-menu-title small')).toContainText('Two-handed');
-	await expect(itemMenu(page).getByRole('menuitem', { name: /^Make one for/ })).toHaveCount(0);
 	await expect(
 		page.getByText('Took off Round shield: Steel longsword is two-handed')
 	).toBeVisible();
+	await itemActions().click();
+	await expect(page.getByRole('menuitem', { name: /^Make one for the/ })).toHaveCount(0);
 	await page.keyboard.press('Escape');
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(shield).toHaveAttribute('aria-pressed', 'false');
 	await expect(sword).toHaveAttribute('aria-pressed', 'true');
 	await expect(off).toContainText('Held by Steel longsword (two-handed).');
+	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
+	await expect(itemMenu(page).locator('.item-menu-title small')).toContainText('Two-handed');
+	await page.keyboard.press('Escape');
 
 	// Putting something in the other hand takes the two-handed item off.
 	await shield.click();
@@ -12360,15 +12373,16 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 
 	// Make one for the other hand opens New item for that hand with the same description; the Off hand item offers
 	// the Main hand.
-	await off.getByRole('button', { name: 'More options for Round shield', exact: true }).click();
+	details = await openItemDetails(page, 'Round shield');
+	await itemActions().click();
 	await expect(
-		itemMenu(page).getByRole('menuitem', { name: 'Make one for the Main hand...', exact: true })
+		page.getByRole('menuitem', { name: 'Make one for the Main hand...', exact: true })
 	).toBeVisible();
 	await page.keyboard.press('Escape');
-	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
-	await itemMenu(page)
-		.getByRole('menuitem', { name: 'Make one for the Off hand...', exact: true })
-		.click();
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
+	details = await openItemDetails(page, 'Steel longsword');
+	await itemActions().click();
+	await page.getByRole('menuitem', { name: 'Make one for the Off hand...', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
 	await expect(
 		sheet.getByRole('button', { name: 'Where does it go?: Off hand', exact: true })
@@ -12383,16 +12397,14 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 		prompt
 	);
 	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
-
-	// Enter toggles the switch like any menu item.
 	await expect(page.getByRole('dialog', { name: 'New item', exact: true })).toHaveCount(0);
-	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
-	await expectAnchoredMenu(page);
-	const toggle = itemMenu(page).getByRole('menuitemcheckbox', { name: 'Two-handed' });
-	await toggle.focus();
-	await page.keyboard.press('Enter');
-	await expect(toggle).toBeChecked();
-	await page.keyboard.press('Escape');
+
+	// On again from Details.
+	details = await openItemDetails(page, 'Steel longsword');
+	await openItemSection(details, 'Outfit');
+	twoHanded = details.getByRole('switch', { name: 'Two-handed', exact: true });
+	await twoHanded.check();
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(shield).toHaveAttribute('aria-pressed', 'false');
 
 	// An outfit keeps the Main hand even when only its Off hand differs from what is worn, and still counts as current.
@@ -12422,9 +12434,9 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await expect(sword).toHaveAttribute('aria-pressed', 'true');
 	await expect(shield).toHaveAttribute('aria-pressed', 'false');
 
-	const details = await openItemDetails(page, 'Steel longsword');
+	details = await openItemDetails(page, 'Steel longsword');
 	await openItemSection(details, 'Outfit');
-	const oppositeHand = details.getByRole('switch', { name: 'Off hand', exact: true });
+	const oppositeHand = details.getByRole('switch', { name: 'Two-handed', exact: true });
 	await expect(details.getByRole('switch', { name: 'Spare shield', exact: true })).toHaveCount(0);
 	await expect(oppositeHand).toBeChecked();
 	await oppositeHand.uncheck();
@@ -12610,7 +12622,7 @@ test('a deleted item comes back from the notice, the history and the Trash after
 	async function deleteItem() {
 		const inspector = await selectedItemDetails(page);
 		await inspector.getByRole('button', { name: 'Item actions', exact: true }).click();
-		await page.getByRole('menuitem', { name: 'Move to Trash', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 		const alert = page.getByRole('alertdialog', { name: /^Move .+ to Trash\?$/ });
 		await alert.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 		await expect(alert).toHaveCount(0);

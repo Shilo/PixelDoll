@@ -669,7 +669,8 @@
 		"layerPosition": "Capa {position} de {count}",
 		"layerPositionHint": "Capa {position} de {count} entre las capas que se superponen, contando desde atrás",
 		"slotLayerOrder": "Orden de capas de la ranura {slot}",
-		"layerScopeFacing": "Se aplica a todos los objetos de {slot} mirando hacia {direction}."
+		"layerScopeFacing": "Se aplica a todos los objetos de {slot} mirando hacia {direction}.",
+		"twoHandedNote": "Usa ambas manos, así que al llevarlo se quita el objeto de {slot}."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nuevo personaje",

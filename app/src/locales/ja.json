@@ -648,7 +648,8 @@
 		"layerPosition": "レイヤー {count}中{position}",
 		"layerPositionHint": "重なるレイヤーのうち、後ろから数えて{count}中{position}番目",
 		"slotLayerOrder": "{slot}スロットのレイヤー順",
-		"layerScopeFacing": "{direction}向きのすべての{slot}アイテムに適用されます。"
+		"layerScopeFacing": "{direction}向きのすべての{slot}アイテムに適用されます。",
+		"twoHandedNote": "両手を使うため、装備すると{slot}のアイテムが外れます。"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新しいキャラクター",

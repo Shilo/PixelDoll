@@ -669,7 +669,8 @@
 		"layerPosition": "Layer {position} of {count}",
 		"layerPositionHint": "Layer {position} of {count} among the layers it overlaps, counted from the back",
 		"slotLayerOrder": "{slot} slot layer order",
-		"layerScopeFacing": "Applies to all {slot} items facing {direction}."
+		"layerScopeFacing": "Applies to all {slot} items facing {direction}.",
+		"twoHandedNote": "Uses both hands, so wearing it takes off the {slot} item."
 	},
 	"newCharacterButton": {
 		"newCharacter": "New character",

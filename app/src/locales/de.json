@@ -669,7 +669,8 @@
 		"layerPosition": "Ebene {position} von {count}",
 		"layerPositionHint": "Ebene {position} von {count} unter den überlappenden Ebenen, von hinten gezählt",
 		"slotLayerOrder": "Ebenenreihenfolge im Slot {slot}",
-		"layerScopeFacing": "Gilt für alle Gegenstände im Slot {slot} in Blickrichtung {direction}."
+		"layerScopeFacing": "Gilt für alle Gegenstände im Slot {slot} in Blickrichtung {direction}.",
+		"twoHandedNote": "Braucht beide Hände, daher wird beim Tragen der Gegenstand in {slot} abgelegt."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Neue Figur",
