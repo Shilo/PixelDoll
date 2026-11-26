@@ -64,10 +64,10 @@ export async function downloadFrames(itemId: string, anim: string) {
 	}
 }
 
-/** The open character as it looks now, or another one as it was last saved. */
-type DownloadSource = { project: Project; look: Look; record?: StoredProject };
+/** The open character as it looks now, or another one as it was last saved. Shared with project folder publishing. */
+export type DownloadSource = { project: Project; look: Look; record?: StoredProject };
 
-async function source(projectId: string): Promise<DownloadSource> {
+export async function exportSource(projectId: string): Promise<DownloadSource> {
 	if (projectId === doc.id && store.project && !doc.loading)
 		return {
 			project: { ...store.project, manifest: structuredClone(store.project.manifest) },
@@ -141,7 +141,7 @@ async function download(
 export function downloadCharacterZip(projectId: string) {
 	const name = store.projects.find((p) => p.id === projectId)?.name ?? 'Character';
 	return download(`character:${projectId}`, name, async () => {
-		const snapshot = await source(projectId);
+		const snapshot = await exportSource(projectId);
 		return {
 			...(await zipOf(snapshot)),
 			name: characterZipId(snapshot.project.manifest)
@@ -155,7 +155,7 @@ export function downloadItemZip(itemId: string) {
 		it = store.project?.manifest.items.find((i) => i.id === itemId);
 	if (!it) return Promise.resolve();
 	return download(`item:${projectId}/${itemId}`, it.name, async () => {
-		const { project, look, record } = await source(projectId);
+		const { project, look, record } = await exportSource(projectId);
 		const { itemProject } = await lazy(() => import('../lib/export/build.ts'));
 		const selected = itemProject(project, itemId, look);
 		const item = project.manifest.items.find((entry) => entry.id === itemId)!;
@@ -187,7 +187,7 @@ export function downloadMoveZip(moveId: string) {
 	const label = moveLabel(moveId, moves);
 	const move = moves.find((entry) => entry.id === moveId);
 	return download(`move:${projectId}/${moveId}`, label, async () => {
-		const { project, look, record } = await source(projectId);
+		const { project, look, record } = await exportSource(projectId);
 		const { moveProject } = await lazy(() => import('../lib/export/build.ts'));
 		return {
 			...(await zipOf({

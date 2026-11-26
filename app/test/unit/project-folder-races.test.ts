@@ -10,7 +10,12 @@ import { domError, files, memoryFolder } from './project-folder-memory.ts';
 
 const studio = vi.hoisted(() => ({
 	doc: { id: 'hero', items: {}, variants: {} },
-	store: { project: { manifest: { rig: { animations: [] } } }, exportRecord: undefined },
+	store: {
+		project: { manifest: { rig: { animations: [] } } },
+		projects: [{ id: 'hero' }],
+		exportRecord: undefined
+	},
+	saved: {} as Record<string, object>,
 	getLink: vi.fn<() => Promise<FolderLink | null>>(),
 	buildExport: vi.fn()
 }));
@@ -23,7 +28,16 @@ vi.mock('../../src/studio/state.svelte.ts', () => ({
 	prepareWorkspaceExport: async () => {}
 }));
 vi.mock('../../src/studio/settingsNavigation.svelte.ts', () => ({ openSettings: vi.fn() }));
-vi.mock('../../src/studio/download.svelte.ts', () => ({ editableData: vi.fn() }));
+vi.mock('../../src/studio/download.svelte.ts', () => ({
+	editableData: vi.fn(),
+	exportSource: async (id: string) => ({
+		project: studio.store.project,
+		look: {
+			items: structuredClone(id === studio.doc.id ? studio.doc.items : studio.saved[id]),
+			variants: {}
+		}
+	})
+}));
 vi.mock('../../src/studio/exportLayering.ts', () => ({ exportActionLayering: vi.fn() }));
 vi.mock('../../src/lib/export/build.ts', () => ({ buildExport: studio.buildExport }));
 vi.mock('../../src/lib/export/export.ts', () => ({ ACTION_LAYER_ENGINES: [] }));

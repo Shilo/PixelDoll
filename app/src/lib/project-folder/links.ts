@@ -212,17 +212,27 @@ export function setKept(key: string, paths: readonly string[], keep: boolean): P
 
 /** Stores a new link for its character in one transaction with its record: it starts empty, or, with `keepRecord`,
  *  carries over what PixelDoll knew it wrote under `previous` (the same folder picked again). The previous record goes,
- *  so a crash can never leave a link whose record is missing or belongs to another folder. */
+ *  so a crash can never leave a link whose record is missing or belongs to another folder. While `previous` is still
+ *  the stored link, its Update automatically choice is kept, since it may have changed after `link` was made. Resolves
+ *  to the stored link. */
 export async function replaceLink(
 	link: FolderLink,
 	previous: FolderLink | null,
 	keepRecord: boolean
-): Promise<void> {
+): Promise<FolderLink> {
 	const db = await open();
 	try {
-		await new Promise<void>((resolve, reject) => {
+		return await new Promise<FolderLink>((resolve, reject) => {
 			const tx = db.transaction([STORE, FILES], 'readwrite');
-			tx.objectStore(STORE).put(link);
+			const links = tx.objectStore(STORE);
+			let stored = link;
+			const read = links.get(link.characterId);
+			read.onsuccess = () => {
+				const current: unknown = read.result;
+				if (previous && isLink(current) && current.linkedAt === previous.linkedAt)
+					stored = { ...link, auto: current.auto };
+				links.put(stored);
+			};
 			if (previous) {
 				const files = tx.objectStore(FILES);
 				const to = recordKey(link);
@@ -235,7 +245,7 @@ export async function replaceLink(
 					c.continue();
 				};
 			}
-			tx.oncomplete = () => resolve();
+			tx.oncomplete = () => resolve(stored);
 			tx.onabort = tx.onerror = () => reject(tx.error);
 		});
 	} finally {

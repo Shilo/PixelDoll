@@ -6,7 +6,12 @@ import { domError, files, memoryFolder } from './project-folder-memory.ts';
 
 const studio = vi.hoisted(() => ({
 	doc: { id: 'hero', items: { hat: 'saved' }, variants: {} },
-	store: { project: { manifest: { rig: { animations: [] } } }, exportRecord: undefined },
+	store: {
+		project: { manifest: { rig: { animations: [] } } },
+		projects: [{ id: 'hero' }],
+		exportRecord: undefined
+	},
+	saved: {} as Record<string, { hat: string }>,
 	buildExport: vi.fn(),
 	readExportSettings: vi.fn(),
 	getLink: vi.fn<() => Promise<FolderLink | null>>(),
@@ -26,7 +31,14 @@ vi.mock('../../src/studio/state.svelte.ts', () => ({
 vi.mock('../../src/studio/settingsNavigation.svelte.ts', () => ({ openSettings: vi.fn() }));
 vi.mock('../../src/studio/download.svelte.ts', () => ({
 	editableData: vi.fn(),
-	characterZipId: () => 'hero'
+	characterZipId: () => 'hero',
+	exportSource: async (id: string) => ({
+		project: studio.store.project,
+		look: {
+			items: structuredClone(id === studio.doc.id ? studio.doc.items : studio.saved[id]),
+			variants: {}
+		}
+	})
 }));
 vi.mock('../../src/studio/exportLayering.ts', () => ({ exportActionLayering: vi.fn() }));
 vi.mock('../../src/lib/export/build.ts', () => ({ buildExport: studio.buildExport }));
@@ -185,12 +197,15 @@ async function linkedStudio() {
 		link = { ...link, ...patch };
 		return link;
 	});
-	studio.replaceLink.mockImplementation(async (next: FolderLink, _previous, keepRecord) => {
-		if (!keepRecord) {
-			for (const path of Object.keys(written)) delete written[path];
+	studio.replaceLink.mockImplementation(
+		async (next: FolderLink, previous: FolderLink | null, keepRecord: boolean) => {
+			if (!keepRecord) {
+				for (const path of Object.keys(written)) delete written[path];
+			}
+			link = previous && link.linkedAt === previous.linkedAt ? { ...next, auto: link.auto } : next;
+			return link;
 		}
-		link = next;
-	});
+	);
 	studio.readRecord.mockImplementation(async () => ({ written: { ...written }, kept: [] }));
 	studio.recordWritten.mockImplementation(async (_key, path: string, hash: string | null) =>
 		recordWritten(path, hash)
@@ -383,6 +398,8 @@ it('keeps a scheduled publish when the user switches to an unlinked character', 
 	await folder.api.setFolderAutoPublish(true);
 	studio.doc.items.hat = 'new saved look';
 	folder.api.scheduleFolderPublish();
+	// Opening another character saves this one first.
+	studio.saved.hero = { ...studio.doc.items };
 	studio.doc.id = 'other';
 	studio.getLink.mockResolvedValueOnce(null);
 	await folder.api.loadFolderLink('other');
