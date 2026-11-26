@@ -1688,9 +1688,9 @@
 													})
 												)}
 									><span class="slot-drag-icon"
-										><GroupIcon group={s.key} size={22} /><GripVertical
+										><GroupIcon group={s.key} size={24} /><GripVertical
 											class="slot-grip"
-											size={22}
+											size={24}
 										/></span
 									><span class="bu-rail-label">{s.label}</span><i
 										class="bu-rail-dot"
@@ -1713,7 +1713,7 @@
 										length: formatNumber(filteredNotShown.length)
 									})}
 									onclick={() => void showNotShown()}
-									><EyeOff size={22} aria-hidden="true" /><span class="bu-rail-label"
+									><EyeOff size={24} aria-hidden="true" /><span class="bu-rail-label"
 										>{t('wardrobe.notShown')}</span
 									></button
 								>
@@ -1734,7 +1734,7 @@
 						aria-haspopup="dialog"
 						title={t('slotsSheet.titleAddSlot')}
 						onclick={addSlot}
-						><Plus size={22} aria-hidden="true" /><span class="bu-rail-label"
+						><Plus size={24} aria-hidden="true" /><span class="bu-rail-label"
 							>{t('wardrobe.addSlot')}</span
 						></button
 					>

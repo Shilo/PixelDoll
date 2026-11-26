@@ -218,9 +218,9 @@
 									aria-label={s.name}
 									tabindex={active === s.it.id ? 0 : -1}
 									onclick={() => void show(s.it.id)}
-									>{#if s.base}<PersonStanding size={22} aria-hidden="true" />{:else}<GroupIcon
+									>{#if s.base}<PersonStanding size={24} aria-hidden="true" />{:else}<GroupIcon
 											group={s.it.slot}
-											size={22}
+											size={24}
 										/>{/if}<span class="bu-rail-label">{s.name}</span><i
 										class="bu-rail-dot"
 										aria-hidden="true"
