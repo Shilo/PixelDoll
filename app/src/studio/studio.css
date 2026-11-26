@@ -344,9 +344,10 @@ html[data-app='studio'] body {
 		transition: none;
 	}
 }
-/* The heading openSettings focuses (so the next Tab enters that row) draws no ring of its own: the row's highlight
-   already marks the place, and two outlines at once read as two selections. */
-[data-reveal-focus]:focus {
+/* The heading openSettings focuses (so the next Tab enters that row) draws no ring while the row's highlight marks the
+   place, since two outlines at once read as two selections. Keyboard users get the ring once the highlight fades. */
+[data-highlight] [data-reveal-focus]:focus,
+[data-reveal-focus]:focus:not(:focus-visible) {
 	outline: none;
 }
 .settings-label {

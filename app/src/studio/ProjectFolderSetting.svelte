@@ -282,7 +282,17 @@
 						onclick={keep}
 						><FileCheck size={16} aria-hidden="true" />{t('projectFolder.keep')}</button
 					>
-				{:else if status.kind !== 'missing'}
+				{:else if status.kind === 'missing'}
+					<!-- A folder moved back into place is picked up again without waiting for the next change. -->
+					<button
+						type="button"
+						class="bu-action btn"
+						data-variant="outline"
+						disabled={disabled || working}
+						onclick={update}
+						><RotateCcw size={16} aria-hidden="true" />{t('projectFolder.tryAgain')}</button
+					>
+				{:else}
 					<button
 						type="button"
 						class="bu-action btn"

@@ -444,8 +444,10 @@ export async function linkProjectFolder(engine: Engine) {
 					(await sameFolder(other.handle, handle))
 				)
 					return null;
-			// Picking the same folder again keeps what PixelDoll knows it wrote there.
-			const replace = () => replaceLink(fresh, previous, same);
+			// Picking the same folder again keeps what PixelDoll knows it wrote there, unless its files' folder is gone
+			// entirely: then nothing of the user's is left to protect, and every file would otherwise read as deleted.
+			const keepRecord = same && (await hasFolder(handle, fresh.subfolder));
+			const replace = () => replaceLink(fresh, previous, keepRecord);
 			await (previous ? exclusive(previous, replace) : replace());
 			return fresh;
 		});
@@ -466,6 +468,17 @@ async function sameFolder(a: FileSystemDirectoryHandle, b: FileSystemDirectoryHa
 	} catch {
 		// A vanished folder is simply not the same one.
 		return false;
+	}
+}
+
+async function hasFolder(parent: FileSystemDirectoryHandle, name: string) {
+	try {
+		await parent.getDirectoryHandle(name);
+		return true;
+	} catch (error) {
+		if (error instanceof DOMException && error.name === 'NotFoundError') return false;
+		// Unknown: keep the record, which can only pause, never overwrite.
+		return true;
 	}
 }
 
