@@ -55,7 +55,7 @@ Costs stay in generations on every paid button. Generic notes that PixelLab may 
 
 ## Copy
 
-Every string in the window was reviewed with Bob for length and plain words (49 changed, in all 10 locales). Cost,
+Every string in the window was reviewed with Bob for length and plain words (59 English strings changed, in all 10 locales). Cost,
 consent and recovery disclosures stay, shortened ("No paid retry was started.", "3 PixelLab requests."). A missing
 facing is a missing-image icon in the tile, with no border or word.
 
