@@ -3669,5 +3669,48 @@
 		"colors": "Buscar cores",
 		"clear": "Limpar busca",
 		"results": "{count} de {total}"
+	},
+	"projectFolder": {
+		"title": "Pasta do projeto",
+		"hint": "Salve os arquivos exportados direto no seu jogo e mantenha-os atualizados.",
+		"choose": "Escolher pasta",
+		"change": "Trocar",
+		"stop": "Parar",
+		"publishNow": "Publicar agora",
+		"auto": "Atualizar automaticamente",
+		"linked": "{path} · {format}",
+		"reconnect": "Reconectar",
+		"replace": "Substituir",
+		"review": "Revisar",
+		"copy": "Copiar",
+		"copied": "Copiado",
+		"brave": "Para usar no Brave, ative {flag} e reinicie o Brave.",
+		"unsaved": "Esta pasta não será lembrada depois que você fechar o PixelDoll.",
+		"state": {
+			"off": "Desativada",
+			"on": "Ativada",
+			"attention": "Precisa de atenção"
+		},
+		"status": {
+			"publishing": "Publicando…",
+			"done": "Atualizado",
+			"reconnect": "O acesso à pasta terminou. Reconecte e escolha “Permitir em todas as visitas”.",
+			"missing": "Pasta não encontrada. Escolha-a de novo.",
+			"blocked": {
+				"one": "{count} arquivo foi alterado no seu jogo.",
+				"other": "{count} arquivos foram alterados no seu jogo."
+			},
+			"unavailable": "Este personagem não pode ser exportado agora.",
+			"locked": "Um arquivo está aberto em outro app. Feche-o e tente de novo.",
+			"space": "O disco está cheio.",
+			"permission": "Essa pasta não é permitida. Escolha outra.",
+			"failed": "Não foi possível gravar na pasta. Tente de novo."
+		},
+		"toast": {
+			"reconnect": "Reconecte {folder} para continuar publicando.",
+			"paused": "Publicação pausada: arquivos mudaram no seu jogo.",
+			"missing": "Não foi possível encontrar {folder}.",
+			"failed": "Não foi possível publicar em {folder}."
+		}
 	}
 }

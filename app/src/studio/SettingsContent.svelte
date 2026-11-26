@@ -91,6 +91,8 @@
 	function setPanelSide(side: PanelSide) {
 		if (!setPanelSettings({ side })) toast(message('studioPanel.notSaved'), { tone: 'warning' });
 	}
+	const mayLinkFolders =
+		!workspaceCopy && ('showDirectoryPicker' in globalThis || 'brave' in navigator);
 	const sections = [
 		{
 			id: 'pixellab',
@@ -285,7 +287,17 @@
 					label: 'export.settings.defaultTarget',
 					terms: ['export.settings.format', 'export.group.engines', 'export.settings.versionMenu'],
 					names: Object.values(exportFormatNames)
-				}
+				},
+				// Only where a folder can be linked, or in Brave, whose row explains how to allow it.
+				...(mayLinkFolders
+					? [
+							{
+								id: 'project-folder',
+								label: 'projectFolder.title' as WhisperKey,
+								terms: ['projectFolder.hint' as WhisperKey]
+							}
+						]
+					: [])
 			]
 		},
 		{

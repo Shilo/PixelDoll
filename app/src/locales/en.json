@@ -3463,7 +3463,9 @@
 			"other": "{n} unpriced calls"
 		}
 	},
-	"shortcut": { "control": "Ctrl" },
+	"shortcut": {
+		"control": "Ctrl"
+	},
 	"report": {
 		"action": "Report",
 		"actionLabel": "Report this problem",
@@ -3658,5 +3660,48 @@
 		"colors": "Search colors",
 		"clear": "Clear search",
 		"results": "{count} of {total}"
+	},
+	"projectFolder": {
+		"title": "Project folder",
+		"hint": "Save export files straight into your game and keep them updated.",
+		"choose": "Choose folder",
+		"change": "Change",
+		"stop": "Stop",
+		"publishNow": "Publish now",
+		"auto": "Update automatically",
+		"linked": "{path} · {format}",
+		"reconnect": "Reconnect",
+		"replace": "Replace",
+		"review": "Review",
+		"copy": "Copy",
+		"copied": "Copied",
+		"brave": "To use this in Brave, turn on {flag}, then restart Brave.",
+		"unsaved": "This folder won’t be remembered after you close PixelDoll.",
+		"state": {
+			"off": "Off",
+			"on": "On",
+			"attention": "Needs attention"
+		},
+		"status": {
+			"publishing": "Publishing…",
+			"done": "Up to date",
+			"reconnect": "Folder access ended. Reconnect, and choose “Allow on every visit”.",
+			"missing": "Folder not found. Choose it again.",
+			"blocked": {
+				"one": "{count} file was changed in your game.",
+				"other": "{count} files were changed in your game."
+			},
+			"unavailable": "This character can’t be exported right now.",
+			"locked": "A file is open in another app. Close it and try again.",
+			"space": "The disk is full.",
+			"permission": "That folder isn’t allowed. Choose another.",
+			"failed": "Couldn’t write to the folder. Try again."
+		},
+		"toast": {
+			"reconnect": "Reconnect {folder} to keep publishing.",
+			"paused": "Publishing paused: files changed in your game.",
+			"missing": "Can’t find {folder}.",
+			"failed": "Couldn’t publish to {folder}."
+		}
 	}
 }

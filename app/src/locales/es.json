@@ -3660,5 +3660,48 @@
 		"colors": "Buscar colores",
 		"clear": "Borrar búsqueda",
 		"results": "{count} de {total}"
+	},
+	"projectFolder": {
+		"title": "Carpeta del proyecto",
+		"hint": "Guarda los archivos exportados directamente en tu juego y mantenlos al día.",
+		"choose": "Elegir carpeta",
+		"change": "Cambiar",
+		"stop": "Detener",
+		"publishNow": "Publicar ahora",
+		"auto": "Actualizar automáticamente",
+		"linked": "{path} · {format}",
+		"reconnect": "Volver a conectar",
+		"replace": "Reemplazar",
+		"review": "Revisar",
+		"copy": "Copiar",
+		"copied": "Copiado",
+		"brave": "Para usarlo en Brave, activa {flag} y reinicia Brave.",
+		"unsaved": "Esta carpeta no se recordará al cerrar PixelDoll.",
+		"state": {
+			"off": "Desactivada",
+			"on": "Activada",
+			"attention": "Requiere atención"
+		},
+		"status": {
+			"publishing": "Publicando…",
+			"done": "Al día",
+			"reconnect": "Terminó el acceso a la carpeta. Vuelve a conectar y elige «Permitir en cada visita».",
+			"missing": "No se encuentra la carpeta. Elígela de nuevo.",
+			"blocked": {
+				"one": "Se cambió {count} archivo en tu juego.",
+				"other": "Se cambiaron {count} archivos en tu juego."
+			},
+			"unavailable": "Este personaje no se puede exportar ahora.",
+			"locked": "Hay un archivo abierto en otra app. Ciérralo e inténtalo de nuevo.",
+			"space": "El disco está lleno.",
+			"permission": "Esa carpeta no está permitida. Elige otra.",
+			"failed": "No se pudo escribir en la carpeta. Inténtalo de nuevo."
+		},
+		"toast": {
+			"reconnect": "Vuelve a conectar {folder} para seguir publicando.",
+			"paused": "Publicación en pausa: cambiaron archivos en tu juego.",
+			"missing": "No se encuentra {folder}.",
+			"failed": "No se pudo publicar en {folder}."
+		}
 	}
 }

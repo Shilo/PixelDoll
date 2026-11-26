@@ -4075,3 +4075,162 @@ test('a sheet whose code fails to load closes, says so in French and can be trie
 	await expect.poll(() => fetches).toBeGreaterThan(tried);
 	await expect(page.locator('dialog[open]')).toHaveCount(0);
 });
+
+/** A browser-private (OPFS) folder stands in for the picked game folder, with a switchable write permission. */
+async function fakeProjectFolder(page: Page) {
+	await page.addInitScript(() => {
+		const w = window as unknown as Record<string, unknown>;
+		w.__folderPermission = 'granted';
+		FileSystemHandle.prototype.queryPermission = async () =>
+			w.__folderPermission as PermissionState;
+		FileSystemHandle.prototype.requestPermission = async () => {
+			w.__folderPermission = 'granted';
+			return 'granted';
+		};
+		w.showDirectoryPicker = async () =>
+			(await navigator.storage.getDirectory()).getDirectoryHandle('game', { create: true });
+	});
+}
+
+const folderText = (page: Page, path: string) =>
+	page.evaluate(async (path) => {
+		const parts = path.split('/');
+		try {
+			let dir = await navigator.storage.getDirectory();
+			for (const part of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(part);
+			return await (await (await dir.getFileHandle(parts.at(-1)!)).getFile()).text();
+		} catch {
+			return null;
+		}
+	}, path);
+
+test('a linked project folder publishes, updates after changes, pauses on game edits and reconnects', async ({
+	page
+}, info) => {
+	await fakeProjectFolder(page);
+	await savedExport(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('radio', { name: 'PNG + JSON', exact: true }).check();
+	// Export keeps one button; the folder is chosen and managed in Settings > Export.
+	await dialog.getByRole('button', { name: 'Project folder · Off' }).click();
+	const row = dialog.locator('[data-setting="project-folder"]');
+	await row.getByRole('button', { name: 'Choose folder' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+	await expect(row.getByRole('checkbox', { name: 'Update automatically' })).toBeChecked();
+	const sub = await page.evaluate(async () => {
+		const path = '/src/studio/projectFolder.svelte.ts';
+		return (await import(path)).projectFolder.link.subfolder as string;
+	});
+	await expect(row).toContainText(`game/${sub}/ · PNG + JSON`);
+	const manifestPath = `game/${sub}/manifest.json`;
+	const first = await folderText(page, manifestPath);
+	expect(JSON.parse(first!).name).toBe('Export settings test');
+	expect(
+		JSON.parse((await folderText(page, `game/${sub}/.pixeldoll-publish.json`))!).pending
+	).toBeNull();
+
+	// Publishing again with nothing changed writes nothing, so the manifest keeps its timestamp.
+	await row.getByRole('button', { name: 'Publish now' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+	expect(await folderText(page, manifestPath)).toBe(first);
+
+	// A saved change republishes by itself.
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
+	const material = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			dbPath = '/src/lib/store/db.ts',
+			state = await import(statePath),
+			db = await import(dbPath);
+		const material = state.store.project.manifest.materials[0].id as string;
+		await db.update(
+			'projects',
+			state.doc.id,
+			(record: {
+				manifest: {
+					materials: { id: string; ramp: string[]; variants: Record<string, string[]> }[];
+				};
+			}) => {
+				const mat = record.manifest.materials.find((m) => m.id === material)!;
+				mat.variants['folder-red'] = mat.ramp.map(() => '#ff0000');
+				return record;
+			}
+		);
+		await state.openProject(state.doc.id);
+		state.setVariant(material, 'folder-red');
+		await state.flushSave();
+		return material;
+	});
+	await expect
+		.poll(
+			async () => JSON.parse((await folderText(page, manifestPath))!).presets[0].variants[material]
+		)
+		.toBe('folder-red');
+
+	// A file edited in the game pauses publishing instead of being replaced.
+	await page.evaluate(async (path) => {
+		const parts = path.split('/');
+		let dir = await navigator.storage.getDirectory();
+		for (const part of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(part);
+		const out = await (await dir.getFileHandle(parts.at(-1)!)).createWritable();
+		await out.write('{"edited":"in the game"}');
+		await out.close();
+	}, manifestPath);
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(statePath);
+		state.setVariant(state.store.project.manifest.materials[0].id, null);
+		await state.flushSave();
+	});
+	const toast = page.locator('.toast');
+	await expect(toast).toContainText('Publishing paused: files changed in your game.');
+	expect(await folderText(page, manifestPath)).toBe('{"edited":"in the game"}');
+	await toast.getByRole('button', { name: 'Review' }).click();
+	await expect(row.getByRole('alert')).toContainText('1 file was changed in your game.');
+	await expect(row.getByRole('alert')).toContainText('manifest.json');
+	await row.getByRole('button', { name: 'Replace' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+	expect(JSON.parse((await folderText(page, manifestPath))!).name).toBe('Export settings test');
+
+	// Lost access asks to reconnect, and reconnecting publishes.
+	await page.evaluate(
+		() => ((window as unknown as Record<string, unknown>).__folderPermission = 'prompt')
+	);
+	await row.getByRole('button', { name: 'Publish now' }).click();
+	await expect(row.getByRole('alert')).toContainText('Folder access ended.');
+	await row.getByRole('button', { name: 'Reconnect' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+
+	// A moved or deleted folder says so; Stop leaves the row ready to choose a folder again.
+	await page.evaluate(async () =>
+		(await navigator.storage.getDirectory()).removeEntry('game', { recursive: true })
+	);
+	await row.getByRole('button', { name: 'Publish now' }).click();
+	await expect(row.getByRole('alert')).toContainText('Folder not found.');
+	await row.getByRole('button', { name: 'Stop' }).click();
+	await expect(row.getByRole('button', { name: 'Choose folder' })).toBeVisible();
+});
+
+test('project folders stay out of browsers that cannot write folders, with a Brave hint in Settings', async ({
+	page
+}, info) => {
+	const errors: string[] = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	await page.addInitScript(() => {
+		delete (window as unknown as Record<string, unknown>).showDirectoryPicker;
+		if (location.hash !== '#firefox')
+			Object.defineProperty(navigator, 'brave', { value: { isBrave: async () => true } });
+	});
+	await savedExport(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Project folder · Off' }).click();
+	const row = dialog.locator('[data-setting="project-folder"]');
+	await expect(row).toContainText('brave://flags/#file-system-access-api');
+	await expect(row.getByRole('button', { name: 'Choose folder' })).toHaveCount(0);
+	expect(errors).toEqual([]);
+});

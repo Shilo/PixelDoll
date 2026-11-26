@@ -3558,5 +3558,47 @@
 		"colors": "Cari warna",
 		"clear": "Hapus pencarian",
 		"results": "{count} dari {total}"
+	},
+	"projectFolder": {
+		"title": "Folder proyek",
+		"hint": "Simpan file ekspor langsung ke game Anda dan tetap perbarui.",
+		"choose": "Pilih folder",
+		"change": "Ganti",
+		"stop": "Hentikan",
+		"publishNow": "Terbitkan sekarang",
+		"auto": "Perbarui otomatis",
+		"linked": "{path} · {format}",
+		"reconnect": "Hubungkan ulang",
+		"replace": "Ganti",
+		"review": "Tinjau",
+		"copy": "Salin",
+		"copied": "Disalin",
+		"brave": "Untuk memakai ini di Brave, aktifkan {flag}, lalu mulai ulang Brave.",
+		"unsaved": "Folder ini tidak akan diingat setelah Anda menutup PixelDoll.",
+		"state": {
+			"off": "Mati",
+			"on": "Aktif",
+			"attention": "Perlu perhatian"
+		},
+		"status": {
+			"publishing": "Menerbitkan…",
+			"done": "Terbaru",
+			"reconnect": "Akses folder berakhir. Hubungkan ulang, lalu pilih “Izinkan di setiap kunjungan”.",
+			"missing": "Folder tidak ditemukan. Pilih lagi.",
+			"blocked": {
+				"other": "{count} file diubah di game Anda."
+			},
+			"unavailable": "Karakter ini tidak dapat diekspor sekarang.",
+			"locked": "Sebuah file terbuka di aplikasi lain. Tutup, lalu coba lagi.",
+			"space": "Disk penuh.",
+			"permission": "Folder itu tidak diizinkan. Pilih folder lain.",
+			"failed": "Tidak dapat menulis ke folder. Coba lagi."
+		},
+		"toast": {
+			"reconnect": "Hubungkan ulang {folder} untuk terus menerbitkan.",
+			"paused": "Penerbitan dijeda: file di game Anda berubah.",
+			"missing": "{folder} tidak ditemukan.",
+			"failed": "Tidak dapat menerbitkan ke {folder}."
+		}
 	}
 }

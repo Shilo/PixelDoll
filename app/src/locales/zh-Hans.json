@@ -3558,5 +3558,47 @@
 		"colors": "搜索颜色",
 		"clear": "清除搜索",
 		"results": "{total} 项中显示 {count} 项"
+	},
+	"projectFolder": {
+		"title": "项目文件夹",
+		"hint": "将导出文件直接保存到你的游戏中，并保持最新。",
+		"choose": "选择文件夹",
+		"change": "更换",
+		"stop": "停止",
+		"publishNow": "立即发布",
+		"auto": "自动更新",
+		"linked": "{path} · {format}",
+		"reconnect": "重新连接",
+		"replace": "替换",
+		"review": "查看",
+		"copy": "复制",
+		"copied": "已复制",
+		"brave": "要在 Brave 中使用，请开启 {flag}，然后重启 Brave。",
+		"unsaved": "关闭 PixelDoll 后将不会记住此文件夹。",
+		"state": {
+			"off": "关闭",
+			"on": "开启",
+			"attention": "需要处理"
+		},
+		"status": {
+			"publishing": "正在发布…",
+			"done": "已是最新",
+			"reconnect": "文件夹访问已结束。请重新连接，并选择“每次访问时都允许”。",
+			"missing": "找不到文件夹。请重新选择。",
+			"blocked": {
+				"other": "游戏中有 {count} 个文件被更改。"
+			},
+			"unavailable": "此角色目前无法导出。",
+			"locked": "有文件在其他应用中打开。请关闭后重试。",
+			"space": "磁盘已满。",
+			"permission": "不允许使用该文件夹。请选择其他文件夹。",
+			"failed": "无法写入文件夹。请重试。"
+		},
+		"toast": {
+			"reconnect": "重新连接 {folder} 以继续发布。",
+			"paused": "发布已暂停：游戏中的文件已更改。",
+			"missing": "找不到 {folder}。",
+			"failed": "无法发布到 {folder}。"
+		}
 	}
 }

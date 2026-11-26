@@ -3660,5 +3660,48 @@
 		"colors": "Renklerde ara",
 		"clear": "Aramayı temizle",
 		"results": "{total} içinden {count}"
+	},
+	"projectFolder": {
+		"title": "Proje klasörü",
+		"hint": "Dışa aktarılan dosyaları doğrudan oyununuza kaydedin ve güncel tutun.",
+		"choose": "Klasör seçin",
+		"change": "Değiştir",
+		"stop": "Durdur",
+		"publishNow": "Şimdi yayımla",
+		"auto": "Otomatik güncelle",
+		"linked": "{path} · {format}",
+		"reconnect": "Yeniden bağlan",
+		"replace": "Değiştir",
+		"review": "İncele",
+		"copy": "Kopyala",
+		"copied": "Kopyalandı",
+		"brave": "Bunu Brave'de kullanmak için {flag} ayarını açın ve Brave'i yeniden başlatın.",
+		"unsaved": "PixelDoll'u kapattıktan sonra bu klasör hatırlanmayacak.",
+		"state": {
+			"off": "Kapalı",
+			"on": "Açık",
+			"attention": "İlgilenilmeli"
+		},
+		"status": {
+			"publishing": "Yayımlanıyor…",
+			"done": "Güncel",
+			"reconnect": "Klasör erişimi sona erdi. Yeniden bağlanın ve “Her ziyarette izin ver” seçeneğini seçin.",
+			"missing": "Klasör bulunamadı. Yeniden seçin.",
+			"blocked": {
+				"one": "Oyununuzda {count} dosya değişti.",
+				"other": "Oyununuzda {count} dosya değişti."
+			},
+			"unavailable": "Bu karakter şu anda dışa aktarılamıyor.",
+			"locked": "Bir dosya başka bir uygulamada açık. Kapatıp yeniden deneyin.",
+			"space": "Disk dolu.",
+			"permission": "Bu klasöre izin verilmiyor. Başka bir klasör seçin.",
+			"failed": "Klasöre yazılamadı. Yeniden deneyin."
+		},
+		"toast": {
+			"reconnect": "Yayımlamaya devam etmek için şu klasöre yeniden bağlanın: {folder}",
+			"paused": "Yayımlama duraklatıldı: oyununuzdaki dosyalar değişti.",
+			"missing": "Şu klasör bulunamadı: {folder}",
+			"failed": "Şu klasöre yayımlanamadı: {folder}"
+		}
 	}
 }

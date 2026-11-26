@@ -3660,5 +3660,48 @@
 		"colors": "Farben durchsuchen",
 		"clear": "Suche leeren",
 		"results": "{count} von {total}"
+	},
+	"projectFolder": {
+		"title": "Projektordner",
+		"hint": "Speichere Exportdateien direkt in deinem Spiel und halte sie aktuell.",
+		"choose": "Ordner wählen",
+		"change": "Ändern",
+		"stop": "Beenden",
+		"publishNow": "Jetzt veröffentlichen",
+		"auto": "Automatisch aktualisieren",
+		"linked": "{path} · {format}",
+		"reconnect": "Neu verbinden",
+		"replace": "Ersetzen",
+		"review": "Ansehen",
+		"copy": "Kopieren",
+		"copied": "Kopiert",
+		"brave": "Um das in Brave zu nutzen, aktiviere {flag} und starte Brave neu.",
+		"unsaved": "Dieser Ordner wird nach dem Schließen von PixelDoll nicht gespeichert.",
+		"state": {
+			"off": "Aus",
+			"on": "An",
+			"attention": "Braucht Aufmerksamkeit"
+		},
+		"status": {
+			"publishing": "Wird veröffentlicht…",
+			"done": "Aktuell",
+			"reconnect": "Der Ordnerzugriff ist abgelaufen. Verbinde neu und wähle „Bei jedem Besuch zulassen“.",
+			"missing": "Ordner nicht gefunden. Wähle ihn erneut.",
+			"blocked": {
+				"one": "{count} Datei wurde in deinem Spiel geändert.",
+				"other": "{count} Dateien wurden in deinem Spiel geändert."
+			},
+			"unavailable": "Diese Figur kann gerade nicht exportiert werden.",
+			"locked": "Eine Datei ist in einer anderen App geöffnet. Schließe sie und versuche es erneut.",
+			"space": "Der Datenträger ist voll.",
+			"permission": "Dieser Ordner ist nicht erlaubt. Wähle einen anderen.",
+			"failed": "In den Ordner konnte nicht geschrieben werden. Versuche es erneut."
+		},
+		"toast": {
+			"reconnect": "Verbinde {folder} neu, um weiter zu veröffentlichen.",
+			"paused": "Veröffentlichen pausiert: Dateien in deinem Spiel wurden geändert.",
+			"missing": "{folder} wurde nicht gefunden.",
+			"failed": "Veröffentlichen in {folder} fehlgeschlagen."
+		}
 	}
 }

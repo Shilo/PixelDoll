@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { currentLiveClips, currentLiveLayering } from './experience/liveViews.ts';
+	import { exportActionLayering } from './exportLayering.ts';
 	import { MediaQuery } from 'svelte/reactivity';
 	import SettingsItemButton from './SettingsItemButton.svelte';
 	import { CURRENT_OUTFIT_ID } from '../lib/store/identity.ts';
@@ -52,6 +52,8 @@
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { slotLabelMessage } from './slots.ts';
 	import RichMessage from './RichMessage.svelte';
+	import ProjectFolderButton from './ProjectFolderButton.svelte';
+	import ProjectFolderSetting from './ProjectFolderSetting.svelte';
 	let {
 		embedded = false,
 		onSaving,
@@ -382,6 +384,16 @@
 			document.removeEventListener('visibilitychange', refresh);
 		};
 	});
+	/** Export's Project folder button: Settings > Export, scrolled to that row. */
+	async function openFolderSettings() {
+		await navigate();
+		await tick();
+		const row = content?.querySelector<HTMLElement>('[data-setting="project-folder"]');
+		row?.scrollIntoView({ block: 'nearest' });
+		(
+			row?.querySelector<HTMLElement>('button:not(:disabled), input:not(:disabled)') ?? row
+		)?.focus();
+	}
 	async function navigate() {
 		if (returningToExport) ui.sheet = 'export';
 		else openSettings('export');
@@ -533,16 +545,11 @@
 		result = null;
 		const look = { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) };
 		const snapshot = { ...p, manifest: structuredClone(p.manifest) };
-		const layering = currentLiveLayering(doc.id);
-		const clips = currentLiveClips(doc.id, snapshot.manifest.rig.animations);
-		const actionLayering =
+		const actionLayering = exportActionLayering(
+			doc.id,
+			snapshot.manifest.rig.animations,
 			actionLayers && supportsActionLayers
-				? {
-						waist: layering.waist,
-						walk: clips.walk.slice(0, 1),
-						attacks: [...clips.attack, ...clips.attackUp, ...clips.attackDown]
-					}
-				: undefined;
+		);
 		let stale = false;
 		void (async () => {
 			const qa = rec?.rigQa as { clips?: Record<string, { fails?: unknown }> } | undefined;
@@ -808,6 +815,7 @@
 				>{t('export.settings.defaultTargetHint')}</span
 			>
 		</div>
+		<ProjectFolderSetting {engine} disabled={!ready} />
 	</div>
 {/snippet}
 
@@ -972,6 +980,7 @@
 									>{/each}</select
 							></label
 						>{/if}
+					<ProjectFolderButton onopen={openFolderSettings} />
 					{#if ready && !pendingExport && (result?.kind === 'recovery' || result?.kind === 'failed')}
 						<p
 							class="notice {result.kind === 'recovery' ? 'warn' : 'bad'} small"

@@ -97,7 +97,8 @@
 		frames: () => import('./FramesSheet.svelte'),
 		adjustFrame: () => import('./AdjustFrameSheet.svelte'),
 		cost: () => import('./CostSheet.svelte'),
-		workspace: () => import('./WorkspaceSheet.svelte')
+		workspace: () => import('./WorkspaceSheet.svelte'),
+		projectFolder: () => import('./ProjectFolderAuto.svelte')
 	};
 
 	$effect(() => {
@@ -398,6 +399,12 @@
 
 <div class="studio-app" onclickcapture={rememberActivation}>
 	{#if !workspaceCopy}<PwaRuntime />{/if}
+	<!-- Optional: keeps a linked game folder updated; absent where the browser cannot write folders. -->
+	{#if !workspaceCopy && 'showDirectoryPicker' in window}<Lazy
+			load={parts.projectFolder}
+			sheet={false}
+			onLoadError={() => {}}
+		/>{/if}
 	<Experience />
 	{#if !workspaceCopy && offline}<div class="offline-banner" role="status">
 			<WifiOff size={14} aria-hidden="true" />{t('studio.youReOfflineEditAndExportLocally')}
