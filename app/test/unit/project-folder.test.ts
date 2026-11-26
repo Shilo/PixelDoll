@@ -97,7 +97,8 @@ describe('publishFiles', () => {
 		expect(folder.record.written['a.png']).toBe(await hash('1'));
 		expect(await folder.publish({ 'a.png': '1', 'manifest.json': 'm1' })).toEqual({
 			kind: 'unchanged',
-			kept: 0
+			kept: 0,
+			matching: []
 		});
 		expect(await folder.publish({ 'a.png': '2', 'manifest.json': 'm1' })).toMatchObject({
 			kind: 'published',

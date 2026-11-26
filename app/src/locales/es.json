@@ -3719,6 +3719,12 @@
 			"failed": "No se pudo actualizar {folder}."
 		},
 		"justUpdated": "Actualizado hace un momento",
+		"matching": {
+			"one": "{count} archivo de esta carpeta ya coincide con la exportación de PixelDoll. ¿Mantenerlo actualizado?",
+			"other": "{count} archivos de esta carpeta ya coinciden con la exportación de PixelDoll. ¿Mantenerlos actualizados?"
+		},
+		"adopt": "Mantener actualizados",
+		"leave": "Dejar como están",
 		"section": "Proyecto de juego"
 	}
 }

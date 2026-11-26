@@ -3616,6 +3616,11 @@
 			"failed": "Tidak dapat memperbarui {folder}."
 		},
 		"justUpdated": "Baru saja diperbarui",
+		"matching": {
+			"other": "{count} file di folder ini sudah sama dengan ekspor PixelDoll. Tetap perbarui?"
+		},
+		"adopt": "Tetap perbarui",
+		"leave": "Biarkan",
 		"section": "Proyek game"
 	}
 }

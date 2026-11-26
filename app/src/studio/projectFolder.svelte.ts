@@ -4,7 +4,7 @@
 import { buildExport } from '../lib/export/build.ts';
 import { ACTION_LAYER_ENGINES } from '../lib/export/export.ts';
 import { walkMoves } from '../lib/export/rpgmaker.ts';
-import { message, type Message } from '../lib/message.ts';
+import { message, sameMessage, type Message } from '../lib/message.ts';
 import {
 	allLinks,
 	deleteLink,
@@ -20,15 +20,17 @@ import {
 } from '../lib/project-folder/links.ts';
 import type { PlanAction } from '../lib/project-folder/plan.ts';
 import {
+	hashAt,
 	hashFiles,
 	inSync,
 	matchesRecord,
 	publishFiles,
+	sha256,
 	type FailureReason,
 	type FolderFile
 } from '../lib/project-folder/publish.ts';
 import { folderSupport, type FolderSupport } from '../lib/project-folder/support.ts';
-import { directoryTarget } from '../lib/project-folder/target.ts';
+import { directoryTarget, type FolderTarget } from '../lib/project-folder/target.ts';
 import { readExportSettings } from '../lib/store/export-settings.ts';
 import type { Engine } from '../lib/store/manifest.ts';
 import { workspaceCopy } from '../lib/store/workspace-mode.ts';
@@ -68,6 +70,9 @@ class FolderState {
 	/** The open character's link, once read. */
 	link = $state.raw<FolderLink | null>(null);
 	status = $state.raw<FolderStatus>({ kind: 'idle' });
+	/** After choosing a folder: files there that already hold exactly what PixelDoll writes, offered once to be kept
+	 *  updated. Declining leaves them the user's, as any file PixelDoll did not write. */
+	offer = $state.raw<{ linkedAt: string; files: PlanAction[] } | null>(null);
 }
 export const projectFolder = new FolderState();
 
@@ -89,6 +94,8 @@ type Request = {
 	manual: boolean;
 	linkedAt: string;
 	link: FolderLink;
+	/** The first publish after choosing this folder, which may offer to keep already matching files updated. */
+	fresh?: boolean;
 	overwrite?: ReadonlyMap<string, string>;
 	keep?: readonly string[];
 	release?: boolean;
@@ -154,6 +161,7 @@ export async function loadFolderLink(characterId: string) {
 		loadedFor = characterId;
 		projectFolder.link = null;
 		projectFolder.status = { kind: 'idle' };
+		projectFolder.offer = null;
 	}
 	if ((await checkFolderSupport()) !== 'supported' || !characterId) return;
 	const readAt = linkChanges;
@@ -266,7 +274,7 @@ const lasting = { tone: 'warning' as const, report: false, duration: 0 };
 
 /** The project folder notice last shown and the character it is about, so a publish that resolves that character's
  *  problem can take it down again. */
-let shownNotice: { id: string; linkedAt: string; text: unknown } | undefined;
+let shownNotice: { id: string; linkedAt: string; text: Message } | undefined;
 const notice = (link: FolderLink, text: Message, options: Parameters<typeof toast>[1]) => {
 	const id = link.characterId;
 	shownNotice = { id, linkedAt: link.linkedAt, text };
@@ -276,7 +284,7 @@ const notice = (link: FolderLink, text: Message, options: Parameters<typeof toas
 function clearNotice(id: string, linkedAt?: string) {
 	if (shownNotice?.id !== id || (linkedAt !== undefined && shownNotice.linkedAt !== linkedAt))
 		return;
-	if (ui.toast === shownNotice.text) dismissToast();
+	if (sameMessage(ui.toast as Message | undefined, shownNotice.text)) dismissToast();
 	shownNotice = undefined;
 }
 
@@ -295,6 +303,20 @@ async function superseded(id: string, readAt: number, stale?: string) {
 	if (stale) {
 		clearNotice(id, stale);
 		if (problems.get(id)?.linkedAt === stale) problems.delete(id);
+	}
+}
+
+const MANIFEST = 'manifest.json';
+
+/** The time and bytes of an export manifest already in the folder, if it reads as one. */
+async function sameEarlierExport(target: FolderTarget) {
+	try {
+		const data = await target.read(MANIFEST);
+		if (!data) return null;
+		const exportedAt: unknown = JSON.parse(new TextDecoder().decode(data))?.export?.exportedAt;
+		return typeof exportedAt === 'string' ? { exportedAt, hash: await sha256(data) } : null;
+	} catch {
+		return null; // not an export manifest (or unreadable): build as usual
 	}
 }
 
@@ -358,15 +380,30 @@ async function publish(link: FolderLink, request: Request) {
 			if (
 				next &&
 				// A click, or a problem still on screen, checks the folder itself: only a quiet background check may trust
-				// the record alone, so a shown problem is never cleared without looking.
-				(request.manual || showingProblem
+				// the record alone, so a shown problem is never cleared without looking. Where the record does not cover the
+				// files (such as ones the user has not yet chosen to keep updated), the folder decides too: bytes already
+				// there need no write.
+				(request.manual || showingProblem || !matchesRecord(record, next)
 					? await inSync(target, record, next)
-					: matchesRecord(record, next))
+					: true)
 			)
 				return finished({ kind: 'done', kept: record.kept.length, already: request.manual });
 		}
 		const now = new Date().toISOString();
-		const files = await buildFiles(link, input, settings, now);
+		// A folder chosen again over this character's own earlier export: built with that export's time, an unchanged
+		// character matches it file for file, so every file can be offered rather than the manifest pausing.
+		const earlier = request.fresh && !link.exportedAt ? await sameEarlierExport(target) : null;
+		let exportedAt = now;
+		let files: FolderFile[] | null = null;
+		if (earlier) {
+			const same = await buildFiles(link, input, settings, earlier.exportedAt);
+			const manifest = same?.find((f) => f.name === MANIFEST);
+			if (manifest && (await sha256(manifest.data)) === earlier.hash) {
+				files = same;
+				exportedAt = earlier.exportedAt;
+			}
+		}
+		files ??= await buildFiles(link, input, settings, now);
 		if (!files) return report({ kind: 'unavailable' });
 		// Building takes a moment: recheck that the link was not stopped or replaced meanwhile.
 		readAt = linkChanges;
@@ -387,6 +424,14 @@ async function publish(link: FolderLink, request: Request) {
 				return typeof latest === 'object' && !!latest && (request.manual || latest.auto);
 			}
 		});
+		if (
+			request.fresh &&
+			outcome.kind !== 'stopped' &&
+			outcome.kind !== 'failed' &&
+			outcome.matching?.length &&
+			loadedFor === id
+		)
+			projectFolder.offer = { linkedAt: link.linkedAt, files: outcome.matching };
 		switch (outcome.kind) {
 			case 'stopped': {
 				readAt = linkChanges;
@@ -397,13 +442,14 @@ async function publish(link: FolderLink, request: Request) {
 			}
 			case 'published':
 			case 'unchanged':
-				if (outcome.kind === 'published') {
+				if (outcome.kind === 'published' || exportedAt !== now) {
 					try {
 						readAt = linkChanges;
-						const stored = await updateLink(id, link.linkedAt, {
-							exportedAt: now,
-							publishedAt: now
-						});
+						const stored = await updateLink(
+							id,
+							link.linkedAt,
+							outcome.kind === 'published' ? { exportedAt, publishedAt: now } : { exportedAt }
+						);
 						if (stored) showLink(id, stored, readAt);
 					} catch (error) {
 						console.warn('Could not record the project folder publish', error);
@@ -470,6 +516,7 @@ function run(request: Request): Promise<void> {
 			waiting
 				? {
 						manual: request.manual || waiting.manual,
+						fresh: request.fresh || waiting.fresh,
 						linkedAt: request.linkedAt,
 						link: request.link,
 						overwrite: request.overwrite ?? waiting.overwrite,
@@ -524,6 +571,7 @@ const behind = new Map<string, number>();
 export function scheduleFolderPublish() {
 	const link = projectFolder.link;
 	if (!usable() || !link?.auto || link.characterId !== doc.id) return;
+	if (projectFolder.status.kind === 'done') setStatus(link.characterId, { kind: 'idle' });
 	clearTimeout(timers.get(link.linkedAt)?.timer);
 	timers.set(link.linkedAt, {
 		characterId: link.characterId,
@@ -555,6 +603,34 @@ export function keepProjectFolderFiles(paths: readonly string[], linkedAt: strin
 		: Promise.resolve();
 }
 
+/** Keeps the offered matching files updated: each becomes PixelDoll's only while it still holds exactly the bytes that
+ *  were found, checked again now, so a file changed since the offer stays the user's. */
+export async function adoptMatchingFiles() {
+	const offer = projectFolder.offer;
+	const link = offer && current(offer.linkedAt);
+	if (!offer || !link) return;
+	try {
+		await exclusive(link, async () => {
+			if (typeof (await stillLinked(link)) !== 'object') return;
+			const target = directoryTarget(link.handle, [link.subfolder]);
+			const key = recordKey(link);
+			for (const file of offer.files)
+				if (file.found && (await hashAt(target, file.path)) === file.found)
+					await recordWritten(key, file.path, file.found);
+		});
+		// Gone once they are recorded, so the offer's disappearing means it took effect.
+		if (projectFolder.offer === offer) projectFolder.offer = null;
+	} catch (error) {
+		console.warn('Could not keep the matching project folder files updated', error);
+		setStatus(link.characterId, { kind: 'failed', reason: 'unknown' }, link.linkedAt);
+	}
+}
+
+/** Leaves the offered matching files as the user's. */
+export function leaveMatchingFiles() {
+	projectFolder.offer = null;
+}
+
 /** Stops keeping every kept file, so their differences are reported again. */
 export function releaseKeptFiles() {
 	const link = projectFolder.link;
@@ -578,7 +654,6 @@ export async function linkProjectFolder(engine: Engine) {
 		}
 		return;
 	}
-	if (doc.id !== characterId) return;
 	let link: FolderLink;
 	try {
 		// Claiming a folder happens one tab at a time, and waits for any publish into the previous folder to finish.
@@ -621,8 +696,9 @@ export async function linkProjectFolder(engine: Engine) {
 		return setStatus(characterId, { kind: 'failed', reason: 'unknown' });
 	}
 	showLink(characterId, link);
+	if (loadedFor === characterId) projectFolder.offer = null;
 	// This link's own first publish, even if another character was opened meanwhile.
-	await run({ manual: true, linkedAt: link.linkedAt, link });
+	await run({ manual: true, linkedAt: link.linkedAt, link, fresh: true });
 }
 
 async function sameFolder(a: FileSystemDirectoryHandle, b: FileSystemDirectoryHandle) {
@@ -690,6 +766,7 @@ export async function unlinkProjectFolder() {
 		return;
 	}
 	showLink(link.characterId, null);
+	if (loadedFor === link.characterId) projectFolder.offer = null;
 	problems.delete(link.characterId);
 	clearNotice(link.characterId);
 	setStatus(link.characterId, { kind: 'idle' });

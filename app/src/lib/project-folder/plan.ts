@@ -13,7 +13,8 @@ export interface PlanAction {
 	kind: PlanKind;
 	/** For a conflict: why the file is the user's. */
 	reason?: 'edited-outside' | 'not-ours' | 'folder' | 'deleted';
-	/** For a conflict: the bytes found there, so replacing them needs approval of exactly these bytes. */
+	/** For a conflict: the bytes found there, so replacing them needs approval of exactly these bytes. For a foreign
+	 *  file: the export's own bytes, already there. */
 	found?: string;
 }
 
@@ -70,7 +71,9 @@ export function planPublish(o: {
 			actions.push({ path, kind: 'conflict', reason: 'folder', found: current });
 		// Already right. Identical bytes PixelDoll did not write stay the user's: nothing is recorded for them.
 		else if (current === hash)
-			actions.push({ path, kind: mine === hash ? 'unchanged' : 'foreign' });
+			actions.push(
+				mine === hash ? { path, kind: 'unchanged' } : { path, kind: 'foreign', found: current }
+			);
 		else if (current === null) {
 			// A file PixelDoll published that is now gone was deleted by the user: a change like any other.
 			if (mine === undefined) actions.push({ path, kind: 'create' });

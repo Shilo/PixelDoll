@@ -3616,6 +3616,11 @@
 			"failed": "无法更新 {folder}。"
 		},
 		"justUpdated": "刚刚更新",
+		"matching": {
+			"other": "此文件夹中有 {count} 个文件与 PixelDoll 的导出完全相同。要继续更新它们吗？"
+		},
+		"adopt": "继续更新",
+		"leave": "保持不变",
 		"section": "游戏项目"
 	}
 }

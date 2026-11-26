@@ -20,8 +20,10 @@
 		Unlink
 	} from './icons.ts';
 	import {
+		adoptMatchingFiles,
 		checkFolderSupport,
 		keepProjectFolderFiles,
+		leaveMatchingFiles,
 		linkProjectFolder,
 		loadFolderLink,
 		projectFolder,
@@ -56,6 +58,11 @@
 	// behind it), so keyboard focus is never dropped by a button turning disabled under it.
 	const working = $derived(busy);
 	const conflicts = $derived(status.kind === 'blocked' ? status.conflicts : []);
+	const offer = $derived(
+		projectFolder.offer && projectFolder.offer.linkedAt === link?.linkedAt
+			? projectFolder.offer
+			: null
+	);
 	const conflictLink = $derived(status.kind === 'blocked' ? status.linkedAt : '');
 	/** A folder sitting where a file belongs cannot be replaced by a file: the user moves it (or keeps it). */
 	const replaceable = $derived(conflicts.every((c) => c.reason !== 'folder' && c.found));
@@ -217,6 +224,27 @@
 						>{summary ? ' · ' : ''}{updated}</span
 					>{/if}
 			</p>
+			{#if offer}
+				<div class="notice small offer" role="status">
+					<p>{t('projectFolder.matching', { count: offer.files.length })}</p>
+					<div class="offer-actions">
+						<button
+							type="button"
+							class="bu-action btn sm primary"
+							disabled={working}
+							onclick={() => act(adoptMatchingFiles)}
+							><RefreshCw size={14} aria-hidden="true" />{t('projectFolder.adopt')}</button
+						>
+						<button
+							type="button"
+							class="bu-action btn sm"
+							data-variant="outline"
+							disabled={working}
+							onclick={leaveMatchingFiles}>{t('projectFolder.leave')}</button
+						>
+					</div>
+				</div>
+			{/if}
 			{#if problem}
 				<div class="notice warn small" role="alert">
 					<TriangleAlert size={14} aria-hidden="true" />
@@ -377,6 +405,16 @@
 		display: grid;
 		gap: 6px;
 		min-width: 0;
+	}
+	.offer {
+		display: grid;
+		gap: 8px;
+		justify-self: stretch;
+	}
+	.offer-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
 	}
 	.conflicts {
 		display: grid;

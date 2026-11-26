@@ -3719,6 +3719,12 @@
 			"failed": "Impossible de mettre à jour {folder}."
 		},
 		"justUpdated": "Mis à jour à l’instant",
+		"matching": {
+			"one": "{count} fichier de ce dossier correspond déjà à l’export de PixelDoll. Le garder à jour ?",
+			"other": "{count} fichiers de ce dossier correspondent déjà à l’export de PixelDoll. Les garder à jour ?"
+		},
+		"adopt": "Garder à jour",
+		"leave": "Laisser tel quel",
 		"section": "Projet de jeu"
 	}
 }

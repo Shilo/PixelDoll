@@ -20,9 +20,9 @@ export type FailureReason = 'permission' | 'missing' | 'locked' | 'space' | 'uns
 
 export type PublishOutcome =
 	/** `kept`: files the user chose to keep, which PixelDoll leaves alone. */
-	| { kind: 'published'; written: number; kept: number }
-	| { kind: 'unchanged'; kept: number }
-	| { kind: 'blocked'; conflicts: PlanAction[] }
+	| { kind: 'published'; written: number; kept: number; matching: PlanAction[] }
+	| { kind: 'unchanged'; kept: number; matching: PlanAction[] }
+	| { kind: 'blocked'; conflicts: PlanAction[]; matching?: PlanAction[] }
 	/** `proceed` said no before anything was written. */
 	| { kind: 'stopped' }
 	| { kind: 'failed'; reason: FailureReason; error: unknown; written: number };
@@ -61,7 +61,7 @@ export async function hashFiles(files: readonly FolderFile[]) {
 }
 
 /** The hash at a path now: null when missing, NOT_A_FILE when a folder is there. */
-async function hashAt(target: FolderTarget, path: string): Promise<string | null> {
+export async function hashAt(target: FolderTarget, path: string): Promise<string | null> {
 	try {
 		const data = await target.read(path);
 		return data && (await sha256(data));
@@ -127,9 +127,11 @@ export async function publishFiles(
 		const kept = new Set(o.record.kept);
 		for (const path of next.keys()) if (!kept.has(path)) disk.set(path, await hashAt(target, path));
 		const plan = planPublish({ next, record: o.record, disk, overwrite: o.overwrite });
-		if (plan.conflicts.length) return { kind: 'blocked', conflicts: plan.conflicts };
+		// Files already holding the export's bytes that PixelDoll did not write: still the user's, but worth offering.
+		const matching = plan.actions.filter((a) => a.kind === 'foreign');
+		if (plan.conflicts.length) return { kind: 'blocked', conflicts: plan.conflicts, matching };
 		approved = plan.approved;
-		if (!plan.writes.length) return { kind: 'unchanged', kept: o.record.kept.length };
+		if (!plan.writes.length) return { kind: 'unchanged', kept: o.record.kept.length, matching };
 		if (o.proceed && !(await o.proceed())) return { kind: 'stopped' };
 		// The manifest goes last, so a game that reads it never sees it ahead of its images.
 		const order = [...plan.writes].sort(
@@ -169,7 +171,7 @@ export async function publishFiles(
 			approved = approved.filter((c) => c.path !== a.path);
 			await o.onRecord(a.path, next.get(a.path)!);
 		}
-		return { kind: 'published', written, kept: o.record.kept.length };
+		return { kind: 'published', written, kept: o.record.kept.length, matching };
 	} catch (error) {
 		// A folder that appeared where a file belongs: the user's, never replaced.
 		if (error instanceof NotAFileError)

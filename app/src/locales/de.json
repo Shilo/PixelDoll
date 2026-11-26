@@ -3719,6 +3719,12 @@
 			"failed": "{folder} konnte nicht aktualisiert werden."
 		},
 		"justUpdated": "Gerade aktualisiert",
+		"matching": {
+			"one": "{count} Datei in diesem Ordner entspricht bereits dem Export von PixelDoll. Weiter aktualisieren?",
+			"other": "{count} Dateien in diesem Ordner entsprechen bereits dem Export von PixelDoll. Weiter aktualisieren?"
+		},
+		"adopt": "Aktualisieren",
+		"leave": "So lassen",
 		"section": "Spielprojekt"
 	}
 }

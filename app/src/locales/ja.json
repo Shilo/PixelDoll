@@ -3616,6 +3616,11 @@
 			"failed": "{folder} を更新できませんでした。"
 		},
 		"justUpdated": "たった今更新",
+		"matching": {
+			"other": "このフォルダーの {count} 個のファイルは PixelDoll のエクスポートと同じです。今後も更新しますか？"
+		},
+		"adopt": "更新する",
+		"leave": "そのままにする",
 		"section": "ゲームプロジェクト"
 	}
 }

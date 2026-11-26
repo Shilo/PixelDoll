@@ -3728,6 +3728,12 @@
 			"failed": "Não foi possível atualizar {folder}."
 		},
 		"justUpdated": "Atualizado agora há pouco",
+		"matching": {
+			"one": "{count} arquivo desta pasta já corresponde à exportação do PixelDoll. Mantê-lo atualizado?",
+			"other": "{count} arquivos desta pasta já correspondem à exportação do PixelDoll. Mantê-los atualizados?"
+		},
+		"adopt": "Manter atualizados",
+		"leave": "Deixar como estão",
 		"section": "Projeto de jogo"
 	}
 }

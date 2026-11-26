@@ -62,7 +62,7 @@ it('publishes the rest of the export when a kept file cannot be read', async () 
 	const outcome = await folder.publish({ 'kept.png': 'new generated sprite', 'new.png': 'new' });
 
 	expect(folder.text('kept.png')).toBe('game file');
-	expect(outcome).toEqual({ kind: 'published', written: 1, kept: 1 });
+	expect(outcome).toEqual({ kind: 'published', written: 1, kept: 1, matching: [] });
 	expect(folder.text('new.png')).toBe('new');
 });
 

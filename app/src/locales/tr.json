@@ -3719,6 +3719,12 @@
 			"failed": "Şu klasör güncellenemedi: {folder}"
 		},
 		"justUpdated": "Az önce güncellendi",
+		"matching": {
+			"one": "Bu klasördeki {count} dosya zaten PixelDoll dışa aktarımıyla aynı. Güncel tutulsun mu?",
+			"other": "Bu klasördeki {count} dosya zaten PixelDoll dışa aktarımıyla aynı. Güncel tutulsun mu?"
+		},
+		"adopt": "Güncel tut",
+		"leave": "Olduğu gibi bırak",
 		"section": "Oyun projesi"
 	}
 }

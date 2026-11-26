@@ -3719,6 +3719,12 @@
 			"failed": "Couldn’t update {folder}."
 		},
 		"justUpdated": "Updated just now",
+		"matching": {
+			"one": "{count} file in this folder already matches PixelDoll’s export. Keep it updated?",
+			"other": "{count} files in this folder already match PixelDoll’s export. Keep them updated?"
+		},
+		"adopt": "Keep updated",
+		"leave": "Leave as is",
 		"section": "Game project"
 	}
 }

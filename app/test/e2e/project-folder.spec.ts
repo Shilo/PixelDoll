@@ -424,6 +424,8 @@ test('notice Review opens the paused row while Export is open, and a deleted fol
 	await paused.getByRole('button', { name: 'Replace listed files' }).click();
 	await expect(paused.getByRole('status')).toHaveText('Up to date');
 	expect(JSON.parse((await folderText(page, manifestPath))!).name).toBe('Export settings test');
+	// The resolved pause takes its notice down by itself.
+	await expect(page.getByText('Updates paused: files in the folder changed.')).toHaveCount(0);
 
 	// Deleting the whole folder says so, then choosing it again republishes everything.
 	await page.evaluate(async () =>
@@ -444,6 +446,30 @@ test('notice Review opens the paused row while Export is open, and a deleted fol
 	expect(JSON.parse((await folderText(page, manifestPath))!).name).toBe('Export settings test');
 	expect(errors).toEqual([]);
 });
+test('choosing a folder that already holds this export offers once to keep those files updated', async ({
+	page
+}, info) => {
+	const dev = devURL(info);
+	await fakeProjectFolder(page.context());
+	const errors = watchErrors(page);
+	await savedExport(page, dev);
+	const { row, manifestPath } = await linkFolder(page);
+	// Unlinked, PixelDoll forgets which files it wrote: linking again finds its own files as someone else's.
+	await row.getByRole('button', { name: 'Unlink' }).click();
+	await row.getByRole('button', { name: 'Choose folder…' }).click();
+	const offer = row.locator('.offer');
+	await expect(offer).toContainText(/files in this folder already match PixelDoll’s export/);
+	await expect(row.locator('.summary [role="status"]')).toHaveText('Up to date');
+	await offer.getByRole('button', { name: 'Keep updated' }).click();
+	await expect(offer).toHaveCount(0);
+	// Kept updated, they are PixelDoll's again: one the user deletes now is listed for approval, not recreated.
+	await changeFolder(page, manifestPath, { remove: true });
+	await row.getByRole('button', { name: 'Update now' }).click();
+	await expect(row.getByRole('alert')).toContainText('Deleted');
+	expect(await folderText(page, manifestPath)).toBeNull();
+	expect(errors).toEqual([]);
+});
+
 test('phone width, light theme and keyboard-only use show a readable Project folder row', async ({
 	page
 }, info) => {

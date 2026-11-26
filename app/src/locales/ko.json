@@ -3616,6 +3616,11 @@
 			"failed": "다음 폴더를 업데이트하지 못했어요: {folder}"
 		},
 		"justUpdated": "방금 업데이트됨",
+		"matching": {
+			"other": "이 폴더의 파일 {count}개가 이미 PixelDoll 내보내기와 같아요. 계속 업데이트할까요?"
+		},
+		"adopt": "계속 업데이트",
+		"leave": "그대로 두기",
 		"section": "게임 프로젝트"
 	}
 }
