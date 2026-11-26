@@ -492,30 +492,6 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
-		"artworkSection": "图像",
-		"movesSection": "动作与状态",
-		"outfitSection": "穿戴行为",
-		"replaceFrames": "修复或重绘此朝向",
-		"technicalDetails": "技术详情",
-		"openSprite": "放大{title}",
-		"availableDirectionsFor": "{name}的可用朝向",
-		"previewContext": "{move} · 第 {frame}/{count} 帧",
-		"drawForMoves": "为缺失的动作生成",
-		"drawSelected": "生成所选动作",
-		"reviewMissingMoves": "查看缺失的动作",
-		"drawMovesSelect": "请至少选择一个动作。",
-		"selectAllMoves": "全选",
-		"clearSelection": "清除选择",
-		"drawMovesHelp": "仅绘制缺失的装备帧。PixelLab 可能收取生成费用。",
-		"repairView": "修复此视角",
-		"redrawView": "重绘此视角",
-		"sendBackward": "下移一层",
-		"bringForward": "上移一层",
-		"makeAnother": "新建装备",
-		"layerCategory": "图层顺序应用于{slot}类别。",
-		"inFrontOf": "位于{name}前方",
-		"behind": "位于{name}后方",
-		"previewUnavailable": "此动作没有装备图像。",
 		"restoreStanding": {
 			"other": "恢复站立视图"
 		},
@@ -525,8 +501,12 @@
 		"hiddenByAnotherItem": "被另一件装备遮挡",
 		"hiddenByItem": "被 {name} 遮挡",
 		"showName": "显示 {name}",
+		"notWorn": "未穿戴",
 		"qualityChecks": "质量检查",
+		"customize": "自定义",
+		"itemActions": "物品操作",
 		"layerHiddenHint": "另一件已穿戴装备遮挡了此物品，因此无法在此更改图层顺序。请先显示它。",
+		"nameInEveryDirection": "所有朝向的{name}",
 		"labelNameFacingId": "{name}，朝向{id}",
 		"acceptedAppearanceWarnings": "已接受的外观警告",
 		"titleShowThisFrame": "显示此帧",
@@ -537,6 +517,7 @@
 		"keepWithoutMoves": "不含这些动作并保留",
 		"keepWithoutMovesDetail": "不花费积分，仅保留该装备在完整动作中的帧。它在{moves}中隐藏，这些动作仍标为缺失，你可以稍后按各自的价格制作。",
 		"youAcceptedThisArtworkWithItsRecorded": "你已接受此图像及其记录的质量说明。",
+		"generateItemForMove": "为动作生成装备",
 		"coverageTitle": "动作覆盖",
 		"coverageAllDrawn": "已在所有动作和状态中绘制",
 		"coverageMissing": {
@@ -544,13 +525,24 @@
 		},
 		"coverageClipDrawn": "{move}：已绘制",
 		"coverageClipMissing": "{move}：缺少",
+		"fillMissingMoves": "补齐缺少的动作",
+		"fillMissingHint": {
+			"other": "复用站立设计，一次报价为全部 {n} 个缺少的动作绘制这个物品。"
+		},
+		"labelMakeNameForMissingName": "为{missingName}制作{name}",
+		"generatesOnlyThisItemSMissingViews": "仅为所选动作中此装备缺失的视图生成，并复用其站立设计。身体保持不变。PixelLab 可能按美元计费；排队时间不定。",
+		"madeForAnotherBodyItMayNot": "为另一个身体制作，可能无法对齐。",
 		"itsMirroredViewsUpdateToo": "其镜像视图也会更新。",
 		"matchingColors": "匹配颜色…",
 		"matchItemColors": "匹配装备颜色",
 		"recolor": "重新上色",
 		"layerOrder": "图层顺序",
+		"titleDrawInFrontOfTheNext": "绘制在下一图层上方",
+		"forward": "前移",
+		"titleDrawBehindThePreviousLayer": "绘制在上一图层下方",
+		"backward": "后移",
 		"reset": "重置",
-		"whenWornHide": "穿戴时隐藏的类别",
+		"whenWornHide": "穿戴时隐藏",
 		"howItWasMade": "制作方式",
 		"iD": "ID",
 		"slot": "装备栏",
@@ -570,7 +562,7 @@
 		"edgePx": "边缘像素",
 		"hands": "手部",
 		"reRolls": "重抽",
-		"missingFrames": "缺失帧键",
+		"missingFrames": "缺失帧",
 		"refitIntro": "已免费从{from}的装备适配。请检查这些帧：",
 		"remakeToFit": "为{name}制作一件以适配。",
 		"moveGaps": "朝向{directions}的{move}帧部分或全部缺失。这些帧中不会显示它。",
@@ -579,6 +571,7 @@
 		"copyFrames": {
 			"other": "{name}缺少此装备的 {n} 帧，可从{from}复制。不会生成任何内容。"
 		},
+		"makeFor": "为{move}制作",
 		"makingMoreMoves": "正在为更多动作制作装备",
 		"colorMatchNote": {
 			"other": "将朝向{direction}的 {n} 个已保存{move}帧中的 {pixels} 匹配到装备现有的调色板。"
@@ -596,8 +589,9 @@
 		"frames": {
 			"other": "{n} 帧"
 		},
-		"onlyFacing": "仅在朝向{direction}时移动图层",
-		"tuckNote": "{slots}中可见的装备可能会被部分遮挡。",
+		"onlyFacing": "仅朝向{direction}时",
+		"hideWhenWorn": "穿戴{name}时，勾选的装备会被隐藏。",
+		"tuckNote": "未勾选的{slots}会收在其下方：只显示帽檐以下的部分。兜帽和全脸面具请勾选此项。",
 		"chromaKey": "色键：{color}",
 		"qaStatus": {
 			"pass": "通过",

@@ -501,30 +501,6 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
-		"artworkSection": "Artwork",
-		"movesSection": "Moves & States",
-		"outfitSection": "Outfit behavior",
-		"replaceFrames": "Repair or redraw this view",
-		"technicalDetails": "Technical details",
-		"openSprite": "Enlarge {title}",
-		"availableDirectionsFor": "Available directions for {name}",
-		"previewContext": "{move} · frame {frame} of {count}",
-		"drawForMoves": "Generate for missing moves",
-		"drawSelected": "Generate selected moves",
-		"reviewMissingMoves": "Review missing moves",
-		"drawMovesSelect": "Select at least one move.",
-		"selectAllMoves": "Select all",
-		"clearSelection": "Clear selection",
-		"drawMovesHelp": "Draws only missing item frames. PixelLab may charge for generation.",
-		"repairView": "Repair this view",
-		"redrawView": "Redraw this view",
-		"sendBackward": "Send backward",
-		"bringForward": "Bring forward",
-		"makeAnother": "Make a new item",
-		"layerCategory": "Layer order applies to the {slot} category.",
-		"inFrontOf": "In front of {name}",
-		"behind": "Behind {name}",
-		"previewUnavailable": "No item artwork for this move.",
 		"restoreStanding": {
 			"one": "Restore standing view",
 			"other": "Restore standing views"
@@ -536,8 +512,12 @@
 		"hiddenByAnotherItem": "Hidden by another item",
 		"hiddenByItem": "Hidden by {name}",
 		"showName": "Show {name}",
+		"notWorn": "Not worn",
 		"qualityChecks": "Quality checks",
+		"customize": "Customize",
+		"itemActions": "Item actions",
 		"layerHiddenHint": "Another worn item hides this one, so its layer order cannot change here. Show it first.",
+		"nameInEveryDirection": "{name} in every direction",
 		"labelNameFacingId": "{name} facing {id}",
 		"acceptedAppearanceWarnings": "Accepted appearance warnings",
 		"titleShowThisFrame": "Show this frame",
@@ -548,6 +528,7 @@
 		"keepWithoutMoves": "Keep without those moves",
 		"keepWithoutMovesDetail": "Keeps the item from its complete moves without spending credits. It is hidden in {moves}, which stay listed as missing so you can make them later at their own price.",
 		"youAcceptedThisArtworkWithItsRecorded": "You accepted this artwork with its recorded quality notes.",
+		"generateItemForMove": "Generate item for move",
 		"coverageTitle": "Move coverage",
 		"coverageAllDrawn": "Drawn in every move and State",
 		"coverageMissing": {
@@ -556,13 +537,25 @@
 		},
 		"coverageClipDrawn": "{move}: drawn",
 		"coverageClipMissing": "{move}: missing",
+		"fillMissingMoves": "Fill missing moves",
+		"fillMissingHint": {
+			"one": "Draws this item for {n} missing move in one offer, reusing its standing design.",
+			"other": "Draws this item for all {n} missing moves in one offer, reusing its standing design."
+		},
+		"labelMakeNameForMissingName": "Make {name} for {missingName}",
+		"generatesOnlyThisItemSMissingViews": "Generates only this item’s missing views for the chosen move, reusing its standing design. The body stays as it is. PixelLab may bill dollars; queue time varies.",
+		"madeForAnotherBodyItMayNot": "Made for another body. It may not line up.",
 		"itsMirroredViewsUpdateToo": "Its mirrored views update too.",
 		"matchingColors": "Matching colors…",
 		"matchItemColors": "Match item colors",
 		"recolor": "Recolor",
 		"layerOrder": "Layer order",
+		"titleDrawInFrontOfTheNext": "Draw in front of the next layer",
+		"forward": "Forward",
+		"titleDrawBehindThePreviousLayer": "Draw behind the previous layer",
+		"backward": "Backward",
 		"reset": "Reset",
-		"whenWornHide": "Hide categories when worn",
+		"whenWornHide": "When worn, hide",
 		"howItWasMade": "How it was made",
 		"iD": "ID",
 		"slot": "Slot",
@@ -582,7 +575,7 @@
 		"edgePx": "Edge px",
 		"hands": "Hands",
 		"reRolls": "Re-rolls",
-		"missingFrames": "Missing frame keys",
+		"missingFrames": "Missing frames",
 		"refitIntro": "Fitted for free from {from}’s item. Check these frames:",
 		"remakeToFit": "Make one for {name} to fit it.",
 		"moveGaps": "Missing some or all {move} frames facing {directions}. It won’t show in those frames.",
@@ -592,6 +585,7 @@
 			"one": "{from} has {n} frame of this item that {name} lacks. Nothing is generated.",
 			"other": "{from} has {n} frames of this item that {name} lacks. Nothing is generated."
 		},
+		"makeFor": "Make for {move}",
 		"makingMoreMoves": "Making items for more moves",
 		"colorMatchNote": {
 			"one": "Match {pixels} in {n} saved {move} frame facing {direction} to the item’s existing color palette.",
@@ -613,8 +607,9 @@
 			"one": "{n} frame",
 			"other": "{n} frames"
 		},
-		"onlyFacing": "Only move the layer when facing {direction}",
-		"tuckNote": "Visible items in {slots} may be partly covered.",
+		"onlyFacing": "Only when facing {direction}",
+		"hideWhenWorn": "Checked items are hidden while {name} is worn.",
+		"tuckNote": "Unchecked {slots} is tucked under it: only what hangs below the brim shows. Check it for hoods and full masks.",
 		"chromaKey": "{color} key",
 		"qaStatus": {
 			"pass": "pass",
@@ -3475,9 +3470,7 @@
 			"other": "{n} unpriced calls"
 		}
 	},
-	"shortcut": {
-		"control": "Ctrl"
-	},
+	"shortcut": { "control": "Ctrl" },
 	"report": {
 		"action": "Report",
 		"actionLabel": "Report this problem",

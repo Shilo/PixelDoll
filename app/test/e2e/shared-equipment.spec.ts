@@ -783,7 +783,7 @@ test('an item drawn for another body on the same canvas is worn as drawn for fre
 		'Drawn for Stout’s body, so it may float, clip or leave gaps. Make one for Adventurer copy to fit it.'
 	);
 	await expect(details).toContainText('Not fitted');
-	await openItemSection(details, 'Artwork');
+	await openItemSection(details, 'Item actions');
 	await expect(
 		details.getByRole('button', { name: 'Make one for Adventurer copy...', exact: true })
 	).toBeVisible();
@@ -959,13 +959,12 @@ test('a copy missing frames its source item has copies them for free into the sa
 	await expect(worn).not.toHaveAttribute('data-dim');
 	await expect(worn).not.toHaveAccessibleName(/not shown in this move/);
 	const details = await selectedItemDetails(page);
-	await openItemSection(details, 'Moves & States');
 	const copy = details.getByRole('button', { name: 'Copy from Twin · Free', exact: true });
 	await expect(copy).toBeVisible();
 	await expect(details).toContainText(
 		`Twin has ${dropped} frames of this item that Adventurer copy lacks. Nothing is generated.`
 	);
-	await expect(details.getByRole('button', { name: /^Generate selected moves/ })).toHaveCount(0);
+	await expect(details.getByRole('button', { name: /^Make for / })).toHaveCount(0);
 	await copy.click();
 	await expect(page.locator('.bu-toast').last()).toContainText(
 		`Copied ${dropped} frames of Traveling wizard hat from Twin. No generations used.`
@@ -1145,7 +1144,7 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 	await expect(details).toContainText('Fitted for free from Lefty’s item. Check these frames:');
 	// A re-fit's issues are its fit: nothing to accept as is; a new item for this body is offered instead.
 	await expect(details.getByRole('button', { name: 'Accept as is', exact: true })).toHaveCount(0);
-	await openItemSection(details, 'Artwork');
+	await openItemSection(details, 'Item actions');
 	await expect(
 		details.getByRole('button', { name: 'Make one for Adventurer copy...', exact: true })
 	).toBeVisible();

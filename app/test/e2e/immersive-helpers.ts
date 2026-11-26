@@ -99,7 +99,7 @@ export async function newItem(page: Page, group = 'Head') {
 }
 
 export async function selectedItemDetails(page: Page) {
-	const existing = page.locator('dialog.item-detail[open]');
+	const existing = page.getByRole('dialog').filter({ has: page.locator('.insp-body') });
 	if (await existing.count()) return existing;
 	await equipmentMode(page, 'Wardrobe');
 	// The list shows every category, so the selected item's tile is already in it; its ⋮ menu opens the details.
@@ -109,12 +109,12 @@ export async function selectedItemDetails(page: Page) {
 	await more.scrollIntoViewIfNeeded();
 	await more.click();
 	await page.getByRole('menuitem', { name: 'Details...', exact: true }).click();
-	const dialog = page.locator('dialog.item-detail[open]');
-	await expect(dialog).toBeVisible();
+	const dialog = page.getByRole('dialog');
+	await expect(dialog.locator('.insp-body')).toBeVisible();
 	return dialog;
 }
 
-/** Open one of the Item sheet's disclosure sections, such as Artwork or Outfit behavior. */
+/** Open one of the Item sheet's disclosure sections, such as Customize or Layer order. */
 export async function openItemSection(dialog: Locator, name: string) {
 	const summary = dialog.locator('summary').filter({ hasText: name }).first();
 	// `xpath=..` takes the summary's own details: a has: filter would look for the named summary inside each candidate,

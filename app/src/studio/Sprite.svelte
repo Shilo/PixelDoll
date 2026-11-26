@@ -11,7 +11,6 @@
 		h,
 		limit,
 		checker = false,
-		checkerSize,
 		fitToBox = false,
 		label
 	}: {
@@ -21,7 +20,6 @@
 		h?: number;
 		limit?: number;
 		checker?: boolean;
-		checkerSize?: number;
 		fitToBox?: boolean;
 		label: string;
 	} = $props();
@@ -57,7 +55,7 @@
 		height={height * k}
 		style:width={fitToBox ? '100%' : `${width * shown}px`}
 		style:height={fitToBox ? '100%' : `${height * shown}px`}
-		style:--chk="{checkerSize ?? 16 * px}px"
+		style:--chk="{16 * px}px"
 	></canvas></span
 >
 

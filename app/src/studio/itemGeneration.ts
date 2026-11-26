@@ -72,6 +72,16 @@ export function itemClipDrawn(m: Manifest, itemId: string, clipId: string): bool
 	return dirs.length && item ? drawnFor(m, item, clipId, dirs) : null;
 }
 
+/** One priced offer for several moves or States the same item is missing (Fill missing moves): every spec in a single
+ *  estimate and queue, not one at a time. Null unless at least two can be offered. */
+export function fillMissingMovesOffer(
+	m: Manifest,
+	specs: readonly MoveSpec[],
+	redo: readonly string[] = []
+) {
+	return specs.length > 1 ? itemMoveOffer(m, [...specs], redo) : null;
+}
+
 /** Fresh seeds for approved requests, so a repeat attempt is not the same draw. */
 export const seeded = (specs: MoveSpec[]) =>
 	specs.map((spec) => ({ ...spec, seed: 1 + Math.floor(Math.random() * 1_000_000) }));

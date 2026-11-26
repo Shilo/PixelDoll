@@ -334,7 +334,7 @@ test('real wardrobe, None, Undo, exact colors, outfits and item details remain c
 	const hatOptions = page.getByRole('button', { name: 'More options for Wizard hat', exact: true });
 	await hatOptions.click();
 	await page.getByRole('menuitem', { name: 'Details...', exact: true }).click();
-	const details = page.locator('dialog.item-detail[open]');
+	const details = page.getByRole('dialog', { name: 'Item', exact: true });
 	await expect(details).toContainText('Wizard hat');
 	await expect(details.getByRole('button', { name: 'Take off', exact: true })).toBeVisible();
 	await details.getByRole('button', { name: 'Close', exact: true }).click();

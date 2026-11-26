@@ -43,11 +43,7 @@ import {
 } from '../lib/dress/dress.ts';
 import {
 	drawList,
-	equipped,
-	handHides,
 	handSide,
-	hiddenSlots,
-	hidesOf,
 	oppositeHands,
 	settleHands,
 	twoHanded
@@ -2650,47 +2646,14 @@ export const sameOutfit = (p: Preset) => {
 export function toggleHide(itemId: string, slot: string) {
 	const m = store.project!.manifest,
 		it = itemById(itemId)!;
-	const cur = hideTargets(m, it),
-		shows = hidesOf(m, it).includes(slot);
+	const cur = it.hides ?? m.slots.find((s) => s.id === it.slot)?.hides ?? [];
 	commit(
-		message(shows ? 'history.show' : 'history.hide', { name: slotLabel(m, slot) }),
+		message(cur.includes(slot) ? 'history.show' : 'history.hide', { name: slot }),
 		() => {
-			it.hides = shows ? withoutHide(m, it, slot) : [...cur, slot];
+			it.hides = cur.includes(slot) ? cur.filter((s) => s !== slot) : [...cur, slot];
 		},
 		{ keepHand: it.slot }
 	);
-}
-
-const hideTargets = (m: Manifest, it: Item) =>
-	it.hides ?? m.slots.find((s) => s.id === it.slot)?.hides ?? [];
-
-const withoutHide = (m: Manifest, it: Item, slot: string) =>
-	hideTargets(m, it).filter((target) => !handHides(m, it.slot, [target]).includes(slot));
-
-export function itemHiders(slot: string) {
-	const m = store.project!.manifest;
-	const worn = equipped(m, doc.items);
-	if (!hiddenSlots(m, worn).has(slot)) return [];
-	const candidates = worn.filter((it) => it.slot !== slot && hidesOf(m, it).includes(slot));
-	if (candidates.length < 2) return candidates;
-	// Test each rule in the same outfit with the other rules for this slot set aside.
-	return candidates.filter((hider) =>
-		hiddenSlots(
-			m,
-			worn.map((it) =>
-				it !== hider && candidates.includes(it) ? { ...it, hides: withoutHide(m, it, slot) } : it
-			)
-		).has(slot)
-	);
-}
-
-export function showHiddenItem(slot: string) {
-	const m = store.project!.manifest;
-	const hiders = itemHiders(slot);
-	if (!hiders.length) return;
-	commit(message('history.show', { name: slotLabel(m, slot) }), () => {
-		for (const it of hiders) it.hides = withoutHide(m, it, slot);
-	});
 }
 /** The other hand a held slot conflicts with, as the canonical target its hides name: custom held slots on that side follow
  *  it (runtime handHides). */
@@ -2722,38 +2685,24 @@ export function toggleTwoHanded(itemId: string) {
 /** The draw order of the current frame and the item's front layer in it. An item that is not worn is placed as if it
  *  were, so its order can be set before it is worn. An item hidden by another worn item is not drawn anywhere. */
 function layerPlacement(itemId: string) {
-	void doc.rev;
 	const m = store.project!.manifest,
 		it = itemById(itemId);
 	if (!it) return null;
 	const anim = m.rig.animations.find((x) => x.id === ui.anim);
-	if (!anim?.frames.length) return null;
-	const cell = anim.frames[ui.frame % anim.frames.length].cell;
-	// An unworn item is placed as if it were worn, even when a worn item hides its category: its order can still be set
-	// before it is shown. Lend the manifest only for this draw so the saved hides stay untouched.
-	const placed =
-		doc.items[it.slot] === itemId
-			? m
-			: {
-					...m,
-					items: m.items.map((entry) => {
-						const hidden = hidesOf(m, entry);
-						return hidden.includes(it.slot)
-							? { ...entry, hides: hidden.filter((slot) => slot !== it.slot) }
-							: entry;
-					})
-				};
-	const order = drawList(placed, { ...doc.items, [it.slot]: itemId }, ui.anim, ui.dir, cell);
-	const i = order.findIndex((d) => d.item.slot === it.slot && d.layer.role === 'fg');
+	if (!anim) return null;
+	const cell = anim.frames[ui.frame % anim.frames.length].cell,
+		items = $state.snapshot(doc.items);
+	let order = drawList(m, items, ui.anim, ui.dir, cell);
+	if (!order.some((d) => d.item.id === itemId))
+		order = drawList(m, { ...items, [it.slot]: itemId }, ui.anim, ui.dir, cell);
+	const i = order.findIndex((d) => d.item.id === itemId && d.layer.role === 'fg');
 	return i < 0 ? null : { order, i };
 }
-/** The layers the item's front can cross in the current view. */
-export function itemLayerNeighbors(itemId: string) {
-	const place = layerPlacement(itemId);
-	return {
-		behind: place?.order[place.i - 1]?.item.name,
-		ahead: place?.order[place.i + 1]?.item.name
-	};
+/** Whether Forward (1) or Backward (-1) can move the item's front layer in the current draw order. */
+export function canMoveLayer(itemId: string, step: 1 | -1) {
+	const place = layerPlacement(itemId),
+		j = place ? place.i + step : -1;
+	return !!place && j >= 0 && j < place.order.length;
 }
 /** Move the item's front layer one step in the draw order of the current frame (all directions, or only the current one). */
 export function moveLayer(itemId: string, step: 1 | -1, onlyDir: boolean) {
@@ -2762,46 +2711,26 @@ export function moveLayer(itemId: string, step: 1 | -1, onlyDir: boolean) {
 	const { order, i } = place,
 		j = i + step;
 	if (j < 0 || j >= order.length) return;
-	const { slot, layer, z } = order[i];
-	// Move the front as a unit, including any finer overrides that take precedence over the base depth.
-	const offset = order[j].z + step - z;
-	const dir = onlyDir ? ui.dir : undefined;
-	const overrides = slot.zOverrides ?? [];
-	const isBase = (o: ZOverride) => o.layer === 'fg' && o.dir === dir && !o.anim && o.cell == null;
-	const base =
-		overrides.findLast(isBase)?.z ??
-		overrides.findLast((o) => o.layer === 'fg' && !o.dir && !o.anim && o.cell == null)?.z ??
-		layer.z;
+	const m = store.project!.manifest,
+		it = itemById(itemId)!,
+		nz = order[j].z + step, // just past the neighbor
+		slot = m.slots.find((s) => s.id === it.slot)!,
+		o: ZOverride = { layer: 'fg', z: nz, ...(onlyDir ? { dir: ui.dir } : {}) };
 	commit(message(step > 0 ? 'history.bringForward' : 'history.sendBackward'), () => {
 		slot.zOverrides = [
-			...overrides.flatMap((o, index) => {
-				if (isBase(o)) return [];
-				if (o.layer !== 'fg' || (dir && o.dir && o.dir !== dir)) return [o];
-				const shifted = { ...o, z: o.z + offset };
-				if (!dir || o.dir) return [shifted];
-				const replaced = overrides.some(
-					(next, i) =>
-						i > index &&
-						next.layer === o.layer &&
-						next.dir === dir &&
-						next.anim === o.anim &&
-						next.cell === o.cell
-				);
-				return (!o.anim && o.cell == null) || replaced ? [o] : [o, { ...shifted, dir }];
-			}),
-			{ layer: 'fg', z: base + offset, ...(dir ? { dir } : {}) }
+			...(slot.zOverrides ?? []).filter(
+				(x) => !(x.layer === 'fg' && x.dir === o.dir && !x.anim && x.cell == null)
+			),
+			o
 		];
 	});
 }
-/** Restore the foreground ladder. Back layers have their own authored positions. */
+/** `ladder`: the slot's default order from lib/items SLOTS (T3), passed in so the item pipeline stays out of startup. */
 export function resetLayer(itemId: string, ladder: ZOverride[]) {
 	const m = store.project!.manifest,
 		slot = m.slots.find((s) => s.id === itemById(itemId)!.slot)!;
 	commit(message('history.resetLayerOrder'), () => {
-		slot.zOverrides = [
-			...(slot.zOverrides ?? []).filter((rule) => rule.layer !== 'fg'),
-			...structuredClone(ladder)
-		];
+		slot.zOverrides = structuredClone(ladder);
 	});
 }
 
