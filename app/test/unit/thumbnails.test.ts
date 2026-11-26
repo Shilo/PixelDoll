@@ -169,3 +169,48 @@ test('the selection cast rides the mount on its feet, at the standing size, only
 		experience.mountLegs = 'far';
 	}
 });
+
+test('the selection cast keeps both legs visible when its saved seat clears the mount', async () => {
+	const project = await loadFixture(
+		async (path) =>
+			new Uint8Array(await readFile(new URL('../../public/fixtures/s2/' + path, import.meta.url)))
+	);
+	const { rig } = project.manifest;
+	const walk = rig.animations.find(({ id }) => id === 'walk')!;
+	const points = ['LEFT', 'RIGHT'].flatMap((side, index) =>
+		['HIP', 'KNEE', 'LEG', 'ELBOW', 'ARM'].map((joint, row) => ({
+			label: `${side} ${joint}`,
+			x: row < 3 ? 0.4 + index * 0.2 : 0.2 + index * 0.6,
+			y: [0.55, 0.7, 0.85, 0.35, 0.5][row]
+		}))
+	);
+	walk.sources = {
+		south: {
+			route: 'import',
+			reference: rig.baseHash,
+			measured: Array.from({ length: walk.cells }, () => points),
+			provenance: []
+		}
+	};
+	const id = 'cast-raised-seat';
+	try {
+		experience.testMount = true;
+		experience.ridingPoses[id] = walk.id;
+		const compare = (revision: number) => {
+			experience.mountLegs = 'none';
+			const visible = mountedStill(id, project, {}, revision)!.image;
+			experience.mountLegs = 'both';
+			const obscured = mountedStill(id, project, {}, revision)!.image;
+			return { visible, obscured };
+		};
+		const automatic = compare(0);
+		expect(automatic.obscured).not.toEqual(automatic.visible);
+		rig.mountSeatOffsets = { south: { x: -32, y: -32 } };
+		const cleared = compare(1);
+		expect(cleared.obscured).toEqual(cleared.visible);
+	} finally {
+		delete experience.ridingPoses[id];
+		experience.testMount = false;
+		experience.mountLegs = 'far';
+	}
+});

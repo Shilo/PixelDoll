@@ -669,6 +669,8 @@ export function advancePlayback(
 export interface RenderedPresentation {
 	image: Img | null;
 	frame: Frame;
+	/** The exact outfit and cell used for an ordinary composition, including facing fallback. */
+	composition?: { items: Preset['items']; cell: number };
 	hiddenItems: Item[];
 	issue: string | null;
 	notice?: PresentationNotice;
@@ -767,7 +769,10 @@ export function renderPresentation(
 		result.attackLayered = !!layered.image;
 		result.attackFallback = layered.fallback ?? undefined;
 	}
-	result.image ??= composeCell(p, filtered, clip, direction, actualCell, result.frame);
+	if (!result.image) {
+		result.image = composeCell(p, filtered, clip, direction, actualCell, result.frame);
+		result.composition = { items: filtered, cell: actualCell };
+	}
 	if (result.hiddenItems.length && !a.loading) {
 		// Missing in every view: naming the facing shown would read as if turning brought the items back.
 		const everywhere = result.hiddenItems.every((item) =>

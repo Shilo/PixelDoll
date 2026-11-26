@@ -510,13 +510,6 @@
 			"other": "Reconstruídas a partir dos desenhos salvos do item para {directions}. Nada é gerado."
 		},
 		"hiddenByAnotherItem": "Oculto por outro item",
-		"hiddenByItem": "Oculto por {name}",
-		"showName": "Mostrar {name}",
-		"notWorn": "Não equipado",
-		"qualityChecks": "Verificações de qualidade",
-		"customize": "Personalizar",
-		"itemActions": "Ações do item",
-		"layerHiddenHint": "Outro item equipado oculta este, então a ordem das camadas não pode mudar aqui. Mostre-o primeiro.",
 		"nameInEveryDirection": "{name} em todas as direções",
 		"labelNameFacingId": "{name} na direção {id}",
 		"acceptedAppearanceWarnings": "Alertas visuais aceitos",
@@ -1503,6 +1496,7 @@
 			"skippedStanding": "“{move}” na direção {direction} ficou de fora: o personagem não tem uma vista em pé nessa direção.",
 			"semiAlpha": "As bordas parcialmente transparentes foram convertidas para transparência de pixel art.",
 			"upscaledBase": "A arte parada parece ter sido ampliada em {scale}x. Ela é mantida como está: os itens feitos a partir dela usam mais pixels, misturam tamanhos de pixel e recoloram com menos limpeza. Importe a arte original em 1x se puder.",
+			"compressedBase": "A arte parada parece comprimida ou redimensionada: muitas das suas cores aparecem uma única vez. Ela é mantida como está: os itens feitos a partir dela são mais difíceis de recortar, recolorir e alinhar. Importe a arte original se puder.",
 			"detailsDropped": "Alguns dados salvos do personagem estavam danificados e foram deixados de fora. Configure o rig de poses de novo, se precisar."
 		},
 		"error": {

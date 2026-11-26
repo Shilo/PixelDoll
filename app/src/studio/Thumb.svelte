@@ -26,4 +26,4 @@
 		h={im.h}
 		fitToBox
 		label={item.name}
-	/>{:else}<GroupIcon group={item.slot} size={24} />{/if}
+	/>{:else}<GroupIcon group={item.slot} surface="thumbnail" />{/if}

@@ -15,7 +15,7 @@
 	import { scrollToSection, sectionInView } from './sectionScroll.ts';
 	import { categories } from './slots.ts';
 	import { ui, doc, store, randomizeColors, resetColors } from './state.svelte.ts';
-	import { PersonStanding, RotateCcw, Shuffle } from './icons.ts';
+	import { RotateCcw, Shuffle } from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
 	// The same order as Wardrobe's categories, so an item is in the same place in both tabs.
@@ -154,10 +154,7 @@
 					: message('colorSections.resetLowerColors', { lower })}
 				<section class="slot-section" data-owner={s.it.id} aria-labelledby="colors-{s.it.id}">
 					<div class="bu-section-head" data-current={active === s.it.id || undefined}>
-						{#if s.base}<PersonStanding size={16} aria-hidden="true" />{:else}<GroupIcon
-								group={s.it.slot}
-								size={16}
-							/>{/if}
+						<GroupIcon group={s.it.slot} surface="header" />
 						<h3 class="bu-section-title" id="colors-{s.it.id}">{s.name}</h3>
 						<button
 							class="bu-action section-action"
@@ -213,18 +210,13 @@
 									class="bu-action slot-tab"
 									data-variant="rail"
 									data-color-rail={s.it.id}
-									data-filled
 									aria-current={active === s.it.id ? 'true' : undefined}
 									aria-label={s.name}
 									tabindex={active === s.it.id ? 0 : -1}
 									onclick={() => void show(s.it.id)}
-									>{#if s.base}<PersonStanding size={22} aria-hidden="true" />{:else}<GroupIcon
-											group={s.it.slot}
-											size={22}
-										/>{/if}<span class="bu-rail-label">{s.name}</span><i
-										class="bu-rail-dot"
-										aria-hidden="true"
-									></i></button
+									><GroupIcon group={s.it.slot} surface="rail" /><span class="bu-rail-label"
+										>{s.name}</span
+									></button
 								>
 							</li>
 						{/each}

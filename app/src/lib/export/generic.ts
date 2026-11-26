@@ -527,7 +527,7 @@ Quick start
 ${(m.export?.engines ?? []).map((e) => `  ${ENGINE_START[e] ?? e}`).join('\n')}
 
 What is inside
-  manifest.json   rig (cell ${m.rig.cell.w}x${m.rig.cell.h}, pivot ${m.rig.pivot.x},${m.rig.pivot.y}), moves, slots, items, colors and outfits
+  manifest.json   rig (cell ${m.rig.cell.w}x${m.rig.cell.h}, pivot ${m.rig.pivot.x},${m.rig.pivot.y}), moves, slots, items, materials and outfits
   layers/         one sheet per item layer and move: layers/<slot>/<item>/<layer>/<move>.png
                   rows = directions (${m.rig.directions.map((d) => d.id).join(', ')}), columns = frames${
 										m.export?.baked
@@ -542,10 +542,21 @@ Path segments derived from IDs prefix Windows device names (con, prn, aux, nul, 
 lpt0-lpt9) with an underscore, case-insensitively. IDs in manifest.json stay unchanged.
 For example, outfit aux and move con use baked/_aux/_con.png. Layer sheets have explicit manifest paths.
 
-Outfit colors are exact palette swaps (materials[].ramp and variants, presets[].variants); the runtimes swap them while
-the character plays, so a game can change them.
+${
+	m.materials.length && m.materials.some((mat) => Object.keys(mat.variants ?? {}).length)
+		? `Outfit colors are exact palette swaps (materials[].ramp and variants, presets[].variants); the runtimes swap them
+while the character plays, so a game can change them.`
+		: `This character ships no named color variants, so every sheet already carries its final colors and there is nothing
+to recolor at runtime. Do not call the recolor API with invented material or variant ids.`
+}
 
 Moves: ${moves.join(', ')}.
+Outfits: ${m.presets
+		.map((p, i) => `${p.name} (${p.id})${i === 0 ? ' starts the character' : ''}`)
+		.join(', ')}.
+An item id containing ~ is a baked tuck variant (for example hair under a hat): the runtime applies it automatically when
+the covering item is worn, and the equipment API refuses it if you equip it yourself (each engine reference says whether
+that throws or returns an error).
 A move lists the directions it has in rig.animations[].directions; its other sheet rows are empty.
 Pixel art: use nearest-neighbor filtering and whole-pixel positions.
 `;

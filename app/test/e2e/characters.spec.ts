@@ -5,14 +5,13 @@ import {
 	equipmentGroup,
 	newItem,
 	selectedItemDetails,
-	openItemSection,
 	pickItem,
 	openPlaybackPicker
 } from './immersive-helpers.ts';
 import './setup-concurrency.ts';
-import { test, expect, type Locator } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import { makeImg } from '../../src/lib/image/png.ts';
+import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import { encodePngBytes, decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { zip, unzip } from '../../src/lib/store/zip.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
@@ -235,7 +234,6 @@ test('Edit appearance makes reviewed character and equipment copies from saved p
 	await equipmentGroup(page, 'Head');
 	await pickItem(page, hat.name);
 	const details = await selectedItemDetails(page);
-	await openItemSection(details, 'Customize');
 	await details.getByRole('button', { name: action }).click();
 	const editItem = edit.getByRole('button', { name: /^Edit item ·/ });
 	await expect(edit.getByRole('radio')).toHaveCount(0);
@@ -2193,11 +2191,8 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 	await pickItem(page, garmentName);
 	const pane = await selectedItemDetails(page);
 	await expect(pane.locator('.badge.look')).toContainText('Needs a look');
-	// The notes sit in the quality checks disclosure, one intentional step from the summary.
-	const itemPane = page.getByRole('dialog', { name: 'Item', exact: true });
-	await openItemSection(itemPane, 'Quality checks');
 	await expect(
-		itemPane.getByText('Some lower clothing is missing compared with the standing design', {
+		pane.getByText('Some lower clothing is missing compared with the standing design', {
 			exact: true
 		})
 	).toBeVisible();
@@ -2266,7 +2261,6 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 	await pickItem(page, before.item.name);
 	await selectedItemDetails(page);
 	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
-	await openItemSection(itemPane, 'Quality checks');
 	await expect(
 		pane.getByText('Some lower clothing is missing compared with the standing design', {
 			exact: true
@@ -4901,7 +4895,6 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
 	});
 	const pane = await selectedItemDetails(page);
 	await expect(pane.locator('.badge.accepted')).toContainText('Accepted');
-	await openItemSection(pane, 'Quality checks');
 	await expect(pane.getByText('Accepted appearance warnings', { exact: true })).toBeVisible();
 	await expect(pane.getByText('The design has gray smudges', { exact: true })).toBeVisible();
 	await expect(
@@ -5255,4 +5248,69 @@ test('every character loads its frames once across switching, menus and updates,
 	expect(final.maxPerFrame).toBe(1);
 	expect(final.reads).toBe(imported.reads);
 	expect(final.decodes).toBe(imported.decodes);
+});
+
+async function importArchive(page: Page, art: Img): Promise<void> {
+	const enc = new TextEncoder();
+	const dirs = ['south', 'east', 'west'];
+	const archive = await zip([
+		{
+			name: 'metadata.json',
+			data: enc.encode(
+				JSON.stringify({
+					character: {
+						id: 'compression-check',
+						name: 'Compression check',
+						size: { width: art.w, height: art.h }
+					},
+					frames: {
+						rotations: Object.fromEntries(dirs.map((dir) => [dir, `rotations/${dir}.png`])),
+						animations: {}
+					}
+				})
+			)
+		},
+		...(await Promise.all(
+			dirs.map(async (dir) => ({ name: `rotations/${dir}.png`, data: await encodePngBytes(art) }))
+		))
+	]);
+	await openStudio(page, '/');
+	await page.locator('.project-btn').click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
+		name: 'character.zip',
+		mimeType: 'application/zip',
+		buffer: Buffer.from(archive)
+	});
+	// The preview is ready once the name field exists; the warning list renders with it.
+	await expect(page.getByLabel('Character name', { exact: true })).toBeVisible();
+}
+
+test('import warns when the standing artwork looks compressed or resampled', async ({ page }) => {
+	// Every pixel a slightly different color, the signature of JPEG damage or a smooth rescale.
+	const noisy = makeImg(32, 32);
+	for (let y = 0; y < 32; y++)
+		for (let x = 0; x < 32; x++)
+			noisy.data.set(
+				[(x * 7 + y * 3) & 255, (x * 5 + y * 11) & 255, (x * 13 + y) & 255, 255],
+				(y * 32 + x) * 4
+			);
+	await importArchive(page, noisy);
+	await expect(page.getByText('looks compressed or resampled', { exact: false })).toBeVisible();
+});
+
+test('import stays quiet for native standing artwork', async ({ page }) => {
+	// 200 colors, each repeated about five times: a rich but hand-drawn palette, the case a naive color count would flag.
+	const clean = makeImg(32, 32);
+	for (let y = 0; y < 32; y++)
+		for (let x = 0; x < 32; x++) {
+			const i = (x + y * 32) % 200;
+			clean.data.set([i & 255, (i >> 8) & 255, 0, 255], (y * 32 + x) * 4);
+		}
+	await importArchive(page, clean);
+	await expect(page.getByText('looks compressed or resampled', { exact: false })).toHaveCount(0);
 });

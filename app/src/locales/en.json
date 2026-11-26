@@ -510,13 +510,6 @@
 			"other": "Rebuilt from this item’s saved {directions} designs. Nothing is generated."
 		},
 		"hiddenByAnotherItem": "Hidden by another item",
-		"hiddenByItem": "Hidden by {name}",
-		"showName": "Show {name}",
-		"notWorn": "Not worn",
-		"qualityChecks": "Quality checks",
-		"customize": "Customize",
-		"itemActions": "Item actions",
-		"layerHiddenHint": "Another worn item hides this one, so its layer order cannot change here. Show it first.",
 		"nameInEveryDirection": "{name} in every direction",
 		"labelNameFacingId": "{name} facing {id}",
 		"acceptedAppearanceWarnings": "Accepted appearance warnings",
@@ -1497,6 +1490,7 @@
 			"skippedStanding": "“{move}” facing {direction} was left out: the character has no standing view facing that way.",
 			"semiAlpha": "Partially transparent edges were converted to pixel-art transparency.",
 			"upscaledBase": "The standing artwork looks like a {scale}x upscale. It is kept as it is: items made from it cost more pixels, mix pixel sizes and recolor less cleanly. Import the original 1x art if you can.",
+			"compressedBase": "The standing artwork looks compressed or resampled: many of its colors appear only once. It is kept as it is: items made from it are harder to cut out, recolor and line up. Import the original art if you can.",
 			"detailsDropped": "Some saved character details were damaged and were left out. Set up its pose rig again if needed."
 		},
 		"error": {

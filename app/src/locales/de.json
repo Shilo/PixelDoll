@@ -510,13 +510,6 @@
 			"other": "Aus den gespeicherten Vorlagen des Gegenstands für {directions} wiederhergestellt. Es wird nichts generiert."
 		},
 		"hiddenByAnotherItem": "Von einem anderen Gegenstand verdeckt",
-		"hiddenByItem": "Verdeckt von {name}",
-		"showName": "{name} anzeigen",
-		"notWorn": "Nicht getragen",
-		"qualityChecks": "Qualitätsprüfungen",
-		"customize": "Anpassen",
-		"itemActions": "Gegenstandsaktionen",
-		"layerHiddenHint": "Ein anderer getragener Gegenstand verdeckt diesen, daher lässt sich die Ebenenreihenfolge hier nicht ändern. Zeige ihn zuerst an.",
 		"nameInEveryDirection": "{name} in allen Blickrichtungen",
 		"labelNameFacingId": "{name}, Blickrichtung: {id}",
 		"acceptedAppearanceWarnings": "Akzeptierte Hinweise zur Darstellung",
@@ -1497,6 +1490,7 @@
 			"skippedStanding": "„{move}“ in Blickrichtung {direction} wurde weggelassen: Die Figur hat keine Standansicht in diese Richtung.",
 			"semiAlpha": "Teiltransparente Kanten wurden in harte Pixelgrafik-Transparenz umgewandelt.",
 			"upscaledBase": "Die Standbilder sehen wie eine {scale}x-Vergrößerung aus. Sie bleiben unverändert: Gegenstände daraus brauchen mehr Pixel, mischen Pixelgrößen und lassen sich weniger sauber umfärben. Importiere nach Möglichkeit die Originalgrafik in 1x.",
+			"compressedBase": "Die Standbilder sehen komprimiert oder neu skaliert aus: Viele Farben kommen nur einmal vor. Sie bleiben unverändert: Gegenstände daraus lassen sich schlechter freistellen, umfärben und ausrichten. Importiere nach Möglichkeit das Original.",
 			"detailsDropped": "Einige gespeicherte Angaben zur Figur waren beschädigt und wurden ausgelassen. Richte bei Bedarf ihr Posen-Rig erneut ein."
 		},
 		"error": {

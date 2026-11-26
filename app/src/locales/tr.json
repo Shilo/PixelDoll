@@ -510,13 +510,6 @@
 			"other": "Eşyanın {directions} için kayıtlı çizimlerinden yeniden oluşturulur. Üretim yapılmaz."
 		},
 		"hiddenByAnotherItem": "Başka bir eşya tarafından gizleniyor",
-		"hiddenByItem": "{name} tarafından gizleniyor",
-		"showName": "{name} öğesini göster",
-		"notWorn": "Giyili değil",
-		"qualityChecks": "Kalite kontrolleri",
-		"customize": "Özelleştir",
-		"itemActions": "Eşya işlemleri",
-		"layerHiddenHint": "Giyilen başka bir eşya bunu gizliyor, bu yüzden katman sırası burada değiştirilemez. Önce gösterin.",
 		"nameInEveryDirection": "{name}, tüm yönler",
 		"labelNameFacingId": "{name}, yön: {id}",
 		"acceptedAppearanceWarnings": "Kabul edilen görünüm uyarıları",
@@ -1497,6 +1490,7 @@
 			"skippedStanding": "“{move}” animasyonunun {direction} yönü dışarıda bırakıldı: karakterin o yöne bakan duruş görünümü yok.",
 			"semiAlpha": "Kısmen şeffaf kenarlar piksel sanatına uygun şeffaflığa dönüştürüldü.",
 			"upscaledBase": "Ayakta duran görsel {scale}x büyütülmüş gibi görünüyor. Olduğu gibi tutulur: ondan yapılan eşyalar daha fazla piksel kullanır, piksel boyutlarını karıştırır ve renk değişimi daha az temiz olur. Mümkünse özgün 1x görseli içe aktarın.",
+			"compressedBase": "Ayakta duran görsel sıkıştırılmış veya yeniden ölçeklenmiş görünüyor: birçok rengi yalnızca bir kez geçiyor. Olduğu gibi tutulur: ondan yapılan eşyaları kesmek, renklendirmek ve hizalamak zorlaşır. Mümkünse özgün görseli içe aktarın.",
 			"detailsDropped": "Kayıtlı bazı karakter bilgileri bozuktu ve dahil edilmedi. Gerekirse poz rig’ini yeniden kurun."
 		},
 		"error": {
