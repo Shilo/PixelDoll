@@ -5,28 +5,29 @@ coordinating agent and two independent reviewers (Bob and Ada, GPT Sol 6.2 mediu
 
 ## The rule
 
-**The menu holds what you can choose from the name alone. Details holds what you need to see first.**
+Ask one question about the action: **can the player do it without looking at anything first?**
 
-The menu is the object's ⋮, its right-click and its press-and-hold: one shared menu wherever it opens, including the ⋮ in
-the object's details window (which leaves out its own Details row). Details is the object's window: its preview,
-settings, coverage and findings, each tool beside the evidence for using it.
+- **Yes: it goes in the menu.** They already know they want it just from seeing the object in a list. Examples: Rename,
+  Download ZIP, Move to Trash, Recolor, Make copy with new look. A window that opens next may still ask for the
+  remaining choices.
+- **No, they need to look at something first: it goes in the object's window,** right next to what they look at.
+  Something to look at means frames, facings, problems the checks found, or how a setting changes the outfit. Examples:
+  Fix frames and Redraw (look at the frames first), the re-fit beside the fit problems, Two-handed, layer order. An
+  action on one part of the object (one frame, facing or slot) always needs that part in view, so it is always in the
+  window.
 
-Apply these tests to any action, in order:
+How often an action is used and what it costs decide its order and its confirmation, never where it lives.
 
-1. **Can you choose it from the object's name alone?** Rename, Download ZIP, Move to Trash, Recolor, starting a copy or
-   variant: menu. A dialog that opens next may still collect the remaining choices.
-2. **Do you need to see what is there before deciding?** Missing frames, failed checks, fit, grip, frame bounds, facing
-   coverage: details, next to that evidence.
-3. **Does it act on the whole object or one part of it?** The whole object: menu. One frame, facing, slot or worn
-   combination: details, next to that part.
-4. **Frequency and cost set order and safeguards, not placement.** Frequent actions go first in their home; prices and
-   confirmations appear at the point of commitment, wherever the action starts.
+**One home per action, with one exception.** When the object's tile already shows a warning icon, the action that fixes
+that warning may also appear in the menu as a shortcut, with the same label and the same flow. Example: an item that
+cannot be worn on this body shows a red icon, so **Make copy for self…** is in its menu as well as in its window,
+beside the explanation.
 
-**One home per action.** A second entry is allowed only as a shortcut for a visible blocker on the object (for example
-an item that cannot be worn on this body), with the same label and the same priced or confirmed flow.
+The menu is the object's ⋮, right-click and press-and-hold: one shared menu wherever it opens, including the ⋮ in the
+object's window (which leaves out the row that opens that window).
 
-**Name:** the menu row stays **Details…**; the window is titled with the object's name. "Inspect" is already the stage's
-pose inspector.
+**The window's name is still being decided** (2026-11-26). "Details" reads as text only, so players may skip the
+window that fixes their item. Candidates from the reviewers: **View and edit…** (Ada) and **Preview & edit…** (Bob).
 
 ## Applied
 
@@ -34,12 +35,12 @@ pose inspector.
 | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Item      | Details, Recolor, edited copy, variant, Rename, Move to slot, Download ZIP, Move to Trash; the re-fit for this character as a blocker shortcut | Preview and facings, coverage and drawing missing frames, Quality findings with Fix frames and one-view repair or redraw, the re-fit beside its findings, Outfit (hand settings, layer order, hiding), About; Wear in the footer |
 | Character | Details, Rename, edited copy, Download ZIP, Delete                                                                                             | Frame and directions (Adjust frame, Directions), recorded and estimated cost (Cost estimate), generation details                                                                                                                 |
-| Move      | Details, Rename, Redraw, Add state from frame, Download ZIP, Delete                                                                            | Facings and frames, Fix frames, which items are drawn for it and drawing the missing ones                                                                                                                                        |
+| Move      | Details, Rename, Add state from frame, Download ZIP, Delete                                                                                    | Facings and frames, Fix frames, Redraw (after seeing the facings), which items are drawn for it and drawing the missing ones                                                                                                     |
 | State     | Details, Rename, Add state from frame, Download ZIP, Delete                                                                                    | Facings, Fix frames, items drawn for it; no Redraw (capture again from a better frame)                                                                                                                                           |
 
-Redraw of a whole move stays in the menu because you choose it from the move's name; its sheet shows the facings before
-anything is paid. Repairing body frames is deferred: every item layer is drawn on the body, so a repair would need to
-show the affected layers and keep the original.
+Redraw sits in the window for moves, as an item's redraw does: you look at the facings before paying. Repairing body
+frames is deferred: every item layer is drawn on the body, so a repair would need to show the affected layers and keep
+the original.
 
 ## Sources
 
