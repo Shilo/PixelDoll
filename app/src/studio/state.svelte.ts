@@ -2760,7 +2760,7 @@ type Crossing = { draw: Draw; back: boolean; frame: number };
  *  changes in at least one frame (`frame`, the first such playback frame). Stepping past anything else (another item's
  *  back part far away, layers both covered by a hood, an empty layer) changes nothing anyone can see, so it is not a
  *  step. The order is read on the move's first frame, so it holds still while the move plays. */
-function layerCrossings(itemId: string, animId: string, dir: DirectionName) {
+function layerCrossings(itemId: string, animId: string, dir: DirectionName, onlyDir = false) {
 	void doc.rev;
 	const p = store.project,
 		anim = p?.manifest.rig.animations.find((x) => x.id === animId);
@@ -2781,7 +2781,8 @@ function layerCrossings(itemId: string, animId: string, dir: DirectionName) {
 		const zOverrides = steppedOverrides(
 			slot.zOverrides ?? [],
 			layer.z,
-			order[j].z + Math.sign(j - i) - z
+			order[j].z + Math.sign(j - i) - z,
+			onlyDir ? dir : undefined
 		);
 		const trial = {
 			...project,
@@ -2842,8 +2843,13 @@ function steppedOverrides(
 	];
 }
 /** The layers the item's front would cross with Send backward and Bring forward in the shown move and facing. */
-export function itemLayerNeighbors(itemId: string, animId = ui.anim, dir: DirectionName = ui.dir) {
-	const place = layerCrossings(itemId, animId, dir);
+export function itemLayerNeighbors(
+	itemId: string,
+	animId = ui.anim,
+	dir: DirectionName = ui.dir,
+	onlyDir = false
+) {
+	const place = layerCrossings(itemId, animId, dir, onlyDir);
 	const named = (crossing?: Crossing) =>
 		crossing && {
 			itemId: crossing.draw.item.id,
@@ -2863,7 +2869,7 @@ export function moveLayer(
 	animId = ui.anim,
 	facing: DirectionName = ui.dir
 ): number | undefined {
-	const place = layerCrossings(itemId, animId, facing),
+	const place = layerCrossings(itemId, animId, facing, onlyDir),
 		target = step > 0 ? place?.ahead : place?.behind;
 	if (!place || !target) return;
 	const { slot, layer, z } = place.order[place.i];

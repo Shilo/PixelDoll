@@ -228,7 +228,7 @@
 	backTo={!prepared && frames.back ? t('studio.titleItem') : undefined}
 	backDiscards
 	dirty={!!prepared}
-	onclose={() => (ui.sheet = null)}
+	onclose={() => (ui.sheet = frames.back ?? null)}
 >
 	{#if m && item && move && frame}
 		<div

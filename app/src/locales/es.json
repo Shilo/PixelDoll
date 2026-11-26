@@ -609,7 +609,7 @@
 		"staleNote": "Hecho para otro cuerpo. Puede que no encaje.",
 		"previewMove": "Animación",
 		"openMissingView": "Abrir {direction} (aún sin fotogramas)",
-		"missingView": "Ninguno",
+		"missingView": "Falta",
 		"hiddenWhenWorn": "Oculto mientras se lleva {names}",
 		"clipsIncomplete": {
 			"one": "{n} incompleta",

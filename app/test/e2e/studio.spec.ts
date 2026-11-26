@@ -3482,7 +3482,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 					sprites = [...strip.querySelectorAll('canvas')];
 				return {
 					strip: box(strip),
-					actions: box(sheet.querySelector('.preview-toolbar')!),
+					actions: box(sheet.querySelector('.preview-bar')!),
 					sprites: sprites.map(box),
 					pixels: sprites[0].toDataURL()
 				};
@@ -3507,10 +3507,10 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	const southView = inspector.getByRole('button', { name: 'Enlarge Red cape facing South' });
 	await southView.focus();
 	await page.keyboard.press('Enter');
-	const spritePreview = page.getByRole('dialog', { name: 'Red cape facing South', exact: true });
+	const spritePreview = page.getByRole('dialog', { name: 'Red cape', exact: true });
 	await expect(spritePreview.getByRole('img')).toBeVisible();
-	const frameNote = spritePreview.locator('.preview-context');
-	await expect(frameNote).toContainText(/^Walk · frame \d+ of \d+$/);
+	const frameNote = spritePreview.locator('.viewer-caption');
+	await expect(frameNote).toContainText(/^Walk · South · Frame \d+ of 8$/);
 	const firstNote = await frameNote.textContent();
 	await page.keyboard.press('ArrowRight');
 	await expect(frameNote).not.toHaveText(firstNote!);
@@ -3532,8 +3532,9 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await page.goBack();
 	await expect(spritePreview).toHaveCount(0);
 	await expect(southView).toBeFocused();
-	// Delete asks in an alert over the details; Cancel keeps the item and the details open.
-	await inspector.getByRole('button', { name: 'Move to Trash', exact: true }).click();
+	// Delete, in the item actions menu, asks in an alert over the details; Cancel keeps the item and the details open.
+	await inspector.getByRole('button', { name: 'Item actions', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Move to Trash', exact: true }).click();
 	const deleteAlert = page.getByRole('alertdialog', { name: /^Move .+ to Trash\?$/ });
 	await expect(deleteAlert.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
 	await page.keyboard.press('Escape');
@@ -4409,12 +4410,10 @@ test('free item color matching is offline, scoped, persistent and preserves save
 		dressed: true,
 		frames: 8
 	});
-	await openItemSection(pane, 'Artwork');
+	await openItemSection(pane, 'Quality');
 	const action = pane.getByRole('button', { name: /^Match item colors.*Free$/ });
 	await expect(action).toBeVisible();
-	await expect(pane).toContainText('Match 2 pixels in 2 saved Walk frames facing west');
-	await expect(pane).toContainText('2 unmatched eligible pixels stay unchanged');
-	await expect(pane).toContainText('No PixelLab call is made');
+	await expect(action).toContainText('Snaps 2 pixels in 2 frames to the item’s own colors.');
 	await context.setOffline(true);
 	await action.click();
 	await expect(pane.getByText('Matched 2 pixels in 2 frames.', { exact: true })).toBeVisible();
@@ -4469,7 +4468,7 @@ test('free item color matching is offline, scoped, persistent and preserves save
 	expect(after).toMatchObject({ selected: fixture.itemId, anim: 'walk', dir: 'west' });
 	expect(after.audit).toHaveLength(1);
 	expect(after.audit[0]).toMatchObject({ version: 'neutral-owned-v1', anim: 'walk', dir: 'west' });
-	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
+	await expect(pane.locator('.item-status')).toHaveText('Accepted');
 	await reloadStudio(page);
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	await page.evaluate(async (id) => {
@@ -4480,11 +4479,11 @@ test('free item color matching is offline, scoped, persistent and preserves save
 		s.pick(id);
 	}, fixture.itemId);
 	await selectedItemDetails(page);
-	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
+	await expect(pane.locator('.item-status')).toHaveText('Accepted');
 	await expect(pane.getByRole('button', { name: /^Match item colors.*Free$/ })).toHaveCount(0);
-	// The saved recolor survives: the item's colors live in the Colors tab, which Recolor opens.
-	await openItemSection(pane, 'Artwork');
-	await pane.getByRole('button', { name: 'Recolor', exact: true }).click();
+	// The saved recolor survives: the item's colors live in the Colors tab, which Recolor in its actions menu opens.
+	await pane.getByRole('button', { name: 'Item actions', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Recolor', exact: true }).click();
 	await expect(
 		page
 			.locator(`.color-sections [data-owner="${fixture.itemId}"]`)
@@ -7369,9 +7368,9 @@ test('accepted held-item review reasons survive actual reload without claiming a
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	await pickItem(page, name);
 	const pane = await selectedItemDetails(page);
-	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
-	// The review reasons sit in the quality checks disclosure, one intentional step from the summary.
-	await openItemSection(pane, 'Quality checks');
+	await expect(pane.locator('.item-status')).toHaveText('Accepted');
+	// The review reasons sit in the Quality section, one intentional step from the summary.
+	await openItemSection(pane, 'Quality');
 	await expect(
 		pane.getByText('The grip side is unclear; check the intended hand (idle, west)', {
 			exact: true
@@ -8670,8 +8669,7 @@ test('targeted move replacement names mirrored effects without offering a separa
 
 async function openFrameReplacement(details: Locator) {
 	await expect(details).toBeVisible();
-	await openItemSection(details, 'Artwork');
-	await openItemSection(details, 'Repair or redraw this view');
+	await openItemSection(details, 'Quality');
 }
 
 test('stage makes all missing item views while explicit repair stays on the current view', async ({
@@ -9276,7 +9274,7 @@ test('the item sheet offers one priced edit-images-v2 request and holds its resu
 		}, projectId);
 	const pane = await selectedItemDetails(page);
 	await openItemSection(pane, 'Moves & States');
-	const make = pane.getByRole('button', { name: /^Generate selected moves/ });
+	const make = pane.getByRole('button', { name: /^Generate \d+ moves?/ });
 	await expect(make).toContainText(`~${gens} gens`);
 	await pane.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
 	const api = page.getByRole('dialog', { name: 'API calls', exact: true });
@@ -9381,7 +9379,7 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 		.getByRole('button', { name: /^Make missing views/ });
 	await expect(stageMake).toContainText('~10 gens');
 	await openItemSection(await selectedItemDetails(page), 'Moves & States');
-	await expect(page.getByRole('button', { name: /^Generate selected moves/ })).toContainText(
+	await expect(page.getByRole('button', { name: /^Generate \d+ moves?/ })).toContainText(
 		'~10 gens'
 	);
 	await page.evaluate(async (id) => {
@@ -9400,10 +9398,8 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 	// A held item cannot use the frozen grid. It used to be refused here; it is now priced on its measured joints with the
 	// suspicious frames named on the quote before anything is bought.
 	await openItemSection(page.locator('dialog.item-detail[open]'), 'Moves & States');
-	await expect(page.getByRole('button', { name: /^Generate selected moves/ })).toBeEnabled();
-	await expect(page.getByRole('button', { name: /^Generate selected moves/ })).toContainText(
-		'gens'
-	);
+	await expect(page.getByRole('button', { name: /^Generate \d+ moves?/ })).toBeEnabled();
+	await expect(page.getByRole('button', { name: /^Generate \d+ moves?/ })).toContainText('gens');
 	await expect(
 		page.locator('.notice').filter({ hasText: 'Some measured joints look unusual' }).first()
 	).toContainText('frame 2');
@@ -10430,7 +10426,7 @@ test('standing-first items quote standing and draw selected custom moves togethe
 	await openItemSection(pane, 'Moves & States');
 	const walk = pane.getByRole('checkbox', { name: /^Custom walk/ });
 	const punch = pane.getByRole('checkbox', { name: /^Custom cross punch/ });
-	const draw = pane.getByRole('button', { name: /^Generate selected moves/ });
+	const draw = pane.getByRole('button', { name: /^Generate \d+ moves?/ });
 	await expect(walk).toBeChecked();
 	await expect(punch).not.toBeChecked();
 	await expect(draw).toContainText('~12 gens');
@@ -10477,7 +10473,7 @@ test('standing-first items quote standing and draw selected custom moves togethe
 		);
 		(await import(path)).noteCreationSettings();
 	});
-	await expect(pane.getByRole('button', { name: /^Generate selected moves/ })).not.toContainText(
+	await expect(pane.getByRole('button', { name: /^Generate \d+ moves?/ })).not.toContainText(
 		'~12 gens'
 	);
 	await peekCalls('/edit-animation-v2', '/animate-with-skeleton-v3');
@@ -11195,7 +11191,7 @@ for (const changed of ['item', 'rig'] as const)
 		);
 		const fixture = await freePaletteFixture(page),
 			pane = await selectedItemDetails(page);
-		await openItemSection(pane, 'Artwork');
+		await openItemSection(pane, 'Quality');
 		await page.evaluate(async () => {
 			const path = '/src/lib/i18n.ts',
 				i18n = await import(path);
@@ -11771,9 +11767,9 @@ test('tile status shows on the tile and in its name, and Recolor opens the item�
 	// The worn helmet hides the worn hair.
 	await pickItem(page, 'Steel helmet');
 	let details = await selectedItemDetails(page);
-	await openItemSection(details, 'Outfit behavior');
+	await openItemSection(details, 'Outfit');
 	const hairChip = details
-		.getByRole('group', { name: 'Hide categories when worn', exact: true })
+		.getByRole('group', { name: 'Hide while worn', exact: true })
 		.getByRole('switch', { name: 'Hair', exact: true });
 	await expect(hairChip).not.toBeChecked();
 	await hairChip.click();
@@ -11804,8 +11800,8 @@ test('tile status shows on the tile and in its name, and Recolor opens the item�
 	details = await selectedItemDetails(page);
 	// The trimmed sheet links to the Colors tab instead of repeating it.
 	await expect(details.locator('.colors')).toHaveCount(0);
-	await openItemSection(details, 'Artwork');
-	await details.getByRole('button', { name: 'Recolor', exact: true }).click();
+	await details.getByRole('button', { name: 'Item actions', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Recolor', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await expect(
 		page
@@ -11859,13 +11855,13 @@ const headDepths = (page: Page) =>
 		);
 	});
 
-/** The worn helmet hides the worn hair through its Hide categories when worn switch. */
+/** The worn helmet hides the worn hair through its Hide while worn switch. */
 async function hideHairWithHelmet(page: Page) {
 	await pickItem(page, 'Steel helmet');
 	const details = await selectedItemDetails(page);
-	await openItemSection(details, 'Outfit behavior');
+	await openItemSection(details, 'Outfit');
 	await details
-		.getByRole('group', { name: 'Hide categories when worn', exact: true })
+		.getByRole('group', { name: 'Hide while worn', exact: true })
 		.getByRole('switch', { name: 'Hair', exact: true })
 		.check();
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
@@ -11890,7 +11886,7 @@ test('item details names what hides an item and shows it again', async ({ page }
 	await hideHairWithHelmet(page);
 	await pickItem(page, 'Red cape');
 	const cape = await selectedItemDetails(page);
-	await openItemSection(cape, 'Outfit behavior');
+	await openItemSection(cape, 'Outfit');
 	await cape.getByRole('switch', { name: 'Hair', exact: true }).check();
 	await cape.getByRole('button', { name: 'Close', exact: true }).click();
 	const details = await openItemDetails(page, 'Messy brown hair');
@@ -11898,7 +11894,7 @@ test('item details names what hides an item and shows it again', async ({ page }
 		/^Hidden by (Red cape and Steel helmet|Steel helmet and Red cape)$/
 	);
 	await expect(hidden).toBeVisible();
-	await details.getByRole('button', { name: 'Show Messy brown hair', exact: true }).click();
+	await details.getByRole('button', { name: /^Turn off hiding by / }).click();
 	await expect(hidden).toHaveCount(0);
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentGroup(page, 'Hair');
@@ -11914,16 +11910,14 @@ test('item details reorders layers for an unworn item, gates the ends and resets
 }, info) => {
 	await editableCopy(page, devBaseURL(info));
 	const details = await openItemDetails(page, 'Wizard hat');
-	const layerSection = await openItemSection(details, 'Outfit behavior');
+	const layerSection = await openItemSection(details, 'Outfit');
 	const forward = details.getByRole('button', { name: 'Bring forward', exact: true });
 	const backward = details.getByRole('button', { name: 'Send backward', exact: true });
 	// The hat is not worn; it is placed as if worn, so Backward works among the worn layers.
 	await expect(backward).toBeEnabled();
 	const before = await headLayerOverrides(page);
 	const [south, east] = await headDepths(page);
-	const direction = details.getByRole('switch', {
-		name: 'Only move the layer when facing South'
-	});
+	const direction = details.getByRole('switch', { name: 'Only when facing south' });
 	await direction.check();
 	await backward.click();
 	const [southOnly, eastOnly] = await headDepths(page);
@@ -11934,20 +11928,20 @@ test('item details reorders layers for an unworn item, gates the ends and resets
 	await expect.poll(async () => (await headDepths(page))[0]).toBeLessThan(southOnly);
 	await expect.poll(async () => (await headDepths(page))[1]).toBeLessThan(east);
 	await expect.poll(() => headLayerOverrides(page)).not.toEqual(before);
-	await expect(details.getByRole('button', { name: 'Reset', exact: true })).toBeVisible();
+	await expect(details.getByRole('button', { name: 'Reset order', exact: true })).toBeVisible();
 	await expect(forward).toBeEnabled();
 	// At the very back there is nothing left to move behind: the arrow disables instead of silently doing nothing.
 	for (let step = 0; step < 8 && (await backward.isEnabled()); step++) await backward.click();
 	await expect(backward).toBeDisabled();
 	await expect(forward).toBeEnabled();
 	// A disclosure toggles from the keyboard, and its controls stay reachable.
-	const summary = details.locator('summary').filter({ hasText: 'Outfit behavior' });
+	const summary = details.locator('summary').filter({ hasText: 'Outfit' });
 	await summary.focus();
 	await page.keyboard.press('Enter');
 	await expect(layerSection).not.toHaveAttribute('open', '');
 	await page.keyboard.press('Space');
 	await expect(layerSection).toHaveAttribute('open', '');
-	await details.getByRole('button', { name: 'Reset', exact: true }).click();
+	await details.getByRole('button', { name: 'Reset order', exact: true }).click();
 	await expect.poll(() => headLayerOverrides(page)).toEqual(before);
 });
 
@@ -11955,7 +11949,7 @@ test('layer order explains why a hidden item cannot be reordered', async ({ page
 	await editableCopy(page, devBaseURL(info));
 	await hideHairWithHelmet(page);
 	const details = await openItemDetails(page, 'Messy brown hair');
-	await openItemSection(details, 'Outfit behavior');
+	await openItemSection(details, 'Outfit');
 	await expect(details.getByRole('button', { name: 'Bring forward', exact: true })).toBeDisabled();
 	await expect(details.getByRole('button', { name: 'Send backward', exact: true })).toBeDisabled();
 	await expect(
@@ -11973,7 +11967,7 @@ test('an unworn item in a hidden category is not called hidden and keeps its ord
 	await expect.poll(() => wornItem(page, 'hair')).toBe(null);
 	const details = await openItemDetails(page, 'Messy brown hair');
 	await expect(details.getByText(/^Hidden by /)).toHaveCount(0);
-	await openItemSection(details, 'Outfit behavior');
+	await openItemSection(details, 'Outfit');
 	await expect(details.getByRole('button', { name: 'Bring forward', exact: true })).toBeEnabled();
 	await expect(details.getByRole('button', { name: 'Send backward', exact: true })).toBeEnabled();
 	await expect(details.getByText(/Another worn item hides this one/)).toHaveCount(0);
@@ -11991,21 +11985,12 @@ test('item details fill a phone screen and keep Wear pinned while the body scrol
 	expect(Math.round(bounds.height)).toBe(viewport.height);
 	const wear = details.getByRole('button', { name: 'Wear', exact: true });
 	await expect(wear).toBeInViewport();
-	await expect(details.locator('summary').filter({ hasText: 'Artwork' })).toContainText(
-		'Fix frames'
-	);
 	await expect(details.locator('summary').filter({ hasText: 'Moves & States' })).toContainText(
-		/Missing \d+ moves?/
+		/\d+ incomplete/
 	);
-	for (const section of [
-		'Artwork',
-		'Moves & States',
-		'Outfit behavior',
-		'How it was made',
-		'Technical details'
-	])
+	for (const section of ['Moves & States', 'Quality', 'Outfit', 'About', 'Technical details'])
 		await openItemSection(details, section);
-	await expect(details.getByRole('heading', { name: 'Artwork', level: 3 })).toBeVisible();
+	await expect(details.getByRole('heading', { name: 'Quality', level: 3 })).toBeVisible();
 	await details.locator('.sheet-body').evaluate((body) => (body.scrollTop = body.scrollHeight));
 	await expect(wear).toBeInViewport();
 	await expect(details.getByRole('button', { name: 'Close', exact: true })).toBeInViewport();
@@ -12398,7 +12383,7 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await expect(shield).toHaveAttribute('aria-pressed', 'false');
 
 	const details = await openItemDetails(page, 'Steel longsword');
-	await openItemSection(details, 'Outfit behavior');
+	await openItemSection(details, 'Outfit');
 	const oppositeHand = details.getByRole('switch', { name: 'Off hand', exact: true });
 	await expect(details.getByRole('switch', { name: 'Spare shield', exact: true })).toHaveCount(0);
 	await expect(oppositeHand).toBeChecked();
@@ -12529,7 +12514,7 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	await page.getByRole('button', { name: 'More options for Steel helmet' }).click();
 	await page.getByRole('menuitem', { name: /^Details/ }).click();
 	const itemPane = page.locator('dialog.item-detail[open]');
-	await openItemSection(itemPane, 'Artwork');
+	await openItemSection(itemPane, 'Quality');
 	await itemPane.getByRole('button', { name: /^Fix frames/ }).click();
 	await sheet.getByRole('combobox', { name: 'Move' }).selectOption('walk');
 	await sheet.getByRole('button', { name: 'Restore original · 1' }).click();

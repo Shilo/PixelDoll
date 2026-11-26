@@ -609,7 +609,7 @@
 		"staleNote": "Başka bir gövde için yapıldı. Hizalanmayabilir.",
 		"previewMove": "Animasyon",
 		"openMissingView": "{direction} yönünü aç (henüz kare yok)",
-		"missingView": "Yok",
+		"missingView": "Eksik",
 		"hiddenWhenWorn": "{names} giyiliyken gizli",
 		"clipsIncomplete": {
 			"one": "{n} eksik",

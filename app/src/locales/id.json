@@ -595,7 +595,7 @@
 		"staleNote": "Dibuat untuk tubuh lain. Mungkin tidak pas.",
 		"previewMove": "Animasi",
 		"openMissingView": "Buka {direction} (belum ada frame)",
-		"missingView": "Tidak ada",
+		"missingView": "Hilang",
 		"hiddenWhenWorn": "Disembunyikan saat {names} dipakai",
 		"clipsIncomplete": {
 			"other": "{n} belum lengkap"

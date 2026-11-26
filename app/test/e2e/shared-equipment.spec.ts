@@ -783,7 +783,6 @@ test('an item drawn for another body on the same canvas is worn as drawn for fre
 		'Drawn for Stout’s body, so it may float, clip or leave gaps. Make one for Adventurer copy to fit it.'
 	);
 	await expect(details).toContainText('Not fitted');
-	await openItemSection(details, 'Artwork');
 	await expect(
 		details.getByRole('button', { name: 'Make one for Adventurer copy...', exact: true })
 	).toBeVisible();
@@ -965,7 +964,7 @@ test('a copy missing frames its source item has copies them for free into the sa
 	await expect(details).toContainText(
 		`Twin has ${dropped} frames of this item that Adventurer copy lacks. Nothing is generated.`
 	);
-	await expect(details.getByRole('button', { name: /^Generate selected moves/ })).toHaveCount(0);
+	await expect(details.getByRole('button', { name: /^Generate \d+ moves?/ })).toHaveCount(0);
 	await copy.click();
 	await expect(page.locator('.bu-toast').last()).toContainText(
 		`Copied ${dropped} frames of Traveling wizard hat from Twin. No generations used.`
@@ -1145,12 +1144,11 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 	await expect(details).toContainText('Fitted for free from Lefty’s item. Check these frames:');
 	// A re-fit's issues are its fit: nothing to accept as is; a new item for this body is offered instead.
 	await expect(details.getByRole('button', { name: 'Accept as is', exact: true })).toHaveCount(0);
-	await openItemSection(details, 'Artwork');
 	await expect(
 		details.getByRole('button', { name: 'Make one for Adventurer copy...', exact: true })
 	).toBeVisible();
 	// Each note shows its frame on the stage, paused.
-	await openItemSection(details, 'Quality checks');
+	await openItemSection(details, 'Quality');
 	const note = details.getByRole('button', { name: /^Walk facing south, frame 2: / });
 	await expect(note).toHaveText(/the forearm points another way than on Lefty/);
 	await note.click();

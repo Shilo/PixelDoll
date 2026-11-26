@@ -609,7 +609,7 @@
 		"staleNote": "Made for another body. It may not line up.",
 		"previewMove": "Move",
 		"openMissingView": "Open {direction} (no frames yet)",
-		"missingView": "None",
+		"missingView": "Missing",
 		"hiddenWhenWorn": "Hidden while {names} is worn",
 		"clipsIncomplete": {
 			"one": "{n} incomplete",

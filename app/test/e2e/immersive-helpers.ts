@@ -114,7 +114,7 @@ export async function selectedItemDetails(page: Page) {
 	return dialog;
 }
 
-/** Open one of the Item sheet's disclosure sections, such as Artwork or Outfit behavior. */
+/** Open one of the Item sheet's disclosure sections, such as Quality or Outfit. */
 export async function openItemSection(dialog: Locator, name: string) {
 	const summary = dialog.locator('summary').filter({ hasText: name }).first();
 	// `xpath=..` takes the summary's own details: a has: filter would look for the named summary inside each candidate,

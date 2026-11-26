@@ -595,7 +595,7 @@
 		"staleNote": "为另一个身体制作，可能无法对齐。",
 		"previewMove": "动作",
 		"openMissingView": "打开{direction}（尚无帧）",
-		"missingView": "无",
+		"missingView": "缺失",
 		"hiddenWhenWorn": "穿戴{names}时隐藏",
 		"clipsIncomplete": {
 			"other": "{n} 个不完整"

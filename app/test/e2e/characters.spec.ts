@@ -235,8 +235,8 @@ test('Edit appearance makes reviewed character and equipment copies from saved p
 	await equipmentGroup(page, 'Head');
 	await pickItem(page, hat.name);
 	const details = await selectedItemDetails(page);
-	await openItemSection(details, 'Artwork');
-	await details.getByRole('button', { name: action }).click();
+	await details.getByRole('button', { name: 'Item actions', exact: true }).click();
+	await page.getByRole('menuitem', { name: action }).click();
 	const editItem = edit.getByRole('button', { name: /^Edit item ·/ });
 	await expect(edit.getByRole('radio')).toHaveCount(0);
 	await expect(edit.getByRole('button', { name: 'Back to Item' })).toBeVisible();
@@ -2138,7 +2138,7 @@ test('suspicious imported walking joints plan a priced frozen-frame alternative 
 	await pickItem(page, 'Leather vest');
 	const pane = await selectedItemDetails(page);
 	await openItemSection(pane, 'Moves & States');
-	await expect(pane.getByRole('button', { name: /^Generate selected moves/ })).toContainText(
+	await expect(pane.getByRole('button', { name: /^Generate \d+ moves?/ })).toContainText(
 		'~10 gens'
 	);
 	await pane.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
@@ -2195,20 +2195,19 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 	await reloadStudio(page);
 	await pickItem(page, garmentName);
 	const pane = await selectedItemDetails(page);
-	await expect(pane.locator('.badge.look')).toContainText('Needs a look');
-	// Review comes first and is already open when checks found an issue.
+	await expect(pane.locator('.item-status')).toContainText('Needs a look');
+	// Quality is already open, and says why, when checks found an issue.
 	const itemPane = page.locator('dialog.item-detail[open]');
-	await expect(itemPane.locator('summary').first()).toContainText('Quality checks');
-	await expect(itemPane.locator('summary').filter({ hasText: 'Quality checks' })).toContainText(
+	await expect(itemPane.locator('summary').filter({ hasText: 'Quality' })).toContainText(
 		'Needs a look'
 	);
 	const quality = itemPane
 		.locator('summary')
-		.filter({ hasText: 'Quality checks' })
+		.filter({ hasText: 'Quality' })
 		.first()
 		.locator('xpath=..');
 	await expect(quality).toHaveAttribute('open', '');
-	await openItemSection(itemPane, 'Quality checks');
+	await openItemSection(itemPane, 'Quality');
 	await expect(
 		itemPane.getByText('Some lower clothing is missing compared with the standing design', {
 			exact: true
@@ -2256,7 +2255,7 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 			},
 			{ projectId, items }
 		);
-	await openItemSection(pane, 'Quality checks');
+	await openItemSection(pane, 'Quality');
 	const accept = pane.getByRole('button', { name: 'Accept as is', exact: true });
 	await stoppedMove('another-character', [before.id]);
 	await expect(accept).toBeEnabled();
@@ -2264,7 +2263,7 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 	await expect(accept).toBeDisabled();
 	await stoppedMove('', []);
 	await accept.click();
-	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
+	await expect(pane.locator('.item-status')).toHaveText('Accepted');
 	await expect(pane.getByRole('button', { name: 'Accept as is', exact: true })).toHaveCount(0);
 	await expect(
 		pane.getByText('Some frames resemble the opposite view; inspect the torso', { exact: true })
@@ -2279,8 +2278,8 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 	await reloadStudio(page);
 	await pickItem(page, before.item.name);
 	await selectedItemDetails(page);
-	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
-	await openItemSection(itemPane, 'Quality checks');
+	await expect(pane.locator('.item-status')).toHaveText('Accepted');
+	await openItemSection(itemPane, 'Quality');
 	await expect(
 		pane.getByText('Some lower clothing is missing compared with the standing design', {
 			exact: true
@@ -4914,14 +4913,14 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
 		return it.id;
 	});
 	const pane = await selectedItemDetails(page);
-	await expect(pane.locator('.badge.accepted')).toContainText('Accepted');
-	await openItemSection(pane, 'Quality checks');
+	await expect(pane.locator('.item-status')).toContainText('Accepted');
+	await openItemSection(pane, 'Quality');
 	await expect(pane.getByText('Accepted appearance warnings', { exact: true })).toBeVisible();
 	await expect(pane.getByText('The design has gray smudges', { exact: true })).toBeVisible();
 	await expect(
 		pane.getByText('Some body pixels were changed by the model', { exact: true })
 	).toBeVisible();
-	await pane.getByText('How it was made', { exact: true }).click();
+	await openItemSection(pane, 'About');
 	await expect(pane.getByText('10 gens · $0.080 · 1 call', { exact: true })).toBeVisible();
 	await page.evaluate(async (id) => {
 		const path = '/src/studio/state.svelte.ts',
@@ -4937,7 +4936,7 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
 		};
 		s.doc.rev++;
 	}, id);
-	await expect(pane.locator('.badge.accepted')).toContainText('Accepted');
+	await expect(pane.locator('.item-status')).toContainText('Accepted');
 	await expect(pane.getByText('The design has gray smudges', { exact: true })).toBeVisible();
 });
 

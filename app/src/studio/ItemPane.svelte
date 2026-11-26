@@ -94,6 +94,7 @@
 		otherHandOf,
 		itemHiders,
 		showHiddenItem,
+		showFrame,
 		moveLayer,
 		itemLayerNeighbors,
 		placedOutfitCell,
@@ -204,6 +205,18 @@
 			? Math.max(1, Math.floor(Math.min(60 / strip[0].w, 64 / strip[0].h, 6) * ui.dpr))
 			: 1
 	);
+	// Short landscape keeps the strip low so the sections start above the fold.
+	const tile = $derived(ui.size === 'landscape' ? 40 : 64);
+	/** Arrow keys move the facing choice (one Tab stop for the group), as in any radio group. */
+	function facingKey(event: KeyboardEvent) {
+		const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+		if (!step || !directions.length) return;
+		event.preventDefault();
+		const group = (event.currentTarget as HTMLElement).parentElement,
+			at = directions.findIndex((direction) => direction.id === facing);
+		scopeDir = directions[(at + step + directions.length) % directions.length].id;
+		void tick().then(() => group?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus());
+	}
 	let viewer = $state.raw<{ views: SpriteView[]; view: number; frame: number } | null>(null);
 	function openViewer(directionId: string, frame = frameIndex) {
 		if (!m) return;
@@ -513,7 +526,7 @@
 		);
 	});
 	let onlyDir = $state(false);
-	const neighbors = $derived(it ? itemLayerNeighbors(it.id, animId, facing) : null);
+	const neighbors = $derived(it ? itemLayerNeighbors(it.id, animId, facing, onlyDir) : null);
 	// The outfit preview shows the frame where the last step made a difference, else the first one.
 	let witness = $state(0);
 	$effect(() => {
@@ -659,15 +672,29 @@
 	// One callout for a consequence the header and sections do not already say (failed checks open Quality instead), with a
 	// link to where it is handled.
 	const callout = $derived.by(
-		(): { text: string; tone: 'warn' | 'info'; section?: Section; link?: string } | null => {
+		(): {
+			text: string;
+			tone: 'warn' | 'info';
+			action?: { label: string; run: () => void };
+		} | null => {
 			if (!m || !it) return null;
-			if (it.unfitted)
+			if (it.unfitted) {
+				// The New item sheet that opens prices the remake before anything is spent; without it, the text says what to do.
+				const remake = !isDemo() && !!it.prompt;
 				return {
 					tone: 'warn',
 					text:
 						unfitText(m, it.copiedFrom?.name ?? t('studioModel.anotherCharacter'), it.unfitted, t) +
-						(isDemo() ? '' : ' ' + t('itemPane.remakeToFit', { name: m.name }))
+						(isDemo() || remake ? '' : ' ' + t('itemPane.remakeToFit', { name: m.name })),
+					action: remake
+						? {
+								label: openerLabel(t('itemMenu.remake', { name: m.name })),
+								run: () =>
+									openNewItem(it.slot, { slot: it.slot, prompt: it.prompt, route: it.route })
+							}
+						: undefined
 				};
+			}
 			if (moveGaps.length)
 				return {
 					tone: 'warn',
@@ -679,8 +706,9 @@
 						(remakeOnly && !isDemo() && !freeFrames
 							? ' ' + t('itemPane.remakeAllMoves', { name: m.name })
 							: ''),
-					section: isDemo() ? undefined : 'moves',
-					link: isDemo() ? undefined : t('itemPane.reviewMissingMoves')
+					action: isDemo()
+						? undefined
+						: { label: t('itemPane.reviewMissingMoves'), run: () => void reveal('moves') }
 				};
 			if (health === 'stale') return { tone: 'warn', text: t('itemPane.staleNote') };
 			return null;
@@ -862,14 +890,19 @@
 									aria-checked={direction.id === facing}
 									aria-label={displayDirection(direction.id)}
 									title={displayDirection(direction.id)}
+									tabindex={direction.id === facing ? 0 : -1}
 									onclick={() => (scopeDir = direction.id)}
-									>{displayDirectionShort(direction.id)}</button
+									onkeydown={facingKey}>{displayDirectionShort(direction.id)}</button
 								>
 							{/each}
 						</div>
 					{/if}
 				</div>
-				<div class="item-views" style:--cols={Math.min(4, directions.length || 1)}>
+				<div
+					class="item-views"
+					style:--cols={Math.min(4, directions.length || 1)}
+					style:--tile="{tile}px"
+				>
 					{#each directions as direction (direction.id)}
 						{@const has = drawnAt(direction, frameIndex)}
 						{@const image = strip[m.rig.directions.indexOf(direction)]}
@@ -889,7 +922,7 @@
 							onclick={() => openViewer(direction.id)}
 						>
 							<span class="view-art" aria-hidden="true">
-								{#if has && image}<Sprite img={image} {k} limit={64} {label} />{:else}<span
+								{#if has && image}<Sprite img={image} {k} limit={tile} {label} />{:else}<span
 										class="view-missing">{t('itemPane.missingView')}</span
 									>{/if}
 							</span>
@@ -918,7 +951,8 @@
 							data-variant="quiet"
 							onclick={() => {
 								showHiddenItem(it.slot);
-								wearButton?.focus({ preventScroll: true });
+								// The row goes away: keep the keyboard in the body, on where hiding is set.
+								sections.outfit?.querySelector<HTMLElement>('summary')?.focus();
 							}}
 							>{t('itemPane.stopHiding', {
 								names: formatList(hiders.map((hider) => hider.name))
@@ -930,12 +964,12 @@
 			{#if callout}
 				<p class="notice small item-callout" class:warn={callout.tone === 'warn'} role="status">
 					<span>{callout.text}</span>
-					{#if callout.section && callout.link}
-						{@const target = callout.section}
+					{#if callout.action}
+						{@const action = callout.action}
 						<button
 							class="bu-action btn plain callout-link"
 							data-variant="quiet"
-							onclick={() => void reveal(target)}>{callout.link}</button
+							onclick={() => action.run()}>{action.label}</button
 						>
 					{/if}
 				</p>
@@ -1143,12 +1177,11 @@
 												<button
 													class="bu-action btn plain finding-link"
 													data-variant="quiet"
-													aria-haspopup="dialog"
 													title={t('itemPane.titleShowThisFrame')}
 													onclick={() => {
-														scopeAnim = note.anim;
-														scopeDir = note.dir as DirectionName;
-														void tick().then(() => openViewer(note.dir, note.frame));
+														// A fit is judged on the body: show the frame on the stage, which the sheet covers.
+														showFrame(note.anim, note.dir, note.frame);
+														ui.sheet = null;
 													}}><TriangleAlert size={14} aria-hidden="true" />{note.text}</button
 												>
 											</li>{/each}
@@ -1385,7 +1418,7 @@
 						{#if hideChoices.length}
 							<section class="hide-rules" aria-labelledby="hide-rules-{it.id}">
 								<h4 id="hide-rules-{it.id}">{t('itemPane.whenWornHide')}</h4>
-								<div class="switch-list">
+								<div class="switch-list" role="group" aria-labelledby="hide-rules-{it.id}">
 									{#each hideChoices as slot (slot)}
 										{@const isOtherHand = slot === otherHand}
 										<label class="switch-row bu-check">
@@ -1640,7 +1673,15 @@
 		min-width: 0;
 		overflow-wrap: anywhere;
 	}
-	/* A phone keeps the name on one line beside the menu and Close: it truncates, its heading keeps the full name. */
+	/* Both header buttons keep their room, so the title stays centered without running under them. */
+	:global(dialog.item-detail .sheet-head) {
+		grid-template-columns: minmax(96px, 1fr) minmax(0, auto) minmax(96px, 1fr);
+	}
+	/* A phone starts the title at the edge and keeps the name on one line beside the menu and Close: it truncates, and
+	   the heading keeps the full name. */
+	:global(dialog.item-detail.bottom .sheet-head) {
+		grid-template-columns: 0 minmax(0, 1fr) auto;
+	}
 	:global(dialog.item-detail.bottom .sheet-heading) {
 		flex-wrap: nowrap;
 		justify-content: flex-start;
@@ -1713,7 +1754,7 @@
 	}
 	.item-view {
 		display: grid;
-		grid-template-rows: 64px auto;
+		grid-template-rows: var(--tile, 64px) auto;
 		justify-items: center;
 		align-items: center;
 		gap: 4px;
@@ -1728,7 +1769,7 @@
 		display: grid;
 		place-items: center;
 		width: 100%;
-		height: 64px;
+		height: var(--tile, 64px);
 	}
 	.view-missing {
 		display: grid;

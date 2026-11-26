@@ -609,7 +609,7 @@
 		"staleNote": "Für einen anderen Körper erstellt. Er passt eventuell nicht.",
 		"previewMove": "Animation",
 		"openMissingView": "{direction} öffnen (noch keine Frames)",
-		"missingView": "Keine",
+		"missingView": "Fehlt",
 		"hiddenWhenWorn": "Ausgeblendet, solange {names} getragen wird",
 		"clipsIncomplete": {
 			"one": "{n} unvollständig",
