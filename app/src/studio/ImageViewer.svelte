@@ -293,28 +293,26 @@
 				<ImageOff size={28} aria-hidden="true" /><span>{missing}</span>
 			</p>
 		{/if}
-		{#if step}
-			<div class="viewer-side bu-floating" data-side="start">
-				<button
-					class="bu-action"
-					data-variant="quiet"
-					aria-label={step.previous}
-					title={step.previousHint ?? step.previous}
-					onclick={() => step?.go(-1)}><ChevronLeft size={18} aria-hidden="true" /></button
-				>
-			</div>
-			<div class="viewer-side bu-floating" data-side="end">
-				<button
-					class="bu-action"
-					data-variant="quiet"
-					aria-label={step.next}
-					title={step.nextHint ?? step.next}
-					onclick={() => step?.go(1)}><ChevronRight size={18} aria-hidden="true" /></button
-				>
-			</div>
-		{/if}
-		{#if corner}<div class="viewer-corner">
-				{@render corner()}
+		<!-- Bottom right: the host's control (play and pause), then previous and next at the edge, where they stay put
+			 whether or not the host shows a control. -->
+		{#if corner || step}<div class="viewer-corner">
+				{#if corner}{@render corner()}{/if}
+				{#if step}<div class="viewer-side bu-floating">
+						<button
+							class="bu-action"
+							data-variant="quiet"
+							aria-label={step.previous}
+							title={step.previousHint ?? step.previous}
+							onclick={() => step?.go(-1)}><ChevronLeft size={18} aria-hidden="true" /></button
+						>
+						<button
+							class="bu-action"
+							data-variant="quiet"
+							aria-label={step.next}
+							title={step.nextHint ?? step.next}
+							onclick={() => step?.go(1)}><ChevronRight size={18} aria-hidden="true" /></button
+						>
+					</div>{/if}
 			</div>{/if}
 		<div class="viewer-zoom">
 			<ZoomControls
@@ -381,6 +379,7 @@
 	}
 	/* The image fills the window: it moves by transform only, so panning and zooming never relayout. */
 	.viewer-stage {
+		container: viewer / inline-size;
 		position: relative;
 		flex: 1;
 		min-height: 0;
@@ -424,23 +423,23 @@
 		position: absolute;
 		right: 12px;
 		bottom: 12px;
+		display: flex;
+		align-items: flex-end;
+		gap: 8px;
 	}
-	/* Previous and next sit just above the bottom controls (zoom on the left, the host's control on the right), clear of
-	   the image's middle, as square as those controls: a 44px target in the same floating material. They keep that height
-	   even without a control below, so they never jump while being clicked through. */
+	/* Where zoom and this row would meet (about 360px wide), the host's control stacks above previous and next, which
+	   keep the corner. */
+	@container viewer (max-width: 360px) {
+		.viewer-corner {
+			flex-direction: column;
+			align-items: flex-end;
+		}
+	}
+	/* Previous and next share one floating group, each a 44px square like the zoom and play buttons. */
 	.viewer-side {
-		position: absolute;
-		/* The controls below stand 50px (a 44px target, 2px padding, 1px border): 8px clear of them. */
-		bottom: calc(12px + 50px + 8px);
-		display: grid;
+		display: flex;
 		padding: 2px;
 		border-radius: var(--bu-radius-control);
-	}
-	.viewer-side[data-side='start'] {
-		left: 12px;
-	}
-	.viewer-side[data-side='end'] {
-		right: 12px;
 	}
 	.viewer-side .bu-action {
 		display: grid;
