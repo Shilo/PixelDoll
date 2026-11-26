@@ -21,6 +21,7 @@
 		isDemo,
 		itemSlotTargets,
 		openAppearance,
+		openCopyForSelf,
 		openNewItem,
 		openRename
 	} from './state.svelte.ts';
@@ -163,9 +164,13 @@
 					data-variant="quiet"
 					role="menuitem"
 					onclick={() =>
-						act(() => openNewItem(it.slot, { slot: it.slot, prompt: it.prompt, route: it.route }))}
+						act(() =>
+							remakeOnly
+								? openCopyForSelf(it)
+								: openNewItem(it.slot, { slot: it.slot, prompt: it.prompt, route: it.route })
+						)}
 					><RefreshCw size={16} aria-hidden="true" />{openerLabel(
-						remakeOnly ? t('itemMenu.remake', { name: m.name }) : t('itemMenu.createVariant')
+						remakeOnly ? t('itemMenu.remake') : t('itemMenu.createVariant')
 					)}<SurfaceChevron /></button
 				>
 			{/if}

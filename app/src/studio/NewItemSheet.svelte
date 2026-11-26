@@ -39,8 +39,11 @@
 		withKey,
 		copyDemo,
 		busySlots,
-		takeImport
+		takeImport,
+		toast
 	} from './state.svelte.ts';
+	import { encodePng } from '../lib/image/png.ts';
+	import { readReference } from '../lib/image/reference.ts';
 	import * as db from '../lib/store/db.ts';
 	import { SWATCHES } from '../lib/dress/dress.ts';
 	import type { RigCtx } from '../lib/items/run.ts';
@@ -55,7 +58,7 @@
 	import { freeItemName } from '../lib/equipment/copy.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { displaySwatch } from './displaySwatch.ts';
-	import { displayError, displayMessage } from '../lib/i18n.ts';
+	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { formatNumber, getLocale, t, type WhisperKey } from 'svelte-whisper';
 
 	const draft =
@@ -87,6 +90,8 @@
 	let advancedOpen = $state(!!initialMethod);
 	let busy = $state(false);
 	let reference = $state(draft?.reference);
+	/** The reference the sheet opened with (a draft's, or Make copy for self's), which closing does not lose. */
+	let openedReference = $state(draft?.reference);
 	// Typed text or a picked reference that closing would lose.
 	const typedAtStart = untrack(
 		() => `${prompt}
@@ -94,9 +99,32 @@ ${name}`
 	);
 	const dirty = $derived(
 		`${prompt}
-${name}` !== typedAtStart || reference !== draft?.reference
+${name}` !== typedAtStart || reference !== openedReference
 	);
 	let referenceLoading = $state(false);
+	// Make copy for self opens with the item's first frame attached, read like a picked file so it is sized for this
+	// item's canvas.
+	const referenceFrom = untrack(() => (draft ? undefined : ui.newItem.referenceFrom));
+	if (referenceFrom) {
+		referenceLoading = true;
+		void (async () => {
+			try {
+				const png = await encodePng(referenceFrom);
+				const file = new File([png], `${untrack(() => name) || 'reference'}.png`, {
+					type: 'image/png'
+				});
+				reference = openedReference = await readReference(
+					file,
+					untrack(() => referenceMax),
+					true
+				);
+			} catch (error) {
+				toast(errorMessage(error), { tone: 'danger', error });
+			} finally {
+				referenceLoading = false;
+			}
+		})();
+	}
 	const profile = $derived(profileOf(m, group));
 	const suggestions = $derived(
 		promptSuggestions(`item.${profile === 'body' ? 'accessory' : profile}`)

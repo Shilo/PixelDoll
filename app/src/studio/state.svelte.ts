@@ -123,6 +123,7 @@ import {
 	characterFacts,
 	cropAll,
 	displayMoveJob,
+	itemReferenceFrame,
 	missingMoves,
 	wearClip,
 	pixelSize,
@@ -407,6 +408,8 @@ export const ui = $state({
 		prompt: string;
 		name: string;
 		method?: Method;
+		/** An image the sheet attaches as its reference when it opens (Make copy for self: the item's first frame). */
+		referenceFrom?: Img;
 	},
 	anim: '',
 	dir: 'south' as DirectionName,
@@ -4912,7 +4915,13 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 
 export function openNewItem(
 	group: string,
-	prefill?: { slot?: string; prompt?: string; name?: string; route?: Item['route'] }
+	prefill?: {
+		slot?: string;
+		prompt?: string;
+		name?: string;
+		route?: Item['route'];
+		referenceFrom?: Img;
+	}
 ) {
 	ui.newItem = {
 		group,
@@ -4920,6 +4929,7 @@ export function openNewItem(
 		prompt: prefill?.prompt ?? '',
 		name: prefill?.name ?? '',
 		reuseMethod: prefill?.route !== undefined,
+		...(prefill?.referenceFrom ? { referenceFrom: prefill.referenceFrom } : {}),
 		// Trying an item again keeps the animation method it was made with.
 		...(prefill?.route === 'ea2-anchor'
 			? { method: 'anchor' as const }
@@ -4928,6 +4938,17 @@ export function openNewItem(
 				: {})
 	};
 	ui.sheet = 'newitem';
+}
+/** Make copy for self: the same description drawn again to fit this character's body, with the item's first frame as the
+ *  reference so the copy keeps its look. The New item sheet prices it before anything is spent. */
+export function openCopyForSelf(it: Item) {
+	const p = store.project;
+	openNewItem(it.slot, {
+		slot: it.slot,
+		prompt: it.prompt,
+		route: it.route,
+		...(p ? { referenceFrom: itemReferenceFrame(p, it) } : {})
+	});
 }
 
 // ---------- Wardrobe categories (organization and custom slots: free, never generation) ----------

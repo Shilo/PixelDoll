@@ -482,7 +482,6 @@
 		"cancelGeneration": "Cancelar geração…",
 		"cancelFromTheTabThatIsGenerating": "Cancele pela aba que está gerando este item.",
 		"wearInACopyOfTheDemo": "Equipar em uma cópia da demo",
-		"makeOneForName": "Criar um item para {name}",
 		"wearName": "Equipar {name}",
 		"titleWearingTakeOff": "Equipado (tirar)",
 		"twoHanded": "Duas mãos",
@@ -492,7 +491,7 @@
 		"generationsAlreadyUsedAreNotRefundedAnd": "As gerações já usadas não são reembolsadas, e ainda pode haver cobrança por solicitações já enviadas.",
 		"cancelSaveError": "Não foi possível salvar o cancelamento. Mantenha esta aba aberta e tente novamente.",
 		"preparing": "Preparando seu item",
-		"remake": "Criar um item para {name}…",
+		"remake": "Fazer cópia para este personagem…",
 		"makeForSlot": "Criar um item para o espaço {slot}…",
 		"demoDeleteLocked": "Não é possível excluir itens da demo",
 		"cancelItem": "Cancelar item",
@@ -564,7 +563,6 @@
 		"refitIntro": "Adaptado de graça a partir do item de {from}. Confira estes quadros:",
 		"remakeToFit": "Crie uma versão ajustada para {name}.",
 		"moveGaps": "O item não aparece em alguns quadros de {move} voltados para {directions}.",
-		"remakeAllMoves": "Crie uma versão para {name} usar em todos os movimentos.",
 		"copyFrom": "Copiar de {name}",
 		"copyFrames": {
 			"one": "Adiciona {n} quadro ausente a {name} a partir de {from}. Não precisa gerar.",
@@ -672,7 +670,8 @@
 		"layerScopeFacing": "Vale para todos os itens de {slot} virados para {direction}.",
 		"twoHandedNote": "Usa as duas mãos, então usá-lo tira o item de {slot}.",
 		"makeForSlotDetail": "Desenhe este item de novo para {slot}.",
-		"groupReady": "{ready} de {count} prontos"
+		"groupReady": "{ready} de {count} prontos",
+		"remakeFits": "Faz uma cópia nova que serve em {name}, o personagem que você está vestindo."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Novo personagem",
@@ -3010,8 +3009,8 @@
 		"runningJump": "Salto em corrida"
 	},
 	"appearance": {
-		"action": "Editar aparência…",
-		"title": "Editar aparência",
+		"action": "Fazer cópia com novo visual…",
+		"title": "Cópia editada",
 		"choose": "Escolha uma edição",
 		"custom": "Edição personalizada",
 		"instructions": "O que você quer mudar?",
@@ -3026,8 +3025,8 @@
 		"characterSource": "Usa o primeiro quadro de {move}.",
 		"characterScope": "O novo personagem começa com as vistas em pé. Adicione animações e ajuste os itens depois de salvar.",
 		"itemScope": "Origem: {move}, primeiro quadro. Adicione imagens aos outros quadros depois de salvar.",
-		"editCharacter": "Editar personagem",
-		"editItem": "Editar item",
+		"editCharacter": "Criar personagem novo",
+		"editItem": "Criar item novo",
 		"editCost": "{action} · {cost}",
 		"saveCharacter": "Salvar como novo personagem",
 		"saveItem": "Salvar como novo item",
@@ -3040,7 +3039,8 @@
 		"keptDirections": "A cópia mantém a arte original nestas direções: {directions}.",
 		"incomplete": "Algumas vistas editadas estão indisponíveis. Abra Atividade para ver os detalhes ou baixe os resultados recebidos.",
 		"reviewPending": "Salve ou descarte a prévia da aparência antes de alterar a origem.",
-		"discardNotice": "Descartar a prévia? As cobranças do PixelLab continuam valendo."
+		"discardNotice": "Descartar a prévia? As cobranças do PixelLab continuam valendo.",
+		"titleOf": "Cópia editada de {name}"
 	},
 	"stateGeneration": {
 		"continueIntro": "Você pode concluir as vistas que nunca foram enviadas. As vistas concluídas serão mantidas.",

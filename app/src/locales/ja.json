@@ -473,7 +473,6 @@
 		"cancelGeneration": "生成をキャンセル…",
 		"cancelFromTheTabThatIsGenerating": "このアイテムを生成しているタブからキャンセルしてください。",
 		"wearInACopyOfTheDemo": "デモのコピーで装備",
-		"makeOneForName": "{name}用に作成",
 		"wearName": "{name}を装備",
 		"titleWearingTakeOff": "装備中（外す）",
 		"twoHanded": "両手持ち",
@@ -483,7 +482,7 @@
 		"generationsAlreadyUsedAreNotRefundedAnd": "消費済みの生成回数は戻りません。送信済みのリクエストには、その後も料金が発生する場合があります。",
 		"cancelSaveError": "キャンセル状態を保存できませんでした。このタブを開いたまま、もう一度お試しください。",
 		"preparing": "アイテムを準備中",
-		"remake": "{name}用に作成…",
+		"remake": "このキャラ用にコピー…",
 		"makeForSlot": "{slot}用に作成…",
 		"demoDeleteLocked": "デモのアイテムは削除できません",
 		"cancelItem": "生成をキャンセル",
@@ -553,7 +552,6 @@
 		"refitIntro": "{from}のアイテムから無料で調整しました。次のフレームを確認してください：",
 		"remakeToFit": "{name}に合わせたバージョンを作成します。",
 		"moveGaps": "{directions}向きの{move}の一部のフレームで、アイテムは表示されません。",
-		"remakeAllMoves": "{name}がすべてのモーションで装備できるバージョンを作成します。",
 		"copyFrom": "{name}からコピー",
 		"copyFrames": {
 			"other": "{from}から{name}に不足フレームを{n}枚追加します。生成は不要です。"
@@ -651,7 +649,8 @@
 		"layerScopeFacing": "{direction}向きのすべての{slot}アイテムに適用されます。",
 		"twoHandedNote": "両手を使うため、装備すると{slot}のアイテムが外れます。",
 		"makeForSlotDetail": "このアイテムを{slot}用にもう一度描きます。",
-		"groupReady": "{count}件中{ready}件完了"
+		"groupReady": "{count}件中{ready}件完了",
+		"remakeFits": "着せ替え中のキャラ、{name}に合う新しいコピーを作ります。"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新しいキャラクター",
@@ -2921,8 +2920,8 @@
 		"runningJump": "走りジャンプ"
 	},
 	"appearance": {
-		"action": "見た目を編集…",
-		"title": "見た目を編集",
+		"action": "新しい見た目でコピー…",
+		"title": "編集したコピー",
 		"choose": "編集内容を選択",
 		"custom": "カスタム編集",
 		"instructions": "何を変更しますか？",
@@ -2937,8 +2936,8 @@
 		"characterSource": "「{move}」の最初のフレームを使います。",
 		"characterScope": "新しいキャラクターは立ち姿から始まります。保存後にモーションを追加し、装備を合わせてください。",
 		"itemScope": "元の画像：{move}の最初のフレーム。保存後にほかのフレームの画像を追加してください。",
-		"editCharacter": "キャラクターを編集",
-		"editItem": "アイテムを編集",
+		"editCharacter": "新しいキャラクターを作成",
+		"editItem": "新しいアイテムを作成",
 		"editCost": "{action} · {cost}",
 		"saveCharacter": "新しいキャラクターとして保存",
 		"saveItem": "新しいアイテムとして保存",
@@ -2951,7 +2950,8 @@
 		"keptDirections": "このコピーでは次の向きに元の絵を使います：{directions}。",
 		"incomplete": "一部の編集画像を取得できませんでした。アクティビティで詳細を確認するか、取得済みの結果をダウンロードしてください。",
 		"reviewPending": "元の画像を変更する前に、見た目のプレビューを保存するか破棄してください。",
-		"discardNotice": "プレビューを破棄しますか？PixelLabの料金は発生します。"
+		"discardNotice": "プレビューを破棄しますか？PixelLabの料金は発生します。",
+		"titleOf": "{name}の編集コピー"
 	},
 	"stateGeneration": {
 		"continueIntro": "まだ送信していない向きの画像を生成できます。完了した画像は保持されます。",

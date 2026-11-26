@@ -473,7 +473,6 @@
 		"cancelGeneration": "取消生成…",
 		"cancelFromTheTabThatIsGenerating": "请在生成此装备的标签页中取消。",
 		"wearInACopyOfTheDemo": "在演示副本中穿戴",
-		"makeOneForName": "为{name}制作一件",
 		"wearName": "穿戴{name}",
 		"titleWearingTakeOff": "已穿戴（脱下）",
 		"twoHanded": "双手",
@@ -483,7 +482,7 @@
 		"generationsAlreadyUsedAreNotRefundedAnd": "已使用的生成次数不会退还，已发送的请求仍可能计费。",
 		"cancelSaveError": "无法保存取消状态。请保持此标签页打开并重试。",
 		"preparing": "正在准备你的装备",
-		"remake": "为{name}制作一件…",
+		"remake": "为此角色制作副本…",
 		"makeForSlot": "为{slot}制作一件…",
 		"demoDeleteLocked": "演示装备无法删除",
 		"cancelItem": "取消生成",
@@ -553,7 +552,6 @@
 		"refitIntro": "已从{from}的装备免费适配。请检查这些帧：",
 		"remakeToFit": "为{name}创建适配版本。",
 		"moveGaps": "朝向{directions}的部分{move}帧中不会显示该装备。",
-		"remakeAllMoves": "为{name}创建可在所有动作中穿戴的版本。",
 		"copyFrom": "从{name}复制",
 		"copyFrames": {
 			"other": "从{from}为{name}补充 {n} 个缺失帧，无需生成。"
@@ -651,7 +649,8 @@
 		"layerScopeFacing": "适用于所有朝向{direction}的{slot}物品。",
 		"twoHandedNote": "需要双手，穿戴时会卸下{slot}的物品。",
 		"makeForSlotDetail": "为{slot}再画一次这件物品。",
-		"groupReady": "{count} 个中 {ready} 个就绪"
+		"groupReady": "{count} 个中 {ready} 个就绪",
+		"remakeFits": "制作一个适合 {name}（你正在装扮的角色）的新副本。"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新建角色",
@@ -2921,8 +2920,8 @@
 		"runningJump": "奔跑跳跃"
 	},
 	"appearance": {
-		"action": "编辑外观…",
-		"title": "编辑外观",
+		"action": "以新外观制作副本…",
+		"title": "编辑后的副本",
 		"choose": "选择编辑方式",
 		"custom": "自定义编辑",
 		"instructions": "你想修改什么？",
@@ -2937,8 +2936,8 @@
 		"characterSource": "使用“{move}”的第一帧。",
 		"characterScope": "新角色从站立视图开始。保存后可添加动作并调整装备。",
 		"itemScope": "来源：{move}的第一帧。保存后可补充其他帧的图像。",
-		"editCharacter": "编辑角色",
-		"editItem": "编辑物品",
+		"editCharacter": "创建新角色",
+		"editItem": "创建新物品",
 		"editCost": "{action} · {cost}",
 		"saveCharacter": "另存为新角色",
 		"saveItem": "另存为新装备",
@@ -2951,7 +2950,8 @@
 		"keptDirections": "此副本会在以下方向保留原始图像：{directions}。",
 		"incomplete": "部分编辑后的视图不可用。请打开活动查看详情，或下载已收到的结果。",
 		"reviewPending": "更改来源前，请先保存或丢弃外观预览。",
-		"discardNotice": "要丢弃预览吗？PixelLab 的费用仍然适用。"
+		"discardNotice": "要丢弃预览吗？PixelLab 的费用仍然适用。",
+		"titleOf": "{name} 的编辑副本"
 	},
 	"stateGeneration": {
 		"continueIntro": "你可以完成从未提交的视角。已完成的视角将保留。",

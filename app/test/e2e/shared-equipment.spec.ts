@@ -717,7 +717,7 @@ test('a shared item’s ⋮ explains how it fits and makes one for this characte
 	const menu = page.locator('#item-menu');
 	await expect(menu.locator('.item-menu-marks li')).toHaveText(titles);
 	await expect(menu.getByRole('menuitem', { name: /^Wear/ })).toBeFocused();
-	await menu.getByRole('menuitem', { name: /^Make one for Adventurer copy\.\.\./ }).click();
+	await menu.getByRole('menuitem', { name: /^Make copy for self\.\.\./ }).click();
 	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
 	await expect(
 		sheet.getByRole('button', { name: 'Where does it go?: Head', exact: true })
@@ -784,7 +784,7 @@ test('an item drawn for another body on the same canvas is worn as drawn for fre
 	);
 	await expect(details).toContainText('Not fitted');
 	await expect(
-		details.getByRole('button', { name: 'Make one for Adventurer copy...', exact: true })
+		details.getByRole('button', { name: 'Make copy for self...', exact: true })
 	).toBeVisible();
 	expect(requests).toEqual([]);
 });
@@ -827,9 +827,7 @@ test('items from other characters fit a phone without horizontal overflow and it
 	await expect(others.locator('.shared-tile')).toHaveCount(3);
 	await others.getByRole('button', { name: 'More options for Giant helmet', exact: true }).click();
 	await expect(
-		page
-			.locator('#item-menu')
-			.getByRole('menuitem', { name: /^Make one for Adventurer copy\.\.\./ })
+		page.locator('#item-menu').getByRole('menuitem', { name: /^Make copy for self\.\.\./ })
 	).toBeInViewport();
 	const viewport = page.viewportSize()!;
 	for (const tile of await others.getByRole('button').all()) {
@@ -879,9 +877,7 @@ test('an item that can’t be worn here shows a red icon over dimmed art, and it
 	);
 	await giant.click();
 	const menu = page.locator('#item-menu');
-	await expect(
-		menu.getByRole('menuitem', { name: /^Make one for Adventurer copy\.\.\./ })
-	).toBeFocused();
+	await expect(menu.getByRole('menuitem', { name: /^Make copy for self\.\.\./ })).toBeFocused();
 	await expect(menu.getByRole('menuitem', { name: /^Wear/ })).toHaveCount(0);
 	await expect(menu.locator('.item-menu-marks li')).toHaveText([
 		'From Giant.',
@@ -1140,13 +1136,19 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 		'title',
 		/^Needs a look/
 	);
-	const details = await selectedItemDetails(page);
+	let details = await selectedItemDetails(page);
 	await expect(details).toContainText('Fitted for free from Lefty’s item. Review these frames:');
 	// A re-fit's issues are its fit: nothing to accept as is; a new item for this body is offered instead.
 	await expect(details.getByRole('button', { name: 'Accept as is', exact: true })).toHaveCount(0);
 	await expect(
-		details.getByRole('button', { name: 'Make one for Adventurer copy...', exact: true })
+		details.getByRole('button', { name: 'Make copy for self...', exact: true })
 	).toBeVisible();
+	// It opens New item with the item's first frame attached as the reference, so the copy keeps its look.
+	await details.getByRole('button', { name: 'Make copy for self...', exact: true }).click();
+	const copySheet = page.getByRole('dialog', { name: 'New item', exact: true });
+	await expect(copySheet.getByText('reference.png', { exact: true })).toBeVisible();
+	await copySheet.getByRole('button', { name: 'Close', exact: true }).click();
+	details = await selectedItemDetails(page);
 	// Each note shows its frame on the stage, paused.
 	await openItemSection(details, 'Quality');
 	const note = details.getByRole('button', { name: /^Walk facing south, frame 2: / });

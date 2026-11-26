@@ -254,9 +254,7 @@
 							})
 						)}
 					><RefreshCw size={16} aria-hidden="true" />{openerLabel(
-						t('itemMenu.remake', {
-							name: m.name
-						})
+						t('itemMenu.remake')
 					)}<SurfaceChevron /></button
 				>
 			</div>

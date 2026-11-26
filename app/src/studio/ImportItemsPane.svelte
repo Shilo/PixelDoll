@@ -82,9 +82,7 @@
 								class="bu-action btn make"
 								data-variant="outline"
 								disabled={busy}
-								onclick={() => onmake(entry)}
-								>{t('itemMenu.remake', { name: store.project?.manifest.name ?? '' })}<SurfaceChevron
-								/></button
+								onclick={() => onmake(entry)}>{t('itemMenu.remake')}<SurfaceChevron /></button
 							>{/if}
 					</span>
 				</li>

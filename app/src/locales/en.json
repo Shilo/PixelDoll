@@ -482,7 +482,6 @@
 		"cancelGeneration": "Cancel generation…",
 		"cancelFromTheTabThatIsGenerating": "Cancel from the tab that is generating this item.",
 		"wearInACopyOfTheDemo": "Wear in a copy of the demo",
-		"makeOneForName": "Make one for {name}",
 		"wearName": "Wear {name}",
 		"titleWearingTakeOff": "Wearing (take off)",
 		"twoHanded": "Two-handed",
@@ -492,7 +491,7 @@
 		"generationsAlreadyUsedAreNotRefundedAnd": "Generations already used are not refunded, and requests already sent may still charge.",
 		"cancelSaveError": "Could not save cancellation. Keep this tab open and try again.",
 		"preparing": "Preparing your item",
-		"remake": "Make one for {name}…",
+		"remake": "Make copy for self…",
 		"makeForSlot": "Make one for the {slot}…",
 		"demoDeleteLocked": "Demo items can't be deleted",
 		"cancelItem": "Cancel item",
@@ -564,7 +563,6 @@
 		"refitIntro": "Fitted for free from {from}’s item. Review these frames:",
 		"remakeToFit": "Create a version fitted to {name}.",
 		"moveGaps": "The item won’t show in some {move} frames facing {directions}.",
-		"remakeAllMoves": "Create a version for {name} to wear in every move.",
 		"copyFrom": "Copy from {name}",
 		"copyFrames": {
 			"one": "Adds {n} missing frame to {name} from {from}. No generation needed.",
@@ -672,7 +670,8 @@
 		"layerScopeFacing": "Applies to all {slot} items facing {direction}.",
 		"twoHandedNote": "Uses both hands, so wearing it takes off the {slot} item.",
 		"makeForSlotDetail": "Draw this item again for the {slot}.",
-		"groupReady": "{ready} of {count} ready"
+		"groupReady": "{ready} of {count} ready",
+		"remakeFits": "Makes a new copy that fits {name}, the character you’re dressing."
 	},
 	"newCharacterButton": {
 		"newCharacter": "New character",
@@ -3001,8 +3000,8 @@
 		"runningJump": "Running jump"
 	},
 	"appearance": {
-		"action": "Edit appearance…",
-		"title": "Edit appearance",
+		"action": "Make copy with new look…",
+		"title": "Edited copy",
 		"choose": "Choose an edit",
 		"custom": "Custom edit",
 		"instructions": "What should change?",
@@ -3017,8 +3016,8 @@
 		"characterSource": "Uses the first frame of {move}.",
 		"characterScope": "The new character starts with Standing views. Add moves and fit gear after saving.",
 		"itemScope": "Source: {move}, first frame. Add artwork for other frames after saving.",
-		"editCharacter": "Edit character",
-		"editItem": "Edit item",
+		"editCharacter": "Create new character",
+		"editItem": "Create new item",
 		"editCost": "{action} · {cost}",
 		"saveCharacter": "Save as new character",
 		"saveItem": "Save as new item",
@@ -3031,7 +3030,8 @@
 		"keptDirections": "Saving this copy keeps the original artwork for these directions: {directions}.",
 		"incomplete": "Some edited views are unavailable. Open Activity for details or download the results you received.",
 		"reviewPending": "Save or discard the appearance preview before changing its source.",
-		"discardNotice": "Discard the preview? PixelLab charges still apply."
+		"discardNotice": "Discard the preview? PixelLab charges still apply.",
+		"titleOf": "Edited copy of {name}"
 	},
 	"stateGeneration": {
 		"continueIntro": "You can finish the views that were never sent. Completed views will be kept.",

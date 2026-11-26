@@ -482,7 +482,6 @@
 		"cancelGeneration": "Generierung abbrechen…",
 		"cancelFromTheTabThatIsGenerating": "Brich die Generierung in dem Tab ab, in dem sie läuft.",
 		"wearInACopyOfTheDemo": "In einer Demo-Kopie anlegen",
-		"makeOneForName": "Für {name} erstellen",
 		"wearName": "{name} anlegen",
 		"titleWearingTakeOff": "Angelegt (ablegen)",
 		"twoHanded": "Zweihändig",
@@ -492,7 +491,7 @@
 		"generationsAlreadyUsedAreNotRefundedAnd": "Bereits verbrauchte Generierungen werden nicht erstattet. Bereits gesendete Anfragen können weiterhin Kosten verursachen.",
 		"cancelSaveError": "Der Abbruch konnte nicht gespeichert werden. Lass diesen Tab offen und versuch es noch einmal.",
 		"preparing": "Dein Gegenstand wird vorbereitet",
-		"remake": "Für {name} erstellen…",
+		"remake": "Kopie für diese Figur…",
 		"makeForSlot": "Für {slot} erstellen…",
 		"demoDeleteLocked": "Demo-Gegenstände können nicht gelöscht werden",
 		"cancelItem": "Gegenstand abbrechen",
@@ -564,7 +563,6 @@
 		"refitIntro": "Kostenlos an den Gegenstand von {from} angepasst. Prüfe diese Frames:",
 		"remakeToFit": "Erstelle eine Version, die zu {name} passt.",
 		"moveGaps": "Der Gegenstand fehlt in einigen {move}-Frames in Blickrichtung {directions}.",
-		"remakeAllMoves": "Erstelle eine Version für {name}, die in jeder Animation getragen werden kann.",
 		"copyFrom": "Von {name} kopieren",
 		"copyFrames": {
 			"one": "Ergänzt {n} fehlenden Frame bei {name} aus {from}. Keine Generierung nötig.",
@@ -672,7 +670,8 @@
 		"layerScopeFacing": "Gilt für alle Gegenstände im Slot {slot} in Blickrichtung {direction}.",
 		"twoHandedNote": "Braucht beide Hände, daher wird beim Tragen der Gegenstand in {slot} abgelegt.",
 		"makeForSlotDetail": "Diesen Gegenstand noch einmal für {slot} zeichnen.",
-		"groupReady": "{ready} von {count} fertig"
+		"groupReady": "{ready} von {count} fertig",
+		"remakeFits": "Erstellt eine neue Kopie, die zu {name} passt, der Figur, die du gerade einkleidest."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Neue Figur",
@@ -3001,8 +3000,8 @@
 		"runningJump": "Sprung im Lauf"
 	},
 	"appearance": {
-		"action": "Aussehen bearbeiten…",
-		"title": "Aussehen bearbeiten",
+		"action": "Kopie mit neuem Look…",
+		"title": "Bearbeitete Kopie",
 		"choose": "Änderung wählen",
 		"custom": "Eigene Änderung",
 		"instructions": "Was soll sich ändern?",
@@ -3017,8 +3016,8 @@
 		"characterSource": "Verwendet das erste Bild aus „{move}“.",
 		"characterScope": "Die neue Figur beginnt mit Standansichten. Füge nach dem Speichern Animationen hinzu und passe Ausrüstung an.",
 		"itemScope": "Quelle: {move}, erster Frame. Ergänze weitere Frames nach dem Speichern.",
-		"editCharacter": "Charakter bearbeiten",
-		"editItem": "Gegenstand bearbeiten",
+		"editCharacter": "Neue Figur erstellen",
+		"editItem": "Neuen Gegenstand erstellen",
 		"editCost": "{action} · {cost}",
 		"saveCharacter": "Als neue Figur speichern",
 		"saveItem": "Als neuen Gegenstand speichern",
@@ -3031,7 +3030,8 @@
 		"keptDirections": "Die Kopie behält das Original für diese Richtungen: {directions}.",
 		"incomplete": "Einige bearbeitete Ansichten fehlen. Öffne die Aktivität für Details oder lade die vorhandenen Ergebnisse herunter.",
 		"reviewPending": "Speichere oder verwirf die Änderungsvorschau, bevor du die Quelle änderst.",
-		"discardNotice": "Vorschau verwerfen? Die PixelLab-Kosten bleiben bestehen."
+		"discardNotice": "Vorschau verwerfen? Die PixelLab-Kosten bleiben bestehen.",
+		"titleOf": "Bearbeitete Kopie von {name}"
 	},
 	"stateGeneration": {
 		"continueIntro": "Du kannst die noch nicht gesendeten Ansichten fertigstellen. Fertige Ansichten bleiben erhalten.",

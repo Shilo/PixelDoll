@@ -99,6 +99,7 @@
 		removeItem,
 		isDemo,
 		openNewItem,
+		openCopyForSelf,
 		moveItemToSlot,
 		withKey,
 		startMove,
@@ -767,9 +768,8 @@
 						(isDemo() || remake ? '' : ' ' + t('itemPane.remakeToFit', { name: m.name })),
 					action: remake
 						? {
-								label: openerLabel(t('itemMenu.remake', { name: m.name })),
-								run: () =>
-									openNewItem(it.slot, { slot: it.slot, prompt: it.prompt, route: it.route })
+								label: openerLabel(t('itemMenu.remake')),
+								run: () => openCopyForSelf(it)
 							}
 						: undefined
 				};
@@ -783,7 +783,7 @@
 							directions: formatList(moveGaps.map(directionName))
 						}) +
 						(remakeOnly && !isDemo() && !freeFrames
-							? ' ' + t('itemPane.remakeAllMoves', { name: m.name })
+							? ' ' + t('itemPane.remakeFits', { name: m.name })
 							: ''),
 					// No link when Moves & States is already open below.
 					action:
@@ -1252,12 +1252,11 @@
 									<ToolRow
 										{...{
 											icon: RefreshCw,
-											label: openerLabel(t('itemMenu.remake', { name: m.name })),
-											detail: t('itemPane.remakeAllMoves', { name: m.name }),
+											label: openerLabel(t('itemMenu.remake')),
+											detail: t('itemPane.remakeFits', { name: m.name }),
 											aside: '',
 											opens: true,
-											onclick: () =>
-												openNewItem(it.slot, { slot: it.slot, prompt: it.prompt, route: it.route })
+											onclick: () => openCopyForSelf(it)
 										}}
 									/>
 								</div>
@@ -1451,19 +1450,6 @@
 						{#if otherHand}
 							<!-- First: how the item is held (functional), before how the outfit is layered and drawn. Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
 							<section class="hide-rules hand-rules">
-								<label class="switch-row bu-check">
-									<span>{t('itemMenu.twoHanded')}</span>
-									<input
-										class="bu-switch"
-										type="checkbox"
-										role="switch"
-										checked={twoHanded(m, it)}
-										onchange={() => toggleTwoHanded(it.id)}
-									/>
-								</label>
-								<p class="faint small">
-									{t('itemPane.twoHandedNote', { slot: slotName(otherHand) })}
-								</p>
 								{#if !isDemo() && it.prompt && !twoHanded(m, it)}
 									<!-- The same description drawn for the other hand; the New item sheet prices it first. -->
 									<div class="tool-list">
@@ -1482,6 +1468,19 @@
 										/>
 									</div>
 								{/if}
+								<label class="switch-row bu-check">
+									<span>{t('itemMenu.twoHanded')}</span>
+									<input
+										class="bu-switch"
+										type="checkbox"
+										role="switch"
+										checked={twoHanded(m, it)}
+										onchange={() => toggleTwoHanded(it.id)}
+									/>
+								</label>
+								<p class="faint small">
+									{t('itemPane.twoHandedNote', { slot: slotName(otherHand) })}
+								</p>
 							</section>
 						{/if}
 						<section class="layer-order" aria-labelledby="layer-order-{it.id}">

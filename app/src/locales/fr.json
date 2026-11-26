@@ -482,7 +482,6 @@
 		"cancelGeneration": "Annuler la génération…",
 		"cancelFromTheTabThatIsGenerating": "Annulez depuis l’onglet qui génère cet objet.",
 		"wearInACopyOfTheDemo": "Porter dans une copie de la démo",
-		"makeOneForName": "En créer un pour {name}",
 		"wearName": "Porter {name}",
 		"titleWearingTakeOff": "Porté (retirer)",
 		"twoHanded": "À deux mains",
@@ -492,7 +491,7 @@
 		"generationsAlreadyUsedAreNotRefundedAnd": "Les générations déjà utilisées ne sont pas remboursées. Les requêtes déjà envoyées peuvent encore être facturées.",
 		"cancelSaveError": "Impossible d’enregistrer l’annulation. Gardez cet onglet ouvert et réessayez.",
 		"preparing": "Préparation de votre objet",
-		"remake": "En créer un pour {name}…",
+		"remake": "Faire une copie pour ce personnage…",
 		"makeForSlot": "En créer un pour l’emplacement {slot}…",
 		"demoDeleteLocked": "Les objets de la démo ne peuvent pas être supprimés",
 		"cancelItem": "Annuler la génération",
@@ -564,7 +563,6 @@
 		"refitIntro": "Ajusté gratuitement à partir de l’objet de {from}. Vérifiez ces images :",
 		"remakeToFit": "Créez une version adaptée à {name}.",
 		"moveGaps": "L’objet n’apparaîtra pas dans certaines images de {move} vers {directions}.",
-		"remakeAllMoves": "Créez une version pour que {name} le porte dans toutes les animations.",
 		"copyFrom": "Copier depuis {name}",
 		"copyFrames": {
 			"one": "Ajoute {n} image manquante à {name} depuis {from}. Aucune génération nécessaire.",
@@ -672,7 +670,8 @@
 		"layerScopeFacing": "S’applique à tous les objets {slot} orientés {direction}.",
 		"twoHandedNote": "Utilise les deux mains : le porter retire l’objet de {slot}.",
 		"makeForSlotDetail": "Redessiner cet objet pour {slot}.",
-		"groupReady": "{ready} sur {count} prêts"
+		"groupReady": "{ready} sur {count} prêts",
+		"remakeFits": "Crée une nouvelle copie ajustée à {name}, le personnage que vous habillez."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nouveau personnage",
@@ -3001,8 +3000,8 @@
 		"runningJump": "Saut en course"
 	},
 	"appearance": {
-		"action": "Modifier l’apparence…",
-		"title": "Modifier l’apparence",
+		"action": "Faire une copie avec un nouveau look…",
+		"title": "Copie modifiée",
 		"choose": "Choisissez une modification",
 		"custom": "Modification personnalisée",
 		"instructions": "Que voulez-vous modifier ?",
@@ -3017,8 +3016,8 @@
 		"characterSource": "Utilise la première image de {move}.",
 		"characterScope": "Le nouveau personnage commence avec des vues debout. Après l’enregistrement, ajoutez des animations et ajustez l’équipement.",
 		"itemScope": "Source : {move}, première image. Ajoutez les autres images après l’enregistrement.",
-		"editCharacter": "Modifier le personnage",
-		"editItem": "Modifier l’objet",
+		"editCharacter": "Créer un nouveau personnage",
+		"editItem": "Créer un nouvel objet",
 		"editCost": "{action} · {cost}",
 		"saveCharacter": "Enregistrer comme nouveau personnage",
 		"saveItem": "Enregistrer comme nouvel objet",
@@ -3031,7 +3030,8 @@
 		"keptDirections": "La copie conserve le dessin original pour ces directions : {directions}.",
 		"incomplete": "Certaines vues modifiées sont indisponibles. Ouvrez Activité pour voir les détails ou téléchargez les résultats reçus.",
 		"reviewPending": "Enregistrez ou abandonnez l’aperçu avant de modifier sa source.",
-		"discardNotice": "Abandonner l’aperçu ? Les frais PixelLab restent dus."
+		"discardNotice": "Abandonner l’aperçu ? Les frais PixelLab restent dus.",
+		"titleOf": "Copie modifiée de {name}"
 	},
 	"stateGeneration": {
 		"continueIntro": "Vous pouvez terminer les vues qui n’ont jamais été envoyées. Les vues terminées seront conservées.",

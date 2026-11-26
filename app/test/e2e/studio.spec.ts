@@ -8013,7 +8013,7 @@ test('a view kept without poses names the move and view to make again before equ
 	await expect(stageNote.getByRole('button', { name: /^Make missing views/ })).toContainText(
 		'gens'
 	);
-	await expect(stageNote.getByRole('button', { name: /^Make one for / })).toBeVisible();
+	await expect(stageNote.getByRole('button', { name: /^Make copy for self/ })).toBeVisible();
 	expect(posts.length).toBe(sent);
 });
 
@@ -11653,7 +11653,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	expect(iconOffsets).toEqual(Array(iconOffsets.length).fill(iconOffsets.at(-1)));
 	await expect(itemMenu(page).getByRole('menuitem', { name: /Wear|Take off/ })).toHaveCount(0);
 	await page.keyboard.press('ArrowDown');
-	await expect(items.nth(1)).toHaveAccessibleName('Edit appearance…');
+	await expect(items.nth(1)).toHaveAccessibleName('Make copy with new look…');
 	await expect(items.nth(1)).toBeFocused();
 	await page.keyboard.press('ArrowDown');
 	await expect(items.nth(2)).toHaveAccessibleName('Create a variant...');

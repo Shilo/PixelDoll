@@ -482,7 +482,6 @@
 		"cancelGeneration": "Cancelar generación…",
 		"cancelFromTheTabThatIsGenerating": "Cancela desde la pestaña que está generando este objeto.",
 		"wearInACopyOfTheDemo": "Poner en una copia de la demo",
-		"makeOneForName": "Crear uno para {name}",
 		"wearName": "Poner {name}",
 		"titleWearingTakeOff": "Puesto (quitar)",
 		"twoHanded": "A dos manos",
@@ -492,7 +491,7 @@
 		"generationsAlreadyUsedAreNotRefundedAnd": "Las generaciones ya consumidas no se devuelven y las solicitudes ya enviadas todavía pueden generar cargos.",
 		"cancelSaveError": "No se pudo guardar la cancelación. Mantén esta pestaña abierta e inténtalo de nuevo.",
 		"preparing": "Preparando tu objeto",
-		"remake": "Crear uno para {name}…",
+		"remake": "Hacer copia para este personaje…",
 		"makeForSlot": "Crear uno para la ranura {slot}…",
 		"demoDeleteLocked": "Los objetos de la demo no se pueden eliminar",
 		"cancelItem": "Cancelar generación",
@@ -564,7 +563,6 @@
 		"refitIntro": "Ajustado gratis a partir del objeto de {from}. Revisa estos fotogramas:",
 		"remakeToFit": "Crea una versión ajustada a {name}.",
 		"moveGaps": "El objeto no se verá en algunos fotogramas de {move} hacia {directions}.",
-		"remakeAllMoves": "Crea una versión para que {name} lo lleve en todos los movimientos.",
 		"copyFrom": "Copiar de {name}",
 		"copyFrames": {
 			"one": "Añade {n} fotograma faltante a {name} desde {from}. No hace falta generar.",
@@ -672,7 +670,8 @@
 		"layerScopeFacing": "Se aplica a todos los objetos de {slot} mirando hacia {direction}.",
 		"twoHandedNote": "Usa ambas manos, así que al llevarlo se quita el objeto de {slot}.",
 		"makeForSlotDetail": "Dibuja este objeto otra vez para {slot}.",
-		"groupReady": "{ready} de {count} listos"
+		"groupReady": "{ready} de {count} listos",
+		"remakeFits": "Hace una copia nueva que le queda a {name}, el personaje que estás vistiendo."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nuevo personaje",
@@ -3001,8 +3000,8 @@
 		"runningJump": "Salto corriendo"
 	},
 	"appearance": {
-		"action": "Editar apariencia…",
-		"title": "Editar apariencia",
+		"action": "Hacer copia con nuevo aspecto…",
+		"title": "Copia editada",
 		"choose": "Elige una edición",
 		"custom": "Edición personalizada",
 		"instructions": "¿Qué quieres cambiar?",
@@ -3017,8 +3016,8 @@
 		"characterSource": "Usa el primer fotograma de {move}.",
 		"characterScope": "El nuevo personaje empieza con vistas de pie. Añade animaciones y ajusta el equipo después de guardar.",
 		"itemScope": "Origen: {move}, primer fotograma. Añade gráficos para otros fotogramas después de guardar.",
-		"editCharacter": "Editar personaje",
-		"editItem": "Editar objeto",
+		"editCharacter": "Crear personaje nuevo",
+		"editItem": "Crear objeto nuevo",
 		"editCost": "{action} · {cost}",
 		"saveCharacter": "Guardar como nuevo personaje",
 		"saveItem": "Guardar como nuevo objeto",
@@ -3031,7 +3030,8 @@
 		"keptDirections": "Al guardar la copia se conserva la imagen original en estas direcciones: {directions}.",
 		"incomplete": "Faltan algunas vistas editadas. Abre Actividad para ver los detalles o descarga los resultados recibidos.",
 		"reviewPending": "Guarda o descarta la vista previa antes de cambiar su origen.",
-		"discardNotice": "¿Descartar la vista previa? Los cargos de PixelLab se mantienen."
+		"discardNotice": "¿Descartar la vista previa? Los cargos de PixelLab se mantienen.",
+		"titleOf": "Copia editada de {name}"
 	},
 	"stateGeneration": {
 		"continueIntro": "Puedes terminar las vistas que no se enviaron. Se conservarán las vistas completadas.",

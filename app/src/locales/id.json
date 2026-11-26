@@ -473,7 +473,6 @@
 		"cancelGeneration": "Batalkan generasi…",
 		"cancelFromTheTabThatIsGenerating": "Batalkan dari tab yang sedang membuat item ini.",
 		"wearInACopyOfTheDemo": "Kenakan pada salinan demo",
-		"makeOneForName": "Buat untuk {name}",
 		"wearName": "Kenakan {name}",
 		"titleWearingTakeOff": "Sedang dikenakan (lepas)",
 		"twoHanded": "Dua tangan",
@@ -483,7 +482,7 @@
 		"generationsAlreadyUsedAreNotRefundedAnd": "Generasi yang sudah digunakan tidak dikembalikan. Permintaan yang sudah dikirim mungkin tetap dikenai biaya.",
 		"cancelSaveError": "Pembatalan tidak dapat disimpan. Biarkan tab ini terbuka dan coba lagi.",
 		"preparing": "Menyiapkan item Anda",
-		"remake": "Buat untuk {name}…",
+		"remake": "Buat salinan untuk karakter ini…",
 		"makeForSlot": "Buat untuk slot {slot}…",
 		"demoDeleteLocked": "Item demo tidak dapat dihapus",
 		"cancelItem": "Batalkan item",
@@ -553,7 +552,6 @@
 		"refitIntro": "Disesuaikan gratis dari item {from}. Periksa frame berikut:",
 		"remakeToFit": "Buat versi yang disesuaikan untuk {name}.",
 		"moveGaps": "Item tidak akan terlihat di sebagian frame {move} yang menghadap {directions}.",
-		"remakeAllMoves": "Buat versi untuk {name} agar dapat dikenakan di setiap gerakan.",
 		"copyFrom": "Salin dari {name}",
 		"copyFrames": {
 			"other": "Menambahkan {n} frame yang hilang ke {name} dari {from}. Tidak perlu pembuatan."
@@ -651,7 +649,8 @@
 		"layerScopeFacing": "Berlaku untuk semua item {slot} yang menghadap {direction}.",
 		"twoHandedNote": "Memakai kedua tangan, jadi memakainya melepas item {slot}.",
 		"makeForSlotDetail": "Gambar item ini lagi untuk {slot}.",
-		"groupReady": "{ready} dari {count} siap"
+		"groupReady": "{ready} dari {count} siap",
+		"remakeFits": "Membuat salinan baru yang pas untuk {name}, karakter yang sedang kamu dandani."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Karakter baru",
@@ -2921,8 +2920,8 @@
 		"runningJump": "Lompat sambil berlari"
 	},
 	"appearance": {
-		"action": "Edit tampilan…",
-		"title": "Edit tampilan",
+		"action": "Buat salinan dengan tampilan baru…",
+		"title": "Salinan yang diedit",
 		"choose": "Pilih perubahan",
 		"custom": "Edit khusus",
 		"instructions": "Apa yang ingin Anda ubah?",
@@ -2937,8 +2936,8 @@
 		"characterSource": "Menggunakan bingkai pertama dari {move}.",
 		"characterScope": "Karakter baru diawali dengan tampilan berdiri. Tambahkan animasi dan pasang perlengkapan setelah menyimpan.",
 		"itemScope": "Sumber: {move}, frame pertama. Tambahkan gambar untuk frame lain setelah menyimpan.",
-		"editCharacter": "Edit karakter",
-		"editItem": "Edit item",
+		"editCharacter": "Buat karakter baru",
+		"editItem": "Buat item baru",
 		"editCost": "{action} · {cost}",
 		"saveCharacter": "Simpan sebagai karakter baru",
 		"saveItem": "Simpan sebagai item baru",
@@ -2951,7 +2950,8 @@
 		"keptDirections": "Salinan ini menyimpan gambar asli untuk arah berikut: {directions}.",
 		"incomplete": "Beberapa tampilan hasil edit tidak tersedia. Buka Aktivitas untuk melihat detail atau unduh hasil yang diterima.",
 		"reviewPending": "Simpan atau buang pratinjau tampilan sebelum mengubah sumbernya.",
-		"discardNotice": "Buang pratinjau? Biaya PixelLab tetap berlaku."
+		"discardNotice": "Buang pratinjau? Biaya PixelLab tetap berlaku.",
+		"titleOf": "Salinan {name} yang diedit"
 	},
 	"stateGeneration": {
 		"continueIntro": "Anda dapat menyelesaikan tampilan yang belum pernah dikirim. Tampilan yang sudah selesai akan disimpan.",

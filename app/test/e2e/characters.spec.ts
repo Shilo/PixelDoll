@@ -149,8 +149,8 @@ test('Edit appearance makes reviewed character and equipment copies from saved p
 				})
 		);
 	const source = (await read()).find(({ manifest }) => manifest.name === 'Appearance source')!;
-	const edit = page.getByRole('dialog', { name: 'Edit appearance', exact: true });
-	const action = /^Edit appearance…$/;
+	const edit = page.getByRole('dialog', { name: /^Edited copy of / });
+	const action = /^Make copy with new look…$/;
 	const characterEditor = async () => {
 		await nameMenu.click();
 		await page.locator('#project-menu').getByRole('menuitem', { name: action }).click();
@@ -191,7 +191,7 @@ test('Edit appearance makes reviewed character and equipment copies from saved p
 	await underwear.press('ArrowRight');
 	await expect(choices.getByRole('radio', { name: 'Nothing worn', exact: true })).toBeChecked();
 	await expect(edit.getByRole('img', { name: 'Original', exact: true })).toBeVisible();
-	const generate = edit.getByRole('button', { name: /^Edit character ·/ });
+	const generate = edit.getByRole('button', { name: /^Create new character ·/ });
 	await expect(generate).toBeEnabled();
 	expect(posted).toHaveLength(0);
 	await generate.click();
@@ -237,7 +237,7 @@ test('Edit appearance makes reviewed character and equipment copies from saved p
 	const details = await selectedItemDetails(page);
 	await details.getByRole('button', { name: 'Item actions', exact: true }).click();
 	await page.getByRole('menuitem', { name: action }).click();
-	const editItem = edit.getByRole('button', { name: /^Edit item ·/ });
+	const editItem = edit.getByRole('button', { name: /^Create new item ·/ });
 	await expect(edit.getByRole('radio')).toHaveCount(0);
 	await expect(edit.getByRole('button', { name: 'Back to Item' })).toBeVisible();
 	const instructions = edit.getByRole('textbox', { name: 'What should change?' });
@@ -1413,7 +1413,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 			'Details...',
 			'Cost estimate...',
 			'Rename...',
-			'Edit appearance…',
+			'Make copy with new look…',
 			'Directions...',
 			'Adjust frame...',
 			'Download ZIP',
@@ -2466,7 +2466,7 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 			.filter({ hasText: 'Clothes drawn on the character' });
 		await expect(appearanceNote).toContainText('To remove or change them after import:');
 		await page.getByLabel('Character name', { exact: true }).fill(name);
-		await expect(appearanceNote.locator('code')).toHaveText([name, 'Edit appearance…']);
+		await expect(appearanceNote.locator('code')).toHaveText([name, 'Make copy with new look…']);
 		const setup = page.getByRole('switch', { name: 'Set up the pose rig next (recommended)' });
 		await expect(setup).toBeChecked();
 		await page.getByText('Set up the pose rig next (recommended)', { exact: true }).click();
@@ -2476,8 +2476,8 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 		await expect(page.locator('.project-btn')).toContainText(name, { timeout: 30_000 });
 	}
 	await importCopy('Imported one');
-	await page.getByRole('button', { name: 'Edit appearance…', exact: true }).click();
-	const appearance = page.getByRole('dialog', { name: 'Edit appearance', exact: true });
+	await page.getByRole('button', { name: 'Make copy with new look…', exact: true }).click();
+	const appearance = page.getByRole('dialog', { name: /^Edited copy of / });
 	await expect(appearance).toContainText('Imported one');
 	await appearance.getByRole('button', { name: 'Close', exact: true }).click();
 	await reloadStudio(page);

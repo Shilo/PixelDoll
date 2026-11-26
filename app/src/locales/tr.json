@@ -482,7 +482,6 @@
 		"cancelGeneration": "Üretimi iptal edin…",
 		"cancelFromTheTabThatIsGenerating": "İptal işlemini bu eşyayı üreten sekmeden yapın.",
 		"wearInACopyOfTheDemo": "Demonun kopyasında giydirin",
-		"makeOneForName": "{name} için bir tane üretin",
 		"wearName": "Şu eşyayı giydirin: {name}",
 		"titleWearingTakeOff": "Giyili (çıkarın)",
 		"twoHanded": "Çift elli",
@@ -492,7 +491,7 @@
 		"generationsAlreadyUsedAreNotRefundedAnd": "Kullanılmış üretim hakları iade edilmez. Gönderilmiş istekler yine de ücretlendirilebilir.",
 		"cancelSaveError": "İptal kaydedilemedi. Bu sekmeyi açık tutun ve tekrar deneyin.",
 		"preparing": "Eşya hazırlanıyor",
-		"remake": "{name} için bir tane üretin…",
+		"remake": "Bu karakter için kopya yap…",
 		"makeForSlot": "{slot} yuvası için bir tane üretin…",
 		"demoDeleteLocked": "Demo eşyaları silinemez",
 		"cancelItem": "Eşyayı iptal edin",
@@ -564,7 +563,6 @@
 		"refitIntro": "{from} karakterinin eşyasından ücretsiz uyarlandı. Bu kareleri kontrol et:",
 		"remakeToFit": "{name} için uyarlanmış bir sürüm oluştur.",
 		"moveGaps": "Eşya, {directions} yönündeki bazı {move} karelerinde görünmez.",
-		"remakeAllMoves": "{name} için her harekette giyilebilecek bir sürüm oluştur.",
 		"copyFrom": "{name} karakterinden kopyalayın",
 		"copyFrames": {
 			"one": "{from} karakterinden {name} karakterine {n} eksik kare ekler. Üretim gerekmez.",
@@ -672,7 +670,8 @@
 		"layerScopeFacing": "{direction} yönündeki tüm {slot} eşyalarına uygulanır.",
 		"twoHandedNote": "İki eli de kullanır; giyildiğinde {slot} eşyası çıkarılır.",
 		"makeForSlotDetail": "Bu eşyayı {slot} için yeniden çiz.",
-		"groupReady": "{count} içinden {ready} hazır"
+		"groupReady": "{count} içinden {ready} hazır",
+		"remakeFits": "Giydirdiğin karakter {name} için uyan yeni bir kopya yapar."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Yeni karakter",
@@ -3001,8 +3000,8 @@
 		"runningJump": "Koşarak zıplama"
 	},
 	"appearance": {
-		"action": "Görünümü düzenle…",
-		"title": "Görünümü düzenle",
+		"action": "Yeni görünümle kopya yap…",
+		"title": "Düzenlenmiş kopya",
 		"choose": "Düzenlemeyi seçin",
 		"custom": "Özel düzenleme",
 		"instructions": "Neyi değiştirmek istersiniz?",
@@ -3017,8 +3016,8 @@
 		"characterSource": "{move} hareketinin ilk karesini kullanır.",
 		"characterScope": "Yeni karakter ayakta duruş görünümleriyle başlar. Kaydettikten sonra animasyon ekleyin ve eşyaları uyarlayın.",
 		"itemScope": "Kaynak: {move}, ilk kare. Diğer karelerin çizimlerini kaydettikten sonra ekleyin.",
-		"editCharacter": "Karakteri düzenle",
-		"editItem": "Eşyayı düzenle",
+		"editCharacter": "Yeni karakter oluştur",
+		"editItem": "Yeni eşya oluştur",
 		"editCost": "{action} · {cost}",
 		"saveCharacter": "Yeni karakter olarak kaydet",
 		"saveItem": "Yeni eşya olarak kaydet",
@@ -3031,7 +3030,8 @@
 		"keptDirections": "Bu kopya şu yönlerde özgün çizimi korur: {directions}.",
 		"incomplete": "Düzenlenmiş görünümlerin bir kısmı kullanılamıyor. Ayrıntılar için Etkinlik bölümünü açın veya alınan sonuçları indirin.",
 		"reviewPending": "Kaynağı değiştirmeden önce görünüm önizlemesini kaydedin veya atın.",
-		"discardNotice": "Önizleme atılsın mı? PixelLab ücretleri geçerliliğini korur."
+		"discardNotice": "Önizleme atılsın mı? PixelLab ücretleri geçerliliğini korur.",
+		"titleOf": "{name} düzenlenmiş kopyası"
 	},
 	"stateGeneration": {
 		"continueIntro": "Hiç gönderilmemiş görünümleri tamamlayabilirsiniz. Tamamlanan görünümler korunur.",
