@@ -968,7 +968,8 @@
 							id: displayDirection(direction.id)
 						})}
 						<button
-							class="item-view bu-tile"
+							class="item-view bu-action"
+							data-variant="quiet"
 							data-missing={!has || undefined}
 							aria-haspopup="dialog"
 							aria-label={has
@@ -976,16 +977,18 @@
 								: t('itemPane.openMissingView', { direction: displayDirection(direction.id) })}
 							onclick={() => openViewer(direction.id)}
 						>
-							<span class="view-art bu-tile-art" aria-hidden="true">
+							<span class="view-art" aria-hidden="true">
 								{#if has && image}<Sprite img={image} {k} limit={tile} {label} />{:else}<span
 										class="view-missing"
 										title={t('itemPane.missingView')}><ImageOff size={24} strokeWidth={1.5} /></span
 									>{/if}
 							</span>
-							<span class="view-caption bu-tile-label">{displayDirection(direction.id)}</span>
-							<span class="view-enlarge" aria-hidden="true"><Maximize size={12} /></span>
+							<span class="view-caption">{displayDirection(direction.id)}</span>
 						</button>
 					{/each}
+					{#if directions.length}<span class="view-enlarge" aria-hidden="true"
+							><Maximize size={14} /></span
+						>{/if}
 					{#if !directions.length}<p class="muted small preview-empty">
 							{t('itemPane.previewUnavailable')}
 						</p>{/if}
@@ -1878,37 +1881,52 @@
 		grid-template-columns: minmax(0, 1fr);
 		gap: 6px;
 	}
+	/* The facings touch: one seamless strip where every point opens a view, so no gap can swallow a tap. Its corners clip
+	   the hover of the corner tiles. */
 	.item-views {
 		position: relative;
 		display: grid;
 		grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-		gap: 6px;
-		padding: 6px;
 		background: var(--stage);
 		border-radius: var(--r-card);
+		overflow: hidden;
 	}
-	/* Each facing is a theme tile, its whole cell one button that opens the viewer. */
 	.item-view {
 		display: grid;
 		grid-template-rows: var(--tile, 64px) auto;
 		justify-items: center;
 		align-items: center;
-		padding: 12px 4px 6px;
+		gap: 4px;
+		min-width: 0;
+		padding: 12px 4px 8px;
+		border-radius: 0;
 		font-size: var(--fs-sm);
 		color: var(--text-2);
+		cursor: zoom-in;
 	}
-	/* A glyph, not a control: it says the tile opens bigger. */
+	/* Inside the strip, so its clipped corners keep the whole ring. */
+	.item-view:focus-visible {
+		outline-offset: -2px;
+	}
+	/* Pressing sinks the art a little: the theme's hover shows the target, this shows the press. */
+	.item-view:active .view-art {
+		transform: scale(0.94);
+	}
+	.view-art {
+		transition: transform var(--dur);
+	}
+	/* One glyph for the strip, docked in its corner: any facing opens full size. Not a control; it lights up while a
+	   facing is hovered or focused. */
 	.view-enlarge {
 		position: absolute;
-		inset-block-start: 6px;
-		inset-inline-end: 6px;
+		inset-block-start: 8px;
+		inset-inline-end: 8px;
 		display: grid;
 		color: var(--text-3);
-		opacity: 0.7;
-		transition: opacity var(--dur);
+		pointer-events: none;
+		transition: color var(--dur);
 	}
-	.item-view:is(:hover, :focus-visible) .view-enlarge {
-		opacity: 1;
+	.item-views:has(.item-view:is(:hover, :focus-visible)) .view-enlarge {
 		color: var(--text);
 	}
 	.view-art {
@@ -1927,8 +1945,9 @@
 		color: var(--warn);
 	}
 	.view-caption {
-		white-space: normal;
+		max-width: 100%;
 		overflow-wrap: anywhere;
+		text-align: center;
 	}
 	.preview-empty {
 		grid-column: 1 / -1;
