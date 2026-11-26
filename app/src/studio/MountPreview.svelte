@@ -21,7 +21,7 @@
 	import type { Preset, Project } from '../lib/store/manifest.ts';
 	import { displayDirection } from './displayDirection.ts';
 	import { previewBounds } from './experience/bounds.ts';
-	import { hideMountedLegs, mountLegGeometry } from './experience/mountLegs.ts';
+	import { splitMountedRider } from './experience/mountLegs.ts';
 	import { imageCanvas } from './experience/imageCanvas.ts';
 	import { mountPlacement, offsetMountSeat } from './experience/mountPlacement.ts';
 	import {
@@ -296,7 +296,7 @@
 			clockRider = current?.id ?? '';
 		}
 		// The rider is composed only when its clip, facing or frame changes, not on every animation frame.
-		let composed: { key: string; rider: ReturnType<typeof hideMountedLegs> } | null = null,
+		let composed: { key: string; rider: ReturnType<typeof splitMountedRider> } | null = null,
 			last = performance.now(),
 			frameId = 0;
 		const draw = (now: number) => {
@@ -318,17 +318,14 @@
 					composed = result.image
 						? {
 								key,
-								rider: hideMountedLegs(
+								rider: splitMountedRider(
+									current.project,
 									result.image,
 									result.frame,
-									current.project.manifest.rig,
 									p.clip,
 									p.direction,
-									clock.cell,
-									mode,
-									mode === 'none'
-										? undefined
-										: mountLegGeometry(current.project, p.clip, p.direction, clock.cell)
+									result.composition,
+									mode
 								)
 							}
 						: null;

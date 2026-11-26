@@ -1,7 +1,7 @@
-import type { Frame } from '../../lib/compose/compose.ts';
+import { cellImg, type Frame } from '../../lib/compose/compose.ts';
 import { makeImg, type Img } from '../../lib/image/png.ts';
-import type { Project } from '../../lib/store/manifest.ts';
-import { cellImg } from '../../lib/compose/compose.ts';
+import { actionLowerSlot, dollPixels } from '../../lib/runtime/paperdoll.js';
+import type { Preset, Project } from '../../lib/store/manifest.ts';
 import { flipH } from '../../lib/rig/mirror.ts';
 import {
 	DEFAULT_MOVE,
@@ -15,6 +15,59 @@ import {
 export type MountLegMode = 'none' | 'far' | 'both';
 type Point = { x: number; y: number };
 type Leg = [Point, Point, Point];
+
+/** Track visible equipment contributions in the same frame and order as the rendered rider. */
+function equipmentCoverage(
+	project: Project,
+	frame: Frame,
+	items: Preset['items'],
+	clip: string,
+	direction: DirectionName,
+	cell: number
+) {
+	let coverage: Uint8Array | undefined;
+	for (const { item, slot, body, image, frame: pivot } of dollPixels(
+		project,
+		items,
+		clip,
+		direction,
+		cell
+	)) {
+		const protectedLayer = !body && !actionLowerSlot(slot?.profile ?? item.slot);
+		if (protectedLayer) coverage ??= new Uint8Array(frame.w * frame.h);
+		if (!coverage) continue;
+		const dx = frame.x - pivot.x,
+			dy = frame.y - pivot.y;
+		for (let y = Math.max(0, -dy); y < Math.min(image.h, frame.h - dy); y++)
+			for (let x = Math.max(0, -dx); x < Math.min(image.w, frame.w - dx); x++) {
+				const alpha = image.data[(y * image.w + x) * 4 + 3];
+				if (!alpha) continue;
+				const pixel = (y + dy) * frame.w + x + dx;
+				// A translucent leg above visible equipment still contains equipment color.
+				if (alpha === 255 || protectedLayer) coverage[pixel] = Number(protectedLayer);
+			}
+	}
+	return coverage;
+}
+
+export function splitMountedRider(
+	project: Project,
+	image: Img,
+	frame: Frame,
+	clip: string,
+	direction: DirectionName,
+	composition: { items: Preset['items']; cell: number } | undefined,
+	mode: MountLegMode
+): ReturnType<typeof hideMountedLegs> {
+	if (mode === 'none') return { image, issue: null };
+	if (!composition || image.w !== frame.w || image.h !== frame.h)
+		return { image, issue: 'Mounted-leg coverage is unavailable for this composed frame.' };
+	const { items, cell } = composition;
+	return hideMountedLegs(image, frame, project.manifest.rig, clip, direction, cell, mode, {
+		...mountLegGeometry(project, clip, direction, cell),
+		coverage: () => equipmentCoverage(project, frame, items, clip, direction, cell)
+	});
+}
 
 export function mountLegGeometry(
 	project: Project,
@@ -96,7 +149,11 @@ export function hideMountedLegs(
 	direction: DirectionName,
 	cell: number,
 	mode: MountLegMode,
-	geometry?: { resolvedSource?: DirectionName; baseImage?: Sha256 | null }
+	geometry?: {
+		resolvedSource?: DirectionName;
+		baseImage?: Sha256 | null;
+		coverage?: () => Uint8Array | undefined;
+	}
 ): { image: Img; behind?: Img; issue: string | null; source?: 'measured' | 'requested' | 'rest' } {
 	const unchanged = (issue: string) => ({ image, issue });
 	if (mode === 'none') return { image, issue: null };
@@ -183,14 +240,12 @@ export function hideMountedLegs(
 		legs.push(joints as Leg);
 	}
 	const arms: [Point, Point][] = [];
-	if (mode === 'both') {
-		for (const side of ['LEFT', 'RIGHT']) {
-			const elbow = jointPoint(side + ' ELBOW'),
-				wrist = jointPoint(side + ' ARM');
-			if (!elbow || !wrist)
-				return { image, issue: 'Invalid ' + source + ' mounted-arm joints.', source };
-			arms.push([elbow, wrist]);
-		}
+	for (const side of ['LEFT', 'RIGHT']) {
+		const elbow = jointPoint(side + ' ELBOW'),
+			wrist = jointPoint(side + ' ARM');
+		if (elbow && wrist) arms.push([elbow, wrist]);
+		else if (mode === 'both')
+			return { image, issue: 'Invalid ' + source + ' mounted-arm joints.', source };
 	}
 	if (
 		offsetX >= image.w ||
@@ -237,25 +292,30 @@ export function hideMountedLegs(
 		foreground.data.fill(0, index, index + 4);
 	};
 	const removed: number[] = [];
+	const coverage = geometry?.coverage?.();
+	const armRadius =
+		mode === 'both'
+			? radius
+			: Math.min(radius, Math.max(1, Math.min(rig.cell.w, rig.cell.h) * 0.07));
+	const atArm = (point: Point) =>
+		arms.some(([elbow, wrist]) => segmentDistance(point, elbow, wrist) <= armRadius);
 	for (let y = minY; y <= maxY; y++)
 		for (let x = minX; x <= maxX; x++) {
-			const index = (y * image.w + x) * 4;
-			if (!image.data[index + 3]) continue;
-			const point = { x, y },
-				candidateDistance = legDistance(point, far),
-				otherDistance = legDistance(point, near),
-				ambiguous =
-					Math.max(candidateDistance, otherDistance) <= radius &&
-					Math.abs(candidateDistance - otherDistance) <= 1,
-				cut =
-					mode === 'both'
-						? !arms.some(([elbow, wrist]) => segmentDistance(point, elbow, wrist) <= radius)
-						: candidateDistance <= radius && candidateDistance < otherDistance && !ambiguous;
-			if (!cut) continue;
+			const pixel = y * image.w + x,
+				index = pixel * 4;
+			if (!image.data[index + 3] || coverage?.[pixel]) continue;
+			const point = { x, y };
+			if (atArm(point)) continue;
+			if (mode === 'far') {
+				const candidate = legDistance(point, far),
+					other = legDistance(point, near);
+				if (candidate > radius || candidate >= other || (other <= radius && other - candidate <= 1))
+					continue;
+			}
 			output ??= { w: image.w, h: image.h, data: new Uint8ClampedArray(image.data) };
 			behind ??= makeImg(image.w, image.h);
 			moveBehind(output, behind, index);
-			if (mode === 'far') removed.push(y * image.w + x);
+			if (mode === 'far') removed.push(pixel);
 		}
 	if (output && behind && removed.length) {
 		const visited = new Set<number>();
@@ -276,7 +336,9 @@ export function hideMountedLegs(
 						const pixel = component[cursor],
 							point = { x: pixel % image.w, y: Math.floor(pixel / image.w) };
 						if (
+							coverage?.[pixel] ||
 							point.y <= hipY ||
+							atArm(point) ||
 							legDistance(point, far) > radius * 2 ||
 							legDistance(point, near) <= radius
 						)

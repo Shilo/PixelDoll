@@ -6,7 +6,7 @@ import { stableStringify } from '../../lib/image/hash.ts';
 import type { Preset, Project } from '../../lib/store/manifest.ts';
 import { characterFacts } from '../model.ts';
 import { characterBodySize, previewBounds, standingFrame } from './bounds.ts';
-import { hideMountedLegs, mountLegGeometry } from './mountLegs.ts';
+import { splitMountedRider } from './mountLegs.ts';
 import { mountPlacement } from './mountPlacement.ts';
 import { mountedLayers, placeRider } from './mounts.ts';
 import {
@@ -62,15 +62,14 @@ export function mountedStill(
 		const result = renderPresentation(assets, items, p, cell);
 		if (result.image) {
 			const legs = legsKept(project.manifest, p.clip) ? 'none' : experience.mountLegs;
-			const rider = hideMountedLegs(
+			const rider = splitMountedRider(
+				project,
 				result.image,
 				result.frame,
-				project.manifest.rig,
 				p.clip,
 				p.direction,
-				cell,
-				legs,
-				legs === 'none' ? undefined : mountLegGeometry(project, p.clip, p.direction, cell)
+				result.composition,
+				legs
 			);
 			const pose = place.view.frames[0];
 			const at = placeRider(place.ground, place.contact, pose);

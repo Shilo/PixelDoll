@@ -494,7 +494,7 @@ export function over(dst, src, x = 0, y = 0) {
  * @param {DirectionName} dir
  * @param {number} cell
  */
-function* dollPixels(p, items, anim, dir, cell) {
+export function* dollPixels(p, items, anim, dir, cell) {
 	const m = p.manifest;
 	const cuts = equipped(m, items)
 		.filter((it) => it.baseCut && it.baseHash === m.rig.baseHash)

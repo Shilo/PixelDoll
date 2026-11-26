@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { over } from '../../src/lib/compose/compose.ts';
+import { composeCell, over } from '../../src/lib/compose/compose.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import { flipH } from '../../src/lib/rig/mirror.ts';
 import { DEFAULT_MOVE, type Keypoint, type Rig, type Sha256 } from '../../src/lib/rig/rig.ts';
-import { hideMountedLegs, mountLegGeometry } from '../../src/studio/experience/mountLegs.ts';
+import {
+	hideMountedLegs,
+	mountLegGeometry,
+	splitMountedRider
+} from '../../src/studio/experience/mountLegs.ts';
 import {
 	mountedLayers,
 	mountView,
@@ -11,7 +15,12 @@ import {
 	TEST_MOUNT
 } from '../../src/studio/experience/mounts.ts';
 import { offsetMountSeat } from '../../src/studio/experience/mountPlacement.ts';
-import type { Project } from '../../src/lib/store/manifest.ts';
+import {
+	CURRENT_FORMAT,
+	type Item,
+	type Project,
+	type Slot
+} from '../../src/lib/store/manifest.ts';
 
 const hash: Sha256 = 'sha256:standing';
 const joints = (leftX = 0.3, rightX = 0.7): Keypoint[] => [
@@ -84,6 +93,126 @@ function rider() {
 }
 
 describe('mounted-leg experimental cutout', () => {
+	it.each(['far', 'both'] as const)(
+		'respects visibly drawn equipment over and under %s legs',
+		(mode) => {
+			const rig = makeRig();
+			const images: Project['images'] = new Map();
+			const body = rider();
+			const items: Item[] = [];
+			const slots: Slot[] = [];
+			function add(
+				id: string,
+				className: Slot['class'],
+				z: number,
+				image: Img,
+				profile?: Slot['profile']
+			) {
+				const digest = `sha256:${id}` as const;
+				images.set(digest, image);
+				slots.push({ id, class: className, z, profile });
+				items.push({
+					id,
+					name: id,
+					slot: id,
+					status: 'accepted',
+					baseHash: rig.baseHash,
+					prompt: id,
+					mirror: 'flip',
+					materials: [],
+					provenance: [],
+					layers: [{ id: 'main', role: 'fg', z, cells: { walk: { east: [digest, digest] } } }]
+				});
+			}
+			const cape = makeImg(20, 20);
+			paint(paint(cape, 6, 15), 6, 16);
+			const boots = makeImg(20, 20);
+			paint(paint(paint(boots, 6, 15, [20, 90, 120, 128]), 6, 16, [140, 160, 180, 255]), 0, 17);
+			add('back', 'worn', 5, cape);
+			add('body', 'base', 10, body);
+			add('custom_boots', 'worn', 20, boots, 'feet');
+			items.at(-1)!.baseCut = { walk: { east: [[15 * 20 + 6], null] } };
+			add('main_hand', 'held', 30, paint(makeImg(28, 28), 10, 21));
+			Object.assign(items.at(-1)!.layers[0], {
+				cell: { w: 28, h: 28 },
+				pivot: { x: rig.pivot.x + 4, y: rig.pivot.y + 4 }
+			});
+			const project: Project = {
+				images,
+				manifest: {
+					format: CURRENT_FORMAT,
+					app: 'test',
+					name: 'Mount',
+					rig,
+					slots,
+					items,
+					materials: [],
+					presets: []
+				}
+			};
+			const outfit = Object.fromEntries(items.map(({ id }) => [id, id]));
+			const frame = { ...rig.pivot, ...rig.cell };
+			for (const direction of ['east', 'west'] as const) {
+				const image = composeCell(project, outfit, 'walk', direction, 0, frame);
+				const split = splitMountedRider(
+					project,
+					image,
+					frame,
+					'walk',
+					direction,
+					{ items: outfit, cell: 0 },
+					mode
+				);
+				const x = direction === 'east' ? 6 : 13;
+				expect(pixel(split.image, x, 15)).toEqual(pixel(image, x, 15)); // cape visible through boot
+				expect(pixel(split.behind!, x, 16)).toEqual([140, 160, 180, 255]); // opaque boot covers cape
+				expect(pixel(split.image, x, 17)).toEqual(pixel(image, x, 17)); // held weapon over leg
+				const edge = direction === 'east' ? 0 : 19;
+				expect(pixel(split.image, edge, 17)[3]).toBe(mode === 'both' ? 0 : 255);
+			}
+		}
+	);
+
+	it('keeps mount underlay behind both rider passes and covers legs only with the body above it', () => {
+		const under = paint(paint(makeImg(3, 1), 0, 0), 1, 0);
+		const back = paint(makeImg(3, 1), 1, 0, [40, 50, 60, 255]);
+		const front = paint(makeImg(3, 1), 2, 0, [50, 60, 70, 255]);
+		const behind = paint(paint(makeImg(3, 1), 0, 0, [200, 0, 0, 255]), 1, 0);
+		const rider = paint(makeImg(3, 1), 2, 0);
+		const origin = { x: 0, y: 0 };
+		const mounted = makeImg(3, 1);
+		for (const layer of mountedLayers(
+			{ under, back, front, ground: origin, seat: origin, ms: 100 },
+			{ mount: origin, rider: origin },
+			rider,
+			behind
+		))
+			over(mounted, layer.image, layer.x, layer.y);
+		expect(pixel(mounted, 0, 0)).toEqual([200, 0, 0, 255]);
+		expect(pixel(mounted, 1, 0)).toEqual([40, 50, 60, 255]);
+		expect(pixel(mounted, 2, 0)).toEqual([50, 60, 70, 255]);
+	});
+
+	it('reports unavailable coverage for an incompatible or nonstandard frame', () => {
+		const project = { manifest: { rig: makeRig() } } as Project;
+		const image = rider();
+		const frame = { ...project.manifest.rig.pivot, w: 20, h: 20 };
+		expect(splitMountedRider(project, image, frame, 'walk', 'east', undefined, 'both')).toEqual({
+			image,
+			issue: expect.stringContaining('coverage is unavailable')
+		});
+		const mismatched = splitMountedRider(
+			project,
+			image,
+			{ ...frame, w: 19 },
+			'walk',
+			'east',
+			{ items: {}, cell: 0 },
+			'far'
+		);
+		expect(mismatched.image).toBe(image);
+		expect(mismatched.issue).toContain('coverage is unavailable');
+	});
 	it.each(['far', 'both'] as const)(
 		'only hides %s leg pixels covered by the placed mount',
 		(mode) => {
@@ -337,23 +466,23 @@ describe('mounted-leg experimental cutout', () => {
 			}
 		}
 	);
-	it('protects low forearms and hands in Both, not the hanging blade below them', () => {
+	it.each(['far', 'both'] as const)('preserves a low forearm across the %s leg region', (mode) => {
 		const points = joints();
 		for (const point of points) {
 			if (point.label === 'LEFT ELBOW') {
-				point.x = 0.1;
+				point.x = 0.3;
 				point.y = 0.4;
 			}
 			if (point.label === 'LEFT ARM') {
-				point.x = 0.1;
+				point.x = 0.3;
 				point.y = 0.6;
 			}
 		}
 		const rig = makeRig(points),
-			image = paint(paint(makeImg(20, 20), 2, 12), 2, 19);
-		const result = hideMountedLegs(image, rig.pivot, rig, 'walk', 'east', 0, 'both');
-		expect(pixel(result.image, 2, 12)).toEqual(pixel(image, 2, 12));
-		expect(pixel(result.image, 2, 19)).toEqual([0, 0, 0, 0]);
+			image = paint(paint(makeImg(20, 20), 6, 12), 6, 19);
+		const result = hideMountedLegs(image, rig.pivot, rig, 'walk', 'east', 0, mode);
+		expect(pixel(result.image, 6, 12)).toEqual(pixel(image, 6, 12));
+		expect(pixel(result.image, 6, 19)).toEqual([0, 0, 0, 0]);
 	});
 
 	it.each(['missing', 'nonfinite'])(
@@ -378,32 +507,29 @@ describe('mounted-leg experimental cutout', () => {
 		['east', 'west'],
 		['north-east', 'north-west'],
 		['south-east', 'south-west']
-	] as const)(
-		'mirrors the continuous Both region from %s to %s on a padded canvas',
-		(source, direction) => {
-			const rig = makeRig(),
-				image = makeImg(29, 27);
-			rig.directions = [{ id: source }, { id: direction, mirrorOf: source }];
-			rig.animations[0].sources = { [source]: rig.animations[0].sources!.east! };
-			for (let pixelY = 0; pixelY < image.h; pixelY++)
-				for (let pixelX = 0; pixelX < image.w; pixelX++) paint(image, pixelX, pixelY);
-			const frame = { x: rig.pivot.x + 4, y: rig.pivot.y + 3 };
-			const original = hideMountedLegs(image, frame, rig, 'walk', source, 0, 'both');
-			const mirrored = hideMountedLegs(
-				flipH(image),
-				{ ...frame, x: rig.pivot.x + 5 },
-				rig,
-				'walk',
-				direction,
-				0,
-				'both'
-			);
-			expect(mirrored.issue).toBeNull();
-			expect(mirrored.image).toEqual(flipH(original.image));
-			expect(pixel(original.image, 14, 26)).toEqual([0, 0, 0, 0]);
-			expect(pixel(original.image, 0, 26)).toEqual([0, 0, 0, 0]);
-		}
-	);
+	] as const)('mirrors the Both region from %s to %s on a padded canvas', (source, direction) => {
+		const rig = makeRig(),
+			image = makeImg(29, 27);
+		rig.directions = [{ id: source }, { id: direction, mirrorOf: source }];
+		rig.animations[0].sources = { [source]: rig.animations[0].sources!.east! };
+		for (let pixelY = 0; pixelY < image.h; pixelY++)
+			for (let pixelX = 0; pixelX < image.w; pixelX++) paint(image, pixelX, pixelY);
+		const frame = { x: rig.pivot.x + 4, y: rig.pivot.y + 3 };
+		const original = hideMountedLegs(image, frame, rig, 'walk', source, 0, 'both');
+		const mirrored = hideMountedLegs(
+			flipH(image),
+			{ ...frame, x: rig.pivot.x + 5 },
+			rig,
+			'walk',
+			direction,
+			0,
+			'both'
+		);
+		expect(mirrored.issue).toBeNull();
+		expect(mirrored.image).toEqual(flipH(original.image));
+		expect(pixel(original.image, 14, 26)).toEqual([0, 0, 0, 0]);
+		expect(pixel(original.image, 0, 26)).toEqual([0, 0, 0, 0]);
+	});
 
 	it('preserves a lower near foot beneath the far ankle in a diagonal view', () => {
 		const rig = makeRig(),
@@ -420,11 +546,12 @@ describe('mounted-leg experimental cutout', () => {
 		expect(pixel(result.image, 6, 19)).toEqual(pixel(image, 6, 19));
 	});
 
-	it('cuts Both through the pelvis and bottom including outboard hanging artwork', () => {
+	it('cuts Both through the pelvis and wide bare feet, including pixels outside the joint capsules', () => {
 		const rig = makeRig(),
 			image = rider();
 		for (const [pixelX, pixelY] of [
 			[10, 7],
+			[10, 19],
 			[10, 19],
 			[6, 19],
 			[14, 19],
@@ -436,7 +563,6 @@ describe('mounted-leg experimental cutout', () => {
 		const result = hideMountedLegs(image, rig.pivot, rig, 'walk', 'east', 0, 'both');
 		for (const [pixelX, pixelY] of [
 			[10, 7],
-			[10, 19],
 			[6, 19],
 			[14, 19]
 		])

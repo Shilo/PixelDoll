@@ -50,7 +50,7 @@
 		type MountViewResult
 	} from './mounts.ts';
 	import type { Img } from '../../lib/image/png.ts';
-	import { hideMountedLegs, mountLegGeometry } from './mountLegs.ts';
+	import { splitMountedRider } from './mountLegs.ts';
 	import { activeRiderPose, legsKept } from './riderPose.ts';
 	import { currentLiveClips, currentLiveLayering } from './liveViews.ts';
 	import { showMount } from '../mountPreview.ts';
@@ -900,7 +900,7 @@
 				key: string;
 				image: Img;
 				availability: NonNullable<typeof availability>;
-				result: ReturnType<typeof hideMountedLegs>;
+				result: ReturnType<typeof splitMountedRider>;
 			}
 		>();
 		const mountCanvases = new WeakMap<Img, HTMLCanvasElement>();
@@ -910,19 +910,13 @@
 			presentation: Presentation,
 			mounted: ReturnType<typeof mountedPresentation>,
 			result: ReturnType<typeof renderPresentation>,
-			source: HTMLCanvasElement,
-			requestedCell: number
+			source: HTMLCanvasElement
 		) => {
-			let legs: ReturnType<typeof hideMountedLegs> | null = null;
+			let legs: ReturnType<typeof splitMountedRider> | null = null;
 			if (mounted?.view && result.image && presentation.clip && presentation.direction) {
 				const { clip, direction } = presentation;
-				const cells =
-					presentation.kind === 'animation'
-						? presentation.sequence!.frames.map((frame) => frame.cell)
-						: [presentation.cell];
-				const cell = cells.includes(requestedCell) ? requestedCell : cells[0];
 				const mode = legMode(clip);
-				const key = JSON.stringify([clip, cell, mode, result.frame]);
+				const key = JSON.stringify([clip, result.composition?.cell, mode, result.frame]);
 				const cached = legResults.get(direction);
 				if (
 					cached?.key === key &&
@@ -931,16 +925,14 @@
 				) {
 					legs = cached.result;
 				} else {
-					const rig = available.project.manifest.rig;
-					legs = hideMountedLegs(
+					legs = splitMountedRider(
+						available.project,
 						result.image,
 						result.frame,
-						rig,
 						clip,
 						direction,
-						cell,
-						mode,
-						mountLegGeometry(available.project, clip, direction, cell)
+						result.composition,
+						mode
 					);
 					legResults.set(direction, {
 						key,
@@ -1536,7 +1528,7 @@
 							: 0;
 				delete host.dataset.mountLegs;
 				delete host.dataset.mountLegSource;
-				const actor = result ? prepareActor(a, p, mounted, result, source, cell) : null;
+				const actor = result ? prepareActor(a, p, mounted, result, source) : null;
 				const legResult = actor?.legs;
 				if (legResult) {
 					const axial =
@@ -1647,8 +1639,7 @@
 										entry.presentation,
 										mountedPresentation(direction, entry.presentation),
 										entry.result,
-										entry.canvas,
-										view.cell
+										entry.canvas
 									)
 								: null;
 							if (actor?.mounted && !actor.mounted.view)

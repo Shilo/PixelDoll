@@ -63,6 +63,9 @@ Deliberate boundaries:
   can face an attack while its hip contact stays on the mount's seat. The editor's test mount is an
   editor feature. A game can compose the same behavior by playing two exported dolls independently
   and placing the rider's contact on the mount's seat.
+  Studio reads the effective layers from the same draw resolver that composes a character frame. The
+  [mount seating and occlusion guide](mount-seating.md) describes how Studio uses their alpha and slot
+  profiles to preserve visible equipment.
 
 Add runtime behavior to the canonical JavaScript modules, not the TypeScript facades. Existing
 application entry points preserve caller interfaces; direct canonical imports are appropriate for
