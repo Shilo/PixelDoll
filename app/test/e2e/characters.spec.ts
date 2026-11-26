@@ -302,7 +302,7 @@ test.describe('first Studio render in French', () => {
 		await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
 		await expect(page.locator('html')).toHaveAttribute('data-first-options-label', label);
 		await page
-			.getByRole('button', { name: french.newCharacterButton.newCharacter, exact: true })
+			.getByRole('button', { name: french.newCharacterButton.addCharacter, exact: true })
 			.first()
 			.click();
 		await page

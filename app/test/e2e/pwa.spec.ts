@@ -355,8 +355,8 @@ test('an offline launch needs no optional languages and retains a language used 
 		await expect(page.locator('html')).toHaveAttribute('lang', 'de');
 		await expect(customize).not.toHaveText(english);
 		const german = await customize.innerText();
-		await page.getByRole('button', { name: 'Neue Figur', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Neu erstellen...', exact: true }).click();
+		await page.getByRole('button', { name: 'Figur hinzufügen', exact: true }).first().click();
+		await page.getByRole('menuitem', { name: 'Erstellen...', exact: true }).click();
 		const creator = page.getByRole('dialog', { name: 'Neue Figur', exact: true });
 		await creator.getByRole('button', { name: 'Zurück', exact: true }).click();
 		await expect(creator).toBeHidden();
