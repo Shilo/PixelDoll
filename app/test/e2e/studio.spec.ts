@@ -2323,9 +2323,9 @@ test('studio demo: a custom slot chooses its own Wardrobe icon', async ({ contex
 	await addSheet.getByRole('button', { name: 'Create slot', exact: true }).click();
 	const header = page.locator('[data-slot-button="wings"]');
 	await expect(header).toHaveAccessibleName('Wings');
-	const iconPath = () => header.locator('svg.group-icon path').getAttribute('d');
+	const iconKey = () => header.locator('.group-icon').getAttribute('data-icon');
 	// A new custom category owns the generic tag, not the cape its behavior copies.
-	const tag = await iconPath();
+	expect(await iconKey()).toBe('tag');
 	await header.click();
 	await page
 		.locator('#slot-menu')
@@ -2339,15 +2339,15 @@ test('studio demo: a custom slot chooses its own Wardrobe icon', async ({ contex
 	await page.keyboard.press('Space');
 	await expect(star).toBeChecked();
 	await editor.getByRole('button', { name: 'Save', exact: true }).click();
-	const chosen = (await iconPath())!;
-	expect(chosen).not.toBe(tag);
+	const chosen = await iconKey();
+	expect(chosen).toBe('star');
 	// The category keeps its choice across a reload, and Back still draws its own cape.
 	await reloadStudio(page, { waitUntil: 'networkidle' });
 	await equipmentGroup(page, 'Wings');
-	await expect.poll(iconPath).toBe(chosen);
-	await expect(page.locator('[data-slot-button="back"] svg.group-icon path')).not.toHaveAttribute(
-		'd',
-		chosen
+	await expect.poll(iconKey).toBe('star');
+	await expect(page.locator('[data-slot-button="back"] .group-icon')).toHaveAttribute(
+		'data-icon',
+		'back'
 	);
 	finish();
 });
