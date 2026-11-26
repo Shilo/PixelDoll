@@ -9,13 +9,15 @@ export interface FolderTarget {
 	/** Replaces the file in one step: readers see the old or the new bytes, never a mix. `unchanged` runs once the new
 	 *  bytes are staged, just before they replace the file, and learns whether this write created the (still empty) file;
 	 *  false cancels the write and throws ChangedError, leaving the file as it was. `existing` says the caller saw a file
-	 *  there, so a file that has gone since throws ChangedError instead of being created again. There is deliberately
-	 *  no delete. */
+	 *  there, so a file that has gone since throws ChangedError instead of being created again. `created` is told as
+	 *  soon as this write creates the file, so a caller knows a file may be left behind even if the write then fails.
+	 *  There is deliberately no delete. */
 	write(
 		path: string,
 		data: Uint8Array,
 		unchanged?: (createdHere: boolean) => Promise<boolean>,
-		existing?: boolean
+		existing?: boolean,
+		created?: () => void
 	): Promise<void>;
 }
 
@@ -94,7 +96,7 @@ export function directoryTarget(
 				throw error;
 			}
 		},
-		async write(path, data, unchanged, existing) {
+		async write(path, data, unchanged, existing, created) {
 			const parts = pathParts(path);
 			const dir = await folder(parts.slice(0, -1), true);
 			const name = parts.at(-1)!;
@@ -113,6 +115,7 @@ export function directoryTarget(
 				// apart from an empty file someone else saved there.
 				file = await dir.getFileHandle(name, { create: true });
 				createdHere = true;
+				created?.();
 			}
 			const out = await file.createWritable();
 			try {

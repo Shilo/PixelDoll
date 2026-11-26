@@ -125,11 +125,18 @@ const usable = () => projectFolder.support === 'supported';
  *  same character never shows or clears it. */
 const setStatus = (characterId: string, status: FolderStatus, linkedAt?: string) => {
 	if (linkedAt !== undefined) {
+		const known = problems.get(characterId)?.linkedAt === linkedAt;
 		if (folderNeedsAttention(status)) problems.set(characterId, { linkedAt, status });
-		else if (status.kind !== 'publishing' && problems.get(characterId)?.linkedAt === linkedAt)
-			problems.delete(characterId);
+		// Only a publish that checked the folder clears a problem; one that stopped early leaves it showing.
+		else if (status.kind === 'done' && known) problems.delete(characterId);
+		else if (status.kind === 'idle' && known) status = problems.get(characterId)!.status;
 	}
 	if (loadedFor === characterId) projectFolder.status = status;
+};
+/** The status to show for a link newly shown for the open character: its own known problem, or nothing yet. */
+const statusFor = (characterId: string, link: FolderLink | null): FolderStatus => {
+	const known = problems.get(characterId);
+	return known && link && known.linkedAt === link.linkedAt ? known.status : { kind: 'idle' };
 };
 /** Counts this tab's own changes to the link (Update automatically), so a read that started before one never shows the
  *  older value over it. */
@@ -139,21 +146,24 @@ const showLink = (characterId: string, link: FolderLink | null, readAt = linkCha
 	if (loadedFor === characterId && readAt === linkChanges) projectFolder.link = link;
 };
 
-/** Reads the open character's link when the character changes. */
+/** Reads the open character's link when the character changes, and again when asked for the same character (Export
+ *  opening, the tab coming back into view), since another tab may have linked, replaced or stopped it meanwhile. */
 export async function loadFolderLink(characterId: string) {
-	if (loadedFor === characterId) return;
-	loadedFor = characterId;
-	projectFolder.link = null;
-	projectFolder.status = { kind: 'idle' };
+	const again = loadedFor === characterId;
+	if (!again) {
+		loadedFor = characterId;
+		projectFolder.link = null;
+		projectFolder.status = { kind: 'idle' };
+	}
 	if ((await checkFolderSupport()) !== 'supported' || !characterId) return;
 	const readAt = linkChanges;
 	try {
 		const link = await getLink(characterId);
+		if (loadedFor !== characterId || readAt !== linkChanges) return;
+		const changed = !again || projectFolder.link?.linkedAt !== link?.linkedAt;
 		showLink(characterId, link, readAt);
 		// A problem this character's folder reported while another character was open, if it is still the same link.
-		const known = problems.get(characterId);
-		if (known && link && known.linkedAt === link.linkedAt && loadedFor === characterId)
-			projectFolder.status = known.status;
+		if (changed) projectFolder.status = statusFor(characterId, link);
 	} catch (error) {
 		// Shown in Settings, so a storage failure never looks like "no folder".
 		console.warn('Could not read the linked project folder', error);
@@ -256,21 +266,23 @@ const lasting = { tone: 'warning' as const, report: false, duration: 0 };
 
 /** The project folder notice last shown and the character it is about, so a publish that resolves that character's
  *  problem can take it down again. */
-let shownNotice: { id: string; text: unknown } | undefined;
-const notice = (id: string, text: Message, options: Parameters<typeof toast>[1]) => {
-	shownNotice = { id, text };
+let shownNotice: { id: string; linkedAt: string; text: unknown } | undefined;
+const notice = (link: FolderLink, text: Message, options: Parameters<typeof toast>[1]) => {
+	const id = link.characterId;
+	shownNotice = { id, linkedAt: link.linkedAt, text };
 	return toast(text, options);
 };
 /** Takes down the notice about this character once its problem is resolved, unless another notice replaced it. */
-function clearNotice(id: string) {
-	if (shownNotice?.id !== id) return;
+function clearNotice(id: string, linkedAt?: string) {
+	if (shownNotice?.id !== id || (linkedAt !== undefined && shownNotice.linkedAt !== linkedAt))
+		return;
 	if (ui.toast === shownNotice.text) dismissToast();
 	shownNotice = undefined;
 }
 
 /** A request whose link was stopped or replaced elsewhere: shows what is stored now, and leaves the status alone when a
  *  newer link has one of its own. */
-async function superseded(id: string, readAt: number) {
+async function superseded(id: string, readAt: number, stale?: string) {
 	let current: FolderLink | null;
 	try {
 		current = await getLink(id);
@@ -278,7 +290,12 @@ async function superseded(id: string, readAt: number) {
 		return; // the next publish or reopening reads it again
 	}
 	showLink(id, current, readAt);
-	if (!current) setStatus(id, { kind: 'idle' });
+	if (loadedFor === id && readAt === linkChanges) projectFolder.status = statusFor(id, current);
+	// The superseded link's notice and problem go with it.
+	if (stale) {
+		clearNotice(id, stale);
+		if (problems.get(id)?.linkedAt === stale) problems.delete(id);
+	}
 }
 
 /** The stored link, if it is still the one this request was made for; another tab may have stopped or replaced it. */
@@ -303,7 +320,7 @@ async function publish(link: FolderLink, request: Request) {
 		const checked = await stillLinked(link);
 		// Without a fresh read this tab cannot know whether the folder was stopped elsewhere, so it waits.
 		if (checked === 'unknown') return report({ kind: 'failed', reason: 'unknown' });
-		if (!checked) return superseded(id, readAt);
+		if (!checked) return superseded(id, readAt, link.linkedAt);
 		link = checked;
 		showLink(id, link, readAt);
 		// Update automatically may have been turned off in another tab.
@@ -325,7 +342,8 @@ async function publish(link: FolderLink, request: Request) {
 		const finished = (status: Extract<FolderStatus, { kind: 'done' }>) => {
 			for (const k of [...noticed]) if (k.startsWith(`${id}:`)) noticed.delete(k);
 			clearNotice(id);
-			report((behind.get(id) ?? 0) !== seen ? { kind: 'idle' } : status);
+			report(status); // clears this link's problem: the folder was just checked
+			if ((behind.get(id) ?? 0) !== seen) report({ kind: 'idle' });
 		};
 		report({ kind: 'publishing' });
 		const key = recordKey(link);
@@ -354,7 +372,7 @@ async function publish(link: FolderLink, request: Request) {
 		readAt = linkChanges;
 		const recheck = await stillLinked(link);
 		if (recheck === 'unknown') return report({ kind: 'failed', reason: 'unknown' });
-		if (!recheck) return superseded(id, readAt);
+		if (!recheck) return superseded(id, readAt, link.linkedAt);
 		showLink(id, recheck, readAt);
 		// Update automatically may also have been turned off meanwhile.
 		if (!request.manual && !recheck.auto) return report({ kind: 'idle' });
@@ -375,7 +393,7 @@ async function publish(link: FolderLink, request: Request) {
 				const latest = await stillLinked(link);
 				return typeof latest === 'object' && latest
 					? report({ kind: 'idle' })
-					: superseded(id, readAt);
+					: superseded(id, readAt, link.linkedAt);
 			}
 			case 'published':
 			case 'unchanged':
@@ -399,7 +417,7 @@ async function publish(link: FolderLink, request: Request) {
 			case 'blocked':
 				report({ kind: 'blocked', conflicts: outcome.conflicts, linkedAt: link.linkedAt });
 				return notify(link, 'blocked', request.manual, () =>
-					notice(id, message('projectFolder.toast.paused'), { ...lasting, ...review(id) })
+					notice(link, message('projectFolder.toast.paused'), { ...lasting, ...review(id) })
 				);
 			case 'failed':
 				console.warn('Project folder publish failed', outcome.error);
@@ -407,7 +425,7 @@ async function publish(link: FolderLink, request: Request) {
 				if (outcome.reason === 'missing') {
 					report({ kind: 'missing' });
 					return notify(link, 'missing', request.manual, () =>
-						notice(id, message('projectFolder.toast.missing', { folder: link.handle.name }), {
+						notice(link, message('projectFolder.toast.missing', { folder: link.handle.name }), {
 							...lasting,
 							...review(id)
 						})
@@ -415,7 +433,7 @@ async function publish(link: FolderLink, request: Request) {
 				}
 				report({ kind: 'failed', reason: outcome.reason });
 				return notify(link, `failed:${outcome.reason}`, request.manual, () =>
-					notice(id, message('projectFolder.toast.failed', { folder: link.handle.name }), {
+					notice(link, message('projectFolder.toast.failed', { folder: link.handle.name }), {
 						tone: 'warning',
 						error: outcome.error,
 						// A locked file, a full disk or a refused folder is the user's to fix, not a bug to report.
@@ -430,16 +448,12 @@ async function publish(link: FolderLink, request: Request) {
 function lostAccess(link: FolderLink, manual: boolean) {
 	setStatus(link.characterId, { kind: 'reconnect' }, link.linkedAt);
 	notify(link, 'reconnect', manual, () =>
-		notice(
-			link.characterId,
-			message('projectFolder.toast.reconnect', { folder: link.handle.name }),
-			{
-				...lasting,
-				// A notice's button is a click, so the browser can ask for access straight away.
-				action: () => reconnectProjectFolder(link),
-				actionLabel: message('projectFolder.reconnect')
-			}
-		)
+		notice(link, message('projectFolder.toast.reconnect', { folder: link.handle.name }), {
+			...lasting,
+			// A notice's button is a click, so the browser can ask for access straight away.
+			action: () => reconnectProjectFolder(link),
+			actionLabel: message('projectFolder.reconnect')
+		})
 	);
 }
 
@@ -476,17 +490,13 @@ function run(request: Request): Promise<void> {
 					await publish(link, current);
 				} catch (error) {
 					console.warn('Project folder publish stopped', error);
-					setStatus(link.characterId, { kind: 'failed', reason: 'unknown' });
+					setStatus(link.characterId, { kind: 'failed', reason: 'unknown' }, link.linkedAt);
 					notify(link, 'failed:unknown', current.manual, () =>
-						notice(
-							link.characterId,
-							message('projectFolder.toast.failed', { folder: link.handle.name }),
-							{
-								tone: 'warning',
-								error,
-								...review(link.characterId)
-							}
-						)
+						notice(link, message('projectFolder.toast.failed', { folder: link.handle.name }), {
+							tone: 'warning',
+							error,
+							...review(link.characterId)
+						})
 					);
 				}
 			}
@@ -681,5 +691,6 @@ export async function unlinkProjectFolder() {
 	}
 	showLink(link.characterId, null);
 	problems.delete(link.characterId);
+	clearNotice(link.characterId);
 	setStatus(link.characterId, { kind: 'idle' });
 }

@@ -18,6 +18,16 @@
 		untrack(() => void loadFolderLink(id));
 	});
 
+	// Coming back to this tab reads the link again: another tab may have linked, replaced or stopped it meanwhile.
+	$effect(() => {
+		const refresh = () => {
+			if (document.visibilityState === 'visible' && doc.id && !doc.loading)
+				void loadFolderLink(doc.id);
+		};
+		document.addEventListener('visibilitychange', refresh);
+		return () => document.removeEventListener('visibilitychange', refresh);
+	});
+
 	// Only whether the open character publishes automatically: a publish that records its timestamp replaces the link
 	// object, and that alone must not start another publish.
 	const automatic = $derived(

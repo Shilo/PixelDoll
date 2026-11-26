@@ -142,6 +142,7 @@ export async function publishFiles(
 			// check and the swap can still be lost.)
 			const previous = Object.hasOwn(o.record.written, a.path) ? o.record.written[a.path] : null;
 			await o.onRecord(a.path, PENDING);
+			let created = false;
 			try {
 				await target.write(
 					a.path,
@@ -150,14 +151,15 @@ export async function publishFiles(
 						const now = await hashAt(target, a.path);
 						return now === expected || (expected === null && createdHere && now === EMPTY_HASH);
 					},
-					expected !== null
+					expected !== null,
+					() => (created = true)
 				);
 			} catch (error) {
 				// The swap only happens when a write completes, so the file still holds its previous bytes. A new path
-				// stays pending if the failed write left a file behind (the browser creates it empty on opening): that
-				// file is then the user's to delete or approve, never one PixelDoll recreates unasked.
-				const left =
-					previous === null && (await hashAt(target, a.path).catch(() => PENDING)) !== null;
+				// this write created (the browser creates it empty on opening) stays pending, whether that file is still
+				// there or someone removed it meanwhile: it is the user's to delete or approve, never one PixelDoll
+				// recreates unasked.
+				const left = previous === null && created;
 				await o.onRecord(a.path, left ? PENDING : previous).catch((recordError: unknown) => {
 					console.warn('Could not restore the project folder record', recordError);
 				});
