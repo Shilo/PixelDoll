@@ -1,5 +1,11 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { afterSeparator, model, writeNotes } from '../../scripts/release/claude.ts';
+import {
+	afterSeparator,
+	type Claude,
+	labelsFor,
+	model,
+	writeNotes
+} from '../../scripts/release/claude.ts';
 import { buildChanges, type ReleaseCommit } from '../../scripts/release/changes.ts';
 import { releaseMarkdown } from '../../scripts/release/markdown.ts';
 import { publicNotes, validateNotes, validateTranslation } from '../../scripts/release/notes.ts';
@@ -83,33 +89,57 @@ it('requires matching translation item counts and plain, non-empty prose', () =>
 	]);
 });
 
-it('passes the prompt verbatim and asks Claude for a corrected tool call once', async () => {
+it('passes the prompt verbatim and asks Claude for corrected JSON once', async () => {
 	expect(afterSeparator('# Header\r\n\r\n---\r\n\r\nLiteral copy\r\n')).toBe(
 		'\r\nLiteral copy\r\n'
 	);
-	const reply = (input: unknown) =>
-		Response.json({ content: [{ type: 'tool_use', name: 'release_notes', input }] });
-	const fetch = vi.fn((_url: string, _options: RequestInit) => Promise.resolve(reply(notes)));
-	fetch.mockResolvedValueOnce(reply({ ...notes, headline: 'Try again!' }));
-	vi.stubGlobal('fetch', fetch);
-	await expect(writeNotes('test-key', '0.0.1', '2026-11-27', commits)).resolves.toEqual(notes);
-	expect(fetch).toHaveBeenCalledTimes(2);
-	const request = JSON.parse(fetch.mock.calls[1][1].body as string);
+	const reply = (value: unknown) => ({
+		stop_reason: 'end_turn',
+		content: [{ type: 'text', text: JSON.stringify(value) }]
+	});
+	const create = vi.fn((_request: Record<string, unknown>) => Promise.resolve(reply(notes)));
+	create.mockResolvedValueOnce(reply({ ...notes, headline: 'Try again!' }));
+	const claude = { beta: { messages: { create } } } as unknown as Claude;
+	await expect(writeNotes(claude, '0.0.1', '2026-11-27', commits)).resolves.toEqual(notes);
+	expect(create).toHaveBeenCalledTimes(2);
+	const request = create.mock.calls[1][0];
 	expect(request).toMatchObject({
 		model,
-		temperature: 0,
-		tool_choice: { type: 'tool', name: 'release_notes' },
+		fallbacks: 'default',
+		output_config: { format: { type: 'json_schema' } },
 		messages: [
 			{ role: 'user' },
+			{ role: 'assistant' },
 			{ role: 'user', content: expect.stringContaining('headline contains an exclamation mark') }
 		]
 	});
+	expect(JSON.stringify(request.output_config)).not.toMatch(/minItems|maxItems|uniqueItems/);
 	expect(request.system).toMatch(/^\s*You write the release notes for PixelDoll/);
-	fetch.mockReset().mockImplementation(() => Promise.resolve(reply({ ...notes, highlights: [] })));
-	await expect(writeNotes('test-key', '0.0.1', '2026-11-27', commits)).rejects.toThrow(
+	create.mockReset().mockImplementation(() => Promise.resolve(reply({ ...notes, highlights: [] })));
+	await expect(writeNotes(claude, '0.0.1', '2026-11-27', commits)).rejects.toThrow(
 		/highlights must have/
 	);
-	expect(fetch).toHaveBeenCalledTimes(2);
+	expect(create).toHaveBeenCalledTimes(2);
+	create.mockReset().mockResolvedValue({ stop_reason: 'refusal', content: [] });
+	await expect(writeNotes(claude, '0.0.1', '2026-11-27', commits)).rejects.toThrow(/declined/);
+});
+
+it('maps app labels that appear in the notes to the target language', () => {
+	const english = new Map([
+		['trash.title', 'Trash'],
+		['undo', 'Undo'],
+		['greeting', 'Hello {name}'],
+		['lower', 'move']
+	]);
+	const german = new Map([
+		['trash.title', 'Papierkorb'],
+		['undo', 'Rückgängig'],
+		['greeting', 'Hallo {name}'],
+		['lower', 'Animation']
+	]);
+	expect(labelsFor('Restore it from Trash, or move it back.', english, german)).toEqual({
+		Trash: 'Papierkorb'
+	});
 });
 
 it('renders the same data as the app, escaping literal commit subjects and bounding the body', () => {

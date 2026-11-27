@@ -107,6 +107,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+      deployments: read
       pages: write
       id-token: write
     concurrency:
@@ -116,18 +117,25 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Check current main head
-        id: head
+      # Deploy only forward: a build older than the live site (a slower run finishing after a newer one, or a release
+      # redeploy overtaken by a push) is skipped, so the site never rolls back. A pending deploy that a later one replaced
+      # is caught up by the next deploy, as before.
+      - name: Check the build moves the site forward
+        id: forward
         env:
           GH_TOKEN: ${{ github.token }}
           BUILT_SHA: ${{ github.sha }}
         run: |
-          main_sha=$(gh api "/repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
-          if [[ "$main_sha" == "$BUILT_SHA" ]]; then
-            echo 'current=true' >> "$GITHUB_OUTPUT"
+          live_sha=$(gh api "/repos/$GITHUB_REPOSITORY/deployments?environment=github-pages&per_page=1" --jq '.[0].sha // ""')
+          status=identical
+          if [[ -n "$live_sha" && "$live_sha" != "$BUILT_SHA" ]]; then
+            status=$(gh api "/repos/$GITHUB_REPOSITORY/compare/$live_sha...$BUILT_SHA" --jq '.status')
+          fi
+          if [[ "$status" == ahead || "$status" == identical ]]; then
+            echo 'deploy=true' >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::Skipping Pages deploy because main moved past $BUILT_SHA to $main_sha."
+            echo "::notice::Skipping Pages deploy: $BUILT_SHA is $status relative to the live $live_sha."
           fi
       - id: deployment
-        if: steps.head.outputs.current == 'true'
+        if: steps.forward.outputs.deploy == 'true'
         uses: actions/deploy-pages@v5

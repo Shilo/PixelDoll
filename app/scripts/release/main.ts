@@ -5,7 +5,7 @@ import { parseArgs } from 'node:util';
 import { appVersion } from '../../version.ts';
 import { composeBanner, upscaleBanner } from './banner.ts';
 import { buildChanges, collectCommits } from './changes.ts';
-import { model, translations, writeNotes } from './claude.ts';
+import { claudeClient, model, translations, writeNotes } from './claude.ts';
 import {
 	readJson,
 	readSource,
@@ -174,7 +174,11 @@ async function main() {
 			}
 			if (showNotes && key)
 				console.log(
-					JSON.stringify(resumed?.notes ?? (await writeNotes(key, version, date, commits)), null, 2)
+					JSON.stringify(
+						resumed?.notes ?? (await writeNotes(claudeClient(key), version, date, commits)),
+						null,
+						2
+					)
 				);
 			continue;
 		}
@@ -191,8 +195,9 @@ async function main() {
 			const recent = new Set(
 				index.releases.slice(0, 8).map((entry) => readSource(folder, entry.version).bannerHash)
 			);
-			const english = await writeNotes(key, version, date, commits);
-			notes = await translations(key, english);
+			const claude = claudeClient(key);
+			const english = await writeNotes(claude, version, date, commits);
+			notes = await translations(claude, english);
 			const composed = await composeBanner(version, recent);
 			source = {
 				version,

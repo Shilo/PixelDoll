@@ -21,6 +21,7 @@
 		"bench": "node scripts/bench.ts"
 	},
 	"devDependencies": {
+		"@anthropic-ai/sdk": "1.14.0",
 		"@playwright/test": "1.65.0",
 		"@sveltejs/vite-plugin-svelte": "7.3.1",
 		"@tsconfig/svelte": "5.0.8",
