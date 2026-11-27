@@ -9,9 +9,6 @@
 }
 @media (max-width: 599px), (max-height: 499px), (pointer: coarse) {
 	:root {
-		--fs: 15px;
-		--fs-sm: 12.5px;
-		--fs-md: 17px;
 		--ctl-h: 44px;
 		--tb-h: 52px;
 	}
@@ -53,8 +50,13 @@ html[data-app='studio'] body {
 .studio-app dialog * {
 	box-sizing: border-box;
 }
-.studio-app :where(h1, h2, h3, p, figure, ul, ol, dl, dd) {
+.studio-app :where(h1, h2, h3, h4, h5, h6, p, figure, ul, ol, dl, dd) {
 	margin: 0;
+}
+/* Headings take no browser size or weight: each heading role sets its own, and section headings share .section-title.
+   Zero specificity, so any component or Bronze rule wins. */
+:where(.studio-app) :where(h1, h2, h3, h4, h5, h6) {
+	font: inherit;
 }
 .studio-app :where(ul, ol) {
 	padding: 0;
@@ -64,7 +66,8 @@ html[data-app='studio'] body {
 	font: inherit;
 	color: inherit;
 }
-.studio-app button {
+/* Legacy buttons only: Bronze sets the cursor for its own controls, including their disabled state. */
+.studio-app button:where(:not(.bu-action, .bu-btn):enabled) {
 	cursor: pointer;
 }
 .studio-app :focus-visible {
@@ -102,26 +105,6 @@ html[data-app='studio'] body {
 }
 .studio-app a {
 	color: var(--accent-text);
-}
-
-/* ---------- logo ---------- */
-.logo {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	font-weight: 650;
-	font-size: 15px;
-	letter-spacing: -0.01em;
-	white-space: nowrap;
-}
-.logo .mark {
-	width: 22px;
-	height: 22px;
-	border-radius: 6px;
-	background: var(--accent);
-	color: #fff;
-	display: grid;
-	place-items: center;
 }
 
 /* ---------- buttons ---------- */
@@ -352,13 +335,13 @@ html[data-app='studio'] body {
 	outline: none;
 }
 .settings-label {
-	font-size: 0.9375rem;
+	font-size: 14px;
 	font-weight: 600;
 	line-height: 1.4;
 	margin: 0;
 }
 .settings-description {
-	font-size: 0.875rem;
+	font-size: 14px;
 	line-height: 1.45;
 	margin-block: 0;
 }
@@ -577,10 +560,13 @@ dialog select option {
 	flex-direction: column;
 	gap: 14px;
 }
-.sec-title {
-	font-size: var(--fs-sm);
+/* Section headings inside sheets and panels, matching Bronze's .bu-section-title type (which also truncates to one
+   line, so headings that may wrap use this instead). */
+.section-title {
+	font-size: 14px;
 	font-weight: 600;
-	color: var(--text-2);
+	line-height: 1.3;
+	color: var(--text);
 }
 .mat {
 	display: flex;
@@ -795,7 +781,7 @@ dialog select option {
 	white-space: nowrap;
 	background: var(--bg-raised);
 	border: 1px solid var(--line);
-	border-radius: calc(var(--r-ctl) + 6px);
+	border-radius: var(--r-card);
 	box-shadow: var(--shadow-pop);
 }
 .bar-sep {
@@ -1115,11 +1101,14 @@ dialog select option {
 	border-bottom: 1px solid var(--line);
 	vertical-align: top;
 }
+.ledger th {
+	font-weight: 600;
+}
 
 /* ---------- sheets (native <dialog>) ---------- */
 dialog.sheet {
 	padding: 0;
-	border: 0;
+	border: 1px solid var(--bu-rim);
 	color: var(--text);
 	background: var(--bg-raised);
 	box-shadow: var(--shadow-pop);
@@ -1281,7 +1270,7 @@ dialog.sheet.side::backdrop {
 	flex: 1;
 	overflow: auto;
 	scrollbar-gutter: stable;
-	padding: 18px 20px;
+	padding: 16px 20px;
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
@@ -1492,15 +1481,6 @@ dialog.sheet.bottom .sheet-foot .recovery-options .btn.primary {
 	background: linear-gradient(to bottom, transparent, var(--bg) 45%);
 	pointer-events: none;
 }
-.tabbar {
-	display: flex;
-	gap: 2px;
-	padding: 4px;
-	border-radius: 32px;
-	background: var(--bg-raised);
-	border: 1px solid var(--line);
-	box-shadow: var(--shadow-pop);
-}
 .tab {
 	display: flex;
 	flex-direction: column;
@@ -1588,32 +1568,6 @@ dialog.sheet.bottom .sheet-foot .recovery-options .btn.primary {
 	flex: none;
 	width: min(100dvh, 46vw);
 }
-.land-col {
-	flex: 1;
-	min-width: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	padding: 0 calc(12px + env(safe-area-inset-right)) 12px 12px;
-	overflow: auto;
-	scrollbar-gutter: stable;
-	background: var(--bg);
-}
-.land-col .toolbar {
-	border: 0;
-	padding: 0;
-	position: sticky;
-	top: 0;
-	z-index: 2;
-	height: 48px;
-	grid-template-columns: minmax(0, 1fr) auto;
-}
-.land-col > .seg {
-	flex: none;
-}
-.land-col > .seg > button {
-	height: 36px;
-}
 /* create sheet review */
 .create-review {
 	display: flex;
@@ -1621,6 +1575,10 @@ dialog.sheet.bottom .sheet-foot .recovery-options .btn.primary {
 	align-items: center;
 	gap: 12px;
 	text-align: center;
+}
+.create-review > h3 {
+	font-size: var(--fs-title);
+	font-weight: 600;
 }
 
 @media (max-width: 599px) {
@@ -1652,7 +1610,7 @@ dialog.sheet.bottom .sheet-foot .recovery-options .btn.primary {
 	color: var(--text);
 	background: var(--bg-raised);
 	border: 1px solid var(--line);
-	border-radius: calc(var(--r-ctl) + 6px);
+	border-radius: var(--r-card);
 	box-shadow: var(--shadow-pop);
 }
 .stage-note > svg {
@@ -1676,7 +1634,6 @@ dialog.sheet.bottom .sheet-foot .recovery-options .btn.primary {
 	}
 	.btn.sm,
 	.chip,
-	.land-col > .seg > button,
 	.seg > button {
 		height: 44px;
 	}

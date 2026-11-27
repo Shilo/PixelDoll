@@ -511,7 +511,7 @@
 			</p>
 		</div>
 		<section class="state-moves" role="group" aria-labelledby="import-poses-title">
-			<h3 class="label" id="import-poses-title">{t('import.posesTitle')}</h3>
+			<h3 class="section-title" id="import-poses-title">{t('import.posesTitle')}</h3>
 			<p class="faint small">{t('import.posesHint')}</p>
 			{#each states.filter((state) => state.id !== stateId) as state (state.id)}
 				<label class="check"
@@ -531,7 +531,7 @@
 	{/if}
 	{#if states.some((state) => state.animations !== 0)}
 		<section class="state-moves" role="group" aria-labelledby="import-moves-title">
-			<h3 class="label" id="import-moves-title">{t('import.movesTitle')}</h3>
+			<h3 class="section-title" id="import-moves-title">{t('import.movesTitle')}</h3>
 			<p class="faint small">
 				{t('import.movesHint')}
 			</p>

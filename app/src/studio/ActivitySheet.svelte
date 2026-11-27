@@ -226,7 +226,7 @@
 	<div class="act-list">
 		{#if flowsPending}
 			<section class="act-group" aria-label={t('activity.pendingWork')}>
-				<span class="sec-title">{t('activity.pendingWork')}</span>
+				<span class="section-title">{t('activity.pendingWork')}</span>
 				<ul>
 					{#each creatingPending as run (run.id)}
 						{@render workRow(
@@ -281,7 +281,7 @@
 			<div class="bu-notice" data-size="compact" data-tone="warning" role="status">
 				<CircleAlert size={18} />
 				<div class="waiting-copy">
-					<h3>{t('activity.waitingTitle')}</h3>
+					<h3 class="section-title">{t('activity.waitingTitle')}</h3>
 					<p>{t('activity.waitingBody')}</p>
 					<!-- Leaving Activity cancels the waiting click (Studio.svelte), so this leaves it the same way: back to
 					     New character when it waited there, so its draft stays. -->
@@ -358,7 +358,7 @@
 			</p>{/if}
 		{#if running.length}
 			<section class="act-group">
-				<span class="sec-title">{t('activity.generating')}</span>
+				<span class="section-title">{t('activity.generating')}</span>
 				{#if running.some((r) => r.state === 'submitting')}<p
 						class="faint small"
 						id="activity-submitting-stop"
@@ -406,7 +406,7 @@
 		{/if}
 		{#if queued.length}
 			<section class="act-group">
-				<span class="sec-title">{t('activity.waiting')}</span>
+				<span class="section-title">{t('activity.waiting')}</span>
 				<ul>
 					{#each queued as r (r.id)}
 						<li>
@@ -439,7 +439,7 @@
 		{/if}
 		{#if done.length}
 			<section class="act-group">
-				<span class="sec-title">{t('activity.recent')}</span>
+				<span class="section-title">{t('activity.recent')}</span>
 				<ul>
 					{#each done as r (r.id)}
 						<li>
@@ -546,8 +546,5 @@
 	.waiting-copy {
 		display: grid;
 		gap: 4px;
-	}
-	.waiting-copy h3 {
-		font-size: var(--fs-md);
 	}
 </style>

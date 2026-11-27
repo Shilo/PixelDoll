@@ -301,7 +301,7 @@
 		opacity: 0.65;
 	}
 	.trash-name {
-		font-size: 0.9375rem;
+		font-size: 14px;
 		font-weight: 500;
 		line-height: 1.35;
 		overflow: hidden;
@@ -310,7 +310,7 @@
 	}
 	.trash-meta,
 	.trash-date {
-		font-size: 0.8125rem;
+		font-size: 12px;
 		line-height: 1.35;
 		overflow: hidden;
 		text-overflow: ellipsis;

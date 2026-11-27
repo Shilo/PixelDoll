@@ -778,10 +778,9 @@
 		margin: 0;
 	}
 	.amount {
-		font-size: 2.75rem;
-		line-height: 1.08;
+		font-size: var(--fs-title);
+		line-height: 1.1;
 		font-weight: 600;
-		letter-spacing: -0.03em;
 		overflow-wrap: anywhere;
 	}
 	.spent {

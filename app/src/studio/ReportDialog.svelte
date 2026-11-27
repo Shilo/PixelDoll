@@ -110,7 +110,7 @@
 	}
 	h2 {
 		margin: 0 0 8px;
-		font-size: 17px;
+		font-size: 18px;
 		font-weight: 600;
 		text-align: center;
 	}

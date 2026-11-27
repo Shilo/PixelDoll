@@ -289,7 +289,7 @@
 	{#if creating?.projectId}
 		{@const name = result?.manifest.name ?? creating.spec.name}
 		<div class="create-review">
-			<h3 style="font-size:var(--fs-title)">
+			<h3>
 				{t('create.sheet.ready', { name })}
 			</h3>
 			{#if result}

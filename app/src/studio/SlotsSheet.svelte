@@ -468,7 +468,7 @@
 		</form>
 		{#if builtins.length && !copying}
 			<hr class="bu-separator slot-divider" />
-			<h3 class="sec-title" id="slots-builtin">{t('slotsSheet.builtInSlots')}</h3>
+			<h3 class="section-title" id="slots-builtin">{t('slotsSheet.builtInSlots')}</h3>
 			<ul class="slot-list" aria-labelledby="slots-builtin">
 				{#each builtins as c (c.key)}
 					{@const sub = [

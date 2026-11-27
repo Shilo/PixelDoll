@@ -130,6 +130,10 @@
 		white-space: normal;
 		text-align: center;
 	}
+	h1 {
+		font-size: 18px;
+		font-weight: 600;
+	}
 	section {
 		width: min(100%, 30rem);
 		display: grid;

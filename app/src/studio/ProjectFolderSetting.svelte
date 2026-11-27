@@ -470,7 +470,7 @@
 	.destination-format,
 	.destination-shared {
 		overflow-wrap: anywhere;
-		font-size: 0.8125rem;
+		font-size: 12px;
 		opacity: 0.8;
 	}
 	.summary:has(> .summary-text:empty:only-child) {

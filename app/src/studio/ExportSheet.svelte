@@ -894,7 +894,7 @@
 					<fieldset class="export-picker" aria-label={t('export.settings.format')}>
 						{#each GROUPS as group (group.id)}
 							<section aria-labelledby={`export-${group.id}`}>
-								<h3 class="label" id={`export-${group.id}`}>{t(group.name)}</h3>
+								<h3 class="section-title" id={`export-${group.id}`}>{t(group.name)}</h3>
 								<div class="export-targets">
 									{#each group.targets as e (e.id)}
 										{#snippet target()}
@@ -1067,7 +1067,7 @@
 					{/if}
 					{#if result?.kind !== 'recovery'}<hr class="bu-separator export-divider" />
 						<section aria-labelledby="export-settings-summary">
-							<h3 class="label" id="export-settings-summary">
+							<h3 class="section-title" id="export-settings-summary">
 								{t('export.notes.currentSettings')}
 							</h3>
 							<dl class="export-summary small">

@@ -222,4 +222,7 @@
 	.controls :is(h4, p) {
 		margin: 0;
 	}
+	h4 {
+		font-weight: 600;
+	}
 </style>

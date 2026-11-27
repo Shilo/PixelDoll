@@ -114,7 +114,7 @@
 </script>
 
 <section class="editor" aria-labelledby={`${id}-heading`}>
-	<h3 id={`${id}-heading`}>{t('promptSuggestions.heading')}</h3>
+	<h3 class="section-title" id={`${id}-heading`}>{t('promptSuggestions.heading')}</h3>
 	{#if listKey === 'move'}
 		<p class="bu-muted">{t('promptSuggestions.moveHelp')}</p>
 	{/if}

@@ -1871,7 +1871,7 @@
 	}
 	h4 {
 		margin: 0;
-		font-size: var(--fs-sm);
+		font-size: 14px;
 		font-weight: 600;
 	}
 
@@ -1879,7 +1879,7 @@
 	.tool-list {
 		display: grid;
 		border: 1px solid var(--bu-line);
-		border-radius: 10px;
+		border-radius: 8px;
 		overflow: hidden;
 	}
 	/* Moves & States */
@@ -1906,10 +1906,11 @@
 		margin: 0;
 		padding-block-end: 6px;
 		border-block-end: 1px solid var(--bu-line);
-		font-size: var(--fs-sm, 13px);
+		font-size: 14px;
 		font-weight: 600;
 	}
 	.clip-group-head small {
+		font-size: 12px;
 		font-weight: 400;
 		color: var(--text-2);
 	}

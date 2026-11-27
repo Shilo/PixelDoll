@@ -788,7 +788,7 @@
 	}
 	.settings-heading {
 		margin: 0;
-		font-size: 1.125rem;
+		font-size: 18px;
 		font-weight: 600;
 	}
 	.settings-content :global(.row:not([popover] *)) {
@@ -817,7 +817,7 @@
 		white-space: nowrap;
 	}
 	nav button[aria-current='page'] {
-		font-weight: 700;
+		font-weight: 600;
 	}
 	nav button :global(svg) {
 		flex: none;

@@ -1652,13 +1652,17 @@
 	display: grid;
 	align-items: center;
 }
+/* The rail's captions match the form's other field labels (.help-title): muted 14px semibold. */
 .studio-app .character-sheet .creator-guide h3 {
 	display: flex;
 	align-items: center;
 	min-height: 44px;
-	font-size: 16px;
-	font-weight: 400;
+	font-size: 14px;
+	font-weight: 600;
 	color: var(--bu-muted);
+}
+.studio-app .character-sheet .creator-rail .reference-label {
+	font-weight: 600;
 }
 .studio-app .character-sheet .creator-guide .size-guide {
 	height: auto;

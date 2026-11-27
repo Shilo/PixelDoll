@@ -407,7 +407,9 @@
 		{#if attempt}
 			{#if review?.views.length}
 				<div class="appearance-review-heading">
-					<h3 class="label" tabindex="-1" bind:this={reviewTitle}>{t('appearance.review')}</h3>
+					<h3 class="section-title" tabindex="-1" bind:this={reviewTitle}>
+						{t('appearance.review')}
+					</h3>
 					{#if directions.length > 1}
 						<select
 							aria-label={t('appearance.facing')}

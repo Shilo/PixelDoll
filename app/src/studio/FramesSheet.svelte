@@ -547,7 +547,7 @@
 	.num,
 	.dir,
 	.mirror-note {
-		font-size: 0.75rem;
+		font-size: 12px;
 		color: var(--text-2);
 		text-align: center;
 	}
@@ -561,7 +561,7 @@
 		place-items: center;
 		padding: 2px;
 		border: 1px solid transparent;
-		border-radius: 6px;
+		border-radius: 8px;
 		background: none;
 	}
 	.tile.mirror {
@@ -595,7 +595,7 @@
 		gap: 4px;
 	}
 	.compare figcaption {
-		font-size: 0.8rem;
+		font-size: 12px;
 	}
 	.notes {
 		list-style: none;

@@ -42,7 +42,7 @@
 
 {#if projectFolder.support === 'supported' || projectFolder.support === 'brave-disabled'}
 	<section class="folder-section" aria-labelledby="project-folder-section">
-		<h3 class="label" id="project-folder-section">{t('projectFolder.section')}</h3>
+		<h3 class="section-title" id="project-folder-section">{t('projectFolder.section')}</h3>
 		<div class="folder-row">
 			<!-- A stable name with the changing state as its description, so a ticking timestamp is not re-announced as a new name. -->
 			<button
@@ -136,14 +136,14 @@
 		font-weight: 600;
 	}
 	.folder-state {
-		font-size: 0.8125rem;
+		font-size: 12px;
 		font-weight: 400;
 		opacity: 0.75;
 		overflow-wrap: anywhere;
 	}
 	.folder-path {
 		font-family: var(--mono, ui-monospace, monospace);
-		font-size: 0.75rem;
+		font-size: 12px;
 		font-weight: 400;
 		opacity: 0.6;
 		overflow: hidden;
