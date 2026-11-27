@@ -331,6 +331,26 @@ html[data-app='studio'] body {
 	flex-direction: column;
 	gap: 6px;
 }
+/* openSettings(section, entry) briefly marks the row it opened at. */
+[data-setting] {
+	transition: box-shadow 0.6s ease-out;
+}
+[data-setting][data-highlight] {
+	border-radius: 8px;
+	box-shadow: 0 0 0 2px var(--focus);
+	transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+	[data-setting] {
+		transition: none;
+	}
+}
+/* The heading openSettings focuses (so the next Tab enters that row) draws no ring while the row's highlight marks the
+   place, since two outlines at once read as two selections. Keyboard users get the ring once the highlight fades. */
+[data-highlight] [data-reveal-focus]:focus,
+[data-reveal-focus]:focus:not(:focus-visible) {
+	outline: none;
+}
 .settings-label {
 	font-size: 0.9375rem;
 	font-weight: 600;
@@ -1146,6 +1166,32 @@ dialog.sheet.center {
 }
 dialog.sheet.center.wide {
 	width: min(720px, calc(100vw - 32px));
+}
+/* Settings and Export share one size, so moving between them never resizes or squeezes either: the same width, and in
+   two-column Settings a fixed height that fits Settings' whole index (about 874px) or stops at the window's sheet
+   margin. Below the two-column breakpoint both fill the screen the same way, except that a tall tablet stops at 960px so
+   Export's short page is not stretched. Written with .sheet so they outrank the general sheet rules below. */
+dialog.sheet.settings-size.center {
+	width: min(640px, calc(100vw - 32px));
+	height: min(720px, calc(100dvh - 32px));
+}
+dialog.sheet.settings-size.bottom {
+	height: 100dvh;
+	max-height: 100dvh;
+}
+dialog.sheet.settings-size.side {
+	width: min(100%, 560px);
+	height: 100dvh;
+}
+@media (min-width: 660px) {
+	dialog.sheet.settings-size.bottom {
+		height: min(960px, calc(100dvh - 32px));
+	}
+}
+@media (min-width: 660px) and (min-height: 520px) {
+	dialog.sheet.settings-size.center {
+		height: min(880px, calc(100dvh - 48px));
+	}
 }
 dialog.sheet.center.character-sheet {
 	width: min(1000px, calc(100vw - 32px));

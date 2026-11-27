@@ -61,13 +61,8 @@
 			openRename(id, inWindow ? { back: 'details' } : {});
 		})}
 />
-<button
-	class="row"
-	role="menuitem"
-	onclick={() => {
-		close();
-		void downloadCharacterZip(id);
-	}}><Download size={16} />{t('common.downloadZip')}</button
+<button class="row" role="menuitem" onclick={() => go(() => void downloadCharacterZip(id))}
+	><Download size={16} />{t('common.downloadZip')}</button
 >
 <hr class="bu-separator" />
 <DeleteRow

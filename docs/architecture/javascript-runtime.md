@@ -253,6 +253,27 @@ Required scenario coverage lives in these existing harnesses rather than a secon
 Paths in this table are under `app/test/unit/` or `app/scripts/`. Test exported runtime bytes and
 native controller output; matching source text alone is not evidence of matching engine behavior.
 
+## Project folder runtime compatibility
+
+Folder publishing places one runtime per engine in `pixeldoll-<engine>/`, alongside the character
+folders that use it. Godot, Phaser, Phaser AE and Unity publish a shared bundle. Each character keeps
+its own data, sheets and integration guides. ZIP exports still embed their runtime in the archive.
+
+Every new bundle revision must load and play character data written by all earlier revisions of that
+engine's folder export. Characters can remain on disk indefinitely and can use the same shared runtime
+as newly published characters. Keep existing entry paths and integration APIs usable. Unity's integer
+`runtimeFormat` is the character data contract. The shared importer accepts positive formats up to its
+supported version, with no `exportId`. ZIP manifests keep their assembly-specific `exportId`.
+
+Keep runtime changes additive: PixelDoll never deletes a file from a user's folder, so a file a
+revision no longer needs stays there and must stay harmless to the engine (Unity compiles every .cs under Assets).
+Bump the engine's runtime revision whenever its bundle changes, including file names, declarations and
+assembly definitions. Add the new revision's digest in `export-folder.test.ts` and keep the earlier pins of every revision that
+shipped (a revision that never left this branch may be re-pinned).
+The digest is SHA-256 over the JSON array of sorted path and file SHA-256 pairs. Bundle bytes are independent
+of characters and export timestamps. When updating a bundle, verify that it still runs a character exported
+before the update in the native engine without republishing that character.
+
 ## Maintaining exact source identity
 
 `app/scripts/sync-runtime.mjs` generates `runtime/sources.ts`, a transport-only copy of the exact JS

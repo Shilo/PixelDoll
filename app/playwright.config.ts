@@ -53,6 +53,7 @@ export default defineConfig({
 				'studio.spec.ts',
 				'auth.spec.ts',
 				'export-picker.spec.ts',
+				'project-folder.spec.ts',
 				'characters.spec.ts',
 				'shared-equipment.spec.ts',
 				'crash-recovery.spec.ts',

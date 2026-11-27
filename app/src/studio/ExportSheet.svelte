@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { currentLiveClips, currentLiveLayering } from './experience/liveViews.ts';
+	import { exportActionLayering } from './exportLayering.ts';
 	import { MediaQuery } from 'svelte/reactivity';
 	import SettingsItemButton from './SettingsItemButton.svelte';
 	import { CURRENT_OUTFIT_ID } from '../lib/store/identity.ts';
@@ -51,6 +51,8 @@
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { slotLabelMessage } from './slots.ts';
 	import RichMessage from './RichMessage.svelte';
+	import ProjectFolderButton from './ProjectFolderButton.svelte';
+	import ProjectFolderSetting from './ProjectFolderSetting.svelte';
 	let {
 		embedded = false,
 		onSaving,
@@ -573,16 +575,11 @@
 		result = null;
 		const look = { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) };
 		const snapshot = { ...p, manifest: structuredClone(p.manifest) };
-		const layering = currentLiveLayering(doc.id);
-		const clips = currentLiveClips(doc.id, snapshot.manifest.rig.animations);
-		const actionLayering =
+		const actionLayering = exportActionLayering(
+			doc.id,
+			snapshot.manifest.rig.animations,
 			actionLayers && supportsActionLayers
-				? {
-						waist: layering.waist,
-						walk: clips.walk.slice(0, 1),
-						attacks: [...clips.attack, ...clips.attackUp, ...clips.attackDown]
-					}
-				: undefined;
+		);
 		let stale = false;
 		void (async () => {
 			const qa = rec?.rigQa as { clips?: Record<string, { fails?: unknown }> } | undefined;
@@ -848,6 +845,7 @@
 				>{t('export.settings.defaultTargetHint')}</span
 			>
 		</div>
+		<ProjectFolderSetting {engine} disabled={!ready} />
 	</div>
 {/snippet}
 
@@ -856,7 +854,7 @@
 {:else}
 	<Sheet
 		title={t(settings ? 'export.sheet.settings' : 'export.sheet.title')}
-		className="export-sheet"
+		className="export-sheet settings-size"
 		onclose={() => (ui.sheet = null)}
 		locked={settingsBusy}
 		back={returningToExport
@@ -960,6 +958,8 @@
 									>{/each}</select
 							></label
 						>{/if}
+					<!-- Optional and separate from downloading: its own heading, after the formats it publishes. -->
+					<ProjectFolderButton onopen={() => openSettings('export', 'project-folder')} />
 					{#if ready && !pendingExport && (result?.kind === 'recovery' || result?.kind === 'failed')}
 						<p
 							class="notice {result.kind === 'recovery' ? 'warn' : 'bad'} small"
@@ -1110,9 +1110,6 @@
 {/if}
 
 <style>
-	:global(dialog.export-sheet) {
-		height: min(680px, calc(100dvh - 32px));
-	}
 	.export-page {
 		display: flex;
 		flex-direction: column;

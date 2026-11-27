@@ -1243,6 +1243,7 @@
 		},
 		"settings": {
 			"loadInvalid": "Impossible de lire les réglages d’export enregistrés.",
+			"resetRequired": "Impossible de lire les réglages d’export enregistrés. Ouvrez « Exporter », puis choisissez « Réinitialiser les réglages d’export ».",
 			"loadFailed": "Impossible de charger les réglages d’export. Essayez de rouvrir la fenêtre d’export.",
 			"saveFailed": "Impossible d’enregistrer les réglages d’export. Réessayez.",
 			"resetHint": "Rétablit uniquement les préférences d’export par défaut. Vos personnages et tenues sont conservés.",
@@ -3712,6 +3713,83 @@
 		"colors": "Rechercher des couleurs",
 		"clear": "Effacer la recherche",
 		"results": "{count} sur {total}"
+	},
+	"projectFolder": {
+		"title": "Dossier du projet",
+		"hint": "Gardez les fichiers exportés de ce personnage dans votre projet de jeu.",
+		"choose": "Choisir un dossier…",
+		"change": "Changer de dossier",
+		"stop": "Dissocier",
+		"publishNow": "Mettre à jour maintenant",
+		"auto": "Mettre à jour automatiquement",
+		"reconnect": "Reconnecter le dossier",
+		"replace": "Remplacer les fichiers listés",
+		"keep": "Garder les fichiers existants",
+		"review": "Voir",
+		"copy": "Copier",
+		"copied": "Copié",
+		"copyPath": "Copier le chemin",
+		"pathCopied": "Chemin copié",
+		"brave": "Pour l’utiliser dans Brave, collez cette adresse dans la barre d’adresse, activez le réglage, puis redémarrez Brave :",
+		"kept": {
+			"one": "{count} fichier gardé",
+			"other": "{count} fichiers gardés"
+		},
+		"updateKept": "Revoir les fichiers gardés",
+		"updated": "Mis à jour {time}",
+		"tryAgain": "Réessayer",
+		"state": {
+			"off": "Non lié · Garde automatiquement à jour les fichiers de ce personnage dans le dossier de votre jeu",
+			"on": "Mises à jour automatiques activées",
+			"manual": "Mises à jour automatiques désactivées",
+			"updating": "Mise à jour…",
+			"attention": "À vérifier"
+		},
+		"status": {
+			"publishing": "Mise à jour…",
+			"done": "À jour",
+			"already": "Déjà à jour",
+			"reconnect": "PixelDoll a de nouveau besoin d’accéder à ce dossier. Choisissez « Autoriser à chaque visite » pour que cela dure.",
+			"missing": "Dossier introuvable. Il a peut-être été déplacé ou supprimé.",
+			"blocked": "Mises à jour en pause. PixelDoll ne remplacera pas ces fichiers sans votre accord :",
+			"unavailable": "Ce personnage ne peut pas être exporté pour le moment.",
+			"locked": "Un fichier est ouvert dans une autre app, ou le chemin du dossier est trop long. Fermez le fichier ou choisissez un dossier au chemin plus court.",
+			"space": "Le disque est plein.",
+			"permission": "Ce dossier n’est pas autorisé. Choisissez-en un autre.",
+			"failed": "Impossible d’écrire dans le dossier. Réessayez.",
+			"taken": "Un autre personnage utilise déjà ce dossier. Choisissez-en un autre.",
+			"outdated": "PixelDoll a été mis à jour dans un autre onglet. Rechargez cet onglet pour continuer à mettre à jour ce dossier.",
+			"inside": "Ce dossier se trouve dans un dossier géré par PixelDoll. Choisissez plutôt le dossier qui le contient.",
+			"unityNested": "Un autre personnage Unity utilise un dossier dans ou autour de celui-ci. Liez tous les personnages Unity d’un jeu au même dossier."
+		},
+		"reason": {
+			"edited": "Modifié en dehors de PixelDoll",
+			"notOurs": "Déjà dans le dossier",
+			"deleted": "Supprimé",
+			"folder": "Un dossier est à sa place"
+		},
+		"toast": {
+			"reconnect": "Reconnectez {folder} pour continuer les mises à jour.",
+			"paused": "Mises à jour en pause : des fichiers du dossier ont changé.",
+			"missing": "{folder} est introuvable.",
+			"failed": "Impossible de mettre à jour {folder}.",
+			"outdated": "Rechargez PixelDoll pour continuer à mettre à jour {folder}."
+		},
+		"justUpdated": "Mis à jour à l’instant",
+		"matching": {
+			"one": "{count} fichier de ce dossier correspond déjà à l’export de PixelDoll. Le garder à jour ?",
+			"other": "{count} fichiers de ce dossier correspondent déjà à l’export de PixelDoll. Les garder à jour ?"
+		},
+		"adopt": "Garder à jour",
+		"leave": "Laisser tel quel",
+		"section": "Projet de jeu",
+		"reload": "Recharger",
+		"shared": "Runtime partagé : {path}",
+		"manualStep": {
+			"rpg": "{format} charge les personnages depuis son propre dossier (img/characters, ou Graphics/Characters pour XP, VX Ace et VX). Après une mise à jour, copiez-y les planches comme l’indique le README.txt du personnage.",
+			"gdevelop": "Si vous avez fusionné ce personnage dans un autre projet GDevelop, reportez-y les mises à jour comme l’indique le gdevelop/README.txt du personnage.",
+			"phaserAe": "Après avoir ajouté des mouvements ou des objets, ajoutez les nouveaux chemins de phaser-ae/assets.json à game/manifest.json, comme l’indique le phaser-ae/README.txt du personnage."
+		}
 	},
 	"spriteViewer": {
 		"missing": "Aucune image à afficher",

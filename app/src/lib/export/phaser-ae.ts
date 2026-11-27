@@ -561,8 +561,19 @@ export class Paperdoll<G extends PaperdollGame = PaperdollGame> {
 }
 `;
 
-export function phaserAeFiles(m: Manifest): OutFile[] {
-	const dir = aeFolder(m);
+export const phaserAeRuntime = {
+	revision: 1,
+	files: [
+		{ name: 'paperdoll.js', data: PAPERDOLL_AE_JS },
+		{ name: 'paperdoll.d.ts', data: PAPERDOLL_AE_DTS },
+		{ name: 'types.d.ts', data: runtimeTypes }
+	]
+};
+
+export function phaserAeFiles(m: Manifest, folder = false): OutFile[] {
+	const assetsDir = aeFolder(m);
+	const dir = folder ? '<folder>/<character>/' : assetsDir;
+	const runtime = folder ? '<folder>/pixeldoll-phaser-ae/' : `${dir}phaser-ae/`;
 	const assets = [
 		'manifest.json',
 		...new Set(
@@ -575,12 +586,12 @@ export function phaserAeFiles(m: Manifest): OutFile[] {
 				)
 			)
 		)
-	].map((file) => dir + file);
+		// The folder layout cannot know where the picked folder sits under game/, so its list is relative to the character
+		// folder and the README says how to prefix it; editing the list would pause automatic publishing.
+	].map((file) => (folder ? file : assetsDir + file));
 	const initial = m.rig.animations.find((a) => (a.directions ?? m.rig.directions).length > 0);
 	return [
-		{ name: 'phaser-ae/paperdoll.js', data: PAPERDOLL_AE_JS },
-		{ name: 'phaser-ae/paperdoll.d.ts', data: PAPERDOLL_AE_DTS },
-		{ name: 'phaser-ae/types.d.ts', data: runtimeTypes },
+		...(folder ? [] : phaserAeRuntime.files.map((f) => ({ ...f, name: 'phaser-ae/' + f.name }))),
 		{ name: 'phaser-ae/assets.json', data: JSON.stringify(assets, null, 1) + '\n' },
 		{
 			name: 'phaser-ae/README.txt',
@@ -591,20 +602,39 @@ Phaser's own route for your files is "npm run -s upload" (Phaser AE Pro), which 
 game/assets.json; this export does not use it. PixelDoll's runtime (paperdoll.js) is MIT; the Phaser AE engine is
 under Phaser's own license.
 
-1. Copy into the game's folder, under game/${dir}, only what the game needs: manifest.json, the phaser-ae/ folder and
+1. ${
+				folder
+					? `Keep the character under game/${dir}, where <folder> is the path from game/ to the folder you picked in
+   PixelDoll and <character> is this character's folder in it. If you picked game/ itself, leave out "<folder>/"
+   everywhere below: <character>/manifest.json and './pixeldoll-phaser-ae/paperdoll.js'.
+   Its runtime is at ../pixeldoll-phaser-ae/paperdoll.js relative to this character folder. When copying the
+   character, copy pixeldoll-phaser-ae too and keep them in the same parent folder. Include the shared module under game/
+   so the build can import it. Rebuild and reload a running game to pick up runtime changes.
+   Phaser AE's publish uploads game/ as the game's private source, including this folder's project.json (item prompts)
+   and cells/.`
+					: `Copy into the game's folder, under game/${dir}, only what the game needs: manifest.json, the phaser-ae/ folder and
    every file listed in phaser-ae/assets.json. Leave project.json, cells/, baked/ and the docs out: the game folder is
-   the source that publishing uploads.
+   the source that publishing uploads.`
+			}
 2. phaser-ae/assets.json is a list of paths for the "assets" list in game/manifest.json (not for game/assets.json):
-   add them there, so the build copies the sheets next to the game. Set "pixelArt": true in its "screen".
+   add them there, so the build copies the sheets next to the game. Set "pixelArt": true in its "screen".${
+			folder
+				? `
+   The paths are relative to this character folder: prefix each with the path from game/ to it
+   (${dir}), for example ${dir}manifest.json. Do not edit phaser-ae/assets.json; PixelDoll
+   manages it. After adding moves or items, add the new paths from phaser-ae/assets.json the same way.`
+				: ''
+		}
 3. Load once, before the first scene, in a module of its own (hero.ts), and import it where it is needed:
      // hero.ts
      import { game } from './engine.js'
-     import { loadPaperdoll } from './${dir}phaser-ae/paperdoll.js'
+     import { loadPaperdoll } from './${runtime}paperdoll.js'
      import heroData from './${dir}manifest.json'
      export const hero = await loadPaperdoll(game, '${dir}', { manifest: heroData })
-     // main.ts imports './hero.js' before await game.start(); a scene file:
-     import { Paperdoll } from './${dir}phaser-ae/paperdoll.js'
-     import { hero } from './hero.js'
+     // main.ts imports './hero.js' before await game.start(); a scene file in game/scenes/:
+     import { game } from '../engine.js'
+     import { Paperdoll } from '../${runtime}paperdoll.js'
+     import { hero } from '../hero.js'
      // in the scene's enter(), synchronously:
      const doll = new Paperdoll(game, 360, 640, hero)
      doll.play(${JSON.stringify(initial?.id ?? 'walk')}, ${JSON.stringify(initial?.directions?.[0] ?? m.rig.directions[0]?.id ?? 'south')})
@@ -625,7 +655,7 @@ pauses with that scene and is removed when the scene is left (doll.alive turns f
 load in enter() would belong to whatever scene is current then. A clip started with play() counts from the next step.
 Read doll.completed for a once-only move that has ended.
 Switch outfits with doll.applyPreset(outfitId) (an id from manifest.json's presets, or a preset object); it replaces the equipped items and the color selections, so call setVariants after it to keep custom colors. Unknown outfit IDs throw without changing the doll.
-Call setActionLayering(true) to enable moving attacks when the ZIP contains precut fragments (manifest.actionLayers). canLayerAction(move, direction) checks the whole action set and equipped gear. Invalid playAction calls throw without changing playback. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running; a full action also plays on a doll with no move yet. Read actionPlaying for completion. Calling play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
+Call setActionLayering(true) to enable moving attacks when the ${folder ? 'character export' : 'ZIP'} contains precut fragments (manifest.actionLayers). canLayerAction(move, direction) checks the whole action set and equipped gear. Invalid playAction calls throw without changing playback. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running; a full action also plays on a doll with no move yet. Read actionPlaying for completion. Calling play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
 
 play(anim, dir) preserves an active clip's progress, starts changed moves/directions at the beginning and replays a completed once-only clip. Pass true as the third argument to restart explicitly.
 doll.setDirection(dir) turns the active move (e.g. an aimed attack) while keeping its frame, time, loop position and completion. The current direction is a no-op; an unavailable direction or no active move throws before changing state.

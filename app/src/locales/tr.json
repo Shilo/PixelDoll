@@ -1243,6 +1243,7 @@
 		},
 		"settings": {
 			"loadInvalid": "Kayıtlı dışa aktarım ayarları okunamadı.",
+			"resetRequired": "Kayıtlı dışa aktarım ayarları okunamadı. “Dışa aktarın” ekranını açın, ardından “Dışa aktarım ayarlarını sıfırlayın” seçeneğini seçin.",
 			"loadFailed": "Dışa aktarım ayarları yüklenemedi. Dışa aktarım ekranını yeniden açmayı deneyin.",
 			"saveFailed": "Dışa aktarım ayarları kaydedilemedi. Tekrar deneyin.",
 			"resetHint": "Yalnızca dışa aktarım tercihleri varsayılan değerlerine döner. Karakterleriniz ve kıyafetleriniz korunur.",
@@ -3712,6 +3713,83 @@
 		"colors": "Renklerde ara",
 		"clear": "Aramayı temizle",
 		"results": "{total} içinden {count}"
+	},
+	"projectFolder": {
+		"title": "Proje klasörü",
+		"hint": "Bu karakterin dışa aktarılan dosyalarını oyun projenizde tutun.",
+		"choose": "Klasör seçin…",
+		"change": "Klasörü değiştir",
+		"stop": "Bağlantıyı kaldır",
+		"publishNow": "Şimdi güncelle",
+		"auto": "Otomatik güncelle",
+		"reconnect": "Klasöre yeniden bağlan",
+		"replace": "Listelenen dosyaların üzerine yaz",
+		"keep": "Mevcut dosyaları koru",
+		"review": "İncele",
+		"copy": "Kopyala",
+		"copied": "Kopyalandı",
+		"copyPath": "Yolu kopyala",
+		"pathCopied": "Yol kopyalandı",
+		"brave": "Bunu Brave'de kullanmak için bu adresi adres çubuğuna yapıştırın, ayarı açın ve Brave'i yeniden başlatın:",
+		"kept": {
+			"one": "{count} dosya korundu",
+			"other": "{count} dosya korundu"
+		},
+		"updateKept": "Korunan dosyaları incele",
+		"updated": "Güncellendi: {time}",
+		"tryAgain": "Yeniden dene",
+		"state": {
+			"off": "Bağlı değil · Bu karakterin oyun klasöründeki dosyalarını otomatik olarak güncel tutar",
+			"on": "Otomatik güncelleme açık",
+			"manual": "Otomatik güncelleme kapalı",
+			"updating": "Güncelleniyor…",
+			"attention": "İlgilenilmeli"
+		},
+		"status": {
+			"publishing": "Güncelleniyor…",
+			"done": "Güncel",
+			"already": "Zaten güncel",
+			"reconnect": "PixelDoll'un bu klasöre yeniden erişmesi gerekiyor. Kalıcı olması için “Her ziyarette izin ver” seçeneğini seçin.",
+			"missing": "Klasör bulunamadı. Taşınmış veya silinmiş olabilir.",
+			"blocked": "Güncellemeler duraklatıldı. PixelDoll bu dosyaları onayınız olmadan değiştirmez:",
+			"unavailable": "Bu karakter şu anda dışa aktarılamıyor.",
+			"locked": "Bir dosya başka bir uygulamada açık ya da klasörün yolu çok uzun. Dosyayı kapatın veya daha kısa yollu bir klasör seçin.",
+			"space": "Disk dolu.",
+			"permission": "Bu klasöre izin verilmiyor. Başka bir klasör seçin.",
+			"failed": "Klasöre yazılamadı. Yeniden deneyin.",
+			"taken": "Bu klasörü zaten başka bir karakter kullanıyor. Başka bir klasör seçin.",
+			"outdated": "PixelDoll başka bir sekmede güncellendi. Bu klasörü güncellemeye devam etmek için bu sekmeyi yeniden yükle.",
+			"inside": "Bu klasör, PixelDoll’un yönettiği bir klasörün içinde. Bunun yerine onu içeren klasörü seç.",
+			"unityNested": "Başka bir Unity karakteri bu klasörün içinde veya çevresinde bir klasör kullanıyor. Bir oyundaki tüm Unity karakterlerini aynı klasöre bağla."
+		},
+		"reason": {
+			"edited": "PixelDoll dışında düzenlendi",
+			"notOurs": "Zaten klasördeydi",
+			"deleted": "Silindi",
+			"folder": "Yerinde bir klasör var"
+		},
+		"toast": {
+			"reconnect": "Güncellemeye devam etmek için şu klasöre yeniden bağlanın: {folder}",
+			"paused": "Güncellemeler duraklatıldı: klasördeki dosyalar değişti.",
+			"missing": "Şu klasör bulunamadı: {folder}",
+			"failed": "Şu klasör güncellenemedi: {folder}",
+			"outdated": "{folder} klasörünü güncellemeye devam etmek için PixelDoll’u yeniden yükle."
+		},
+		"justUpdated": "Az önce güncellendi",
+		"matching": {
+			"one": "Bu klasördeki {count} dosya zaten PixelDoll dışa aktarımıyla aynı. Güncel tutulsun mu?",
+			"other": "Bu klasördeki {count} dosya zaten PixelDoll dışa aktarımıyla aynı. Güncel tutulsun mu?"
+		},
+		"adopt": "Güncel tut",
+		"leave": "Olduğu gibi bırak",
+		"section": "Oyun projesi",
+		"reload": "Yeniden yükle",
+		"shared": "Paylaşılan çalışma zamanı: {path}",
+		"manualStep": {
+			"rpg": "{format} karakterleri kendi klasöründen yükler (img/characters veya XP, VX Ace ve VX için Graphics/Characters). Bir güncellemeden sonra sayfaları karakterin README.txt dosyasında anlatıldığı gibi oraya kopyala.",
+			"gdevelop": "Bu karakteri başka bir GDevelop projesine birleştirdiysen, güncellemeleri karakterin gdevelop/README.txt dosyasında anlatıldığı gibi oraya aktar.",
+			"phaserAe": "Hareket veya eşya ekledikten sonra phaser-ae/assets.json içindeki yeni yolları, karakterin phaser-ae/README.txt dosyasında anlatıldığı gibi game/manifest.json dosyasına ekle."
+		}
 	},
 	"spriteViewer": {
 		"missing": "Gösterilecek kare yok",

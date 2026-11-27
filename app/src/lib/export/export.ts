@@ -1,7 +1,7 @@
 // Project -> export zip entries (manifest-spec §5 layout). Pure; runs in the browser and in node (scripts/export-fixture.ts).
 import type { Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
-import type { DirectionName, Engine, Project } from '../store/manifest.ts';
+import type { DirectionName, Engine, Manifest, Project } from '../store/manifest.ts';
 import { fitsEditableZip, MAX_ZIP_BYTES, zip, type ZipEntry } from '../store/zip.ts';
 import {
 	bodyCutVariantCount,
@@ -10,13 +10,13 @@ import {
 	MAX_BODY_CUT_VARIANTS,
 	withTuckVariants
 } from '../compose/compose.ts';
-import { agentFiles } from './agent-docs.ts';
+import { agentFiles, runtimeAgentFiles } from './agent-docs.ts';
 import { asepriteFiles } from './aseprite.ts';
 import { coreFiles, exportManifest, genericFiles, validate, type OutFile } from './generic.ts';
-import { godotFiles } from './godot.ts';
-import { phaserFiles } from './phaser.ts';
-import { phaserAeFiles } from './phaser-ae.ts';
-import { unityFiles } from './unity.ts';
+import { godotFiles, godotRuntime } from './godot.ts';
+import { phaserFiles, phaserRuntime } from './phaser.ts';
+import { phaserAeFiles, phaserAeRuntime } from './phaser-ae.ts';
+import { unityFiles, unityRuntime } from './unity.ts';
 import { gdevelopFiles } from './gdevelop.ts';
 import { rpgMakerFiles, walkMove } from './rpg-maker.ts';
 import { checkArchivePixels, projectEntries, type ImportedCharacter } from '../store/import.ts';
@@ -37,18 +37,43 @@ export const ACTION_LAYER_ENGINES: readonly Engine[] = [
 	'unity'
 ];
 
+const folderRuntimes = {
+	godot: godotRuntime,
+	phaser: phaserRuntime,
+	'phaser-ae': phaserAeRuntime,
+	unity: unityRuntime
+};
+
+/** The revision of an engine's shared project folder runtime, or undefined for an engine without one. */
+export const runtimeRevision = (engine: Engine): number | undefined =>
+	Object.hasOwn(folderRuntimes, engine)
+		? folderRuntimes[engine as keyof typeof folderRuntimes].revision
+		: undefined;
+
+export interface RuntimeBundle {
+	engine: keyof typeof folderRuntimes;
+	revision: number;
+	/** Paths relative to pixeldoll-<engine>/. */
+	files: ZipEntry[];
+}
+
 export interface ExportOptions {
 	actionLayering?: ActionSheetOptions;
 	engines: Engine[];
 	baked: boolean;
 	pixelsPerUnit?: number;
 	exportedAt?: string;
+	/** Build the files without packing a ZIP (project folder publishing writes them one by one). `zip` is then empty. */
+	filesOnly?: boolean;
+	/** One engine, with character files and its shared runtime delivered separately. Implies filesOnly. */
+	layout?: 'zip' | 'folder';
 	projectData?: ImportedCharacter['extra'];
 	/** The walk move RPG Maker sheets take their steps from; the first eligible one when unset or not eligible. */
 	rpgWalk?: string;
 }
 export interface ExportResult {
 	entries: ZipEntry[];
+	bundle?: RuntimeBundle;
 	warnings: string[];
 	errors: string[];
 	/** Localized counterparts aligned with `errors`; an empty slot keeps that English message. */
@@ -57,11 +82,22 @@ export interface ExportResult {
 	warningMessages?: Map<string, Message>;
 	problem?: string;
 	problemMessage?: Message;
+	/** `filesOnly` builds: the same files with another export time. Only text that embeds the manifest changes, so the
+	 *  images are never encoded again; the bytes equal a build with that time. */
+	retime?: (exportedAt: string) => ZipEntry[] | null;
 }
 /** A note variable the Studio shows in the active language; an array of them reads as a list. */
 export type NoteTerm = { direction: DirectionName } | { slot: string } | { move: string };
 
 export async function exportFiles(src: Project, o: ExportOptions): Promise<ExportResult> {
+	const folder = o.layout === 'folder';
+	if (folder && o.engines.length !== 1) throw new Error('Folder exports require one engine.');
+	const engine = o.engines[0];
+	const runtimeEngine = Object.hasOwn(folderRuntimes, engine)
+		? (engine as keyof typeof folderRuntimes)
+		: undefined;
+	const runtime = folder && runtimeEngine ? folderRuntimes[runtimeEngine] : undefined;
+	const runtimePath = runtime && `../pixeldoll-${runtimeEngine}/${runtime.files[0]!.name}`;
 	const invalid = validate(src);
 	const invalidMessages: (Message | undefined)[] = invalid.map(() => undefined);
 	if (!invalid.length) {
@@ -187,7 +223,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 					attacks: opts.attacks.flatMap((id) => identities.get(id) ?? [])
 				})
 			: [];
-	const files: OutFile[] = rpg ? [] : [...coreFiles(p, m), ...fragments];
+	const files: OutFile[] = rpg ? [] : [...coreFiles(p, m, runtimePath), ...fragments];
 	const sheets = new Map(
 		files.flatMap((f) =>
 			typeof f.data === 'object' && 'w' in f.data ? [[f.name, f.data] as [string, Img]] : []
@@ -199,7 +235,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 		);
 	if (o.engines.includes('godot')) {
 		try {
-			files.push(...godotFiles(m));
+			files.push(...godotFiles(m, folder));
 		} catch (error) {
 			if (!(error instanceof Error) || !error.message.startsWith('Godot: ')) throw error;
 			return {
@@ -212,9 +248,9 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 			};
 		}
 	}
-	if (o.engines.includes('phaser')) files.push(...phaserFiles(m));
-	if (o.engines.includes('phaser-ae')) files.push(...phaserAeFiles(m));
-	if (o.engines.includes('unity')) files.push(...unityFiles(m));
+	if (o.engines.includes('phaser')) files.push(...phaserFiles(m, folder));
+	if (o.engines.includes('phaser-ae')) files.push(...phaserAeFiles(m, folder));
+	if (o.engines.includes('unity')) files.push(...unityFiles(m, folder));
 	if (o.engines.includes('gdevelop')) {
 		try {
 			files.push(...gdevelopFiles(m, sheets));
@@ -269,7 +305,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 			};
 		}
 	}
-	files.push(...agentFiles(o.engines));
+	files.push(...agentFiles(o.engines, runtimePath));
 	const projectFiles = await projectEntries(src, o.projectData);
 	const names = new Set<string>();
 	for (const { name } of [...files, ...projectFiles]) {
@@ -315,7 +351,75 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 		}))
 	);
 	entries.push(...projectFiles);
-	return { entries, warnings, warningMessages, errors, errorMessages };
+	// Only files built from text can carry the export time; their sources are kept so another time costs no encoding.
+	const text = new Map<number, string>();
+	files.forEach((f, i) => {
+		if (typeof f.data === 'string') text.set(i, f.data);
+	});
+	return {
+		entries,
+		...(runtime && runtimeEngine
+			? {
+					bundle: {
+						engine: runtimeEngine,
+						revision: runtime.revision,
+						files: [
+							...runtime.files,
+							...runtimeAgentFiles(runtimeEngine, runtime.files[0]!.name)
+						].map(({ name, data }) => ({ name, data: enc.encode(data) }))
+					}
+				}
+			: {}),
+		warnings,
+		warningMessages,
+		errors,
+		errorMessages,
+		...(o.filesOnly || folder
+			? { retime: (exportedAt: string) => retime(entries, text, m, exportedAt) }
+			: {})
+	};
+}
+
+/** Every form the build embeds the manifest in: compact and indented JSON, each also escaped inside another JSON string
+ *  (GDevelop carries its controller's manifest in game.json and Paperdoll.js). */
+function manifestForms(m: Manifest): string[] {
+	const compact = JSON.stringify(m),
+		indented = JSON.stringify(m, null, 2);
+	return [
+		compact,
+		JSON.stringify(compact).slice(1, -1),
+		indented,
+		JSON.stringify(indented).slice(1, -1)
+	];
+}
+
+/** The export's files with another export time. A build is deterministic, so the two differ only where the time appears:
+ *  rewriting those manifest embeddings reproduces a build with that time byte for byte. */
+function retime(
+	entries: ZipEntry[],
+	text: ReadonlyMap<number, string>,
+	m: Manifest,
+	exportedAt: string
+): ZipEntry[] | null {
+	const old = m.export!.exportedAt;
+	if (exportedAt === old) return entries;
+	const from = manifestForms(m),
+		to = manifestForms({ ...m, export: { ...m.export!, exportedAt } });
+	const encoder = new TextEncoder();
+	let missed = false;
+	const out = entries.map((entry, i) => {
+		const source = text.get(i);
+		if (source === undefined) return entry;
+		let next = source;
+		// A function, so `$&`, `$$` and the like in a name are copied as written rather than read as patterns.
+		for (const [k, search] of from.entries())
+			if (next.includes(search)) next = next.replaceAll(search, () => to[k]!);
+		// The old time anywhere else (a file that embeds it some other way, or a name that happens to contain it): the
+		// caller builds again instead, so a file never keeps a stale time.
+		if (next.includes(old)) missed = true;
+		return next === source ? entry : { name: entry.name, data: encoder.encode(next) };
+	});
+	return missed ? null : out;
 }
 
 export async function exportZip(
@@ -351,6 +455,8 @@ export async function exportZip(
 	} catch {
 		return oversized();
 	}
+	if (o.filesOnly || o.layout === 'folder')
+		return { ...r, warnings, warningMessages, zip: new Uint8Array() };
 	let bytes: Uint8Array;
 	try {
 		bytes = await zip(r.entries, { deflate: true });

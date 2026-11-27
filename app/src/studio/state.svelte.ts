@@ -579,6 +579,8 @@ export interface ToastOptions {
 	actionLabel?: string | Message;
 	/** The error behind a danger or warning notice: its report names the error and any PixelLab status and endpoint. */
 	error?: unknown;
+	/** Additional allow-listed facts for the public report. */
+	facts?: Problem['facts'];
 	/** Warnings get Report when they carry an error or explicitly opt in. Use false for expected guidance or if a
 	 *  linked failure view already offers Report. 'uncaught' identifies errors that reached the global handlers. */
 	report?: boolean | 'uncaught';
@@ -687,6 +689,7 @@ export function toast(
 			? {
 					message: firstMessage(s) ?? firstMessage(o.title),
 					error: o.error,
+					facts: o.facts,
 					tone: o.tone === 'danger' ? 'error' : 'warning',
 					uncaught: o.report === 'uncaught'
 				}

@@ -17,6 +17,7 @@ import {
 	subscribeExportSettings,
 	type ExportSettings
 } from '../../src/lib/store/export-settings.ts';
+import { errorKey, errorText } from '../../src/lib/message.ts';
 import { projectEntries, readCharacterZip } from '../../src/lib/store/import.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import * as db from '../../src/lib/store/db.ts';
@@ -347,7 +348,11 @@ test('explicit invalid-preference reset is scoped, atomic, failure-visible and p
 	const database = storedSettings({ engine: 'removed' });
 	const character = { manifest: { name: 'Untouched character' } };
 	database.records.set('rig-character', character);
-	await expect(readExportSettings()).rejects.toBeInstanceOf(InvalidExportSettings);
+	const invalid = await readExportSettings().catch((error: unknown) => error);
+	expect(invalid).toBeInstanceOf(InvalidExportSettings);
+	// Readers outside Export, such as the quick ZIP, show this guidance toward the explicit Reset.
+	expect(errorKey(invalid)).toBe('export.settings.resetRequired');
+	expect(errorText(invalid)).toContain('Reset export settings');
 	expect(await resetInvalidExportSettings()).toEqual(defaultExportSettings());
 	for (const playOnce of [Array(1), Array(2), [, 'walk']]) {
 		database.records.set(EXPORT_SETTINGS_KEY, {

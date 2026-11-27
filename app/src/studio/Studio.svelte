@@ -64,6 +64,7 @@
 		stepPreviewFrame
 	} from './state.svelte.ts';
 	import { lazy } from '../lib/lazy.ts';
+	import { loadExportBuild } from './download.svelte.ts';
 	import { WifiOff } from './icons.ts';
 	import { PRE_RELEASE, PREVIEW_NOTICE } from './previewNotice.ts';
 	import Toast from './Toast.svelte';
@@ -100,7 +101,8 @@
 		frames: () => import('./FramesSheet.svelte'),
 		adjustFrame: () => import('./AdjustFrameSheet.svelte'),
 		cost: () => import('./CostSheet.svelte'),
-		workspace: () => import('./WorkspaceSheet.svelte')
+		workspace: () => import('./WorkspaceSheet.svelte'),
+		projectFolder: () => import('./ProjectFolderAuto.svelte')
 	};
 
 	$effect(() => {
@@ -179,7 +181,8 @@
 			if (import.meta.env.PROD)
 				void Promise.allSettled([
 					...Object.values(parts).map((load) => lazy<unknown>(load)),
-					prefetchFlows()
+					prefetchFlows(),
+					loadExportBuild()
 				]);
 		})().catch(startupFailed);
 		return () => {
@@ -442,6 +445,12 @@
 
 <div class="studio-app" onclickcapture={rememberActivation}>
 	{#if !workspaceCopy}<PwaRuntime />{/if}
+	<!-- Optional: keeps a linked game folder updated; absent where the browser cannot write folders. -->
+	{#if !workspaceCopy && 'showDirectoryPicker' in window}<Lazy
+			load={parts.projectFolder}
+			sheet={false}
+			onLoadError={() => {}}
+		/>{/if}
 	<Experience />
 	<TipsHost />
 	{#if !workspaceCopy && offline}<div class="offline-banner" role="status">

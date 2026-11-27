@@ -1243,6 +1243,7 @@
 		},
 		"settings": {
 			"loadInvalid": "Gespeicherte Exporteinstellungen konnten nicht gelesen werden.",
+			"resetRequired": "Gespeicherte Exporteinstellungen konnten nicht gelesen werden. Öffne „Exportieren“ und wähle „Exporteinstellungen zurücksetzen“.",
 			"loadFailed": "Die Exporteinstellungen konnten nicht geladen werden. Öffne den Export erneut.",
 			"saveFailed": "Die Exporteinstellungen konnten nicht gespeichert werden. Versuch es noch einmal.",
 			"resetHint": "Setzt nur die Exporteinstellungen auf die Standardwerte zurück. Deine Figuren und Outfits bleiben erhalten.",
@@ -3712,6 +3713,83 @@
 		"colors": "Farben durchsuchen",
 		"clear": "Suche leeren",
 		"results": "{count} von {total}"
+	},
+	"projectFolder": {
+		"title": "Projektordner",
+		"hint": "Halte die Exportdateien dieser Figur in deinem Spielprojekt.",
+		"choose": "Ordner wählen…",
+		"change": "Ordner ändern",
+		"stop": "Trennen",
+		"publishNow": "Jetzt aktualisieren",
+		"auto": "Automatisch aktualisieren",
+		"reconnect": "Ordner neu verbinden",
+		"replace": "Aufgeführte Dateien ersetzen",
+		"keep": "Vorhandene Dateien behalten",
+		"review": "Ansehen",
+		"copy": "Kopieren",
+		"copied": "Kopiert",
+		"copyPath": "Pfad kopieren",
+		"pathCopied": "Pfad kopiert",
+		"brave": "Um das in Brave zu nutzen, füge diese Adresse in die Adressleiste ein, aktiviere die Einstellung und starte Brave neu:",
+		"kept": {
+			"one": "{count} Datei behalten",
+			"other": "{count} Dateien behalten"
+		},
+		"updateKept": "Behaltene Dateien prüfen",
+		"updated": "Aktualisiert {time}",
+		"tryAgain": "Erneut versuchen",
+		"state": {
+			"off": "Nicht verbunden · Hält die Dateien dieser Figur in deinem Spielordner automatisch aktuell",
+			"on": "Automatische Updates an",
+			"manual": "Automatische Updates aus",
+			"updating": "Wird aktualisiert…",
+			"attention": "Braucht Aufmerksamkeit"
+		},
+		"status": {
+			"publishing": "Wird aktualisiert…",
+			"done": "Aktuell",
+			"already": "Bereits aktuell",
+			"reconnect": "PixelDoll braucht wieder Zugriff auf diesen Ordner. Wähle „Bei jedem Besuch zulassen“, damit er bleibt.",
+			"missing": "Ordner nicht gefunden. Er wurde vielleicht verschoben oder gelöscht.",
+			"blocked": "Updates pausiert. PixelDoll ersetzt diese Dateien nicht ohne deine Zustimmung:",
+			"unavailable": "Diese Figur kann gerade nicht exportiert werden.",
+			"locked": "Eine Datei ist in einer anderen App geöffnet, oder der Pfad des Ordners ist zu lang. Schließe die Datei oder wähle einen Ordner mit kürzerem Pfad.",
+			"space": "Der Datenträger ist voll.",
+			"permission": "Dieser Ordner ist nicht erlaubt. Wähle einen anderen.",
+			"failed": "In den Ordner konnte nicht geschrieben werden. Versuche es erneut.",
+			"taken": "Eine andere Figur nutzt diesen Ordner bereits. Wähle einen anderen.",
+			"outdated": "PixelDoll wurde in einem anderen Tab aktualisiert. Lade diesen Tab neu, um diesen Ordner weiter zu aktualisieren.",
+			"inside": "Dieser Ordner liegt in einem Ordner, den PixelDoll verwaltet. Wähle stattdessen den Ordner, der ihn enthält.",
+			"unityNested": "Eine andere Unity-Figur nutzt einen Ordner in oder um diesen Ordner. Verknüpfe alle Unity-Figuren eines Spiels mit demselben Ordner."
+		},
+		"reason": {
+			"edited": "Außerhalb von PixelDoll bearbeitet",
+			"notOurs": "War schon im Ordner",
+			"deleted": "Gelöscht",
+			"folder": "Ein Ordner ist im Weg"
+		},
+		"toast": {
+			"reconnect": "Verbinde {folder} neu, um weiter zu aktualisieren.",
+			"paused": "Updates pausiert: Dateien im Ordner wurden geändert.",
+			"missing": "{folder} wurde nicht gefunden.",
+			"failed": "{folder} konnte nicht aktualisiert werden.",
+			"outdated": "Lade PixelDoll neu, um {folder} weiter zu aktualisieren."
+		},
+		"justUpdated": "Gerade aktualisiert",
+		"matching": {
+			"one": "{count} Datei in diesem Ordner entspricht bereits dem Export von PixelDoll. Weiter aktualisieren?",
+			"other": "{count} Dateien in diesem Ordner entsprechen bereits dem Export von PixelDoll. Weiter aktualisieren?"
+		},
+		"adopt": "Aktualisieren",
+		"leave": "So lassen",
+		"section": "Spielprojekt",
+		"reload": "Neu laden",
+		"shared": "Gemeinsame Laufzeit: {path}",
+		"manualStep": {
+			"rpg": "{format} lädt Figuren aus einem eigenen Ordner (img/characters, bei XP, VX Ace und VX Graphics/Characters). Kopiere die Sheets nach einer Aktualisierung dorthin, wie es die README.txt der Figur beschreibt.",
+			"gdevelop": "Wenn du diese Figur in ein anderes GDevelop-Projekt übernommen hast, übertrage Aktualisierungen so, wie es die gdevelop/README.txt der Figur beschreibt.",
+			"phaserAe": "Füge nach neuen Animationen oder Items die neuen Pfade aus phaser-ae/assets.json zu game/manifest.json hinzu, wie es die phaser-ae/README.txt der Figur beschreibt."
+		}
 	},
 	"spriteViewer": {
 		"missing": "Kein Frame zum Anzeigen",

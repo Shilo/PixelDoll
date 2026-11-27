@@ -1243,6 +1243,7 @@
 		},
 		"settings": {
 			"loadInvalid": "No se pudieron leer los ajustes de exportación guardados.",
+			"resetRequired": "No se pudieron leer los ajustes de exportación guardados. Abre Exportar y elige «Restablecer ajustes de exportación».",
 			"loadFailed": "No se pudieron cargar los ajustes de exportación. Prueba a abrir Exportar de nuevo.",
 			"saveFailed": "No se pudieron guardar los ajustes de exportación. Inténtalo de nuevo.",
 			"resetHint": "Restablece solo las preferencias de Exportar a sus valores predeterminados. Tus personajes y atuendos se conservan.",
@@ -3712,6 +3713,83 @@
 		"colors": "Buscar colores",
 		"clear": "Borrar búsqueda",
 		"results": "{count} de {total}"
+	},
+	"projectFolder": {
+		"title": "Carpeta del proyecto",
+		"hint": "Mantén los archivos exportados de este personaje en tu proyecto de juego.",
+		"choose": "Elegir carpeta…",
+		"change": "Cambiar carpeta",
+		"stop": "Desvincular",
+		"publishNow": "Actualizar ahora",
+		"auto": "Actualizar automáticamente",
+		"reconnect": "Volver a conectar la carpeta",
+		"replace": "Reemplazar los archivos listados",
+		"keep": "Conservar los archivos existentes",
+		"review": "Revisar",
+		"copy": "Copiar",
+		"copied": "Copiado",
+		"copyPath": "Copiar ruta",
+		"pathCopied": "Ruta copiada",
+		"brave": "Para usarlo en Brave, pega esta dirección en la barra de direcciones, activa el ajuste y reinicia Brave:",
+		"kept": {
+			"one": "{count} archivo conservado",
+			"other": "{count} archivos conservados"
+		},
+		"updateKept": "Revisar archivos conservados",
+		"updated": "Actualizado {time}",
+		"tryAgain": "Reintentar",
+		"state": {
+			"off": "Sin vincular · Mantiene actualizados automáticamente los archivos de este personaje en la carpeta de tu juego",
+			"on": "Actualizaciones automáticas activadas",
+			"manual": "Actualizaciones automáticas desactivadas",
+			"updating": "Actualizando…",
+			"attention": "Requiere atención"
+		},
+		"status": {
+			"publishing": "Actualizando…",
+			"done": "Al día",
+			"already": "Ya está al día",
+			"reconnect": "PixelDoll necesita acceso a esta carpeta otra vez. Elige «Permitir en cada visita» para que dure.",
+			"missing": "No se encuentra la carpeta. Puede que se haya movido o eliminado.",
+			"blocked": "Actualizaciones en pausa. PixelDoll no reemplazará estos archivos sin tu permiso:",
+			"unavailable": "Este personaje no se puede exportar ahora.",
+			"locked": "Hay un archivo abierto en otra app, o la ruta de la carpeta es demasiado larga. Cierra el archivo o elige una carpeta con una ruta más corta.",
+			"space": "El disco está lleno.",
+			"permission": "Esa carpeta no está permitida. Elige otra.",
+			"failed": "No se pudo escribir en la carpeta. Inténtalo de nuevo.",
+			"taken": "Otro personaje ya usa esta carpeta. Elige otra.",
+			"outdated": "PixelDoll se actualizó en otra pestaña. Recarga esta pestaña para seguir actualizando esta carpeta.",
+			"inside": "Esta carpeta está dentro de una que gestiona PixelDoll. Elige la carpeta que la contiene.",
+			"unityNested": "Otro personaje de Unity usa una carpeta dentro o alrededor de esta. Vincula todos los personajes de Unity de un juego a la misma carpeta."
+		},
+		"reason": {
+			"edited": "Editado fuera de PixelDoll",
+			"notOurs": "Ya estaba en la carpeta",
+			"deleted": "Eliminado",
+			"folder": "Hay una carpeta en su lugar"
+		},
+		"toast": {
+			"reconnect": "Vuelve a conectar {folder} para seguir actualizando.",
+			"paused": "Actualizaciones en pausa: cambiaron archivos de la carpeta.",
+			"missing": "No se encuentra {folder}.",
+			"failed": "No se pudo actualizar {folder}.",
+			"outdated": "Recarga PixelDoll para seguir actualizando {folder}."
+		},
+		"justUpdated": "Actualizado hace un momento",
+		"matching": {
+			"one": "{count} archivo de esta carpeta ya coincide con la exportación de PixelDoll. ¿Mantenerlo actualizado?",
+			"other": "{count} archivos de esta carpeta ya coinciden con la exportación de PixelDoll. ¿Mantenerlos actualizados?"
+		},
+		"adopt": "Mantener actualizados",
+		"leave": "Dejar como están",
+		"section": "Proyecto de juego",
+		"reload": "Recargar",
+		"shared": "Runtime compartido: {path}",
+		"manualStep": {
+			"rpg": "{format} carga los personajes desde su propia carpeta (img/characters, o Graphics/Characters en XP, VX Ace y VX). Tras una actualización, copia allí las hojas como indica el README.txt del personaje.",
+			"gdevelop": "Si combinaste este personaje en otro proyecto de GDevelop, lleva allí las actualizaciones como indica el gdevelop/README.txt del personaje.",
+			"phaserAe": "Después de añadir movimientos u objetos, agrega las rutas nuevas de phaser-ae/assets.json a game/manifest.json, como indica el phaser-ae/README.txt del personaje."
+		}
 	},
 	"spriteViewer": {
 		"missing": "No hay fotograma para mostrar",

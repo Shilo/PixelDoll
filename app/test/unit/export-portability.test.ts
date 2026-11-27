@@ -117,9 +117,11 @@ test('character display names do not change paths or native identity when an Exp
 		});
 		expect(result.errors).toEqual([]);
 		const manifest = exportManifest(project, { engines: ['unity'], baked: false }).manifest;
+		const unity = unityJson(manifest);
 		return {
 			paths: result.entries.map((entry) => entry.name),
-			unity: unityJson(manifest).exportId,
+			// The ZIP layout names the export ID; the folder layout has none.
+			unity: 'exportId' in unity ? unity.exportId : undefined,
 			gdevelop: gdCharacterKey(manifest)
 		};
 	};

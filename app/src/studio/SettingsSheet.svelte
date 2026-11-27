@@ -34,7 +34,7 @@
 
 <Sheet
 	title={t('export.sheet.settings')}
-	className="settings-sheet"
+	className="settings-sheet settings-size"
 	overlay={ui.settingsOverlay}
 	wide
 	locked={busy}

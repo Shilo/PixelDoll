@@ -1208,6 +1208,7 @@
 		},
 		"settings": {
 			"loadInvalid": "저장된 내보내기 설정을 읽지 못했어요.",
+			"resetRequired": "저장된 내보내기 설정을 읽지 못했어요. 내보내기를 열고 “내보내기 설정 초기화”를 선택해 주세요.",
 			"loadFailed": "내보내기 설정을 불러오지 못했어요. 내보내기를 다시 열어 주세요.",
 			"saveFailed": "내보내기 설정을 저장하지 못했어요. 다시 시도해 주세요.",
 			"resetHint": "내보내기 환경 설정만 기본값으로 초기화해요. 캐릭터와 코디는 유지돼요.",
@@ -3610,6 +3611,81 @@
 		"colors": "색상 검색",
 		"clear": "검색 지우기",
 		"results": "{total}개 중 {count}개"
+	},
+	"projectFolder": {
+		"title": "프로젝트 폴더",
+		"hint": "이 캐릭터의 내보내기 파일을 게임 프로젝트에 두어요.",
+		"choose": "폴더 선택…",
+		"change": "폴더 변경",
+		"stop": "연결 해제",
+		"publishNow": "지금 업데이트",
+		"auto": "자동으로 업데이트",
+		"reconnect": "폴더 다시 연결",
+		"replace": "목록의 파일 바꾸기",
+		"keep": "기존 파일 유지",
+		"review": "확인",
+		"copy": "복사",
+		"copied": "복사됨",
+		"copyPath": "경로 복사",
+		"pathCopied": "경로 복사됨",
+		"brave": "Brave에서 사용하려면 이 주소를 주소 표시줄에 붙여 넣고 설정을 켠 다음 Brave를 다시 시작하세요:",
+		"kept": {
+			"other": "파일 {count}개 유지 중"
+		},
+		"updateKept": "유지한 파일 확인",
+		"updated": "{time}에 업데이트됨",
+		"tryAgain": "다시 시도",
+		"state": {
+			"off": "연결 안 됨 · 게임 폴더에 있는 이 캐릭터의 파일을 자동으로 최신 상태로 유지해요",
+			"on": "자동 업데이트 켜짐",
+			"manual": "자동 업데이트 꺼짐",
+			"updating": "업데이트 중…",
+			"attention": "확인 필요"
+		},
+		"status": {
+			"publishing": "업데이트 중…",
+			"done": "최신 상태",
+			"already": "이미 최신 상태예요",
+			"reconnect": "PixelDoll이 이 폴더에 다시 접근해야 해요. 계속 유지되도록 “방문할 때마다 허용”을 선택하세요.",
+			"missing": "폴더를 찾을 수 없어요. 이동되었거나 삭제되었을 수 있어요.",
+			"blocked": "업데이트가 일시 중지됐어요. PixelDoll은 허락 없이 이 파일들을 바꾸지 않아요:",
+			"unavailable": "지금은 이 캐릭터를 내보낼 수 없어요.",
+			"locked": "파일이 다른 앱에서 열려 있거나 폴더 경로가 너무 길어요. 파일을 닫거나 경로가 더 짧은 폴더를 선택하세요.",
+			"space": "디스크가 가득 찼어요.",
+			"permission": "그 폴더는 사용할 수 없어요. 다른 폴더를 선택하세요.",
+			"failed": "폴더에 쓸 수 없었어요. 다시 시도하세요.",
+			"taken": "다른 캐릭터가 이미 이 폴더를 사용해요. 다른 폴더를 선택하세요.",
+			"outdated": "다른 탭에서 PixelDoll이 업데이트되었습니다. 이 폴더를 계속 업데이트하려면 이 탭을 새로고침하세요.",
+			"inside": "이 폴더는 PixelDoll이 관리하는 폴더 안에 있습니다. 대신 이 폴더를 포함하는 폴더를 선택하세요.",
+			"unityNested": "다른 Unity 캐릭터가 이 폴더의 안쪽이나 바깥쪽 폴더를 사용합니다. 한 게임의 모든 Unity 캐릭터를 같은 폴더에 연결하세요."
+		},
+		"reason": {
+			"edited": "PixelDoll 밖에서 편집됨",
+			"notOurs": "원래 폴더에 있던 파일",
+			"deleted": "삭제됨",
+			"folder": "폴더가 자리를 차지함"
+		},
+		"toast": {
+			"reconnect": "계속 업데이트하려면 다음 폴더에 다시 연결하세요: {folder}",
+			"paused": "업데이트 일시 중지됨: 폴더의 파일이 바뀌었어요.",
+			"missing": "다음 폴더를 찾을 수 없어요: {folder}",
+			"failed": "다음 폴더를 업데이트하지 못했어요: {folder}",
+			"outdated": "{folder}을(를) 계속 업데이트하려면 PixelDoll을 새로고침하세요."
+		},
+		"justUpdated": "방금 업데이트됨",
+		"matching": {
+			"other": "이 폴더의 파일 {count}개가 이미 PixelDoll 내보내기와 같아요. 계속 업데이트할까요?"
+		},
+		"adopt": "계속 업데이트",
+		"leave": "그대로 두기",
+		"section": "게임 프로젝트",
+		"reload": "새로고침",
+		"shared": "공유 런타임: {path}",
+		"manualStep": {
+			"rpg": "{format}은(는) 자체 폴더(img/characters, XP, VX Ace, VX는 Graphics/Characters)에서 캐릭터를 불러와요. 업데이트 후 캐릭터의 README.txt에 따라 시트를 그곳에 복사하세요.",
+			"gdevelop": "이 캐릭터를 다른 GDevelop 프로젝트에 합쳤다면 캐릭터의 gdevelop/README.txt에 따라 업데이트를 반영하세요.",
+			"phaserAe": "동작이나 아이템을 추가한 뒤에는 캐릭터의 phaser-ae/README.txt에 따라 phaser-ae/assets.json의 새 경로를 game/manifest.json에 추가하세요."
+		}
 	},
 	"spriteViewer": {
 		"missing": "표시할 프레임이 없습니다",

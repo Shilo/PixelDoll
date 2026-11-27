@@ -223,10 +223,10 @@ test('each card writes only its own layout: $ sheets for MZ, MV, VX Ace and VX, 
 		'README.txt'
 	]);
 	expect(sheet(vx.files, 'README.txt') as unknown as string).toMatch(
-		/^Copy the PNG files at the top of this zip into img\/characters \(RPG Maker MZ, MV\) or Graphics\/Characters\n\(VX Ace, VX\)/
+		/^Copy the PNG files at the top of this export into img\/characters \(RPG Maker MZ, MV\) or Graphics\/Characters\n\(VX Ace, VX\)/
 	);
 	expect(sheet(xp.files, 'README.txt') as unknown as string).toMatch(
-		/^Copy the PNG files at the top of this zip into Graphics\/Characters \(RPG Maker XP or Pokemon Essentials\)/
+		/^Copy the PNG files at the top of this export into Graphics\/Characters \(RPG Maker XP or Pokemon Essentials\)/
 	);
 });
 
