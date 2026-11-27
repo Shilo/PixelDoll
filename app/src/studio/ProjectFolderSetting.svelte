@@ -294,6 +294,14 @@
 							onclick={replace}
 							><Replace size={16} aria-hidden="true" />{t('projectFolder.replace')}</button
 						>
+						<button
+							type="button"
+							class="bu-action btn"
+							data-variant="outline"
+							disabled={disabled || working}
+							onclick={update}
+							><RotateCcw size={16} aria-hidden="true" />{t('projectFolder.tryAgain')}</button
+						>
 					{:else}
 						<button
 							type="button"

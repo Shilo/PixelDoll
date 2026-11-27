@@ -452,20 +452,26 @@ test('choosing a folder that already holds this export offers once to keep those
 	const dev = devURL(info);
 	await fakeProjectFolder(page.context());
 	const errors = watchErrors(page);
-	await savedExport(page, dev);
+	const id = await savedExport(page, dev);
 	const { row, manifestPath } = await linkFolder(page);
 	// Unlinked, PixelDoll forgets which files it wrote: linking again finds its own files as someone else's.
 	await row.getByRole('button', { name: 'Unlink' }).click();
 	await row.getByRole('button', { name: 'Choose folder…' }).click();
-	const offer = row.locator('.offer');
-	await expect(offer).toContainText(/files in this folder already match PixelDoll’s export/);
+	await expect(row.locator('.offer')).toContainText(
+		/files in this folder already match PixelDoll’s export/
+	);
 	await expect(row.locator('.summary [role="status"]')).toHaveText('Up to date');
+	// Unanswered, the offer is still there after a reload.
+	await openCharacterIn(page, dev, id);
+	const reopened = await openProjectFolderRow(page);
+	const offer = reopened.locator('.offer');
+	await expect(offer).toContainText(/files in this folder already match PixelDoll’s export/);
 	await offer.getByRole('button', { name: 'Keep updated' }).click();
 	await expect(offer).toHaveCount(0);
 	// Kept updated, they are PixelDoll's again: one the user deletes now is listed for approval, not recreated.
 	await changeFolder(page, manifestPath, { remove: true });
-	await row.getByRole('button', { name: 'Update now' }).click();
-	await expect(row.getByRole('alert')).toContainText('Deleted');
+	await reopened.getByRole('button', { name: 'Update now' }).click();
+	await expect(reopened.getByRole('alert')).toContainText('Deleted');
 	expect(await folderText(page, manifestPath)).toBeNull();
 	expect(errors).toEqual([]);
 });

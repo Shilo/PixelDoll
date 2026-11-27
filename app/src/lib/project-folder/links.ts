@@ -1,7 +1,7 @@
 // Linked project folders, one per character, and PixelDoll's trusted record of what it wrote into each, in their own small
 // database. Kept apart from the library so the feature can be absent, fail or be cleared without touching saved
 // characters, so backups never carry a device's folder handle, and so nothing in the user's folder can claim ownership.
-import type { FolderRecord } from './plan.ts';
+import type { FolderRecord, PlanAction } from './plan.ts';
 import type { Engine } from '../store/manifest.ts';
 
 export interface FolderLink {
@@ -20,6 +20,9 @@ export interface FolderLink {
 	 *  background check of an unchanged character then checks those against the record without building. */
 	inputs?: string;
 	files?: Record<string, string>;
+	/** Files found already holding exactly the export when this folder was chosen, offered once to be kept updated;
+	 *  stored so the offer survives a reload until it is answered. */
+	offered?: PlanAction[];
 }
 
 const DB = 'pixeldoll-project-folders';
@@ -113,7 +116,9 @@ export async function deleteLink(characterId: string, linkedAt: string): Promise
 export async function updateLink(
 	characterId: string,
 	linkedAt: string,
-	patch: Partial<Pick<FolderLink, 'auto' | 'exportedAt' | 'publishedAt' | 'inputs' | 'files'>>
+	patch: Partial<
+		Pick<FolderLink, 'auto' | 'exportedAt' | 'publishedAt' | 'inputs' | 'files' | 'offered'>
+	>
 ): Promise<FolderLink | null> {
 	const db = await open();
 	try {

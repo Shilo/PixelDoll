@@ -115,13 +115,10 @@ const queued = new Map<string, Request>();
 /** The problem each character's folder last reported, kept while that character is not open so its pause is neither
  *  cleared unseen by a quiet background check nor lost when the user comes back to review it. */
 const problems = new Map<string, { linkedAt: string; status: FolderStatus }>();
-/** Each new link's offer of already matching files, kept until answered so it also waits for a character that was not
- *  open when its first publish finished. */
-const offers = new Map<string, PlanAction[]>();
-const offerFor = (link: FolderLink | null) => {
-	const files = link && offers.get(link.linkedAt);
-	return files ? { linkedAt: link.linkedAt, files } : null;
-};
+/** A link's offer of already matching files, stored on the link until answered, so it waits for a character that was
+ *  not open when its first publish finished and survives a reload. */
+const offerFor = (link: FolderLink | null) =>
+	link?.offered?.length ? { linkedAt: link.linkedAt, files: link.offered } : null;
 /** Background notices already shown this session, so a lasting problem is reported once rather than on every edit. */
 const noticed = new Set<string>();
 
@@ -507,8 +504,9 @@ async function publish(link: FolderLink, request: Request) {
 			outcome.kind !== 'failed' &&
 			outcome.matching?.length
 		) {
-			offers.set(link.linkedAt, outcome.matching);
-			if (loadedFor === id) projectFolder.offer = offerFor(link);
+			await remember({ offered: outcome.matching });
+			if (loadedFor === id)
+				projectFolder.offer = { linkedAt: link.linkedAt, files: outcome.matching };
 		}
 		// The earlier export's time stays in use (also while paused), so a retry still matches its files.
 		if (exportedAt !== now && outcome.kind !== 'published' && outcome.kind !== 'unchanged')
@@ -700,7 +698,7 @@ export async function adoptMatchingFiles() {
 					await recordWritten(key, file.path, file.found);
 		});
 		// Gone once they are recorded, so the offer's disappearing means it took effect.
-		offers.delete(offer.linkedAt);
+		await answered(link);
 		if (projectFolder.offer?.linkedAt === offer.linkedAt) projectFolder.offer = null;
 	} catch (error) {
 		console.warn('Could not keep the matching project folder files updated', error);
@@ -709,9 +707,21 @@ export async function adoptMatchingFiles() {
 }
 
 /** Leaves the offered matching files as the user's. */
-export function leaveMatchingFiles() {
-	if (projectFolder.offer) offers.delete(projectFolder.offer.linkedAt);
+export async function leaveMatchingFiles() {
+	const offer = projectFolder.offer;
+	const link = offer && current(offer.linkedAt);
 	projectFolder.offer = null;
+	if (link) await answered(link);
+}
+
+/** Forgets a link's answered offer, so it is not asked again after a reload. */
+async function answered(link: FolderLink) {
+	try {
+		const stored = await updateLink(link.characterId, link.linkedAt, { offered: undefined });
+		if (stored) showLink(link.characterId, stored);
+	} catch (error) {
+		console.warn('Could not record the answer to the matching files offer', error);
+	}
 }
 
 /** Stops keeping every kept file, so their differences are reported again. */
@@ -748,7 +758,7 @@ export async function linkProjectFolder(engine: Engine) {
 				characterId,
 				handle,
 				subfolder: same ? previous.subfolder : characterZipId(project.manifest),
-				engine,
+				engine: same ? previous.engine : engine,
 				auto: previous?.auto ?? true,
 				// Unique even when two tabs link in the same millisecond: it identifies this link and its approvals.
 				linkedAt: `${new Date().toISOString()} ${crypto.randomUUID()}`
@@ -849,7 +859,6 @@ export async function unlinkProjectFolder() {
 		return;
 	}
 	showLink(link.characterId, null);
-	offers.delete(link.linkedAt);
 	if (loadedFor === link.characterId) projectFolder.offer = null;
 	problems.delete(link.characterId);
 	clearNotice(link.characterId);
