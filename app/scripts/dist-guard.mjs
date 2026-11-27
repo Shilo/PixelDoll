@@ -2,9 +2,9 @@
 // or agent-key code, an .env file or a source map (file or inline). Prints file names only, never the matched content.
 // Same check as PixelLab Backpack's scripts/dist-guard.mjs.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { basename, join, sep } from 'node:path';
 import { distDir } from '../dist-dir.ts';
-import { studioMusicAsset } from '../pwa-build.ts';
+import { pwaCategory, studioMusicAsset } from '../pwa-build.ts';
 
 // Historical names are leak indicators, not a list of permitted environment references. resolveAgentKey covers any name.
 
@@ -36,6 +36,9 @@ for (const rel of readdirSync(dist, { recursive: true })) {
 	const file = join(dist, rel);
 	if (!statSync(file).isFile()) continue;
 	const name = basename(file);
+	const category = pwaCategory(rel.split(sep).join('/'));
+	if (category === 'releases' && ['source.json', 'schedule.json'].includes(name))
+		bad.push(`${file}: private release metadata`);
 	if (name.startsWith('.env')) bad.push(`${file}: .env file`);
 	else if (name.endsWith('.map')) bad.push(`${file}: source map`);
 	else if (name === 'update.html') bad.push(`${file}: retired update page`);
@@ -43,7 +46,7 @@ for (const rel of readdirSync(dist, { recursive: true })) {
 		const text = readFileSync(file, 'latin1');
 		if (MARKERS.some((m) => text.includes(m))) bad.push(`${file}: dev or agent-key marker`);
 		if (DEV_UI.some((m) => text.includes(m))) bad.push(`${file}: developer UI or self-test`);
-		if (name.startsWith('startup-update-') && name.endsWith('.js')) {
+		if (category === 'asset' && name.startsWith('startup-update-') && name.endsWith('.js')) {
 			if (text.includes('pixeldoll.startupUpdate:')) startupPolicies++;
 			const imports = [...text.matchAll(/\b(?:from|import)\s*["'`]([^"'`]+)["'`]/g)].map(
 				(match) => match[1]
@@ -64,6 +67,12 @@ if (startupPolicies !== 1)
 try {
 	const worker = join(dist, 'sw.js');
 	const inventory = JSON.parse(/^const FILES = (.*);$/m.exec(readFileSync(worker, 'utf8'))?.[1]);
+	if (
+		inventory.some(({ path }) => ['releases', 'metadata'].includes(pwaCategory(path.split('?')[0])))
+	)
+		bad.push(
+			`${worker}: release notes and deployment metadata must stay outside the offline inventory`
+		);
 	const expected = readdirSync(new URL('../src/locales/', import.meta.url))
 		.filter((name) => name.endsWith('.json') && name !== 'en.json')
 		.map((name) => name.slice(0, -5))

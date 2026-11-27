@@ -27,11 +27,14 @@
 	import { sharedItemsHidden } from './wardrobeVisibility.svelte.ts';
 	import { historyText } from './historyText.ts';
 	import { activityStatus } from './activityStatus.svelte.ts';
+	import { releaseNews } from './releaseNews.svelte.ts';
+	import ReleaseNewsDot from './ReleaseNewsDot.svelte';
 	import { ui, doc, store, undo, redo, randomize } from './state.svelte.ts';
 	import {
 		Archive,
 		MonitorDown,
 		BookOpen,
+		Sparkles,
 		Bug,
 		ExternalLink,
 		CircleHelp,
@@ -269,6 +272,24 @@
 		>
 			<PopoverArrow />
 			<div class="menu-surface bu-popover-surface bu-floating">
+				{#if !workspaceCopy}
+					<button
+						class="row bu-action"
+						data-variant="quiet"
+						aria-haspopup="dialog"
+						disabled={releaseNews.blocked}
+						onclick={() => {
+							document.getElementById('help-options')?.hidePopover();
+							closeOptions();
+							releaseNews.open();
+						}}
+					>
+						<Sparkles size={18} aria-hidden="true" />
+						<span class="row-name">{t('releaseNews.title')}</span>
+						<ReleaseNewsDot />
+						<SurfaceChevron />
+					</button>
+				{/if}
 				{#if tipsEnabled}<button
 						class="row bu-action"
 						data-variant="quiet"

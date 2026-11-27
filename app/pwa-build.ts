@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { cpSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { basename, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
 
 export interface PwaRelease {
@@ -17,9 +18,24 @@ export interface PwaFile {
 export const studioMusicAsset = /^assets\/studio-ambient-[^/]+\.flac$/;
 const AUDIO_PLAYBACK_MODULE = /[\\/]src[\\/]studio[\\/]audioPlayback\.ts$/;
 
+export function pwaCategory(path: string) {
+	if (path === 'releases' || path.startsWith('releases/')) return 'releases';
+	if (path.startsWith('assets/')) return 'asset';
+	if (path === 'sw.js' || path === 'release.json') return 'metadata';
+	return 'public';
+}
+
+export function copyReleaseFiles(source: string, outDir: string) {
+	if (!existsSync(source)) return;
+	cpSync(source, join(outDir, 'releases'), {
+		recursive: true,
+		filter: (path) => !['schedule.json', 'source.json'].includes(basename(path))
+	});
+}
+
 /** Public URLs need a release identity too: unlike Vite chunks their names do not contain a content hash. */
 export function revisionPath(path: string, build: string) {
-	return path.startsWith('assets/') ? path : `${path}?pd-build=${encodeURIComponent(build)}`;
+	return pwaCategory(path) === 'public' ? `${path}?pd-build=${encodeURIComponent(build)}` : path;
 }
 
 export function revisionHtml(html: string, build: string) {
@@ -50,8 +66,10 @@ export function emitPwa(
 		for (const name of readdirSync(directory).sort()) {
 			const path = prefix + name,
 				absolute = join(directory, name);
+			const category = pwaCategory(path);
+			if (category === 'releases' || category === 'metadata') continue;
 			if (statSync(absolute).isDirectory()) walk(absolute, path + '/');
-			else if (path !== 'sw.js' && path !== 'release.json') {
+			else {
 				const locale = locales.get(path);
 				files.push({
 					path: revisionPath(path, release.build),
@@ -120,6 +138,7 @@ export function pwaBuild(release: PwaRelease): Plugin {
 				audio.imports.some((path) => locales.has(path))
 			)
 				throw new Error('PWA: expected one lazy audio playback chunk with only required imports');
+			copyReleaseFiles(fileURLToPath(new URL('../releases/', import.meta.url)), outDir);
 			emitPwa(outDir, release, locales, audio.fileName);
 		}
 	};

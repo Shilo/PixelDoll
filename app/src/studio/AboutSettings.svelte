@@ -5,12 +5,23 @@
 	import { t } from 'svelte-whisper';
 	import { message } from '../lib/message.ts';
 	import { repository } from '../lib/repository.ts';
-	import { Copy, Download, ExternalLink, GitCommitHorizontal, Github, RefreshCw } from './icons.ts';
+	import {
+		Copy,
+		Download,
+		ExternalLink,
+		GitCommitHorizontal,
+		Github,
+		RefreshCw,
+		Sparkles
+	} from './icons.ts';
 	import { checkForUpdate, pwa, requestUpdate } from '../lib/pwa.ts';
 	import { updateNotice } from './updateNotice.svelte.ts';
 	import PendingIndicator from './PendingIndicator.svelte';
 	import { PRE_RELEASE } from './previewNotice.ts';
 	import { toast } from './state.svelte.ts';
+	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
+	import { releaseNews } from './releaseNews.svelte.ts';
+	import ReleaseNewsDot from './ReleaseNewsDot.svelte';
 
 	const hasCommit = /^[a-f0-9]{7,40}$/i.test(__APP_COMMIT__);
 	const commitUrl = `${repository}/commit/${__APP_COMMIT__}`;
@@ -98,6 +109,17 @@
 			<span class="sr" role="status"
 				>{ready ? updateAction : updateStatus || (checking ? updateAction : '')}</span
 			>
+		{/if}
+		{#if !workspaceCopy}
+			<SettingsItemButton
+				aria-haspopup="dialog"
+				disabled={releaseNews.blocked}
+				onclick={releaseNews.open}
+			>
+				<Sparkles size={18} aria-hidden="true" />
+				<span class="row-name">{t('releaseNews.title')}</span>
+				<ReleaseNewsDot />
+			</SettingsItemButton>
 		{/if}
 		<SettingsItemButton
 			aria-describedby={externalHint}

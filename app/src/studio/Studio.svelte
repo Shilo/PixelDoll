@@ -72,6 +72,7 @@
 	import LibraryBackupButton from './LibraryBackupButton.svelte';
 	import { downloadLibraryBackupWithFeedback } from './downloadLibraryBackup.ts';
 	import PwaRuntime from './PwaRuntime.svelte';
+	import { offerReleaseNews, releaseNews, startReleaseNews } from './releaseNews.svelte.ts';
 	import TipsHost from './tips/TipsHost.svelte';
 
 	// On-demand parts, out of the startup bundle.
@@ -88,6 +89,7 @@
 		stateCapture: () => import('./StateCaptureSheet.svelte'),
 		stateReview: () => import('./StateReviewSheet.svelte'),
 		appearance: () => import('./AppearanceSheet.svelte'),
+		releaseNews: () => import('./ReleaseNewsSheet.svelte'),
 		importZip: () => import('./ImportSheet.svelte'),
 		importPixelLab: () => import('./ImportSheet.svelte'),
 		setup: () => import('./SetupSheet.svelte'),
@@ -137,6 +139,7 @@
 		// A first visit has no work at risk yet, so the warning waits for a later visit instead of greeting a newcomer
 		// with it. Any saved character brings it back at once.
 		const firstVisit = claimFirstVisit();
+		const stopReleaseNews = !workspaceCopy ? startReleaseNews(firstVisit) : undefined;
 		if (PRE_RELEASE && !workspaceCopy && !firstVisit) previewNotice();
 		void (async () => {
 			const listed = await refreshProjects();
@@ -182,9 +185,15 @@
 				]);
 		})().catch(startupFailed);
 		return () => {
+			stopReleaseNews?.();
 			off();
 			delete document.documentElement.dataset.app;
 		};
+	});
+
+	$effect(() => (!workspaceCopy ? offerReleaseNews() : undefined));
+	$effect(() => {
+		if (ui.releaseOverlay && releaseNews.blocked) releaseNews.close();
 	});
 
 	// one playback clock for every visible sprite (D1 §3.6 rule 5)
@@ -199,7 +208,7 @@
 	// ponytail: not reactive on purpose (plain flag); a sheet -> sheet switch keeps the same entry.
 	let sheetEntry = false;
 	$effect(() => {
-		const open = !!ui.sheet || ui.settingsOverlay;
+		const open = !!ui.sheet || ui.settingsOverlay || ui.releaseOverlay;
 		if (open && !sheetEntry) {
 			history.pushState({ pixeldollSheet: 1 }, '');
 			sheetEntry = true;
@@ -230,7 +239,7 @@
 	const onpop = () => {
 		if (!sheetEntry) return;
 		// An atomic local save/publish has the same disabled-close rule for browser Back as for its X and Escape.
-		if (ui.sheetBusy && !ui.settingsOverlay && !alertOnTop()) {
+		if (ui.sheetBusy && !ui.settingsOverlay && !ui.releaseOverlay && !alertOnTop()) {
 			history.pushState({ pixeldollSheet: 1 }, '');
 			return;
 		}
@@ -246,7 +255,9 @@
 		// Otherwise Back takes the sheet's own Back (an inner pane) or its close request, which may ask first.
 		sheetEntry = false;
 		// A sheet still loading (lazy) has not claimed its exits yet: a Settings child still steps back to Settings.
-		if (ui.settingsOverlay && !document.querySelector('dialog.settings-sheet:modal'))
+		if (ui.releaseOverlay && !document.querySelector('dialog.release-news-sheet:modal'))
+			releaseNews.close();
+		else if (ui.settingsOverlay && !document.querySelector('dialog.settings-sheet:modal'))
 			closeSettings();
 		else if (
 			!sheetBrowserBack() &&
@@ -258,7 +269,7 @@
 			)
 		)
 			ui.sheet = null;
-		if (ui.sheet || ui.settingsOverlay) {
+		if (ui.sheet || ui.settingsOverlay || ui.releaseOverlay) {
 			history.pushState({ pixeldollSheet: 1 }, '');
 			sheetEntry = true;
 		}
@@ -342,6 +353,7 @@
 		}
 		if (
 			ui.settingsOverlay ||
+			ui.releaseOverlay ||
 			(ui.sheet && ui.sheet !== 'inspect') ||
 			t.closest('input, textarea, select, [contenteditable]')
 		)
@@ -456,6 +468,9 @@
 	{/if}
 	{#if ui.settingsOverlay || (ui.sheet === 'settings' && !settingsNavigation.fromExport)}
 		<Lazy load={parts.settings} onLoadError={closeSettings} />
+	{/if}
+	{#if ui.releaseOverlay && !releaseNews.blocked}
+		<Lazy load={parts.releaseNews} onLoadError={releaseNews.close} />
 	{/if}
 	{#if reportDialog.report}{#key reportDialog.report}<ReportDialog
 				report={reportDialog.report}

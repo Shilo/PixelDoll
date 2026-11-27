@@ -1,4 +1,21 @@
 {
+	"releaseNews": {
+		"title": "Nouveautés",
+		"unseen": "Mise à jour non lue",
+		"fixed": "Corrections",
+		"allChanges": "Toutes les modifications",
+		"allChangesCount": {
+			"one": "Toutes les modifications ({n})",
+			"other": "Toutes les modifications ({n})"
+		},
+		"new": "Nouvelles fonctionnalités",
+		"improved": "Améliorations",
+		"pastUpdates": "Mises à jour précédentes",
+		"loadError": "Impossible de charger les notes de version.",
+		"empty": "Aucune mise à jour n’a encore été publiée.",
+		"notice": "Quoi de neuf dans PixelDoll ?",
+		"open": "Ouvrir"
+	},
 	"recentlyDeleted": {
 		"empty": "Rien ici. Les personnages, objets, catégories, mouvements et états que vous déplacez vers la corbeille restent jusqu’à 30 jours.",
 		"kept": "Conservé jusqu’à 30 jours, jusqu’à 50 entrées.",

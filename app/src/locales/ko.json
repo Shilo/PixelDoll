@@ -1,4 +1,20 @@
 {
+	"releaseNews": {
+		"title": "새 소식",
+		"unseen": "읽지 않은 업데이트",
+		"fixed": "수정 사항",
+		"allChanges": "모든 변경 사항",
+		"allChangesCount": {
+			"other": "모든 변경 사항({n}개)"
+		},
+		"new": "새 기능",
+		"improved": "개선 사항",
+		"pastUpdates": "지난 업데이트",
+		"loadError": "릴리스 노트를 불러오지 못했어요.",
+		"empty": "아직 공개된 업데이트가 없어요.",
+		"notice": "PixelDoll의 새 소식",
+		"open": "열기"
+	},
 	"recentlyDeleted": {
 		"empty": "휴지통이 비었습니다. 휴지통으로 이동한 캐릭터, 아이템, 카테고리, 모션, 상태는 최대 30일 동안 남습니다.",
 		"kept": "최대 30일 동안 최대 50개까지 보관됩니다.",

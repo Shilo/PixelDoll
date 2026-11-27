@@ -399,6 +399,7 @@ export const ui = $state({
 	costProject: '', // the character the Cost estimate sheet opens on
 	details: '', // the character the Details sheet is for
 	settingsOverlay: false, // Settings opened over the current sheet without replacing it
+	releaseOverlay: false,
 	newItem: { group: 'head', slot: '', prompt: '', name: '' } as {
 		reuseMethod?: boolean;
 		group: string;
@@ -421,6 +422,7 @@ export const ui = $state({
 	toastSheet: null as SheetId,
 	toastAction: null as (() => void | Promise<void>) | null,
 	toastActionLabel: '' as string | Message,
+	toastAfterUpdate: false,
 	/** What the notice's Report action sends: set for danger and warning notices. */
 	toastProblem: null as Problem | null,
 	waitingForTab: false // a spending action waits for the other tab that runs the jobs
@@ -552,6 +554,7 @@ let toastRemaining = 0,
 	toastStarted = 0;
 let toastRevision = 0,
 	toastActivating: number | null = null;
+let onToastDismiss: (() => void) | undefined;
 const toastPauses = new Set<'pointer' | 'focus' | 'hidden'>();
 export interface ToastOptions {
 	title?: string | Message;
@@ -561,6 +564,8 @@ export interface ToastOptions {
 	action?: () => void | Promise<void>;
 	/** Names the explicit button that runs `action`: without it, the whole notice stays the button. */
 	actionLabel?: string | Message;
+	onDismiss?: () => void;
+	afterUpdate?: boolean;
 	/** The error behind a danger or warning notice: its report names the error and any PixelLab status and endpoint. */
 	error?: unknown;
 	/** Warnings get Report when they carry an error or explicitly opt in. Use false for expected guidance or if a
@@ -601,6 +606,8 @@ function stopToastTimer() {
 	toastT = undefined;
 }
 export function dismissToast() {
+	const onDismiss = onToastDismiss;
+	onToastDismiss = undefined;
 	stopToastTimer();
 	toastRevision++;
 	toastRemaining = 0;
@@ -610,7 +617,9 @@ export function dismissToast() {
 	ui.toastPending = false;
 	ui.toastAction = null;
 	ui.toastActionLabel = '';
+	ui.toastAfterUpdate = false;
 	ui.toastProblem = null;
+	onDismiss?.();
 }
 export async function activateToast() {
 	if (!ui.toast || toastActivating === toastRevision) return;
@@ -663,6 +672,8 @@ export function toast(
 	ui.toastSheet = ui.sheet;
 	ui.toastAction = o.action ?? null;
 	ui.toastActionLabel = o.actionLabel ?? '';
+	ui.toastAfterUpdate = o.afterUpdate ?? false;
+	onToastDismiss = o.onDismiss;
 	const reportable =
 		o.tone === 'danger' ||
 		(o.tone === 'warning' && (o.error != null || o.report === true || o.report === 'uncaught'));
@@ -2028,6 +2039,7 @@ function updateBlocker(allowAbout?: () => boolean): LocalizedError | undefined {
 	if (
 		ui.sheetBusy ||
 		ui.settingsOverlay ||
+		ui.releaseOverlay ||
 		(ui.sheet && !(allowAbout?.() && ui.sheet === 'settings' && !canReturnToCreator()))
 	)
 		return new LocalizedError(

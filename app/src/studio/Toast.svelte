@@ -15,6 +15,11 @@
 
 	let host = $state<HTMLDivElement>();
 	const showUpdate = $derived(updateNotice.visible && !updateNotice.aboutOpen);
+	const showToast = $derived(
+		ui.toast &&
+			(!ui.toastAfterUpdate || !updateNotice.visible) &&
+			(ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet)
+	);
 	$effect(() => {
 		void ui.toast;
 		void showUpdate;
@@ -144,7 +149,7 @@
 
 <svelte:document onvisibilitychange={() => (hidden = document.hidden)} />
 <svelte:window bind:innerWidth={viewportWidth} bind:innerHeight={viewportHeight} />
-{#if showUpdate || (ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet))}
+{#if showUpdate || showToast}
 	<div
 		class="toast bu-toast-region"
 		class:toast-controls-only={typeof ui.toast === 'function' && !showUpdate}
@@ -176,7 +181,7 @@
 			}
 		}}
 	>
-		{#if ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet)}<Notice
+		{#if ui.toast && showToast}<Notice
 				class="bu-toast studio-toast"
 				title={ui.toastTitle ? displayNestedMessage(ui.toastTitle) : undefined}
 				tone={ui.toastTone}

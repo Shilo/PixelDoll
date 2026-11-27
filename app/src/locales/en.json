@@ -1,4 +1,21 @@
 {
+	"releaseNews": {
+		"title": "What's new",
+		"unseen": "Unread update",
+		"fixed": "Fixed",
+		"allChanges": "All changes",
+		"allChangesCount": {
+			"one": "All changes ({n})",
+			"other": "All changes ({n})"
+		},
+		"new": "New",
+		"improved": "Improved",
+		"pastUpdates": "Past updates",
+		"loadError": "Couldn't load the release notes.",
+		"empty": "No updates have been published yet.",
+		"notice": "What's new in PixelDoll",
+		"open": "Open"
+	},
 	"recentlyDeleted": {
 		"empty": "Nothing here. Characters, items, categories, moves and states you move to Trash stay for up to 30 days.",
 		"kept": "Kept for up to 30 days, up to 50 entries.",

@@ -1,4 +1,21 @@
 {
+	"releaseNews": {
+		"title": "Yenilikler",
+		"unseen": "Okunmamış güncelleme",
+		"fixed": "Düzeltmeler",
+		"allChanges": "Tüm değişiklikler",
+		"allChangesCount": {
+			"one": "Tüm değişiklikler ({n})",
+			"other": "Tüm değişiklikler ({n})"
+		},
+		"new": "Yeni özellikler",
+		"improved": "İyileştirmeler",
+		"pastUpdates": "Önceki güncellemeler",
+		"loadError": "Sürüm notları yüklenemedi.",
+		"empty": "Henüz bir güncelleme yayımlanmadı.",
+		"notice": "PixelDoll’daki yenilikler",
+		"open": "Aç"
+	},
 	"recentlyDeleted": {
 		"empty": "Burada bir şey yok. Çöp kutusuna taşıdığınız karakterler, öğeler, kategoriler, hareketler ve durumlar en fazla 30 gün kalır.",
 		"kept": "en fazla 30 gün, en fazla 50 kayıt saklanır.",

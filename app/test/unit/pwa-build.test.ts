@@ -1,10 +1,16 @@
 import { createHash, webcrypto } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it, vi } from 'vitest';
-import { emitPwa, revisionHtml, revisionPath } from '../../pwa-build.ts';
+import {
+	copyReleaseFiles,
+	emitPwa,
+	pwaCategory,
+	revisionHtml,
+	revisionPath
+} from '../../pwa-build.ts';
 
 const release = { build: 'build-b', version: '0.4.12', commit: 'abc1234' };
 const scope = 'https://example.test/app/';
@@ -90,6 +96,9 @@ function worker(
 		update: typeof update;
 	} = { scope, update };
 	const caches = {
+		async match(request: Request, { cacheName }: { cacheName: string }) {
+			return cacheData.get(cacheName)?.get(request.url)?.clone();
+		},
 		async open(name: string) {
 			if (!cacheData.has(name)) cacheData.set(name, new Map());
 			const cache = cacheData.get(name)!;
@@ -240,7 +249,7 @@ describe('PWA release construction', () => {
 		);
 	});
 
-	it('includes public files and unopened lazy chunks with their exact byte hashes', () => {
+	it('verifies app assets and copies release notes outside the offline inventory', () => {
 		const directory = mkdtempSync(join(tmpdir(), 'pixeldoll-pwa-'));
 		try {
 			const chunk = 'assets/audioPlayback-abc.js';
@@ -254,6 +263,24 @@ describe('PWA release construction', () => {
 				join(directory, 'manifest.webmanifest'),
 				JSON.stringify({ icons: [{ src: './icons/pwa/icon-192.png' }] })
 			);
+			const source = join(directory, 'release-source');
+			copyReleaseFiles(source, directory);
+			expect(existsSync(join(directory, 'releases'))).toBe(false);
+			mkdirSync(join(source, release.version), { recursive: true });
+			writeFileSync(join(source, 'index.json'), '{"releases":[]}');
+			writeFileSync(join(source, 'schedule.json'), '{}');
+			writeFileSync(join(source, release.version, 'source.json'), '{}');
+			writeFileSync(join(source, release.version, 'notes.en.json'), '{}');
+			copyReleaseFiles(source, directory);
+			rmSync(source, { recursive: true });
+			expect(readFileSync(join(directory, 'releases', 'index.json'), 'utf8')).toBe(
+				'{"releases":[]}'
+			);
+			expect(existsSync(join(directory, 'releases', release.version, 'notes.en.json'))).toBe(true);
+			expect(existsSync(join(directory, 'releases', release.version, 'source.json'))).toBe(false);
+			expect(existsSync(join(directory, 'releases', 'schedule.json'))).toBe(false);
+			expect(pwaCategory('releases/index.json')).toBe('releases');
+			expect(revisionPath('releases/index.json', release.build)).toBe('releases/index.json');
 			const result = emitPwa(directory, release, undefined, chunk);
 			expect(result.map((file) => file.path)).toEqual([
 				chunk,
@@ -292,6 +319,33 @@ describe('PWA release construction', () => {
 });
 
 describe('PWA worker release safety', () => {
+	it('refreshes the release notes index, caches immutable files on demand, and serves both offline across builds', async () => {
+		const app = worker();
+		const index = scope + 'releases/index.json';
+		const notes = scope + 'releases/0.4.12/notes.en.json';
+		const missing = scope + 'releases/0.4.13/notes.en.json';
+		const get = (url: string, owner = app) => owner.event('fetch', { request: new Request(url) });
+		app.interceptNetwork(async (_, url) =>
+			url === missing
+				? new Response('missing', { status: 404 })
+				: new Response(url === index ? 'newest index' : 'notes')
+		);
+		expect(await (await get(index))?.text()).toBe('newest index');
+		expect(await (await get(index))?.text()).toBe('newest index');
+		expect(await (await get(notes))?.text()).toBe('notes');
+		expect(await (await get(notes))?.text()).toBe('notes');
+		expect((await get(missing))?.status).toBe(404);
+		expect((await get(missing))?.status).toBe(404);
+		expect(app.fetched.map(({ url }) => url)).toEqual([index, index, notes, missing, missing]);
+		expect(app.fetched[0]?.options.cache).toBe('no-store');
+		expect(await get('https://another.test/app/releases/index.json')).toBeUndefined();
+		expect(await get(scope + 'release.json')).toBeUndefined();
+		const next = worker(app.cacheData, { ...release, build: 'build-c' });
+		next.goOffline();
+		expect(await (await get(index, next))?.text()).toBe('newest index');
+		expect(await (await get(notes, next))?.text()).toBe('notes');
+		expect(next.fetched.map(({ url }) => url)).toEqual([index]);
+	});
 	it('verifies the lazy playback chunk and content-hashed soundtrack only on demand', async () => {
 		const audio = new Map([
 			['assets/audioPlayback-abc123.js', 'export default "audio"'],
