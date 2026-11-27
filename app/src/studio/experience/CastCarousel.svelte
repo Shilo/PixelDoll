@@ -2,6 +2,7 @@
 	import { onDestroy, tick, untrack } from 'svelte';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { t } from 'svelte-whisper';
+	import { contextMenu } from '../../lib/input/contextMenu.ts';
 	import CharacterThumb from './CharacterThumb.svelte';
 	import CastReflection from './CastReflection.svelte';
 	import SelectionRing from './SelectionRing.svelte';
@@ -32,7 +33,8 @@
 		culledOffsets = [],
 		floorHorizon,
 		floorFocal,
-		select
+		select,
+		oncharacteractions
 	}: {
 		entries: Entry[];
 		context: string;
@@ -49,6 +51,7 @@
 		floorHorizon: number;
 		floorFocal: number;
 		select: (id: string, activate: boolean, side?: number) => void;
+		oncharacteractions: (source: HTMLElement, id: string) => void;
 	} = $props();
 	let width = $state(0),
 		height = $state(0);
@@ -281,6 +284,7 @@
 			</div>
 			<button
 				{@attach register(actor.p.id)}
+				{@attach contextMenu((source) => oncharacteractions(source, actor.p.id))}
 				class="cast-character carousel-character"
 				class:chosen={!actor.offset && !actor.leaving}
 				data-character-id={actor.p.id}

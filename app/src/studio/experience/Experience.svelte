@@ -8,6 +8,7 @@
 	import { tabActivity, workTabs } from '../activityStatus.svelte.ts';
 	import { onMount, tick, untrack } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
+	import { contextMenu } from '../../lib/input/contextMenu.ts';
 	import Toolbar from '../Toolbar.svelte';
 	import { openSettings } from '../settingsNavigation.svelte.ts';
 	import CharacterActions from '../CharacterActions.svelte';
@@ -89,6 +90,14 @@
 	let search = $state('');
 	let rows = $state<HTMLDivElement>();
 	let castDirection = $state(1);
+	let characterActions: CharacterActions;
+	let actionCharacter = $state<{ id: string; name: string } | undefined>();
+	function showCharacterActions(source: HTMLElement, id = doc.id, at?: DOMRect) {
+		const project = store.projects.find((project) => project.id === id);
+		if (ui.sheet || !project) return;
+		actionCharacter = project;
+		characterActions.show(source, at);
+	}
 	let selection = $state<HTMLDivElement>();
 	let missing = $state.raw<{ clip: string; direction: DirectionName; items: Item[] } | null>(null);
 	let coveragePopover = $state<HTMLElement>();
@@ -808,7 +817,18 @@
 >
 	<div class="scene-backdrop" aria-hidden="true"></div>
 	<div class="scene-reading" aria-hidden="true"></div>
-	<Toolbar {panelOpen} panelSide={dockEdge} onpanel={togglePanel} onmode={changeMode} />
+	<Toolbar
+		{panelOpen}
+		panelSide={dockEdge}
+		onpanel={togglePanel}
+		onmode={changeMode}
+		oncharacteractions={showCharacterActions}
+	/>
+	<CharacterActions
+		id={actionCharacter?.id ?? ''}
+		name={actionCharacter?.name ?? ''}
+		bind:this={characterActions}
+	/>
 	{#if workspaceCopy}<div class="workspace-banner bu-floating" role="status">
 			{t(
 				app.key && !app.keyRejected
@@ -861,6 +881,7 @@
 				floorHorizon={baseWorld.eye - g.feet.y}
 				floorFocal={baseWorld.scale * worldArt(ui.theme).focal}
 				select={pick}
+				oncharacteractions={showCharacterActions}
 			/>
 			<div
 				class="selected-caption"
@@ -872,6 +893,7 @@
 					<h2 class="sr">{name}</h2>
 					<button
 						class="selected-name project-btn"
+						{@attach contextMenu(showCharacterActions)}
 						popovertarget="project-menu"
 						onclick={() => void refreshProjects()}
 						><span class="selected-name-text"><CharacterName id={doc.id} {name} /></span>
@@ -1011,6 +1033,7 @@
 				place={g}
 				stageRoom={g.stage.r - g.stage.l - 2 * g.edge}
 				onmode={changeMode}
+				oncharacteractions={(source, at) => showCharacterActions(source, doc.id, at)}
 				bind:missing
 			/>
 		</div>

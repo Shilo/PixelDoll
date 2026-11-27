@@ -6,6 +6,7 @@
 	import { app } from '../lib/app.svelte.ts';
 	import { navigateMenu, popoverFocus } from './experience/focus.ts';
 	import { tick } from 'svelte';
+	import { contextMenu } from '../lib/input/contextMenu.ts';
 	import { experience, characters, type WorldMode } from './experience/state.svelte.ts';
 	import type { PanelSide } from './experience/panelSettings.svelte.ts';
 	import CharacterThumb from './experience/CharacterThumb.svelte';
@@ -60,12 +61,14 @@
 		panelOpen,
 		panelSide,
 		onpanel,
-		onmode
+		onmode,
+		oncharacteractions
 	}: {
 		panelOpen: boolean;
 		panelSide: PanelSide | 'bottom';
 		onpanel: () => void;
 		onmode: (mode: WorldMode, pointer: string) => void;
+		oncharacteractions: (source: HTMLElement) => void;
 	} = $props();
 	// The icon shows what a press does: open toward the dock edge, or close into it.
 	const PANEL_ICONS = {
@@ -316,6 +319,7 @@
 			<h1 class="sr">{name}</h1>
 			<button
 				class="name-menu project-btn"
+				{@attach contextMenu(oncharacteractions)}
 				popovertarget="project-menu"
 				aria-haspopup="menu"
 				onclick={() => void refreshProjects()}

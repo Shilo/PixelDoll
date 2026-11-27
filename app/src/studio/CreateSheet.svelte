@@ -23,6 +23,8 @@
 	import { estimate } from './movePricing.ts';
 	import PaidReview from './PaidReview.svelte';
 	import CharacterForm from './CharacterForm.svelte';
+	import CharacterActions from './CharacterActions.svelte';
+	import { contextMenu } from '../lib/input/contextMenu.ts';
 	import {
 		CREATE_STEPS,
 		autoFrame,
@@ -67,6 +69,7 @@
 			formDrafts.character = $state.snapshot(d);
 	});
 	const creating = $derived(creates.find((run) => run.id === createPresentation.id));
+	let characterActions = $state<CharacterActions>();
 	let enhancing = $state(false);
 	let referenceLoading = $state(false);
 	const frameSize = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
@@ -276,17 +279,19 @@
 				/></label
 			>{/if}{/snippet}
 	{#if creating?.projectId}
+		{@const name = result?.manifest.name ?? creating.spec.name}
 		<div class="create-review">
 			<h3 style="font-size:var(--fs-title)">
-				{t('create.sheet.ready', { name: creating.spec?.name ?? '' })}
+				{t('create.sheet.ready', { name })}
 			</h3>
 			{#if result}
+				<CharacterActions id={creating.projectId} {name} bind:this={characterActions} />
 				{@const a =
 					result.manifest.rig.animations.find((x) => x.id === 'walk') ??
 					result.manifest.rig.animations[0]}
 				<div class="review-grid">
 					{#each result.manifest.rig.directions as d (d.id)}
-						<figure>
+						<figure tabindex="-1" {@attach contextMenu((source) => characterActions?.show(source))}>
 							<Sprite
 								img={composeCell(result, {}, a.id, d.id, a.frames[frame % a.frames.length].cell)}
 								w={result.manifest.rig.cell.w}
@@ -294,7 +299,7 @@
 								{k}
 								checker
 								label={t('create.sheet.resultFrame', {
-									name: creating.spec?.name ?? '',
+									name,
 									move: getLocale() === 'en' ? a.id : displayMove(a.id),
 									direction: displayDirectionInSentence(d.id)
 								})}
