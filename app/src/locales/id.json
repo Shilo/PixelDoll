@@ -1219,7 +1219,7 @@
 			"dressed": "Sertakan sprite sheet karakter berperlengkapan",
 			"dressedHint": "Menambahkan sprite sheet PNG untuk penampilan saat ini dan setiap setelan tersimpan, dengan tubuh dan item yang dikenakan digabungkan. Lapisan terpisah selalu disertakan, kecuali pada sprite sheet RPG Maker yang selalu digabungkan.",
 			"actionLayers": "Lapisan serangan sambil berjalan",
-			"actionLayersHint": "Menambahkan bagian tubuh untuk serangan sambil berjalan yang kompatibel ke ZIP. Memakai pengaturan gerakan dan pinggang dari mode bermain, meski fitur ini dimatikan di sana. Hanya Phaser, GDevelop, Godot, dan Unity yang memakai lapisan ini.",
+			"actionLayersHint": "Menambahkan bagian tubuh untuk serangan sambil berjalan yang kompatibel ke ZIP. Memakai pengaturan gerakan dan pinggang dari mode bermain, meski \"Berjalan saat menyerang\" dimatikan di sana. Hanya Phaser, GDevelop, Godot, dan Unity yang memakai lapisan ini.",
 			"actionLayersOn": "Aktif",
 			"actionLayersOff": "Nonaktif",
 			"format": "Format ekspor",

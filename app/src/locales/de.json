@@ -1254,7 +1254,7 @@
 			"dressed": "Angezogene Figur als Spritesheets exportieren",
 			"dressedHint": "Fügt PNG-Spritesheets für deinen aktuellen Look und jedes gespeicherte Outfit hinzu, jeweils mit Grundkörper und angelegten Gegenständen in einem Bild. Separate Ebenen sind immer dabei, außer bei RPG Maker: Dort sind alle Ebenen zusammengefasst.",
 			"actionLayers": "Ebenen für Laufangriffe",
-			"actionLayersHint": "Fügt dem ZIP Körperteile für kompatible Laufangriffe hinzu. Verwendet die Einstellungen für Bewegungen und Taille aus dem Spielmodus, auch wenn Laufangriffe dort aus sind. Nur Phaser, GDevelop, Godot und Unity verwenden diese Ebenen.",
+			"actionLayersHint": "Fügt dem ZIP Körperteile für kompatible Laufangriffe hinzu. Verwendet die Einstellungen für Bewegungen und Taille aus dem Spielmodus, auch wenn „Beim Angriff weiterlaufen“ dort aus ist. Nur Phaser, GDevelop, Godot und Unity verwenden diese Ebenen.",
 			"actionLayersOn": "An",
 			"actionLayersOff": "Aus",
 			"format": "Exportformat",

@@ -1254,7 +1254,7 @@
 			"dressed": "Incluir hojas de sprites del personaje vestido",
 			"dressedHint": "Agrega hojas de sprites PNG de tu look actual y de cada atuendo guardado, con el cuerpo y los objetos puestos combinados. Las capas separadas siempre se incluyen, salvo en las hojas de RPG Maker, que siempre van combinadas.",
 			"actionLayers": "Capas de ataque en movimiento",
-			"actionLayersHint": "Añade al ZIP fragmentos del cuerpo para ataques compatibles al caminar. Usa los ajustes de movimiento y cintura del modo de juego, aunque allí estén desactivados. Solo Phaser, GDevelop, Godot y Unity usan estas capas.",
+			"actionLayersHint": "Añade al ZIP fragmentos del cuerpo para ataques compatibles al caminar. Usa los ajustes de movimiento y cintura del modo de juego, aunque «Caminar mientras atacas» esté desactivado allí. Solo Phaser, GDevelop, Godot y Unity usan estas capas.",
 			"actionLayersOn": "Activado",
 			"actionLayersOff": "Desactivado",
 			"format": "Formato de exportación",

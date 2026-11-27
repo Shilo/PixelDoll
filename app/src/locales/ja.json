@@ -1219,7 +1219,7 @@
 			"dressed": "着せ替え済みキャラクターのシートを含める",
 			"dressedHint": "現在の見た目と保存済みの各コーディネートについて、素体と装備中のアイテムを合成したPNGスプライトシートを追加します。RPG Maker以外では個別のレイヤーも必ず含まれます。RPG Makerでは合成済みのシートのみ出力します。",
 			"actionLayers": "移動攻撃のレイヤー",
-			"actionLayersHint": "歩きながらの攻撃に使える体のパーツを ZIP に追加します。プレイモードで移動攻撃がオフでも、そのモードの動作と腰位置の設定を使います。これらのレイヤーを使うのは Phaser、GDevelop、Godot、Unity のみです。",
+			"actionLayersHint": "歩きながらの攻撃に使える体のパーツを ZIP に追加します。プレイモードで「攻撃しながら歩く」がオフでも、そのモードの動作と腰位置の設定を使います。これらのレイヤーを使うのは Phaser、GDevelop、Godot、Unity のみです。",
 			"actionLayersOn": "オン",
 			"actionLayersOff": "オフ",
 			"format": "エクスポート形式",
