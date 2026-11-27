@@ -205,12 +205,16 @@ export function deriveMaterials(
 			ramps = k[it.id] ? deriveRamps(counts, k[it.id], claimed) : autoRamps(counts, claimed);
 			names = materialNames(it, ramps, m);
 		}
-		it.materials = ramps.map((ramp, i) => {
+		// In item order (the base first), not after whatever is there: a re-derived item, such as a base split again on
+		// every open, then lands where it did the first time, so the character's materials keep one order.
+		const order = new Map(m.items.map((x, i) => [x.id, i]));
+		const at = m.materials.findIndex((x) => (order.get(x.owner) ?? Infinity) > order.get(it.id)!);
+		const derived = ramps.map((ramp, i) => {
 			ramp.forEach((h) => claimed.add(fromHex(h)));
-			const id = `${it.id}_${i + 1}`;
-			m.materials.push({ id, label: names[i], ramp, variants: {}, owner: it.id });
-			return id;
+			return { id: `${it.id}_${i + 1}`, label: names[i], ramp, variants: {}, owner: it.id };
 		});
+		m.materials.splice(at < 0 ? m.materials.length : at, 0, ...derived);
+		it.materials = derived.map((x) => x.id);
 	}
 }
 
