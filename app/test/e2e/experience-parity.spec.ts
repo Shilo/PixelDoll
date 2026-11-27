@@ -3799,8 +3799,8 @@ test('a 320px bar keeps Export and the panel toggle reachable for a long name', 
 				muted: false,
 				musicMuted: false,
 				effectsMuted: false,
-				music: 0.2,
-				effects: 0.2
+				music: 20,
+				effects: 20
 			})
 		)
 	);

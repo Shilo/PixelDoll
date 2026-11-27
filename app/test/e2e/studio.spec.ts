@@ -2956,11 +2956,9 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	assert.equal(await pressed('Steel longsword'), 'true');
 	await equipmentGroup(page, 'Off hand');
 	await expect(page.getByRole('heading', { name: 'Off hand', exact: true })).toBeVisible();
-	// An empty category shows Empty first and a New tile beside it, plus the header's +.
-	await expect(page.getByRole('group', { name: 'Off hand items', exact: true })).toHaveText(
-		/^\s*Empty\s*New\s*$/
-	);
-	await expect(page.getByRole('button', { name: 'New off hand item', exact: true })).toHaveCount(2);
+	// The empty slot has one New tile and no duplicate header action.
+	await expect(page.getByRole('group', { name: 'Off hand items', exact: true })).toHaveText('New');
+	await expect(page.getByRole('button', { name: 'New off hand item', exact: true })).toHaveCount(1);
 	await equipmentGroup(page, 'Head');
 	step('held items have separate Main hand and Off hand groups');
 
