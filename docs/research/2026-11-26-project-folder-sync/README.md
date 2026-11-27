@@ -134,8 +134,8 @@ Characters linked to one folder share their engine's runtime instead of each car
 - **Native checks** on the folder layout (two characters, the same character in two subfolders): Godot 4.7.1 root and
   nested picks with import, play and exported pack; Unity 6000.4 automatic import without a menu call, a ZIP copy
   alongside, and a player build; Phaser 3.80, 3.90 and 4.1 in Canvas and WebGL with one module; GDevelop 5.6.285 web
-  export; Aseprite 1.3.18; RPG Maker MV 1.6.1; an offline PNG + JSON consumer. Phaser AE's bake was not run (it needs a
-  phaser.io game folder).
+  export; Aseprite 1.3.18; RPG Maker MV 1.6.1; an offline PNG + JSON consumer; Phaser AE engine v3-82bf126 build and playback, with three
+  dolls on one shared runtime and the README's scene imports from `game/scenes/`.
 
 ## Writing several files at once
 
