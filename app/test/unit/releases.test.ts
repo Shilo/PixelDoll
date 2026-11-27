@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+	compareVersions,
 	createSeenRelease,
 	fetchReleaseChanges,
 	fetchReleaseIndex,
@@ -92,4 +93,10 @@ describe('seen release', () => {
 		expect(seen.mark('1.4.13')).toBe('1.4.13');
 		expect(seen.sync()).toBe('1.4.13');
 	});
+});
+
+it('orders release versions numerically', () => {
+	expect(compareVersions('1.10.0', '1.9.99')).toBeGreaterThan(0);
+	expect(compareVersions('0.7.38', '1.3.80')).toBeLessThan(0);
+	expect(compareVersions('1.3.80', '1.3.80')).toBe(0);
 });

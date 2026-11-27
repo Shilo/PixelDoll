@@ -43,13 +43,13 @@ test.describe("What's new", () => {
 	test.use({ serviceWorkers: 'block' });
 
 	const previous = {
-		version: '1.4.11',
+		version: '0.4.11',
 		date: '2026-11-13',
 		headline: { en: 'Dress the demo', de: 'Die Demo einkleiden' },
 		features: 1
 	};
 	const latest = {
-		version: '1.4.12',
+		version: '0.4.12',
 		date: '2026-11-27',
 		headline: { en: 'A fresh look', de: 'Ein neuer Look' },
 		features: 2

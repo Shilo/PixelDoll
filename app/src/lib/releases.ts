@@ -19,6 +19,12 @@ export interface ReleaseChanges {
 
 export const SEEN_RELEASE_KEY = 'pixeldoll.seenRelease';
 
+/** Orders major.minor.patch versions; negative when `a` is older. */
+export function compareVersions(a: string, b: string) {
+	const [x, y] = [a, b].map((version) => version.split('.').map(Number));
+	return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
+}
+
 export function createSeenRelease() {
 	let seen: string | null = null;
 	function sync() {

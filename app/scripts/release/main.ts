@@ -6,6 +6,7 @@ import { appVersion } from '../../version.ts';
 import { composeBanner, upscaleBanner } from './banner.ts';
 import { buildChanges, collectCommits } from './changes.ts';
 import { claudeClient, model, translations, writeNotes } from './claude.ts';
+import { compareVersions } from '../../src/lib/releases.ts';
 import {
 	readJson,
 	readSource,
@@ -26,11 +27,6 @@ const cwd = fileURLToPath(new URL('../../../', import.meta.url));
 const folder = join(cwd, 'releases');
 const indexPath = join(folder, 'index.json');
 const schedulePath = join(folder, 'schedule.json');
-
-const compareVersions = (a: string, b: string) => {
-	const [x, y] = [a, b].map((v) => v.split('.').map(Number));
-	return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
-};
 
 function options() {
 	const { values } = parseArgs({

@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import { message } from '../lib/message.ts';
 import { pwa } from '../lib/pwa.ts';
 import {
+	compareVersions,
 	createSeenRelease,
 	fetchReleaseIndex,
 	SEEN_RELEASE_KEY,
@@ -17,10 +18,14 @@ let inFlight: Promise<void> | undefined;
 let firstIndex = false;
 
 const latest = $derived(entries?.[0]);
-const unseen = $derived(!!latest && latest.version !== seen);
+// Newer than the last one read: an older cached index can never reopen news or rewind what was read.
+const unseen = $derived(!!latest && (!seen || compareVersions(latest.version, seen) > 0));
+let firstVisitSession = false;
+const autoOpened = new Set<string>();
 
 function markSeen(version: string) {
-	if (version === latest?.version) seen = seenRelease.mark(version);
+	if (version === latest?.version && (!seen || compareVersions(version, seen) > 0))
+		seen = seenRelease.mark(version);
 }
 
 function refresh() {
@@ -34,7 +39,8 @@ function refresh() {
 				firstIndex = false;
 			},
 			() => {
-				entries = null;
+				// A failed refresh keeps the releases already known; the next visible moment retries.
+				if (!entries) entries = null;
 			}
 		)
 		.finally(() => (inFlight = undefined));
@@ -68,6 +74,7 @@ export const releaseNews = {
 
 export function startReleaseNews(firstVisit: boolean) {
 	firstIndex = firstVisit;
+	firstVisitSession = firstVisit;
 	seen = seenRelease.sync();
 	const wake = () => {
 		if (!document.hidden) void refresh();
@@ -89,7 +96,16 @@ export function startReleaseNews(firstVisit: boolean) {
 let toastedVersion: string | undefined;
 export function offerReleaseNews() {
 	const candidate = latest;
-	if (!candidate?.features || !unseen || ui.releaseOverlay || candidate.version === toastedVersion)
+	if (
+		firstVisitSession ||
+		!candidate?.features ||
+		!unseen ||
+		ui.releaseOverlay ||
+		candidate.version === toastedVersion ||
+		autoOpened.has(candidate.version) ||
+		// An older running app waits for its update instead of announcing features it does not have yet.
+		compareVersions(__APP_VERSION__, candidate.version) < 0
+	)
 		return;
 	const { version } = candidate;
 
@@ -124,6 +140,8 @@ export function offerReleaseNews() {
 					'dialog[open], :popover-open:not([popover="manual"]), [data-tip], input:focus, textarea:focus, select:focus, [contenteditable]:focus'
 				)
 			) {
+				// Once per release per visit: closing it before the notes load must not reopen it.
+				autoOpened.add(version);
 				open();
 				return;
 			}

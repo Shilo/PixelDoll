@@ -428,6 +428,19 @@ describe('PWA worker release safety', () => {
 		});
 	});
 
+	it('serves cached release notes on a server error but keeps a missing translation missing', async () => {
+		const app = worker();
+		const notes = scope + 'releases/0.4.12/notes.en.json';
+		const missing = scope + 'releases/0.4.12/notes.de.json';
+		const get = (url: string) => app.event('fetch', { request: new Request(url) });
+		app.interceptNetwork(async () => new Response('notes'));
+		expect(await (await get(notes))?.text()).toBe('notes');
+		app.interceptNetwork(async () => new Response('down', { status: 503 }));
+		expect(await (await get(notes))?.text()).toBe('notes');
+		expect((await get(missing))?.status).toBe(503);
+		app.interceptNetwork(async () => new Response('missing', { status: 404 }));
+		expect((await get(missing))?.status).toBe(404);
+	});
 	it('promotes matching locale bytes from a retained release, even offline', async () => {
 		const path = 'assets/fr-language.js';
 		const url = scope + path;

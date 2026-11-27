@@ -555,6 +555,11 @@ async function releaseNotesResponse(request, isIndex) {
 			console.warn('PixelDoll could not cache release notes:', error);
 		}
 	}
+	// A server error falls back to what was already read; a 404 stays, so a missing translation falls back to English.
+	if (response.status >= 500) {
+		const saved = await cached();
+		if (saved) return saved;
+	}
 	return response;
 }
 
