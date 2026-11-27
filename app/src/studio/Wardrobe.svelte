@@ -29,7 +29,7 @@
 	} from './model.ts';
 	import { itemKey } from '../lib/equipment/copy.ts';
 	import { matchesSearch } from '../lib/search/match.ts';
-	import type { SharedItem } from '../lib/equipment/shared.ts';
+	import { ownedItemKeys, type SharedItem } from '../lib/equipment/shared.ts';
 	import TileMarks, { sortMarks, type Mark } from './TileMarks.svelte';
 	import type { CellKey, Item, Manifest } from '../lib/store/manifest.ts';
 	import {
@@ -253,7 +253,11 @@
 	}
 	const menuItem = $derived(m?.items.find((i) => i.id === menuFor));
 	const sharedHidden = $derived(sharedItemsHidden(doc.id));
-	const visibleShared = $derived(sharedHidden ? [] : shared.items);
+	// The manifest can publish a saved copy before the background offer list catches up.
+	const ownedKeys = $derived(ownedItemKeys(doc.id, m ?? null));
+	const visibleShared = $derived(
+		sharedHidden ? [] : shared.items.filter((x) => !ownedKeys.has(itemKey(x.item, x.sourceId)))
+	);
 	const menuShared = $derived(visibleShared.find((x) => sharedKey(x) === menuFor));
 	const menuGeneration = $derived(genOf(menuFor));
 	// A menu whose generation or shared item is gone (finished, or added from another tab) closes rather than stay empty.

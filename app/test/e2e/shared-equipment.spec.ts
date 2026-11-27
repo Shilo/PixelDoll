@@ -634,9 +634,7 @@ test('another character’s item on the same body is worn for free, survives rel
 		'Copied Traveling wizard hat from Twin. No generations used.'
 	);
 	// The toast names the moves it will vanish in, before the player first sees it vanish.
-	await expect(page.locator('.bu-toast')).toContainText(
-		/Missing some frames in .+; it hides there\./
-	);
+	await expect(page.locator('.bu-toast')).toContainText(/It won’t show on some frames in .+\./);
 	const own = page
 		.locator('.equipment-scroll [role=group][aria-label="Head items"]')
 		.getByRole('button', { name: /^Traveling wizard hat(,|$)/ })
@@ -789,9 +787,21 @@ test('an item drawn for another body on the same canvas is worn as drawn for fre
 	const others = await threeCharacters(page);
 	// Exact copies list before the ones worn as drawn.
 	await expect(others.locator('.shared-tile').first()).toHaveText(/^\s*Traveling wizard hat/);
+	await expect(others.locator('.shared-tile')).toHaveCount(3);
+	// Observe the intermediate DOM too: polling the final count can miss a briefly duplicated tile.
+	const layouts = await others.evaluateHandle((grid) => {
+		const read = () => Array.from(grid.querySelectorAll('.tile-name'), (tile) => tile.textContent);
+		const snapshots = [read()];
+		const observer = new MutationObserver(() => {
+			const next = read();
+			if (JSON.stringify(next) !== JSON.stringify(snapshots.at(-1))) snapshots.push(next);
+		});
+		observer.observe(grid, { childList: true, subtree: true, characterData: true });
+		return { snapshots, observer };
+	});
 	await sharedTile(others, 'Stout helmet').click();
 	await expect(page.locator('.bu-toast')).toContainText(
-		'Wearing Stout helmet as drawn for Stout. It may not line up with this body. No generations used.'
+		'Wearing Stout helmet, drawn for Stout. It may not line up on this body.'
 	);
 	const own = page.locator('.equipment-scroll [role=group][aria-label="Head items"]');
 	const worn = own.getByRole('button', {
@@ -810,10 +820,21 @@ test('an item drawn for another body on the same canvas is worn as drawn for fre
 	// A copy is its own kind: it keeps its own icon, apart from an item still offered from another character.
 	await expect(worn.locator('.tile-status').first()).toHaveAttribute('data-kind', 'copied');
 	await expect(worn.locator('.tile-status').first().locator('svg')).toHaveClass(/lucide-copy/);
-	const offered = sharedTile(others, 'Traveling wizard hat').locator('.tile-status').first();
+	const hat = sharedTile(others, 'Traveling wizard hat');
+	const offered = hat.locator('.tile-status').first();
 	await expect(offered).toHaveAttribute('data-kind', 'shared');
 	await expect(offered.locator('svg')).toHaveClass(/lucide-users-round/);
 	await expect(others.locator('.shared-tile', { hasText: 'Stout helmet' })).toHaveCount(0);
+	await expect(hat).not.toHaveAttribute('aria-disabled');
+	const [before, ...changes] = await layouts.evaluate(({ snapshots, observer }) => {
+		observer.disconnect();
+		return snapshots;
+	});
+	await layouts.dispose();
+	const after = [...before];
+	after.splice(after.indexOf('Stout helmet'), 1);
+	after.splice(after.indexOf('Traveling wizard hat'), 0, 'Stout helmet');
+	expect(changes).toEqual([after]);
 	await reloadStudio(page);
 	await equipmentGroup(page, 'Head');
 	await own
