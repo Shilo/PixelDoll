@@ -1802,12 +1802,12 @@ test('actual UI ZIPs materialize global playback in every engine and asset forma
 			expect(playback(JSON.parse(text('unity/pixeldoll_unity.json')).animations)).toEqual(expected);
 		} else if (engine === 'phaserae') {
 			// every file the game manifest must list is in the ZIP, under the folder the README suggests
-			const assets: string[] = JSON.parse(text('phaserae/assets.json'));
+			const assets: string[] = JSON.parse(text('phaser-ae/assets.json'));
 			const folder = assets[0].slice(0, -'manifest.json'.length);
 			expect(assets[0]).toBe(folder + 'manifest.json');
 			for (const path of assets) file(path.slice(folder.length));
-			expect(text('phaserae/README.txt')).toContain(`game/${folder}`);
-			expect(text('phaserae/paperdoll.js')).toContain('export class Paperdoll');
+			expect(text('phaser-ae/README.txt')).toContain(`game/${folder}`);
+			expect(text('phaser-ae/paperdoll.js')).toContain('export class Paperdoll');
 		} else if (engine === 'gdevelop') {
 			const project = JSON.parse(text('gdevelop/game.json'));
 			const code = project.layouts[0].events[0].inlineCode.join('\n') as string;
@@ -3832,18 +3832,17 @@ test('export picker has accessible categories, local icons and a native GDevelop
 	await expect(radios).toHaveCount(7);
 	expect(
 		await radios.evaluateAll((inputs) => inputs.map((input) => input.getAttribute('aria-label')))
-	).toEqual(['Godot', 'Unity', 'Phaser', 'GDevelop', 'RPG Maker', 'Aseprite', 'PNG + JSON']);
+	).toEqual(['Phaser', 'Godot', 'Unity', 'GDevelop', 'RPG Maker', 'Aseprite', 'PNG + JSON']);
 	await expect(dialog.getByRole('radio', { name: 'PNG + JSON', exact: true })).toBeChecked();
 	await dialog.getByRole('radio', { name: 'Godot', exact: true }).focus();
 	await page.keyboard.press('ArrowRight');
 	await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked();
 	await expect(dialog.locator('#export-description')).toContainText('prefab');
 	await page.keyboard.press('ArrowRight');
-	await page.keyboard.press('ArrowRight');
 	await expect(dialog.getByRole('radio', { name: 'GDevelop', exact: true })).toBeChecked();
 	await expect(dialog.locator('#export-description')).toContainText('project');
 
-	for (const id of ['godot', 'unity', 'phaser', 'gdevelop', 'rpgmaker', 'aseprite', 'generic']) {
+	for (const id of ['phaser', 'godot', 'unity', 'gdevelop', 'rpg-maker', 'aseprite', 'generic']) {
 		const response = await page.request.get(
 			new URL(`./icons/exports/${id}.svg`, await page.evaluate(() => document.baseURI)).href
 		);
@@ -3954,7 +3953,8 @@ test('export picker has accessible categories, local icons and a native GDevelop
 		await expect(dialog.getByText('Includes a walking sheet for your current look')).toBeVisible();
 		await expect(downloadButton).toBeEnabled({ timeout: 30_000 });
 		const [rpg] = await Promise.all([page.waitForEvent('download'), downloadButton.click()]);
-		expect(rpg.suggestedFilename()).toContain(`-${engine}.pixeldoll.zip`);
+		const fileName = engine === 'rpgmaker' ? 'rpg-maker' : 'rpg-maker-xp';
+		expect(rpg.suggestedFilename()).toContain(`-${fileName}.pixeldoll.zip`);
 		const rpgEntries = await unzip(new Uint8Array(await readFile((await rpg.path())!)));
 		const top = [...rpgEntries.keys()].filter((entry) => !entry.startsWith('cells/'));
 		const sheets = top.filter((entry) => entry.endsWith('.png'));
@@ -3966,7 +3966,7 @@ test('export picker has accessible categories, local icons and a native GDevelop
 				'README.txt',
 				'AGENTS.md',
 				'CLAUDE.md',
-				`docs/${engine}.md`,
+				`docs/${fileName}.md`,
 				'project.json'
 			].sort()
 		);

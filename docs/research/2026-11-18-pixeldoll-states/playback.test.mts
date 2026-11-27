@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { exportFiles } from "../../../app/src/lib/export/export.ts";
-import { walkMove } from "../../../app/src/lib/export/rpgmaker.ts";
+import { walkMove } from "../../../app/src/lib/export/rpg-maker.ts";
 import { makeImg } from "../../../app/src/lib/image/png.ts";
 import { decodePngBytes } from "../../../app/src/lib/image/pngraw.ts";
 import { retainMoves } from "../../../app/src/lib/rig/moves.ts";

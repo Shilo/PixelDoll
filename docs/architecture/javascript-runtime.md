@@ -51,7 +51,7 @@ Deliberate boundaries:
   second pixel compositor or equipment resolver.
 - Phaser texture loading, sprite placement and native frame events remain adapter responsibilities.
   `sync()` consumes the same `drawList()` used by internal composition, not a second visibility or z rule.
-- The Phaser AE export (`phaserae/paperdoll.js`) appends its adapter to the same canonical modules. AE has no animation
+- The Phaser AE export (`phaser-ae/paperdoll.js`) appends its adapter to the same canonical modules. AE has no animation
   manager with per-frame durations, so the adapter keeps one clock per doll in a scene step and samples it with
   `sampleTimeline`. Its sprites are a pool spawned in draw order: the k-th sprite shows the k-th `drawList` (or
   `exportedActionDraws`) entry, so AE's z-then-spawn order keeps a doll whole in side-on worlds, and in top-down worlds
@@ -239,13 +239,13 @@ GDScript/C# execution. Do not claim that every native port automatically inherit
 
 Required scenario coverage lives in these existing harnesses rather than a second test framework:
 
-| Scenario                                     | Executable checks                                                                                                                                                                                        |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Shared rendering, ordering and palettes      | `runtime.test.ts`, `runtime-preset.test.ts`, `export-phaser.test.ts`, `export-phaserae.test.ts`, `gdevelop-export.test.ts`                                                                               |
-| Repeat selection, restart, completion replay | `verify-phaser-export.mjs`, `verify-phaserae-export.mjs`, `verify-gdevelop-engine.mjs`, native `godot-export.test.ts`, `unity-review/NativePlayback.cs`                                                  |
-| Turning mid-move, including completed clips  | `export-phaser.test.ts`, `export-phaserae.test.ts`, `gdevelop-export.test.ts`, `verify-phaser-export.mjs`, `verify-phaserae-export.mjs`, native `godot-export.test.ts`, `unity-review/NativePlayback.cs` |
-| Rejection atomicity and palette restoration  | Controller unit tests, native `godot-export.test.ts`, `unity-review/NativePlayback.cs`                                                                                                                   |
-| Portable resources and export boundary       | `export-portability.test.ts`, `export-validation.test.ts`                                                                                                                                                |
+| Scenario                                     | Executable checks                                                                                                                                                                                          |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared rendering, ordering and palettes      | `runtime.test.ts`, `runtime-preset.test.ts`, `export-phaser.test.ts`, `export-phaser-ae.test.ts`, `gdevelop-export.test.ts`                                                                                |
+| Repeat selection, restart, completion replay | `verify-phaser-export.mjs`, `verify-phaser-ae-export.mjs`, `verify-gdevelop-engine.mjs`, native `godot-export.test.ts`, `unity-review/NativePlayback.cs`                                                   |
+| Turning mid-move, including completed clips  | `export-phaser.test.ts`, `export-phaser-ae.test.ts`, `gdevelop-export.test.ts`, `verify-phaser-export.mjs`, `verify-phaser-ae-export.mjs`, native `godot-export.test.ts`, `unity-review/NativePlayback.cs` |
+| Rejection atomicity and palette restoration  | Controller unit tests, native `godot-export.test.ts`, `unity-review/NativePlayback.cs`                                                                                                                     |
+| Portable resources and export boundary       | `export-portability.test.ts`, `export-validation.test.ts`                                                                                                                                                  |
 
 Paths in this table are under `app/test/unit/` or `app/scripts/`. Test exported runtime bytes and
 native controller output; matching source text alone is not evidence of matching engine behavior.

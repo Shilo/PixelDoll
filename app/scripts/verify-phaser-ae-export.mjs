@@ -1,7 +1,7 @@
 // Runs Phaser AE exports in the real Phaser AE engine. No PixelLab calls. The engine is not public on npm: make a game
 // folder once with `npx -y @phaser-ae/cli blank <name> <folder>` (a free phaser.io account) and pass it here. This script
 // owns that folder's game/main.ts, game/harness.*, game/manifest.json and game/pixeldoll/: use a folder kept for it.
-// node --experimental-transform-types app/scripts/verify-phaserae-export.mjs --game <folder> [--zip actual-ui-export.zip]
+// node --experimental-transform-types app/scripts/verify-phaser-ae-export.mjs --game <folder> [--zip actual-ui-export.zip]
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -49,7 +49,7 @@ for (const archive of archives) {
 	archive.files = await unzip(archive.zip);
 	archive.manifest = JSON.parse(new TextDecoder().decode(archive.files.get('manifest.json')));
 	assert(
-		archive.files.has('phaserae/paperdoll.js'),
+		archive.files.has('phaser-ae/paperdoll.js'),
 		`${archive.label} must contain a Phaser AE export.`
 	);
 	assert(
@@ -490,7 +490,7 @@ try {
 			mkdirSync(dirname(join(hero, name)), { recursive: true });
 			writeFileSync(join(hero, name), bytes);
 		}
-		const listed = JSON.parse(readFileSync(join(hero, 'phaserae', 'assets.json'), 'utf8'));
+		const listed = JSON.parse(readFileSync(join(hero, 'phaser-ae', 'assets.json'), 'utf8'));
 		const folderName = listed[0].slice(0, listed[0].indexOf('manifest.json'));
 		const assets = listed.map((path) => 'pixeldoll/hero/' + path.slice(folderName.length));
 		writeFileSync(
@@ -501,7 +501,7 @@ try {
 		const dist = bake(
 			withWorld('side', { assets }),
 			`import { game } from './engine.js';
-import { loadPaperdoll, Paperdoll } from './pixeldoll/hero/phaserae/paperdoll.js';
+import { loadPaperdoll, Paperdoll } from './pixeldoll/hero/phaser-ae/paperdoll.js';
 import { expose } from './harness.js';
 const hero = await loadPaperdoll(game, 'pixeldoll/hero/');
 export const Stage = { name: 'stage', enter(): void { expose({ game, api: { Paperdoll }, m: hero }); } };
@@ -532,14 +532,14 @@ game.scenes.go('stage');
 		const dist = bake(withWorld(world), STAGE);
 		for (const archive of archives.filter((a) => !values.only || a.label.includes(values.only)))
 			for (const control of controlsFor(archive, world)) {
-				let runtime = new TextDecoder().decode(archive.files.get('phaserae/paperdoll.js'));
+				let runtime = new TextDecoder().decode(archive.files.get('phaser-ae/paperdoll.js'));
 				if (control !== 'none') {
 					const [from, to] = CONTROLS[control];
 					assert(runtime.includes(from), `Control ${control} no longer matches the runtime.`);
 					runtime = runtime.replace(from, to);
 				}
 				const files = new Map([...archive.files].map(([name, bytes]) => ['/hero/' + name, bytes]));
-				files.set('/hero/phaserae/paperdoll.js', new TextEncoder().encode(runtime));
+				files.set('/hero/phaser-ae/paperdoll.js', new TextEncoder().encode(runtime));
 				const server = await serve(dist, files),
 					{ page, errors } = await open(`http://127.0.0.1:${server.address().port}/`),
 					failures = [];
@@ -547,7 +547,7 @@ game.scenes.go('stage');
 				let compared = 0;
 				try {
 					await page.evaluate(async () => {
-						const api = await import('/hero/phaserae/paperdoll.js');
+						const api = await import('/hero/phaser-ae/paperdoll.js');
 						globalThis.pdTest = {
 							game: globalThis.game,
 							api,

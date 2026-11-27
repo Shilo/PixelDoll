@@ -3,6 +3,7 @@
 // another's data. Each engine's own README.txt keeps the full guide; these files only map the folder and start the work.
 import type { Engine } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
+import { engineFileName } from './paths.ts';
 
 const AGENTS = `# PixelDoll paper-doll export
 
@@ -15,7 +16,7 @@ this file first, then the doc for your engine in docs/, then that engine's READM
   manifest that names every path, frame, pivot and draw order. Engines: generic, Godot, Unity, Phaser, Phaser AE,
   GDevelop, Aseprite.
 - PNG sheets at the root and no manifest.json: an RPG Maker sheet export. Rows are down, left, right, up and the
-  columns are that maker version's steps. See docs/rpgmaker.md or docs/rpgmakerxp.md.
+  columns are that maker version's steps. See docs/rpg-maker.md or docs/rpg-maker-xp.md.
 
 ## Read in this order
 
@@ -116,13 +117,13 @@ are frames, on export.bakedCell and export.bakedPivot from manifest.json. Nothin
 const PHASER_AE = `# Phaser AE
 
 Phaser AE is the Phaser Game Agent's engine, built with the phaser-ae CLI; it is not Phaser 3 or 4.
-Entry: phaserae/paperdoll.js, an ES module, typed by phaserae/paperdoll.d.ts. Full guide: phaserae/README.txt.
+Entry: phaser-ae/paperdoll.js, an ES module, typed by phaser-ae/paperdoll.d.ts. Full guide: phaser-ae/README.txt.
 
-Copy the folder into the game as game/pixeldoll/<character>/ and add every path in phaserae/assets.json to the "assets"
+Copy the folder into the game as game/pixeldoll/<character>/ and add every path in phaser-ae/assets.json to the "assets"
 list in game/manifest.json: the build copies those files into the game. Do not upload them or add them to
 game/assets.json; no Pro account is needed. Set "pixelArt": true in the manifest's "screen".
 
-    import { loadPaperdoll, Paperdoll } from './pixeldoll/<character>/phaserae/paperdoll.js'
+    import { loadPaperdoll, Paperdoll } from './pixeldoll/<character>/phaser-ae/paperdoll.js'
     const model = await loadPaperdoll(game, 'pixeldoll/<character>/')   // in main.ts, before await game.start()
     // in a scene's enter():
     const doll = new Paperdoll(game, 360, 640, model)                  // 360,640 is the pivot: the feet
@@ -269,6 +270,6 @@ export function agentFiles(engines: readonly Engine[]): OutFile[] {
 		{ name: 'CLAUDE.md', data: CLAUDE }
 	];
 	for (const engine of new Set(engines))
-		files.push({ name: `docs/${engine}.md`, data: API[engine] });
+		files.push({ name: `docs/${engineFileName(engine)}.md`, data: API[engine] });
 	return files;
 }

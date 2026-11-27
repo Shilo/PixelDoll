@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest';
 import { agentFiles } from '../../src/lib/export/agent-docs.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
+import { engineFileName } from '../../src/lib/export/paths.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import { CURRENT_FORMAT, EXPORT_ENGINES, type Project } from '../../src/lib/store/manifest.ts';
@@ -62,14 +63,15 @@ test('every engine export carries the agent map and its own engine reference', a
 		'AGENTS.md'
 	);
 	for (const engine of engines) {
-		const doc = text(result.entries as { name: string; data: unknown }[], `docs/${engine}.md`);
-		expect(doc, engine).toContain('#');
-		expect(doc, engine).toContain(
-			`${engine === 'generic' ? 'generic/README' : `${engine}/README`}`
+		const doc = text(
+			result.entries as { name: string; data: unknown }[],
+			`docs/${engineFileName(engine)}.md`
 		);
+		expect(doc, engine).toContain('#');
+		expect(doc, engine).toContain(`${engineFileName(engine)}/README`);
 	}
 	// Only the selected engines get a reference.
-	expect(result.entries.some((entry) => entry.name === 'docs/rpgmaker.md')).toBe(false);
+	expect(result.entries.some((entry) => entry.name === 'docs/rpg-maker.md')).toBe(false);
 	expect(result.entries.some((entry) => entry.name === 'docs/rpgmakerxp.md')).toBe(false);
 });
 
@@ -98,7 +100,7 @@ test('the agent files cover every engine the app can export', () => {
 	const names = files.map((file) => file.name);
 	expect(new Set(names).size).toBe(names.length);
 	expect(names.slice(0, 2)).toEqual(['AGENTS.md', 'CLAUDE.md']);
-	for (const engine of EXPORT_ENGINES) expect(names).toContain(`docs/${engine}.md`);
+	for (const engine of EXPORT_ENGINES) expect(names).toContain(`docs/${engineFileName(engine)}.md`);
 	// A repeated engine never produces a duplicate path.
 	expect(agentFiles(['phaser', 'phaser']).map((file) => file.name)).toEqual([
 		'AGENTS.md',
@@ -115,14 +117,16 @@ const ENGINE_FILES: Record<string, string[]> = {
 	godot: ['godot/Paperdoll.tscn', 'godot/paperdoll.gd', 'godot/library.tres'],
 	unity: ['unity/Runtime/Paperdoll.cs', 'unity/Editor/PixelDollImporter.cs'],
 	phaser: ['phaser/PaperdollContainer.js', 'phaser/types.d.ts'],
+	phaserae: ['phaser-ae/paperdoll.js', 'phaser-ae/paperdoll.d.ts', 'phaser-ae/assets.json'],
 	gdevelop: ['gdevelop/game.json', 'gdevelop/Paperdoll.js'],
 	aseprite: ['aseprite/README.txt']
 };
 
 test('each engine doc names files that the export really contains', async () => {
-	for (const [engine, expected] of Object.entries(ENGINE_FILES)) {
+	for (const [id, expected] of Object.entries(ENGINE_FILES)) {
+		const engine = id as (typeof EXPORT_ENGINES)[number];
 		const result = await exportFiles(await fixture(), {
-			engines: [engine as (typeof EXPORT_ENGINES)[number]],
+			engines: [engine],
 			baked: false
 		});
 		expect(result.errors, engine).toEqual([]);
@@ -130,15 +134,18 @@ test('each engine doc names files that the export really contains', async () => 
 		for (const path of [
 			'AGENTS.md',
 			'CLAUDE.md',
-			`docs/${engine}.md`,
+			`docs/${engineFileName(engine)}.md`,
 			'README.txt',
 			'manifest.json',
-			`${engine}/README.txt`,
+			`${engineFileName(engine)}/README.txt`,
 			...expected
 		]) {
 			expect(names.has(path), `${engine}: ${path}`).toBe(true);
 		}
-		const doc = text(result.entries as { name: string; data: unknown }[], `docs/${engine}.md`);
+		const doc = text(
+			result.entries as { name: string; data: unknown }[],
+			`docs/${engineFileName(engine)}.md`
+		);
 		expect(doc.length, engine).toBeGreaterThan(200);
 	}
 });

@@ -999,7 +999,7 @@ layer synchronization and oversized pivots with zero page errors. Phaser 3.80 co
 ### 6.4.1 Phaser AE — layer grids and a pooled runtime
 
 Phaser AE is a separate engine (the Phaser Game Agent's kernel), not a Phaser 3/4 version, and has its own API: no loader
-atlases, scenes or animation manager. Its export reuses the layer sheets and adds `phaserae/`:
+atlases, scenes or animation manager. Its export reuses the layer sheets and adds `phaser-ae/`:
 
 - `paperdoll.js`: the canonical runtime modules plus the AE adapter. `loadPaperdoll(game, folder)` loads `manifest.json`
   as JSON and every sheet as bytes through `game.assets.load` (retries, the loading screen, the game's base URL), decodes
@@ -1015,7 +1015,7 @@ atlases, scenes or animation manager. Its export reuses the layer sheets and add
 
 2026-11-26 native run: AE engine v3-82bf126 (kernel 3.0.0-2), side-on and top-down worlds, WebGL2, every outfit, move,
 direction and playlist entry of three synthetic archives and the demo export pixel-equal to `baked/`; overlap, clock,
-turning, rejection and recolor checks with negative controls. See [Phaser AE export](testing/phaserae-export-2026-11-26.md).
+turning, rejection and recolor checks with negative controls. See [Phaser AE export](testing/phaser-ae-export-2026-11-26.md).
 
 ### 6.5 Aseprite — layered `.aseprite` as the zero-code alternative (B11)
 

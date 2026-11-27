@@ -1,10 +1,10 @@
 import { expect, test } from 'vitest';
-import { PAPERDOLL_AE_JS, phaserAeFiles } from '../../src/lib/export/phaserae.ts';
+import { PAPERDOLL_AE_JS, phaserAeFiles } from '../../src/lib/export/phaser-ae.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 // Executes the generated module against a stand-in for the Phaser AE kernel. The real engine runs in
-// scripts/verify-phaserae-export.mjs, which needs a phaser.io account to download it.
+// scripts/verify-phaser-ae-export.mjs, which needs a phaser.io account to download it.
 const runtime = () =>
 	new Function(
 		PAPERDOLL_AE_JS.replace(/^export /gm, '') + '\nreturn { loadPaperdoll, Paperdoll };'
@@ -173,11 +173,11 @@ function gameHarness(m: Manifest, { world = 'side', fail = '' } = {}) {
 test('the Phaser AE export lists every sheet for the game manifest and ships typed runtime files', () => {
 	const files = phaserAeFiles(fixture());
 	expect(files.map((f) => f.name)).toEqual([
-		'phaserae/paperdoll.js',
-		'phaserae/paperdoll.d.ts',
-		'phaserae/types.d.ts',
-		'phaserae/assets.json',
-		'phaserae/README.txt'
+		'phaser-ae/paperdoll.js',
+		'phaser-ae/paperdoll.d.ts',
+		'phaser-ae/types.d.ts',
+		'phaser-ae/assets.json',
+		'phaser-ae/README.txt'
 	]);
 	expect(JSON.parse(files[3].data as string)).toEqual([
 		'pixeldoll/hero/manifest.json',

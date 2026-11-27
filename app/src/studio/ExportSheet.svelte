@@ -20,7 +20,8 @@
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import { buildExport } from '../lib/export/build.ts';
 	import { characterZipId, editableData, saveZip } from './download.svelte.ts';
-	import { ROWS as RPG_ROWS, walkMoves } from '../lib/export/rpgmaker.ts';
+	import { ROWS as RPG_ROWS, walkMoves } from '../lib/export/rpg-maker.ts';
+	import { engineFileName } from '../lib/export/paths.ts';
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { stableStringify } from '../lib/image/hash.ts';
 	import { coverageGaps, missingFrames, moveDirs } from '../lib/dress/dress.ts';
@@ -133,12 +134,19 @@
 	const cardOf = (id: Engine): Engine =>
 		(Object.entries(VERSIONED).find(([, card]) => card.versions.some((v) => v.id === id))?.[0] as
 			Engine | undefined) ?? id;
-	// Product order for this layered 2D workflow; asset formats are useful across engines.
+	// Product order for this layered 2D workflow (docs/research/2026-11-26-engine-priority.md); asset formats are useful
+	// across engines.
 	const GROUPS: { id: string; name: WhisperKey; targets: Target[] }[] = [
 		{
 			id: 'engines',
 			name: 'export.group.engines',
 			targets: [
+				{
+					id: 'phaserae',
+					name: exportFormatNames.phaserae,
+					sub: 'export.target.phaser.sub',
+					detail: 'export.target.phaserae.detail'
+				},
 				{
 					id: 'godot',
 					name: exportFormatNames.godot,
@@ -150,12 +158,6 @@
 					name: exportFormatNames.unity,
 					sub: 'export.target.unity.sub',
 					detail: 'export.target.unity.detail'
-				},
-				{
-					id: 'phaserae',
-					name: exportFormatNames.phaserae,
-					sub: 'export.target.phaser.sub',
-					detail: 'export.target.phaserae.detail'
 				},
 				{
 					id: 'gdevelop',
@@ -672,7 +674,7 @@
 		const filename =
 			result.kind === 'recovery'
 				? `${name}-recovered-artwork.zip`
-				: `${name}-${engine}.pixeldoll.zip`;
+				: `${name}-${engineFileName(engine)}.pixeldoll.zip`;
 		saveZip(result.zip, filename);
 		toast(
 			result.kind === 'recovery'
@@ -894,7 +896,7 @@
 												<span
 													class="target-icon"
 													aria-hidden="true"
-													style:mask-image={`url("${assetUrl(`icons/exports/${e.id === 'phaserae' ? 'phaser' : e.id}.svg`)}")`}
+													style:mask-image={`url("${assetUrl(`icons/exports/${e.id === 'phaserae' ? 'phaser' : engineFileName(e.id)}.svg`)}")`}
 												></span>
 												<span class="target-label"
 													><span class="engine-name">{e.name}</span><span class="engine-sub"

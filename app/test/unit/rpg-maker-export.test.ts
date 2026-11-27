@@ -1,7 +1,8 @@
 import { expect, test } from 'vitest';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import { cellHash, playlist, type Keypoint } from '../../src/lib/rig/rig.ts';
-import { rpgMakerFiles, type RpgLayout } from '../../src/lib/export/rpgmaker.ts';
+import { engineFileName } from '../../src/lib/export/paths.ts';
+import { rpgMakerFiles, type RpgLayout } from '../../src/lib/export/rpg-maker.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
 import { exportManifest } from '../../src/lib/export/generic.ts';
 import type { Manifest, Project } from '../../src/lib/store/manifest.ts';
@@ -535,7 +536,7 @@ test('the zip holds only the sheets, README, agent docs and the editable copy, b
 				'README.txt',
 				'AGENTS.md',
 				'CLAUDE.md',
-				`docs/${engine}.md`,
+				`docs/${engineFileName(engine)}.md`,
 				'project.json'
 			].sort()
 		);

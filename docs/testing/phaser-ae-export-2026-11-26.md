@@ -1,7 +1,7 @@
 # Phaser AE export (2026-11-26)
 
-The Phaser AE export (`phaserae/` in the ZIP) was run in the real Phaser AE engine with
-`app/scripts/verify-phaserae-export.mjs`. No PixelLab calls were made.
+The Phaser AE export (`phaser-ae/` in the ZIP) was run in the real Phaser AE engine with
+`app/scripts/verify-phaser-ae-export.mjs`. No PixelLab calls were made.
 
 ## Setup
 
@@ -16,7 +16,7 @@ The Phaser AE export (`phaserae/` in the ZIP) was run in the real Phaser AE engi
 
 ## What ran
 
-1. The README path: the export copied into `game/pixeldoll/hero/`, `phaserae/assets.json` in the game manifest's
+1. The README path: the export copied into `game/pixeldoll/hero/`, `phaser-ae/assets.json` in the game manifest's
    `assets`, a static `import` of `paperdoll.js` and AE's strict build gate (types, game rules, bundle). The build
    copied every listed file and the doll rendered pixel-equal to `baked/`.
 2. For each world and archive: every outfit, move, direction and playlist entry against the dressed character sheets
@@ -40,7 +40,7 @@ Result: 29 of 29 runs passed (8 clean runs, 20 controls caught, the README build
 
 ## Not covered natively
 
-- Moving-attack layering (`playAction` with precut fragments) ran only in `test/unit/export-phaserae.test.ts` against a
+- Moving-attack layering (`playAction` with precut fragments) ran only in `test/unit/export-phaser-ae.test.ts` against a
   stub kernel: the shared archives have no action layers.
 - WebGPU rendering and AE's `npm run -s play` tool. `play` opens a half-size viewport, so a `fixed` screen larger than it
   is cut off in its shots; games normally use `letterbox`.

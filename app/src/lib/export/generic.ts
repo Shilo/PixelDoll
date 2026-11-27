@@ -508,7 +508,7 @@ const ENGINE_START: Record<string, string> = {
 	phaser:
 		'Phaser 3.80+ / 4: copy this folder into your assets and use phaser/PaperdollContainer.js (see phaser/README.txt).',
 	phaserae:
-		'Phaser AE: copy this folder into the game folder and use phaserae/paperdoll.js (see phaserae/README.txt).',
+		'Phaser AE: copy this folder into the game folder and use phaser-ae/paperdoll.js (see phaser-ae/README.txt).',
 	gdevelop:
 		'GDevelop: open gdevelop/game.json for an editable Sprite project with a paperdoll controller (see gdevelop/README.txt).',
 	aseprite:

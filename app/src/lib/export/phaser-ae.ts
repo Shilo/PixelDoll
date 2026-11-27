@@ -369,19 +369,19 @@ export function phaserAeFiles(m: Manifest): OutFile[] {
 	].map((file) => dir + file);
 	const initial = m.rig.animations.find((a) => (a.directions ?? m.rig.directions).length > 0);
 	return [
-		{ name: 'phaserae/paperdoll.js', data: PAPERDOLL_AE_JS },
-		{ name: 'phaserae/paperdoll.d.ts', data: PAPERDOLL_AE_DTS },
-		{ name: 'phaserae/types.d.ts', data: runtimeTypes },
-		{ name: 'phaserae/assets.json', data: JSON.stringify(assets, null, 1) + '\n' },
+		{ name: 'phaser-ae/paperdoll.js', data: PAPERDOLL_AE_JS },
+		{ name: 'phaser-ae/paperdoll.d.ts', data: PAPERDOLL_AE_DTS },
+		{ name: 'phaser-ae/types.d.ts', data: runtimeTypes },
+		{ name: 'phaser-ae/assets.json', data: JSON.stringify(assets, null, 1) + '\n' },
 		{
-			name: 'phaserae/README.txt',
+			name: 'phaser-ae/README.txt',
 			data: `Phaser AE (the Phaser Game Agent's engine, not Phaser 3 or 4)
 
 1. Copy the whole export folder into the game's folder as game/${dir}
-2. Add the paths in phaserae/assets.json to the "assets" list in game/manifest.json, so the build copies the
+2. Add the paths in phaser-ae/assets.json to the "assets" list in game/manifest.json, so the build copies the
    sheets into the game (this needs no upload and no Pro account). Set "pixelArt": true in its "screen".
 3. Load before the first scene, in main.ts, and show the doll in a scene:
-     import { loadPaperdoll, Paperdoll } from './${dir}phaserae/paperdoll.js'
+     import { loadPaperdoll, Paperdoll } from './${dir}phaser-ae/paperdoll.js'
      const hero = await loadPaperdoll(game, '${dir}')     // before await game.start()
      // in a scene's enter():
      const doll = new Paperdoll(game, 360, 640, hero)
