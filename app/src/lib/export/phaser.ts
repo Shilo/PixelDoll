@@ -61,10 +61,24 @@ export const animKey = (m, anim, dir) => 'pd:' + JSON.stringify([m._base ?? m.ex
 const fragmentKey = (anim, part) => part ? part + ':' + anim : anim;
 const loads = new WeakMap();
 const available = (m, a) => m.rig.directions.filter((d) => !a.directions || a.directions.includes(d.id));
-async function json(url) {
+// Match the size limit for recolorable sheets in the Phaser AE adapter.
+const MAX_SIDE = 16384;
+async function asset(url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error('PixelDoll: HTTP ' + response.status + ' loading ' + url);
-  return response.json();
+  return response;
+}
+async function json(url) {
+  return (await asset(url)).json();
+}
+async function exactPixels(url) {
+  try {
+    const response = await asset(url);
+    return await decodePngBytes(new Uint8Array(await response.arrayBuffer()), MAX_SIDE);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error('PixelDoll: failed to read palette pixels from ' + url + ': ' + message, { cause: error });
+  }
 }
 
 /** Loads manifest.json and every layer atlas, creates the body animations. Call from create() (it runs the loader). */
@@ -78,31 +92,39 @@ export async function loadPaperdoll(scene, base) {
     const m = await json(base + 'manifest.json');
     m._base = base;
     m._atlases = {};
+    m._sources = {};
     const entries = [];
     for (const it of m.items) for (const l of it.layers) for (const a of m.rig.animations) {
-      const key = texKey(m, it.id, l.id, a.id);
-      entries.push({ key, sheet: l.sourceSheets?.[a.id] ?? l.sheets[a.id], path: atlasName(it.id, l.id, a.id) });
+      const key = texKey(m, it.id, l.id, a.id), exact = it.materials.length > 0;
+      entries.push({ key, sheet: l.sourceSheets?.[a.id] ?? l.sheets[a.id], path: atlasName(it.id, l.id, a.id), exact });
       for (const part of ['lower', 'upper']) {
         const sheet = l.actionSheets?.[part]?.[a.id];
-        if (sheet) entries.push({ key: texKey(m, it.id, l.id, fragmentKey(a.id, part)), sheet, path: part + '-' + atlasName(it.id, l.id, a.id) });
+        if (sheet) entries.push({ key: texKey(m, it.id, l.id, fragmentKey(a.id, part)), sheet, path: part + '-' + atlasName(it.id, l.id, a.id), exact });
       }
     }
-    // Fetch all metadata before mutating Phaser's caches.
-    await Promise.all(entries.map(async (e) => { m._atlases[e.key] = await json(base + 'phaser/' + e.path); }));
+    // Fetch all metadata and exact palette pixels before mutating Phaser's caches.
+    // Canvas readback rounds the RGB of translucent pixels, making exact lookups miss.
+    const sheets = new Map();
+    await Promise.all(entries.flatMap((e) => {
+      const atlas = json(base + 'phaser/' + e.path).then((data) => { m._atlases[e.key] = data; });
+      if (!e.exact) return [atlas];
+      if (!sheets.has(e.sheet)) sheets.set(e.sheet, exactPixels(base + e.sheet));
+      return [atlas, sheets.get(e.sheet).then((pixels) => { m._sources[e.key] = pixels; })];
+    }));
     const queued = entries.filter((e) => !scene.textures.exists(e.key));
     if (queued.length) await new Promise((resolve, reject) => {
-      const failed = [], keys = new Set(queued.map((e) => e.key));
-      const onError = (file) => { if (keys.has(file.key)) failed.push(file.src ?? file.key); };
+      const failed = new Map(), urls = new Map(queued.map((e) => [e.key, base + e.sheet]));
+      const onError = (file) => { if (urls.has(file.key)) failed.set(file.key, file.src ?? urls.get(file.key)); };
       scene.load.on('loaderror', onError);
       scene.load.once('complete', () => {
         scene.load.off('loaderror', onError);
-        for (const e of queued) if (!scene.textures.exists(e.key) && !failed.includes(e.key)) failed.push(e.key);
-        if (failed.length) {
+        for (const e of queued) if (!scene.textures.exists(e.key) && !failed.has(e.key)) failed.set(e.key, urls.get(e.key));
+        if (failed.size) {
           for (const e of queued) if (scene.textures.exists(e.key)) scene.textures.remove(e.key);
-          reject(new Error('PixelDoll: failed to load ' + failed.join(', ')));
+          reject(new Error('PixelDoll: failed to load ' + [...failed.values()].join(', ')));
         } else resolve(undefined);
       });
-      for (const e of queued) scene.load.atlas(e.key, base + e.sheet, m._atlases[e.key]);
+      for (const e of queued) scene.load.atlas(e.key, urls.get(e.key), m._atlases[e.key]);
       if (!scene.load.isLoading()) scene.load.start();
     });
     const body = m.items.find((i) => i.id === m.rig.baseItem).layers.find((l) => l.role === 'fg');
@@ -228,14 +250,13 @@ export class Paperdoll {
     if (!table.size) return original;
     const key = original + ':palette:' + JSON.stringify([...table]);
     if (!this.scene.textures.exists(key)) {
-      const source = this.scene.textures.get(original).getSourceImage();
+      const source = this.m._sources[original];
       const canvas = document.createElement('canvas');
-      canvas.width = source.width; canvas.height = source.height;
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      canvas.width = source.w; canvas.height = source.h;
+      const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('PixelDoll: Canvas 2D is unavailable');
-      ctx.drawImage(source, 0, 0);
-      const image = ctx.getImageData(0, 0, canvas.width, canvas.height), pixels = image.data;
-      pixels.set(applyPalette({ w: canvas.width, h: canvas.height, data: pixels }, table).data);
+      const image = ctx.createImageData(source.w, source.h);
+      image.data.set(applyPalette(source, table).data);
       ctx.putImageData(image, 0, 0);
       const texture = this.scene.textures.addCanvas(key, canvas);
       this.scene.textures.addAtlasJSONHash(key, texture, this.m._atlases[original]);
@@ -343,7 +364,7 @@ doll.setDirection(dir) turns the active move (e.g. an aimed attack) while keepin
 Invalid move/direction, equipment and outfit IDs throw before changing state. Equip an item with doll.equip(slot, itemId); null empties a non-body slot.
 Recolor with doll.setVariants({ "<material-id>": "<variant-id>" }).
 setVariants replaces all explicit color selections. Omitted keys or null restore material defaults; an empty-string selection uses source colors. Linked materials follow their target's selection. Only variants listed in materials[].variants can be selected; an unknown material or variant id selects nothing.
-Palette swaps use exact source RGBs and stored material ramps in Canvas or WebGL.
+The loader decodes recolorable sheets from PNG bytes for exact source RGB matches, including translucent pixels. In Canvas and WebGL, the resulting palette textures preserve alpha and go through Phaser's normal texture upload.
 paletteMap returns only active source-RGB to target-RGB swaps; unselected colors are omitted.
 This module also exports the engine-neutral paper-doll API used inside PixelDoll itself, including composeCell, drawList, paletteMap and sampleTimeline.
 The adjacent types.d.ts supplies portable data types for checked JavaScript consumers; no TypeScript compilation is required.

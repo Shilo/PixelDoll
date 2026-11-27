@@ -990,6 +990,8 @@ Historical verification [M5] covered Phaser 3.80, 3.90 and 4.2.1. The current
   changed moves/directions and completed once-only clips start at the beginning. A third `true` argument explicitly restarts.
   `setDirection(dir)` turns the active move in place (same playlist entry, clock, repeat count and completion) without
   animation start or complete events.
+  Palette lookup uses straight RGBA decoded from recolorable PNG sheets to match translucent source colors exactly.
+  Phaser uploads the resulting palette textures through its normal Canvas or WebGL path.
   `destroy()` removes the container; palette textures remain
   cached until game teardown. Use `pixelArt: true`, `roundPixels: true`.
 

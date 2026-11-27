@@ -51,6 +51,8 @@ Deliberate boundaries:
   second pixel compositor or equipment resolver.
 - Phaser texture loading, sprite placement and native frame events remain adapter responsibilities.
   `sync()` consumes the same `drawList()` used by internal composition, not a second visibility or z rule.
+  The loader decodes recolorable sheet PNGs with the canonical `png.js` so exact palette lookups see
+  straight RGBA, including translucent pixels. Phaser uploads the resulting palette textures normally.
 - The Phaser AE export (`phaser-ae/paperdoll.js`) appends its adapter to the same canonical modules. AE has no animation
   manager with per-frame durations, so the adapter keeps one clock per doll in a scene step and samples it with
   `sampleTimeline`. A doll is one roster object (`doll.actor`) made an aggregate: the actor owns the transform, and once
@@ -300,7 +302,8 @@ names use the shared portable-name helper. The final archive path check remains 
 See `app/test/unit/runtime.test.ts` for source identity and independent pixel/timeline golden values;
 existing mask, equipment, palette, presentation and export suites cover their established behavior.
 `app/scripts/verify-phaser-export.mjs` runs pinned real Phaser engines with negative controls for broken
-duration, looping, layer synchronization, pivots, masks, visibility, palettes and direction rows. It
+duration, looping, layer synchronization, pivots, masks, visibility, palettes, translucent palette
+lookup through Canvas readback and direction rows. It
 compares every playlist frame against combined outfit sheets when those sheets are included. A ZIP
 without them still receives clock checks and explicitly reports that its pixel oracle did not run.
 

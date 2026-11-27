@@ -14,7 +14,8 @@ export async function reviewArchives(engine, dir) {
 	return [
 		basic,
 		await adversarialArchive(engine, dir, basic.project),
-		await stateArchive(engine, dir, basic.project)
+		await stateArchive(engine, dir, basic.project),
+		await translucentArchive(engine, basic.project)
 	];
 }
 
@@ -335,4 +336,55 @@ async function stateArchive(engine, dir, source) {
 	assert.deepEqual(result.errors, []);
 	await writeFile(join(dir, 'state-fixture.pixeldoll.zip'), result.zip);
 	return { label: 'ready-stance-state', fixture: false, state: true, zip: result.zip };
+}
+
+/**
+ * Translucent body pixels in the palette ramp (alpha 64, 128 and 192). A canvas readback premultiplies alpha and
+ * changes their RGB, so an exact palette lookup that reads the sheet through a canvas misses them.
+ */
+async function translucentArchive(engine, source) {
+	const manifest = structuredClone(source.manifest),
+		images = new Map(source.images);
+	manifest.name = 'Translucent palette';
+	const body = manifest.items.find((item) => item.slot === 'body').layers[0];
+	for (const move of manifest.rig.animations)
+		body.cells[move.id].south = await Promise.all(
+			body.cells[move.id].south.map(async (hash) => {
+				const original = images.get(hash),
+					image = { ...original, data: original.data.slice() };
+				for (let x = 8; x < 56; x++)
+					for (const [row, alpha] of [
+						[40, 64],
+						[44, 128],
+						[48, 192]
+					])
+						image.data.set([50, 100, 150, alpha], (row * image.w + x) * 4);
+				const next = await cellHash(image);
+				images.set(next, image);
+				return next;
+			})
+		);
+	manifest.rig.baseHash = await baseHashOf(
+		manifest.rig,
+		Object.fromEntries(
+			manifest.rig.animations.flatMap((a) =>
+				body.cells[a.id].south.map((hash, i) => [`${a.id}/south/${i}`, hash])
+			)
+		)
+	);
+	for (const item of manifest.items) item.baseHash = manifest.rig.baseHash;
+	manifest.materials[0].ramp = ['#646464', '#326496'];
+	manifest.materials[0].variants = { blue: ['#0000ff', '#00ff00'], red: ['#ff0000', '#ffff00'] };
+	const copy = structuredClone(manifest);
+	applyExportSettings(copy, {
+		engine,
+		dressedCharacterSheets: true,
+		playOnce: ['jump']
+	});
+	const result = await exportZip(
+		{ manifest: copy, images },
+		{ engines: [engine], baked: true, exportedAt: '2026-11-26T00:00:00.000Z' }
+	);
+	assert.deepEqual(result.errors, []);
+	return { label: 'translucent-palette', translucent: true, zip: result.zip };
 }

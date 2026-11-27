@@ -3,6 +3,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { atlasJson, atlasName, phaserFiles, PAPERDOLL_JS } from '../../src/lib/export/phaser.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 
 // Execute the actual generated module; no copied runtime logic in this harness.
 const runtime = () =>
@@ -106,7 +107,7 @@ const fixture = () =>
 		]
 	}) as unknown as Manifest;
 
-function sceneHarness() {
+function sceneHarness(sourcePixels = [100, 100, 100, 255]) {
 	const textures = new Map<string, any>(),
 		animations = new Map<string, any>();
 	const load = Object.assign(new EventEmitter(), {
@@ -121,7 +122,7 @@ function sceneHarness() {
 				if (this.fail && i === 1) this.emit('loaderror', { key: e.key, src: e.url });
 				else
 					textures.set(e.key, {
-						getSourceImage: () => ({ width: 1, height: 1, pixels: [100, 100, 100, 255] })
+						getSourceImage: () => ({ width: 1, height: 1, pixels: sourcePixels })
 					});
 			});
 			this.emit('complete');
@@ -213,11 +214,15 @@ function sceneHarness() {
 	return { scene, textures, animations };
 }
 
-function browserHarness(m: Manifest) {
+function browserHarness(m: Manifest, pixels = [100, 100, 100, 255]) {
+	let png: ReturnType<typeof encodePngBytes> | undefined;
 	vi.stubGlobal(
 		'fetch',
 		vi.fn(async (url: string) => ({
 			ok: true,
+			arrayBuffer: async () =>
+				(await (png ??= encodePngBytes({ w: 1, h: 1, data: new Uint8ClampedArray(pixels) })))
+					.buffer,
 			json: async () =>
 				url.endsWith('manifest.json') ? structuredClone(m) : atlasJson(m, ...atlasArgs(url, m))
 		}))
@@ -232,6 +237,7 @@ function browserHarness(m: Manifest) {
 				getContext: () => ctx
 			};
 			const ctx = {
+				createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
 				drawImage: (source: any) => {
 					canvas.pixels = new Uint8ClampedArray(source.pixels);
 				},
@@ -466,6 +472,18 @@ test('generated Phaser runtime recolors source pixels per owner, resolves linked
 	expect(doll.container.destroy).toHaveBeenCalledOnce();
 });
 
+test('Phaser recolors a translucent ramp pixel from the exact source PNG bytes', async () => {
+	const m = fixture(),
+		api = runtime(),
+		h = sceneHarness([52, 100, 151, 64]); // RGB after a Canvas 2D round trip at alpha 64
+	m.materials[0].ramp = ['#326496'];
+	browserHarness(m, [50, 100, 150, 64]);
+	const loaded = await api.loadPaperdoll(h.scene, '/hero/');
+	const doll = new api.Paperdoll(h.scene, 0, 0, loaded);
+	doll.play('walk', 'south');
+	expect([...h.textures.get(doll.body.key).canvas.pixels]).toEqual([0, 0, 255, 64]);
+});
+
 test('Phaser accepts outfit IDs and rejects unknown outfits without clearing equipment or colors', async () => {
 	const m = fixture(),
 		api = runtime(),
@@ -498,8 +516,20 @@ test('generated loader reports HTTP failures and removes partial textures before
 	await expect(api.loadPaperdoll(h.scene, '/bad/')).rejects.toThrow('HTTP 404');
 	expect(h.textures.size).toBe(0);
 	browserHarness(m);
+	const fetchFile = fetch;
+	vi.stubGlobal('fetch', (url: string) =>
+		url.endsWith('sources/body.png') ? new Response('invalid PNG') : fetchFile(url)
+	);
+	await expect(api.loadPaperdoll(h.scene, '/hero/')).rejects.toThrow(
+		'https://game.test/hero/sources/body.png: png: not a PNG'
+	);
+	expect(h.scene.load.queued).toHaveLength(0);
+	expect(h.textures.size).toBe(0);
+	browserHarness(m);
 	h.scene.load.fail = true;
-	await expect(api.loadPaperdoll(h.scene, '/hero/')).rejects.toThrow('failed to load');
+	await expect(api.loadPaperdoll(h.scene, '/hero/')).rejects.toThrow(
+		'failed to load https://game.test/hero/layers/hair.png'
+	);
 	expect(h.textures.size).toBe(0);
 	expect(h.animations.size).toBe(0);
 	h.scene.load.fail = false;

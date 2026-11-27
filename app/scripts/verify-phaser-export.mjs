@@ -98,7 +98,9 @@ try {
 						? ['none', 'no-covers', 'no-hides', 'no-palette', 'wrong-direction', 'turn-restarts']
 						: archive.state
 							? ['none', 'restart-every-play', 'state-loop']
-							: ['none']) {
+							: archive.translucent
+								? ['none', 'canvas-lookup']
+								: ['none']) {
 					const page = await browser.newPage(),
 						errors = [],
 						label = `${bundle.version} ${renderer} ${archive.label} ${control}`;
@@ -153,6 +155,18 @@ try {
 						} else if (control === 'no-palette') {
 							assert(runtime.includes('if (!table.size) return original;'));
 							runtime = runtime.replace('if (!table.size) return original;', 'return original;');
+						} else if (control === 'canvas-lookup') {
+							const exact = 'image.data.set(applyPalette(source, table).data);';
+							assert(
+								runtime.includes(exact),
+								'Canvas control must replace the exact palette input.'
+							);
+							runtime = runtime.replace(
+								exact,
+								`ctx.drawImage(this.scene.textures.get(original).getSourceImage(), 0, 0);
+								const rounded = ctx.getImageData(0, 0, source.w, source.h);
+								image.data.set(applyPalette({ ...source, data: rounded.data }, table).data);`
+							);
 						}
 						await page.route('**/*', (route) => {
 							const url = new URL(route.request().url());
@@ -764,6 +778,7 @@ try {
 												'no-covers',
 												'no-hides',
 												'no-palette',
+												'canvas-lookup',
 												'wrong-direction'
 										  ].includes(control)
 										? 'pixels:'
