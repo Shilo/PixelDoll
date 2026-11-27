@@ -243,7 +243,7 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	const openMore = () => page.getByRole('button', { name: 'More options', exact: true }).click();
 	const fillKey = async (dialog: ReturnType<typeof page.getByRole>, value: string) => {
 		await dialog.getByLabel('Paste your Secret API key', { exact: true }).fill(value);
-		await dialog.getByRole('checkbox', { name: 'Remember on this device' }).check();
+		await dialog.getByRole('switch', { name: 'Remember on this device' }).check();
 	};
 	await openMore();
 	await page.getByRole('button', { name: 'Connect PixelLab…', exact: true }).click();
@@ -364,9 +364,7 @@ test('Settings replaces and forgets the key in place, refreshing usage without m
 	await replace.click();
 	const replacement = page.getByRole('dialog', { name: 'Replace PixelLab key', exact: true });
 	await expect(replacement.getByLabel('Paste your Secret API key', { exact: true })).toBeFocused();
-	await expect(
-		replacement.getByRole('checkbox', { name: 'Remember on this device' })
-	).toBeChecked();
+	await expect(replacement.getByRole('switch', { name: 'Remember on this device' })).toBeChecked();
 	await replacement.getByRole('button', { name: 'Keep current key' }).click();
 	await expect(replace).toBeFocused();
 	await replace.click();
@@ -443,7 +441,7 @@ test('a delayed replacement does not undo another tab’s Forget', async ({ page
 	await replacement
 		.getByLabel('Paste your Secret API key', { exact: true })
 		.fill('synthetic-delayed');
-	await replacement.getByRole('checkbox', { name: 'Remember on this device' }).check();
+	await replacement.getByRole('switch', { name: 'Remember on this device' }).check();
 	await replacement.getByRole('button', { name: 'Replace key', exact: true }).click();
 	await waiting;
 	try {
@@ -502,7 +500,7 @@ for (const remembered of [true, false]) {
 		await page.getByRole('menuitem', { name: 'Connect PixelLab…', exact: true }).click();
 		let dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 		await dialog.getByLabel('Paste your Secret API key', { exact: true }).fill(key);
-		await dialog.getByRole('checkbox', { name: 'Remember on this device' }).setChecked(remembered);
+		await dialog.getByRole('switch', { name: 'Remember on this device' }).setChecked(remembered);
 		await dialog.getByRole('button', { name: 'Connect', exact: true }).click();
 		await page.locator('.project-btn').click();
 		await expect(

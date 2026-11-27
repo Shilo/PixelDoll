@@ -604,7 +604,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await expect(moveDetails.getByText(/^64×64 px, pivot /)).toBeVisible();
 	await expect(moveDetails.getByText(/^\d+×\d+ px$/)).toBeVisible();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
+	await page.getByRole('button', { name: 'Make editable copy', exact: true }).click();
 	await expect(page.locator('.name-text')).toHaveText('Saved hero');
 	const viewport = page.viewportSize()!;
 	await page.setViewportSize({ width: 320, height: 700 });
@@ -612,7 +612,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await expect(page.locator('.name-text')).toHaveText('Saved hero');
 	await page.setViewportSize(viewport);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await expect(page.getByRole('menuitem', { name: 'Make editable copy', exact: true })).toHaveCount(
+	await expect(page.getByRole('button', { name: 'Make editable copy', exact: true })).toHaveCount(
 		0
 	);
 });

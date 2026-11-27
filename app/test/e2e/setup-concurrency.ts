@@ -206,7 +206,7 @@ for (const tier of [3, 1] as const)
 			await connect
 				.getByLabel('Paste your Secret API key', { exact: true })
 				.fill('synthetic-setup-concurrency-key');
-			await connect.getByRole('checkbox', { name: 'Remember on this device', exact: true }).check();
+			await connect.getByRole('switch', { name: 'Remember on this device', exact: true }).check();
 			await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 			await expect.poll(() => pending.size).toBe(limit);
 			expect(estimates).toBe(limit);

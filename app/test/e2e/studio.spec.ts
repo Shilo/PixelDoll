@@ -808,7 +808,7 @@ test('tips point at each control in order, end on their action, and come back in
 	await enterStudio(page);
 	// An own character: Make your own ends by itself, and its own tips appear where they apply.
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
+	await page.getByRole('button', { name: 'Make editable copy', exact: true }).click();
 	await expect(page.locator('h1')).toHaveText('Adventurer copy');
 	await expect(heading('Add gear')).toBeVisible();
 	// The slot's + in its header, which stays when the slot has gear, not the New tile that goes away.

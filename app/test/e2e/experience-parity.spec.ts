@@ -210,7 +210,7 @@ test('rapid clicks operate controls without selecting their labels', async ({ pa
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Connect PixelLab…', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-	const remember = dialog.getByRole('checkbox', { name: 'Remember on this device' });
+	const remember = dialog.getByRole('switch', { name: 'Remember on this device' });
 	const label = dialog.getByText('Remember on this device', { exact: true });
 	const initial = await remember.isChecked();
 	await remember.evaluate((control: HTMLInputElement) => {
@@ -3826,7 +3826,7 @@ test('a 320px bar keeps Export and the panel toggle reachable for a long name', 
 	await expect(bar.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
 	expect(await fits()).toBe(true);
 	await more.click();
-	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
+	await page.getByRole('button', { name: 'Make editable copy', exact: true }).click();
 	await expect(page.locator('.name-text')).not.toContainText('(demo)');
 	await page.locator('.project-btn').click();
 	await currentCharacterAction(page, 'Rename…');

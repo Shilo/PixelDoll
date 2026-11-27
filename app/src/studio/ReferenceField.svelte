@@ -319,6 +319,9 @@
 		gap: 0.35rem;
 		min-width: 0;
 	}
+	.reference-label {
+		color: var(--text);
+	}
 	.reference > small {
 		font-size: var(--fs-sm);
 	}

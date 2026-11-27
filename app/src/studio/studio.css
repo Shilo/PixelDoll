@@ -497,7 +497,7 @@ dialog select option {
 	overflow-wrap: anywhere;
 }
 /* Inline notices take Bronze's compact notice look; an action inside one sits at the end of the row. */
-.bu-notice .btn {
+.bu-notice[data-size='compact'] .btn {
 	margin-left: auto;
 }
 

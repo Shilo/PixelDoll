@@ -541,7 +541,7 @@ test('a backup opened as a copy isolates the library and PixelLab connection', a
 	).toBeNull();
 	await expect(connect.getByLabel('Paste your Secret API key', { exact: true })).toBeEmpty();
 	expect(copyRequests).toEqual([]);
-	await expect(connect.getByRole('checkbox', { name: 'Remember on this device' })).toHaveCount(0);
+	await expect(connect.getByRole('switch', { name: 'Remember on this device' })).toHaveCount(0);
 	await connect.getByLabel('Paste your Secret API key', { exact: true }).fill(copyKey);
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(connect).toBeHidden();
@@ -3787,7 +3787,7 @@ test('Share resets to Standing when switching characters', async ({ page, contex
 	await popover.getByRole('combobox', { name: 'Size' }).selectOption('4');
 	await page.keyboard.press('Escape');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
+	await page.getByRole('button', { name: 'Make editable copy', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const download = page.waitForEvent('download');
