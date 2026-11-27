@@ -483,7 +483,9 @@ test('the offline status stays compact and leaves the character and controls vis
 		await checkLayout('.equipment-rail,.experience-playback,.toast');
 		await context.setOffline(false);
 		await expect(banner).toHaveCount(0);
-		await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
+		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await page.locator('#experience-options .mobile-export').click();
+		await expect(page.getByRole('dialog', { name: 'Export', exact: true })).toBeVisible();
 	} finally {
 		await context.setOffline(false);
 		await server.close();
