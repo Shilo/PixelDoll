@@ -532,8 +532,17 @@ test('full screen and view navigation stay separate while Activity is in the hea
 		await expect
 			.poll(overlap, { message: `View navigation overlaps header at ${width}px` })
 			.toBe(false);
-		await page.getByRole('button', { name: 'Enter full screen', exact: true }).click();
-		await page.getByRole('button', { name: 'Exit full screen', exact: true }).click();
+		// Narrow bars keep Export and move Full screen into More, where it still works.
+		if (await page.locator('.experience-header .header-fullscreen').isVisible()) {
+			await page.getByRole('button', { name: 'Enter full screen', exact: true }).click();
+			await page.getByRole('button', { name: 'Exit full screen', exact: true }).click();
+		} else {
+			await page.locator('.experience-header [popovertarget="experience-options"]').click();
+			await expect(
+				page.locator('#experience-options').getByRole('button', { name: 'Enter full screen' })
+			).toBeVisible();
+			await page.keyboard.press('Escape');
+		}
 	}
 });
 

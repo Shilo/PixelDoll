@@ -3250,14 +3250,14 @@ test('studio demo: New character fits an HD window and smaller screens scroll to
 	await expect.poll(fitsWithoutScrolling).toBe(true);
 	await expect(create).toBeInViewport();
 	step('1920x1080: the whole form and Create fit without scrolling the sheet');
-	// 1440x900: the traits pair up, so the prompt excerpt clears the floating footer.
+	// 1440x900: the traits pair up, so the appearance fields clear the floating footer.
 	await page.setViewportSize({ width: 1440, height: 900 });
 	await expect.poll(fitsWithoutScrolling).toBe(true);
-	const [excerpt, footer] = await Promise.all([
-		creator.getByRole('button', { name: 'Edit exact prompt', exact: true }).boundingBox(),
+	const [appearance, footer] = await Promise.all([
+		creator.locator('#appearance-panel').boundingBox(),
 		foot.boundingBox()
 	]);
-	expect(excerpt!.y + excerpt!.height).toBeLessThanOrEqual(footer!.y);
+	expect(appearance!.y + appearance!.height).toBeLessThanOrEqual(footer!.y);
 	await expect(create).toBeInViewport();
 	step('1440x900: paired traits keep the lowest field above the footer');
 	// Expanding Advanced may scroll the sheet, but every field stays reachable and Create stays put.

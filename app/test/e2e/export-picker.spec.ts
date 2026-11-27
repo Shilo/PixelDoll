@@ -3648,8 +3648,8 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await selectShareClip(popover, 'Everything');
 	await fixedLayout(smallLayout);
 	await expect(page.getByRole('button', { name: 'Share character' })).toBeHidden();
-	// The audio control and the panel toggle leave no room for Export here, so it moves into More. The bar still fits.
-	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeHidden();
+	// Export keeps its place; Full screen and Audio move into More first. The bar still fits.
+	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
 	await headerFits();
 	await page.screenshot({ path: testInfo.outputPath('share-grid-320.png') });
 	await selectShareClip(popover, 'Walk');
@@ -3677,9 +3677,9 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('south');
 	await page.setViewportSize({ width: 320, height: 390 });
 	await expect(page.getByRole('button', { name: 'Share character' })).toBeHidden();
-	// The panel toggle and audio control leave no room for Export on a 320 px bar; Full screen stays.
-	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeHidden();
-	await expect(page.getByRole('button', { name: 'Enter full screen', exact: true })).toBeVisible();
+	// A 320 px bar keeps Export and moves Full screen into More.
+	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Enter full screen', exact: true })).toBeHidden();
 	await headerFits();
 	expect(
 		(await popover.boundingBox())!.y + (await popover.boundingBox())!.height
