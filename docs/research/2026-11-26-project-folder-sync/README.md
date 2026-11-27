@@ -8,14 +8,14 @@ Follow-up to the [desktop shell study](../2026-11-25-desktop-shell/README.md) an
 
 A project folder receives **individual files**, exactly the files the export ZIP would contain, written into `<picked folder>/<character export ID>/`. It is not a ZIP, and PixelDoll adds no other file to the folder. Download ZIP stays available next to it in every browser.
 
-| Platform | Support | Why |
-| --- | --- | --- |
-| Chrome, Edge, Opera and other Chromium browsers on Windows, macOS, Linux and ChromeOS | Project folder with automatic updates, plus ZIP | Documented API since Chrome 86. Windows passed real tests here. macOS and Linux use the same Chromium code but were not tested. |
-| Brave | Same as Chrome once its flag is on, plus ZIP | Brave ships the same Chromium API switched off. With `brave://flags/#file-system-access-api` enabled and Brave restarted, it behaves like Chrome. With the flag off, Settings > Export explains how to turn it on. Nothing is forced. Verified in real Brave on Windows: off by default (the hint appears), and with the flag on a real folder grant published 372 files. |
-| Android Chrome | Shown where the browser offers it (Chrome 132 and later), untested | The API is present on Android according to browser compat data. Android storage providers lack atomic writes, so the per-file journal matters more there. No real Android game workflow was tested. |
-| Firefox, Safari on macOS | ZIP only | Mozilla and WebKit oppose the API. No folder control appears anywhere (checked in Firefox 159 and WebKit with iPhone emulation, with no page errors). |
-| iOS and iPadOS (every browser) | ZIP only | Apple requires every iOS browser, Chrome included, to use WebKit, which lacks the API. |
-| Native Windows, macOS, Linux | None for now | Nothing tested requires it. See [the native case](#native-editions). |
+| Platform                                                                              | Support                                                            | Why                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chrome, Edge, Opera and other Chromium browsers on Windows, macOS, Linux and ChromeOS | Project folder with automatic updates, plus ZIP                    | Documented API since Chrome 86. Windows passed real tests here. macOS and Linux use the same Chromium code but were not tested.                                                                                                                                                                                                                                           |
+| Brave                                                                                 | Same as Chrome once its flag is on, plus ZIP                       | Brave ships the same Chromium API switched off. With `brave://flags/#file-system-access-api` enabled and Brave restarted, it behaves like Chrome. With the flag off, Settings > Export explains how to turn it on. Nothing is forced. Verified in real Brave on Windows: off by default (the hint appears), and with the flag on a real folder grant published 372 files. |
+| Android Chrome                                                                        | Shown where the browser offers it (Chrome 132 and later), untested | The API is present on Android according to browser compat data. Android storage providers lack atomic writes, so the per-file journal matters more there. No real Android game workflow was tested.                                                                                                                                                                       |
+| Firefox, Safari on macOS                                                              | ZIP only                                                           | Mozilla and WebKit oppose the API. No folder control appears anywhere (checked in Firefox 159 and WebKit with iPhone emulation, with no page errors).                                                                                                                                                                                                                     |
+| iOS and iPadOS (every browser)                                                        | ZIP only                                                           | Apple requires every iOS browser, Chrome included, to use WebKit, which lacks the API.                                                                                                                                                                                                                                                                                    |
+| Native Windows, macOS, Linux                                                          | None for now                                                       | Nothing tested requires it. See [the native case](#native-editions).                                                                                                                                                                                                                                                                                                      |
 
 ## Design goals
 
@@ -81,15 +81,15 @@ A local CLI that applies an export ZIP to a project is credible for CI and scrip
 
 ## Implementation
 
-| Layer | Files | Role |
-| --- | --- | --- |
-| Planner | [plan.ts](../../../app/src/lib/project-folder/plan.ts) | Pure. Decides create, update, restore, conflict or keep per path from the export, the folder and PixelDoll's trusted record. |
-| Folder target | [target.ts](../../../app/src/lib/project-folder/target.ts) | Three operations (read, atomic write, remove) over a File System Access directory. Refuses paths that could leave the folder. A native shell or CLI could supply its own target. |
-| Publisher | [publish.ts](../../../app/src/lib/project-folder/publish.ts) | Hashes, plans, writes changed files (manifest last) with a final check before each swap, and records each write. Returns an outcome and never throws. Never deletes. |
-| Support check | [support.ts](../../../app/src/lib/project-folder/support.ts) | `supported`, `brave-disabled` or `unsupported`. Also refuses insecure pages and cross-origin frames. |
-| Link storage | [links.ts](../../../app/src/lib/project-folder/links.ts) | Per character: the folder handle, subfolder, format and automatic updates; per link: what PixelDoll wrote and what the user kept. Its own `pixeldoll-project-folders` database, never in the library, its backups or the user's folder. |
-| Studio state | [projectFolder.svelte.ts](../../../app/src/studio/projectFolder.svelte.ts) | Builds the open character's export as the Export sheet would, publishes one at a time per character (Web Locks across tabs), turns outcomes into status and at most one background notice per problem. |
-| UI | [ProjectFolderButton.svelte](../../../app/src/studio/ProjectFolderButton.svelte), [ProjectFolderSetting.svelte](../../../app/src/studio/ProjectFolderSetting.svelte), [ProjectFolderAuto.svelte](../../../app/src/studio/ProjectFolderAuto.svelte) | Export's one button, the Settings > Export row (or the Brave hint), and an invisible watcher loaded on demand only in browsers that have the folder picker. |
+| Layer         | Files                                                                                                                                                                                                                                              | Role                                                                                                                                                                                                                                    |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Planner       | [plan.ts](../../../app/src/lib/project-folder/plan.ts)                                                                                                                                                                                             | Pure. Decides create, update, restore, conflict or keep per path from the export, the folder and PixelDoll's trusted record.                                                                                                            |
+| Folder target | [target.ts](../../../app/src/lib/project-folder/target.ts)                                                                                                                                                                                         | Three operations (read, atomic write, remove) over a File System Access directory. Refuses paths that could leave the folder. A native shell or CLI could supply its own target.                                                        |
+| Publisher     | [publish.ts](../../../app/src/lib/project-folder/publish.ts)                                                                                                                                                                                       | Hashes, plans, writes changed files (manifest last) with a final check before each swap, and records each write. Returns an outcome and never throws. Never deletes.                                                                    |
+| Support check | [support.ts](../../../app/src/lib/project-folder/support.ts)                                                                                                                                                                                       | `supported`, `brave-disabled` or `unsupported`. Also refuses insecure pages and cross-origin frames.                                                                                                                                    |
+| Link storage  | [links.ts](../../../app/src/lib/project-folder/links.ts)                                                                                                                                                                                           | Per character: the folder handle, subfolder, format and automatic updates; per link: what PixelDoll wrote and what the user kept. Its own `pixeldoll-project-folders` database, never in the library, its backups or the user's folder. |
+| Studio state  | [projectFolder.svelte.ts](../../../app/src/studio/projectFolder.svelte.ts)                                                                                                                                                                         | Builds the open character's export as the Export sheet would, publishes one at a time per character (Web Locks across tabs), turns outcomes into status and at most one background notice per problem.                                  |
+| UI            | [ProjectFolderButton.svelte](../../../app/src/studio/ProjectFolderButton.svelte), [ProjectFolderSetting.svelte](../../../app/src/studio/ProjectFolderSetting.svelte), [ProjectFolderAuto.svelte](../../../app/src/studio/ProjectFolderAuto.svelte) | Export's one button, the Settings > Export row (or the Brave hint), and an invisible watcher loaded on demand only in browsers that have the folder picker.                                                                             |
 
 Existing code changed only where it had to: Export mounts the button and the settings row, Settings search lists the row where it can appear, Export shares its moving-attack options through [exportLayering.ts](../../../app/src/studio/exportLayering.ts), the Studio lazily mounts the watcher, and `buildExport` accepts a fixed `exportedAt` and an uncompressed archive (folder publishing needs only the files).
 
@@ -98,6 +98,47 @@ Tests:
 - **Unit** ([project-folder.test.ts](../../../app/test/unit/project-folder.test.ts), [project-folder-adversarial.test.ts](../../../app/test/unit/project-folder-adversarial.test.ts)): planner cases, path safety, and an adversarial suite (first written by GPT-6.2 Sol, which found 17 overwrites in the previous design) that edits, deletes, recreates or empties files at every moment of a publish, forges ownership files, reuses approvals, crashes between writing and recording, keeps files, and checks 1,024 files before writing any. Two expected-failure cases record the browser's final-instant limit.
 - **End to end** (`npm run e2e -- export-picker -g "project folder"`): through the real Export button and Settings row, with a browser-private folder: publishing, an unchanged republish writing nothing, automatic updates, a game edit pausing with a lasting notice, Replace files, reconnecting, a missing folder, Unlink; a separate safety test with an edited earlier extract (nothing written), an approval made stale by a newer edit, a deleted file, a folder in the way, Keep mine and Update them, and untouched sidecars and game files; and a test with the API removed and Brave faked.
 - **Real grant** (manual, Windows Edge): the spike driver in `web-publish-spike/` exercises the native picker and permission prompts. A browser test cannot complete a real picker grant.
+
+## Writing several files at once
+
+The publisher reads and writes up to eight files at once (`AT_ONCE` in [publish.ts](../../../app/src/lib/project-folder/publish.ts)). The order is:
+
+1. PNGs, eight at a time.
+2. Godot's per-layer `.tres` resources, eight at a time.
+3. Every other file, one at a time in export order.
+4. `manifest.json`, last.
+
+Each phase waits for the previous one, so no index or scene lands before the files it names. Set `AT_ONCE` to 1 to go back to fully sequential publishing; nothing else depends on it.
+
+**Why.** In Chromium, `close()` on a writable stream hashes the staged swap file and runs Safe Browsing and quarantine checks (Mark-of-the-Web on Windows) before the rename. That is about 55 to 66 ms per file and about 80% of a first publish. The time is mostly spent waiting on the browser, not on JavaScript, so a few writes in flight overlap it. Measured on Windows:
+
+- a first publish of the demo went from 21 to 32 s down to about 4.7 s in Edge and 6.1 s in Brave (PNG + JSON);
+- an edit went from 2.4 to 2.7 s down to 1.1 to 1.4 s;
+- above eight writes at once, the gain was small.
+
+**Why it is safe per file.** Each write keeps the same guarantees as before, independently of the others:
+
+- a strictly durable PENDING mark is recorded before the write;
+- the bytes are staged in that file's own swap file;
+- that file is checked again just before its own swap;
+- its final hash is recorded after.
+
+Chromium gives each writable its own swap file and its own lock per path, and the File System Access spec allows several open writables on different files. When one file fails, no new write starts. A write still checking its staged bytes is given up, so its file keeps its old bytes. Writes already past the check finish and are recorded. Conflicts are reported in export order, whatever finished first. The known Chromium hazard (issue 40795015) is unbounded batches of thousands of writables; the bound of eight avoids it.
+
+**Evidence.**
+
+- Chromium source reading (DeepSeek 4.1).
+- Real Edge and Brave runs on Windows (Opus 5.5): 22 publishes byte-identical to sequential ones with every record final, plus a locked file and an edit during a publish, both stopped cleanly.
+- A three-way cross-review with Sol 6.2.
+- The unit suites, including the adversarial one, run unchanged against the concurrent writer.
+
+**Not tested:**
+
+- Chrome on Android, where storage and Safe Browsing behave differently, so slow or flaky writes there should be checked first;
+- macOS and Linux;
+- network, cloud-synced (OneDrive) and removable drives.
+
+If any of those fail or corrupt a publish, lower `AT_ONCE` for that platform, or set it to 1 everywhere.
 
 ## Independent challenge
 
