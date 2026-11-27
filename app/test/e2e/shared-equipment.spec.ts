@@ -677,6 +677,43 @@ test('another character’s item on the same body is worn for free, survives rel
 	expect(errors).toEqual([]);
 });
 
+test('another character’s two-handed item shows the grip icon on its tile here too', async ({
+	page
+}) => {
+	await threeCharacters(page);
+	// Twin's sword becomes its own two-handed greatsword, so it is offered here.
+	await page.evaluate(async () => {
+		const request = indexedDB.open('pixeldoll', 1);
+		const database = await new Promise<IDBDatabase>((resolve, reject) => {
+			request.onsuccess = () => resolve(request.result);
+			request.onerror = () => reject(request.error);
+		});
+		const store = database.transaction('projects', 'readwrite').objectStore('projects');
+		const twin = await new Promise<any>((resolve, reject) => {
+			const read = store.get('rig-twin');
+			read.onsuccess = () => resolve(read.result);
+			read.onerror = () => reject(read.error);
+		});
+		Object.assign(
+			twin.manifest.items.find((it: { slot: string }) => it.slot === 'main_hand'),
+			{ name: 'Twin greatsword', prompt: 'a greatsword', hides: ['off_hand'] }
+		);
+		store.put(twin, twin.id);
+		await new Promise<void>((resolve, reject) => {
+			store.transaction.oncomplete = () => resolve();
+			store.transaction.onerror = store.transaction.onabort = () => reject(store.transaction.error);
+		});
+	});
+	await reloadStudio(page);
+	await equipmentGroup(page, 'Main hand');
+	const tile = page.locator('.shared-tile').filter({ hasText: 'Twin greatsword' });
+	await expect(tile).toHaveAccessibleName(/two-handed/);
+	await expect(tile.locator('.tile-status[data-kind="twoHanded"]')).toHaveAttribute(
+		'title',
+		'Uses both hands.'
+	);
+});
+
 test('a shared item’s ⋮ explains how it fits and makes one for this character, and nothing is submitted', async ({
 	page,
 	context

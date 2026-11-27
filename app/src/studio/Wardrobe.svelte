@@ -426,7 +426,13 @@
 				label: t('wardrobe.checkFit'),
 				text: t('wardrobe.checkFitNote', { from: x.sourceName })
 			},
-			missingMark(missing)
+			missingMark(missing),
+			// A copy keeps the item's hand rule, so it is held as it would be here.
+			twoHanded(m, x.item) && {
+				kind: 'twoHanded',
+				label: t('itemMenu.twoHanded'),
+				text: t('wardrobe.twoHandedNote')
+			}
 		]);
 	}
 	/** Moves the item has no art for here, worded like an own item's missing frames (it hides in them once worn). */
