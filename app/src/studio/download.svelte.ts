@@ -83,8 +83,13 @@ async function source(projectId: string): Promise<DownloadSource> {
 	};
 }
 
+/** Every quick ZIP loads the export builder through this one import, and Studio prefetches it after startup: a dynamic import
+ *  of a module that ExportSheet also imports statically gets its own small chunk, which ExportSheet's prefetch does not fetch,
+ *  so a tab without the service worker would lose it when a deploy replaced the files. */
+export const loadExportBuild = () => lazy(() => import('../lib/export/build.ts'));
+
 async function zipOf({ project, look, record }: DownloadSource) {
-	const { buildExport } = await lazy(() => import('../lib/export/build.ts'));
+	const { buildExport } = await loadExportBuild();
 	const original = editableData(record);
 	const extra = original && {
 		...original,
@@ -180,7 +185,7 @@ export function downloadItemZip(itemId: string) {
 	if (!it) return Promise.resolve();
 	return download('item', `${projectId}/${itemId}`, it.name, async () => {
 		const { project, look, record } = await source(projectId);
-		const { itemProject } = await lazy(() => import('../lib/export/build.ts'));
+		const { itemProject } = await loadExportBuild();
 		const selected = itemProject(project, itemId, look);
 		const item = project.manifest.items.find((entry) => entry.id === itemId)!;
 		return {
@@ -197,7 +202,7 @@ export function downloadOutfitZip(outfitId: string) {
 	const project = { ...store.project!, manifest: structuredClone(store.project!.manifest) };
 	const record = store.exportRecord;
 	return download('outfit', `${projectId}/${outfitId}`, outfit.name, async () => {
-		const { outfitProject } = await lazy(() => import('../lib/export/build.ts'));
+		const { outfitProject } = await loadExportBuild();
 		return {
 			...(await zipOf({ ...outfitProject(project, outfitId), record })),
 			name: `${characterZipId(project.manifest)}-${fileSlug(outfit.name)}`
@@ -212,7 +217,7 @@ export function downloadMoveZip(moveId: string) {
 	const move = moves.find((entry) => entry.id === moveId);
 	return download('move', `${projectId}/${moveId}`, label, async () => {
 		const { project, look, record } = await source(projectId);
-		const { moveProject } = await lazy(() => import('../lib/export/build.ts'));
+		const { moveProject } = await loadExportBuild();
 		return {
 			...(await zipOf({
 				project: await moveProject(project, moveId),

@@ -11,7 +11,8 @@ import {
 	test,
 	type BrowserContext,
 	type Locator,
-	type Page
+	type Page,
+	type Request
 } from '@playwright/test';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -4203,4 +4204,51 @@ test('a sheet whose code fails to load closes, says so in French and can be trie
 	await exportButton.click();
 	await expect.poll(() => fetches).toBeGreaterThan(tried);
 	await expect(page.locator('dialog[open]')).toHaveCount(0);
+});
+
+test.describe('quick ZIP after a deploy', () => {
+	// A first visit has no service worker yet; only the startup prefetch keeps the on-demand code.
+	test.use({ serviceWorkers: 'block' });
+
+	test('the first quick ZIP still downloads when the build files disappear after startup', async ({
+		page,
+		context
+	}, testInfo) => {
+		const origin = new URL(testInfo.project.use.baseURL!).origin;
+		const isCode = (url: URL) => url.origin === origin && url.pathname.endsWith('.js');
+		await context.route('https://api.pixellab.ai/**', (route) => route.abort());
+		// ExportSheet starts in the same prefetch batch as the ZIP loader. Let that batch's code requests finish.
+		const open = new Set<Request>();
+		let exportSheet = false;
+		page.on('request', (request) => {
+			if (isCode(new URL(request.url()))) open.add(request);
+		});
+		page.on('requestfinished', (request) => {
+			open.delete(request);
+			if (/\/ExportSheet-[\w-]+\.js$/.test(request.url())) exportSheet = true;
+		});
+		page.on('requestfailed', (request) => open.delete(request));
+		await context.addInitScript(() => {
+			localStorage.setItem('pixeldoll.agentKey', 'off');
+			localStorage.setItem(
+				'pixeldoll.tips',
+				'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+			);
+			localStorage.setItem('pixeldoll.visited', '1');
+		});
+		await page.goto(testInfo.project.use.baseURL! + '/#/');
+		await expect.poll(() => exportSheet && open.size === 0).toBe(true);
+		// The deploy replaced every code file, so anything not fetched yet is gone.
+		await context.route(isCode, (route) => route.abort());
+		await page.locator('.cast-library .character-row').first().click({ button: 'right' });
+		const downloaded = page.waitForEvent('download');
+		await page
+			.getByRole('menu')
+			.getByRole('menuitem', { name: 'Download ZIP', exact: true })
+			.click();
+		await expect(page.locator('.toast')).toContainText(/download started/i);
+		const entries = await unzip(new Uint8Array(await readFile((await (await downloaded).path())!)));
+		expect(entries.has('project.json')).toBe(true);
+		expect([...entries.keys()].some((name) => name.endsWith('.png'))).toBe(true);
+	});
 });
