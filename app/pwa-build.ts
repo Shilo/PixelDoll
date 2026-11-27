@@ -138,7 +138,10 @@ export function pwaBuild(release: PwaRelease): Plugin {
 				audio.imports.some((path) => locales.has(path))
 			)
 				throw new Error('PWA: expected one lazy audio playback chunk with only required imports');
-			copyReleaseFiles(fileURLToPath(new URL('../releases/', import.meta.url)), outDir);
+			// Browser tests build without the real release notes, so a published release never opens What's new in an
+			// unrelated test; release tests serve their own fixtures (scripts/e2e.mjs sets E2E_QUEUED).
+			if (process.env.E2E_QUEUED !== '1')
+				copyReleaseFiles(fileURLToPath(new URL('../releases/', import.meta.url)), outDir);
 			emitPwa(outDir, release, locales, audio.fileName);
 		}
 	};

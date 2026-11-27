@@ -8,7 +8,7 @@ run-name: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy && 'Depl
 # GitHub checks only a push's first 300 changed files against them, so push large docs-only sweeps apart from app/ changes.
 on:
   push:
-    branches: ['**'] # GitHub ignores `paths` for tag pushes, so tags would run everything
+    branches: ["**"] # GitHub ignores `paths` for tag pushes, so tags would run everything
     paths: [app/**, .github/workflows/pages.yml]
   pull_request:
     paths: [app/**, .github/workflows/pages.yml]
@@ -43,7 +43,7 @@ jobs:
           filter: blob:none
       - uses: actions/setup-node@v7
         with:
-          node-version: '24.22.1'
+          node-version: "24.22.1"
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
@@ -79,7 +79,7 @@ jobs:
           filter: blob:none
       - uses: actions/setup-node@v7
         with:
-          node-version: '24.22.1'
+          node-version: "24.22.1"
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
@@ -126,7 +126,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           BUILT_SHA: ${{ github.sha }}
         run: |
-          live_sha=$(gh api "/repos/$GITHUB_REPOSITORY/deployments?environment=github-pages&per_page=1" --jq '.[0].sha // ""')
+          # The live build is the newest deployment whose latest status is a success with a page URL. This job's own
+          # deployment record exists already but is not successful yet, so it never counts.
+          live_sha=''
+          for id in $(gh api "/repos/$GITHUB_REPOSITORY/deployments?environment=github-pages&per_page=30" --jq '.[].id'); do
+            state=$(gh api "/repos/$GITHUB_REPOSITORY/deployments/$id/statuses?per_page=1" --jq '.[0] | select(.environment_url != null and .environment_url != "") | .state')
+            if [[ "$state" == success ]]; then
+              live_sha=$(gh api "/repos/$GITHUB_REPOSITORY/deployments/$id" --jq '.sha')
+              break
+            fi
+          done
           status=identical
           if [[ -n "$live_sha" && "$live_sha" != "$BUILT_SHA" ]]; then
             status=$(gh api "/repos/$GITHUB_REPOSITORY/compare/$live_sha...$BUILT_SHA" --jq '.status')

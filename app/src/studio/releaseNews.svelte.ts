@@ -100,11 +100,18 @@ export function offerReleaseNews() {
 		const expired = performance.now() >= deadline;
 		if (!document.hidden && !updateNotice.visible && !get(pwa).checking && !ui.toast) {
 			if (expired) {
+				let opened = false;
 				const shown = toast(message('releaseNews.notice'), {
-					action: open,
+					action: () => {
+						opened = true;
+						open();
+					},
 					actionLabel: message('releaseNews.open'),
 					afterUpdate: true,
-					onDismiss: () => markSeen(version),
+					// Opening counts as read only once the article shows; dismissing the notice counts at once.
+					onDismiss: () => {
+						if (!opened) markSeen(version);
+					},
 					duration: 0
 				});
 				if (shown) {

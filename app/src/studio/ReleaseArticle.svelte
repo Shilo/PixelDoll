@@ -10,11 +10,23 @@
 	import { repository } from '../lib/repository.ts';
 	import { ExternalLink } from './icons.ts';
 
-	let { entry, locale, date }: { entry: ReleaseEntry; locale: string; date: string } = $props();
+	let {
+		entry,
+		locale,
+		date,
+		onshown
+	}: { entry: ReleaseEntry; locale: string; date: string; onshown?: () => void } = $props();
 	let notesAttempt = $state(0);
 	const notes = $derived.by(() => {
 		void notesAttempt;
 		return fetchReleaseNotes(entry.version, locale);
+	});
+	$effect(() => {
+		// The {:catch} block below shows a failed load; only a shown article counts as read.
+		notes.then(
+			() => onshown?.(),
+			() => undefined
+		);
 	});
 	let changes = $state.raw<ReleaseChanges | null>();
 	let fetchingChanges = false;

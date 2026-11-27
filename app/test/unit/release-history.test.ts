@@ -160,3 +160,17 @@ it('nets an explicit combined revert with abbreviated target IDs', () => {
 		])
 	).toEqual([]);
 });
+
+it('nets a revert that names its target without the word commit', () => {
+	const commit = (sha: string, subject: string, body = '') => ({
+		sha: sha.padEnd(40, '0'),
+		subject,
+		body
+	});
+	expect(
+		userCommits([
+			commit('8e4abb0', 'revert: restore the global move hold', 'This reverts c7db029.'),
+			commit('c7db029', 'feat(studio): hold moves per character')
+		])
+	).toEqual([]);
+});

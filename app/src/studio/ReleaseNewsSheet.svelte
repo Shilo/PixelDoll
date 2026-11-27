@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { formatDate, getLocale, t } from 'svelte-whisper';
 	import Sheet from './Sheet.svelte';
@@ -13,22 +12,22 @@
 	function dateLabel(date: string) {
 		return formatDate(new Date(date), { dateStyle: 'medium', timeZone: 'UTC' });
 	}
-	$effect(() => {
-		const version = latest?.version;
-		if (version) untrack(() => releaseNews.markShown(version));
-	});
+	function close() {
+		if (latest) releaseNews.markShown(latest.version);
+		releaseNews.close();
+	}
 </script>
 
-<Sheet
-	title={t('releaseNews.title')}
-	className="release-news-sheet"
-	overlay
-	onclose={releaseNews.close}
->
+<Sheet title={t('releaseNews.title')} className="release-news-sheet" overlay onclose={close}>
 	<div class="release-news">
 		{#if latest}
 			{#key latest.version}
-				<ReleaseArticle entry={latest} {locale} date={dateLabel(latest.date)} />
+				<ReleaseArticle
+					entry={latest}
+					{locale}
+					date={dateLabel(latest.date)}
+					onshown={() => releaseNews.markShown(latest.version)}
+				/>
 			{/key}
 		{:else if releaseNews.entries === null}
 			<div class="release-error">

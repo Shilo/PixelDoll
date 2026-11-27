@@ -21,7 +21,7 @@ export function userCommits(commits: GitCommit[]): ReleaseCommit[] {
 		if (reverted.has(sha)) continue;
 		if (revertSubject.test(subject)) {
 			// Git names one target. A combined revert can also list several target SHAs explicitly.
-			const standard = [...body.matchAll(/^This reverts commit ([a-f\d]{7,64})\b/gim)].map(
+			const standard = [...body.matchAll(/^This reverts (?:commit )?([a-f\d]{7,64})\b/gim)].map(
 				(match) => match[1]
 			);
 			const combined =

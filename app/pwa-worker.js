@@ -538,18 +538,14 @@ async function releaseNotesResponse(request, isIndex) {
 		caches.match(request, { cacheName: RELEASE_NOTES }).catch((error) => {
 			console.warn('PixelDoll could not read cached release notes:', error);
 		});
-	if (!isIndex) {
-		const saved = await cached();
-		if (saved) return saved;
-	}
+	// Network first for every release file: a bad copy cached once is replaced by the next good response, and offline
+	// readers still get what they already saw.
 	let response;
 	try {
 		response = await fetch(request, isIndex ? { cache: 'no-store' } : undefined);
 	} catch (error) {
-		if (isIndex) {
-			const saved = await cached();
-			if (saved) return saved;
-		}
+		const saved = await cached();
+		if (saved) return saved;
 		throw error;
 	}
 	if (response.ok && !response.headers.get('content-type')?.includes('text/html')) {

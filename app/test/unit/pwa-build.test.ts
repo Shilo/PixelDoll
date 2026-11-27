@@ -319,24 +319,33 @@ describe('PWA release construction', () => {
 });
 
 describe('PWA worker release safety', () => {
-	it('refreshes the release notes index, caches immutable files on demand, and serves both offline across builds', async () => {
+	it('fetches release files network first, replaces a bad cached copy, and serves them offline across builds', async () => {
 		const app = worker();
 		const index = scope + 'releases/index.json';
 		const notes = scope + 'releases/0.4.12/notes.en.json';
 		const missing = scope + 'releases/0.4.13/notes.en.json';
 		const get = (url: string, owner = app) => owner.event('fetch', { request: new Request(url) });
+		let repaired = false;
 		app.interceptNetwork(async (_, url) =>
 			url === missing
 				? new Response('missing', { status: 404 })
-				: new Response(url === index ? 'newest index' : 'notes')
+				: new Response(url === index ? 'newest index' : repaired ? 'notes' : 'broken notes')
 		);
 		expect(await (await get(index))?.text()).toBe('newest index');
 		expect(await (await get(index))?.text()).toBe('newest index');
-		expect(await (await get(notes))?.text()).toBe('notes');
+		expect(await (await get(notes))?.text()).toBe('broken notes');
+		repaired = true;
 		expect(await (await get(notes))?.text()).toBe('notes');
 		expect((await get(missing))?.status).toBe(404);
 		expect((await get(missing))?.status).toBe(404);
-		expect(app.fetched.map(({ url }) => url)).toEqual([index, index, notes, missing, missing]);
+		expect(app.fetched.map(({ url }) => url)).toEqual([
+			index,
+			index,
+			notes,
+			notes,
+			missing,
+			missing
+		]);
 		expect(app.fetched[0]?.options.cache).toBe('no-store');
 		expect(await get('https://another.test/app/releases/index.json')).toBeUndefined();
 		expect(await get(scope + 'release.json')).toBeUndefined();
@@ -344,7 +353,7 @@ describe('PWA worker release safety', () => {
 		next.goOffline();
 		expect(await (await get(index, next))?.text()).toBe('newest index');
 		expect(await (await get(notes, next))?.text()).toBe('notes');
-		expect(next.fetched.map(({ url }) => url)).toEqual([index]);
+		expect(next.fetched.map(({ url }) => url)).toEqual([index, notes]);
 	});
 	it('verifies the lazy playback chunk and content-hashed soundtrack only on demand', async () => {
 		const audio = new Map([
