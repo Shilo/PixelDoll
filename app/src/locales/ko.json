@@ -473,8 +473,6 @@
 		"cancelGeneration": "생성 취소…",
 		"cancelFromTheTabThatIsGenerating": "이 아이템을 생성 중인 탭에서 취소해 주세요.",
 		"wearInACopyOfTheDemo": "데모 사본에서 착용",
-		"wearName": "{name} 착용",
-		"titleWearingTakeOff": "착용 중(벗기)",
 		"twoHanded": "양손",
 		"createVariant": "변형 만들기…",
 		"labelDeleteItem": "휴지통으로 이동…",

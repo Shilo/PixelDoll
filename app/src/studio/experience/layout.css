@@ -1389,13 +1389,6 @@
 	flex: none;
 	margin-top: 2px;
 }
-.item-menu-wear {
-	flex: none;
-	display: grid;
-	place-items: center;
-	width: 44px;
-	height: 44px;
-}
 .item-menu .row-aside {
 	margin-left: auto;
 	color: var(--bu-muted);

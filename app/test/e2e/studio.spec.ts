@@ -3478,7 +3478,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 					const r = el.getBoundingClientRect();
 					return { x: r.x, y: r.y, width: r.width, height: r.height };
 				};
-				const strip = sheet.querySelector('.item-views')!,
+				const strip = sheet.querySelector('.window-views')!,
 					sprites = [...strip.querySelectorAll('canvas')];
 				return {
 					strip: box(strip),
@@ -3621,7 +3621,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await selectPlaybackClip(page, 'walk');
 	await pickItem(page, 'Red cape');
 	inspector = await selectedItemDetails(page);
-	await expect(inspector.locator('.item-views canvas')).toHaveCount(8);
+	await expect(inspector.locator('.window-views canvas')).toHaveCount(8);
 	await checkFrames();
 	await inspector.getByRole('button', { name: 'Close', exact: true }).click();
 	await inspectStage(page);
@@ -4490,7 +4490,7 @@ test('free item color matching is offline, scoped, persistent and preserves save
 	expect(after).toMatchObject({ selected: fixture.itemId, anim: 'walk', dir: 'west' });
 	expect(after.audit).toHaveLength(1);
 	expect(after.audit[0]).toMatchObject({ version: 'neutral-owned-v1', anim: 'walk', dir: 'west' });
-	await expect(pane.locator('.item-status')).toHaveText('Accepted');
+	await expect(pane.locator('.window-status')).toHaveText('Accepted');
 	await reloadStudio(page);
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	await page.evaluate(async (id) => {
@@ -4501,7 +4501,7 @@ test('free item color matching is offline, scoped, persistent and preserves save
 		s.pick(id);
 	}, fixture.itemId);
 	await selectedItemDetails(page);
-	await expect(pane.locator('.item-status')).toHaveText('Accepted');
+	await expect(pane.locator('.window-status')).toHaveText('Accepted');
 	await expect(pane.getByRole('button', { name: /^Match colors in \S+ view$/ })).toHaveCount(0);
 	// The saved recolor survives: the item's colors live in the Colors tab, which Recolor in its actions menu opens.
 	await pane.getByRole('button', { name: 'Item actions', exact: true }).click();
@@ -7388,7 +7388,7 @@ test('accepted held-item review reasons survive actual reload without claiming a
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	await pickItem(page, name);
 	const pane = await selectedItemDetails(page);
-	await expect(pane.locator('.item-status')).toHaveText('Accepted');
+	await expect(pane.locator('.window-status')).toHaveText('Accepted');
 	// The review reasons sit in the Quality section, one intentional step from the summary.
 	await openItemSection(pane, 'Quality');
 	await expect(
@@ -11678,11 +11678,8 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	expect(await page.evaluate(() => document.activeElement !== document.body)).toBe(true);
 	await more.click();
 	await expect(items.first()).toBeFocused();
-	await page.keyboard.press('Shift+Tab');
-	// Shift+Tab from the first command reaches the header's Wear toggle, still inside the menu.
-	await expect(
-		itemMenu(page).getByRole('button', { name: 'Wear Wizard hat', exact: true })
-	).toBeFocused();
+	// The menu has no Wear toggle (a tap on the tile wears it): Shift+Tab from the first command leaves the menu.
+	await expect(itemMenu(page).getByRole('button', { name: /^Wear / })).toHaveCount(0);
 	await page.keyboard.press('Shift+Tab');
 	await expect.poll(() => menuOpen(page)).toBe(false);
 
@@ -11717,21 +11714,6 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await page.keyboard.press('Shift+F10');
 	await expectAnchoredMenu(page);
 	await expect(items.first()).toBeFocused();
-
-	// Wear is a toggle in the menu header, not a command: one fixed name, the state in aria-pressed, and a different
-	// glyph and status line for each state.
-	const toggle = itemMenu(page).getByRole('button', { name: 'Wear Wizard hat', exact: true });
-	await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-	await expect(toggle).toHaveAttribute('title', 'Wear');
-	const glyph = () => toggle.locator('svg').getAttribute('class');
-	const offGlyph = await glyph();
-	await expect(itemMenu(page).locator('.item-menu-marks')).not.toContainText('Wearing');
-	await toggle.click();
-	await expect(hat).toHaveAttribute('aria-pressed', 'true');
-	await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-	await expect(toggle).toHaveAccessibleName('Wear Wizard hat');
-	await expect.poll(glyph).not.toBe(offGlyph);
-	await expect(itemMenu(page).locator('.item-menu-marks')).toContainText('Wearing');
 
 	// Delete asks first, focusing the safe choice.
 	await items.last().click();

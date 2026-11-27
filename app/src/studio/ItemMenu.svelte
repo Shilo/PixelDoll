@@ -25,7 +25,6 @@
 		doc,
 		store,
 		view,
-		wear,
 		isDemo,
 		openNewItem,
 		cancelGen,
@@ -33,7 +32,7 @@
 		addShared,
 		type Gen
 	} from './state.svelte.ts';
-	import { Check, Circle, CircleCheck, Info, RefreshCw, Trash } from './icons.ts';
+	import { Check, Circle, Info, RefreshCw, Trash } from './icons.ts';
 
 	let {
 		id,
@@ -269,19 +268,6 @@
 					<strong id="item-menu-name">{it.name}</strong>
 					<small>{sentence}</small>
 				</span>
-				<!-- One fixed name; aria-pressed carries the state, and the glyph changes from an empty to a checked circle. -->
-				<button
-					class="bu-action item-menu-wear"
-					data-variant="outline"
-					aria-pressed={on}
-					aria-label={t('itemMenu.wearName', { name: it.name })}
-					title={on ? t('itemMenu.titleWearingTakeOff') : t('common.wear')}
-					onclick={() => wear(it.id)}
-					>{#if on}<CircleCheck size={20} aria-hidden="true" />{:else}<Circle
-							size={20}
-							aria-hidden="true"
-						/>{/if}</button
-				>
 			</div>
 			<TileMarks {marks} list />
 			<ItemActions

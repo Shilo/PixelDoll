@@ -473,8 +473,6 @@
 		"cancelGeneration": "生成をキャンセル…",
 		"cancelFromTheTabThatIsGenerating": "このアイテムを生成しているタブからキャンセルしてください。",
 		"wearInACopyOfTheDemo": "デモのコピーで装備",
-		"wearName": "{name}を装備",
-		"titleWearingTakeOff": "装備中（外す）",
 		"twoHanded": "両手持ち",
 		"createVariant": "バリエーションを作成…",
 		"labelDeleteItem": "ゴミ箱に移動…",

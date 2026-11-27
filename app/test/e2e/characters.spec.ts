@@ -2195,7 +2195,7 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 	await reloadStudio(page);
 	await pickItem(page, garmentName);
 	const pane = await selectedItemDetails(page);
-	await expect(pane.locator('.item-status')).toContainText('Needs a look');
+	await expect(pane.locator('.window-status')).toContainText('Needs a look');
 	// Quality is already open, and says why, when checks found an issue.
 	const itemPane = page.locator('dialog.item-detail[open]');
 	await expect(itemPane.locator('summary').filter({ hasText: 'Quality' })).toContainText(
@@ -2263,7 +2263,7 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 	await expect(accept).toBeDisabled();
 	await stoppedMove('', []);
 	await accept.click();
-	await expect(pane.locator('.item-status')).toHaveText('Accepted');
+	await expect(pane.locator('.window-status')).toHaveText('Accepted');
 	await expect(pane.getByRole('button', { name: 'Accept as is', exact: true })).toHaveCount(0);
 	await expect(
 		pane.getByText('Some frames resemble the opposite view; inspect the torso', { exact: true })
@@ -2278,7 +2278,7 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 	await reloadStudio(page);
 	await pickItem(page, before.item.name);
 	await selectedItemDetails(page);
-	await expect(pane.locator('.item-status')).toHaveText('Accepted');
+	await expect(pane.locator('.window-status')).toHaveText('Accepted');
 	await openItemSection(itemPane, 'Quality');
 	await expect(
 		pane.getByText('Some lower clothing is missing compared with the standing design', {
@@ -4913,7 +4913,7 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
 		return it.id;
 	});
 	const pane = await selectedItemDetails(page);
-	await expect(pane.locator('.item-status')).toContainText('Accepted');
+	await expect(pane.locator('.window-status')).toContainText('Accepted');
 	await openItemSection(pane, 'Quality');
 	await expect(pane.getByText('Accepted design warnings', { exact: true })).toBeVisible();
 	await expect(pane.getByText('The design has gray smudges', { exact: true })).toBeVisible();
@@ -4936,7 +4936,7 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
 		};
 		s.doc.rev++;
 	}, id);
-	await expect(pane.locator('.item-status')).toContainText('Accepted');
+	await expect(pane.locator('.window-status')).toContainText('Accepted');
 	await expect(pane.getByText('The design has gray smudges', { exact: true })).toBeVisible();
 });
 

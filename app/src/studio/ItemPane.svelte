@@ -19,10 +19,10 @@
 	// says how it was made. Wear is the only footer action; the rest of the item's verbs live in the ⋮ menu, as on its tile.
 	import { tick, untrack } from 'svelte';
 	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
-	import { popoverFocus } from './experience/focus.ts';
-	import Sheet from './Sheet.svelte';
+	import ObjectWindow from './ObjectWindow.svelte';
+	import WindowSection from './WindowSection.svelte';
+	import FacingStrip from './FacingStrip.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
-	import PopoverArrow from './PopoverArrow.svelte';
 	import ItemActions from './ItemActions.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
@@ -121,11 +121,8 @@
 		Check,
 		ChevronLeft,
 		ChevronRight,
-		CircleCheck,
 		CopyPlus,
-		EllipsisVertical,
 		EyeOff,
-		ImageOff,
 		Grid2x2,
 		LoaderCircle,
 		Maximize,
@@ -797,84 +794,57 @@
 	);
 
 	// ---------- menu ----------
-	const menuId = $props.id();
-	let menu = $state<HTMLElement>();
 	let confirmRemove = $state(false);
 	let pickingSlot = $state(false);
-	// Only worn items (and the body) have a section in the Colors tab.
-	function act(fn: () => void) {
-		menu?.hidePopover();
-		fn();
-	}
 </script>
 
-{#snippet sectionSummary(label: string, state?: { text: string; tone: Tone })}
-	<summary>
-		<ChevronRight size={16} aria-hidden="true" />
-		<h3 class="section-name">{label}</h3>
-		{#if state}<span class="section-state" data-tone={state.tone}
-				>{#if state.tone === 'warn'}<TriangleAlert
-						size={13}
-						aria-hidden="true"
-					/>{:else if state.tone === 'ok'}<Check
-						size={13}
-						aria-hidden="true"
-					/>{/if}{state.text}</span
-			>{/if}
-	</summary>
-{/snippet}
-
-<Sheet
+<ObjectWindow
 	title={it?.name ?? t('studio.titleItem')}
 	className="item-detail"
+	kind={it ? slotName(it.slot) : t('studio.titleItem')}
+	status={status ? { ...status, busy: generating } : undefined}
+	menuLabel={t('itemPane.itemActions')}
+	onmenutoggle={(open) => {
+		if (!open) pickingSlot = false;
+	}}
 	onclose={() => (ui.sheet = null)}
 >
-	{#snippet heading()}
-		{#if it}
-			<!-- Shown before the name (CSS order): the category's icon, as on its Wardrobe rail. -->
-			<span class="item-icon" title={slotName(it.slot)}
-				><GroupIcon group={it.slot} size={18} /></span
-			>
-			<span class="sr">{slotName(it.slot)}</span>
-			{#if status}<span class="item-status" data-tone={status.tone}
-					>{#if status.tone === 'warn'}<TriangleAlert
-							size={12}
-							aria-hidden="true"
-						/>{:else if status.tone === 'ok'}<CircleCheck
-							size={12}
-							aria-hidden="true"
-						/>{:else if generating}<LoaderCircle
-							size={12}
-							aria-hidden="true"
-						/>{/if}{status.label}</span
-				>{/if}
-			<!-- The move scopes the whole window (views, fixes, outfit), so it stays in the fixed header while the body
-				 scrolls; phones give it the header's second row. -->
-			{#if m && playbackClips(m.rig.animations).length > 1}<label class="item-move">
-					<span class="sr">{t('itemPane.previewMove')}</span>
-					<select
-						class="bu-input input"
-						value={animId}
-						onchange={(event) => (scopeAnim = event.currentTarget.value)}
-					>
-						{#each playbackClips(m.rig.animations) as clip (clip.key)}
-							<option value={clip.key}>{displayMove(clip.key, moveRefs)}</option>
-						{/each}
-					</select>
-				</label>{/if}
-		{/if}
+	{#snippet icon()}
+		<!-- The category's icon, as on its Wardrobe rail. -->
+		{#if it}<GroupIcon group={it.slot} size={18} />{/if}
 	{/snippet}
-	{#snippet tools()}
-		{#if it}
-			<button
-				class="bu-action btn plain icon"
-				data-variant="quiet"
-				popovertarget={menuId}
-				aria-haspopup="menu"
-				aria-label={t('itemPane.itemActions')}
-				title={t('itemPane.itemActions')}><EllipsisVertical size={20} aria-hidden="true" /></button
-			>
-		{/if}
+	{#snippet scope()}
+		<!-- The move scopes the whole window (views, fixes, outfit), so it stays in the fixed header while the body scrolls. -->
+		{#if m && playbackClips(m.rig.animations).length > 1}<label class="item-move">
+				<span class="sr">{t('itemPane.previewMove')}</span>
+				<select
+					class="bu-input input"
+					value={animId}
+					onchange={(event) => (scopeAnim = event.currentTarget.value)}
+				>
+					{#each playbackClips(m.rig.animations) as clip (clip.key)}
+						<option value={clip.key}>{displayMove(clip.key, moveRefs)}</option>
+					{/each}
+				</select>
+			</label>{/if}
+	{/snippet}
+	{#snippet menu(close)}
+		<!-- The tile menu's actions, without View and edit: one menu for the item wherever its ⋮ opens. -->
+		{#if m && it}<ItemActions
+				{m}
+				{it}
+				worn={on}
+				inDetails
+				label={t('itemPane.itemActions')}
+				bind:picking={pickingSlot}
+				act={(fn) => {
+					close();
+					fn();
+				}}
+				leave={leaveFor}
+				onmove={(target) => void moveItemToSlot(it.id, target, { showDestination: true })}
+				ondelete={() => (confirmRemove = true)}
+			/>{/if}
 	{/snippet}
 	{#snippet footer()}
 		{#if it}
@@ -925,49 +895,17 @@
 	{#if m && it && view.project}
 		<div class="item-body" bind:this={body}>
 			<!-- Preview: every facing of the chosen move; any view opens full size. -->
-			<section
-				class="item-preview"
-				aria-label={t('itemPane.availableDirectionsFor', { name: it.name })}
-			>
-				<div
-					class="item-views"
-					style:--cols={Math.min(4, directions.length || 1)}
-					style:--tile="{tile}px"
-				>
-					{#each directions as direction (direction.id)}
-						{@const has = drawnAt(direction, frameIndex)}
-						{@const image = strip[m.rig.directions.indexOf(direction)]}
-						{@const label = t('itemPane.labelNameFacingId', {
-							name: it.name,
-							id: displayDirection(direction.id)
-						})}
-						<button
-							class="item-view bu-action"
-							data-variant="quiet"
-							data-missing={!has || undefined}
-							aria-haspopup="dialog"
-							aria-label={has
-								? t('itemPane.openSprite', { title: label })
-								: t('itemPane.openMissingView', { direction: displayDirection(direction.id) })}
-							onclick={() => openViewer(direction.id)}
-						>
-							<span class="view-art" aria-hidden="true">
-								{#if has && image}<Sprite img={image} {k} limit={tile} {label} />{:else}<span
-										class="view-missing"
-										title={t('itemPane.missingView')}><ImageOff size={24} strokeWidth={1.5} /></span
-									>{/if}
-							</span>
-							<span class="view-caption">{displayDirection(direction.id)}</span>
-						</button>
-					{/each}
-					{#if directions.length}<span class="view-enlarge" aria-hidden="true"
-							><Maximize size={14} /></span
-						>{/if}
-					{#if !directions.length}<p class="muted small preview-empty">
-							{t('itemPane.previewUnavailable')}
-						</p>{/if}
-				</div>
-			</section>
+			<FacingStrip
+				label={t('itemPane.availableDirectionsFor', { name: it.name })}
+				{directions}
+				image={(direction) => strip[m.rig.directions.indexOf(direction)]}
+				drawn={(direction) => drawnAt(direction, frameIndex)}
+				name={it.name}
+				{tile}
+				{k}
+				empty={t('itemPane.previewUnavailable')}
+				onopen={openViewer}
+			/>
 
 			{#if hiders.length}
 				<div class="hidden-row">
@@ -1022,21 +960,22 @@
 			<div class="item-sections">
 				<!-- Moves & States: what artwork the item has, and adding what it lacks. -->
 				{#if clips.length}
-					<details class="item-section" bind:this={sections.moves} bind:open={open.moves}>
-						{@render sectionSummary(
-							t('itemPane.movesSection'),
-							generating
-								? { text: t('itemPane.statusGenerating'), tone: 'neutral' }
-								: incomplete
-									? {
-											text: t('itemPane.clipsIncomplete', {
-												count: incomplete,
-												n: number(incomplete)
-											}),
-											tone: 'warn'
-										}
-									: { text: t('itemPane.complete'), tone: 'ok' }
-						)}
+					<WindowSection
+						label={t('itemPane.movesSection')}
+						state={generating
+							? { text: t('itemPane.statusGenerating'), tone: 'neutral' }
+							: incomplete
+								? {
+										text: t('itemPane.clipsIncomplete', {
+											count: incomplete,
+											n: number(incomplete)
+										}),
+										tone: 'warn'
+									}
+								: { text: t('itemPane.complete'), tone: 'ok' }}
+						bind:element={sections.moves}
+						bind:open={open.moves}
+					>
 						<div class="section-body">
 							{#if restorable.length || copyOffer}
 								<div class="tool-list">
@@ -1189,22 +1128,23 @@
 								</div>
 							{/if}
 						</div>
-					</details>
+					</WindowSection>
 				{/if}
 
 				<!-- Quality: what the checks found, accepting it, and fixing one view. -->
 				{#if hasQuality || hasFixTools || !isDemo()}
-					<details class="item-section" bind:this={sections.quality} bind:open={open.quality}>
-						{@render sectionSummary(
-							t('itemPane.qualitySection'),
-							health === 'look' || health === 'unfitted'
-								? { text: displayMessage(HEALTH_LABEL[health]), tone: 'warn' }
-								: health === 'accepted'
-									? { text: displayMessage(HEALTH_LABEL.accepted), tone: 'neutral' }
-									: it.qa?.status === 'pass'
-										? { text: t('itemPane.passed'), tone: 'ok' }
-										: undefined
-						)}
+					<WindowSection
+						label={t('itemPane.qualitySection')}
+						state={health === 'look' || health === 'unfitted'
+							? { text: displayMessage(HEALTH_LABEL[health]), tone: 'warn' }
+							: health === 'accepted'
+								? { text: displayMessage(HEALTH_LABEL.accepted), tone: 'neutral' }
+								: it.qa?.status === 'pass'
+									? { text: t('itemPane.passed'), tone: 'ok' }
+									: undefined}
+						bind:element={sections.quality}
+						bind:open={open.quality}
+					>
 						<div class="section-body">
 							{#if designReasons.length && !it.refit}
 								<div class="finding-group">
@@ -1429,22 +1369,23 @@
 										</p>{/if}
 								</div>{/if}
 						</div>
-					</details>
+					</WindowSection>
 				{/if}
 
 				<!-- Outfit: how the item sits with the rest of the outfit. -->
-				<details class="item-section" bind:this={sections.outfit} bind:open={open.outfit}>
-					{@render sectionSummary(
-						t('itemPane.outfitSection'),
-						hiddenNow
-							? { text: t('itemPane.hiddenState'), tone: 'warn' }
-							: hideCount
-								? {
-										text: t('itemPane.hidesCount', { count: hideCount, n: number(hideCount) }),
-										tone: 'neutral'
-									}
-								: undefined
-					)}
+				<WindowSection
+					label={t('itemPane.outfitSection')}
+					state={hiddenNow
+						? { text: t('itemPane.hiddenState'), tone: 'warn' }
+						: hideCount
+							? {
+									text: t('itemPane.hidesCount', { count: hideCount, n: number(hideCount) }),
+									tone: 'neutral'
+								}
+							: undefined}
+					bind:element={sections.outfit}
+					bind:open={open.outfit}
+				>
 					<!-- The outfit preview stays beside every control here, so each change shows where it is made. -->
 					<div class="section-body outfit-body">
 						{#if otherHand}
@@ -1668,15 +1609,17 @@
 							</section>
 						{/if}
 					</div>
-				</details>
+				</WindowSection>
 
 				<!-- About: how it was made, then the raw numbers one level deeper. -->
-				<details class="item-section" bind:this={sections.about} bind:open={open.about}>
-					{@render sectionSummary(t('itemPane.aboutSection'))}
+				<WindowSection
+					label={t('itemPane.aboutSection')}
+					bind:element={sections.about}
+					bind:open={open.about}
+				>
 					<div class="section-body">
 						<GenerationDetails {m} {it} />
-						<details class="item-section nested">
-							{@render sectionSummary(t('itemPane.technicalDetails'))}
+						<WindowSection nested label={t('itemPane.technicalDetails')}>
 							<div class="section-body">
 								<dl class="kv">
 									<dt>{t('itemPane.iD')}</dt>
@@ -1748,39 +1691,9 @@
 										<dd>{gaps.join(', ')}</dd>{/if}
 								</dl>
 							</div>
-						</details>
+						</WindowSection>
 					</div>
-				</details>
-			</div>
-		</div>
-
-		<!-- The item's other verbs, the same ones its Wardrobe tile menu offers. -->
-		<div
-			id={menuId}
-			class="menu item-menu bu-popover-anchor"
-			data-placement="bottom-end"
-			popover
-			bind:this={menu}
-			ontoggle={(event) => {
-				if (event.newState === 'closed') pickingSlot = false;
-				popoverFocus(event, true);
-			}}
-		>
-			<PopoverArrow />
-			<div class="menu-surface bu-popover-surface bu-floating">
-				<!-- The tile menu's actions, without Details: one menu for the item wherever its ⋮ opens. -->
-				<ItemActions
-					{m}
-					{it}
-					worn={on}
-					inDetails
-					label={t('itemPane.itemActions')}
-					bind:picking={pickingSlot}
-					{act}
-					leave={leaveFor}
-					onmove={(target) => void moveItemToSlot(it.id, target, { showDestination: true })}
-					ondelete={() => (confirmRemove = true)}
-				/>
+				</WindowSection>
 			</div>
 		</div>
 	{/if}
@@ -1817,7 +1730,7 @@
 			onclose={() => (viewer = null)}
 		/>
 	{/if}
-</Sheet>
+</ObjectWindow>
 
 <style>
 	/* Every grid here keeps its column to the sheet's width, so long rows wrap instead of widening the sheet. */
@@ -1826,166 +1739,11 @@
 		grid-template-columns: minmax(0, 1fr);
 		gap: 12px;
 	}
-	/* Header (only the window's own: the viewer opens inside this dialog): one line of category icon, name, one status and
-	   the move picker. The name truncates first; its heading keeps
-	   the full name. It starts at the edge (an identity row, not a centered title) so the line has the room it needs. */
-	:global(dialog.item-detail > .sheet-head) {
-		grid-template-columns: 0 minmax(0, 1fr) auto;
-	}
-	:global(dialog.item-detail > .sheet-head .sheet-heading) {
-		display: flex;
-		flex-wrap: nowrap;
-		align-items: center;
-		justify-content: flex-start;
-		gap: 8px;
-		min-width: 0;
-	}
-	:global(dialog.item-detail > .sheet-head .sheet-heading .sheet-title) {
-		flex: 0 1 auto;
-		min-width: 0;
-		overflow: hidden;
-		white-space: nowrap;
-		text-overflow: ellipsis;
-	}
-	.item-icon {
-		order: -1;
-		flex: none;
-		display: grid;
-		color: var(--text-2);
-	}
-	.item-status {
-		flex: none;
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		padding: 1px 8px;
-		border-radius: 999px;
-		border: 1px solid var(--bu-line);
-		font-size: var(--fs-xs, 12px);
-		line-height: 18px;
-		white-space: nowrap;
-		color: var(--text-2);
-	}
-	.item-status[data-tone='warn'] {
-		color: var(--warn);
-		border-color: color-mix(in srgb, var(--warn) 45%, transparent);
-	}
-	.item-status[data-tone='ok'] {
-		color: var(--ok);
-		border-color: color-mix(in srgb, var(--ok) 45%, transparent);
-	}
-	/* The move picker ends the line; it keeps its width (up to 40%) while the name truncates. The category is its icon
-	   (and the heading's screen-reader text): its word would take the name's room. */
-	.item-move {
-		flex: none;
-		max-width: 40%;
-		margin-inline-start: auto;
-	}
-	/* Exactly its longest choice's width (the theme's fitSelects), not the chosen one's, so the row never reflows as the
-	   choice changes. */
-	.item-move select {
-		inline-size: var(--bu-select-fit, auto);
-		max-width: 100%;
-		min-height: 32px;
-		padding-block: 2px;
-		font-size: var(--fs-sm);
-	}
-	/* A phone gives the item's name the whole first row beside the menu and Close; the second row holds its status and the
-	   move picker, full width at touch size. */
-	@media (max-width: 480px) {
-		:global(dialog.item-detail > .sheet-head) {
-			grid-template-columns: auto auto minmax(0, 1fr) auto;
-			row-gap: 6px;
-		}
-		:global(dialog.item-detail > .sheet-head .sheet-start) {
-			display: none;
-		}
-		:global(dialog.item-detail > .sheet-head .sheet-heading) {
-			display: contents;
-		}
-		.item-icon {
-			grid-area: 1 / 1;
-		}
-		:global(dialog.item-detail > .sheet-head .sheet-heading .sheet-title) {
-			grid-area: 1 / 2 / 2 / 4;
-			justify-self: start;
-			max-width: 100%;
-			text-align: start;
-		}
-		:global(dialog.item-detail > .sheet-head .sheet-end) {
-			grid-area: 1 / 4;
-		}
-		.item-status {
-			grid-area: 2 / 1 / 3 / 3;
-			justify-self: start;
-		}
-		.item-move {
-			grid-area: 2 / 3 / 3 / -1;
-			max-width: none;
-			margin: 0;
-		}
-		:global(dialog.item-detail > .sheet-head:not(:has(.item-status))) .item-move {
-			grid-column: 1 / -1;
-		}
-		.item-move select {
-			width: 100%;
-			min-height: 44px;
-			font-size: 16px;
-		}
-	}
-	:global(dialog.sheet.bottom.item-detail) {
-		box-sizing: border-box;
-		height: 100dvh;
-		max-height: 100dvh;
-		margin: 0;
-		padding-top: env(safe-area-inset-top);
-		border-radius: 0;
-	}
 	.item-wear {
 		min-width: 140px;
 		min-height: 44px;
 	}
 
-	/* Preview */
-	.item-preview {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		gap: 6px;
-	}
-	/* The facings touch: one seamless strip where every point opens a view, so no gap can swallow a tap. Its corners clip
-	   the hover of the corner tiles. */
-	.item-views {
-		position: relative;
-		display: grid;
-		grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-		background: var(--stage);
-		border-radius: var(--r-card);
-		overflow: hidden;
-	}
-	.item-view {
-		display: grid;
-		grid-template-rows: var(--tile, 64px) auto;
-		justify-items: center;
-		align-items: center;
-		gap: 4px;
-		min-width: 0;
-		padding: 12px 4px 8px;
-		border-radius: 0;
-		font-size: var(--fs-sm);
-		color: var(--text-2);
-		cursor: zoom-in;
-	}
-	/* Inside the strip, so its clipped corners keep the whole ring. */
-	.item-view:focus-visible {
-		outline-offset: -2px;
-	}
-	/* Pressing sinks the art a little: the theme's hover shows the target, this shows the press. */
-	.item-view:active .view-art {
-		transform: scale(0.94);
-	}
-	.view-art {
-		transition: transform var(--dur);
-	}
 	/* One glyph for the strip, docked in its corner: any facing opens full size. Not a control; it lights up while a
 	   facing is hovered or focused. */
 	.view-enlarge {
@@ -1996,35 +1754,6 @@
 		color: var(--text-3);
 		pointer-events: none;
 		transition: color var(--dur);
-	}
-	.item-views:has(.item-view:is(:hover, :focus-visible)) .view-enlarge {
-		color: var(--text);
-	}
-	.view-art {
-		display: grid;
-		place-items: center;
-		width: 100%;
-		height: var(--tile, 64px);
-	}
-	/* A facing with no frames: just a missing-image icon where its art would be, so the strip keeps one rhythm. */
-	.view-missing {
-		display: grid;
-		place-items: center;
-		color: var(--text-3);
-	}
-	.item-view[data-missing] .view-caption {
-		color: var(--warn);
-	}
-	.view-caption {
-		max-width: 100%;
-		overflow-wrap: anywhere;
-		text-align: center;
-	}
-	.preview-empty {
-		grid-column: 1 / -1;
-		margin: 0;
-		padding: 16px 8px;
-		text-align: center;
 	}
 	.hidden-row {
 		display: flex;
@@ -2069,74 +1798,6 @@
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		border-block-start: 1px solid var(--bu-line);
-	}
-	.item-section {
-		min-width: 0;
-		border-block-end: 1px solid var(--bu-line);
-	}
-	.item-section.nested {
-		border-block: 1px solid var(--bu-line);
-		border-block-end: 0;
-		margin-block-start: 8px;
-	}
-	.item-section :global(> summary) {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		min-height: 48px;
-		padding: 0 4px;
-		cursor: pointer;
-		list-style: none;
-		border-radius: 6px;
-	}
-	.item-section :global(> summary::-webkit-details-marker) {
-		display: none;
-	}
-	.item-section :global(> summary:hover) {
-		background: var(--bg-hover);
-	}
-	.item-section :global(> summary > svg) {
-		flex: none;
-		color: var(--text-3);
-		transition: transform var(--dur);
-	}
-	.item-section[open] :global(> summary > svg) {
-		transform: rotate(90deg);
-	}
-	.item-section :global(.section-name) {
-		margin: 0;
-		min-width: 0;
-		font: 600 var(--fs) / 1.3 var(--font-ui);
-	}
-	.item-section.nested :global(.section-name) {
-		font-weight: 400;
-		font-size: var(--fs-sm);
-		color: var(--text-2);
-	}
-	.item-section :global(.section-state) {
-		margin-inline-start: auto;
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		min-width: 0;
-		font-size: var(--fs-sm);
-		color: var(--text-3);
-		text-align: end;
-	}
-	.item-section :global(.section-state[data-tone='warn']) {
-		color: var(--warn);
-	}
-	.item-section :global(.section-state[data-tone='ok']) {
-		color: var(--ok);
-	}
-	.section-body {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		gap: 12px;
-		padding: 4px 4px 16px 28px;
-	}
-	.item-section.nested .section-body {
-		padding-inline-start: 24px;
 	}
 	h4 {
 		margin: 0;
@@ -2496,9 +2157,6 @@
 			position: relative;
 			top: auto;
 			justify-self: center;
-		}
-		.section-body {
-			padding-inline-start: 4px;
 		}
 	}
 </style>

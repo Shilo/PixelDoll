@@ -1,7 +1,8 @@
 <script lang="ts">
-	// An item's actions, the same rows in the same order wherever its ⋮ opens: its Wardrobe tile (with Details first) and
-	// its details window (without). Everyday changes first (free, then priced in the sheet that opens), then upkeep; rare
-	// setup and frame fixes live in the details window's sections, next to what they change.
+	// An item's actions, the same rows in the same order wherever its ⋮ opens: its Wardrobe tile (with View and edit
+	// first) and its View and edit window (without). Everyday changes first (free, then priced in the sheet that opens),
+	// then Move to slot; like every object's menu it ends with Rename, Download ZIP and Move to Trash. Rare setup and frame
+	// fixes live in the window's sections, next to what they change (docs/design/menus-and-details.md).
 	import { tick } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import type { Item, Manifest } from '../lib/store/manifest.ts';
@@ -174,17 +175,6 @@
 					)}<SurfaceChevron /></button
 				>
 			{/if}
-			{#if !isDemo() && !it.variantOf}
-				<button
-					class="row bu-action"
-					data-variant="quiet"
-					role="menuitem"
-					onclick={() => act(() => leave(() => openRename(doc.id, { itemId: it.id, back })))}
-				>
-					<Pencil size={16} aria-hidden="true" />{openerLabel(t('toolbar.rename'))}<SurfaceChevron
-					/>
-				</button>
-			{/if}
 			{#if targets.length}
 				<button
 					class="row bu-action"
@@ -196,6 +186,17 @@
 					<ArrowRightLeft size={16} aria-hidden="true" />{openerLabel(
 						t('wardrobe.moveItemTo')
 					)}<SurfaceChevron />
+				</button>
+			{/if}
+			{#if !isDemo() && !it.variantOf}
+				<button
+					class="row bu-action"
+					data-variant="quiet"
+					role="menuitem"
+					onclick={() => act(() => leave(() => openRename(doc.id, { itemId: it.id, back })))}
+				>
+					<Pencil size={16} aria-hidden="true" />{openerLabel(t('toolbar.rename'))}<SurfaceChevron
+					/>
 				</button>
 			{/if}
 			<button
