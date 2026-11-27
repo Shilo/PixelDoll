@@ -12,19 +12,24 @@ Reply only by calling the `release_notes` tool.
 
 ## What to write
 
-1. `headline`: the theme of the release as a player benefit, at most 8 words. Sentence case, no period, no version number, no emoji, no exclamation mark. It must not repeat the wording of any highlight title. Example: with highlights about Phaser AE export and Trash, "More ways to ship and undo your work".
-2. `intro`: one sentence, at most 25 words, speaking to the reader as "you", that sums up the release. Plain and warm. Do not repeat the headline's wording. No jokes here.
+1. `headline`: the theme of the release as a player benefit, at most 8 words. Sentence case, no period, no version number, no emoji, no exclamation mark. It must not share a distinctive word or phrase with any highlight title (such as Phaser AE, Trash or frames). Example: with highlights about Phaser AE export and Trash, "More ways to ship and undo your work".
+2. `intro`: one sentence, at most 25 words, speaking to the reader as "you", that sums up the release. Plain and warm. It names the overall benefit; it does not list the highlights or reuse their titles or the headline's wording. No jokes here.
 3. `joke`: optional. At most one short, light, kind line (at most 12 words) that fits this release, or an empty string. Never sarcastic, never about bugs, users, competitors or AI. When unsure, leave it empty.
 4. `highlights`: 1 to 3 of the biggest changes a player would notice, most valuable first. Each has:
    - `title`: at most 6 words, sentence case, names what the player can now do or what got better.
    - `text`: 1 or 2 sentences, at most 35 words in total, explaining the benefit in plain words: what changed and why it helps.
    - `commits`: the ids of every input commit this highlight describes (at least one).
-     Prefer `feat` commits. Group several commits about the same feature into one highlight. Never pad: if only one change is worth highlighting, return one.
-5. `fixes`: 0 to 3 bug fixes a player could actually have noticed, most noticeable first. Each has `text` (one sentence, at most 15 words, starting with "Fixed" and describing what the player saw, not the internal cause) and `commits` (ids, at least one). Use only `fix` commits. Do not repeat anything already in highlights.
+
+   Prefer `feat` commits. Group several commits about the same feature into one highlight. Never pad: if only one change is worth highlighting, return one.
+
+5. `fixes`: 0 to 3 bug fixes a player could actually have noticed, most noticeable first. Each has `text` (one sentence, at most 15 words, starting with "Fixed" and describing the symptom the player saw, never its cause or an internal name; skip a fix whose visible symptom the commit does not state) and `commits` (ids, at least one). Use only `fix` commits. Do not repeat anything already in highlights.
 
 ## Rules
 
 - Accuracy beats appeal. Describe only what the commits say. Never invent a feature, number, platform, engine, file format or benefit that the commits do not state. If you are unsure what a commit does for players, leave it out.
+- Word counts: every word, number and symbol (such as + or /) counts as one word.
+- Describe what the player does or sees in PixelDoll, never how it is built: no runtime, actor, sprite pooling, clock, request, ZIP, dimension or file details.
+- When the cited commits describe several separate inputs or fallbacks (click, hold, key, button; nearest view, standing pose), do not merge them into one claim: state only the shared outcome, or name each exactly.
 - Every highlight and fix must cite only ids from the input. Never cite an id twice across highlights and fixes.
 - Skip work players cannot see: tests, refactors, tooling, developer pages, documentation, agent or AI-agent tooling, internal checks, logging, performance numbers nobody would notice, and changes that only rename or move code.
 - Call screens, buttons, settings and features exactly what the commits call them (for example Trash, Fix frames, Undo, Restore originals); never rename them or invent a name.
@@ -38,4 +43,4 @@ Reply only by calling the `release_notes` tool.
 
 ## Self-check before replying
 
-Before calling the tool, check each item: within its word limit, cites at least one input id, says nothing the cited commits do not support, uses no banned word, no code term, no emoji or exclamation mark. Fix anything that fails.
+Before calling the tool, compare the headline with every highlight title word by word, and check each item: within its word limit (symbols count), cites at least one input id, says nothing the cited commits do not support, uses no banned word, no code term, no emoji or exclamation mark, and each fix names something a player saw. Fix anything that fails.
