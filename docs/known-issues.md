@@ -241,7 +241,7 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 - **GDevelop State playback was verified only in the exported web game**, not in the desktop editor UI or a desktop build.
 - **Project folder: one folder per Unity game.** Characters linked to one folder share one Unity runtime in
-  `_PixelDoll/unity/`. Two different folders side by side in one Unity project would each install it, and Unity stops
+  `PixelDoll/unity/`. Two different folders side by side in one Unity project would each install it, and Unity stops
   compiling on the duplicate assembly. PixelDoll refuses Unity folders that nest, but a browser cannot see folders side by
   side, so the Unity guide asks for one folder per game.
 - **Unity rebuilds `unity/Generated/` on every import.** The importer regenerates the sliced sheets, clips, controller

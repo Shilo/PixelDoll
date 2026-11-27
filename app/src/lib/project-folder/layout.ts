@@ -1,12 +1,19 @@
 // Where a link's files go inside the picked folder: the character's own files in its subfolder, and the engine runtime
-// they all use once, in `_PixelDoll/<engine>/`. A publish works on the picked folder with both, so one plan covers every
+// they all use once, in `PixelDoll/<engine>/`. A publish works on the picked folder with both, so one plan covers every
 // file before any is written; each path's trusted record is the character's or the shared runtime's.
 import type { Engine } from '../store/manifest.ts';
 import type { FolderRecord, PlanAction } from './plan.ts';
 
-/** PixelDoll's own folder inside the picked one. Character subfolders never start with "_" (export IDs start with a
- *  letter or digit), so it can never be a character's. */
-export const SHARED_DIR = '_PixelDoll';
+/** PixelDoll's own folder inside the picked one. Its name is reserved: a character is never given it (see
+ *  characterFolder), and it is matched without case, as Windows and macOS folders are. */
+export const SHARED_DIR = 'PixelDoll';
+
+/** Whether a folder name is PixelDoll's own folder. */
+export const isSharedDir = (name: string) => name.toLowerCase() === SHARED_DIR.toLowerCase();
+
+/** A character's subfolder for its export ID: the ID itself, unless it is PixelDoll's reserved folder name. */
+export const characterFolder = (exportId: string) =>
+	isSharedDir(exportId) ? `${exportId}-character` : exportId;
 
 /** The engines whose folder exports have a runtime shared by every character in the folder. */
 export const RUNTIME_ENGINES: readonly Engine[] = ['godot', 'phaser', 'phaser-ae', 'unity'];

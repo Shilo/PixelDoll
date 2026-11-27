@@ -47,7 +47,7 @@ const folderRuntimes = {
 export interface RuntimeBundle {
 	engine: keyof typeof folderRuntimes;
 	revision: number;
-	/** Paths relative to _PixelDoll/<engine>/. */
+	/** Paths relative to PixelDoll/<engine>/. */
 	files: ZipEntry[];
 }
 
@@ -91,7 +91,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 		? (engine as keyof typeof folderRuntimes)
 		: undefined;
 	const runtime = folder && runtimeEngine ? folderRuntimes[runtimeEngine] : undefined;
-	const runtimePath = runtime && `../_PixelDoll/${runtimeEngine}/${runtime.files[0]!.name}`;
+	const runtimePath = runtime && `../PixelDoll/${runtimeEngine}/${runtime.files[0]!.name}`;
 	const invalid = validate(src);
 	const invalidMessages: (Message | undefined)[] = invalid.map(() => undefined);
 	if (!invalid.length) {

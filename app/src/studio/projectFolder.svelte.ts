@@ -7,6 +7,8 @@ import { walkMoves } from '../lib/export/rpg-maker.ts';
 import { message, sameMessage, type Message } from '../lib/message.ts';
 import {
 	byScope,
+	characterFolder,
+	isSharedDir,
 	combineRecords,
 	hasRuntime,
 	runtimeDir,
@@ -985,7 +987,7 @@ export async function linkProjectFolder(engine: Engine) {
 				characterId,
 				handle,
 				destinationId: destinationId ?? crypto.randomUUID(),
-				subfolder: same ? previous.subfolder : characterZipId(project.manifest),
+				subfolder: same ? previous.subfolder : characterFolder(characterZipId(project.manifest)),
 				engine: same ? previous.engine : engine,
 				auto: previous?.auto ?? true,
 				// Unique even when two tabs link in the same millisecond: it identifies this link and its approvals.
@@ -1065,7 +1067,7 @@ async function overlapping(
 	destinations: readonly Destination[]
 ): Promise<Extract<FolderStatus, { kind: 'overlap' }> | null> {
 	const managed = (path: string[] | null, subfolders: readonly string[]) =>
-		!!path?.length && (path[0] === SHARED_DIR || subfolders.includes(path[0].toLowerCase()));
+		!!path?.length && (isSharedDir(path[0]) || subfolders.includes(path[0].toLowerCase()));
 	for (const destination of destinations) {
 		if (destination.id === fresh.destinationId) continue;
 		const here = others.filter((other) => other.destinationId === destination.id);

@@ -76,12 +76,12 @@ engine folder has its own README for the file names and runtime API it provides.
 
 const phaser = (runtimePath?: string) => `# Phaser 3.80+ / 4
 
-Entry: ${runtimePath ?? 'phaser/PaperdollContainer.js'}, an ES module; ${runtimePath ? '../_PixelDoll/phaser/types.d.ts' : 'phaser/types.d.ts'} types the exported data, not the runtime class.
+Entry: ${runtimePath ?? 'phaser/PaperdollContainer.js'}, an ES module; ${runtimePath ? '../PixelDoll/phaser/types.d.ts' : 'phaser/types.d.ts'} types the exported data, not the runtime class.
 Full guide: phaser/README.txt. Data: manifest.json and the TexturePacker atlas JSON in phaser/.
 The JSON files in phaser/ are atlas metadata only: their meta.image points at ../layers/<slot>/<item>/<layer>/<move>.png, so
 the exported folder has to stay together.
 
-    import { loadPaperdoll, Paperdoll } from './${runtimePath ? '<folder>/_PixelDoll/phaser/PaperdollContainer.js' : 'assets/<character>/phaser/PaperdollContainer.js'}'
+    import { loadPaperdoll, Paperdoll } from './${runtimePath ? '<folder>/PixelDoll/phaser/PaperdollContainer.js' : 'assets/<character>/phaser/PaperdollContainer.js'}'
     const model = await loadPaperdoll(this, '${runtimePath ? '<folder>' : 'assets'}/<character>/')   // the folder with manifest.json
     const doll = new Paperdoll(this, 200, 150, model)                // 200,150 is the pivot: the feet
     doll.play('walk', 'south')
@@ -119,7 +119,7 @@ are frames, on export.bakedCell and export.bakedPivot from manifest.json. Nothin
 const phaserAe = (runtimePath?: string) => `# Phaser AE
 
 Phaser AE is the Phaser Game Agent's engine, built with the phaser-ae CLI; it is not Phaser 3 or 4.
-Entry: ${runtimePath ?? 'phaser-ae/paperdoll.js'}, an ES module, typed by ${runtimePath ? '../_PixelDoll/phaser-ae/paperdoll.d.ts' : 'phaser-ae/paperdoll.d.ts'}. Full guide: phaser-ae/README.txt.
+Entry: ${runtimePath ?? 'phaser-ae/paperdoll.js'}, an ES module, typed by ${runtimePath ? '../PixelDoll/phaser-ae/paperdoll.d.ts' : 'phaser-ae/paperdoll.d.ts'}. Full guide: phaser-ae/README.txt.
 
 ${
 	runtimePath
@@ -134,7 +134,7 @@ manifest's "screen".`
 
     // hero.ts: loaded once, before await game.start() (main.ts imports it)
     import { game } from './engine.js'
-    import { loadPaperdoll } from './${runtimePath ? '<folder>/_PixelDoll/phaser-ae/paperdoll.js' : 'pixeldoll/<character>/phaser-ae/paperdoll.js'}'
+    import { loadPaperdoll } from './${runtimePath ? '<folder>/PixelDoll/phaser-ae/paperdoll.js' : 'pixeldoll/<character>/phaser-ae/paperdoll.js'}'
     import heroData from './${runtimePath ? '<folder>' : 'pixeldoll'}/<character>/manifest.json'
     export const hero = await loadPaperdoll(game, '${runtimePath ? '<folder>' : 'pixeldoll'}/<character>/', { manifest: heroData })
 
@@ -185,7 +185,7 @@ Manifest depths become native z_index ranks; keep the root's z_index to place th
 
 const unity = (runtimePath?: string) => `# Unity 2022.3 / Unity 6
 
-Entry: ${runtimePath ?? 'unity/Runtime/Paperdoll.cs'}. The importer ${runtimePath ? '../_PixelDoll/unity/Editor/PixelDollImporter.cs' : 'unity/Editor/PixelDollImporter.cs'} reads unity/pixeldoll_unity.json and
+Entry: ${runtimePath ?? 'unity/Runtime/Paperdoll.cs'}. The importer ${runtimePath ? '../PixelDoll/unity/Editor/PixelDollImporter.cs' : 'unity/Editor/PixelDollImporter.cs'} reads unity/pixeldoll_unity.json and
 builds sliced sheets, clips, the controller and the prefab in unity/Generated/.
 Full guide: unity/README.txt.
 
@@ -288,7 +288,7 @@ const API: Record<Engine, string | ((runtimePath?: string) => string)> = {
 /** The root agent files plus one engine reference per requested engine, in one fixed order. */
 export function agentFiles(engines: readonly Engine[], runtimePath?: string): OutFile[] {
 	const runtimeNote = runtimePath
-		? `\nThe shared runtime is at ${runtimePath}. When copying this character, copy _PixelDoll too
+		? `\nThe shared runtime is at ${runtimePath}. When copying this character, copy the PixelDoll folder too
 and keep them in the same parent folder.\n`
 		: '';
 	const files: OutFile[] = [

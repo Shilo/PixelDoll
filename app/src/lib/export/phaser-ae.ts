@@ -573,7 +573,7 @@ export const phaserAeRuntime = {
 export function phaserAeFiles(m: Manifest, folder = false): OutFile[] {
 	const assetsDir = aeFolder(m);
 	const dir = folder ? '<folder>/<character>/' : assetsDir;
-	const runtime = folder ? '<folder>/_PixelDoll/phaser-ae/' : `${dir}phaser-ae/`;
+	const runtime = folder ? '<folder>/PixelDoll/phaser-ae/' : `${dir}phaser-ae/`;
 	const assets = [
 		'manifest.json',
 		...new Set(
@@ -602,8 +602,8 @@ under Phaser's own license.
 
 1. ${
 				folder
-					? `Keep the character under game/${dir}. Its runtime is at ../_PixelDoll/phaser-ae/paperdoll.js
-   relative to this character folder. When copying the character, copy _PixelDoll too and keep them in the same parent folder.
+					? `Keep the character under game/${dir}. Its runtime is at ../PixelDoll/phaser-ae/paperdoll.js
+   relative to this character folder. When copying the character, copy the PixelDoll folder too and keep them in the same parent folder.
    Include the shared module under game/ so the build can import it. Rebuild and reload a running game to pick up runtime changes.`
 					: `Copy into the game's folder, under game/${dir}, only what the game needs: manifest.json, the phaser-ae/ folder and
    every file listed in phaser-ae/assets.json. Leave project.json, cells/, baked/ and the docs out: the game folder is

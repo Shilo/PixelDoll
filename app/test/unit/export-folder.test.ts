@@ -85,7 +85,7 @@ test.each(engines)('%s folder keeps character files and separates its runtime', 
 	if (another.kind === 'requested') expect(another.bundle).toEqual(bundle);
 
 	const files = new Map(folder.entries.map(({ name, data }) => [name, decoder.decode(data)]));
-	const path = `../_PixelDoll/${engine}/${runtimeFiles[sharedEngine][0]}`;
+	const path = `../PixelDoll/${engine}/${runtimeFiles[sharedEngine][0]}`;
 	for (const name of [
 		'README.txt',
 		'AGENTS.md',
@@ -94,17 +94,17 @@ test.each(engines)('%s folder keeps character files and separates its runtime', 
 		`${engine}/README.txt`
 	]) {
 		expect(files.get(name)).toContain(path);
-		expect(files.get(name)).toContain('copy _PixelDoll too');
+		expect(files.get(name)).toContain('copy the PixelDoll folder too');
 	}
 	if (engine === 'phaser' || engine === 'phaser-ae') {
 		expect(files.get(`${engine}/README.txt`)).toContain(
-			`from './<folder>/_PixelDoll/${engine}/${runtimeFiles[engine][0]}'`
+			`from './<folder>/PixelDoll/${engine}/${runtimeFiles[engine][0]}'`
 		);
 		expect(files.get(`${engine}/README.txt`)).toContain('reload a running game');
 	}
 	if (engine === 'godot')
 		expect(files.get('godot/Paperdoll.tscn')).toContain(
-			'[ext_resource type="Script" path="../../_PixelDoll/godot/paperdoll.gd" id="script"]'
+			'[ext_resource type="Script" path="../../PixelDoll/godot/paperdoll.gd" id="script"]'
 		);
 	if (engine === 'unity') {
 		const data = JSON.parse(files.get('unity/pixeldoll_unity.json')!);

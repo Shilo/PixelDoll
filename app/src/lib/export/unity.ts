@@ -903,8 +903,8 @@ export function unityFiles(m: Manifest, folder = false): OutFile[] {
 			data: `${
 				folder
 					? `Unity 2022.3 / Unity 6. Install com.unity.2d.sprite (2D Sprite) with Package Manager and keep the character under Assets/.
-The shared runtime is ../_PixelDoll/unity/Runtime/Paperdoll.cs and its importer is ../_PixelDoll/unity/Editor/PixelDollImporter.cs
-relative to this character folder. When copying the character, copy _PixelDoll too and keep them in the same parent folder.
+The shared runtime is ../PixelDoll/unity/Runtime/Paperdoll.cs and its importer is ../PixelDoll/unity/Editor/PixelDollImporter.cs
+relative to this character folder. When copying the character, copy the PixelDoll folder too and keep them in the same parent folder.
 Use a single Unity export destination under Assets/ in each project. A second destination, even a sibling, would install
 duplicate PixelDoll assemblies. Unity imports the character automatically when its JSON is imported or scripts reload,
 and rebuilds unity/Generated/ whenever the character or the shared runtime changes: customize a prefab variant, not those files.`

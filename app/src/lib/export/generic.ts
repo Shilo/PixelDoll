@@ -529,7 +529,7 @@ Quick start
 ${
 	runtimePath
 		? `  Follow ${m.export!.engines[0]}/README.txt to add the character to your game.
-  The runtime is at ${runtimePath}. When copying this character, copy _PixelDoll too
+  The runtime is at ${runtimePath}. When copying this character, copy the PixelDoll folder too
   and keep them in the same parent folder.`
 		: (m.export?.engines ?? []).map((e) => `  ${ENGINE_START[e] ?? e}`).join('\n')
 }

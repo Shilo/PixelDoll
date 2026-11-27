@@ -80,7 +80,7 @@ export function paperdollTscn(m: Manifest, folder = false): string {
 	const first = initial ? `${initial.id}_${initialDir}` : '';
 	const out = [
 		'[gd_scene format=3]\n',
-		`[ext_resource type="Script" path=${q(folder ? '../../_PixelDoll/godot/paperdoll.gd' : 'paperdoll.gd')} id="script"]`,
+		`[ext_resource type="Script" path=${q(folder ? '../../PixelDoll/godot/paperdoll.gd' : 'paperdoll.gd')} id="script"]`,
 		'[ext_resource type="Resource" path="library.tres" id="library"]',
 		...res.map(
 			(r) =>
@@ -646,8 +646,8 @@ export function godotFiles(m: Manifest, folder = false): OutFile[] {
 		name: 'godot/README.txt',
 		data: `${
 			folder
-				? `Instance godot/Paperdoll.tscn in your Godot 4 project. The scene uses ../_PixelDoll/godot/paperdoll.gd relative to
-this character folder. When copying the character, copy _PixelDoll too and keep them in the same parent folder.`
+				? `Instance godot/Paperdoll.tscn in your Godot 4 project. The scene uses ../PixelDoll/godot/paperdoll.gd relative to
+this character folder. When copying the character, copy the PixelDoll folder too and keep them in the same parent folder.`
 				: 'Copy the whole export folder into your Godot 4 project, then instance godot/Paperdoll.tscn.'
 		}
 API: play_anim(anim, dir, restart = false), set_direction(dir), equip(slot, item_id) ("" = empty slot), set_preset(preset_id), set_variant(material_id, variant_name).
