@@ -124,3 +124,10 @@
 		{/each}
 	{/if}
 </div>
+
+<style>
+	.swatch.pick:has(input:focus-visible) {
+		outline: 2px solid var(--bu-focus);
+		outline-offset: 3px;
+	}
+</style>

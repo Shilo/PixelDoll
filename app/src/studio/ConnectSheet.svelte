@@ -9,6 +9,7 @@
 	import { app, setKey, replaceKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts';
 	import { ApiError } from '../lib/pixellab/client.ts';
 	import Sheet from './Sheet.svelte';
+	import SettingsItemToggle from './SettingsItemToggle.svelte';
 	import AffiliationNotice from './AffiliationNotice.svelte';
 	import PixelLabUsage from './PixelLabUsage.svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
@@ -399,13 +400,13 @@
 							onclick={useSavedKey}>{t('workspaceCopy.useSavedKey')}</button
 						>
 					</div>{/if}
-			{:else}<label class="toggle-row"
-					><span>{t('connectSheet.rememberOnThisDevice')}</span><input
-						class="switch"
-						type="checkbox"
-						bind:checked={remember}
-					/></label
+			{:else}
+				<SettingsItemToggle
+					checked={remember}
+					onchange={(event) => (remember = event.currentTarget.checked)}
 				>
+					<span>{t('connectSheet.rememberOnThisDevice')}</span>
+				</SettingsItemToggle>
 			{/if}
 			{#if !workspaceCopy && remember && sharedOrigin}<p
 					class="bu-notice"

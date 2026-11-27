@@ -363,7 +363,7 @@
 		"demoRenameLocked": "Buat salinan yang bisa diedit untuk mengganti nama demo"
 	},
 	"characterName": {
-		"demo": "(Demo)"
+		"demo": "(demo)"
 	},
 	"colors": {
 		"follows": "Mengikuti {name}",
@@ -2657,9 +2657,9 @@
 		"customStartKeep": "Pertahankan bawaan",
 		"customStartContinue": "Lanjutkan",
 		"removeEndFrame": "Hapus frame akhir",
-		"changeLoopTitle": "Ubah Ulangi dan atur ulang frame akhir?",
+		"changeLoopTitle": "Ubah pengulangan dan atur ulang frame akhir?",
 		"changeLoopWarning": "Ini mengganti frame akhir khusus animasi ini dengan pengaturan otomatis.",
-		"changeLoopAccept": "Ubah Ulangi",
+		"changeLoopAccept": "Ubah pengulangan",
 		"makeRoom": "Beri ruang",
 		"frameRoom": "Animasi ini bisa melewati frame {frame} px: karakter hanya punya {below} px di bawah kakinya. Beri ruang secara gratis dulu, atau tetap buat animasinya.",
 		"skeleton": {
@@ -2900,7 +2900,7 @@
 		"placeholder": "misalnya {idea}",
 		"defaultIdea": "topi kulit",
 		"shortcut": "Tekan Ctrl+Enter atau Cmd+Enter untuk membuat item.",
-		"useOffHand": "Gunakan Tangan sekunder",
+		"useOffHand": "Gunakan tangan sekunder",
 		"ideas": "Ide",
 		"colorHint": "Petunjuk warna",
 		"anyColor": "Bebas",
@@ -3714,7 +3714,7 @@
 	"characterWindow": {
 		"actions": "Aksi karakter",
 		"open": "Buka karakter",
-		"frameSection": "Bingkai & Arah",
+		"frameSection": "Bingkai & arah",
 		"costSection": "Biaya",
 		"adjustFrameDetail": "Ubah ukuran bingkai atau posisi karakter di dalamnya.",
 		"directionsDetail": "Pilih arah mana yang digambar dan mana yang mencerminkan arah lain.",
@@ -3727,7 +3727,7 @@
 		"actions": "Aksi gerakan atau status",
 		"playOnStage": "Putar di panggung",
 		"showOnStage": "Tampilkan di panggung",
-		"framesSection": "Frame & Kualitas",
+		"framesSection": "Frame & kualitas",
 		"itemsSection": "Item di lemari",
 		"fixFramesDetail": "Edit setiap frame {move} di aplikasi gambarmu.",
 		"redrawDetail": "Gambar ulang {move} di arah yang kamu pilih, dengan harga lebih dulu.",

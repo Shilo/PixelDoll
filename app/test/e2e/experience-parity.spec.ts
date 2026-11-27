@@ -3827,7 +3827,7 @@ test('a 320px bar keeps Export and the panel toggle reachable for a long name', 
 	expect(await fits()).toBe(true);
 	await more.click();
 	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
-	await expect(page.locator('.name-text')).not.toContainText('(Demo)');
+	await expect(page.locator('.name-text')).not.toContainText('(demo)');
 	await page.locator('.project-btn').click();
 	await currentCharacterAction(page, 'Rename…');
 	const rename = page.getByRole('dialog', { name: 'Rename character', exact: true });

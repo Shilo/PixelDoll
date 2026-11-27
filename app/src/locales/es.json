@@ -369,7 +369,7 @@
 		"demoRenameLocked": "Haz una copia editable para renombrar la demo"
 	},
 	"characterName": {
-		"demo": "(Demo)"
+		"demo": "(demo)"
 	},
 	"colors": {
 		"follows": "Usa el color de {name}",
@@ -2730,9 +2730,9 @@
 		"customStartKeep": "Mantener el predeterminado",
 		"customStartContinue": "Continuar",
 		"removeEndFrame": "Quitar fotograma final",
-		"changeLoopTitle": "¿Cambiar Repetir y restablecer los fotogramas finales?",
+		"changeLoopTitle": "¿Cambiar la repetición y restablecer los fotogramas finales?",
 		"changeLoopWarning": "Esto reemplaza los fotogramas finales propios de esta animación por los ajustes automáticos.",
-		"changeLoopAccept": "Cambiar Repetir",
+		"changeLoopAccept": "Cambiar la repetición",
 		"makeRoom": "Hacer espacio",
 		"frameRoom": "Esta animación puede salirse del marco de {frame} px: el personaje tiene {below} px bajo los pies. Haz espacio gratis primero o genera la animación de todos modos.",
 		"skeleton": {

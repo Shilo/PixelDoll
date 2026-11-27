@@ -47,7 +47,7 @@ test('Developer mode defaults to off, persists, and closes an open inspector whe
 	await expect(mode).not.toBeChecked();
 	await expect(history).toHaveCount(0);
 	await expect(preview.getByText('Preview', { exact: true })).toBeVisible();
-	await expect(preview.getByText('Example Activity', { exact: true })).toBeVisible();
+	await expect(preview.getByText('Example activity', { exact: true })).toBeVisible();
 	// The practice sample is docked open as a single-open scope list; the job row numbers its disclosure and Copy ID.
 	const sample = preview.getByRole('group', { name: 'API calls', exact: true });
 	const balance = sample.getByRole('button', { name: 'Refresh balance', exact: true });

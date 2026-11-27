@@ -4557,10 +4557,10 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await page.getByRole('menuitem', { name: 'Character selection', exact: true }).click();
 	await page
 		.locator('.character-rows .character-row')
-		.filter({ has: page.getByText('Adventurer (Demo)', { exact: true }) })
+		.filter({ has: page.getByText('Adventurer (demo)', { exact: true }) })
 		.click();
 	await page.locator('.customize-action').click();
-	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (Demo)');
+	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (demo)');
 	// The page heading names the character outside the menu button (a heading cannot sit inside a button).
 	await expect(page.getByRole('heading', { level: 1, name: 'Adventurer' })).toHaveCount(1);
 	await expect(page.locator('.project-btn h1')).toHaveCount(0);
@@ -4820,7 +4820,7 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
 				{ initial, shared, legacy }
 			);
 			await openStudio(page, '/#/');
-			await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (Demo)');
+			await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (demo)');
 			await expect(page.locator('.world-actors').first()).toBeVisible();
 			await page.locator('.project-btn').click();
 			await page
@@ -5157,7 +5157,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitemradio', { name: 'Adventurer (demo)', exact: true }).click();
 	// Wait for the switch itself: clicking Add a move before the demo replaced the fixture raced the load (the old flake).
-	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (Demo)');
+	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (demo)');
 	await expect(page.locator('.move-list')).toBeVisible();
 	// The draft stays with its character: the read-only demo offers no Add a move at all.
 	await expect(page.getByRole('button', { name: 'New move…', exact: true })).toHaveCount(0);
@@ -8678,12 +8678,12 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(end).toContainText('walk_east_1.png');
 	await add.getByRole('button', { name: 'Remove reference', exact: true }).click();
 	await loop.click();
-	const reset = page.getByRole('alertdialog', { name: 'Change Loop and reset end frames?' });
+	const reset = page.getByRole('alertdialog', { name: 'Change loop and reset end frames?' });
 	await reset.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(loop).toBeChecked();
 	await expect(end).toContainText('walk_east_1.png');
 	await loop.click();
-	await reset.getByRole('button', { name: 'Change Loop', exact: true }).click();
+	await reset.getByRole('button', { name: 'Change loop', exact: true }).click();
 	await expect(loop).not.toBeChecked();
 	await expect(end).toContainText('No end frame');
 	await expect(add.getByRole('button', { name: 'Ride', exact: true })).toHaveCount(0);

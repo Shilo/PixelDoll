@@ -133,7 +133,13 @@
 	.share-controls {
 		gap: 4px;
 	}
-	.share-picker select.bu-select,
+	/* Use the longest native option to size each picker before the row wraps. */
+	.share-controls > .share-picker {
+		flex-basis: max-content;
+	}
+	.share-picker select.bu-select {
+		font-size: 16px;
+	}
 	.share-animate.bu-check {
 		font-size: 12px;
 	}

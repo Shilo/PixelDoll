@@ -369,7 +369,7 @@
 		"demoRenameLocked": "Faites une copie modifiable pour renommer la démo"
 	},
 	"characterName": {
-		"demo": "(Démo)"
+		"demo": "(démo)"
 	},
 	"colors": {
 		"follows": "Couleur liée : {name}",
@@ -2730,9 +2730,9 @@
 		"customStartKeep": "Garder par défaut",
 		"customStartContinue": "Continuer",
 		"removeEndFrame": "Retirer l’image de fin",
-		"changeLoopTitle": "Modifier Boucle et réinitialiser les images de fin ?",
+		"changeLoopTitle": "Modifier la boucle et réinitialiser les images de fin ?",
 		"changeLoopWarning": "Cela remplace les images de fin personnalisées de cette animation par les réglages automatiques.",
-		"changeLoopAccept": "Modifier Boucle",
+		"changeLoopAccept": "Modifier la boucle",
 		"makeRoom": "Faire de la place",
 		"frameRoom": "Cette animation peut dépasser le cadre de {frame} px : le personnage a {below} px sous les pieds. Faites d’abord de la place gratuitement, ou générez l’animation quand même.",
 		"skeleton": {

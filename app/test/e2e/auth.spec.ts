@@ -59,7 +59,7 @@ test('PixelLab first-open help, account links, and return visits share the conne
 	const settingsLink = dialog.getByRole('link', { name: 'PixelLab account', exact: true });
 	await expect(settingsLink).toHaveAttribute('href', 'https://www.pixellab.ai/account');
 	await expect(settingsLink).toHaveAttribute('target', '_blank');
-	const keyLink = dialog.getByRole('link', { name: 'Get Secret API Key' });
+	const keyLink = dialog.getByRole('link', { name: 'Get Secret API key' });
 	await expect(keyLink).toHaveAttribute('href', 'https://www.pixellab.ai/account');
 	await expect(keyLink.locator('strong')).toHaveCount(0);
 	await expect(dialog.getByLabel('Paste your Secret API key', { exact: true })).toHaveAttribute(

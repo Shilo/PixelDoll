@@ -369,7 +369,7 @@
 		"demoRenameLocked": "Faça uma cópia editável para renomear a demo"
 	},
 	"characterName": {
-		"demo": "(Demo)"
+		"demo": "(demo)"
 	},
 	"colors": {
 		"follows": "Segue {name}",
@@ -2739,9 +2739,9 @@
 		"customStartKeep": "Manter o padrão",
 		"customStartContinue": "Continuar",
 		"removeEndFrame": "Remover quadro final",
-		"changeLoopTitle": "Alterar Repetir e redefinir os quadros finais?",
+		"changeLoopTitle": "Alterar a repetição e redefinir os quadros finais?",
 		"changeLoopWarning": "Isso substitui os quadros finais personalizados desta animação pelas configurações automáticas.",
-		"changeLoopAccept": "Alterar Repetir",
+		"changeLoopAccept": "Alterar a repetição",
 		"makeRoom": "Abrir espaço",
 		"frameRoom": "Esta animação pode passar do quadro de {frame} px: o personagem tem {below} px abaixo dos pés. Abra espaço de graça primeiro ou gere a animação mesmo assim.",
 		"skeleton": {

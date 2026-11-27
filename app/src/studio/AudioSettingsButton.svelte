@@ -22,6 +22,6 @@
 		onactivate?.();
 		openSettings('audio');
 	}}
-	><Volume2 size={18} aria-hidden="true" />
+	><Volume2 size={row ? 18 : 20} aria-hidden="true" />
 	{#if row}<span class="row-name">{openerLabel(label)}</span><SurfaceChevron />{/if}</button
 >

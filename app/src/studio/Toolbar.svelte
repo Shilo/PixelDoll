@@ -365,7 +365,7 @@
 					onpointerdown={(event) => (activationPointer = event.pointerType)}
 					onclick={(event) => changeMode(id, event)}
 					><span class="bu-tab-label"
-						><Icon size={18} aria-hidden="true" /><span
+						><Icon size={20} aria-hidden="true" /><span
 							class="view-label bu-tab-text"
 							data-text={label}>{label}</span
 						></span
@@ -388,7 +388,7 @@
 				title={undoText ?? t('common.undo')}
 				disabled={!undoText}
 				bind:this={undoButton}
-				onclick={() => step(undo, redoButton)}><Undo2 size={18} /></button
+				onclick={() => step(undo, redoButton)}><Undo2 size={20} /></button
 			>
 			<button
 				class="bu-action header-redo"
@@ -398,7 +398,7 @@
 				title={redoText ?? t('common.redo')}
 				disabled={!redoText}
 				bind:this={redoButton}
-				onclick={() => step(redo, undoButton)}><Redo2 size={18} /></button
+				onclick={() => step(redo, undoButton)}><Redo2 size={20} /></button
 			>
 			<AudioSettingsButton />
 			<button
@@ -407,7 +407,7 @@
 				aria-label={t('common.randomLook')}
 				title={t('toolbar.titleRandomLookItemsAndColors')}
 				disabled={!m}
-				onclick={randomize}><Dices size={18} /></button
+				onclick={randomize}><Dices size={20} /></button
 			>
 			<button
 				class="bu-action header-share"
@@ -459,8 +459,13 @@
 			<div class="menu-prompt">
 				<p class="menu-sec">{t('common.prompt')}</p>
 				<p class="menu-prompt-text">{prompt}</p>
-				<button class="row" role="menuitem" aria-label={copyMessage} onclick={copyPrompt}
-					><Copy size={16} /><span class="row-name">{copyMessage}</span></button
+				<button
+					class="row bu-action"
+					data-variant="quiet"
+					role="menuitem"
+					aria-label={copyMessage}
+					onclick={copyPrompt}
+					><Copy size={18} aria-hidden="true" /><span class="row-name">{copyMessage}</span></button
 				>
 			</div>
 			<hr />
@@ -488,21 +493,23 @@
 		<NewCharacterButton row />
 		<!-- Each character's own ⋮ above has Rename, Make copy with new look and Move to Trash; Set up is the open one's. -->
 		{#if !isDemo()}<button
-				class="row"
+				class="row bu-action"
+				data-variant="quiet"
 				role="menuitem"
 				aria-label={t('toolbar.setUpCharacter')}
 				onclick={() => sheet('setup')}
-				><PersonStanding size={16} /><span class="row-name"
+				><PersonStanding size={18} aria-hidden="true" /><span class="row-name"
 					>{openerLabel(t('toolbar.setUpCharacter'))}</span
 				><SurfaceChevron /></button
 			>{/if}
 		<hr />
 		<button
-			class="row"
+			class="row bu-action"
+			data-variant="quiet"
 			role="menuitem"
 			aria-label={app.key ? t('toolbar.pixelLabAccount') : t('toolbar.connectPixelLab2')}
 			onclick={() => sheet('connect')}
-			><KeyRound size={16} /><span class="row-name"
+			><KeyRound size={18} aria-hidden="true" /><span class="row-name"
 				>{openerLabel(app.key ? t('toolbar.pixelLabAccount') : t('toolbar.connectPixelLab2'))}</span
 			>
 			{#if app.balance}<span class="faint small num"
@@ -513,27 +520,43 @@
 				>{/if}<SurfaceChevron /></button
 		>
 		<button
-			class="row"
+			class="row bu-action"
+			data-variant="quiet"
 			role="menuitem"
 			aria-label={t('activity.title')}
 			onclick={() => sheet('activity')}
-			><Activity size={16} /><span class="row-name">{openerLabel(t('activity.title'))}</span
+			><Activity size={18} aria-hidden="true" /><span class="row-name"
+				>{openerLabel(t('activity.title'))}</span
 			>{#if active}<span class="badge accent">{formatNumber(active)}</span>{/if}<SurfaceChevron
 			/></button
 		>
 		<button
-			class="row"
+			class="row bu-action"
+			data-variant="quiet"
 			role="menuitem"
 			aria-label={t('toolbar.characterSelection')}
 			onclick={() => {
 				close();
 				characters();
-			}}><House size={16} /><span class="row-name">{t('toolbar.characterSelection')}</span></button
+			}}
+			><House size={18} aria-hidden="true" /><span class="row-name"
+				>{t('toolbar.characterSelection')}</span
+			></button
 		>
 	</div>
 </div>
 
 <style>
+	.row > :global(svg:first-child) {
+		flex: none;
+	}
+	/* Match the toolbar breakpoint where Share and Export hide their labels. */
+	@media (max-width: 1199px) {
+		:is(.header-share, .header-export) > :global(svg:first-child) {
+			width: 20px;
+			height: 20px;
+		}
+	}
 	.project-choices {
 		gap: 0;
 	}

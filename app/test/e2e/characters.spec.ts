@@ -475,8 +475,8 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
 	);
 	await expect(page.locator('.customize-action')).toBeEnabled();
-	await expect(page.locator('.selected-name-text')).toHaveText('Adventurer (Demo)');
-	await expect(page.locator('.character-row strong .bu-muted')).toHaveText('(Demo)');
+	await expect(page.locator('.selected-name-text')).toHaveText('Adventurer (demo)');
+	await expect(page.locator('.character-row strong .bu-muted')).toHaveText('(demo)');
 	await page
 		.getByRole('button', { name: 'More actions for Adventurer (demo)', exact: true })
 		.click();
@@ -593,7 +593,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 		'4 directions · 1 state · 2 moves · 6 items'
 	]);
 	await page.locator('.customize-action').click();
-	await expect(page.locator('.name-text')).toHaveText('Adventurer (Demo)');
+	await expect(page.locator('.name-text')).toHaveText('Adventurer (demo)');
 	await expect(page.locator('.name-facts')).toHaveText(
 		'64×64 px frame · 4 directions · 2 moves · 6 items'
 	);
@@ -1499,7 +1499,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 		]);
 		await menu.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
 		const window = page.locator('dialog.character-window[open]');
-		await openItemSection(window, 'Frame & Directions');
+		await openItemSection(window, 'Frame & directions');
 		await window.getByRole('button', { name: /^Directions/ }).click();
 	};
 	await openDirections();
@@ -1554,7 +1554,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 			.getByRole('menuitem', { name: 'View and edit…', exact: true })
 			.click();
 		const window = page.locator('dialog.character-window[open]');
-		await openItemSection(window, 'Frame & Directions');
+		await openItemSection(window, 'Frame & directions');
 		await window.getByRole('button', { name: /^Adjust frame/ }).click();
 		return page.getByRole('dialog', { name: 'Adjust frame', exact: true });
 	};

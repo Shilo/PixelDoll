@@ -93,7 +93,7 @@
 		</button>
 		<hr />
 		<!-- Character actions: demo editing and actions moved from the toolbar on smaller screens. -->
-		{#if studio}<DemoCopyRow id={doc.id} close={closeOptions} />{/if}
+		{#if studio}<DemoCopyRow id={doc.id} close={closeOptions} menuItem={false} />{/if}
 		{#if studio}<button
 				class="row bu-action mobile-random"
 				data-variant="quiet"

@@ -208,7 +208,7 @@
 		"notSaved": "Developer mode changed for this tab only. The browser could not save it.",
 		"target": "API call scope",
 		"copyId": "Copy ID",
-		"exampleActivity": "Example Activity",
+		"exampleActivity": "Example activity",
 		"examplePrompt": "A traveler with short brown hair",
 		"copyIdValue": "Copy ID {id}",
 		"preview": "Preview",
@@ -369,7 +369,7 @@
 		"demoRenameLocked": "Make an editable copy to rename the demo"
 	},
 	"characterName": {
-		"demo": "(Demo)"
+		"demo": "(demo)"
 	},
 	"colors": {
 		"follows": "Follows {name}",
@@ -423,7 +423,7 @@
 		"continueWithLimitedAccess": "Continue with limited access",
 		"secretApiKey": "Paste your Secret API key",
 		"rememberOnThisDevice": "Remember on this device",
-		"getSecretKey": "Get Secret API Key",
+		"getSecretKey": "Get Secret API key",
 		"checking": "Checking…",
 		"connect": "Connect"
 	},
@@ -2730,9 +2730,9 @@
 		"customStartKeep": "Keep default",
 		"customStartContinue": "Continue",
 		"removeEndFrame": "Remove end frame",
-		"changeLoopTitle": "Change Loop and reset end frames?",
+		"changeLoopTitle": "Change loop and reset end frames?",
 		"changeLoopWarning": "This replaces the custom end frames for this move with the automatic settings.",
-		"changeLoopAccept": "Change Loop",
+		"changeLoopAccept": "Change loop",
 		"makeRoom": "Make room",
 		"frameRoom": "This move may step past the {frame} px frame: the character has {below} px below its feet. Make room for free first, or generate the move anyway.",
 		"skeleton": {
@@ -2981,7 +2981,7 @@
 		"placeholder": "e.g. {idea}",
 		"defaultIdea": "a leather hat",
 		"shortcut": "Ctrl+Enter or Cmd+Enter to make the item.",
-		"useOffHand": "Use Off hand",
+		"useOffHand": "Use off hand",
 		"ideas": "Ideas",
 		"colorHint": "Color hint",
 		"anyColor": "Any",
@@ -3818,7 +3818,7 @@
 	"characterWindow": {
 		"actions": "Character actions",
 		"open": "Open character",
-		"frameSection": "Frame & Directions",
+		"frameSection": "Frame & directions",
 		"costSection": "Cost",
 		"adjustFrameDetail": "Change the frame size or where the character sits in it.",
 		"directionsDetail": "Choose which facings are drawn and which mirror another.",
@@ -3831,7 +3831,7 @@
 		"actions": "Move or State actions",
 		"playOnStage": "Play on stage",
 		"showOnStage": "Show on stage",
-		"framesSection": "Frames & Quality",
+		"framesSection": "Frames & quality",
 		"itemsSection": "Wardrobe items",
 		"fixFramesDetail": "Edit every frame of {move} in your art app.",
 		"redrawDetail": "Draw {move} again in the facings you choose, priced first.",

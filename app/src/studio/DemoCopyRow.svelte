@@ -3,7 +3,11 @@
 	import { t } from 'svelte-whisper';
 	import { copyDemo, doc, openProject, toast, ui } from './state.svelte.ts';
 	import { Copy } from './icons.ts';
-	let { id, close }: { id: string; close: () => void } = $props();
+	let {
+		id,
+		close,
+		menuItem = true
+	}: { id: string; close: () => void; menuItem?: boolean } = $props();
 	let busy = $state(false);
 	async function editCopy() {
 		if (busy) return;
@@ -28,7 +32,14 @@
 </script>
 
 {#if id.startsWith('fixture:')}
-	<button class="row" role="menuitem" disabled={busy} onclick={editCopy}>
-		<Copy size={16} /><span class="row-name">{t('demoCopyRow.editACopy')}</span>
+	<button
+		type="button"
+		class="row bu-action"
+		data-variant="quiet"
+		role={menuItem ? 'menuitem' : undefined}
+		disabled={busy}
+		onclick={editCopy}
+	>
+		<Copy size={18} aria-hidden="true" /><span class="row-name">{t('demoCopyRow.editACopy')}</span>
 	</button>
 {/if}
