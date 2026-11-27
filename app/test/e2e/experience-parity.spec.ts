@@ -676,18 +676,13 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	const copy = menu.getByRole('menuitem', { name: 'Copy prompt', exact: true });
 	await expect(copy).toBeVisible();
 	const current = menu.locator('[role=menuitemradio][aria-checked="true"]');
-	const locked = menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true });
 	const connect = menu.getByRole('menuitem', { name: /^Connect PixelLab/ });
 	const last = menu.getByRole('menuitem', { name: 'Character selection', exact: true });
 	await expect(current).toBeFocused();
-	// Unavailable rows stay in the sequence so their reason is reachable.
-	await page.keyboard.press('ArrowDown');
-	await expect(locked).toBeFocused();
-	await expect(locked).toHaveAccessibleDescription("Demo character can't be deleted");
+	// The open character's Rename, copy and Trash are in its own ⋮ (where the demo's locked Trash keeps its reason), so
+	// the next command is Connect.
 	await page.keyboard.press('ArrowDown');
 	await expect(connect).toBeFocused();
-	await page.keyboard.press('ArrowUp');
-	await expect(locked).toBeFocused();
 	await page.keyboard.press('ArrowUp');
 	await expect(current).toBeFocused();
 	await page.keyboard.press('Home');
