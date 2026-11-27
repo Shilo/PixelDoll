@@ -154,7 +154,10 @@ it('renders the same data as the app, escaping literal commit subjects and bound
 		'https://example.com/banner.png',
 		'https://example.com/compare'
 	);
-	expect(body).toContain('![](https://example.com/banner.png)');
+	// The release title carries the headline, so the body opens with the date and the banner.
+	expect(body.startsWith('November 27, 2026 · v0.0.1\n\n![](https://example.com/banner.png)')).toBe(
+		true
+	);
 	expect(body).toContain('## Save a sprite\n\nSave your work as a PNG file.');
 	expect(body).toContain('<details><summary>All changes (2)</summary>');
 	expect(body).toContain(

@@ -21,12 +21,12 @@ export function releaseMarkdown(
 	bannerUrl: string,
 	compareUrl: string
 ) {
-	const parts = [
-		`# ${escape(notes.headline)}`,
-		`${date} · v${version}`,
-		`![](${bannerUrl})`,
-		escape(notes.intro)
-	];
+	// The release title already carries the headline ("PixelDoll <version>: <headline>"), so the body starts below it.
+	const day = new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', {
+		dateStyle: 'long',
+		timeZone: 'UTC'
+	});
+	const parts = [`${day} · v${version}`, `![](${bannerUrl})`, escape(notes.intro)];
 	if (notes.joke) parts.push(escape(notes.joke));
 	for (const { title, text } of notes.highlights)
 		parts.push(`## ${escape(title)}\n\n${escape(text)}`);
