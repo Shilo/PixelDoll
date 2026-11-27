@@ -233,7 +233,7 @@
 		"deleteNamed": "¿Mover {name} a la papelera?",
 		"deleting": "Eliminando…",
 		"details": "Detalles",
-		"detailsMenu": "Detalles…",
+		"detailsMenu": "Ver y editar…",
 		"direction": "Dirección",
 		"directions": "Direcciones",
 		"discard": "Descartar",
@@ -690,9 +690,9 @@
 		"noMatchingOutfits": "No hay atuendos que coincidan"
 	},
 	"pwaNotice": {
-		"readyToUpdateReloading": "Listo para actualizar. Recargando...",
+		"readyToUpdateReloading": "Listo para actualizar. Recargando…",
 		"readyToUpdate": "Listo para actualizar.",
-		"downloadingUpdate": "Descargando actualización..."
+		"downloadingUpdate": "Descargando actualización…"
 	},
 	"pwaRuntime": {
 		"stillDownloading": "La actualización aún se está descargando. Vuelve a conectarte e inténtalo de nuevo cuando esté lista.",
@@ -822,7 +822,7 @@
 		"previewRisk": "Los personajes guardados pueden dejar de funcionar tras las actualizaciones.",
 		"previewBackupDescription": "Conserva una copia local de tus personajes e ilustraciones.",
 		"youReOfflineEditAndExportLocally": "No tienes conexión. Edita y exporta en local.",
-		"titleInspectCharacter": "Inspeccionar personaje",
+		"titleInspectCharacter": "Ver fotogramas",
 		"titleWorkspaceCopy": "Copia del espacio de trabajo",
 		"titleItem": "Objeto",
 		"titleItemReview": "Revisión del objeto"
@@ -1005,7 +1005,7 @@
 		"moreActionsFor": "Más acciones para {name}",
 		"actionsFor": "Acciones para {name}",
 		"still": "Quieto",
-		"inspect": "Inspeccionar",
+		"inspect": "Ver fotogramas",
 		"customization": "Personalización",
 		"customizationPanels": "Paneles de personalización",
 		"tabWorkRunning": "Aquí hay trabajo en curso, en espera o listo para revisar",
@@ -1657,7 +1657,7 @@
 		}
 	},
 	"download": {
-		"preparing": "Preparando {label}...",
+		"preparing": "Preparando {label}…",
 		"failed": "No se pudo descargar {label}.",
 		"failedRetry": "No se pudo descargar {label}. Inténtalo de nuevo.",
 		"recoveryStarted": "La exportación completa no está disponible. Comenzó la descarga de los PNG de origen.",
@@ -3174,9 +3174,9 @@
 		"copyDetails": "Copiar detalles",
 		"copyFailed": "No se pudieron copiar los detalles de la aplicación.",
 		"checkForUpdates": "Buscar actualizaciones",
-		"checkingForUpdates": "Buscando actualizaciones...",
+		"checkingForUpdates": "Buscando actualizaciones…",
 		"upToDate": "Estás al día.",
-		"preparingUpdate": "Preparando la versión {version}...",
+		"preparingUpdate": "Preparando la versión {version}…",
 		"updateStuck": "La actualización aún no está lista.",
 		"updateFailed": "No se pudieron buscar actualizaciones."
 	},

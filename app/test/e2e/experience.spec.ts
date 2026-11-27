@@ -137,7 +137,7 @@ for (const theme of ['dark', 'light'] as const)
 			}
 			if (theme === 'light') {
 				await page.getByRole('button', { name: 'More options', exact: true }).click();
-				await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+				await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 				const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 				await expect(settings).toBeVisible();
 				const home = settings.getByRole('button', { name: 'Back to Settings', exact: true });
@@ -175,7 +175,7 @@ for (const theme of ['dark', 'light'] as const)
 			).toEqual([]);
 			await screenshot(page, `${size}-${theme}-characters`);
 			await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-			await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+			await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 			const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 			await expect(creator.getByLabel('Details', { exact: true })).toBeVisible();
 			// Name sits above the form in the heading; fine pointers start there, phones avoid forcing the keyboard
@@ -333,7 +333,7 @@ test('real wardrobe, None, Undo, exact colors, outfits and item details remain c
 	await expect(hat).toHaveAttribute('aria-pressed', 'true');
 	const hatOptions = page.getByRole('button', { name: 'More options for Wizard hat', exact: true });
 	await hatOptions.click();
-	await page.getByRole('menuitem', { name: 'Details...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
 	const details = page.locator('dialog.item-detail[open]');
 	await expect(details).toContainText('Wizard hat');
 	await expect(details.getByRole('button', { name: 'Take off', exact: true })).toBeVisible();
@@ -464,7 +464,7 @@ test('creator validation stays real; Cancel and Escape restore the native opener
 	const opener = page.getByRole('button', { name: 'New character', exact: true }).first();
 	await opener.focus();
 	await page.keyboard.press('Enter');
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	const create = creator.getByRole('button', { name: 'Create character', exact: true });
 	await creator.getByRole('tab', { name: 'Prompt', exact: true }).click();
@@ -497,7 +497,7 @@ test('320px inspection keeps both native selects and All directions within its t
 	await page.setViewportSize({ width: 320, height: 568 });
 	await customize(page);
 	await pause(page);
-	const sheet = page.getByRole('dialog', { name: 'Inspect character', exact: true });
+	const sheet = page.getByRole('dialog', { name: 'View frames', exact: true });
 	await page.keyboard.press('Control+Alt+i');
 	await expect(sheet).toBeVisible();
 	await page.keyboard.press('Control+Alt+i');
@@ -729,7 +729,7 @@ test('offline export and device import remain accessible production actions', as
 	await page.getByRole('button', { name: 'Characters', exact: true }).click();
 	const importer = page.getByRole('button', { name: 'New character', exact: true }).first();
 	await importer.click();
-	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
 	const importSheet = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await importSheet
 		.getByLabel('Character ZIP', { exact: true })

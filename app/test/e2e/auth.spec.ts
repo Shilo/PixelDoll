@@ -35,10 +35,10 @@ test('PixelLab first-open help, account links, and return visits share the conne
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	const notice = page.getByRole('link', { name: /Powered by PixelLab\. Not an official app\./ });
 	await expect(notice).toHaveAttribute('href', 'https://pixellab.ai');
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	const settingsConnect = settings.getByRole('button', {
-		name: 'Connect PixelLab...',
+		name: 'Connect PixelLab…',
 		exact: true
 	});
 	await settingsConnect.click();
@@ -75,10 +75,10 @@ test('PixelLab first-open help, account links, and return visits share the conne
 	await expect(settingsConnect).toBeVisible();
 	await openStudio(page, '/');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Activity...', exact: true }).click();
+	await page.getByRole('button', { name: 'Activity…', exact: true }).click();
 	await page
 		.getByRole('dialog', { name: 'Activity', exact: true })
-		.getByRole('button', { name: 'Connect...', exact: true })
+		.getByRole('button', { name: 'Connect…', exact: true })
 		.click();
 	await expect(dialog).toBeVisible();
 	await expect(trial).toHaveCount(0);
@@ -103,7 +103,7 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	const usage = page.getByRole('button', { name: /^PixelLab usage/ });
 	const usageLabel = await usage.getByText('PixelLab usage', { exact: true }).boundingBox();
-	const settingsLabel = await page.getByText('Settings...', { exact: true }).boundingBox();
+	const settingsLabel = await page.getByText('Settings…', { exact: true }).boundingBox();
 	expect(usageLabel?.x).toBe(settingsLabel?.x);
 	await expect(usage.getByText('58 / 100', { exact: true })).toBeVisible();
 	await expect(usage.getByText('58% used', { exact: true })).toBeVisible();
@@ -128,7 +128,7 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await account.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(page.getByRole('button', { name: 'More options', exact: true })).toBeFocused();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Activity...', exact: true }).click();
+	await page.getByRole('button', { name: 'Activity…', exact: true }).click();
 	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
 	await expect(activity.getByText('PixelLab usage', { exact: true })).toBeVisible();
 	await expect(activity.getByText('58 / 100', { exact: true })).toBeVisible();
@@ -180,7 +180,7 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await account.getByRole('button', { name: 'Close', exact: true }).click();
 	// Settings shows its shortcut in More, and Ctrl+, opens it.
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	const settingsRow = page.getByRole('button', { name: 'Settings...', exact: true });
+	const settingsRow = page.getByRole('button', { name: 'Settings…', exact: true });
 	await expect(settingsRow).toHaveAttribute('aria-keyshortcuts', 'Control+, Meta+,');
 	await expect(settingsRow.locator('.shortcut kbd')).toHaveText(['Ctrl', ',']);
 	await page.keyboard.press('Escape');
@@ -199,7 +199,7 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await expect(settings.getByText('Remaining: 0', { exact: true })).toBeVisible();
 	await expect(settings.getByText('$3.06', { exact: true })).toBeVisible();
 	await expect(settings.getByLabel('API key', { exact: true })).toHaveCount(0);
-	const settingsActivity = settings.getByRole('button', { name: 'Activity...', exact: true });
+	const settingsActivity = settings.getByRole('button', { name: 'Activity…', exact: true });
 	await settingsActivity.click();
 	const activitySheet = page.getByRole('dialog', { name: 'Activity', exact: true });
 	// Back returns to Settings and its opener; the X would close both.
@@ -209,7 +209,7 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await page.goBack();
 	await expect(settingsActivity).toBeFocused();
 	// Cost estimate opens for the open character and returns to Settings.
-	const settingsCost = settings.getByRole('button', { name: 'Cost estimate...', exact: true });
+	const settingsCost = settings.getByRole('button', { name: 'Cost estimate…', exact: true });
 	await settingsCost.click();
 	const costSheet = page.getByRole('dialog', { name: 'Cost estimate', exact: true });
 	await expect(costSheet.locator('.amount')).toHaveText(/^\$\d+\.\d\d$/);
@@ -242,7 +242,7 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 		await dialog.getByRole('checkbox', { name: 'Remember on this device' }).check();
 	};
 	await openMore();
-	await page.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
+	await page.getByRole('button', { name: 'Connect PixelLab…', exact: true }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	balanceStatus = 401;
 	await connect.getByLabel('Paste your Secret API key', { exact: true }).fill('synthetic-invalid');
@@ -306,7 +306,7 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	await expect(reconnect.getByLabel('Paste your Secret API key', { exact: true })).toBeFocused();
 	await reconnect.getByRole('button', { name: 'Close', exact: true }).click();
 	await openMore();
-	await page.getByRole('button', { name: 'Reconnect PixelLab...', exact: true }).click();
+	await page.getByRole('button', { name: 'Reconnect PixelLab…', exact: true }).click();
 	balanceStatus = 200;
 	await fillKey(reconnect, key);
 	await reconnect.getByRole('button', { name: 'Connect', exact: true }).click();
@@ -334,7 +334,7 @@ test('Settings replaces and forgets the key in place, refreshing usage without m
 	await page.addInitScript((key) => localStorage.setItem('pixellabApiKey', key), key);
 	await openStudio(page, '/');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await expect(settings.getByText('Remaining: 1', { exact: true })).toBeVisible();
 	await expect(settings.getByText('99.9% used', { exact: true })).toBeVisible();
@@ -356,7 +356,7 @@ test('Settings replaces and forgets the key in place, refreshing usage without m
 	release();
 	await expect(refresh).toBeVisible();
 
-	const replace = settings.getByRole('button', { name: 'Replace key...', exact: true });
+	const replace = settings.getByRole('button', { name: 'Replace key…', exact: true });
 	await replace.click();
 	const replacement = page.getByRole('dialog', { name: 'Replace PixelLab key', exact: true });
 	await expect(replacement.getByLabel('Paste your Secret API key', { exact: true })).toBeFocused();
@@ -375,7 +375,7 @@ test('Settings replaces and forgets the key in place, refreshing usage without m
 		'synthetic-replacement'
 	);
 
-	const forget = settings.getByRole('button', { name: 'Forget key...', exact: true });
+	const forget = settings.getByRole('button', { name: 'Forget key…', exact: true });
 	const reset = settings.getByRole('button', { name: 'Forget key', exact: true });
 	const confirm = page.getByRole('alertdialog', { name: 'Forget PixelLab key?', exact: true });
 	await expect(reset).toBeEnabled();
@@ -398,7 +398,7 @@ test('Settings replaces and forgets the key in place, refreshing usage without m
 	await confirm.getByRole('button', { name: 'Forget key', exact: true }).click();
 	await expect(settings.getByText('Not connected', { exact: true })).toBeVisible();
 	await expect(
-		settings.getByRole('button', { name: 'Connect PixelLab...', exact: true })
+		settings.getByRole('button', { name: 'Connect PixelLab…', exact: true })
 	).toBeFocused();
 	await expect(forget).toHaveCount(0);
 	await expect(reset).toHaveCount(0);
@@ -416,7 +416,7 @@ test('a delayed replacement does not undo another tab’s Forget', async ({ page
 	await openStudio(page, '/');
 	const more = page.getByRole('button', { name: 'More options', exact: true });
 	await more.click();
-	await page.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
+	await page.getByRole('button', { name: 'Connect PixelLab…', exact: true }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	await connect.getByLabel('Paste your Secret API key', { exact: true }).fill(key);
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();

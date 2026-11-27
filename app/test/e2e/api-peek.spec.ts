@@ -24,7 +24,7 @@ test.beforeEach(async ({ context }) => {
 
 async function developerSettings(page: Page) {
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await settings.getByRole('button', { name: 'Developer', exact: true }).click();
 	return settings;
@@ -120,7 +120,7 @@ async function newCharacter(page: Page) {
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	await expect(page.locator('dialog[open]')).toHaveAccessibleName('New character');
 }
 

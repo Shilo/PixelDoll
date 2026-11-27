@@ -5,7 +5,7 @@
 	import type { Snippet } from 'svelte';
 	import { openAppearance, openRename, ui } from './state.svelte.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
-	import { Calculator, Compass, Download, Frame, Info, Pencil, Sparkles } from './icons.ts';
+	import { Calculator, Compass, Download, Eye, Frame, Pencil, Sparkles } from './icons.ts';
 	import DeleteRow from './DeleteRow.svelte';
 	import RowActions from './RowActions.svelte';
 	import DemoCopyRow from './DemoCopyRow.svelte';
@@ -24,7 +24,7 @@
 					.forEach((popover) => popover.hidePopover());
 				ui.details = id;
 				ui.sheet = 'details';
-			}}><Info size={16} />{openerLabel(t('common.detailsMenu'))}<SurfaceChevron /></button
+			}}><Eye size={16} />{openerLabel(t('common.detailsMenu'))}<SurfaceChevron /></button
 		>
 		<button
 			class="row"

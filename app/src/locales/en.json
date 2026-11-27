@@ -233,7 +233,7 @@
 		"deleteNamed": "Move {name} to Trash?",
 		"deleting": "Deleting…",
 		"details": "Details",
-		"detailsMenu": "Details…",
+		"detailsMenu": "View and edit…",
 		"direction": "Direction",
 		"directions": "Directions",
 		"discard": "Discard",
@@ -690,9 +690,9 @@
 		"noMatchingOutfits": "No matching outfits"
 	},
 	"pwaNotice": {
-		"readyToUpdateReloading": "Ready to update. Reloading...",
+		"readyToUpdateReloading": "Ready to update. Reloading…",
 		"readyToUpdate": "Ready to update.",
-		"downloadingUpdate": "Downloading update..."
+		"downloadingUpdate": "Downloading update…"
 	},
 	"pwaRuntime": {
 		"stillDownloading": "The update is still downloading. Reconnect and try again when it is ready.",
@@ -822,7 +822,7 @@
 		"previewRisk": "Saved characters may stop working after updates.",
 		"previewBackupDescription": "Keep a local copy of your characters and artwork.",
 		"youReOfflineEditAndExportLocally": "You’re offline. Edit and export locally.",
-		"titleInspectCharacter": "Inspect character",
+		"titleInspectCharacter": "View frames",
 		"titleWorkspaceCopy": "Workspace copy",
 		"titleItem": "Item",
 		"titleItemReview": "Item review"
@@ -1005,7 +1005,7 @@
 		"moreActionsFor": "More actions for {name}",
 		"actionsFor": "Actions for {name}",
 		"still": "Still",
-		"inspect": "Inspect",
+		"inspect": "View frames",
 		"customization": "Customization",
 		"customizationPanels": "Customization panels",
 		"tabWorkRunning": "Work here is running, waiting or ready to review",
@@ -1657,7 +1657,7 @@
 		}
 	},
 	"download": {
-		"preparing": "Preparing {label}...",
+		"preparing": "Preparing {label}…",
 		"failed": "Could not download {label}.",
 		"failedRetry": "Could not download {label}. Try again.",
 		"recoveryStarted": "Full export unavailable. Source PNG download started.",
@@ -3174,9 +3174,9 @@
 		"copyDetails": "Copy details",
 		"copyFailed": "Could not copy app details.",
 		"checkForUpdates": "Check for updates",
-		"checkingForUpdates": "Checking for updates...",
+		"checkingForUpdates": "Checking for updates…",
 		"upToDate": "You're up to date.",
-		"preparingUpdate": "Getting version {version} ready...",
+		"preparingUpdate": "Getting version {version} ready…",
 		"updateStuck": "The update isn't ready yet.",
 		"updateFailed": "Couldn't check for updates."
 	},

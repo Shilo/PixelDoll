@@ -40,7 +40,7 @@ async function open(page: Page, navigate = true) {
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	return page.getByRole('dialog', { name: 'New character', exact: true });
 }
 async function connect(page: Page) {
@@ -341,7 +341,7 @@ test.describe('creation safety', () => {
 			.locator('#project-menu')
 			.getByRole('button', { name: 'New character', exact: true })
 			.click();
-		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 		await configure('Separate character');
 		await sheet.getByRole('button', { name: 'Create character', exact: true }).click();
 		await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toBeVisible(
@@ -439,7 +439,7 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 		.getByRole('button', { name: 'Start dressing up', exact: true })
 		.click({ timeout: 90_000 });
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	await expect(page.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
 	await move.getByRole('button', { name: 'Walk', exact: true }).click();
@@ -527,7 +527,7 @@ test('a failed required measurement stops the queued idle without paying for an 
 	await expect(sheet.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
 	await sheet.getByRole('button', { name: 'Start dressing up', exact: true }).click();
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	await chooseSkeletonMove(move);
 	await move.getByRole('button', { name: /^Generate / }).click();
@@ -1120,7 +1120,7 @@ test('canceling the connection discards the pending enhancement instead of charg
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'A friendly elf'
 	);
@@ -1645,7 +1645,7 @@ function offlineCreation(config: CreationCase) {
 			.locator('#project-menu')
 			.getByRole('button', { name: 'New character', exact: true })
 			.click();
-		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 		await expect(page.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible();
 		await page
 			.getByRole('dialog', { name: 'New character', exact: true })
@@ -1655,7 +1655,7 @@ function offlineCreation(config: CreationCase) {
 		const move = page.getByRole('dialog', { name: 'New move', exact: true });
 		const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 		for (const name of ['Idle', 'Walk']) {
-			await page.getByRole('button', { name: 'New move...', exact: true }).click();
+			await page.getByRole('button', { name: 'New move…', exact: true }).click();
 			await move.getByRole('button', { name, exact: true }).click();
 			await chooseSkeletonMove(move);
 			await move.getByRole('button', { name: /^Generate / }).click();
@@ -1761,7 +1761,7 @@ function offlineCreation(config: CreationCase) {
 			.locator('#project-menu')
 			.getByRole('button', { name: 'New character', exact: true })
 			.click();
-		await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
 		await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 			name: 'custom-character.zip',
 			mimeType: 'application/zip',

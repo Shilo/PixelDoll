@@ -118,7 +118,7 @@ const sharedTile = (grid: Locator, name: string) => grid.locator('.shared-tile',
 
 async function openGlobalVisibility(page: Page) {
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await expect(settings).toBeVisible();
 	// Settings reopens on the page last shown this session: go back to its index first.
@@ -293,7 +293,7 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 		.locator('.experience-header')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	// The creator reaches Wardrobe visibility through its own More menu.
 	const creatorMore = creator.getByRole('button', { name: 'More options', exact: true });
@@ -410,11 +410,9 @@ test('a shared custom category appears before adoption and stays after wearing a
 	const rail = page.getByRole('navigation', { name: 'Equipment slots' });
 	await equipmentGroup(page, 'Hair clip');
 	await more.click();
-	await expect(
-		page.getByRole('button', { name: 'Connect PixelLab...', exact: true })
-	).toBeFocused();
+	await expect(page.getByRole('button', { name: 'Connect PixelLab…', exact: true })).toBeFocused();
 	await page.keyboard.press('Tab');
-	await expect(page.getByRole('button', { name: 'Settings...', exact: true })).toBeFocused();
+	await expect(page.getByRole('button', { name: 'Settings…', exact: true })).toBeFocused();
 	await page.keyboard.press('Tab');
 	await expect(page.getByRole('button', { name: 'Language', exact: true })).toBeFocused();
 	await page.keyboard.press('Tab');
@@ -430,7 +428,7 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await page.keyboard.press('Tab');
 	await expect(page.getByRole('button', { name: 'Back up library', exact: true })).toBeFocused();
 	await page.keyboard.press('Tab');
-	await expect(page.getByRole('button', { name: 'Activity...', exact: true })).toBeFocused();
+	await expect(page.getByRole('button', { name: 'Activity…', exact: true })).toBeFocused();
 	for (let step = 0; step < 3; step++) await page.keyboard.press('Shift+Tab');
 	await expect(thisCharacter).toBeFocused();
 	await expect(thisCharacter).not.toBeChecked();
@@ -717,7 +715,7 @@ test('a shared item’s ⋮ explains how it fits and makes one for this characte
 	const menu = page.locator('#item-menu');
 	await expect(menu.locator('.item-menu-marks li')).toHaveText(titles);
 	await expect(menu.getByRole('menuitem', { name: /^Wear/ })).toBeFocused();
-	await menu.getByRole('menuitem', { name: /^Make copy for self\.\.\./ }).click();
+	await menu.getByRole('menuitem', { name: /^Make copy for self…/ }).click();
 	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
 	await expect(
 		sheet.getByRole('button', { name: 'Where does it go?: Head', exact: true })
@@ -784,7 +782,7 @@ test('an item drawn for another body on the same canvas is worn as drawn for fre
 	);
 	await expect(details).toContainText('Not fitted');
 	await expect(
-		details.getByRole('button', { name: 'Make copy for self...', exact: true })
+		details.getByRole('button', { name: 'Make copy for self…', exact: true })
 	).toBeVisible();
 	expect(requests).toEqual([]);
 });
@@ -827,7 +825,7 @@ test('items from other characters fit a phone without horizontal overflow and it
 	await expect(others.locator('.shared-tile')).toHaveCount(3);
 	await others.getByRole('button', { name: 'More options for Giant helmet', exact: true }).click();
 	await expect(
-		page.locator('#item-menu').getByRole('menuitem', { name: /^Make copy for self\.\.\./ })
+		page.locator('#item-menu').getByRole('menuitem', { name: /^Make copy for self…/ })
 	).toBeInViewport();
 	const viewport = page.viewportSize()!;
 	for (const tile of await others.getByRole('button').all()) {
@@ -877,7 +875,7 @@ test('an item that can’t be worn here shows a red icon over dimmed art, and it
 	);
 	await giant.click();
 	const menu = page.locator('#item-menu');
-	await expect(menu.getByRole('menuitem', { name: /^Make copy for self\.\.\./ })).toBeFocused();
+	await expect(menu.getByRole('menuitem', { name: /^Make copy for self…/ })).toBeFocused();
 	await expect(menu.getByRole('menuitem', { name: /^Wear/ })).toHaveCount(0);
 	await expect(menu.locator('.item-menu-marks li')).toHaveText([
 		'From Giant.',
@@ -1141,10 +1139,10 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 	// A re-fit's issues are its fit: nothing to accept as is; a new item for this body is offered instead.
 	await expect(details.getByRole('button', { name: 'Accept as is', exact: true })).toHaveCount(0);
 	await expect(
-		details.getByRole('button', { name: 'Make copy for self...', exact: true })
+		details.getByRole('button', { name: 'Make copy for self…', exact: true })
 	).toBeVisible();
 	// It opens New item with the item's first frame attached as the reference, so the copy keeps its look.
-	await details.getByRole('button', { name: 'Make copy for self...', exact: true }).click();
+	await details.getByRole('button', { name: 'Make copy for self…', exact: true }).click();
 	const copySheet = page.getByRole('dialog', { name: 'New item', exact: true });
 	await expect(copySheet.getByText('reference.png', { exact: true })).toBeVisible();
 	await copySheet.getByRole('button', { name: 'Close', exact: true }).click();

@@ -67,7 +67,7 @@ export async function equipmentMode(
 	page: Page,
 	name: 'Wardrobe' | 'Colors' | 'Outfits' | 'States' | 'Moves'
 ) {
-	const inspect = page.getByRole('dialog', { name: 'Inspect character', exact: true });
+	const inspect = page.getByRole('dialog', { name: 'View frames', exact: true });
 	if (await inspect.count())
 		await inspect.getByRole('button', { name: 'Close', exact: true }).click();
 	await page
@@ -108,7 +108,7 @@ export async function selectedItemDetails(page: Page) {
 	);
 	await more.scrollIntoViewIfNeeded();
 	await more.click();
-	await page.getByRole('menuitem', { name: 'Details...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
 	const dialog = page.locator('dialog.item-detail[open]');
 	await expect(dialog).toBeVisible();
 	return dialog;
@@ -143,17 +143,17 @@ export async function pickItem(page: Page, name: string) {
 export async function openInspect(page: Page) {
 	const bar = page
 		.getByRole('toolbar', { name: 'Preview controls', exact: true })
-		.getByRole('button', { name: 'Inspect', exact: true });
+		.getByRole('button', { name: 'View frames', exact: true });
 	if (await bar.isVisible()) return bar.click();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
 		.locator('#experience-options')
-		.getByRole('button', { name: 'Inspect', exact: true })
+		.getByRole('button', { name: 'View frames', exact: true })
 		.click();
 }
 
 export async function inspectStage(page: Page) {
-	if (await page.getByRole('dialog', { name: 'Inspect character', exact: true }).count()) return;
+	if (await page.getByRole('dialog', { name: 'View frames', exact: true }).count()) return;
 	await openInspect(page);
 	await expect(page.locator('.inspection-stage .stage')).toBeVisible();
 }
@@ -163,7 +163,7 @@ export async function openAccount(page: Page) {
 	await page
 		.locator('#experience-options')
 		.getByRole('button', {
-			name: /^(Connect PixelLab\.\.\.$|Reconnect PixelLab\.\.\.$|PixelLab usage\b)/
+			name: /^(Connect PixelLab…$|Reconnect PixelLab…$|PixelLab usage\b)/
 		})
 		.click();
 }

@@ -183,7 +183,7 @@ test('rapid clicks operate controls without selecting their labels', async ({ pa
 	expect(await selected()).toBe('');
 
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
+	await page.getByRole('button', { name: 'Connect PixelLab…', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	const remember = dialog.getByRole('checkbox', { name: 'Remember on this device' });
 	const label = dialog.getByText('Remember on this device', { exact: true });
@@ -376,7 +376,7 @@ test('full screen includes the whole app and survives screen changes, dialogs an
 	await expect(modes(page)).toBeVisible();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.locator('#experience-options')).toBeVisible();
-	await page.getByRole('button', { name: 'Activity...', exact: true }).click();
+	await page.getByRole('button', { name: 'Activity…', exact: true }).click();
 	await expect(page.getByRole('dialog')).toBeVisible();
 	expect(await rootIsFullscreen()).toBe(true);
 	await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
@@ -707,7 +707,7 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	});
 	await more.click();
 	const actions = page.getByRole('menu', { name: `Actions for ${currentName}`, exact: true });
-	const details = actions.getByRole('menuitem', { name: 'Details...', exact: true });
+	const details = actions.getByRole('menuitem', { name: 'View and edit…', exact: true });
 	await expect(details).toBeFocused();
 	await page.keyboard.press('ArrowUp');
 	// The shared handler still steps over the locked Delete row to the last enabled one.
@@ -728,7 +728,7 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	const create = page.getByRole('button', { name: 'New character', exact: true }).first();
 	await create.focus();
 	await page.keyboard.press('Enter');
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'New character', exact: true });
 	const name = dialog.getByRole('textbox', { name: 'Name', exact: true });
 	await name.fill('Keyboard draft');
@@ -1482,7 +1482,7 @@ test('imported move names remain readable, distinct and contained in Preview and
 		.getByRole('button', { name: 'New character', exact: true })
 		.first()
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
 	const importing = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await importing.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'move-labels.zip',
@@ -1529,9 +1529,9 @@ test('imported move names remain readable, distinct and contained in Preview and
 	await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toHaveCount(0);
 	const inspectAction = page
 		.getByRole('toolbar', { name: 'Preview controls', exact: true })
-		.getByRole('button', { name: 'Inspect', exact: true });
+		.getByRole('button', { name: 'View frames', exact: true });
 	await expect(inspectAction).toHaveText('');
-	await expect(inspectAction).toHaveAttribute('title', 'Inspect');
+	await expect(inspectAction).toHaveAttribute('title', 'View frames');
 	await expect(inspectAction.locator('svg')).toHaveCount(1);
 	await selectPlaybackClip(page, 'right_punch');
 	await expect(move).toHaveAttribute('value', 'right_punch');
@@ -1553,13 +1553,16 @@ test('imported move names remain readable, distinct and contained in Preview and
 		await expect(move).toBeInViewport();
 		// Narrow phones move Inspect into More rather than shrinking the bar's targets below 44 px.
 		if (size.width <= 430) {
-			await expect(bar.getByRole('button', { name: 'Inspect', exact: true })).toBeHidden();
+			await expect(bar.getByRole('button', { name: 'View frames', exact: true })).toBeHidden();
 			await page.getByRole('button', { name: 'More options', exact: true }).click();
 			await expect(
-				page.locator('#experience-options').getByRole('button', { name: 'Inspect', exact: true })
+				page
+					.locator('#experience-options')
+					.getByRole('button', { name: 'View frames', exact: true })
 			).toBeVisible();
 			await page.keyboard.press('Escape');
-		} else await expect(bar.getByRole('button', { name: 'Inspect', exact: true })).toBeInViewport();
+		} else
+			await expect(bar.getByRole('button', { name: 'View frames', exact: true })).toBeInViewport();
 		const targets = await bar.evaluate((node) =>
 			[...node.querySelectorAll('button, select')]
 				.map((element) => element.getBoundingClientRect())
@@ -1612,8 +1615,8 @@ test('imported move names remain readable, distinct and contained in Preview and
 		await bar.getByRole('button', { name: 'Face north', exact: true }).click();
 		await expect(world(page)).toHaveAttribute('data-facing', 'north');
 	}
-	await page.getByRole('button', { name: 'Inspect', exact: true }).click();
-	const inspect = page.getByRole('dialog', { name: 'Inspect character', exact: true });
+	await page.getByRole('button', { name: 'View frames', exact: true }).click();
+	const inspect = page.getByRole('dialog', { name: 'View frames', exact: true });
 	const inspectMove = inspect.getByRole('combobox', { name: 'Move', exact: true });
 	await expect(inspectMove).toHaveValue(longId);
 	await expect(inspectMove.locator('option')).toHaveText([
@@ -2658,7 +2661,7 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 			.getByRole('button', { name: 'New character', exact: true })
 			.first()
 			.click();
-		await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
 		const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true });
 		await dialog
 			.getByLabel('Character ZIP', { exact: true })
@@ -4381,9 +4384,9 @@ test('short tab labels, the character name and sheet Done buttons keep 44 px tar
 	expect(Math.max(...row.widths) - Math.min(...row.widths)).toBeLessThanOrEqual(1);
 	expect(row.widths.reduce((a, b) => a + b, 0)).toBeCloseTo(row.bar.width, 0);
 	if (row.rail) expect(row.rail.right).toBeCloseTo(row.bar.right, 0);
-	await page.getByRole('button', { name: 'Inspect', exact: true }).click();
+	await page.getByRole('button', { name: 'View frames', exact: true }).click();
 	const done = page
-		.getByRole('dialog', { name: 'Inspect character', exact: true })
+		.getByRole('dialog', { name: 'View frames', exact: true })
 		.getByRole('button', { name: 'Close', exact: true });
 	// The label stays compact; an invisible box answers presses 22 px around its center.
 	expect(

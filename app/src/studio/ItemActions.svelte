@@ -29,7 +29,7 @@
 		ArrowRightLeft,
 		ChevronLeft,
 		Download,
-		Info,
+		Eye,
 		Palette,
 		Pencil,
 		RefreshCw,
@@ -134,7 +134,7 @@
 							ui.selected = it.id;
 							ui.sheet = 'item';
 						})}
-					><Info size={16} aria-hidden="true" />{openerLabel(
+					><Eye size={16} aria-hidden="true" />{openerLabel(
 						t('common.detailsMenu')
 					)}{#if attention}<span class="details-dot" aria-hidden="true"></span><span
 							id={attentionId}

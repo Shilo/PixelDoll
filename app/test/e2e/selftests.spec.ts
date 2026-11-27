@@ -2125,7 +2125,7 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'starter.pixeldoll.zip',
 		mimeType: 'application/zip',
@@ -2144,8 +2144,8 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 			exact: true
 		})
 	).toBeVisible();
-	await page.getByRole('button', { name: 'Inspect', exact: true }).click();
-	const inspect = page.getByRole('dialog', { name: 'Inspect character', exact: true });
+	await page.getByRole('button', { name: 'View frames', exact: true }).click();
+	const inspect = page.getByRole('dialog', { name: 'View frames', exact: true });
 	const move = inspect.getByRole('combobox', { name: 'Move', exact: true });
 	await expect(move.locator('option')).toHaveText(['Standing', 'Idle', 'Walk', 'Slash']);
 	const pause = inspect.getByRole('button', { name: 'Pause', exact: true });

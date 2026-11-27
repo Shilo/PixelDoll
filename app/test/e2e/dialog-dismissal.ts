@@ -95,9 +95,7 @@ for (const [width, height, touch] of [
 							.locator('#project-menu')
 							.getByRole('button', { name: 'New character', exact: true })
 							.click();
-						await page
-							.getByRole('menuitem', { name: 'Import from device...', exact: true })
-							.click();
+						await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
 					},
 					close: 'Close'
 				},
@@ -109,9 +107,7 @@ for (const [width, height, touch] of [
 							.locator('#project-menu')
 							.getByRole('button', { name: 'New character', exact: true })
 							.click();
-						await page
-							.getByRole('menuitem', { name: 'Create from scratch...', exact: true })
-							.click();
+						await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 					},
 					field: 'Details',
 					close: 'Back',
@@ -123,7 +119,7 @@ for (const [width, height, touch] of [
 					close: 'Close'
 				},
 				{
-					name: 'Inspect character',
+					name: 'View frames',
 					open: () => inspectStage(page),
 					surface: '.inspection-stage canvas',
 					close: 'Close'
