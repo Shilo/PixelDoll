@@ -25,10 +25,10 @@ const runtimeFiles = {
 // Pin each published revision's paths and bytes together. Keep old revision pins when adding a new one. (Revision 1
 // was re-pinned before release, when the runtime folders gained their agent docs.)
 const revisionGoldens: Record<keyof typeof runtimeFiles, Record<number, string>> = {
-	godot: { 1: '721efb338e2e0623080a00dbb0e45f715bceee0ada8fd80834cfe9c2e132d041' },
-	phaser: { 1: 'c75683d0f5dadb441b579c4fb51ebe1ff67497294f04064543af73175c5fa540' },
-	'phaser-ae': { 1: '545479b480abac837c9db2f1312ce2b6ba173287bbbdb51bcc1dc10cc9e4914e' },
-	unity: { 2: '7866a826d5961f9a3e87a14c1eaceb4fe8695fa7fb3579978e1989b21068367e' }
+	godot: { 1: '36d78d90e69c82f893d59fa5b43e37034f16e01d9d3ee0059d9bcf77c1699eca' },
+	phaser: { 1: '5b65b219d3e7dba5ec472bd64eaca071ba57958bc93a66e77e9863bb5f703632' },
+	'phaser-ae': { 1: 'dd4f21b017a8a5fa43a356d7b9dc69dc7e24e3da63ba5207c873fec71b81fc1c' },
+	unity: { 2: 'ada697c9ac5fef326e92340f94483bb8965ce9d75f7e9213ed83210e9e88058d' }
 };
 
 // Captured at the fixture's fixed exportedAt from an isolated archive of 67b40dc8e, then updated only for deliberate
@@ -100,6 +100,10 @@ test.each(engines)('%s folder keeps character files and separates its runtime', 
 	]) {
 		expect(files.get(name)).toContain(path);
 		expect(files.get(name)).toContain(`copy pixeldoll-${engine} too`);
+		// The guides' ../pixeldoll-<engine>/ paths start at the character folder, even from docs/ or an engine folder: say
+		// so. (README.txt sits in the character folder itself.)
+		if (name !== 'README.txt')
+			expect(files.get(name)!.replace(/\s+/g, ' ')).toContain('relative to this character folder');
 	}
 	if (engine === 'phaser' || engine === 'phaser-ae') {
 		expect(files.get(`${engine}/README.txt`)).toContain(

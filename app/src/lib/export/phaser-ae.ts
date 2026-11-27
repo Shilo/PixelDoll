@@ -632,6 +632,7 @@ under Phaser's own license.
      import heroData from './${dir}manifest.json'
      export const hero = await loadPaperdoll(game, '${dir}', { manifest: heroData })
      // main.ts imports './hero.js' before await game.start(); a scene file in game/scenes/:
+     import { game } from '../engine.js'
      import { Paperdoll } from '../${runtime}paperdoll.js'
      import { hero } from '../hero.js'
      // in the scene's enter(), synchronously:

@@ -268,19 +268,23 @@ export async function publishFiles(
 			(a) => !isPayload(a.path) && !isImageResource(a.path) && a.path !== manifest
 		);
 		for (const a of plan.writes) if (isFirst(a.path)) await write(a);
-		// A required file the user keeps is not written, so nothing else notices if it goes while the plan is checked or
-		// the shared files are written: look again before any file that depends on it lands.
+		// A required file this publish does not write (kept, or already right) could go while the plan is checked or the
+		// shared files are written, and nothing else would notice: look again before any file that depends on it lands. A
+		// kept one only has to still be a file; one already right must still hold exactly the planned bytes.
 		if (!stop) {
 			const lost: PlanAction[] = [];
 			for (const k of plan.actions) {
-				if (k.kind !== 'kept' || !o.required?.(k.path)) continue;
+				if (!o.required?.(k.path)) continue;
+				if (k.kind !== 'kept' && k.kind !== 'unchanged' && k.kind !== 'foreign') continue;
 				const found = await hashAt(target, k.path);
 				if (found === null)
 					lost.push({ path: k.path, kind: 'conflict', reason: 'deleted', found: DELETED });
 				else if (found === NOT_A_FILE)
 					lost.push({ path: k.path, kind: 'conflict', reason: 'folder', found: NOT_A_FILE });
+				else if (k.kind !== 'kept' && found !== next.get(k.path))
+					lost.push({ path: k.path, kind: 'conflict', reason: 'edited-outside', found });
 			}
-			if (lost.length) return { kind: 'blocked', conflicts: [...lost, ...approved] };
+			if (lost.length) return { kind: 'blocked', conflicts: [...lost, ...approved], matching };
 		}
 		await settleAtOnce(payload, write);
 		await settleAtOnce(resources, write);

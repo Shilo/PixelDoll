@@ -1075,6 +1075,7 @@ The importer slices the layer sheets in place: their import settings become Poin
 PPU ${m.export?.pixelsPerUnit ?? exportUnit(m.rig)} and pivot at the feet. Output in unity/Generated/: <anim>_<dir>.anim clips for supported views,
 ${data.name}.controller and ${data.name}.prefab
 (Sorting Group + Paperdoll + one SpriteRenderer per slot/role and a hidden animation clock).
+Use the prefab (or a prefab variant), not sprites of the layer sheets: the importer slices those sheets itself.
 Runtime namespace: ${ns}. Paperdoll.Play(anim, dir, restart = false), SetDirection(dir), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).
 Call SetActionLayering(true) to enable moving attacks when the ${folder ? 'character export' : 'ZIP'} contains precut fragments. CanLayerAction(move, direction) checks the whole action set and equipped gear. Invalid PlayAction calls warn and return an empty string without changing playback. PlayAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read IsActionPlaying for completion. Calling Play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
 Play preserves an active clip's progress. Calling it again after the same non-looping clip completes replays that clip.

@@ -386,6 +386,52 @@ it('records a new file left empty by a write given up after another file failed,
 	expect(folder.text('b.png')).toBe('new b');
 });
 
+describe('required files after planning', () => {
+	const publishWith = (
+		folder: ReturnType<typeof memoryFolder>,
+		record: { written: Record<string, string>; kept: string[] },
+		change: () => void
+	) =>
+		publishFiles(folder.target, files({ 'rt/a.js': 'stock', 'hero/manifest.json': 'new' }), {
+			record,
+			onRecord: async () => {},
+			manifest: 'hero/manifest.json',
+			first: 'rt',
+			required: (path) => path.startsWith('rt/'),
+			proceed: async () => {
+				change();
+				return true;
+			}
+		});
+
+	it('pauses when a runtime file already right is deleted or changed before the character lands', async () => {
+		for (const [found, reason] of [
+			[null, 'deleted'],
+			['edited', 'edited-outside']
+		] as const) {
+			const folder = memoryFolder({ 'rt/a.js': 'stock' });
+			const outcome = await publishWith(folder, { written: {}, kept: [] }, () =>
+				found === null ? folder.files.delete('rt/a.js') : folder.set('rt/a.js', found)
+			);
+			expect(outcome).toMatchObject({ kind: 'blocked', conflicts: [{ path: 'rt/a.js', reason }] });
+			expect(folder.text('hero/manifest.json')).toBeNull();
+		}
+	});
+
+	it('pauses when a folder takes the place of a kept runtime file', async () => {
+		const folder = memoryFolder({ 'rt/a.js': 'mine' });
+		const outcome = await publishWith(folder, { written: {}, kept: ['rt/a.js'] }, () => {
+			folder.files.delete('rt/a.js');
+			folder.dirs.add('rt/a.js');
+		});
+		expect(outcome).toMatchObject({
+			kind: 'blocked',
+			conflicts: [{ path: 'rt/a.js', reason: 'folder', found: NOT_A_FILE }]
+		});
+		expect(folder.text('hero/manifest.json')).toBeNull();
+	});
+});
+
 describe('required kept files after planning', () => {
 	it('pauses before any dependent file when a kept required file goes while the plan is checked', async () => {
 		const folder = memoryFolder({ 'rt/a.js': 'mine' });

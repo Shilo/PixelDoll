@@ -15,7 +15,7 @@ this file first, then the doc for your engine in docs/, which names the files to
   manifest that names every path, frame, pivot and draw order. Engines: generic, Godot, Unity, Phaser, Phaser AE,
   GDevelop, Aseprite.
 - PNG sheets at the root and no manifest.json: an RPG Maker sheet export. Rows are down, left, right, up and the
-  columns are that maker version's steps. See docs/rpg-maker.md or docs/rpg-maker-xp.md.
+  columns are that maker version's steps. See the RPG Maker doc in docs/.
 
 ## Read in this order
 
@@ -101,9 +101,10 @@ The path you pass is relative to the document's base URL (document.baseURI), not
 	runtimePath
 		? `
 <folder> is the path from the page (document.baseURI) to the folder picked in PixelDoll, and <character> is this
-character's folder in it. Paths starting with ../pixeldoll-phaser/ are relative to this character folder. If you picked the page's own folder, leave out <folder>/: '<character>/' and
-'./pixeldoll-phaser/PaperdollContainer.js'. The import assumes the importing module sits beside the page; from another
-module, use its own relative path to the same file (from src/main.js: '../<folder>/pixeldoll-phaser/...').`
+character's folder in it. Paths starting with ../pixeldoll-phaser/ are relative to this character folder. If you
+picked the page's own folder, leave out <folder>/: '<character>/' and './pixeldoll-phaser/PaperdollContainer.js'.
+The import assumes the importing module sits beside the page; from another module, use its own relative path to the
+same file (from src/main.js: '../<folder>/pixeldoll-phaser/...').`
 		: ''
 }
 This export does not bundle Phaser. Load Phaser 3.80+ or 4 yourself: a script tag that exposes the global Phaser, or your
@@ -319,8 +320,9 @@ export function runtimeAgentFiles(engine: string, entry: string): { name: string
 	const name = RUNTIME_NAMES[engine] ?? engine;
 	const agents = `# PixelDoll ${name} runtime
 
-PixelDoll manages this folder. It holds the ${name} runtime (${entry}) that the PixelDoll ${name} character folders beside it
-use. Each of them has its own manifest.json, AGENTS.md and ${engine}/README.txt with the runtime API.
+PixelDoll manages this folder. It holds the ${name} runtime (${entry}) that the PixelDoll
+${name} character folders beside it use. Each of them has its own manifest.json, AGENTS.md and
+${engine}/README.txt with the runtime API.
 
 - Integrate through a character folder: start with its AGENTS.md.
 - Do not edit or delete files here. PixelDoll replaces them when it updates the runtime. An edited file pauses updates
@@ -342,8 +344,10 @@ Read AGENTS.md in this folder: it says what this PixelDoll runtime folder is and
 /** The root agent files plus one engine reference per requested engine, in one fixed order. */
 export function agentFiles(engines: readonly Engine[], runtimePath?: string): OutFile[] {
 	const runtimeNote = runtimePath
-		? `\nThe shared runtime is at ${runtimePath}. When copying this character, copy ${runtimePath.split('/')[1]} too
-and keep them in the same parent folder.\n`
+		? `\nThe shared runtime is at ${runtimePath},
+relative to this character folder (the one holding manifest.json); ../pixeldoll-<engine>/ paths in this folder's
+guides start there too. When copying this character, copy ${runtimePath.split('/')[1]} too and keep them in the same
+parent folder.\n`
 		: '';
 	const files: OutFile[] = [
 		{ name: 'AGENTS.md', data: AGENTS + runtimeNote },

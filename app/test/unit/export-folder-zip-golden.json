@@ -1,6 +1,6 @@
 {
 	"generic": {
-		"archive": "447982dd3cd9877221e8909e3a0261b7592319280acb06667912e632169cecc3",
+		"archive": "b8d71b280c66200a8dab4fa639e37285f3d0f2682d142a0a57c19fbd56502152",
 		"entries": {
 			"README.txt": "46e05ffb12edf02cb6a090d0d87b4a8cdca0ae2d30b531a3428d4debfb6349c8",
 			"manifest.json": "2a3bdbf69e83599ec07dfcb9b4f9bcc0afe84bca70a5ad21ab2e32123cb36fb1",
@@ -23,7 +23,7 @@
 			"baked/current/walk.png": "2cc2934263fce7bfe904ce5455ab8fe2bdb71afcf6659270590c14b668ddd244",
 			"baked/default/rest.png": "adaf5d179448ce3d77608394d3fc824658681c71b3b3dade218e5bfe765ce725",
 			"baked/default/walk.png": "fbe5926069296a4869c6ca607ecc6f8450262fa0891a94303061d33a10ad2edb",
-			"AGENTS.md": "c60d7dca47dbdd916ffc69616697e62cfc46df5785a7b4291d37828235944233",
+			"AGENTS.md": "ca55ecd415e2a0fd1fd76e1a4ab05a7ab6c48eafda0ac811d74f1790ab4d32fc",
 			"CLAUDE.md": "e0430a774aa267fcecfae3215c6e4411f9db124cde3dc5089a1cd52e66fd5710",
 			"docs/generic.md": "8d7adcba3907b84fe5dfddc24b794bc2bb7677ec4c816860ace7d4fea813a0da",
 			"project.json": "312b4189d266a3bc22f12069b4446ed3b1f0792a46e20175571cf4a24dc475c8",
@@ -32,7 +32,7 @@
 		}
 	},
 	"godot": {
-		"archive": "fceb6a66508ca24524c6e4e4187151ccad8864e5d8d4c38594976ef8241b0832",
+		"archive": "72219d8f60e7357fc69371c2f481172d5ab886aac07b6f9a03ddb3a3b494639e",
 		"entries": {
 			"README.txt": "410b5cf18c7a91b8a558a4bc892f3807a44de978718b01ea12f0dfcf4946924b",
 			"manifest.json": "4dff6d0aa376a9df4b8e7df392ab0f8a04bbd6759bd1a094fc40b84c3a8ae303",
@@ -50,7 +50,7 @@
 			"godot/Paperdoll.tscn": "8131b39b2a9c57cf9be501f280638083425dad5b1b76ec3046813e31e0f97f21",
 			"godot/paperdoll.gd": "ee54fdc3b6ffb80ab2d86e41953c79a0727b9c48094c8a7ab0ef919dfe40d5a7",
 			"godot/README.txt": "36a43cc1dc34ed1ffe4758b74fad4f042bb62c638b3a3014dde58b3945b8662c",
-			"AGENTS.md": "c60d7dca47dbdd916ffc69616697e62cfc46df5785a7b4291d37828235944233",
+			"AGENTS.md": "ca55ecd415e2a0fd1fd76e1a4ab05a7ab6c48eafda0ac811d74f1790ab4d32fc",
 			"CLAUDE.md": "e0430a774aa267fcecfae3215c6e4411f9db124cde3dc5089a1cd52e66fd5710",
 			"docs/godot.md": "cc3bc8ae78c2ee876cb5912c48699d10242b695db37c1b997b228c94e8e53e92",
 			"project.json": "312b4189d266a3bc22f12069b4446ed3b1f0792a46e20175571cf4a24dc475c8",
@@ -59,7 +59,7 @@
 		}
 	},
 	"phaser": {
-		"archive": "1b16cafbb661bc714fbe81b6676937aefc6cbe696e966291cbb3db411b11ea8a",
+		"archive": "97e040c38fc4de03e3e99d3a1661a9f8618ea1b04ebdef53665b13785c1076d8",
 		"entries": {
 			"README.txt": "864bf1ecf2348127f19260d32537dafef9634df433fe8c6bfc8f3e711fb1e45a",
 			"manifest.json": "c3a8e00b00a9eade021a0175f843887400bdee7d53273c99c0276f6fb8f0ba82",
@@ -78,7 +78,7 @@
 			"phaser/PaperdollContainer.js": "9f016d61c94f9699ef77a71644e30f2072eb78ff6701c5a20e4fceeecfde9695",
 			"phaser/types.d.ts": "78204605f7c5fbc375be48b777177c94a3bdabfe0c6de0e8c940ea9b517b3bf2",
 			"phaser/README.txt": "151690a9bd0232abd2b8f6b86d515863950aad6fb8ad4cb2d7912f7dea338582",
-			"AGENTS.md": "c60d7dca47dbdd916ffc69616697e62cfc46df5785a7b4291d37828235944233",
+			"AGENTS.md": "ca55ecd415e2a0fd1fd76e1a4ab05a7ab6c48eafda0ac811d74f1790ab4d32fc",
 			"CLAUDE.md": "e0430a774aa267fcecfae3215c6e4411f9db124cde3dc5089a1cd52e66fd5710",
 			"docs/phaser.md": "61af2cd7d377f586f43abe4c5d0cdc88df3377c37618956e7fc18e1ce8fd45e2",
 			"project.json": "312b4189d266a3bc22f12069b4446ed3b1f0792a46e20175571cf4a24dc475c8",
@@ -87,7 +87,7 @@
 		}
 	},
 	"phaser-ae": {
-		"archive": "f781334d870bee6b981b761e0584d1c1e387320e6bd66b0a0162cd79d6d00cf4",
+		"archive": "2f19399044b8b6919b488e1943dc2c382c3b60a710d3afe460f62dffb5dade37",
 		"entries": {
 			"README.txt": "46decd38cc1127e89f6612d4d83e360313a2b9a9cce6c8182a535b0330a0b456",
 			"manifest.json": "a05e5eacb47756d117cce8ce0795685005c8850a5e5a5447b295ced87d32c62f",
@@ -103,8 +103,8 @@
 			"phaser-ae/paperdoll.d.ts": "0a4ce98975a3d010b485dbec0870e0f05048dcc32bfd4a76fae74efd03fb6909",
 			"phaser-ae/types.d.ts": "78204605f7c5fbc375be48b777177c94a3bdabfe0c6de0e8c940ea9b517b3bf2",
 			"phaser-ae/assets.json": "ad57c3f4a8a49963aaaff61f47d705ec7019db733ac615b5db971adf9cee3d55",
-			"phaser-ae/README.txt": "d3628d2518bcd975946c92cf870e068ddf97dd5ba7a6f8f074a6cd3d63f9777a",
-			"AGENTS.md": "c60d7dca47dbdd916ffc69616697e62cfc46df5785a7b4291d37828235944233",
+			"phaser-ae/README.txt": "c95c98fbaa18d1a61d4d3b17e18f70bb32e78103f66c1c218a65c2d252dab14e",
+			"AGENTS.md": "ca55ecd415e2a0fd1fd76e1a4ab05a7ab6c48eafda0ac811d74f1790ab4d32fc",
 			"CLAUDE.md": "e0430a774aa267fcecfae3215c6e4411f9db124cde3dc5089a1cd52e66fd5710",
 			"docs/phaser-ae.md": "f5fd6e833e0a58671acd9ecf468d59b3ed0a14835daaf63f2a2a523c4e0f5bd0",
 			"project.json": "312b4189d266a3bc22f12069b4446ed3b1f0792a46e20175571cf4a24dc475c8",
@@ -113,7 +113,7 @@
 		}
 	},
 	"unity": {
-		"archive": "5c0d12cbf08ab94415bb726368e0634005bf426e818b8b64e1ba0a31d1cb3e29",
+		"archive": "1b8cd20f8091ce8a29c2889f4b782802d8475ec32e915449c16812c1fbb48603",
 		"entries": {
 			"README.txt": "a88ccbc0859cb532616ce8642831af2dc83d2356be8cc09b17a48110b278cc3d",
 			"manifest.json": "7611e7ddd066b566f424d05ebdde4cc6e99c8cf77f4459d77a34098b8462d7cd",
@@ -130,8 +130,8 @@
 			"unity/Runtime/PixelDoll.Runtime.asmdef": "555bf652cfb103be3450d8af998202c4bb399496a8a4dc6ae98a449087e41380",
 			"unity/Editor/PixelDollImporter.cs": "93dbad4bbf587e6369d6cef5e67c92189013d51359798d9c963e63dab3751a67",
 			"unity/Editor/PixelDoll.Editor.asmdef": "8c7a37d67f89d1f07cf5a382d987f0b62205a22fdd24ebaf08da987e00b8152c",
-			"unity/README.txt": "3124391f0adbe826b877a1e1eaffba1c29db6d3d38718c0ff3db8743763b9f69",
-			"AGENTS.md": "c60d7dca47dbdd916ffc69616697e62cfc46df5785a7b4291d37828235944233",
+			"unity/README.txt": "b2cebcf0cc7a87b6074897190f47d21e718f9ae495f17692bf8f7181195bfd6f",
+			"AGENTS.md": "ca55ecd415e2a0fd1fd76e1a4ab05a7ab6c48eafda0ac811d74f1790ab4d32fc",
 			"CLAUDE.md": "e0430a774aa267fcecfae3215c6e4411f9db124cde3dc5089a1cd52e66fd5710",
 			"docs/unity.md": "8f3ddb2ef655a4e9e8501f80b1171c19669ffb4528ea60a6cdc756bb7291cd61",
 			"project.json": "312b4189d266a3bc22f12069b4446ed3b1f0792a46e20175571cf4a24dc475c8",
@@ -140,7 +140,7 @@
 		}
 	},
 	"gdevelop": {
-		"archive": "2b97cd34a249beaf29e48f7c5b24bbaf3deaf5dbdf14824914c84fa94b58acd4",
+		"archive": "503e83778711384e7a45563072ffdf1a8eaa04c9190663ed8e50107b85a81ab9",
 		"entries": {
 			"README.txt": "fdcc18ccea8ec0176fad44faa72c1c9eab89c5161b49a4303894a58ec0478647",
 			"manifest.json": "0d0b9b76a327444f47811d829013a8ca4e56ef60ff7a77d9e916cf2722594883",
@@ -157,8 +157,8 @@
 			"gdevelop/images/2cc3ab347943371b_1_0_0_0_0.png": "afc7b0f71c139517459f97f247cba8b89a92a21f9bfee07dda8c7ced12297714",
 			"gdevelop/game.json": "caee6b24f369cd05827ae4e2b605b9a2a0d676e9540c83f5c02998eb393a6781",
 			"gdevelop/Paperdoll.js": "6d3653df8b689989dcac5c4685c7277419a082d9a80c8f94bf117a72e32d05f0",
-			"gdevelop/README.txt": "1c857e56ac5cef72c7d9200b89c606cb7a87f77401c8ab6680482b1c1f1c086f",
-			"AGENTS.md": "c60d7dca47dbdd916ffc69616697e62cfc46df5785a7b4291d37828235944233",
+			"gdevelop/README.txt": "5ea0060f830b9196c059d107857112f7b865091541a6a28a036abca9c6e1a730",
+			"AGENTS.md": "ca55ecd415e2a0fd1fd76e1a4ab05a7ab6c48eafda0ac811d74f1790ab4d32fc",
 			"CLAUDE.md": "e0430a774aa267fcecfae3215c6e4411f9db124cde3dc5089a1cd52e66fd5710",
 			"docs/gdevelop.md": "e64bb5aa25ddcf0934fdb495285822374e37124513dd9444d8607ee2b6d8155c",
 			"project.json": "312b4189d266a3bc22f12069b4446ed3b1f0792a46e20175571cf4a24dc475c8",
@@ -167,7 +167,7 @@
 		}
 	},
 	"aseprite": {
-		"archive": "fa3d54b8e46761d7ea17c93dc9d7be34d1a3de7befad2ee117bc15b13c3a0287",
+		"archive": "460f38eba90e17a97071f9b73f8c5431b86143dcf92ce131c2b93d9683ee9cd5",
 		"entries": {
 			"README.txt": "debab39a992e7ed08c417d7a7d22a22593e2899754f4e764973c5b0d10acd763",
 			"manifest.json": "6d9ff3b2a4d8b3d6da3897d92861a467344d8c4c56e5e3806b9677565edc8a5b",
@@ -181,7 +181,7 @@
 			"baked/default/walk.png": "fbe5926069296a4869c6ca607ecc6f8450262fa0891a94303061d33a10ad2edb",
 			"aseprite/Fixture.aseprite": "e92fb8d4a90a1bc95f3daa2addcc42d0c47be6e1c973d56ec480a2a4e2c449de",
 			"aseprite/README.txt": "3b91446177b037c9f82868bc9f31a919a8c8f5821b23cd2ae70c6004b75f0d06",
-			"AGENTS.md": "c60d7dca47dbdd916ffc69616697e62cfc46df5785a7b4291d37828235944233",
+			"AGENTS.md": "ca55ecd415e2a0fd1fd76e1a4ab05a7ab6c48eafda0ac811d74f1790ab4d32fc",
 			"CLAUDE.md": "e0430a774aa267fcecfae3215c6e4411f9db124cde3dc5089a1cd52e66fd5710",
 			"docs/aseprite.md": "11db2b0195920068cfe4eba5682b85194e97767e2c3e9908b685582705099fc6",
 			"project.json": "312b4189d266a3bc22f12069b4446ed3b1f0792a46e20175571cf4a24dc475c8",
@@ -190,12 +190,12 @@
 		}
 	},
 	"rpg-maker": {
-		"archive": "123651b92cc141ac0de09811644e558bdab9a5ed18e6e9b7ca4282c2acf563e5",
+		"archive": "e691dc75195901a8bedfd46df4a69ae6c5cce692f470fdea36a39e76d61c5de8",
 		"entries": {
 			"$Fixture.png": "e314c2da063680ff35170b61f58d21dd385e9c8b9c8d1bb065ce86d2e3f683fb",
 			"$Fixture_Default.png": "4dab7e753f61707f45630b67ac66b569c22595141288ae6b05efd0d64d27341d",
 			"README.txt": "ddf524bfd975e95b683eee6518e1a7b52693a334ee9f931b8d16ceffcc382e1d",
-			"AGENTS.md": "c60d7dca47dbdd916ffc69616697e62cfc46df5785a7b4291d37828235944233",
+			"AGENTS.md": "ca55ecd415e2a0fd1fd76e1a4ab05a7ab6c48eafda0ac811d74f1790ab4d32fc",
 			"CLAUDE.md": "e0430a774aa267fcecfae3215c6e4411f9db124cde3dc5089a1cd52e66fd5710",
 			"docs/rpg-maker.md": "4ac18bf7634a717825e7a01713b5559de7647669ebc8cc861ecd647150eb669d",
 			"project.json": "312b4189d266a3bc22f12069b4446ed3b1f0792a46e20175571cf4a24dc475c8",
@@ -205,12 +205,12 @@
 		}
 	},
 	"rpg-maker-xp": {
-		"archive": "d850e392993173a0b3f4761cf87ea7e8da416b466ab19f35df8a50e0690cf753",
+		"archive": "6e6e638d7e228892b11b42780ab712bbe0842b7c1c7a15a84c10540dedc2fe7c",
 		"entries": {
 			"Fixture.png": "e57e95ac17867796c726985e12b81d8a97ed2c72909cadf2cc263adb31f25068",
 			"Fixture_Default.png": "df9f2bb0d4a6465c4d3138ba456da9cc09675f6eb6c1121d1b5580c754076d39",
 			"README.txt": "f448489a2673997461dfcd2d166a6ccd19197e7fb0a1cc5b3d12fc5b4b5f5200",
-			"AGENTS.md": "c60d7dca47dbdd916ffc69616697e62cfc46df5785a7b4291d37828235944233",
+			"AGENTS.md": "ca55ecd415e2a0fd1fd76e1a4ab05a7ab6c48eafda0ac811d74f1790ab4d32fc",
 			"CLAUDE.md": "e0430a774aa267fcecfae3215c6e4411f9db124cde3dc5089a1cd52e66fd5710",
 			"docs/rpg-maker-xp.md": "b1c7051704ef1bed95a334f535fca322a4b145539fdbb5757e4ff49da7aa50fe",
 			"project.json": "312b4189d266a3bc22f12069b4446ed3b1f0792a46e20175571cf4a24dc475c8",
