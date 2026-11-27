@@ -5,6 +5,7 @@ import type { Message } from '../message.ts';
 import { repository } from '../repository.ts';
 import { DIRECTIONS } from '../rig/rig.ts';
 import { CREATION_MODEL_LABELS } from '../store/generation.ts';
+import { EXPORT_ENGINES } from '../store/manifest.ts';
 import { areaName } from './areas.ts';
 import { TRAIL_SIZE, type TrailEntry, type TrailEvent } from './trail.ts';
 
@@ -32,6 +33,8 @@ export interface ProblemFacts {
 	serviceWorkerControlled?: boolean;
 	/** The step a download was on when it failed. */
 	step?: DownloadStep;
+	/** The Export sheet's chosen format, one of EXPORT_ENGINES. */
+	exportFormat?: string;
 	/** The browser said it was offline when the problem happened. */
 	offline?: boolean;
 	/** A new PixelDoll version was waiting to load when the problem happened. */
@@ -313,6 +316,7 @@ const RECORD_STATES = new Set([
 	'lost'
 ]);
 const PHASES = new Set(['running', 'review', 'failed']);
+const ENGINE_IDS: ReadonlySet<string> = new Set(EXPORT_ENGINES);
 const QUEUE_ROLES = new Set(['leader', 'follower']);
 const oneOf = (set: ReadonlySet<string>, value: unknown) =>
 	typeof value === 'string' && set.has(value) ? value : undefined;
@@ -594,14 +598,14 @@ const PAGE_STATES = new Set(['hidden', 'visible', 'online', 'offline']);
 const SCREENS = new Set(['Characters', 'Studio']);
 
 /** One trail event in fixed words, or undefined when any part is not app vocabulary. */
-function trailEvent(event: TrailEvent, context: ReportContext): string | undefined {
+function trailEvent(event: TrailEvent, context: ReportContext, times = 1): string | undefined {
 	switch (event.kind) {
 		case 'press': {
 			const area = areaName(event.area);
 			if (!area) return undefined;
 			return typeof event.control === 'string' && TRAIL_CONTROL.test(event.control)
 				? `press ${event.control} in ${area}`
-				: `press a control in ${area}`;
+				: `press ${times > 1 ? 'unnamed controls' : 'an unnamed control'} in ${area}`;
 		}
 		case 'open':
 		case 'close': {
@@ -652,7 +656,7 @@ function trailText(
 			continue;
 		let line: string | undefined;
 		try {
-			line = trailEvent(entry.event, context);
+			line = trailEvent(entry.event, context, count(entry.times, 1e6));
 		} catch {
 			line = undefined;
 		}
@@ -707,6 +711,7 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 		['Character', characterFacts(facts.character, area)],
 		// The message itself is already the problem text; a plain "Error" name says nothing more.
 		['Message key', english && shown?.key],
+		['Export format', oneOf(ENGINE_IDS, facts.exportFormat)],
 		['Download step', oneOf(new Set<string>(DOWNLOAD_STEPS), facts.step)],
 		// A lone plain "Error" says nothing more than the message; a cause behind it does.
 		[

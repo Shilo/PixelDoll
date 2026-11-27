@@ -32,10 +32,12 @@ test('every data-trail name is a static, well-formed literal', () => {
 		}
 		// Callers of the forwarding rows pass literals too: trail="..." or trail: '...'.
 		if (!base.endsWith('.svelte')) continue;
+		// ReportButton hands a report its frozen trail entries (Problem.trail), not a control name.
+		const PROBLEM_TRAIL = base === 'ReportButton.svelte' ? 'shownTrail' : undefined;
 		for (const [, value] of text.matchAll(
 			/\btrail(?:=|:\s*)("[^"]*"|'[^']*'|\{[^}]*\}|[A-Za-z_$][\w.$]*)/g
 		)) {
-			if (value === '{trail}' && FORWARDERS.has(base)) continue;
+			if ((value === '{trail}' && FORWARDERS.has(base)) || value === PROBLEM_TRAIL) continue;
 			const literal = /^["'](.*)["']$/.exec(value)?.[1];
 			if (literal === undefined || !NAME.test(literal)) problems.push(`${base}: trail ${value}`);
 		}

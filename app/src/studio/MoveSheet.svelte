@@ -562,6 +562,8 @@
 		key: string;
 		source?: MoveSpec['motionSource'];
 		error?: string;
+		/** The probe's own failure, for Report. */
+		cause?: unknown;
 	}>();
 	let motionProbe = $state(0);
 	const managedMotionId = $derived(
@@ -604,7 +606,8 @@
 				if (!controller.signal.aborted) managedMotion = { id, key, source };
 			},
 			(error: unknown) => {
-				if (!controller.signal.aborted) managedMotion = { id, key, error: displayError(error) };
+				if (!controller.signal.aborted)
+					managedMotion = { id, key, error: displayError(error), cause: error };
 			}
 		);
 		return () => controller.abort();
@@ -2671,7 +2674,12 @@
 						{/if}
 					</div>
 					{#if motionAccess?.error}
-						<p class="notice warn small"><CircleAlert size={14} />{motionAccess.error}</p>
+						<p class="notice warn small">
+							<CircleAlert size={14} />{motionAccess.error}<ReportButton
+								error={motionAccess.cause}
+								tone="warning"
+							/>
+						</p>
 						<button
 							class="bu-action"
 							type="button"

@@ -158,6 +158,8 @@
 	// The edit is priced for free as the form settles; Generate State only enables once the shown price matches it.
 	let pricing = $state(false);
 	let priceFailure = $state<Message | string>('');
+	/** The exception behind `priceFailure`, for Report. */
+	let priceCause = $state.raw<unknown>();
 	let priceRetry = $state(0);
 
 	const source = $derived<StateSourceFrame>({ clip, frame });
@@ -370,6 +372,7 @@
 		const request = ++priceRequest;
 		pricing = true;
 		priceFailure = '';
+		priceCause = undefined;
 		try {
 			const input = stateModelInput(draft.model, draft.description, draft.reference);
 			const prepared = await prepareState(
@@ -391,6 +394,7 @@
 		} catch (error) {
 			if (request !== priceRequest) return;
 			priceFailure = errorMessage(error);
+			priceCause = error;
 			markStale(priceFailure);
 		} finally {
 			if (request === priceRequest) pricing = false;
@@ -661,7 +665,10 @@
 			{displayNestedMessage(failure)}<ReportButton error={failure} />
 		</p>{/if}
 	{#if priceFailure && editing}<p class="notice bad small" role="alert">
-			{displayNestedMessage(priceFailure)}<ReportButton error={priceFailure} />
+			{displayNestedMessage(priceFailure)}<ReportButton
+				error={priceCause ?? priceFailure}
+				message={typeof priceFailure === 'object' ? priceFailure : undefined}
+			/>
 		</p>{/if}
 </Sheet>
 {#snippet importFoot()}

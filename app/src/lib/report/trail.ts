@@ -22,7 +22,8 @@ export interface TrailEntry {
 	/** performance.now() when it first happened, for repeated events. */
 	first: number;
 	event: TrailEvent;
-	/** How many times in a row the same event happened (a double click, repeated zoom). */
+	/** How many times in a row the same event happened (a double click, repeated zoom). Unnamed presses in one area count
+	 *  together, so they do not take the room of actions a reader can identify. */
 	times: number;
 }
 
@@ -32,8 +33,6 @@ const ring: TrailEntry[] = [];
 let newest = -1;
 
 const same = (a: TrailEvent, b: TrailEvent) => {
-	// Unnamed presses may be on different controls, so they are never counted as one repeated action.
-	if (a.kind === 'press' && !a.control) return false;
 	const x = a as Record<string, unknown>,
 		y = b as Record<string, unknown>;
 	const keys = Object.keys(x);

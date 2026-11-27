@@ -260,6 +260,8 @@
 		requestedWarnings?: (Message | string)[];
 		retryable?: boolean;
 		rigIssues: Message[];
+		/** The exception behind a failed preparation, for Report. */
+		cause?: unknown;
 	} | null>(null);
 	let busy = $state(false);
 	let attempt = $state(0);
@@ -648,7 +650,8 @@
 					problem: 'Could not prepare this export.',
 					problemMessage: message('export.problem.prepareFailed'),
 					retryable: true,
-					rigIssues: []
+					rigIssues: [],
+					cause: e
 				};
 				busy = false;
 			});
@@ -671,7 +674,17 @@
 			result.kind === 'recovery'
 				? `${name}-recovered-artwork.zip`
 				: `${name}-${engine}.pixeldoll.zip`;
-		saveZip(result.zip, filename);
+		try {
+			saveZip(result.zip, filename);
+		} catch (error) {
+			console.error('export save', error);
+			toast(message('download.failedRetry', { label: name }), {
+				tone: 'danger',
+				error,
+				facts: { exportFormat: engine, step: 'save' }
+			});
+			return;
+		}
 		toast(
 			result.kind === 'recovery'
 				? message('export.toast.artworkStarted')
@@ -726,7 +739,11 @@
 				? displayMessage(saveError)
 				: loadError
 					? displayMessage(loadError)
-					: ''}<ReportButton area="Export" error={saveError || loadError} />
+					: ''}<ReportButton
+				area="Export"
+				error={saveError || loadError}
+				facts={{ exportFormat: engine }}
+			/>
 		</p>{/if}
 	{#if invalidPreferences}
 		<p class="bu-muted settings-description">
@@ -983,7 +1000,9 @@
 								{result.warnings.map(displayWarning).join(' ')}</span
 							>{#if result.kind === 'failed'}<ReportButton
 									area="Export"
-									error={result.problemMessage}
+									error={result.cause ?? result.problemMessage}
+									message={result.problemMessage}
+									facts={{ exportFormat: engine }}
 								/>{/if}
 						</p>
 					{/if}

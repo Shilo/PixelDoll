@@ -76,10 +76,11 @@ describe('trail ring', () => {
 		expect(trailSnapshot()).toMatchObject([{ at: 101, first: 95, times: 3 }]);
 	});
 
-	test('unnamed presses are never merged: they may be different controls', () => {
+	test('unnamed presses in one area count together, leaving room for named actions', () => {
 		track({ kind: 'press', area: 'Studio' }, 1);
 		track({ kind: 'press', area: 'Studio' }, 2);
-		expect(trailSnapshot()).toHaveLength(2);
+		track({ kind: 'press', area: 'Export' }, 3);
+		expect(trailSnapshot()).toMatchObject([{ times: 1 }, { times: 2 }]);
 	});
 
 	test('a snapshot is a copy', () => {
@@ -167,7 +168,7 @@ describe('trail in a report', () => {
 			[
 				'Recent actions (newest first, time before the problem):',
 				'- 2 s: press characterMenu.download in Studio',
-				'- 3 s: press a control in Studio (3 times)',
+				'- 3 s: press unnamed controls in Studio (3 times)',
 				'- 4 s: request POST /characters/{id}/animations failed',
 				'- 10 s: show Studio',
 				'- 40 s: page visible'
@@ -202,7 +203,7 @@ describe('trail in a report', () => {
 			]
 		});
 		expect(text).not.toContain('Alice');
-		expect(text).toContain('press a control in Studio');
+		expect(text).toContain('press an unnamed control in Studio');
 		expect(text).toContain('uncaught Error');
 	});
 
@@ -332,6 +333,7 @@ test('closed facts drop plain words', () => {
 			phase: NAME,
 			queueRole: NAME,
 			step: NAME as 'build',
+			exportFormat: NAME,
 			offline: true,
 			updateWaiting: true
 		},
@@ -339,5 +341,8 @@ test('closed facts drop plain words', () => {
 	});
 	expect(text).not.toContain('Alice');
 	expect(text).toContain('Connection: offline');
+	expect(buildReport({ facts: { exportFormat: 'godot' } }, context).details).toContain(
+		'Export format: godot'
+	);
 	expect(text).toContain('Update: a newer version was waiting to load');
 });

@@ -4,7 +4,7 @@
 import { track, watchRequests } from '../lib/report/trail.ts';
 import { queue } from '../lib/pixellab/queue.ts';
 import { experience } from './experience/state.svelte.ts';
-import { areaOf } from './problemCapture.svelte.ts';
+import { areaOf, currentArea } from './problemCapture.svelte.ts';
 import { ui } from './state.svelte.ts';
 
 const requests = watchRequests(performance.timeOrigin);
@@ -23,7 +23,16 @@ export function installTrail(): () => void {
 		const control = event.target.closest(CONTROL);
 		if (!control || control.closest('[data-trail-skip]')) return;
 		const name = control.getAttribute('data-trail') ?? undefined;
-		track({ kind: 'press', area: areaOf(ui.sheet), control: name });
+		track({ kind: 'press', area: currentArea(), control: name });
+	};
+	// Files reach the app without a press on a named control: record that one arrived, never its name.
+	const drop = (event: DragEvent) => {
+		if (event.isTrusted && event.dataTransfer?.types.includes('Files'))
+			track({ kind: 'press', area: currentArea(), control: 'file.drop' });
+	};
+	const change = (event: Event) => {
+		if (event.isTrusted && event.target instanceof HTMLInputElement && event.target.type === 'file')
+			track({ kind: 'press', area: currentArea(), control: 'file.choose' });
 	};
 	const visibility = () =>
 		track({ kind: 'page', state: document.visibilityState === 'hidden' ? 'hidden' : 'visible' });
@@ -31,6 +40,8 @@ export function installTrail(): () => void {
 	const offline = () => track({ kind: 'page', state: 'offline' });
 	// Capture on window runs before handlers that stop a press from propagating (tilePress.ts).
 	addEventListener('click', press, true);
+	addEventListener('drop', drop, true);
+	addEventListener('change', change, true);
 	addEventListener('online', online);
 	addEventListener('offline', offline);
 	document.addEventListener('visibilitychange', visibility);
@@ -41,6 +52,7 @@ export function installTrail(): () => void {
 	);
 
 	let sheet: typeof ui.sheet = null;
+	let overlay = false;
 	let screen = experience.screen;
 	const stopScreen = $effect.root(() => {
 		// Changes only: the screen the app opens on is not an action.
@@ -58,10 +70,18 @@ export function installTrail(): () => void {
 			if (next) track({ kind: 'open', area: areaOf(next) });
 			sheet = next;
 		});
+		$effect(() => {
+			const open = ui.settingsOverlay;
+			if (open === overlay) return;
+			overlay = open;
+			track({ kind: open ? 'open' : 'close', area: 'Settings' });
+		});
 	});
 
 	return () => {
 		removeEventListener('click', press, true);
+		removeEventListener('drop', drop, true);
+		removeEventListener('change', change, true);
 		removeEventListener('online', online);
 		removeEventListener('offline', offline);
 		document.removeEventListener('visibilitychange', visibility);

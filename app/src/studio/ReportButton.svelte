@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { t } from 'svelte-whisper';
-	import { track } from '../lib/report/trail.ts';
+	import { track, trailSnapshot, type TrailEntry } from '../lib/report/trail.ts';
 	import { reportProblem, type Problem } from './report.svelte.ts';
 	// `name`: what failed, in the user's words, so each Report in a list has its own accessible name.
 	const {
@@ -19,6 +19,8 @@
 	);
 	const error = $derived(problem.error);
 	let shownAt: number | undefined;
+	// Frozen when it shows, so actions after it cannot push the steps that led to it out of the trail.
+	let shownTrail: TrailEntry[] | undefined;
 	$effect(() => {
 		void error;
 		if (timed) return;
@@ -29,6 +31,7 @@
 				key,
 				tone: untrack(() => problem.tone) === 'warning' ? 'warning' : 'error'
 			});
+		shownTrail = trailSnapshot();
 	});
 </script>
 
@@ -38,7 +41,8 @@
 	data-variant={outlined ? 'outline' : 'quiet'}
 	data-trail-skip
 	aria-label={name ? t('report.actionLabelFor', { name }) : t('report.actionLabel')}
-	onclick={() => reportProblem(timed ? { ...problem } : { ...problem, failedAt: shownAt })}
+	onclick={() =>
+		reportProblem(timed ? { ...problem } : { ...problem, failedAt: shownAt, trail: shownTrail })}
 	>{t('report.action')}</button
 >
 

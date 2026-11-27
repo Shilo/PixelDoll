@@ -43,7 +43,10 @@
 			n = await cleanUp();
 		} catch (e) {
 			console.error('clear finished', e);
-			toast(t('activity.clearFailed', { error: displayError(e) }), { tone: 'danger' });
+			toast(message('activity.clearFailed', { error: displayError(e) }), {
+				tone: 'danger',
+				error: e
+			});
 			return;
 		}
 		toast(
@@ -56,12 +59,12 @@
 		);
 	}
 	import { ChevronRight, CircleAlert, CircleCheck, RefreshCw } from './icons.ts';
-	import { LocalizedError } from '../lib/message.ts';
+	import { LocalizedError, message } from '../lib/message.ts';
 	/** A cancel whose save fails stays canceled in this tab (nothing is sent from here); say so and offer to save it again. */
 	function cancelRecord(id: string) {
 		queue.cancel(id).catch((error: unknown) => {
 			console.error('cancel', error);
-			if (error instanceof LocalizedError) toast(displayError(error), { tone: 'danger' });
+			if (error instanceof LocalizedError) toast(displayError(error), { tone: 'danger', error });
 			else cancelNotSaved(id);
 		});
 	}
@@ -73,7 +76,8 @@
 				queue.retryCancelSave(id).catch((error: unknown) => {
 					console.error('cancel', error);
 					// A stop PixelLab did not confirm is not a failed save: say so instead of offering to save it again.
-					if (error instanceof LocalizedError) toast(displayError(error), { tone: 'danger' });
+					if (error instanceof LocalizedError)
+						toast(displayError(error), { tone: 'danger', error });
 					else cancelNotSaved(id);
 				})
 		});

@@ -55,6 +55,8 @@ const LIBRARY_AREAS: ReadonlySet<string> = new Set<AreaName>([
 
 export const areaOf = (sheet: SheetId): AreaName =>
 	sheet ? AREAS[sheet] : experience.screen === 'characters' ? 'Characters' : 'Studio';
+/** The area in front now: Settings can open over a sheet without replacing it. */
+export const currentArea = (): AreaName => (ui.settingsOverlay ? 'Settings' : areaOf(ui.sheet));
 
 /** The open character and failing move, reduced to fixed facts: report.ts checks every value again. The move kind comes only
  *  from a move that surface actually names: the generating spec, the Move review candidate, or Fix frames' selected move. */
@@ -103,7 +105,7 @@ function savedMoveKind(anim: RigAnimation | undefined): 'built-in' | 'custom' | 
  *  problem belongs to the sheet that is open now. */
 export function captureProblem(problem: Problem, failedAt: number | undefined): Problem {
 	if (problem.captured) return problem;
-	const area = problem.area ?? areaOf(ui.sheet);
+	const area = problem.area ?? currentArea();
 	// A download can name a character other than the open one, and its failure says nothing about an in-flight move; a stored
 	// record can belong to any character; outside Studio, or on a sheet about the whole library, the last opened character
 	// is not part of the problem. Only character facts supplied with them are kept.
@@ -116,7 +118,9 @@ export function captureProblem(problem: Problem, failedAt: number | undefined): 
 			? characterFacts(area)
 			: undefined);
 	// A stored record that did not settle in this page has no actions of this page to show.
-	const trail = problem.record && failedAt === undefined ? undefined : trailSnapshot(failedAt);
+	const trail =
+		problem.trail ??
+		(problem.record && failedAt === undefined ? undefined : trailSnapshot(failedAt));
 	return {
 		...problem,
 		area,
