@@ -1,7 +1,9 @@
+// Project folder: The first-link offer across tabs, refreshes and retries, and reusing an export time that reproduces the
+// manifest already in the folder.
 import { afterEach, expect, it, vi } from 'vitest';
 import type { FolderLink } from '../../src/lib/project-folder/links.ts';
 import type { FolderRecord } from '../../src/lib/project-folder/plan.ts';
-import { files, memoryFolder } from './project-folder-memory.ts';
+import { domError, files, memoryFolder } from './project-folder-memory.ts';
 
 type UpdateLink = (
 	id: string,
@@ -107,6 +109,212 @@ async function setup(initial: Record<string, string>) {
 afterEach(() => {
 	vi.restoreAllMocks();
 	vi.unstubAllGlobals();
+});
+
+it('shows a newly persisted offer when a second tab refreshes the same link', async () => {
+	const { api, openTab, link } = await setup({
+		[sprite]: 'sprite',
+		[extra]: 'extra',
+		[manifest]: manifestText(earlier)
+	});
+	const building = gate();
+	const resume = gate();
+	const build = studio.build.getMockImplementation()!;
+	studio.build.mockImplementationOnce(async (project, options) => {
+		building.open();
+		await resume.wait;
+		return build(project, options);
+	});
+	const linking = api.linkProjectFolder('generic');
+	await building.wait;
+	const second = await openTab();
+	expect(second.projectFolder.link?.linkedAt).toBe(link()?.linkedAt);
+	expect(second.projectFolder.offer).toBeNull();
+	resume.open();
+	await linking;
+	expect(link()?.offered).toHaveLength(3);
+
+	await second.loadFolderLink('hero');
+
+	expect(second.projectFolder.link?.offered).toHaveLength(3);
+	expect(second.projectFolder.offer?.files).toHaveLength(3);
+});
+
+it('clears a declined offer when a second tab refreshes the same link', async () => {
+	const { api, openTab, link, folder } = await setup({
+		[sprite]: 'sprite',
+		[extra]: 'extra',
+		[manifest]: manifestText(earlier)
+	});
+	await api.linkProjectFolder('generic');
+	const second = await openTab();
+	expect(second.projectFolder.offer?.files).toHaveLength(3);
+	await api.leaveMatchingFiles();
+	// Declining is recorded as an empty offer, so a retry of the first publish does not ask again.
+	expect(link()?.offered).toEqual([]);
+	expect(folder.record.written).toEqual({});
+
+	await second.loadFolderLink('hero');
+
+	expect(second.projectFolder.link?.offered).toEqual([]);
+	expect(second.projectFolder.offer).toBeNull();
+});
+
+it('offers matching foreign files after recovering from a failed first publish', async () => {
+	const { api, folder, link } = await setup({ [sprite]: 'sprite', [extra]: 'extra' });
+	vi.spyOn(console, 'warn').mockImplementation(() => {});
+	folder.failRead = (path) => (path === extra ? domError('NotReadableError') : undefined);
+	await api.linkProjectFolder('generic');
+	expect(api.projectFolder.status).toEqual({ kind: 'failed', reason: 'locked' });
+	expect(folder.text(manifest)).toBeNull();
+	expect(folder.log).toEqual([]);
+	expect(folder.record.written).toEqual({});
+	folder.failRead = undefined;
+
+	await api.publishProjectFolder();
+
+	expect(api.projectFolder.status.kind).toBe('done');
+	expect(folder.log).toEqual([`write ${manifest}`]);
+	expect(Object.hasOwn(folder.record.written, sprite)).toBe(false);
+	expect(Object.hasOwn(folder.record.written, extra)).toBe(false);
+	expect(link()?.offered?.map(({ path }) => path)).toEqual([sprite, extra]);
+});
+
+it('fills a missing file on retry without requiring a timestamp-only replacement', async () => {
+	const { api, folder, link } = await setup({
+		[sprite]: 'game edit',
+		[manifest]: manifestText(earlier)
+	});
+	await api.linkProjectFolder('generic');
+	expect(api.projectFolder.status).toMatchObject({
+		kind: 'blocked',
+		conflicts: [{ path: sprite }]
+	});
+	expect(api.projectFolder.offer?.files.map(({ path }) => path)).toEqual([manifest]);
+	expect(link()?.exportedAt).toBe(earlier);
+	expect(folder.record.written).toEqual({});
+	folder.set(sprite, 'sprite');
+
+	await api.publishProjectFolder();
+
+	expect(folder.text(manifest)).toBe(manifestText(earlier));
+	const status = api.projectFolder.status;
+	const conflicts = status.kind === 'blocked' ? status.conflicts.map(({ path }) => path) : [];
+	expect({ status: status.kind, conflicts, writes: folder.log }).toEqual({
+		status: 'done',
+		conflicts: [],
+		writes: [`write ${extra}`]
+	});
+});
+
+it('offers matching files when the retry finds the entire earlier export already in place', async () => {
+	const { api, folder, link } = await setup({
+		[sprite]: 'sprite',
+		[extra]: 'extra',
+		[manifest]: manifestText(earlier)
+	});
+	vi.spyOn(console, 'warn').mockImplementation(() => {});
+	folder.failRead = (path) => (path === extra ? domError('NotReadableError') : undefined);
+	await api.linkProjectFolder('generic');
+	expect(api.projectFolder.status).toEqual({ kind: 'failed', reason: 'locked' });
+	expect(link()?.exportedAt).toBe(earlier);
+	expect(link()?.files).toBeUndefined();
+	expect(link()?.offered).toBeUndefined();
+	expect(folder.record.written).toEqual({});
+	folder.failRead = undefined;
+
+	await api.publishProjectFolder();
+
+	expect(api.projectFolder.status.kind).toBe('done');
+	expect(folder.log).toEqual([]);
+	expect(folder.record.written).toEqual({});
+	expect(api.projectFolder.offer?.files.map(({ path }) => path)).toEqual([sprite, extra, manifest]);
+});
+
+it('honors an approved sprite replacement without requiring a timestamp-only manifest edit', async () => {
+	const { api, folder } = await setup({
+		[sprite]: 'game edit',
+		[manifest]: manifestText(earlier)
+	});
+	await api.linkProjectFolder('generic');
+	const status = api.projectFolder.status;
+	expect(status).toMatchObject({ kind: 'blocked', conflicts: [{ path: sprite }] });
+	expect(folder.log).toEqual([]);
+	if (status.kind !== 'blocked') throw new Error('Expected the sprite conflict');
+
+	await api.publishProjectFolder(
+		new Map(status.conflicts.map(({ path, found }) => [path, found!])),
+		status.linkedAt
+	);
+
+	expect(folder.text(manifest)).toBe(manifestText(earlier));
+	const result = api.projectFolder.status;
+	const conflicts = result.kind === 'blocked' ? result.conflicts.map(({ path }) => path) : [];
+	expect({ status: result.kind, conflicts }).toEqual({ status: 'done', conflicts: [] });
+	expect(folder.log).toEqual([`write ${sprite}`, `write ${extra}`]);
+	expect(Object.hasOwn(folder.record.written, manifest)).toBe(false);
+});
+
+it('keeps the offer dismissed when a refresh reads it while the decline is being saved', async () => {
+	const { api, folder, link } = await setup({
+		[sprite]: 'sprite',
+		[extra]: 'extra',
+		[manifest]: manifestText(earlier)
+	});
+	await api.linkProjectFolder('generic');
+	expect(api.projectFolder.offer?.files).toHaveLength(3);
+	expect(link()?.offered).toHaveLength(3);
+	const saving = gate();
+	const resume = gate();
+	const update = studio.updateLink.getMockImplementation()!;
+	studio.updateLink.mockImplementationOnce(async (id, linkedAt, patch) => {
+		saving.open();
+		await resume.wait;
+		return update(id, linkedAt, patch);
+	});
+
+	const decline = api.leaveMatchingFiles();
+	await saving.wait;
+	const clearedOnClick = api.projectFolder.offer === null;
+	try {
+		await api.loadFolderLink('hero');
+	} finally {
+		resume.open();
+		await decline;
+	}
+
+	expect(clearedOnClick).toBe(true);
+	expect(link()?.offered).toEqual([]);
+	expect(api.projectFolder.link?.offered).toEqual([]);
+	expect(folder.record.written).toEqual({});
+	expect(api.projectFolder.offer).toBeNull();
+});
+
+it('does not read a kept manifest when publishing other changed files', async () => {
+	const { api, folder, link } = await setup({});
+	await api.linkProjectFolder('generic');
+	expect(api.projectFolder.status.kind).toBe('done');
+	expect(link()?.files).toHaveProperty([manifest]);
+	expect(folder.log).toEqual([`write ${sprite}`, `write ${extra}`, `write ${manifest}`]);
+
+	folder.record.kept.push(manifest);
+	folder.set(manifest, 'user-owned manifest');
+	const read = vi.spyOn(folder.target, 'read');
+	studio.build.mockImplementation(async (_, { exportedAt }) => ({
+		kind: 'requested',
+		entries: files({
+			[sprite]: 'new sprite',
+			[extra]: 'extra',
+			[manifest]: manifestText(exportedAt)
+		})
+	}));
+
+	await api.publishProjectFolder();
+
+	expect(api.projectFolder.status).toMatchObject({ kind: 'done', kept: 1 });
+	expect(folder.text(sprite)).toBe('new sprite');
+	expect(folder.text(manifest)).toBe('user-owned manifest');
+	expect(read).not.toHaveBeenCalledWith(manifest);
 });
 
 it('keeps a persisted decline when the picker tab has yet to start its first publish', async () => {

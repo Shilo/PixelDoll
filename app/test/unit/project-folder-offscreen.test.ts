@@ -1,3 +1,5 @@
+// Project folder: Characters that are not open: deletion mid-build, kept problems, Review routing, independent folder locks,
+// obsolete timers and unreadable artwork.
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { FolderLink } from '../../src/lib/project-folder/links.ts';
 import { domError, files, memoryFolder } from './project-folder-memory.ts';

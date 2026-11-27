@@ -1,3 +1,5 @@
+// Project folder: Accepting the first-link offer, a folder holding the character's earlier export, and edits waiting behind a
+// publish.
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { FolderLink } from '../../src/lib/project-folder/links.ts';
 import type { FolderRecord } from '../../src/lib/project-folder/plan.ts';

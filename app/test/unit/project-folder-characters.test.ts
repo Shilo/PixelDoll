@@ -1,3 +1,5 @@
+// Project folder: Several linked characters: debounced and queued publishes, saved-state snapshots, deleted characters, relinks
+// across switches, notices per character, and skipping the build of an unchanged character.
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { FolderLink } from '../../src/lib/project-folder/links.ts';
 import type { FolderRecord } from '../../src/lib/project-folder/plan.ts';

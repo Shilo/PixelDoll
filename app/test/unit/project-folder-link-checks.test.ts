@@ -1,3 +1,4 @@
+// Project folder: Final link checks that cannot be read, for Update now and for background attempts.
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { FolderLink } from '../../src/lib/project-folder/links.ts';
 import { files, memoryFolder } from './project-folder-memory.ts';

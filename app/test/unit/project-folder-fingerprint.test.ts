@@ -1,3 +1,5 @@
+// Project folder: The unchanged-character shortcut and its record checks (partial publishes, released keeps, format preference,
+// image sizes), plus adoption and save edge cases.
 import { afterEach, expect, it, vi } from 'vitest';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts';

@@ -1,3 +1,5 @@
+// Project folder: One character's publish from start to finish: staging conflicts, approvals of unreadable edits, snapshot
+// freshness, Up to date after newer edits, automatic-mode changes during relinks and switches, and saves.
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { FolderLink } from '../../src/lib/project-folder/links.ts';
 import { publishFiles } from '../../src/lib/project-folder/publish.ts';

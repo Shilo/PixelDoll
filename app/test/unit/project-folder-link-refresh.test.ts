@@ -1,3 +1,5 @@
+// Project folder: Links changing underneath a tab: placeholder files from failed writes, obsolete links, another tab linking,
+// conflicts surviving canceled publishes, Unlink notices and read failures.
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { FolderLink } from '../../src/lib/project-folder/links.ts';
 import { PENDING, type FolderRecord } from '../../src/lib/project-folder/plan.ts';

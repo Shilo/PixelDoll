@@ -1,3 +1,4 @@
+// Project folder: Reads of a character's link racing another character's Unlink.
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { FolderLink } from '../../src/lib/project-folder/links.ts';
 

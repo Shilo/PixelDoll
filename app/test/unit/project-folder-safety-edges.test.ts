@@ -1,3 +1,5 @@
+// Project folder: Write-path edge cases: unreadable kept files, files deleted after planning, Windows device names, automatic
+// updates turned off mid-build, and approvals kept across repeated pauses.
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { FolderLink } from '../../src/lib/project-folder/links.ts';
 import { publishFiles, sha256 } from '../../src/lib/project-folder/publish.ts';

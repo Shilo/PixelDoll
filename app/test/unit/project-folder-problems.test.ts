@@ -1,3 +1,5 @@
+// Project folder: Problems scoped to their link and character: replacement links, Reconnect and Review routing, notices held
+// back by more urgent ones, and conflicts across failed saves.
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { FolderLink } from '../../src/lib/project-folder/links.ts';
 import { DELETED, type FolderRecord } from '../../src/lib/project-folder/plan.ts';
