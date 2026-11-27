@@ -108,6 +108,10 @@ test.each(engines)('%s folder keeps character files and separates its runtime', 
 		if (['AGENTS.md', 'CLAUDE.md', `docs/${engine}.md`].includes(name))
 			expect(files.get(name)!.replace(/\s+/g, ' ')).toContain("don't edit or re-save its files");
 	}
+	// A folder name with # or a space breaks a module import unless encoded: both Phaser guides say so.
+	if (engine === 'phaser')
+		for (const guide of ['phaser/README.txt', 'docs/phaser.md'])
+			expect(files.get(guide)!.replace(/\s+/g, ' ')).toContain('Characters%20%232');
 	if (engine === 'phaser' || engine === 'phaser-ae') {
 		expect(files.get(`${engine}/README.txt`)).toContain(
 			`from './<folder>/pixeldoll-${engine}/${runtimeFiles[engine][0]}'`

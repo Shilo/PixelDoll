@@ -381,6 +381,8 @@ export function phaserFiles(m: Manifest, folder = false): OutFile[] {
    folder, leave out "<folder>/" everywhere below: '<character>/' and './pixeldoll-phaser/PaperdollContainer.js'.
    The import in step 3 assumes the importing module sits beside the page; from another module, use its own relative
    path to the same file (from src/main.js: '../<folder>/pixeldoll-phaser/PaperdollContainer.js').
+   In the import and the loadPaperdoll path, percent-encode folder names with spaces, #, ? or % (Characters #2
+   becomes Characters%20%232).
    Its runtime is at ../pixeldoll-phaser/PaperdollContainer.js relative to this character folder. When copying the
    character, copy pixeldoll-phaser too and keep them in the same parent folder.
    Rebuild if you bundle the module, then reload a running game to pick up runtime changes.`
