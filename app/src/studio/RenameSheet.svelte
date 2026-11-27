@@ -133,7 +133,11 @@
 	locked={busy}
 	back={target.back ? back : undefined}
 	backDiscards
-	backTo={target.back ? t('studio.titleItem') : undefined}
+	backTo={target.back === 'item'
+		? t('studio.titleItem')
+		: target.back === 'details'
+			? (store.projects.find((project) => project.id === target.projectId)?.name ?? name)
+			: undefined}
 	dirty={nameChanged || idChanged}
 	onclose={close}
 >

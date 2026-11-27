@@ -1,11 +1,13 @@
 <script lang="ts" module>
 	type Tool = 'adjustFrame' | 'directions' | 'cost';
-	/** Where the window was when one of its tools opened, so the tool's Back returns to the same place. */
+	/** Where the window was when one of its tools (or a menu action such as Rename) opened, so coming back returns to the
+	 *  same place: the move, every open section and disclosure, and the control that opened it. */
 	let resume: {
 		id: string;
 		anim: string;
 		open: Record<'frame' | 'cost' | 'about', boolean>;
-		tool: Tool;
+		disclosures: boolean[];
+		from: Tool | 'menu';
 	} | null = null;
 </script>
 
@@ -86,11 +88,28 @@
 	const editable = id.startsWith('rig-');
 	const open = $state(resumed?.open ?? { frame: false, cost: false, about: false });
 	let body = $state<HTMLElement>();
-	// Back from a tool puts the keyboard on the row that opened it.
+	// Coming back reopens the disclosures inside the sections and puts the keyboard on the control that left.
 	$effect(() => {
 		if (!resumed || !body) return;
-		body.querySelector<HTMLElement>(`[data-tool="${resumed.tool}"] button`)?.focus();
+		body.querySelectorAll('details').forEach((element, index) => {
+			if (resumed.disclosures[index]) element.open = true;
+		});
+		(resumed.from === 'menu'
+			? body.closest('dialog')?.querySelector<HTMLElement>('.sheet-head [aria-haspopup="menu"]')
+			: body.querySelector<HTMLElement>(`[data-tool="${resumed.from}"] button`)
+		)?.focus();
 	});
+	/** Remembers this window's place before something opens over it whose Back or Cancel returns here. */
+	function remember(from: Tool | 'menu') {
+		resume = {
+			id,
+			anim: animId,
+			open: { ...open },
+			disclosures: [...(body?.querySelectorAll('details') ?? [])].map((element) => element.open),
+			from
+		};
+		ui.returnTo = 'details';
+	}
 
 	// ---------- preview: the body alone, every facing of the chosen move or state ----------
 	const previews = $derived(
@@ -141,11 +160,10 @@
 	);
 	/** Opens one of the character's tools; its Back returns here. */
 	function tool(sheet: Tool) {
-		resume = { id, anim: animId, open: { ...open }, tool: sheet };
+		remember(sheet);
 		if (sheet === 'adjustFrame') ui.frameProject = id;
 		else if (sheet === 'directions') ui.directionProject = id;
 		else ui.costProject = id;
-		ui.returnTo = 'details';
 		ui.sheet = sheet;
 	}
 </script>
@@ -174,7 +192,7 @@
 	{/snippet}
 	{#snippet menu(close)}
 		<div role="menu" aria-label={t('characterWindow.actions')}>
-			<CharacterMenu {id} {close} inWindow />
+			<CharacterMenu {id} {close} inWindow leave={() => remember('menu')} />
 		</div>
 	{/snippet}
 	{#snippet footer()}

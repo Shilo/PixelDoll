@@ -56,7 +56,7 @@
 	problem={error ? displayMessage(error) : displayError(reason)}
 	problemAction={blockedByWork(reason) ? viewPending : undefined}
 	blocked={!!reason}
-	oncancel={() => (ui.sheet = null)}
+	oncancel={() => (ui.sheet = ui.returnTo === 'details' && ui.details === id ? 'details' : null)}
 	onconfirm={() => void remove()}
 	><p>
 		{t('deleteSheet.itsOutfitsAndChangesAreRemovedFrom')}

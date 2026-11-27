@@ -42,6 +42,11 @@
 	popover
 	bind:this={menu}
 	role="menu"
+	onfocusout={(event) => {
+		// Like any menu, Tab or Shift+Tab out of it closes it, so it never covers where the keyboard went.
+		const to = event.relatedTarget;
+		if (to instanceof HTMLElement && !menu.contains(to) && to !== more) close();
+	}}
 	aria-label={t('experience.actionsFor', { name })}
 	ontoggle={(event) => {
 		expanded = event.newState === 'open';

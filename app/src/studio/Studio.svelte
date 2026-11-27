@@ -211,12 +211,15 @@
 		if (sheetBefore === 'activity' && sheet !== 'activity') cancelWaitingForTab();
 		if (sheet !== 'activity') settingsNavigation.activityOpen = false;
 		if (sheet !== 'cost') settingsNavigation.costOpen = false;
-		// A character tool returns to the character's window only while one of them, or the window, is open.
+		// A character tool (or Rename, Move to Trash) returns to the character's window only while one of them, or the
+		// window, is open.
 		if (
 			sheet !== 'details' &&
 			sheet !== 'adjustFrame' &&
 			sheet !== 'directions' &&
-			sheet !== 'cost'
+			sheet !== 'cost' &&
+			sheet !== 'rename' &&
+			sheet !== 'delete'
 		)
 			ui.returnTo = null;
 		if (sheet !== 'export' && !(sheet === 'settings' && settingsNavigation.fromExport))

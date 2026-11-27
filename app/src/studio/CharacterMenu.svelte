@@ -15,13 +15,16 @@
 	let {
 		id,
 		close,
-		inWindow = false
+		inWindow = false,
+		leave
 	}: {
 		id: string;
 		/** Hides the menu before an action runs. */
 		close: () => void;
 		/** Opened from the character's own window: no View and edit row, and the sheets it opens return there. */
 		inWindow?: boolean;
+		/** Remembers the window's place before Rename or Move to Trash opens over it; both return there. */
+		leave?: () => void;
 	} = $props();
 	/** Close this menu and any menu it was opened from (the header picker), then go. */
 	function go(action: () => void) {
@@ -52,7 +55,11 @@
 <DemoCopyRow {id} {close} />
 <RenameRow
 	locked={id.startsWith('fixture:') ? t('characterActions.demoRenameLocked') : ''}
-	onclick={() => go(() => openRename(id))}
+	onclick={() =>
+		go(() => {
+			leave?.();
+			openRename(id, inWindow ? { back: 'details' } : {});
+		})}
 />
 <button
 	class="row"
@@ -69,6 +76,7 @@
 	locked={id.startsWith('fixture:') ? t('characterActions.demoDeleteLocked') : ''}
 	onclick={() =>
 		go(() => {
+			leave?.();
 			ui.deleting = id;
 			ui.sheet = 'delete';
 		})}

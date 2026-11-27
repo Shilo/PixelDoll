@@ -79,6 +79,16 @@
 			data-placement="bottom-end"
 			popover
 			bind:this={popover}
+			onfocusout={(event) => {
+				// Like any menu, Tab or Shift+Tab out of it closes it, so it never covers where the keyboard went.
+				const to = event.relatedTarget;
+				if (
+					to instanceof HTMLElement &&
+					!popover?.contains(to) &&
+					to.getAttribute('popovertarget') !== menuId
+				)
+					close();
+			}}
 			ontoggle={(event) => {
 				onmenutoggle?.(event.newState === 'open');
 				popoverFocus(event, true);
