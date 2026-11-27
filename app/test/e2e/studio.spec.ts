@@ -782,12 +782,10 @@ test('tips point at each control in order, end on their action, and come back in
 	await expect(heading('Make your own')).toBeVisible();
 	const newCharacter = page.getByRole('button', { name: 'Add character', exact: true });
 	await pointsAt(newCharacter);
-	// Opening the menu is the action: the tip ends, and the paid route says so before its form.
+	// Opening the menu is the action: the tip ends.
 	await newCharacter.click();
 	await expect(tip).toHaveCount(0);
-	await expect(
-		page.getByRole('menuitem', { name: 'Create…', exact: true })
-	).toHaveAccessibleDescription('Needs a PixelLab key and uses paid generations');
+	await expect(page.getByRole('menuitem', { name: 'Create…', exact: true })).toBeVisible();
 	await page.keyboard.press('Escape');
 	// Connect explains PixelLab on its sign-up button the first time, inside the dialog; typing a key means they have met it.
 	await page.getByRole('button', { name: 'More options', exact: true }).click();

@@ -676,8 +676,7 @@
 		"createFromScratch": "作成…",
 		"addCharacter": "キャラクターを追加",
 		"fromFile": "ファイルから…",
-		"fromPixelLab": "PixelLabから…",
-		"createNeedsKey": "PixelLabのキーが必要で、有料の生成を使います"
+		"fromPixelLab": "PixelLabから…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "（新しいタブで開きます）"

@@ -834,7 +834,7 @@ test('the Add character header button offers separate import sources on desktop 
 			menu.locator('[role="menuitem"] > svg[data-surface-chevron][aria-hidden="true"]')
 		).toHaveCount(3);
 		await expect(menu.getByRole('menuitem')).toHaveText([
-			'Create…Needs a PixelLab key and uses paid generations',
+			'Create…',
 			'From file…',
 			'From PixelLab…'
 		]);

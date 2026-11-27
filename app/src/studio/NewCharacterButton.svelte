@@ -43,20 +43,14 @@
 >
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
-		<!-- Creating is the one paid path here: say so before the form, not after it is filled in. -->
 		<button
 			class="row bu-action"
 			data-variant="quiet"
 			role="menuitem"
-			aria-labelledby="{id}-create"
-			aria-describedby="{id}-paid"
 			data-trail="newCharacter.create"
 			onclick={() => choose('create')}
 			><Sparkles size={18} aria-hidden="true" /><span class="row-name"
-				><span id="{id}-create">{openerLabel(t('newCharacterButton.createFromScratch'))}</span><span
-					id="{id}-paid"
-					class="row-reason bu-muted">{t('newCharacterButton.createNeedsKey')}</span
-				></span
+				>{openerLabel(t('newCharacterButton.createFromScratch'))}</span
 			><SurfaceChevron /></button
 		>
 		<button

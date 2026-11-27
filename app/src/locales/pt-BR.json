@@ -698,8 +698,7 @@
 		"createFromScratch": "Criar…",
 		"addCharacter": "Adicionar personagem",
 		"fromFile": "Do arquivo…",
-		"fromPixelLab": "Do PixelLab…",
-		"createNeedsKey": "Precisa de uma chave do PixelLab e usa gerações pagas"
+		"fromPixelLab": "Do PixelLab…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(abre em uma nova aba)"

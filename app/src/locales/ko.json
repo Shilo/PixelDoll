@@ -676,8 +676,7 @@
 		"createFromScratch": "만들기…",
 		"addCharacter": "캐릭터 추가",
 		"fromFile": "파일에서…",
-		"fromPixelLab": "PixelLab에서…",
-		"createNeedsKey": "PixelLab 키가 필요하고 유료 생성을 사용해요"
+		"fromPixelLab": "PixelLab에서…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(새 탭에서 열림)"

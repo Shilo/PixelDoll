@@ -676,8 +676,7 @@
 		"createFromScratch": "Buat…",
 		"addCharacter": "Tambahkan karakter",
 		"fromFile": "Dari file…",
-		"fromPixelLab": "Dari PixelLab…",
-		"createNeedsKey": "Perlu kunci PixelLab dan memakai generasi berbayar"
+		"fromPixelLab": "Dari PixelLab…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(terbuka di tab baru)"

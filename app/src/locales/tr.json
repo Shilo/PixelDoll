@@ -698,8 +698,7 @@
 		"createFromScratch": "Oluştur…",
 		"addCharacter": "Karakter ekle",
 		"fromFile": "Dosyadan…",
-		"fromPixelLab": "PixelLab'den…",
-		"createNeedsKey": "PixelLab anahtarı gerekir ve ücretli üretimler kullanır"
+		"fromPixelLab": "PixelLab'den…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(yeni sekmede açılır)"

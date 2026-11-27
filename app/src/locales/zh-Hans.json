@@ -676,8 +676,7 @@
 		"createFromScratch": "创建…",
 		"addCharacter": "添加角色",
 		"fromFile": "从文件…",
-		"fromPixelLab": "从 PixelLab…",
-		"createNeedsKey": "需要 PixelLab 密钥，并会使用付费生成次数"
+		"fromPixelLab": "从 PixelLab…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "（在新标签页中打开）"

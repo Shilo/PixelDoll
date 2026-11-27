@@ -11,8 +11,8 @@ Welcome page and the unmerged hint-card attempt on `t3/quickstart-onboarding` (c
 2. **No pre-release warning on a first visit.** The startup "Saved characters may stop working" toast waits for a later
    visit (its own `pixeldoll.visited` flag, independent of tips). Any saved character or an unreadable library shows it
    at once.
-3. **Create says it is paid before the form.** The Add character menu's Create row reads "Needs a PixelLab key and
-   uses paid generations" under its label (its accessible description).
+3. **Create invites, the form prices.** The Add character menu's Create row carries no paid warning, which discouraged
+   trying it (maintainer decision, 2026-11-27); the New character form shows the estimate on its Create button.
 4. **Nine tips, one at a time,** each an arrow callout on the control it is about, with the Bronze UI accent rim. Each
    is stored once by id, whatever control it points at on a given screen size. When several apply, the lower number
    shows; the tip on screen stays while it still applies.
