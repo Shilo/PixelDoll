@@ -299,6 +299,9 @@ test('switching characters while a publish is running keeps the folder and the o
 		.poll(() => page.evaluate(() => (window as unknown as { __held?: boolean }).__held))
 		.toBe(true);
 	await expect(row.getByRole('status')).toHaveText('Updating…');
+	// The button says so too, and the line under it keeps its place, hidden, instead of collapsing.
+	await expect(row.getByRole('button', { name: 'Updating…' })).toBeVisible();
+	await expect(row.locator('.summary')).toHaveCSS('visibility', 'hidden');
 
 	// Switch to the other character before the held publish finishes.
 	const opened = await page.evaluate(async (second) => {
@@ -477,7 +480,7 @@ test('choosing a folder that already holds this export offers once to keep those
 	await expect(row.locator('.offer')).toContainText(
 		/files in this folder already match PixelDoll’s export/
 	);
-	await expect(row.locator('.summary [role="status"]')).toHaveText('Up to date');
+	await expect(row.locator('.summary-text')).toHaveText('Up to date');
 	// Unanswered, the offer is still there after a reload.
 	await openCharacterIn(page, dev, id);
 	const reopened = await openProjectFolderRow(page);

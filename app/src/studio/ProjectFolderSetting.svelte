@@ -147,8 +147,8 @@
 		}
 	});
 	/** Announced when it changes: Updating…, Up to date, Already up to date, kept files. */
-	const summary = $derived.by(() => {
-		if (status.kind === 'publishing') return t('projectFolder.status.publishing');
+	const updating = $derived(status.kind === 'publishing');
+	const settled = $derived.by(() => {
 		// Only a finished check says "Up to date"; a link that was just loaded has not been checked yet.
 		if (status.kind !== 'done') return '';
 		const parts = [
@@ -157,9 +157,15 @@
 		if (status.kept) parts.push(t('projectFolder.kept', { count: status.kept }));
 		return parts.join(' · ');
 	});
+	// While an update runs the button says so, and the line under it keeps its last text but turns invisible, so nothing
+	// below it moves.
+	let summary = $state('');
+	$effect(() => {
+		if (!updating) summary = settled;
+	});
 	/** Shown beside it but never announced, since it changes every minute on its own. */
 	const updated = $derived(
-		(status.kind === 'done' || status.kind === 'idle') && link?.publishedAt
+		(status.kind === 'done' || status.kind === 'idle' || updating) && link?.publishedAt
 			? updatedLabel(link.publishedAt, now)
 			: ''
 	);
@@ -227,11 +233,15 @@
 				/>
 				<span>{t('projectFolder.auto')}</span>
 			</label>
-			<p class="small summary">
-				<span role="status" aria-live="polite">{summary}</span>{#if updated}<span class="bu-muted"
-						>{summary ? ' · ' : ''}{updated}</span
+			<p class="small summary" class:quiet={updating}>
+				<span class="summary-text" aria-hidden="true">{summary}</span>{#if updated}<span
+						class="bu-muted">{summary ? ' · ' : ''}{updated}</span
 					>{/if}
 			</p>
+			<!-- The one announcement: Updating…, then the result (the line above shows it, invisibly while updating). -->
+			<span class="bu-sr" role="status" aria-live="polite"
+				>{updating ? t('projectFolder.status.publishing') : summary}</span
+			>
 			{#if offer}
 				<div class="notice small offer" role="status">
 					<p>{t('projectFolder.matching', { count: offer.files.length })}</p>
@@ -345,7 +355,13 @@
 						data-variant="outline"
 						disabled={disabled || working}
 						onclick={update}
-						><RefreshCw size={16} aria-hidden="true" />{t('projectFolder.publishNow')}</button
+						><RefreshCw
+							size={16}
+							aria-hidden="true"
+							class={updating ? 'spinning' : undefined}
+						/>{updating
+							? t('projectFolder.status.publishing')
+							: t('projectFolder.publishNow')}</button
 					>
 					{#if status.kind === 'done' && status.kept}
 						<button
@@ -413,8 +429,19 @@
 		font-size: 0.8125rem;
 		opacity: 0.8;
 	}
-	.summary:has(> [role='status']:empty:only-child) {
+	.summary:has(> .summary-text:empty:only-child) {
 		display: none;
+	}
+	.summary.quiet {
+		visibility: hidden;
+	}
+	.primary-action :global(.spinning) {
+		animation: spin 1s linear infinite;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.primary-action :global(.spinning) {
+			animation: none;
+		}
 	}
 	.problem {
 		display: grid;

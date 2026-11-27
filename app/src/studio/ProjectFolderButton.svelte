@@ -106,16 +106,11 @@
 		height: auto;
 	}
 	.folder-update :global(.spinning) {
-		animation: folder-spin 1s linear infinite;
+		animation: spin 1s linear infinite;
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.folder-update :global(.spinning) {
 			animation: none;
-		}
-	}
-	@keyframes folder-spin {
-		to {
-			transform: rotate(360deg);
 		}
 	}
 	.folder-button {
