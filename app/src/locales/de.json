@@ -3585,6 +3585,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "Zuerst ist ein Design in der Standpose nötig.",
+		"allPending": "Die fehlenden Gegenstände sind bereits in Arbeit. Den Fortschritt findest du unter Aktivität.",
 		"open": "Gegenstände generieren",
 		"title": "Gegenstände für {move} generieren",
 		"inProgress": "Läuft",
@@ -3830,11 +3832,11 @@
 		"playOnStage": "Auf der Bühne abspielen",
 		"showOnStage": "Auf der Bühne zeigen",
 		"framesSection": "Frames & Qualität",
-		"itemsSection": "Gegenstände",
+		"itemsSection": "Gegenstände in der Garderobe",
 		"fixFramesDetail": "Jeden Frame von {move} in deinem Grafikprogramm bearbeiten.",
 		"redrawDetail": "{move} in den gewählten Blickrichtungen neu zeichnen, vorher mit Preis.",
 		"captureDetail": "Einen Frame von {move} als neuen Zustand speichern.",
-		"itemsDetail": "Die getragenen Gegenstände zeichnen, die {move} noch fehlen.",
+		"itemsDetail": "Wähle Gegenstände aus der Garderobe, die für {move} noch fehlen.",
 		"itemsComplete": "Jeder Gegenstand ist dafür gezeichnet.",
 		"itemsUnavailable": "Gegenstände lassen sich hier nicht dafür zeichnen.",
 		"frames": "Frames",

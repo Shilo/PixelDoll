@@ -3485,6 +3485,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "先に立ちポーズのデザインが必要です。",
+		"allPending": "足りないアイテムは生成中です。進み具合はアクティビティで確認できます。",
 		"open": "アイテムを生成",
 		"title": "{move}用のアイテムを生成",
 		"inProgress": "処理中",
@@ -3726,11 +3728,11 @@
 		"playOnStage": "ステージで再生",
 		"showOnStage": "ステージに表示",
 		"framesSection": "フレームと品質",
-		"itemsSection": "アイテム",
+		"itemsSection": "装備アイテム",
 		"fixFramesDetail": "{move}の全フレームを画像編集アプリで編集します。",
 		"redrawDetail": "選んだ向きで{move}を描き直します（先に価格を表示）。",
 		"captureDetail": "{move}の1フレームを新しい状態として保存します。",
-		"itemsDetail": "{move}にまだ足りない装備アイテムを描きます。",
+		"itemsDetail": "{move}用の絵がまだない装備アイテムを選びます。",
 		"itemsComplete": "すべてのアイテムが描かれています。",
 		"itemsUnavailable": "ここではアイテムを描けません。",
 		"frames": "フレーム",

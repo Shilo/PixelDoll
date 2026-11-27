@@ -3585,6 +3585,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "Un modèle en pose debout est nécessaire au préalable.",
+		"allPending": "La création des objets manquants est déjà en cours. Suivez sa progression dans Activité.",
 		"open": "Générer des objets",
 		"title": "Générer des objets pour {move}",
 		"inProgress": "En cours",
@@ -3830,11 +3832,11 @@
 		"playOnStage": "Jouer sur la scène",
 		"showOnStage": "Afficher sur la scène",
 		"framesSection": "Images et qualité",
-		"itemsSection": "Objets",
+		"itemsSection": "Objets de la garde-robe",
 		"fixFramesDetail": "Modifier chaque image de {move} dans votre logiciel de dessin.",
 		"redrawDetail": "Redessiner {move} dans les orientations choisies, prix indiqué avant.",
 		"captureDetail": "Enregistrer une image de {move} comme nouvel état.",
-		"itemsDetail": "Dessiner les objets portés qui manquent encore à {move}.",
+		"itemsDetail": "Choisissez les objets de la garde-robe qui manquent encore à {move}.",
 		"itemsComplete": "Chaque objet est dessiné pour lui.",
 		"itemsUnavailable": "Les objets ne peuvent pas être dessinés ici.",
 		"frames": "Images",

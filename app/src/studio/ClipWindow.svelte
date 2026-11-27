@@ -36,14 +36,14 @@
 	import { composeCell } from '../lib/compose/compose.ts';
 	import { clipKind } from '../lib/runtime/timeline.js';
 	import { clipItemCoverage, clipMissingItems } from './itemGeneration.ts';
+	import { savedClipItemGeneration } from './savedClipItemGeneration.ts';
 	import { moveDeletionBlocked, removeMove, stateCaptureSource } from './moveActions.svelte.ts';
 	import { setupRedoMoves, unposedView } from '../lib/rig/setup.ts';
 	import { moveExportId } from '../lib/store/identity.ts';
-	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { cropAll } from './model.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayDirection } from './displayDirection.ts';
-	import { displayError } from '../lib/i18n.ts';
+	import { displayError, displayNestedMessage } from '../lib/i18n.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import type { RigDirection } from '../lib/store/manifest.ts';
 	import {
@@ -75,12 +75,14 @@
 	resume = null;
 	const open = $state(resumed?.open ?? { frames: false, items: false, about: false });
 	let body = $state<HTMLElement>();
+	let itemSection = $state<HTMLDetailsElement>();
 	$effect(() => {
 		if (!resumed || !body) return;
-		(resumed.from === 'menu'
-			? body.closest('dialog')?.querySelector<HTMLElement>('.sheet-head [aria-haspopup="menu"]')
-			: body.querySelector<HTMLElement>(`[data-tool="${resumed.from}"] button`)
-		)?.focus();
+		const target =
+			resumed.from === 'menu'
+				? body.closest('dialog')?.querySelector<HTMLElement>('.sheet-head [aria-haspopup="menu"]')
+				: body.querySelector<HTMLElement>(`[data-tool="${resumed.from}"] button`);
+		(target ?? (resumed.from === 'items' ? itemSection?.querySelector('summary') : null))?.focus();
 	});
 	/** Remembers this window's place before something opens over it whose Back returns here. */
 	function remember(from: Tool | 'menu') {
@@ -156,9 +158,8 @@
 			.map((item) => ({ item, drawn: !missing.has(item.id) }))
 			.sort((a, b) => Number(b.drawn) - Number(a.drawn));
 	});
-	const canDrawItems = $derived(
-		!isDemo() && id !== DEFAULT_MOVE && !redo.includes(id) && !!items && items.drawn < items.total
-	);
+	const generation = $derived(savedClipItemGeneration(store.project, projectId, id));
+	const unavailableReason = $derived(generation.unavailableReason ?? generation.unposedNote);
 	const canCapture = $derived(!isDemo() && !!m && !!stateCaptureSource(m, id));
 	const length = $derived(clip?.frames.reduce((sum, frame) => sum + frame.ms, 0) ?? 0);
 
@@ -293,6 +294,7 @@
 							tone: items.drawn < items.total ? 'warn' : 'ok'
 						}}
 						bind:open={open.items}
+						bind:element={itemSection}
 					>
 						<div class="window-body">
 							<!-- Which items have frames for it: drawn ones, then the ones still missing, in Wardrobe order. -->
@@ -309,7 +311,7 @@
 										>
 									</li>{/each}
 							</ul>
-							{#if canDrawItems}<div class="tool-list">
+							{#if generation.available}<div class="tool-list">
 									<div class="tool-slot" data-tool="items">
 										<ToolRow
 											{...{
@@ -328,7 +330,11 @@
 									</div>
 								</div>{:else if items.drawn >= items.total}<p class="muted small">
 									{t('clipWindow.itemsComplete')}
-								</p>{:else}<p class="muted small">{t('clipWindow.itemsUnavailable')}</p>{/if}
+								</p>{:else}<p class="muted small" role="status">
+									{unavailableReason
+										? displayNestedMessage(unavailableReason)
+										: t('clipWindow.itemsUnavailable')}
+								</p>{/if}
 						</div>
 					</WindowSection>{/if}
 				<WindowSection label={t('itemPane.aboutSection')} bind:open={open.about}>

@@ -3594,6 +3594,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "Primeiro, é preciso ter um desenho na pose em pé.",
+		"allPending": "Os itens que faltam já estão em andamento. Acompanhe o progresso em Atividade.",
 		"open": "Gerar itens",
 		"title": "Gerar itens para {move}",
 		"inProgress": "Em andamento",
@@ -3839,11 +3841,11 @@
 		"playOnStage": "Tocar no palco",
 		"showOnStage": "Mostrar no palco",
 		"framesSection": "Quadros e qualidade",
-		"itemsSection": "Itens",
+		"itemsSection": "Itens do guarda-roupa",
 		"fixFramesDetail": "Edite cada quadro de {move} no seu app de desenho.",
 		"redrawDetail": "Redesenhe {move} nas direções que escolher, com preço antes.",
 		"captureDetail": "Salve um quadro de {move} como novo estado.",
-		"itemsDetail": "Desenhe os itens usados que ainda faltam em {move}.",
+		"itemsDetail": "Escolha os itens do guarda-roupa que ainda faltam em {move}.",
 		"itemsComplete": "Todos os itens estão desenhados.",
 		"itemsUnavailable": "Itens não podem ser desenhados aqui.",
 		"frames": "Quadros",

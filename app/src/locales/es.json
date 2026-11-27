@@ -3585,6 +3585,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "Primero hace falta un diseño en la pose de pie.",
+		"allPending": "Los objetos que faltan ya están en proceso. Consulta el progreso en Actividad.",
 		"open": "Generar objetos",
 		"title": "Generar objetos para {move}",
 		"inProgress": "En curso",
@@ -3830,11 +3832,11 @@
 		"playOnStage": "Reproducir en el escenario",
 		"showOnStage": "Mostrar en el escenario",
 		"framesSection": "Fotogramas y calidad",
-		"itemsSection": "Objetos",
+		"itemsSection": "Objetos del armario",
 		"fixFramesDetail": "Edita cada fotograma de {move} en tu programa de dibujo.",
 		"redrawDetail": "Vuelve a dibujar {move} en las orientaciones que elijas, con precio antes.",
 		"captureDetail": "Guarda un fotograma de {move} como nuevo estado.",
-		"itemsDetail": "Dibuja los objetos puestos que aún faltan en {move}.",
+		"itemsDetail": "Elige los objetos del armario que aún faltan en {move}.",
 		"itemsComplete": "Todos los objetos están dibujados.",
 		"itemsUnavailable": "Aquí no se pueden dibujar objetos para esto.",
 		"frames": "Fotogramas",

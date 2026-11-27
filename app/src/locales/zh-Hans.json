@@ -3485,6 +3485,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "需要先有站立姿势的设计。",
+		"allPending": "缺少的物品已在生成中。可在活动中查看进度。",
 		"open": "生成装备",
 		"title": "为{move}生成装备",
 		"inProgress": "进行中",
@@ -3726,11 +3728,11 @@
 		"playOnStage": "在舞台上播放",
 		"showOnStage": "在舞台上显示",
 		"framesSection": "帧与质量",
-		"itemsSection": "物品",
+		"itemsSection": "衣橱物品",
 		"fixFramesDetail": "在绘图软件中编辑 {move} 的每一帧。",
 		"redrawDetail": "按所选朝向重新绘制 {move}，先显示价格。",
 		"captureDetail": "将 {move} 的一帧保存为新状态。",
-		"itemsDetail": "绘制 {move} 仍缺少的已穿戴物品。",
+		"itemsDetail": "从衣橱中选择尚未为{move}绘制的物品。",
 		"itemsComplete": "所有物品都已绘制。",
 		"itemsUnavailable": "此处无法绘制物品。",
 		"frames": "帧",

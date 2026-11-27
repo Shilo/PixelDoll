@@ -3585,6 +3585,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "A standing design is needed first.",
+		"allPending": "The missing items are already in progress. Check Activity for updates.",
 		"open": "Generate items",
 		"title": "Generate items for {move}",
 		"inProgress": "In progress",
@@ -3830,11 +3832,11 @@
 		"playOnStage": "Play on stage",
 		"showOnStage": "Show on stage",
 		"framesSection": "Frames & Quality",
-		"itemsSection": "Items",
+		"itemsSection": "Wardrobe items",
 		"fixFramesDetail": "Edit every frame of {move} in your art app.",
 		"redrawDetail": "Draw {move} again in the facings you choose, priced first.",
 		"captureDetail": "Save one frame of {move} as a new State.",
-		"itemsDetail": "Draw the worn items still missing from {move}.",
+		"itemsDetail": "Choose Wardrobe items still missing from {move}.",
 		"itemsComplete": "Every item is drawn for it.",
 		"itemsUnavailable": "Items can’t be drawn for it here.",
 		"frames": "Frames",

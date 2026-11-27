@@ -3485,6 +3485,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "Desain dalam pose berdiri diperlukan terlebih dahulu.",
+		"allPending": "Item yang belum ada sedang diproses. Lihat perkembangannya di Aktivitas.",
 		"open": "Buat item",
 		"title": "Buat item untuk {move}",
 		"inProgress": "Sedang diproses",
@@ -3726,11 +3728,11 @@
 		"playOnStage": "Putar di panggung",
 		"showOnStage": "Tampilkan di panggung",
 		"framesSection": "Frame & Kualitas",
-		"itemsSection": "Item",
+		"itemsSection": "Item di lemari",
 		"fixFramesDetail": "Edit setiap frame {move} di aplikasi gambarmu.",
 		"redrawDetail": "Gambar ulang {move} di arah yang kamu pilih, dengan harga lebih dulu.",
 		"captureDetail": "Simpan satu frame {move} sebagai status baru.",
-		"itemsDetail": "Gambar item yang dipakai dan masih hilang dari {move}.",
+		"itemsDetail": "Pilih item di lemari yang masih belum digambar untuk {move}.",
 		"itemsComplete": "Semua item sudah digambar.",
 		"itemsUnavailable": "Item tidak bisa digambar di sini.",
 		"frames": "Frame",

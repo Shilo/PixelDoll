@@ -3485,6 +3485,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "먼저 서 있는 자세의 디자인이 필요해요.",
+		"allPending": "빠진 아이템은 이미 생성 중이에요. 활동에서 진행 상황을 확인하세요.",
 		"open": "아이템 생성",
 		"title": "아이템 생성: {move}",
 		"inProgress": "진행 중",
@@ -3726,11 +3728,11 @@
 		"playOnStage": "무대에서 재생",
 		"showOnStage": "무대에 표시",
 		"framesSection": "프레임 및 품질",
-		"itemsSection": "아이템",
+		"itemsSection": "옷장 아이템",
 		"fixFramesDetail": "{move}의 모든 프레임을 그림 앱에서 편집합니다.",
 		"redrawDetail": "고른 방향으로 {move}를 다시 그립니다(먼저 가격 표시).",
 		"captureDetail": "{move}의 한 프레임을 새 상태로 저장합니다.",
-		"itemsDetail": "{move}에 아직 없는 착용 아이템을 그립니다.",
+		"itemsDetail": "옷장에서 아직 그림이 없는 아이템을 골라요: {move}",
 		"itemsComplete": "모든 아이템이 그려져 있습니다.",
 		"itemsUnavailable": "여기서는 아이템을 그릴 수 없습니다.",
 		"frames": "프레임",

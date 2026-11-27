@@ -2616,12 +2616,15 @@ export function missingItemMoves(
 	seed = 1 + Math.floor(Math.random() * 1_000_000),
 	images?: ReadonlyMap<string, Img>,
 	/** Only these views (e.g. those a Move Review accepted), applied before the route is chosen and its sheet measured. */
-	onlyDirs?: readonly DirectionName[]
+	onlyDirs?: readonly DirectionName[],
+	/** Plan only the clip the caller is about to offer, so measuring its sheet does not measure every other clip. */
+	onlyClip?: string
 ): MoveSpec[] {
 	const item = extendable(m, itemId);
 	if (!item) return [];
 	const { clipDirs } = coverage({ rec: { manifest: m } } as RigCtx);
 	return m.rig.animations
+		.filter((a) => onlyClip === undefined || a.id === onlyClip)
 		.map((a) => {
 			const missing = (clipDirs?.[a.id] ?? []).filter(
 				(d) =>

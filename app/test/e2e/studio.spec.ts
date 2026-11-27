@@ -815,29 +815,27 @@ test('tips point at each control in order, end on their action, and come back in
 	await pointsAt(page.getByRole('button', { name: 'New head item', exact: true }).first());
 	await tip.getByRole('button', { name: 'Close tip' }).click();
 	await page.getByRole('tab', { name: 'Moves', exact: true }).click();
-	await expect(heading('Fit gear to this move')).toBeVisible();
+	// The editable demo has missing artwork, but none of it can be generated yet.
+	await expect(heading('Add a move')).toBeVisible();
+	await expect(heading('Fit gear to this move')).toHaveCount(0);
 	await tip.locator('.tip-copy p').click();
 	await expect(tip).toHaveCount(0);
-	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toContain(
-		'"generate-items"'
-	);
+	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toContain('"add-move"');
 	await page.getByRole('tab', { name: 'States', exact: true }).click();
 	await expect(heading('Add a state')).toBeVisible();
 	await pointsAt(page.locator('[data-tip-anchor="add-state"]'));
 	await page.getByRole('tab', { name: 'Moves', exact: true }).click();
-	await expect(heading('Add a move')).toBeVisible();
+	await expect(tip).toHaveCount(0);
 	// Asked for again, tips start over where the person is.
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: /^Help/ }).click();
 	await page.getByRole('button', { name: 'Show tips again', exact: true }).click();
-	await expect(heading('Fit gear to this move')).toBeVisible();
+	await expect(heading('Add a move')).toBeVisible();
 	await expect(page.locator('h1')).toHaveText('Adventurer copy');
 	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toBe('[]');
 	await tip.locator('.bu-popover-arrow').click();
 	await expect(tip).toHaveCount(0);
-	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toBe(
-		'["generate-items"]'
-	);
+	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toBe('["add-move"]');
 });
 
 test('the startup preview notice expires after eight seconds', async ({ page }, info) => {
@@ -10606,6 +10604,20 @@ test('standing-first items quote standing and draw selected custom moves togethe
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
 	const fixture = await targetedRepairFixture(page);
+	// The copied Wizard hat is missing from Walk and has no standing design to generate it from.
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
+	const walkWindow = page.locator('dialog.clip-window[open]');
+	const walkCoverage = await openItemSection(walkWindow, 'Wardrobe items');
+	await expect(walkCoverage).toContainText('5 of 6 items drawn');
+	await expect(walkCoverage.getByRole('listitem').filter({ hasText: 'Wizard hat' })).toContainText(
+		'Missing'
+	);
+	await expect(walkCoverage.getByRole('status')).toHaveText('A standing design is needed first.');
+	await expect(walkCoverage.getByRole('button', { name: 'Generate items' })).toHaveCount(0);
+	await page.keyboard.press('Escape');
+	await expect(walkWindow).toHaveCount(0);
 	await page.evaluate(async (id) => {
 		const statePath = '/src/studio/state.svelte.ts',
 			dbPath = '/src/lib/store/db.ts',
@@ -10656,9 +10668,27 @@ test('standing-first items quote standing and draw selected custom moves togethe
 	await expect(page.getByRole('button', { name: /^Custom walk preview/ })).toContainText(
 		'0 of 6 items drawn'
 	);
+	const customWalkActions = page.getByRole('button', {
+		name: 'More actions for Custom walk',
+		exact: true
+	});
+	await customWalkActions.scrollIntoViewIfNeeded();
+	await page.evaluate(() => {
+		const key = 'pixeldoll.tips';
+		const saved: string[] = JSON.parse(localStorage.getItem(key) ?? '[]');
+		const next = JSON.stringify(saved.filter((tip) => tip !== 'generate-items'));
+		localStorage.setItem(key, next);
+		window.dispatchEvent(new StorageEvent('storage', { key, newValue: next }));
+	});
+	await expect(page.getByRole('heading', { name: 'Fit gear to this move' })).toBeVisible();
 	await page.getByRole('button', { name: 'More actions for Custom walk', exact: true }).click();
+	await expect(page.getByRole('menuitem', { name: 'View and edit…', exact: true })).toHaveAttribute(
+		'data-tip-anchor',
+		'generate-items'
+	);
 	await openClipTool(page, /^Generate items/);
 	const picker = page.getByRole('dialog', { name: 'Generate items for Custom walk', exact: true });
+	await expect(page.getByRole('heading', { name: 'Fit gear to this move' })).toHaveCount(0);
 	const pickerRow = picker.getByRole('button', { name: new RegExp(fixture.itemName) });
 	await expect(pickerRow).toContainText('12 gens');
 	await expect(picker.getByRole('button', { name: 'Generate items', exact: true })).toBeDisabled();

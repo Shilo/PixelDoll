@@ -3585,6 +3585,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "Önce ayakta duruş tasarımı gerekiyor.",
+		"allPending": "Eksik eşyaların üretimi zaten sürüyor. İlerlemeyi Etkinlik bölümünden izleyin.",
 		"open": "Eşya üret",
 		"title": "Eşya üret: {move}",
 		"inProgress": "Sürüyor",
@@ -3830,11 +3832,11 @@
 		"playOnStage": "Sahnede oynat",
 		"showOnStage": "Sahnede göster",
 		"framesSection": "Kareler ve kalite",
-		"itemsSection": "Eşyalar",
+		"itemsSection": "Gardıroptaki eşyalar",
 		"fixFramesDetail": "{move} karelerinin hepsini çizim uygulamanda düzenle.",
 		"redrawDetail": "{move} hareketini seçtiğin yönlerde yeniden çiz, önce fiyatı gör.",
 		"captureDetail": "{move} hareketinden bir kareyi yeni durum olarak kaydet.",
-		"itemsDetail": "{move} için hâlâ eksik olan giyilen eşyaları çiz.",
+		"itemsDetail": "{move} için çizimi henüz olmayan gardırop eşyalarını seçin.",
 		"itemsComplete": "Her eşya çizildi.",
 		"itemsUnavailable": "Burada eşya çizilemez.",
 		"frames": "Kareler",
