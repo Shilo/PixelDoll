@@ -94,8 +94,6 @@ type Request = {
 	manual: boolean;
 	linkedAt: string;
 	link: FolderLink;
-	/** The first publish after choosing this folder, which may offer to keep already matching files updated. */
-	fresh?: boolean;
 	overwrite?: ReadonlyMap<string, string>;
 	keep?: readonly string[];
 	release?: boolean;
@@ -425,7 +423,8 @@ async function publish(link: FolderLink, request: Request) {
 		const inputs = await fingerprint(link, input, settings);
 		// Until a publish has completed and the matching-files offer was answered, this is still the folder's first check:
 		// a first attempt that failed (a locked file, say) offers on the retry instead.
-		const first = request.fresh || (!link.files && link.offered === undefined);
+		// Read from the stored link, never from where the request came from, so an answer given in another tab stands.
+		const first = !link.files && link.offered === undefined;
 		/** Stores what this publish learned on its link, unless the link changed meanwhile. */
 		const remember = async (patch: Parameters<typeof updateLink>[2]) => {
 			try {
@@ -470,26 +469,28 @@ async function publish(link: FolderLink, request: Request) {
 			}
 		}
 		const now = new Date().toISOString();
-		// The manifest already in the folder decides the time: when a build with the last time (or, for a folder chosen
-		// over this character's own earlier export, that export's time) reproduces it byte for byte, that build is used,
+		// The manifest already in the folder decides the time: when a build with the last time, or the time that manifest
+		// itself records (such as this character's own earlier export), reproduces it byte for byte, that build is used,
 		// so only files that really differ are written and the manifest never pauses over its time alone. Otherwise the
 		// export gets a new time.
 		// A manifest the user keeps is never written, so it is not read either.
 		const there = record.kept.includes(MANIFEST) ? null : await sameEarlierExport(target);
-		const earlier = link.exportedAt ?? (first ? there?.exportedAt : undefined);
 		let exportedAt = now;
 		let files: FolderFile[] | null = null;
-		if (there && earlier) {
-			const built =
-				same && earlier === link.exportedAt
-					? same
-					: await buildFiles(link, input, settings, earlier);
-			const manifest = built?.find((f) => f.name === MANIFEST);
-			if (manifest && (await sha256(manifest.data)) === there.hash) {
-				files = built;
-				exportedAt = earlier;
+		if (there)
+			for (const earlier of new Set([link.exportedAt, there.exportedAt])) {
+				if (!earlier) continue;
+				const built =
+					same && earlier === link.exportedAt
+						? same
+						: await buildFiles(link, input, settings, earlier);
+				const manifest = built?.find((f) => f.name === MANIFEST);
+				if (manifest && (await sha256(manifest.data)) === there.hash) {
+					files = built;
+					exportedAt = earlier;
+					break;
+				}
 			}
-		}
 		files ??= await buildFiles(link, input, settings, now);
 		if (!files) return report({ kind: 'unavailable' });
 		// Building takes a moment: recheck that the link was not stopped or replaced meanwhile.
@@ -605,7 +606,6 @@ function run(request: Request): Promise<void> {
 			waiting
 				? {
 						manual: request.manual || waiting.manual,
-						fresh: request.fresh || waiting.fresh,
 						linkedAt: request.linkedAt,
 						link: request.link,
 						overwrite: request.overwrite ?? waiting.overwrite,
@@ -795,6 +795,7 @@ export async function linkProjectFolder(engine: Engine) {
 		});
 		if (!saved) return setStatus(characterId, { kind: 'taken' });
 		link = saved;
+		linkChanges++; // this tab's own link change: an older read never shows the previous link over it
 		for (const [linkedAt, pending] of timers)
 			if (linkedAt !== link.linkedAt && pending.characterId === characterId) {
 				clearTimeout(pending.timer);
@@ -808,7 +809,7 @@ export async function linkProjectFolder(engine: Engine) {
 	showLink(characterId, link);
 	if (loadedFor === characterId) projectFolder.offer = null;
 	// This link's own first publish, even if another character was opened meanwhile.
-	await run({ manual: true, linkedAt: link.linkedAt, link, fresh: true });
+	await run({ manual: true, linkedAt: link.linkedAt, link });
 }
 
 async function sameFolder(a: FileSystemDirectoryHandle, b: FileSystemDirectoryHandle) {
@@ -875,6 +876,7 @@ export async function unlinkProjectFolder() {
 		setStatus(link.characterId, { kind: 'failed', reason: 'unknown' });
 		return;
 	}
+	linkChanges++;
 	showLink(link.characterId, null);
 	if (loadedFor === link.characterId) projectFolder.offer = null;
 	problems.delete(link.characterId);
