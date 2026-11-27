@@ -71,6 +71,7 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 - [PixelDoll state authoring study](research/2026-11-18-pixeldoll-states/README.md) proposes reusable poses, shared playback, state-derived move generation and independent removal. It includes an interactive layout comparison and runtime probe.
 
 - [Item details rework](design/2026-11-26-item-details/README.md): study of two earlier attempts, the layer-order and hide findings, the decisions with rejected alternatives, and live verification behind the current item window.
+- [Simplicity-first app review](design/2026-11-27-simplicity-review/README.md): surface inventory, independent design findings, decisions, and before-and-after evidence.
 - [First-run onboarding: tips](design/onboarding.md): why PixelDoll onboards with a few self-ending tips pointed at real
   controls instead of a welcome screen, slideshow or tour; the reusable tips module, per-tip saved state, placement,
   accessibility, and best practices for future onboarding.
