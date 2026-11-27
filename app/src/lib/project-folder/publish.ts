@@ -90,10 +90,13 @@ async function settleAtOnce<T, R>(
 /** A staged write given up because another file of the same publish failed; its file was never replaced. */
 class Stopped extends Error {}
 
-/** Image payloads, written several at a time. Every other file (an engine's resources, scenes and indexes, which point
- *  at the images or at each other) is written one at a time afterwards in the export's own order, and the manifest last,
- *  so nothing that names a file lands before it. */
+/** Written several at a time, in two waves: image payloads first, then resources that name only images (Godot's
+ *  per-layer SpriteFrames .tres). Every other file (godot/library.tres and scenes naming those resources, other engines'
+ *  indexes) follows one at a time in the export's own order, and the manifest last, so nothing that names a file lands
+ *  before it. */
 const isPayload = (path: string) => path.endsWith('.png');
+const isImageResource = (path: string) =>
+	path.startsWith('godot/') && path.endsWith('.tres') && path !== 'godot/library.tres';
 
 export async function hashFiles(files: readonly FolderFile[]) {
 	const next = new Map<string, string>();
@@ -239,8 +242,12 @@ export async function publishFiles(
 			}
 		};
 		const payload = plan.writes.filter((a) => isPayload(a.path));
-		const rest = plan.writes.filter((a) => !isPayload(a.path) && a.path !== 'manifest.json');
+		const resources = plan.writes.filter((a) => isImageResource(a.path));
+		const rest = plan.writes.filter(
+			(a) => !isPayload(a.path) && !isImageResource(a.path) && a.path !== 'manifest.json'
+		);
 		await settleAtOnce(payload, write);
+		await settleAtOnce(resources, write);
 		for (const a of rest) await write(a);
 		// The manifest goes last, so a game that reads it never sees it ahead of the files it describes.
 		for (const a of plan.writes) if (a.path === 'manifest.json') await write(a);

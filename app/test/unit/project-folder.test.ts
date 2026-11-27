@@ -187,8 +187,18 @@ describe('publishFiles', () => {
 
 		folder.failRecord = undefined;
 		const again = memoryFolder();
-		await again.publish({ ...entries, 'manifest.json': 'm', 'godot/library.tres': 'lib' });
-		expect(again.log.slice(-2)).toEqual(['write godot/library.tres', 'write manifest.json']);
+		await again.publish({
+			...entries,
+			'godot/hair.tres': 'frames',
+			'manifest.json': 'm',
+			'godot/library.tres': 'lib'
+		});
+		// Images, then the resources naming them, then library.tres naming those, then the manifest.
+		expect(again.log.slice(-3)).toEqual([
+			'write godot/hair.tres',
+			'write godot/library.tres',
+			'write manifest.json'
+		]);
 	});
 
 	it('pauses on a deleted published file and restores it only when approved', async () => {
