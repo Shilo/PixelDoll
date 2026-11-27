@@ -57,7 +57,11 @@ for (const [width, height, touch] of [
 			});
 			await context.addInitScript(() => {
 				localStorage.setItem('pixeldoll.agentKey', 'off');
-				localStorage.setItem('pixeldoll.welcomed', '1');
+				localStorage.setItem(
+					'pixeldoll.tips',
+					'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+				);
+				localStorage.setItem('pixeldoll.visited', '1');
 			});
 			const session = touch ? await context.newCDPSession(page) : null;
 			async function drag(from: { x: number; y: number }, to: { x: number; y: number }) {
@@ -88,14 +92,14 @@ for (const [width, height, touch] of [
 					close: 'Close'
 				},
 				{
-					name: 'Import from device',
+					name: 'Import from file',
 					open: async () => {
 						await page.locator('.project-btn').click();
 						await page
 							.locator('#project-menu')
-							.getByRole('button', { name: 'New character', exact: true })
+							.getByRole('button', { name: 'Add character', exact: true })
 							.click();
-						await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+						await page.getByRole('menuitem', { name: 'From file…', exact: true }).click();
 					},
 					close: 'Close'
 				},
@@ -105,9 +109,9 @@ for (const [width, height, touch] of [
 						await page.locator('.project-btn').click();
 						await page
 							.locator('#project-menu')
-							.getByRole('button', { name: 'New character', exact: true })
+							.getByRole('button', { name: 'Add character', exact: true })
 							.click();
-						await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+						await page.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 					},
 					field: 'Details',
 					close: 'Back',
@@ -195,7 +199,11 @@ test('intentional dialog dismissal respects nested API popovers and bare dialog 
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.developerMode', '1');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, '/');
 	await openAccount(page);
@@ -245,7 +253,11 @@ test('intentional dialog dismissal preserves native Share popovers during conten
 }) => {
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await openStudio(page, '/');
 	const trigger = page.getByRole('button', { name: 'Share character', exact: true });

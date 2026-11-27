@@ -673,13 +673,31 @@
 		"makeForSlotDetail": "Draw this item again for the {slot}.",
 		"groupReady": "{ready} of {count} ready",
 		"remakeFits": "Makes a new copy that fits {name}, the character you’re dressing.",
-		"demoMissing": "The demo never spends PixelLab generations. Make an editable copy to draw the missing frames."
+		"demoMissing": "The demo never spends PixelLab generations. Make an editable copy to draw the missing frames.",
+		"nameInEveryDirection": "{name} in every direction",
+		"generateItemForMove": "Generate item for move",
+		"fillMissingMoves": "Fill missing moves",
+		"fillMissingHint": {
+			"one": "Draws this item for {n} missing move in one offer, reusing its standing design.",
+			"other": "Draws this item for all {n} missing moves in one offer, reusing its standing design."
+		},
+		"labelMakeNameForMissingName": "Make {name} for {missingName}",
+		"generatesOnlyThisItemSMissingViews": "Generates only this item’s missing views for the chosen move, reusing its standing design. The body stays as it is. PixelLab may bill dollars; queue time varies.",
+		"madeForAnotherBodyItMayNot": "Made for another body. It may not line up.",
+		"titleDrawInFrontOfTheNext": "Draw in front of the next layer",
+		"forward": "Forward",
+		"titleDrawBehindThePreviousLayer": "Draw behind the previous layer",
+		"backward": "Backward",
+		"makeFor": "Make for {move}",
+		"hideWhenWorn": "Checked items are hidden while {name} is worn."
 	},
 	"newCharacterButton": {
 		"newCharacter": "New character",
-		"createFromScratch": "Create from scratch…",
-		"importFromDevice": "Import from device…",
-		"importFromPixelLab": "Import from PixelLab…"
+		"createFromScratch": "Create…",
+		"addCharacter": "Add character",
+		"fromFile": "From file…",
+		"fromPixelLab": "From PixelLab…",
+		"createNeedsKey": "Needs a PixelLab key and uses paid generations"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(opens in a new tab)"
@@ -962,25 +980,7 @@
 		"itemQueued": "queued for {move}"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "The demo needs no account. Creating uses your {pixelLab} generations.",
-		"steps": {
-			"create": "Create",
-			"describeBody": "Describe the body",
-			"addItems": "Add items",
-			"examples": "Hats, tops, weapons",
-			"dressUp": "Dress up",
-			"wearRecolorPlay": "Wear, recolor, play",
-			"export": "Export",
-			"anyEngine": "Any game engine"
-		},
-		"switchToLightMode": "Switch to light mode",
-		"switchToDarkMode": "Switch to dark mode",
-		"labelDemoCharacterWalking": "Demo character walking",
-		"dressUpYour2DGameCharactersWith": "Dress up your 2D game characters with pixel‑perfect paper dolling",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine.",
-		"createYourCharacter": "Create your character",
-		"tryTheDemo": "Try the demo",
-		"importAnExistingCharacter": "Import an existing character"
+		"createYourCharacter": "Create your character"
 	},
 	"experience": {
 		"movesOffMounted": "Moves are picked in Preview. Mounted movement follows the Riding pose in Mount settings.",
@@ -1264,7 +1264,9 @@
 			"versionMenu": "RPG Maker version",
 			"version": "Version",
 			"versionLabel": "RPG Maker version: {version}",
-			"walkMove": "Walk move"
+			"walkMove": "Walk move",
+			"phaserVersionMenu": "Phaser version",
+			"phaserVersionLabel": "Phaser version: {version}"
 		},
 		"group": {
 			"engines": "Engines and frameworks",
@@ -1287,13 +1289,6 @@
 				"sub": "Editable project",
 				"detail": "Editable GDevelop project with Sprite layers, synchronized playback and equipment controls. Preview it or copy the objects and event into your game."
 			},
-			"rpgmaker": {
-				"sub": "Walking sheets",
-				"detail": "A walking sheet per outfit at your character’s own size. Copy the PNG files into img/characters (MZ, MV) or Graphics/Characters (VX Ace, VX). Needs front, side and back views."
-			},
-			"rpgmakerxp": {
-				"detail": "A 4-frame walking sheet per outfit at your character’s own size, for RPG Maker XP and Pokémon Essentials. Copy the PNG files into Graphics/Characters. Needs front, side and back views."
-			},
 			"aseprite": {
 				"sub": "Editable layers",
 				"detail": "One layered .aseprite animation with tags, timing, pivot and your current look. Open in Aseprite 1.3 or later."
@@ -1301,6 +1296,16 @@
 			"generic": {
 				"sub": "Custom integration",
 				"detail": "Layer sheets and strips with timing, pivots, equipment and palette data. Your engine needs code to read these rules."
+			},
+			"rpgMaker": {
+				"sub": "Walking sheets",
+				"detail": "A walking sheet per outfit at your character’s own size. Copy the PNG files into img/characters (MZ, MV) or Graphics/Characters (VX Ace, VX). Needs front, side and back views."
+			},
+			"rpgMakerXp": {
+				"detail": "A 4-frame walking sheet per outfit at your character’s own size, for RPG Maker XP and Pokémon Essentials. Copy the PNG files into Graphics/Characters. Needs front, side and back views."
+			},
+			"phaserAe": {
+				"detail": "Layer sheets and a runtime for Phaser AE games, with equipment, colors and synchronized playback. Add the sheets to the assets list in your game’s manifest, and its build copies them in."
 			}
 		},
 		"version": {
@@ -1309,7 +1314,13 @@
 			"standardSub": "3 × 4 layout · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP and Pokémon Essentials",
-			"xpSub": "4 × 4 layout · Name.png"
+			"xpSub": "4 × 4 layout · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "The Phaser Game Agent engine",
+			"phaser": "3 & 4",
+			"phaserTitle": "Phaser 3 and 4",
+			"phaserSub": "Open-source library, 3.80 or later"
 		},
 		"playback": {
 			"all": "All"
@@ -1382,7 +1393,6 @@
 			"noVisibleFrames": "The body has no visible frames.",
 			"godot": "Godot could not use these sprite sheets.",
 			"gdevelop": "GDevelop could not use these sprite sheets.",
-			"rpgmaker": "RPG Maker needs front, side and back views.",
 			"aseprite": "The animation does not fit the Aseprite format.",
 			"unsafeNames": "Some file names cannot be packaged safely.",
 			"tooLarge": "This export is too large.",
@@ -1390,7 +1400,8 @@
 			"buildFailed": "Could not build this export.",
 			"characterLimits": "This character does not fit the export limits.",
 			"damagedImages": "Some saved images are damaged.",
-			"artworkFailed": "The artwork ZIP could not be prepared."
+			"artworkFailed": "The artwork ZIP could not be prepared.",
+			"rpgMaker": "RPG Maker needs front, side and back views."
 		},
 		"error": {
 			"pixelsPerUnit": "Pixels per unit must be a positive finite number.",
@@ -1443,7 +1454,6 @@
 		"posesTitle": "Also import as States",
 		"posesHint": "Choose poses of the same body with no baked-in gear. Import a different look as a separate character. Moves are selected below.",
 		"poseMismatch": "This state has different artwork dimensions, facings, or camera settings. Import it as a separate character.",
-		"titleDevice": "Import from device",
 		"titlePixelLab": "Import from PixelLab",
 		"browseLibrary": "Browse PixelLab characters",
 		"standingState": "Standing pose state",
@@ -1530,7 +1540,8 @@
 			"skippedStanding": "“{move}” facing {direction} was left out: the character has no standing view facing that way.",
 			"semiAlpha": "Partially transparent edges were converted to pixel-art transparency.",
 			"upscaledBase": "The standing artwork looks like a {scale}x upscale. It is kept as it is: items made from it cost more pixels, mix pixel sizes and recolor less cleanly. Import the original 1x art if you can.",
-			"detailsDropped": "Some saved character details were damaged and were left out. Set up its pose rig again if needed."
+			"detailsDropped": "Some saved character details were damaged and were left out. Set up its pose rig again if needed.",
+			"compressedBase": "The standing artwork looks compressed or resampled: many of its colors appear only once. It is kept as it is: items made from it are harder to cut out, recolor and line up. Import the original art if you can."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1583,7 +1594,8 @@
 			"cutPixels": "{path} would lose {cut} visible pixels in a {frame} px cell. Import a smaller character; artwork is never rescaled.",
 			"emptyFrame": "{path} is an empty frame.",
 			"nameLength": "Enter a character name of 1–60 characters."
-		}
+		},
+		"titleFile": "Import from file"
 	},
 	"incompatible": {
 		"error": {
@@ -3753,5 +3765,28 @@
 		"gone": "This move is no longer saved.",
 		"itemDrawn": "Drawn",
 		"itemMissing": "Missing"
+	},
+	"tips": {
+		"customizeTitle": "Dress up the demo",
+		"customizeBody": "Try on gear or export the **demo character** for your game. No PixelLab key needed.",
+		"gearTitle": "Try on gear",
+		"gearBody": "Choose an item in the **Wardrobe** to put it on or take it off.",
+		"exportTitle": "Take it into your game",
+		"exportBody": "**Export** the character, gear and animations, plus optional ready-made code to swap gear in your game.",
+		"exportInMoreBody": "Find **Export** in **{more} more options**: the character, gear and animations, plus optional code to swap gear in your game.",
+		"close": "Close tip",
+		"showAgain": "Show tips again",
+		"pixellabTitle": "What is PixelLab?",
+		"pixellabBody": "An AI pixel art service that draws the characters and gear you create here, using generations from your PixelLab account.",
+		"newCharacterTitle": "Make your own",
+		"newCharacterBody": "Create a **character** from a description or reference image, or import one you already have.",
+		"addItemTitle": "Add gear",
+		"addItemBody": "Use **+** on a slot to describe an item or add a reference image. PixelLab fits it to your character.",
+		"generateItemsTitle": "Fit gear to this move",
+		"generateItemsBody": "Open this move's **{menu} more options**, choose **View and edit**, then **Generate items** to draw your gear in this move.",
+		"addMoveTitle": "Add a move",
+		"addMoveBody": "Animate your character, such as Idle, Walk or Attack.",
+		"addStateTitle": "Add a state",
+		"addStateBody": "Make a **new still pose** to start moves from, such as an attack wind-up, mid-walk step or sitting stance."
 	}
 }

@@ -4,9 +4,10 @@ export const exportFormatNames = {
 	godot: 'Godot',
 	unity: 'Unity',
 	phaser: 'Phaser',
+	'phaser-ae': 'Phaser',
 	gdevelop: 'GDevelop',
-	rpgmaker: 'RPG Maker',
-	rpgmakerxp: 'RPG Maker',
+	'rpg-maker': 'RPG Maker',
+	'rpg-maker-xp': 'RPG Maker',
 	aseprite: 'Aseprite',
 	generic: 'PNG + JSON'
 } satisfies Record<Engine, string>;

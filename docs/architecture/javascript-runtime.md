@@ -51,6 +51,15 @@ Deliberate boundaries:
   second pixel compositor or equipment resolver.
 - Phaser texture loading, sprite placement and native frame events remain adapter responsibilities.
   `sync()` consumes the same `drawList()` used by internal composition, not a second visibility or z rule.
+  The loader decodes recolorable sheet PNGs with the canonical `png.js` so exact palette lookups see
+  straight RGBA, including translucent pixels. Phaser uploads the resulting palette textures normally.
+- The Phaser AE export (`phaser-ae/paperdoll.js`) appends its adapter to the same canonical modules. AE has no animation
+  manager with per-frame durations, so the adapter keeps one clock per doll in a scene step and samples it with
+  `sampleTimeline`. A doll is one roster object (`doll.actor`) made an aggregate: the actor owns the transform, and once
+  a frame it emits each `drawList` (or `exportedActionDraws`) layer as an instance around its interpolated transform,
+  so the layers sort as one object and cannot drift between fixed steps. Palette lookups read sheets decoded exactly by
+  the canonical `png.js`, never a canvas. Grid registration, palette grids and instance placement stay adapter
+  responsibilities.
 - GDevelop's native JavaScript event embeds the canonical modules inside its controller factory, removing
   only ES module `export` keywords. Its adapter uses `sampleTimeline`, `drawList`, `paletteMap` and
   `applyPalette`; Sprite resources, origins and renderer textures remain GDevelop-specific.
@@ -63,6 +72,9 @@ Deliberate boundaries:
   can face an attack while its hip contact stays on the mount's seat. The editor's test mount is an
   editor feature. A game can compose the same behavior by playing two exported dolls independently
   and placing the rider's contact on the mount's seat.
+  Studio reads the effective layers from the same draw resolver that composes a character frame. The
+  [mount seating and occlusion guide](mount-seating.md) describes how Studio uses their alpha and slot
+  profiles to preserve visible equipment.
 
 Add runtime behavior to the canonical JavaScript modules, not the TypeScript facades. Existing
 application entry points preserve caller interfaces; direct canonical imports are appropriate for
@@ -135,7 +147,7 @@ renderers or loading on other engines. The engine-neutral JavaScript is authorit
 visibility, cover selection, depth, geometry, pixels, palettes and timeline sampling. Native ports
 implement those same decisions in their host language; changing JavaScript does not update them automatically.
 
-| Operation                                    | Phaser / GDevelop                                   | Godot                                         | Unity                                    |
+| Operation                                    | Phaser / Phaser AE / GDevelop                       | Godot                                         | Unity                                    |
 | -------------------------------------------- | --------------------------------------------------- | --------------------------------------------- | ---------------------------------------- |
 | Select animation                             | `play(move, direction, restart = false)`            | `play_anim(move, direction, restart = false)` | `Play(move, direction, restart = false)` |
 | Turn the active move                         | `setDirection(direction)`                           | `set_direction(direction)`                    | `SetDirection(direction)`                |
@@ -148,7 +160,7 @@ implement those same decisions in their host language; changing JavaScript does 
 | Turn with no active move                     | Throws before mutation                              | Warning and `false`, before mutation          | Warning and `false`, before mutation     |
 | Disposal                                     | `destroy()`                                         | Native `queue_free()`                         | Native `Destroy(gameObject)`             |
 
-All four live controllers must preserve these behaviors:
+All five live controllers (Phaser 3/4, Phaser AE, GDevelop, Godot and Unity) must preserve these behaviors:
 
 - Selecting the active move/direction preserves its progress. Selecting a different move/direction
   starts at the beginning. Selecting a completed once-only clip replays it. Explicit `restart = true`
@@ -172,7 +184,7 @@ All four live controllers must preserve these behaviors:
   warning/boolean results are intentional host-language differences, not permission to fail silently.
 - Unknown material keys in JavaScript replacement maps are retained but have no visual effect; native
   one-material setters reject unknown material IDs. Unknown variant names, like empty strings, use
-  source colors in all four controllers. Phaser mutators return `undefined`; GDevelop returns the doll
+  source colors in all five controllers. Phaser mutators return `undefined`; GDevelop returns the doll
   for chaining. These return conventions do not change rendered results.
 - Stored layer pivots and cell sizes, most-specific depth overrides, slot/role tie order, exact RGB
   swaps, alpha and source-image immutability retain the same meaning in every renderer.
@@ -185,18 +197,18 @@ where applicable, but cannot expose live operations the destination format does 
 
 ### One-shot actions over a loop
 
-| Operation | Phaser / GDevelop | Godot | Unity |
-| --- | --- | --- | --- |
-| Enable precut action layers | `setActionLayering(enabled)` | `set_action_layering(enabled)` | `SetActionLayering(enabled)` |
-| Start a one-shot action | `playAction(move, direction)` | `play_action(move, direction)` | `PlayAction(move, direction)` |
+| Operation                   | Phaser / Phaser AE / GDevelop     | Godot                               | Unity                             |
+| --------------------------- | --------------------------------- | ----------------------------------- | --------------------------------- |
+| Enable precut action layers | `setActionLayering(enabled)`      | `set_action_layering(enabled)`      | `SetActionLayering(enabled)`      |
+| Start a one-shot action     | `playAction(move, direction)`     | `play_action(move, direction)`      | `PlayAction(move, direction)`     |
 | Check the entire action set | `canLayerAction(move, direction)` | `can_layer_action(move, direction)` | `CanLayerAction(move, direction)` |
-| Query the action clock | `actionPlaying` | `is_action_playing()` | `IsActionPlaying` |
+| Query the action clock      | `actionPlaying`                   | `is_action_playing()`               | `IsActionPlaying`                 |
 
-Layering starts off. `canLayerAction` checks all reachable cells of the current walk and action in their shared direction and checks the visible outfit, independently of the switch. `playAction` starts at time zero and returns `layered` when enabled and eligible, or `full` for a whole-body action. That choice is latched. A different gait cell, palette change, or toggle cannot flip a playing action. After an equipment change, a layered action can downgrade once if the outfit is unsupported; restoring the outfit does not upgrade that action. Neither clock is restarted. A valid `play`, including a facing change, cancels the action in all four exports. Live instead keeps the last cell of the original facing when the user stops walking or turns until the action ends. Invalid `playAction` calls throw in Phaser and GDevelop and warn and return `""` in Godot and Unity. All leave the visible state and both clocks intact.
+Layering starts off. `canLayerAction` checks all reachable cells of the current walk and action in their shared direction and checks the visible outfit, independently of the switch. `playAction` starts at time zero and returns `layered` when enabled and eligible, or `full` for a whole-body action. That choice is latched. A layered action starts with the current gait cell and updates the lower body while the gait faces the action direction. Turning the gait away holds the last matching cell. Turning back resumes drawing the current gait cell. Both clocks keep advancing. Palette changes and the layering toggle leave the current action mode in place. An unsupported outfit downgrades a layered action to full for the rest of that action while both clocks retain their progress. A valid `play` cancels the action in every export. Live also holds the lower body when the user stops walking. Invalid `playAction` calls throw in Phaser and GDevelop and warn and return `""` in Godot and Unity. All leave the visible state and both clocks intact.
 
 The Studio uses the canonical fragment splitter, seam measurement and compositor. It pads the whole cached set around the same pivot without changing Live's world scale. Engine sprites are independently translated and have no shared clipping frame. Export preparation writes source-color body fragments with the original grids and pivots and points whole equipment layers at their existing source sheets. Both parts share normal layer ordering. The upper translation is lower hip minus upper hip plus the baked correction. Native controllers consume only prepared assets and metadata. The host game owns travel speed, action input and hit timing.
 
-For configured attacks, gear without complete attack art is omitted from either action mode. It does not block layering; Live retains the hidden-gear or loading notice. Visible lower-slot gear with complete attack art and incomplete walk art forces a full-body action. Exports record the omissions by attack/facing and the blockers by walk/attack/facing, so the four players do not recalculate image coverage. Seam limits are scaled by unpadded rig width, and off-silhouette hips prefer valid measured or requested coordinates before clamping to the occupied silhouette.
+For configured attacks, gear without complete attack art is omitted from either action mode. It does not block layering; Live retains the hidden-gear or loading notice. Visible lower-slot gear with complete attack art and incomplete walk art forces a full-body action. Exports record the omissions by attack/facing and the blockers by walk/attack/facing, so the five players do not recalculate image coverage. Seam limits are scaled by unpadded rig width, and off-silhouette hips prefer valid measured or requested coordinates before clamping to the occupied silhouette.
 
 ## Maintaining cross-engine consistency
 
@@ -212,8 +224,9 @@ Before changing a paper-doll behavior or public controller operation:
 4. Run the source synchronization workflow below when canonical code or its data types change. Run
    `npm run check`, the unit suite, and affected application export/selftest E2E specs. `AGENTS.md` "Testing" maps
    areas to specs and lists the cross-cutting changes that need the full suite.
-5. Run the affected native checks: `GODOT_BIN` enables `godot-export.test.ts`; the Phaser, GDevelop and
-   Unity verifiers live in `app/scripts/verify-*-export.mjs` and `verify-gdevelop-engine.mjs`.
+5. Run the affected native checks: `GODOT_BIN` enables `godot-export.test.ts`; the Phaser, Phaser AE, GDevelop and
+   Unity verifiers live in `app/scripts/verify-*-export.mjs` and `verify-gdevelop-engine.mjs`. The Phaser AE verifier
+   needs a game folder from `npx -y @phaser-ae/cli blank` (a free phaser.io account), since the engine is not on npm.
    Playback checks include repeated selection, explicit restart, completion replay and turning mid-entry
    on a repeated cell with unequal durations (the GDevelop native fixture has one view per move, so its
    verifier covers only the no-op and rejection; unit tests execute the turn itself); palette checks
@@ -229,13 +242,13 @@ GDScript/C# execution. Do not claim that every native port automatically inherit
 
 Required scenario coverage lives in these existing harnesses rather than a second test framework:
 
-| Scenario                                     | Executable checks                                                                                                                               |
-| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Shared rendering, ordering and palettes      | `runtime.test.ts`, `runtime-preset.test.ts`, `export-phaser.test.ts`, `gdevelop-export.test.ts`                                                 |
-| Repeat selection, restart, completion replay | `verify-phaser-export.mjs`, `verify-gdevelop-engine.mjs`, native `godot-export.test.ts`, `unity-review/NativePlayback.cs`                       |
-| Turning mid-move, including completed clips  | `export-phaser.test.ts`, `gdevelop-export.test.ts`, `verify-phaser-export.mjs`, native `godot-export.test.ts`, `unity-review/NativePlayback.cs` |
-| Rejection atomicity and palette restoration  | Controller unit tests, native `godot-export.test.ts`, `unity-review/NativePlayback.cs`                                                          |
-| Portable resources and export boundary       | `export-portability.test.ts`, `export-validation.test.ts`                                                                                       |
+| Scenario                                     | Executable checks                                                                                                                                                                                          |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared rendering, ordering and palettes      | `runtime.test.ts`, `runtime-preset.test.ts`, `export-phaser.test.ts`, `export-phaser-ae.test.ts`, `gdevelop-export.test.ts`                                                                                |
+| Repeat selection, restart, completion replay | `verify-phaser-export.mjs`, `verify-phaser-ae-export.mjs`, `verify-gdevelop-engine.mjs`, native `godot-export.test.ts`, `unity-review/NativePlayback.cs`                                                   |
+| Turning mid-move, including completed clips  | `export-phaser.test.ts`, `export-phaser-ae.test.ts`, `gdevelop-export.test.ts`, `verify-phaser-export.mjs`, `verify-phaser-ae-export.mjs`, native `godot-export.test.ts`, `unity-review/NativePlayback.cs` |
+| Rejection atomicity and palette restoration  | Controller unit tests, native `godot-export.test.ts`, `unity-review/NativePlayback.cs`                                                                                                                     |
+| Portable resources and export boundary       | `export-portability.test.ts`, `export-validation.test.ts`                                                                                                                                                  |
 
 Paths in this table are under `app/test/unit/` or `app/scripts/`. Test exported runtime bytes and
 native controller output; matching source text alone is not evidence of matching engine behavior.
@@ -289,7 +302,8 @@ names use the shared portable-name helper. The final archive path check remains 
 See `app/test/unit/runtime.test.ts` for source identity and independent pixel/timeline golden values;
 existing mask, equipment, palette, presentation and export suites cover their established behavior.
 `app/scripts/verify-phaser-export.mjs` runs pinned real Phaser engines with negative controls for broken
-duration, looping, layer synchronization, pivots, masks, visibility, palettes and direction rows. It
+duration, looping, layer synchronization, pivots, masks, visibility, palettes, translucent palette
+lookup through Canvas readback and direction rows. It
 compares every playlist frame against combined outfit sheets when those sheets are included. A ZIP
 without them still receives clock checks and explicitly reports that its pixel oracle did not run.
 

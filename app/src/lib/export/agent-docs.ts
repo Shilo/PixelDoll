@@ -12,10 +12,10 @@ this file first, then the doc for your engine in docs/, then that engine's READM
 ## Which kind of export this is
 
 - manifest.json and layers/ present: the layered export. One PNG sheet per item layer, move and direction, plus one
-  manifest that names every path, frame, pivot and draw order. Engines: generic, Godot, Unity, Phaser, GDevelop,
-  Aseprite.
+  manifest that names every path, frame, pivot and draw order. Engines: generic, Godot, Unity, Phaser, Phaser AE,
+  GDevelop, Aseprite.
 - PNG sheets at the root and no manifest.json: an RPG Maker sheet export. Rows are down, left, right, up and the
-  columns are that maker version's steps. See docs/rpgmaker.md or docs/rpgmakerxp.md.
+  columns are that maker version's steps. See docs/rpg-maker.md or docs/rpg-maker-xp.md.
 
 ## Read in this order
 
@@ -37,10 +37,22 @@ this file first, then the doc for your engine in docs/, then that engine's READM
   per direction, the last matching entry winning. Equal z breaks by slot order in manifest.json, back layer before front
   layer, then item id. Never sort by name instead of z.
 - Palette swaps are exact RGB replacements from materials[].ramp and materials[].variants. Replace those pixels; never
-  scale, rotate, blur or resample the art. Only material variants that exist in manifest.json can be selected, and an
-  unknown material or variant id selects nothing without throwing.
+  scale, rotate, blur or resample the art. A ramp is the item's source palette, an array of #rrggbb colors; a variant maps
+  a name to a replacement ramp, applied entry by entry, so keep it as long as ramp (a shorter one recolors only its first
+  entries). Only entries listed under variants can be selected, and an unknown
+  variant applies no swap. Each engine reference says whether that call also throws, warns or clears other selections.
+  When materials is empty, or the
+  material you want lists no variants, this character ships nothing to recolor: skip the recolor step instead of calling
+  it with invented ids. Supplying your own ramp is not part of this export's API. Variants are the ones saved in PixelDoll
+  before the export.
+- An item id containing "~" is a baked tuck variant: an item redrawn to sit under the items named after the ~, joined
+  with ~ when several cover it. The runtime swaps it in by itself when those covering items are worn. Never equip it:
+  the equipment API refuses variant items (each engine reference says whether that throws or returns an error).
 - Nearest-neighbor filtering and whole-pixel positions. No atlas packing, rotation or trimming.
 - The base body is always worn. A layer that a move or an item does not provide is simply absent.
+- With moving attack layers enabled, turning the gait away during a layered action holds the last gait cell in the
+  action's facing. Turning back resumes drawing the current gait cell. Both clocks keep running. An unsupported
+  outfit can downgrade the action to full for the rest of that action.
 - Mirroring is already baked into the exported views; do not flip a sheet that manifest.json lists on its own.
 - Sheet paths in manifest.json are relative to the folder that holds it, and each engine folder's files point back at
   layers/: keep the folder together when you copy it into a project.
@@ -65,7 +77,9 @@ engine folder has its own README for the file names and runtime API it provides.
 const PHASER = `# Phaser 3.80+ / 4
 
 Entry: phaser/PaperdollContainer.js, an ES module; phaser/types.d.ts types the exported data, not the runtime class.
-Full guide: phaser/README.txt. Data: manifest.json and the TexturePacker atlases in phaser/.
+Full guide: phaser/README.txt. Data: manifest.json and the TexturePacker atlas JSON in phaser/.
+The JSON files in phaser/ are atlas metadata only: their meta.image points at ../layers/<slot>/<item>/<layer>/<move>.png, so
+the exported folder has to stay together.
 
     import { loadPaperdoll, Paperdoll } from './assets/<character>/phaser/PaperdollContainer.js'
     const model = await loadPaperdoll(this, 'assets/<character>/')   // the folder with manifest.json
@@ -75,15 +89,64 @@ Full guide: phaser/README.txt. Data: manifest.json and the TexturePacker atlases
     doll.equip('torso_inner', 'vest_leather')                        // after a preset; null empties a slot
     doll.setVariants({ '<material-id>': '<variant-id>' })             // only ids listed in manifest.json
 
+setVariants replaces the whole selection map, so passing only one material clears the others' choices; pass every material
+you want recolored. An unknown id applies no swap. Order: play, then applyPreset, then setVariants; applyPreset swaps
+items and colors without calling play, so the active move keeps running.
+A complete game config:
+    new Phaser.Game({ type: Phaser.AUTO, width: 400, height: 300, pixelArt: true, roundPixels: true, scene: [HeroScene] })
 Use pixelArt: true and roundPixels: true and serve the folder over http: the module fetches manifest.json.
+The path you pass is relative to the document's base URL (document.baseURI), not to PaperdollContainer.js.
+This export does not bundle Phaser. Load Phaser 3.80+ or 4 yourself: a script tag that exposes the global Phaser, or your
+bundler with an explicit import (import Phaser from 'phaser'); then import phaser/PaperdollContainer.js as an ES module.
+Phaser does not await an async create(): nothing may use the doll until loadPaperdoll resolves, so guard update() on
+this.doll or create it in a scene that starts after loading. loadPaperdoll caches per game, so one scene may load it and
+another may create the doll.
 doll.playAction(move, direction) plays a one-shot action and doll.setDirection(dir) turns the active move.
+A move's loop flag from manifest.json decides whether play repeats it; a move with loop false stops on its last frame.
 An unknown move, direction, slot, item or outfit throws before changing anything; an unknown material or variant id
 in setVariants selects nothing, so check manifest.json's materials before relying on a recolor.
-Call doll.destroy() when removing the character. Atlas files are phaser/<length>-<item>_<length>-<layer>_<length>-<move>.json
+The constructor starts in model.presets[0], the first outfit in manifest.json.
+Call doll.destroy() when removing the character, including when the scene shuts down:
+this.events.once('shutdown', () => doll.destroy()).
+With the Canvas renderer, keep integer positions and call scene.cameras.main.setRoundPixels(false) for exact pixels;
+WebGL does not need that. Atlas files are phaser/<length>-<item>_<length>-<layer>_<length>-<move>.json
 with frames named <move>_<direction>_<frame>: each atlas JSON lists the frames it holds, and phaser/README.txt states the
 naming pattern.
 baked/<outfit>/<move>.png holds the same grid flattened for engines that draw one sprite: rows are directions, columns
 are frames, on export.bakedCell and export.bakedPivot from manifest.json. Nothing else in this folder depends on it.
+`;
+
+const PHASER_AE = `# Phaser AE
+
+Phaser AE is the Phaser Game Agent's engine, built with the phaser-ae CLI; it is not Phaser 3 or 4.
+Entry: phaser-ae/paperdoll.js, an ES module, typed by phaser-ae/paperdoll.d.ts. Full guide: phaser-ae/README.txt.
+
+This is a local integration. Copy manifest.json, phaser-ae/ and the files listed in phaser-ae/assets.json into the game as
+game/pixeldoll/<character>/ (not project.json, cells/ or baked/), and add every path in phaser-ae/assets.json to the
+"assets" list in game/manifest.json (not to game/assets.json): the build copies those files next to the game. Phaser's
+hosted route for a person's files is the Pro "upload" command; this export does not use it. Set "pixelArt": true in the
+manifest's "screen".
+
+    // hero.ts: loaded once, before await game.start() (main.ts imports it)
+    import { game } from './engine.js'
+    import { loadPaperdoll } from './pixeldoll/<character>/phaser-ae/paperdoll.js'
+    import heroData from './pixeldoll/<character>/manifest.json'
+    export const hero = await loadPaperdoll(game, 'pixeldoll/<character>/', { manifest: heroData })
+
+    // in a scene's enter(), synchronously:
+    const doll = new Paperdoll(game, 360, 640, hero)          // 360,640 is the pivot: the feet
+    doll.play('<move-id>', '<direction>')
+    doll.applyPreset(hero.presets[0].id)                      // items and colors together
+    doll.equip('<slot-id>', '<item-id>')                      // after a preset; null empties a slot
+    doll.setVariants({ '<material-id>': '<variant-id>' })     // only ids listed in manifest.json
+    game.rig.follow(doll.actor)                               // the doll as one game object
+
+doll.actor is the game's own Sprite: it owns the doll's position, scale, rotation, alpha, tint and visibility, so
+collision, tweens and verbs act on it, and it draws every layer itself so they move and sort together. doll.x and
+doll.y are the pivot, read from and written to the actor. Type a stored doll as Paperdoll<typeof game> so doll.actor
+keeps the game's Sprite type. The doll's clock is a step of the scene that created it, so
+create the doll in the scene that shows it; leaving that scene removes it. setVariants replaces the whole selection
+map, as in Phaser 3 and 4.
 `;
 
 const GODOT = `# Godot 4
@@ -95,9 +158,22 @@ Full guide: godot/README.txt.
     var doll = preload("res://characters/<character>/godot/Paperdoll.tscn").instantiate()
     add_child(doll)
     doll.play_anim("walk", "south")
-    doll.equip("main_hand", "sword")     # "" empties a slot
-    doll.set_preset("outfit_id")
+    doll.set_preset("outfit_id")        # items and colors together; it replaces earlier selections
+    doll.equip("main_hand", "sword")    # after a preset; "" empties a slot
 
+The scene starts playing the first move facing the first direction from its own _ready, so nothing has to start it; call
+play_anim to change move or direction. The API is safe once the node is in the tree (add_child); before that the scene has
+no manifest, so calls fail. The scene starts in manifest.presets[0].
+Copy the whole export folder anywhere under res:// and keep it together; a scene outside it references
+godot/Paperdoll.tscn with a res:// path. The scene root is a Node2D running paperdoll.gd, and it exposes manifest and
+equipped as properties, so no other wiring is needed. Read doll.manifest.materials[].variants (or manifest.json) to see
+which variants exist; there is no query API. This targets Godot 4 with format=3 scenes.
+set_preset swaps items and colors without calling play_anim, so the active move keeps running. A later equip changes only
+that slot and leaves the preset's color variants in place. Each move loops only when its loop flag in manifest.json is
+true.
+set_variant returns true for a known material even when the variant name is unknown; the unknown name replaces that
+material's selection and applies no swap. An unknown material warns, returns false and changes nothing. equip on a
+variant item warns and returns false.
 Set Rendering > Textures > Default Texture Filter to Nearest and 2D > Snap 2D Transforms To Pixel on.
 Manifest depths become native z_index ranks; keep the root's z_index to place the character among scene objects.
 `;
@@ -116,6 +192,8 @@ run Tools > PixelDoll > <export id> > Import. Then in play mode:
     doll.ApplyPreset("outfit_id");
 
 The namespace is PixelDoll.<export id>. Use a Pixel Perfect Camera, and keep the source sheets unpacked.
+The importer takes pixels per unit from export.pixelsPerUnit in manifest.json, or from the rig size when that is absent,
+and keeps it across oversize layers so their world scale matches the body.
 `;
 
 const GDEVELOP = `# GDevelop 5.6.285+
@@ -187,13 +265,14 @@ no place in this format.
 
 const API: Record<Engine, string> = {
 	phaser: PHASER,
+	'phaser-ae': PHASER_AE,
 	godot: GODOT,
 	unity: UNITY,
 	gdevelop: GDEVELOP,
 	aseprite: ASEPRITE,
 	generic: GENERIC,
-	rpgmaker: RPGMAKER,
-	rpgmakerxp: RPGMAKERXP
+	'rpg-maker': RPGMAKER,
+	'rpg-maker-xp': RPGMAKERXP
 };
 
 /** The root agent files plus one engine reference per requested engine, in one fixed order. */

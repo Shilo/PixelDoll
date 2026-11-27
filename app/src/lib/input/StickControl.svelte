@@ -25,8 +25,8 @@
 		size: JoystickSize;
 		deadZone: number;
 		axis?: JoystickAxis;
-		/** Every press, drag and release; `pointerId` is null once it lets go. */
-		onchange: (snapshot: JoystickSnapshot) => void;
+		/** Every press, drag and release; `starting` is true only on the accepted pointerdown. */
+		onchange: (snapshot: JoystickSnapshot, starting: boolean) => void;
 		/** A click without a pointer (assistive technology): one action along the current facing. */
 		onactivate: () => void;
 		/** Shown at rest only; a held stick shows its thumb instead. */
@@ -35,10 +35,10 @@
 	let base: HTMLButtonElement;
 	let stick: Joystick | null = null,
 		snapshot = $state.raw<JoystickSnapshot>(IDLE);
-	function set(next: JoystickSnapshot) {
+	function set(next: JoystickSnapshot, starting = false) {
 		if (next === snapshot) return;
 		snapshot = next;
-		onchange(next);
+		onchange(next, starting);
 	}
 	function down(e: PointerEvent) {
 		if (e.button !== 0 || stick) return;
@@ -59,7 +59,7 @@
 		e.stopPropagation();
 		stick = next;
 		base.setPointerCapture(e.pointerId);
-		set(taken);
+		set(taken, true);
 	}
 	function move(e: PointerEvent) {
 		if (stick) set(stick.move(e.pointerId, { x: e.clientX, y: e.clientY }));

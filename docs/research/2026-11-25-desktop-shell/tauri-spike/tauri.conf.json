@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PixelDoll Tauri Spike",
+  "version": "0.1.0",
+  "identifier": "app.pixeldoll.tauri-spike",
+  "build": { "frontendDist": "dist" },
+  "app": { "withGlobalTauri": true },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.ico"],
+    "windows": { "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true } }
+  }
+}

@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import { cellHash, playlist, type Keypoint } from '../../src/lib/rig/rig.ts';
-import { rpgMakerFiles, type RpgLayout } from '../../src/lib/export/rpgmaker.ts';
+import { rpgMakerFiles, type RpgLayout } from '../../src/lib/export/rpg-maker.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
 import { exportManifest } from '../../src/lib/export/generic.ts';
 import type { Manifest, Project } from '../../src/lib/store/manifest.ts';
@@ -405,10 +405,10 @@ test('a walk exported under another ID still drives the steps', async () => {
 	for (const item of p.manifest.items)
 		for (const layer of item.layers)
 			if (layer.cells?.walk) layer.cells[punch.id] = structuredClone(layer.cells.walk);
-	const plain = await exportFiles(p, { engines: ['rpgmaker'], baked: true });
+	const plain = await exportFiles(p, { engines: ['rpg-maker'], baked: true });
 	walk.exportId = 'stroll';
 	punch.exportId = 'walk';
-	const renamed = await exportFiles(p, { engines: ['rpgmaker'], baked: true });
+	const renamed = await exportFiles(p, { engines: ['rpg-maker'], baked: true });
 	expect(renamed.errors).toEqual([]);
 	const omission = renamed.warnings.find((warning) => warning.includes('left out'))!;
 	expect(omission).toContain('RPG Maker: walk is left out');
@@ -426,7 +426,7 @@ test('refuses characters without front, side and back views', async () => {
 	const partial = await project({ dirs: ['south', 'north'] });
 	expect(() => run(partial)).toThrow(/^RPG Maker: .*no west, east view/);
 	const r = await exportFiles(await project({ dirs: ['south', 'north'], size: 32 }), {
-		engines: ['rpgmakerxp'],
+		engines: ['rpg-maker-xp'],
 		baked: false
 	});
 	expect(r.errors[0]).toMatch(/^RPG Maker: /);
@@ -520,8 +520,8 @@ test.each(['vx', 'xp'] as const)(
 test('the zip holds only the sheets, README, agent docs and the editable copy, built from the exported manifest', async () => {
 	const p = await project({ size: 32 });
 	for (const [engine, sheetName] of [
-		['rpgmaker', '$Hero_Knight.png'],
-		['rpgmakerxp', 'Hero_Knight.png']
+		['rpg-maker', '$Hero_Knight.png'],
+		['rpg-maker-xp', 'Hero_Knight.png']
 	] as const) {
 		const r = await exportFiles(p, { engines: [engine], baked: true });
 		expect(r.errors).toEqual([]);
@@ -540,13 +540,13 @@ test('the zip holds only the sheets, README, agent docs and the editable copy, b
 			].sort()
 		);
 	}
-	const { manifest } = exportManifest(p, { engines: ['rpgmaker'], baked: false });
+	const { manifest } = exportManifest(p, { engines: ['rpg-maker'], baked: false });
 	expect(reds(sheet(rpgMakerFiles(p, manifest, 'vx').files, '$Hero_Knight.png'), 3, 0)).toEqual([
 		11, 200, 13
 	]);
-	expect((await exportFiles(p, { engines: ['rpgmaker', 'generic'], baked: false })).errors).toEqual(
-		['RPG Maker sheets export on their own; choose one format.']
-	);
+	expect(
+		(await exportFiles(p, { engines: ['rpg-maker', 'generic'], baked: false })).errors
+	).toEqual(['RPG Maker sheets export on their own; choose one format.']);
 });
 
 test('a view measured on only some frames uses its requested keypoints instead of dropping to frame 0', async () => {

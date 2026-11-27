@@ -813,7 +813,7 @@
 >
 	{#snippet icon()}
 		<!-- The category's icon, as on its Wardrobe rail. -->
-		{#if it}<GroupIcon group={it.slot} size={18} />{/if}
+		{#if it}<GroupIcon group={it.slot} surface="inline" />{/if}
 	{/snippet}
 	{#snippet scope()}
 		<!-- The move scopes the whole window (views, fixes, outfit), so it stays in the fixed header while the body scrolls. -->

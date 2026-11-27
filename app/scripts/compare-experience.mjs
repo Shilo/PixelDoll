@@ -68,7 +68,11 @@ async function capture(kind, url) {
 					localStorage.setItem('pixeldoll.agentKey', 'off');
 					localStorage.removeItem('pixellabApiKey');
 					localStorage.setItem('pixeldoll.theme', theme);
-					localStorage.setItem('pixeldoll.welcomed', '1');
+					localStorage.setItem(
+						'pixeldoll.tips',
+						'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+					);
+					localStorage.setItem('pixeldoll.visited', '1');
 					localStorage.setItem(
 						'bronze-prototype-theme',
 						theme === 'dark' ? 'obsidian' : 'porcelain'

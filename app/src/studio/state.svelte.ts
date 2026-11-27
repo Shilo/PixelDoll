@@ -279,6 +279,14 @@ const lsSet = (k: string, v: string | null) => {
 export const DEMO = 'fixture:s2';
 const DEMO_NAME = 'Adventurer';
 
+/** Set on the first startup: later startups are return visits. */
+const visited = 'pixeldoll.visited';
+/** True only on the first startup on this device (or while storage is blocked). */
+export function claimFirstVisit(): boolean {
+	if (lsGet(visited) === '1') return false;
+	lsSet(visited, '1');
+	return true;
+}
 const pixelLabConnectOpened = 'pixeldoll.pixelLabConnectOpened';
 let pixelLabConnectOpenedInTab = false;
 
@@ -350,7 +358,6 @@ export const ui = $state({
 	size: sizeNow(),
 	dpr: devicePixelRatio || 1,
 	theme: (lsGet(K.theme) === 'light' ? 'light' : 'dark') as 'light' | 'dark',
-	welcome: !lsGet(K.welcomed),
 	tab: 'wardrobe' as 'wardrobe' | 'colors' | 'outfits' | 'states' | 'moves', // phone
 	colorsFocus: '', // item id whose Colors section the Colors tab scrolls to once (Recolor in item details)
 	group: 'head', // a Wardrobe category: its slot key
@@ -555,10 +562,6 @@ export function setTheme(theme: typeof ui.theme) {
 }
 export function toggleTheme() {
 	setTheme(ui.theme === 'dark' ? 'light' : 'dark');
-}
-export function dismissWelcome() {
-	ui.welcome = false;
-	lsSet(K.welcomed, '1');
 }
 let toastT: ReturnType<typeof setTimeout> | undefined;
 let toastRemaining = 0,

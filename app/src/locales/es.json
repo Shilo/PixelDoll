@@ -673,13 +673,31 @@
 		"makeForSlotDetail": "Dibuja este objeto otra vez para {slot}.",
 		"groupReady": "{ready} de {count} listos",
 		"remakeFits": "Hace una copia nueva que le queda a {name}, el personaje que estás vistiendo.",
-		"demoMissing": "La demo nunca gasta generaciones de PixelLab. Haz una copia editable para dibujar los fotogramas que faltan."
+		"demoMissing": "La demo nunca gasta generaciones de PixelLab. Haz una copia editable para dibujar los fotogramas que faltan.",
+		"nameInEveryDirection": "{name} en todas las direcciones",
+		"generateItemForMove": "Generar objeto para la animación",
+		"fillMissingMoves": "Completar animaciones faltantes",
+		"fillMissingHint": {
+			"one": "Dibuja este objeto para {n} animación faltante en una sola oferta, reutilizando su diseño de pie.",
+			"other": "Dibuja este objeto para las {n} animaciones faltantes en una sola oferta, reutilizando su diseño de pie."
+		},
+		"labelMakeNameForMissingName": "Crear {name} para {missingName}",
+		"generatesOnlyThisItemSMissingViews": "Genera solo las vistas que le faltan a este objeto en la animación elegida, reutilizando su diseño en la pose de pie. El cuerpo no cambia. PixelLab puede cobrar en dólares; el tiempo en cola varía.",
+		"madeForAnotherBodyItMayNot": "Hecho para otro cuerpo. Puede que no encaje.",
+		"titleDrawInFrontOfTheNext": "Dibujar delante de la capa siguiente",
+		"forward": "Adelante",
+		"titleDrawBehindThePreviousLayer": "Dibujar detrás de la capa anterior",
+		"backward": "Atrás",
+		"makeFor": "Crear para {move}",
+		"hideWhenWorn": "Los objetos marcados se ocultan mientras se lleva {name}."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nuevo personaje",
-		"createFromScratch": "Crear desde cero…",
-		"importFromDevice": "Importar desde el dispositivo…",
-		"importFromPixelLab": "Importar desde PixelLab…"
+		"createFromScratch": "Crear…",
+		"addCharacter": "Añadir personaje",
+		"fromFile": "Desde archivo…",
+		"fromPixelLab": "Desde PixelLab…",
+		"createNeedsKey": "Necesita una clave de PixelLab y usa generaciones de pago"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(se abre en una pestaña nueva)"
@@ -962,25 +980,7 @@
 		"itemQueued": "en cola para {move}"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "La demo no necesita cuenta. Crear usa tus generaciones de {pixelLab}.",
-		"steps": {
-			"create": "Crea",
-			"describeBody": "Describe el cuerpo",
-			"addItems": "Agrega objetos",
-			"examples": "Sombreros, camisas, armas",
-			"dressUp": "Viste al personaje",
-			"wearRecolorPlay": "Equipa, cambia colores y juega",
-			"export": "Exporta",
-			"anyEngine": "Cualquier motor de juego"
-		},
-		"switchToLightMode": "Cambiar a modo claro",
-		"switchToDarkMode": "Cambiar a modo oscuro",
-		"labelDemoCharacterWalking": "Personaje de demo caminando",
-		"dressUpYour2DGameCharactersWith": "Viste a tus personajes 2D con capas de muñeco recortable que encajan píxel a píxel",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "Genera capas de equipamiento intercambiables y alineadas por fotograma con PixelLab AI y expórtalas a cualquier motor de juego.",
-		"createYourCharacter": "Crea tu personaje",
-		"tryTheDemo": "Prueba la demo",
-		"importAnExistingCharacter": "Importa un personaje existente"
+		"createYourCharacter": "Crea tu personaje"
 	},
 	"experience": {
 		"movesOffMounted": "Las animaciones se eligen en Vista previa. Al moverte con montura se sigue la pose de jinete de los ajustes de montura.",
@@ -1264,7 +1264,9 @@
 			"versionMenu": "Versión de RPG Maker",
 			"version": "Versión",
 			"versionLabel": "Versión de RPG Maker: {version}",
-			"walkMove": "Animación de caminar"
+			"walkMove": "Animación de caminar",
+			"phaserVersionMenu": "Versión de Phaser",
+			"phaserVersionLabel": "Versión de Phaser: {version}"
 		},
 		"group": {
 			"engines": "Motores y frameworks",
@@ -1287,13 +1289,6 @@
 				"sub": "Proyecto editable",
 				"detail": "Proyecto editable de GDevelop con capas Sprite, reproducción sincronizada y controles de equipamiento. Pruébalo o copia los objetos y el evento a tu juego."
 			},
-			"rpgmaker": {
-				"sub": "Hojas de caminata",
-				"detail": "Una hoja de caminata por atuendo, al tamaño original de tu personaje. Copia los archivos PNG en img/characters (MZ, MV) o Graphics/Characters (VX Ace, VX). Se necesitan vistas de frente, de lado y de espaldas."
-			},
-			"rpgmakerxp": {
-				"detail": "Una hoja de caminata de 4 fotogramas por atuendo, al tamaño original de tu personaje, para RPG Maker XP y Pokémon Essentials. Copia los archivos PNG en Graphics/Characters. Se necesitan vistas de frente, de lado y de espaldas."
-			},
 			"aseprite": {
 				"sub": "Capas editables",
 				"detail": "Una animación .aseprite por capas con etiquetas, tiempos, pivote y tu look actual. Ábrela en Aseprite 1.3 o posterior."
@@ -1301,6 +1296,16 @@
 			"generic": {
 				"sub": "Integración personalizada",
 				"detail": "Hojas y tiras por capa con datos de tiempos, pivotes, equipamiento y paleta. Tu motor necesita código para leer estas reglas."
+			},
+			"rpgMaker": {
+				"sub": "Hojas de caminata",
+				"detail": "Una hoja de caminata por atuendo, al tamaño original de tu personaje. Copia los archivos PNG en img/characters (MZ, MV) o Graphics/Characters (VX Ace, VX). Se necesitan vistas de frente, de lado y de espaldas."
+			},
+			"rpgMakerXp": {
+				"detail": "Una hoja de caminata de 4 fotogramas por atuendo, al tamaño original de tu personaje, para RPG Maker XP y Pokémon Essentials. Copia los archivos PNG en Graphics/Characters. Se necesitan vistas de frente, de lado y de espaldas."
+			},
+			"phaserAe": {
+				"detail": "Hojas de sprites por capa y un runtime para juegos de Phaser AE, con equipamiento, colores y reproducción sincronizada. Añade las hojas a la lista assets del manifiesto de tu juego y la compilación del juego las copiará en él."
 			}
 		},
 		"version": {
@@ -1309,7 +1314,13 @@
 			"standardSub": "Diseño 3 × 4 · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP y Pokémon Essentials",
-			"xpSub": "Diseño 4 × 4 · Name.png"
+			"xpSub": "Diseño 4 × 4 · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "El motor del Phaser Game Agent",
+			"phaser": "3 y 4",
+			"phaserTitle": "Phaser 3 y 4",
+			"phaserSub": "Biblioteca de código abierto, 3.80 o posterior"
 		},
 		"playback": {
 			"all": "Todas"
@@ -1382,7 +1393,6 @@
 			"noVisibleFrames": "El cuerpo no tiene fotogramas visibles.",
 			"godot": "Godot no pudo usar estas hojas de sprites.",
 			"gdevelop": "GDevelop no pudo usar estas hojas de sprites.",
-			"rpgmaker": "RPG Maker necesita vistas de frente, de lado y de espaldas.",
 			"aseprite": "La animación no encaja en el formato de Aseprite.",
 			"unsafeNames": "Algunos nombres de archivo no se pueden empaquetar de forma segura.",
 			"tooLarge": "Esta exportación es demasiado grande.",
@@ -1390,7 +1400,8 @@
 			"buildFailed": "No se pudo generar esta exportación.",
 			"characterLimits": "Este personaje supera los límites de exportación.",
 			"damagedImages": "Algunas imágenes guardadas están dañadas.",
-			"artworkFailed": "No se pudo preparar el ZIP de imágenes."
+			"artworkFailed": "No se pudo preparar el ZIP de imágenes.",
+			"rpgMaker": "RPG Maker necesita vistas de frente, de lado y de espaldas."
 		},
 		"error": {
 			"pixelsPerUnit": "Los píxeles por unidad deben ser un número positivo y finito.",
@@ -1443,7 +1454,6 @@
 		"posesTitle": "Importar también como estados",
 		"posesHint": "Elige poses del mismo cuerpo que no tengan equipamiento dibujado. Si el aspecto es distinto, impórtalo como un personaje aparte. Elige las animaciones más abajo.",
 		"poseMismatch": "Este estado tiene otras dimensiones de imagen, direcciones o ajustes de cámara. Impórtalo como un personaje aparte.",
-		"titleDevice": "Importar desde el dispositivo",
 		"titlePixelLab": "Importar desde PixelLab",
 		"browseLibrary": "Explorar personajes de PixelLab",
 		"standingState": "Estado para la pose de pie",
@@ -1530,7 +1540,8 @@
 			"skippedStanding": "Se omitió «{move}» en la dirección {direction}: el personaje no tiene una vista de pie en esa dirección.",
 			"semiAlpha": "Los bordes semitransparentes se convirtieron a transparencia de pixel art.",
 			"upscaledBase": "El arte de pie parece una ampliación de {scale}x. Se mantiene tal cual: los objetos hechos a partir de él usan más píxeles, mezclan tamaños de píxel y se recolorean con menos limpieza. Importa el arte original de 1x si lo tienes.",
-			"detailsDropped": "Algunos datos guardados del personaje estaban dañados y se omitieron. Vuelve a configurar su rig de pose si hace falta."
+			"detailsDropped": "Algunos datos guardados del personaje estaban dañados y se omitieron. Vuelve a configurar su rig de pose si hace falta.",
+			"compressedBase": "El arte de pie parece comprimido o reescalado: muchos de sus colores aparecen una sola vez. Se mantiene tal cual: los objetos hechos a partir de él son más difíciles de recortar, recolorear y alinear. Importa el arte original si puedes."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1583,7 +1594,8 @@
 			"cutPixels": "{path} perdería {cut} píxeles visibles en una celda de {frame} px. Importa un personaje más pequeño; el arte nunca se reescala.",
 			"emptyFrame": "{path} es un fotograma vacío.",
 			"nameLength": "Escribe un nombre de personaje de 1 a 60 caracteres."
-		}
+		},
+		"titleFile": "Importar desde archivo"
 	},
 	"incompatible": {
 		"error": {
@@ -3753,5 +3765,28 @@
 		"gone": "Este movimiento ya no está guardado.",
 		"itemDrawn": "Dibujado",
 		"itemMissing": "Falta"
+	},
+	"tips": {
+		"customizeTitle": "Viste la demo",
+		"customizeBody": "Pruébate equipo o exporta el **personaje de demo** para tu juego. No necesitas clave de PixelLab.",
+		"gearTitle": "Pruébate equipo",
+		"gearBody": "Elige un objeto del **Armario** para ponértelo o quitártelo.",
+		"exportTitle": "Llévalo a tu juego",
+		"exportBody": "**Exportar** incluye el personaje, el equipo y las animaciones, además de código listo opcional para cambiar el equipo en tu juego.",
+		"exportInMoreBody": "Encontrarás **Exportar** en **{more} más opciones**: el personaje, el equipo y las animaciones, además de código opcional para cambiar el equipo en tu juego.",
+		"close": "Cerrar consejo",
+		"showAgain": "Volver a mostrar consejos",
+		"pixellabTitle": "¿Qué es PixelLab?",
+		"pixellabBody": "Un servicio de pixel art con IA que dibuja los personajes y el equipo que creas aquí, con generaciones de tu cuenta de PixelLab.",
+		"newCharacterTitle": "Crea el tuyo",
+		"newCharacterBody": "Crea un **personaje** a partir de una descripción o una imagen de referencia, o importa uno que ya tengas.",
+		"addItemTitle": "Añade equipo",
+		"addItemBody": "Usa **+** en un hueco para describir un objeto o añadir una imagen de referencia. PixelLab lo ajusta a tu personaje.",
+		"generateItemsTitle": "Ajusta el equipo a esta animación",
+		"generateItemsBody": "Abre **{menu} más opciones** de esta animación, elige **Ver y editar** y luego **Generar objetos** para dibujar tu equipo en ella.",
+		"addMoveTitle": "Añade una animación",
+		"addMoveBody": "Anima a tu personaje, por ejemplo con Idle, Walk o Attack.",
+		"addStateTitle": "Añade un estado",
+		"addStateBody": "Crea una **nueva pose fija** desde la que empezar animaciones, como el inicio de un ataque, un paso a mitad de caminar o una postura sentada."
 	}
 }

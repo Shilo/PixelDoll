@@ -5,6 +5,7 @@ import type { Attachment } from 'svelte/attachments';
  * working while it is pressed. Press is its one activation path: a native click that follows a pointer (including the
  * stage's synthesized click for a second finger) does nothing, while a click without a pointer (assistive technology)
  * activates it and, for a held action, releases it at once. `data-pressed` marks the press for styling.
+ * Studio skips its generic click sound for `data-game-action` controls. The caller owns feedback for accepted actions.
  *
  * With `release`, the action lasts while the button is held (Jump repeats, Attack keeps swinging): the pressing pointer is
  * captured, so sliding off the button keeps holding, and release runs once when it lifts, is canceled or the button goes.

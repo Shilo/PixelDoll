@@ -10,9 +10,10 @@
 	import RenameRow from './RenameRow.svelte';
 	import { Download, Eye } from './icons.ts';
 	import { displayError } from '../lib/i18n.ts';
-	import { doc, isDemo, openRename, ui } from './state.svelte.ts';
+	import { doc, isDemo, openRename, store, ui } from './state.svelte.ts';
 	import { downloadMoveZip } from './download.svelte.ts';
 	import { moveDeletionBlocked } from './moveActions.svelte.ts';
+	import { clipItemCoverage } from './itemGeneration.ts';
 
 	let {
 		id,
@@ -35,11 +36,18 @@
 		ontrash: () => void;
 	} = $props();
 	const trashLocked = $derived(displayError(moveDeletionBlocked(id)));
+	// A move missing some of the character's gear: its window draws it, so the Fit gear tip points here.
+	const fitsGear = $derived.by(() => {
+		const m = store.project?.manifest,
+			items = m && kind === 'move' && !isDemo() ? clipItemCoverage(m, id) : null;
+		return !!items && items.drawn < items.total;
+	});
 </script>
 
 {#if !inWindow}<button
 		class="row"
 		role="menuitem"
+		data-tip-anchor={fitsGear ? 'generate-items' : undefined}
 		onclick={() => {
 			close();
 			ui.clip = id;

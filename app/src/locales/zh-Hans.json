@@ -652,13 +652,30 @@
 		"makeForSlotDetail": "为{slot}再画一次这件物品。",
 		"groupReady": "{count} 个中 {ready} 个就绪",
 		"remakeFits": "制作一个适合 {name}（你正在装扮的角色）的新副本。",
-		"demoMissing": "演示从不消耗 PixelLab 生成次数。制作可编辑副本即可绘制缺少的帧。"
+		"demoMissing": "演示从不消耗 PixelLab 生成次数。制作可编辑副本即可绘制缺少的帧。",
+		"nameInEveryDirection": "所有朝向的{name}",
+		"generateItemForMove": "为动作生成装备",
+		"fillMissingMoves": "补齐缺少的动作",
+		"fillMissingHint": {
+			"other": "复用站立设计，一次报价为全部 {n} 个缺少的动作绘制这个物品。"
+		},
+		"labelMakeNameForMissingName": "为{missingName}制作{name}",
+		"generatesOnlyThisItemSMissingViews": "仅为所选动作中此装备缺失的视图生成，并复用其站立设计。身体保持不变。PixelLab 可能按美元计费；排队时间不定。",
+		"madeForAnotherBodyItMayNot": "为另一个身体制作，可能无法对齐。",
+		"titleDrawInFrontOfTheNext": "绘制在下一图层上方",
+		"forward": "前移",
+		"titleDrawBehindThePreviousLayer": "绘制在上一图层下方",
+		"backward": "后移",
+		"makeFor": "为{move}制作",
+		"hideWhenWorn": "穿戴{name}时，勾选的装备会被隐藏。"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新建角色",
-		"createFromScratch": "从零创建…",
-		"importFromDevice": "从设备导入…",
-		"importFromPixelLab": "从 PixelLab 导入…"
+		"createFromScratch": "创建…",
+		"addCharacter": "添加角色",
+		"fromFile": "从文件…",
+		"fromPixelLab": "从 PixelLab…",
+		"createNeedsKey": "需要 PixelLab 密钥，并会使用付费生成次数"
 	},
 	"noticeLink": {
 		"opensInANewTab": "（在新标签页中打开）"
@@ -937,25 +954,7 @@
 		"itemQueued": "排队中，将为{move}绘制"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "演示无需账户。创建会消耗你的 {pixelLab} 生成次数。",
-		"steps": {
-			"create": "创建",
-			"describeBody": "描述身体",
-			"addItems": "添加装备",
-			"examples": "帽子、上衣、武器",
-			"dressUp": "换装",
-			"wearRecolorPlay": "穿戴、重新上色、试玩",
-			"export": "导出",
-			"anyEngine": "任意游戏引擎"
-		},
-		"switchToLightMode": "切换到浅色模式",
-		"switchToDarkMode": "切换到深色模式",
-		"labelDemoCharacterWalking": "演示角色行走",
-		"dressUpYour2DGameCharactersWith": "用像素级完美的纸娃娃换装，装扮你的 2D 游戏角色",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "使用 PixelLab AI 生成可替换、帧对齐的装备图层，并导出到任意游戏引擎。",
-		"createYourCharacter": "创建你的角色",
-		"tryTheDemo": "试用演示",
-		"importAnExistingCharacter": "导入现有角色"
+		"createYourCharacter": "创建你的角色"
 	},
 	"experience": {
 		"movesOffMounted": "动作在预览中选择。骑乘移动会遵循坐骑设置中的骑乘姿势。",
@@ -1230,7 +1229,9 @@
 			"versionMenu": "RPG Maker 版本",
 			"version": "版本",
 			"versionLabel": "RPG Maker 版本：{version}",
-			"walkMove": "行走动作"
+			"walkMove": "行走动作",
+			"phaserVersionMenu": "Phaser 版本",
+			"phaserVersionLabel": "Phaser 版本：{version}"
 		},
 		"group": {
 			"engines": "引擎与框架",
@@ -1253,13 +1254,6 @@
 				"sub": "可编辑项目",
 				"detail": "带 Sprite 图层、同步播放和装备控制的可编辑 GDevelop 项目。可预览，或将对象和事件复制到你的游戏中。"
 			},
-			"rpgmaker": {
-				"sub": "行走图集",
-				"detail": "按角色原始尺寸、每个套装一张行走图。将 PNG 文件复制到 img/characters（MZ、MV）或 Graphics/Characters（VX Ace、VX）。需要前、侧、后视图。"
-			},
-			"rpgmakerxp": {
-				"detail": "按角色原始尺寸、每个套装一张 4 帧行走图，用于 RPG Maker XP 和 Pokémon Essentials。将 PNG 文件复制到 Graphics/Characters。需要前、侧、后视图。"
-			},
 			"aseprite": {
 				"sub": "可编辑图层",
 				"detail": "一个带标签、时间、枢轴点和当前外观的分层 .aseprite 动画。请在 Aseprite 1.3 或更高版本中打开。"
@@ -1267,6 +1261,16 @@
 			"generic": {
 				"sub": "自定义集成",
 				"detail": "带时间、枢轴点、装备和调色板数据的图层图集和条带。你的引擎需要代码来读取这些规则。"
+			},
+			"rpgMaker": {
+				"sub": "行走图集",
+				"detail": "按角色原始尺寸、每个套装一张行走图。将 PNG 文件复制到 img/characters（MZ、MV）或 Graphics/Characters（VX Ace、VX）。需要前、侧、后视图。"
+			},
+			"rpgMakerXp": {
+				"detail": "按角色原始尺寸、每个套装一张 4 帧行走图，用于 RPG Maker XP 和 Pokémon Essentials。将 PNG 文件复制到 Graphics/Characters。需要前、侧、后视图。"
+			},
+			"phaserAe": {
+				"detail": "用于 Phaser AE 游戏的分图层精灵图集和运行时，支持装备、颜色和同步播放。将这些精灵图集列入游戏清单的 assets 列表，游戏构建时会将其复制到游戏中。"
 			}
 		},
 		"version": {
@@ -1275,7 +1279,13 @@
 			"standardSub": "3 × 4 布局 · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP 和 Pokémon Essentials",
-			"xpSub": "4 × 4 布局 · Name.png"
+			"xpSub": "4 × 4 布局 · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Phaser Game Agent 使用的引擎",
+			"phaser": "3 和 4",
+			"phaserTitle": "Phaser 3 和 4",
+			"phaserSub": "开源库，3.80 或更高版本"
 		},
 		"playback": {
 			"all": "全部"
@@ -1341,7 +1351,6 @@
 			"noVisibleFrames": "身体没有可见的帧。",
 			"godot": "Godot 无法使用这些精灵图集。",
 			"gdevelop": "GDevelop 无法使用这些精灵图集。",
-			"rpgmaker": "RPG Maker 需要前、侧、后视图。",
 			"aseprite": "动画不符合 Aseprite 格式。",
 			"unsafeNames": "部分文件名无法安全打包。",
 			"tooLarge": "此导出过大。",
@@ -1349,7 +1358,8 @@
 			"buildFailed": "无法构建此导出。",
 			"characterLimits": "此角色不符合导出限制。",
 			"damagedImages": "部分已保存的图像已损坏。",
-			"artworkFailed": "无法准备图像 ZIP。"
+			"artworkFailed": "无法准备图像 ZIP。",
+			"rpgMaker": "RPG Maker 需要前、侧、后视图。"
 		},
 		"error": {
 			"pixelsPerUnit": "每单位像素数必须为正的有限数值。",
@@ -1398,7 +1408,6 @@
 		"posesTitle": "同时作为状态导入",
 		"posesHint": "请选择同一身体且未画入装备的姿势。外观不同的请作为独立角色导入。请在下方选择动作。",
 		"poseMismatch": "此状态的图像尺寸、朝向或相机设置不同。请将其作为独立角色导入。",
-		"titleDevice": "从设备导入",
 		"titlePixelLab": "从 PixelLab 导入",
 		"browseLibrary": "浏览 PixelLab 角色",
 		"standingState": "站立姿势状态",
@@ -1482,7 +1491,8 @@
 			"skippedStanding": "已略过朝向{direction}的“{move}”：角色没有朝向该方向的站立视图。",
 			"semiAlpha": "部分透明的边缘已转换为像素画透明。",
 			"upscaledBase": "站立图像看起来是 {scale}x 放大后的结果。它会保持原样：用它制作的装备会占用更多像素、混用不同的像素尺寸，重新着色也更不干净。如果可以，请导入原始的 1x 图像。",
-			"detailsDropped": "部分已保存的角色信息已损坏，已被略过。如有需要，请重新设置其姿势绑定结构。"
+			"detailsDropped": "部分已保存的角色信息已损坏，已被略过。如有需要，请重新设置其姿势绑定结构。",
+			"compressedBase": "站立图看起来经过压缩或重新缩放：许多颜色只出现一次。仍按原样导入，但用它制作的物品更难抠图、换色和对齐。如有可能，请导入原始图像。"
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1535,7 +1545,8 @@
 			"cutPixels": "{path}在 {frame} px 单元格中会丢失 {cut} 个可见像素。请导入更小的角色；图像绝不会被缩放。",
 			"emptyFrame": "{path}是空帧。",
 			"nameLength": "请输入 1–60 个字符的角色名称。"
-		}
+		},
+		"titleFile": "从文件导入"
 	},
 	"incompatible": {
 		"error": {
@@ -3652,5 +3663,28 @@
 		"gone": "此动作已不再保存。",
 		"itemDrawn": "已绘制",
 		"itemMissing": "缺少"
+	},
+	"tips": {
+		"customizeTitle": "给演示角色换装",
+		"customizeBody": "试穿装备，或将**演示角色**导出到你的游戏中。无需 PixelLab 密钥。",
+		"gearTitle": "试穿装备",
+		"gearBody": "在**衣橱**中选择一件装备来穿上或卸下。",
+		"exportTitle": "带进你的游戏",
+		"exportBody": "**导出**角色、装备和动画，还可附带现成代码，在游戏中切换装备。",
+		"exportInMoreBody": "**导出**位于**{more} 更多选项**中：角色、装备和动画，还可附带在游戏中切换装备的代码。",
+		"close": "关闭提示",
+		"showAgain": "重新显示提示",
+		"pixellabTitle": "PixelLab 是什么？",
+		"pixellabBody": "一款 AI 像素画服务，负责绘制你在这里创建的角色和装备，会使用你 PixelLab 账户的生成次数。",
+		"newCharacterTitle": "创建你自己的角色",
+		"newCharacterBody": "根据描述或参考图创建**角色**，或导入你已有的角色。",
+		"addItemTitle": "添加装备",
+		"addItemBody": "在槽位点**+**描述一件物品或添加参考图，PixelLab 会让它贴合你的角色。",
+		"generateItemsTitle": "让装备适配这个动作",
+		"generateItemsBody": "打开这个动作的**{menu} 更多选项**，选择**查看和编辑**，再选择**生成装备**，为装备绘制这个动作的画面。",
+		"addMoveTitle": "添加动作",
+		"addMoveBody": "为角色加入动画，例如 Idle、Walk 或 Attack。",
+		"addStateTitle": "添加状态",
+		"addStateBody": "创建一个**新的静止姿势**作为动作的起点，例如攻击的起手、行走中途或坐姿。"
 	}
 }

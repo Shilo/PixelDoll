@@ -1,7 +1,8 @@
 // Served by Vite only, never an input to the production build. Fake key and complete network isolation.
 if (import.meta.env.MODE === 'agent') throw new Error('Use a dedicated normal dev-server origin for the offline fixture, never the agent server.')
 localStorage.setItem('pixeldoll.agentKey', 'off')
-localStorage.setItem('pixeldoll.welcomed', '1')
+localStorage.setItem('pixeldoll.tips', '["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]')
+localStorage.setItem('pixeldoll.visited', '1')
 await navigator.serviceWorker.register('/dev-fixtures/creator/worker.js', { type: 'module' })
 await navigator.serviceWorker.ready
 if (!navigator.serviceWorker.controller) await new Promise<void>(resolve => navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true }))

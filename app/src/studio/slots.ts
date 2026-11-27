@@ -114,7 +114,7 @@ export const iconLabelMessage = (icon: SlotIcon): Message => message(ICON_LABEL_
 
 /** A slot's drawing: its own custom choice, else its behavior's icon (old custom slots, built-ins). */
 export const iconOf = (m: Pick<Manifest, 'slots'> | undefined, key: string): SlotIcon =>
-	slotDef(m, key)?.icon ?? profileOf(m, key);
+	slotDef(m, key)?.icon ?? (key === BASE_KEY ? 'body' : profileOf(m, key));
 
 const defaultOrder = (key: string) => {
 	const i = (DEFAULT_WARDROBE_ORDER as readonly string[]).indexOf(key);

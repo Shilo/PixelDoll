@@ -50,7 +50,10 @@ test('generated controller preserves playlist boundaries, independent dolls, bod
 				},
 				hidden: false,
 				setLayer() {},
-				setAnimationName() {},
+				setAnimationName(animation: string) {
+					n.animation = animation;
+				},
+				animation: '',
 				setAnimationFrame(cell: number) {
 					n.cell = cell;
 				},
@@ -124,6 +127,7 @@ test('generated controller preserves playlist boundaries, independent dolls, bod
 	d.update(160);
 	expect(d.actionPlaying).toBe(false);
 	expect(d.elapsed).toBe(160);
+	m.rig.animations[0].directions = ['south', 'east'];
 	m.actionLayers = {
 		planes: [
 			{
@@ -172,21 +176,33 @@ test('generated controller preserves playlist boundaries, independent dolls, bod
 	expect(d.playAction('stop', 'south')).toBe('layered');
 	expect([...d.nodes.keys()]).toContain('upper' + names.base.main);
 	expect(() => d.playAction('invalid', 'south')).toThrow('unavailable');
+	const lower = d.nodes.get('lower' + names.base.main);
+	const upper = d.nodes.get('upper' + names.base.main);
+	d.setDirection('east');
 	for (const delta of [50, 50, 19]) {
 		d.update(delta);
-		expect(d.nodes.get('lower' + names.base.main).hidden).toBe(false);
-		expect(d.nodes.get('upper' + names.base.main).hidden).toBe(false);
+		expect(lower).toMatchObject({ hidden: false, animation: '["walk","south","lower"]', cell: 0 });
+		expect(upper).toMatchObject({ hidden: false, animation: '["stop","south","upper"]', cell: 1 });
 	}
 	expect(d.cell).toBe(1);
+	d.setDirection('south');
+	expect(lower).toMatchObject({ hidden: false, cell: 1 });
+	expect(upper).toMatchObject({ hidden: false, cell: 1 });
+	expect(d.action.layered).toBe(true);
+	expect(d.action.elapsed).toBe(119);
 	expect(d.actionPlaying).toBe(true);
 	d.update(1);
 	expect(d.actionPlaying).toBe(false);
 	expect(d.playAction('stop', 'south')).toBe('layered');
 	const usesUpper = () => !d.nodes.get('upper' + names.base.main).hidden;
+	d.setDirection('east');
+	d.equip('hair', null);
+	expect(usesUpper()).toBe(true);
 	d.equip('head', 'hat');
 	expect(d.actionPlaying).toBe(true);
 	expect(usesUpper()).toBe(false);
 	d.equip('head', null);
+	d.setDirection('south');
 	expect(d.canLayerAction('stop', 'south')).toBe(true);
 	expect(d.actionPlaying).toBe(true);
 	expect(usesUpper()).toBe(false);

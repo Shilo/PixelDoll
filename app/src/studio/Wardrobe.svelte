@@ -1073,7 +1073,7 @@
 							data-armed={armed === s.key || undefined}
 							data-dragged={(!drag?.source.item && drag?.source.key === s.key) || undefined}
 						>
-							{#if s.fromOthers}<GroupIcon group={s.key} size={16} />{/if}
+							{#if s.fromOthers}<GroupIcon group={s.key} surface="header" />{/if}
 							<h3 class="bu-section-title" id="{sectionId(s.key)}-title" aria-label={s.label}>
 								{#if s.fromOthers}{s.label}{:else}<button
 										class="bu-action section-menu"
@@ -1098,9 +1098,8 @@
 												slotDrag(node, dragOptions({ key: s.key, label: s.label, hidden: false }))
 											)}
 										><span class="slot-drag-icon"
-											><GroupIcon group={s.key} size={16} /><GripVertical
+											><GroupIcon group={s.key} surface="header" /><GripVertical
 												class="slot-grip"
-												size={16}
 											/></span
 										><span class="section-menu-name">{s.label}</span><span
 											class="bu-section-count"
@@ -1128,6 +1127,7 @@
 								<button
 									class="bu-action section-action"
 									data-variant="quiet"
+									data-tip-anchor="new-item"
 									aria-label={t('wardrobe.newLowerItem', { lower })}
 									title={t('wardrobe.newLowerItem', { lower })}
 									onclick={() => openNewItem(s.key)}><Plus size={18} /></button
@@ -1316,7 +1316,10 @@
 															box={x.phase === 'running' ? 12 : 40}
 														/>
 													{:else if x.phase === 'failed'}<CircleAlert size={24} />
-													{:else if x.phase !== 'running'}<GroupIcon group={s.key} size={24} />{/if}
+													{:else if x.phase !== 'running'}<GroupIcon
+															group={s.key}
+															surface="thumbnail"
+														/>{/if}
 												</span>
 												{#if x.phase === 'running'}<span
 														class="bu-ring ring generation-ring"
@@ -1476,9 +1479,8 @@
 												void showHidden(c.key);
 											}}
 											><span class="slot-drag-icon"
-												><GroupIcon group={c.key} size={18} /><GripVertical
+												><GroupIcon group={c.key} surface="inline" /><GripVertical
 													class="slot-grip"
-													size={18}
 												/></span
 											>
 											<span class="not-shown-name">{c.label}</span><Eye
@@ -1679,9 +1681,8 @@
 													})
 												)}
 									><span class="slot-drag-icon"
-										><GroupIcon group={s.key} size={22} /><GripVertical
+										><GroupIcon group={s.key} surface="rail" /><GripVertical
 											class="slot-grip"
-											size={22}
 										/></span
 									><span class="bu-rail-label">{s.label}</span><i
 										class="bu-rail-dot"
@@ -1704,7 +1705,7 @@
 										length: formatNumber(filteredNotShown.length)
 									})}
 									onclick={() => void showNotShown()}
-									><EyeOff size={22} aria-hidden="true" /><span class="bu-rail-label"
+									><EyeOff size={24} aria-hidden="true" /><span class="bu-rail-label"
 										>{t('wardrobe.notShown')}</span
 									></button
 								>
@@ -1725,7 +1726,7 @@
 						aria-haspopup="dialog"
 						title={t('slotsSheet.titleAddSlot')}
 						onclick={addSlot}
-						><Plus size={22} aria-hidden="true" /><span class="bu-rail-label"
+						><Plus size={24} aria-hidden="true" /><span class="bu-rail-label"
 							>{t('wardrobe.addSlot')}</span
 						></button
 					>

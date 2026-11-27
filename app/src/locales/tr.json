@@ -673,13 +673,31 @@
 		"makeForSlotDetail": "Bu eşyayı {slot} için yeniden çiz.",
 		"groupReady": "{count} içinden {ready} hazır",
 		"remakeFits": "Giydirdiğin karakter {name} için uyan yeni bir kopya yapar.",
-		"demoMissing": "Demo hiçbir zaman PixelLab üretimi harcamaz. Eksik kareleri çizmek için düzenlenebilir bir kopya yap."
+		"demoMissing": "Demo hiçbir zaman PixelLab üretimi harcamaz. Eksik kareleri çizmek için düzenlenebilir bir kopya yap.",
+		"nameInEveryDirection": "{name}, tüm yönler",
+		"generateItemForMove": "Animasyon için eşya üretin",
+		"fillMissingMoves": "Eksik animasyonları tamamla",
+		"fillMissingHint": {
+			"one": "Bu eşyayı ayakta duruş tasarımını yeniden kullanarak eksik {n} animasyon için tek teklifte çizer.",
+			"other": "Bu eşyayı ayakta duruş tasarımını yeniden kullanarak eksik {n} animasyonun tümü için tek teklifte çizer."
+		},
+		"labelMakeNameForMissingName": "{missingName} için şu eşyayı üretin: {name}",
+		"generatesOnlyThisItemSMissingViews": "Duruş tasarımını yeniden kullanarak yalnızca seçilen animasyondaki eksik eşya görünümlerini üretir. Gövde olduğu gibi kalır. PixelLab dolar cinsinden ücret alabilir; bekleme süresi değişir.",
+		"madeForAnotherBodyItMayNot": "Başka bir gövde için yapılmış. Tam oturmayabilir.",
+		"titleDrawInFrontOfTheNext": "Sonraki katmanın önünde çizin",
+		"forward": "Öne alın",
+		"titleDrawBehindThePreviousLayer": "Önceki katmanın arkasında çizin",
+		"backward": "Arkaya alın",
+		"makeFor": "{move} için üretin",
+		"hideWhenWorn": "{name} giyildiğinde işaretli eşyalar gizlenir."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Yeni karakter",
-		"createFromScratch": "Sıfırdan oluşturun…",
-		"importFromDevice": "Cihazdan içe aktarın…",
-		"importFromPixelLab": "PixelLab üzerinden içe aktarın…"
+		"createFromScratch": "Oluştur…",
+		"addCharacter": "Karakter ekle",
+		"fromFile": "Dosyadan…",
+		"fromPixelLab": "PixelLab'den…",
+		"createNeedsKey": "PixelLab anahtarı gerekir ve ücretli üretimler kullanır"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(yeni sekmede açılır)"
@@ -962,25 +980,7 @@
 		"itemQueued": "{move} için sırada"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "Demo için hesap gerekmez. Üretim, {pixelLab} hesabınızdaki üretim haklarını kullanır.",
-		"steps": {
-			"create": "Oluşturun",
-			"describeBody": "Gövdeyi tarif edin",
-			"addItems": "Eşya ekleyin",
-			"examples": "Şapkalar, üst giysiler, silahlar",
-			"dressUp": "Karakteri giydirin",
-			"wearRecolorPlay": "Giydirin, renklendirin, oynayın",
-			"export": "Dışa aktarın",
-			"anyEngine": "Herhangi bir oyun motoru"
-		},
-		"switchToLightMode": "Açık moda geçin",
-		"switchToDarkMode": "Koyu moda geçin",
-		"labelDemoCharacterWalking": "Yürüyen demo karakteri",
-		"dressUpYour2DGameCharactersWith": "2B oyun karakterlerinizi piksel piksel hizalanmış kâğıt bebek katmanlarıyla giydirin",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "PixelLab yapay zekâsıyla karelere hizalanmış, değiştirilebilir ekipman katmanları üretin ve dilediğiniz oyun motoruna aktarın.",
-		"createYourCharacter": "Karakterinizi oluşturun",
-		"tryTheDemo": "Demoyu deneyin",
-		"importAnExistingCharacter": "Mevcut bir karakteri içe aktarın"
+		"createYourCharacter": "Karakterinizi oluşturun"
 	},
 	"experience": {
 		"movesOffMounted": "Animasyonlar Önizleme'de seçilir. Binek üzerinde hareket, binek ayarlarındaki Binici pozunu izler.",
@@ -1264,7 +1264,9 @@
 			"versionMenu": "RPG Maker sürümü",
 			"version": "Sürüm",
 			"versionLabel": "RPG Maker sürümü: {version}",
-			"walkMove": "Yürüme animasyonu"
+			"walkMove": "Yürüme animasyonu",
+			"phaserVersionMenu": "Phaser sürümü",
+			"phaserVersionLabel": "Phaser sürümü: {version}"
 		},
 		"group": {
 			"engines": "Motorlar ve çerçeveler",
@@ -1287,13 +1289,6 @@
 				"sub": "Düzenlenebilir proje",
 				"detail": "Sprite katmanları, eşzamanlı oynatma ve ekipman kontrolleriyle düzenlenebilir GDevelop projesi. Önizleyin veya nesneleri ve etkinliği oyununuza kopyalayın."
 			},
-			"rpgmaker": {
-				"sub": "Yürüme sayfaları",
-				"detail": "Her kıyafet için karakterinizin kendi boyutunda bir yürüme sayfası. PNG dosyalarını img/characters (MZ, MV) veya Graphics/Characters (VX Ace, VX) klasörüne kopyalayın. Ön, yan ve arka görünümler gerekir."
-			},
-			"rpgmakerxp": {
-				"detail": "RPG Maker XP ve Pokémon Essentials için her kıyafete, karakterinizin kendi boyutunda 4 kareli bir yürüme sayfası. PNG dosyalarını Graphics/Characters klasörüne kopyalayın. Ön, yan ve arka görünümler gerekir."
-			},
 			"aseprite": {
 				"sub": "Düzenlenebilir katmanlar",
 				"detail": "Etiketler, zamanlama, pivot noktası ve mevcut görünümünüzü içeren tek bir katmanlı .aseprite animasyonu. Aseprite 1.3 veya daha yeni bir sürümle açın."
@@ -1301,6 +1296,16 @@
 			"generic": {
 				"sub": "Özel entegrasyon",
 				"detail": "Zamanlama, pivot noktaları, ekipman ve palet verileriyle katman sayfaları ve şeritleri. Oyun motorunuzun bu kuralları okuyacak koda ihtiyacı var."
+			},
+			"rpgMaker": {
+				"sub": "Yürüme sayfaları",
+				"detail": "Her kıyafet için karakterinizin kendi boyutunda bir yürüme sayfası. PNG dosyalarını img/characters (MZ, MV) veya Graphics/Characters (VX Ace, VX) klasörüne kopyalayın. Ön, yan ve arka görünümler gerekir."
+			},
+			"rpgMakerXp": {
+				"detail": "RPG Maker XP ve Pokémon Essentials için her kıyafete, karakterinizin kendi boyutunda 4 kareli bir yürüme sayfası. PNG dosyalarını Graphics/Characters klasörüne kopyalayın. Ön, yan ve arka görünümler gerekir."
+			},
+			"phaserAe": {
+				"detail": "Phaser AE oyunları için katman başına sprite sayfaları ve ekipman, renkler ve eşzamanlı oynatma sunan bir çalışma zamanı. Sayfaları oyununuzun manifest dosyasındaki assets listesine ekleyin; oyunun derleme işlemi bunları oyuna kopyalar."
 			}
 		},
 		"version": {
@@ -1309,7 +1314,13 @@
 			"standardSub": "3 × 4 düzen · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP ve Pokémon Essentials",
-			"xpSub": "4 × 4 düzen · Name.png"
+			"xpSub": "4 × 4 düzen · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Phaser Game Agent motoru",
+			"phaser": "3 ve 4",
+			"phaserTitle": "Phaser 3 ve 4",
+			"phaserSub": "Açık kaynaklı kitaplık, 3.80 veya üzeri"
 		},
 		"playback": {
 			"all": "Tümü"
@@ -1382,7 +1393,6 @@
 			"noVisibleFrames": "Gövdede görünür kare yok.",
 			"godot": "Godot bu sprite sayfalarını kullanamadı.",
 			"gdevelop": "GDevelop bu sprite sayfalarını kullanamadı.",
-			"rpgmaker": "RPG Maker için ön, yan ve arka görünümler gerekli.",
 			"aseprite": "Animasyon Aseprite biçimine uymuyor.",
 			"unsafeNames": "Bazı dosya adları güvenle paketlenemiyor.",
 			"tooLarge": "Bu dışa aktarım çok büyük.",
@@ -1390,7 +1400,8 @@
 			"buildFailed": "Bu dışa aktarım oluşturulamadı.",
 			"characterLimits": "Bu karakter dışa aktarım sınırlarına uymuyor.",
 			"damagedImages": "Bazı kayıtlı görseller bozuk.",
-			"artworkFailed": "Görsel ZIP dosyası hazırlanamadı."
+			"artworkFailed": "Görsel ZIP dosyası hazırlanamadı.",
+			"rpgMaker": "RPG Maker için ön, yan ve arka görünümler gerekli."
 		},
 		"error": {
 			"pixelsPerUnit": "Birim başına piksel sayısı pozitif ve sonlu olmalı.",
@@ -1443,7 +1454,6 @@
 		"posesTitle": "Durum olarak da içe aktar",
 		"posesHint": "Aynı gövdenin, görsele işlenmiş ekipman içermeyen pozlarını seçin. Farklı bir görünümü ayrı bir karakter olarak içe aktarın. Animasyonları aşağıdan seçin.",
 		"poseMismatch": "Bu durumun görsel boyutları, bakış yönleri veya kamera ayarları farklı. Ayrı bir karakter olarak içe aktarın.",
-		"titleDevice": "Cihazdan içe aktarın",
 		"titlePixelLab": "PixelLab üzerinden içe aktarın",
 		"browseLibrary": "PixelLab karakterlerine göz atın",
 		"standingState": "Ayakta duruş durumu",
@@ -1530,7 +1540,8 @@
 			"skippedStanding": "“{move}” animasyonunun {direction} yönü dışarıda bırakıldı: karakterin o yöne bakan duruş görünümü yok.",
 			"semiAlpha": "Kısmen şeffaf kenarlar piksel sanatına uygun şeffaflığa dönüştürüldü.",
 			"upscaledBase": "Ayakta duran görsel {scale}x büyütülmüş gibi görünüyor. Olduğu gibi tutulur: ondan yapılan eşyalar daha fazla piksel kullanır, piksel boyutlarını karıştırır ve renk değişimi daha az temiz olur. Mümkünse özgün 1x görseli içe aktarın.",
-			"detailsDropped": "Kayıtlı bazı karakter bilgileri bozuktu ve dahil edilmedi. Gerekirse poz rig’ini yeniden kurun."
+			"detailsDropped": "Kayıtlı bazı karakter bilgileri bozuktu ve dahil edilmedi. Gerekirse poz rig’ini yeniden kurun.",
+			"compressedBase": "Ayakta duran görsel sıkıştırılmış veya yeniden ölçeklenmiş görünüyor: birçok rengi yalnızca bir kez geçiyor. Olduğu gibi tutulur: ondan yapılan eşyaları kesmek, renklendirmek ve hizalamak zorlaşır. Mümkünse özgün görseli içe aktarın."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1583,7 +1594,8 @@
 			"cutPixels": "{path} dosyası {frame} px boyutundaki bir hücrede {cut} görünür piksel kaybeder. Daha küçük bir karakter içe aktarın; görseller yeniden ölçeklenmez.",
 			"emptyFrame": "{path} boş bir kare.",
 			"nameLength": "1–60 karakter uzunluğunda bir karakter adı girin."
-		}
+		},
+		"titleFile": "Dosyadan içe aktar"
 	},
 	"incompatible": {
 		"error": {
@@ -3753,5 +3765,28 @@
 		"gone": "Bu hareket artık kayıtlı değil.",
 		"itemDrawn": "Çizildi",
 		"itemMissing": "Eksik"
+	},
+	"tips": {
+		"customizeTitle": "Demoyu giydir",
+		"customizeBody": "Eşyaları dene ya da **demo karakteri** oyunun için dışa aktar. PixelLab anahtarı gerekmez.",
+		"gearTitle": "Ekipman deneyin",
+		"gearBody": "Giymek veya çıkarmak için **Gardırop**’tan bir eşya seçin.",
+		"exportTitle": "Oyununuza taşıyın",
+		"exportBody": "**Dışa aktarın**: karakter, eşyalar ve animasyonlar, ayrıca oyununda eşya değiştirmek için isteğe bağlı hazır kod.",
+		"exportInMoreBody": "**Dışa aktarın** seçeneği **{more} diğer seçenekler** içinde: karakter, eşyalar ve animasyonlar, ayrıca oyununda eşya değiştirmek için isteğe bağlı kod.",
+		"close": "İpucunu kapat",
+		"showAgain": "İpuçlarını yeniden göster",
+		"pixellabTitle": "PixelLab nedir?",
+		"pixellabBody": "Burada oluşturduğun karakterleri ve eşyaları çizen bir yapay zekâ piksel sanatı hizmeti. PixelLab hesabındaki üretimleri kullanır.",
+		"newCharacterTitle": "Kendininkini yap",
+		"newCharacterBody": "Bir açıklamadan veya referans görselden **karakter** oluştur ya da elindeki bir karakteri içe aktar.",
+		"addItemTitle": "Eşya ekle",
+		"addItemBody": "Bir eşyayı tarif etmek veya referans görsel eklemek için bir yuvada **+** kullan. PixelLab onu karakterine uydurur.",
+		"generateItemsTitle": "Eşyaları bu animasyona uydur",
+		"generateItemsBody": "Bu animasyonun **{menu} diğer seçenekler** menüsünü aç, **Görüntüle ve düzenle**’yi, ardından eşyalarını bu animasyonda çizmek için **Eşya üret**’i seç.",
+		"addMoveTitle": "Animasyon ekle",
+		"addMoveBody": "Karakterini Idle, Walk veya Attack gibi hareketlerle canlandır.",
+		"addStateTitle": "Durum ekle",
+		"addStateBody": "Animasyonlara başlangıç olacak **yeni bir duruş pozu** oluştur: örneğin saldırıya hazırlık, yürüyüşün ortası veya oturma duruşu."
 	}
 }

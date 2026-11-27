@@ -494,7 +494,7 @@ export function over(dst, src, x = 0, y = 0) {
  * @param {DirectionName} dir
  * @param {number} cell
  */
-function* dollPixels(p, items, anim, dir, cell) {
+export function* dollPixels(p, items, anim, dir, cell) {
 	const m = p.manifest;
 	const cuts = equipped(m, items)
 		.filter((it) => it.baseCut && it.baseHash === m.rig.baseHash)
@@ -1098,23 +1098,32 @@ export function exportedActionOffset(manifest, walk, facing, lower, action, uppe
 }
 
 /**
+ * @param {DollActionCell | null} held
+ * @param {DollActionCell | null} walk
+ * @param {DirectionName} facing
+ */
+export function holdActionWalk(held, walk, facing) {
+	return walk?.direction === facing ? walk : held;
+}
+
+/**
  * @param {Manifest} manifest
  * @param {Preset['items']} items
  * @param {DollActionCell} action
- * @param {DollActionCell | null} walk
+ * @param {DollActionCell | null} lower the last compatible gait cell
  * @param {boolean} layering
  */
-export function exportedActionDraws(manifest, items, action, walk, layering) {
+export function exportedActionDraws(manifest, items, action, lower, layering) {
 	const omitted = manifest.actionLayers?.omissions?.find(
 		(row) => row.clip === action.clip && row.direction === action.direction
 	)?.items;
 	const offset =
-		layering && walk?.direction === action.direction
+		layering && lower?.direction === action.direction
 			? exportedActionOffset(
 					manifest,
-					walk.clip,
-					walk.direction,
-					walk.cell,
+					lower.clip,
+					action.direction,
+					lower.cell,
 					action.clip,
 					action.cell
 				)
@@ -1128,8 +1137,8 @@ export function exportedActionDraws(manifest, items, action, walk, layering) {
 			)
 			.map((draw) => ({ ...draw, ...pose, part, point }));
 	const origin = { x: 0, y: 0 };
-	return offset && walk
-		? [...draws(walk, 'lower', origin), ...draws(action, 'upper', offset)].sort(
+	return offset && lower
+		? [...draws(lower, 'lower', origin), ...draws(action, 'upper', offset)].sort(
 				compareDraws(manifest)
 			)
 		: draws(action, null, origin);
