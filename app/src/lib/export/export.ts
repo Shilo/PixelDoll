@@ -1,7 +1,7 @@
 // Project -> export zip entries (manifest-spec §5 layout). Pure; runs in the browser and in node (scripts/export-fixture.ts).
 import type { Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
-import type { DirectionName, Engine, Project } from '../store/manifest.ts';
+import type { DirectionName, Engine, Manifest, Project } from '../store/manifest.ts';
 import { fitsEditableZip, MAX_ZIP_BYTES, zip, type ZipEntry } from '../store/zip.ts';
 import {
 	bodyCutVariantCount,
@@ -52,6 +52,9 @@ export interface ExportResult {
 	warningMessages?: Map<string, Message>;
 	problem?: string;
 	problemMessage?: Message;
+	/** `filesOnly` builds: the same files with another export time. Only text that embeds the manifest changes, so the
+	 *  images are never encoded again; the bytes equal a build with that time. */
+	retime?: (exportedAt: string) => ZipEntry[] | null;
 }
 /** A note variable the Studio shows in the active language; an array of them reads as a list. */
 export type NoteTerm = { direction: DirectionName } | { slot: string } | { move: string };
@@ -309,7 +312,61 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 		}))
 	);
 	entries.push(...projectFiles);
-	return { entries, warnings, warningMessages, errors, errorMessages };
+	// Only files built from text can carry the export time; their sources are kept so another time costs no encoding.
+	const text = new Map<number, string>();
+	files.forEach((f, i) => {
+		if (typeof f.data === 'string') text.set(i, f.data);
+	});
+	return {
+		entries,
+		warnings,
+		warningMessages,
+		errors,
+		errorMessages,
+		...(o.filesOnly ? { retime: (exportedAt: string) => retime(entries, text, m, exportedAt) } : {})
+	};
+}
+
+/** Every form the build embeds the manifest in: compact and indented JSON, each also escaped inside another JSON string
+ *  (GDevelop carries its controller's manifest in game.json and Paperdoll.js). */
+function manifestForms(m: Manifest): string[] {
+	const compact = JSON.stringify(m),
+		indented = JSON.stringify(m, null, 2);
+	return [
+		compact,
+		JSON.stringify(compact).slice(1, -1),
+		indented,
+		JSON.stringify(indented).slice(1, -1)
+	];
+}
+
+/** The export's files with another export time. A build is deterministic, so the two differ only where the time appears:
+ *  rewriting those manifest embeddings reproduces a build with that time byte for byte. */
+function retime(
+	entries: ZipEntry[],
+	text: ReadonlyMap<number, string>,
+	m: Manifest,
+	exportedAt: string
+): ZipEntry[] | null {
+	const old = m.export!.exportedAt;
+	if (exportedAt === old) return entries;
+	const from = manifestForms(m),
+		to = manifestForms({ ...m, export: { ...m.export!, exportedAt } });
+	const encoder = new TextEncoder();
+	let missed = false;
+	const out = entries.map((entry, i) => {
+		const source = text.get(i);
+		if (source === undefined) return entry;
+		let next = source;
+		// A function, so `$&`, `$$` and the like in a name are copied as written rather than read as patterns.
+		for (const [k, search] of from.entries())
+			if (next.includes(search)) next = next.replaceAll(search, () => to[k]!);
+		// The old time anywhere else (a file that embeds it some other way, or a name that happens to contain it): the
+		// caller builds again instead, so a file never keeps a stale time.
+		if (next.includes(old)) missed = true;
+		return next === source ? entry : { name: entry.name, data: encoder.encode(next) };
+	});
+	return missed ? null : out;
 }
 
 export async function exportZip(

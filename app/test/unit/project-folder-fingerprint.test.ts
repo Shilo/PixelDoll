@@ -324,6 +324,8 @@ it('rebuilds when the decoded reference dimensions change under the same RGBA ha
 	await background(fresh);
 
 	expect(await decodePngBytes(folder.files.get(path)!)).toMatchObject({ w: 4, h: 8 });
+	// One build per publish: the new export time is retimed from the build made with the last one, never built again.
+	expect(studio.build).toHaveBeenCalledTimes(2);
 });
 
 it('clears the accepted offer after leaving and returning to the character during adoption', async () => {

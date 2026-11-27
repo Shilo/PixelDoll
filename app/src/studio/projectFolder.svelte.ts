@@ -245,13 +245,16 @@ const fingerprint = (
 		)
 	);
 
-/** The export's files, as the Export sheet would build them, or null when no export can be built. */
+/** The export's files, as the Export sheet would build them, or null when no export can be built. `at` gives the same
+ *  files with another export time: only the text that carries it changes, so the images are never encoded again. */
+type BuiltFiles = { files: FolderFile[]; at: (exportedAt: string) => Promise<FolderFile[] | null> };
+
 async function buildFiles(
 	link: FolderLink,
 	input: Snapshot,
 	settings: Awaited<ReturnType<typeof readExportSettings>>,
 	exportedAt: string
-): Promise<FolderFile[] | null> {
+): Promise<BuiltFiles | null> {
 	const rpg = link.engine === 'rpgmaker' || link.engine === 'rpgmakerxp';
 	const result = await buildExport(input.project, {
 		engine: link.engine,
@@ -267,9 +270,22 @@ async function buildFiles(
 		exportedAt,
 		filesOnly: true
 	});
-	return result.kind === 'requested'
-		? result.entries.map(({ name, data }) => ({ name, data }))
-		: null;
+	if (result.kind !== 'requested') return null;
+	const folder = (entries: readonly { name: string; data: Uint8Array }[]) =>
+		entries.map(({ name, data }) => ({ name, data }));
+	const files = folder(result.entries);
+	const retime = result.retime;
+	return {
+		files,
+		at: async (time) => {
+			if (time === exportedAt) return files;
+			const again = retime?.(time);
+			if (again) return folder(again);
+			// Without another-time support (a test double, say), or when retiming could not account for every use of the
+			// time, the export is simply built again: same files, more time.
+			return (await buildFiles(link, input, settings, time))?.files ?? null;
+		}
+	};
 }
 
 async function permission(link: FolderLink): Promise<PermissionState> {
@@ -475,10 +491,10 @@ async function publish(link: FolderLink, request: Request) {
 		)
 			return finished({ kind: 'done', kept: record.kept.length, already: false });
 		// It first tries the last time, so an export whose files did not change matches what is there and writes nothing.
-		let same: FolderFile[] | null = null;
+		let same: BuiltFiles | null = null;
 		if (link.exportedAt && !request.overwrite && !first) {
 			same = await buildFiles(link, input, settings, link.exportedAt);
-			const next = same && (await hashFiles(same));
+			const next = same && (await hashFiles(same.files));
 			if (
 				next &&
 				// A click, or a problem still on screen, checks the folder itself: only a quiet background check may trust
@@ -507,21 +523,22 @@ async function publish(link: FolderLink, request: Request) {
 		const there = record.kept.includes(MANIFEST) ? null : await sameEarlierExport(target);
 		let exportedAt = now;
 		let files: FolderFile[] | null = null;
-		if (there)
+		// One build serves the whole publish: another time only rewrites the text that carries it, never the images.
+		// Built with a known time (the link's last, else now), so the export's own checks run on it; the folder manifest's
+		// time is only tried afterwards, as another candidate.
+		const built = same ?? (await buildFiles(link, input, settings, link.exportedAt ?? now));
+		if (there && built)
 			for (const earlier of new Set([link.exportedAt, there.exportedAt])) {
 				if (!earlier) continue;
-				const built =
-					same && earlier === link.exportedAt
-						? same
-						: await buildFiles(link, input, settings, earlier);
-				const manifest = built?.find((f) => f.name === MANIFEST);
+				const attempt = await built.at(earlier);
+				const manifest = attempt?.find((f) => f.name === MANIFEST);
 				if (manifest && (await sha256(manifest.data)) === there.hash) {
-					files = built;
+					files = attempt;
 					exportedAt = earlier;
 					break;
 				}
 			}
-		files ??= await buildFiles(link, input, settings, now);
+		files ??= (await built?.at(now)) ?? null;
 		if (!files) return report({ kind: 'unavailable' });
 		// Building takes a moment: recheck that the link was not stopped or replaced meanwhile.
 		readAt = changesOf(id);
