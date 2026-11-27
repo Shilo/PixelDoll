@@ -1,8 +1,9 @@
 /** Whole on screen: rendered, not transparent, inside the viewport and inside every scrolling or clipping ancestor, so a
- *  tip's arrow lands on the control itself rather than on a clipped edge or on nothing. */
-export function fullyVisible(el: Element | null | undefined): boolean {
+ *  tip's arrow lands on the control itself rather than on a clipped edge or on nothing. `faded` accepts a control kept
+ *  transparent until hovered, which the tip reveals while it points at it. */
+export function fullyVisible(el: Element | null | undefined, faded = false): boolean {
 	if (!(el instanceof HTMLElement) || el.closest('[inert]')) return false;
-	if (!el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return false;
+	if (!el.checkVisibility({ opacityProperty: !faded, visibilityProperty: true })) return false;
 	const r = el.getBoundingClientRect();
 	if (r.width < 1 || r.height < 1) return false;
 	if (r.top < -1 || r.left < -1 || r.bottom > innerHeight + 1 || r.right > innerWidth + 1)

@@ -3660,25 +3660,25 @@
 	},
 	"tips": {
 		"customizeTitle": "Vista a demo",
-		"customizeBody": "Experimente equipamentos e exporte para o seu jogo. A demo não precisa de chave do PixelLab.",
+		"customizeBody": "Experimente equipamentos ou exporte o **personagem de demo** para o seu jogo. Não precisa de chave do PixelLab.",
 		"gearTitle": "Experimente equipamentos",
-		"gearBody": "Escolha um item no Guarda-roupa para vesti-lo ou tirá-lo.",
+		"gearBody": "Escolha um item no **Guarda-roupa** para vesti-lo ou tirá-lo.",
 		"exportTitle": "Leve para o seu jogo",
-		"exportBody": "Exportar pode salvar o corpo base e cada item em folhas de sprites separadas.",
-		"exportInMoreBody": "Exportar fica em Mais opções. Ele pode salvar o corpo base e cada item em folhas de sprites separadas.",
+		"exportBody": "**Exportar** traz o corpo, os equipamentos e as animações, além de código pronto opcional para trocar equipamentos no seu jogo.",
+		"exportInMoreBody": "**Exportar** fica em **{more} Mais opções**: o corpo, os equipamentos e as animações, além de código opcional para trocar equipamentos no seu jogo.",
 		"close": "Fechar dica",
 		"showAgain": "Mostrar dicas novamente",
 		"pixellabTitle": "O que é o PixelLab?",
 		"pixellabBody": "Um serviço de pixel art com IA que desenha os personagens e equipamentos que você cria aqui, usando gerações da sua conta PixelLab.",
 		"newCharacterTitle": "Crie o seu",
-		"newCharacterBody": "Crie um personagem a partir de uma descrição ou importe um que você já tenha.",
+		"newCharacterBody": "Crie um **personagem** a partir de uma descrição ou imagem de referência, ou importe um que você já tenha.",
 		"addItemTitle": "Adicione equipamento",
-		"addItemBody": "Use + em qualquer espaço para descrever um item. O PixelLab o desenha para caber neste personagem em todos os quadros.",
+		"addItemBody": "Use **+** em um espaço para descrever um item ou adicionar uma imagem de referência. O PixelLab o ajusta ao seu personagem.",
 		"generateItemsTitle": "Ajuste o equipamento a esta animação",
-		"generateItemsBody": "Abra o menu desta animação e escolha Gerar itens para desenhar os quadros que faltam no seu equipamento.",
+		"generateItemsBody": "Abra o **{menu} menu** desta animação e escolha **Gerar itens** para desenhar seu equipamento nela.",
 		"addMoveTitle": "Adicione uma animação",
 		"addMoveBody": "Anime seu personagem, por exemplo com Idle, Walk ou Attack.",
 		"addStateTitle": "Adicione um estado",
-		"addStateBody": "Crie uma nova pose ou visual, como sentado ou fantasiado, para começar animações."
+		"addStateBody": "Crie uma **nova pose parada** para começar animações, como a preparação de um ataque, um passo no meio da caminhada ou uma postura sentada."
 	}
 }

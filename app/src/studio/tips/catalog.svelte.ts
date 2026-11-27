@@ -21,6 +21,10 @@ export interface TipSpec {
 	placement?: Side;
 	/** Sides to try, in order, when the preferred one has no room (instead of opposite, then across). */
 	fallbacks?: Side[];
+	/** The control fades in only on hover (a row's ⋮): the tip may point at it anyway and keeps it shown meanwhile. */
+	reveal?: boolean;
+	/** At most one such tip per arrival on a screen and tab: after one, the next waits for the person to come back. */
+	onePerVisit?: boolean;
 	/** The app context the tip belongs to. */
 	when: () => boolean;
 	/** Tips that must be done first. */
@@ -112,7 +116,7 @@ function exportAnchor() {
 }
 /** The first whole control matching a selector. */
 const first = (selector: string) =>
-	[...document.querySelectorAll<HTMLElement>(selector)].find(fullyVisible) ?? null;
+	[...document.querySelectorAll<HTMLElement>(selector)].find((el) => fullyVisible(el)) ?? null;
 
 export const catalog: TipSpec[] = [
 	{
@@ -188,6 +192,7 @@ export const catalog: TipSpec[] = [
 		// while + stays and is easy to miss.
 		anchor: () => first('#customization-panel [data-tip-anchor="new-item"]'),
 		placement: 'top',
+		onePerVisit: true,
 		when: () => calm() && ui.tab === 'wardrobe' && ownOpen(),
 		doneWhen: () => ui.sheet === 'newitem'
 	},
@@ -195,22 +200,20 @@ export const catalog: TipSpec[] = [
 		id: 'generate-items',
 		title: 'tips.generateItemsTitle',
 		body: () => 'tips.generateItemsBody',
-		// The ⋮ of a move whose menu offers Generate items. Where ⋮ appears only on hover (a mouse), the move's row, so the
-		// arrow never stays on a ⋮ that has faded away.
+		// The ⋮ of a move whose menu offers Generate items. With a mouse it shows only on hover, so the tip keeps it shown
+		// while pointing at it.
 		anchor: () => {
-			const hover = matchMedia('(hover: hover) and (pointer: fine)').matches;
 			for (const action of document.querySelectorAll<HTMLElement>(
 				'#customization-panel [data-tip-anchor="generate-items"]'
 			)) {
 				const id = action.closest('[popover]')?.id;
 				const trigger = id ? document.querySelector<HTMLElement>(`[popovertarget="${id}"]`) : null;
-				const target = hover
-					? trigger?.closest('.hover-actions')?.querySelector<HTMLElement>('.move-row')
-					: trigger;
-				if (target && fullyVisible(target)) return target;
+				if (trigger && fullyVisible(trigger, true)) return trigger;
 			}
 			return null;
 		},
+		reveal: true,
+		onePerVisit: true,
 		when: () => calm() && ui.tab === 'moves' && ownOpen(),
 		doneWhen: () => ui.sheet === 'itemGeneration'
 	},
@@ -219,7 +222,8 @@ export const catalog: TipSpec[] = [
 		title: 'tips.addMoveTitle',
 		body: () => 'tips.addMoveBody',
 		anchor: () => first('#customization-panel [data-tip-anchor="add-move"]'),
-		placement: 'top',
+		// Below: above it would cover the panel's tabs.
+		onePerVisit: true,
 		when: () => calm() && ui.tab === 'moves' && ownOpen(),
 		doneOn: '[data-tip-anchor="add-move"]'
 	},
@@ -228,7 +232,8 @@ export const catalog: TipSpec[] = [
 		title: 'tips.addStateTitle',
 		body: () => 'tips.addStateBody',
 		anchor: () => first('#customization-panel [data-tip-anchor="add-state"]'),
-		placement: 'top',
+		// Below: above it would cover the panel's tabs.
+		onePerVisit: true,
 		when: () => calm() && ui.tab === 'states' && ownOpen(),
 		doneOn: '[data-tip-anchor="add-state"]'
 	}

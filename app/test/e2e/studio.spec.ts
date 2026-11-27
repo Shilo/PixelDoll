@@ -812,6 +812,7 @@ test('tips point at each control in order, end on their action, and come back in
 	await expect(heading('Add gear')).toBeVisible();
 	// The slot's + in its header, which stays when the slot has gear, not the New tile that goes away.
 	await pointsAt(page.getByRole('button', { name: 'New head item', exact: true }).first());
+	await tip.getByRole('button', { name: 'Close tip' }).click();
 	await page.getByRole('tab', { name: 'Moves', exact: true }).click();
 	await expect(heading('Fit gear to this move')).toBeVisible();
 	await tip.getByRole('button', { name: 'Close tip' }).click();

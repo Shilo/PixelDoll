@@ -128,6 +128,18 @@
 		`${experience.screen}|${experience.mode}|${ui.tab}|${ui.sheet}|${doc.id}|${tips.request}`;
 	let quietIn = $state<string | null>(null);
 
+	/** Counts arrivals on a screen and tab, so a one-per-visit tip can wait for the next one. */
+	let arrival = $state(0);
+	let place = '';
+	$effect(() => {
+		const now = `${experience.screen}|${ui.tab}|${doc.id}`;
+		if (now === place) return;
+		place = now;
+		untrack(() => arrival++);
+	});
+	/** The arrival (and tips request) in which a one-per-visit tip already showed; asking for tips again starts over. */
+	let spent = '';
+
 	let shown: { spec: TipSpec; anchor: HTMLElement } | null = null;
 	const current = $derived.by(() => {
 		void page;
@@ -135,13 +147,17 @@
 		const ready: { spec: TipSpec; anchor: HTMLElement }[] = [];
 		for (const spec of catalog) {
 			if (tipDone(spec.id) || !(spec.after ?? []).every(tipDone) || !spec.when()) continue;
+			if (spec.onePerVisit && spent === `${arrival}|${tips.request}` && shown?.spec !== spec)
+				continue;
 			const anchor = spec.anchor();
-			if (anchor && fullyVisible(anchor) && !coveredByLayer(anchor)) ready.push({ spec, anchor });
+			if (anchor && fullyVisible(anchor, spec.reveal) && !coveredByLayer(anchor))
+				ready.push({ spec, anchor });
 		}
 		// The tip on screen stays while it still applies; otherwise the first in catalog order shows.
 		const pick = ready.find((r) => r.spec === shown?.spec) ?? ready[0] ?? null;
 		// The same tip on the same control is the same value, so the tip on screen is not placed again.
 		if (pick?.spec !== shown?.spec || pick?.anchor !== shown?.anchor) shown = pick;
+		if (shown?.spec.onePerVisit) spent = `${arrival}|${tips.request}`;
 		return shown;
 	});
 	$effect(() => {
@@ -169,6 +185,7 @@
 			body={t(current.spec.body(current.anchor))}
 			placement={current.spec.placement}
 			fallbacks={current.spec.fallbacks}
+			reveal={current.spec.reveal}
 			announce={!heard.has(current.spec.id)}
 			onannounce={() => heard.add(current.spec.id)}
 			ondismiss={() => dismiss(current.spec)}

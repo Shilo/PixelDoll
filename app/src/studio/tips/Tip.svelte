@@ -14,7 +14,7 @@
 	} from '@floating-ui/dom';
 	import { t } from 'svelte-whisper';
 	import PopoverArrow from '../PopoverArrow.svelte';
-	import { Lightbulb, X } from '../icons.ts';
+	import { Ellipsis, EllipsisVertical, Lightbulb, X } from '../icons.ts';
 	import type { Side } from './catalog.svelte.ts';
 
 	let {
@@ -24,6 +24,7 @@
 		body,
 		placement = 'bottom',
 		fallbacks,
+		reveal = false,
 		announce = true,
 		onannounce,
 		ondismiss
@@ -34,11 +35,18 @@
 		body: string;
 		placement?: Side;
 		fallbacks?: Side[];
+		/** Keep a hover-only control (a row's ⋮) shown while the tip points at it. */
+		reveal?: boolean;
 		/** Read it out once it is placed: false when it was already announced this visit and only came back. */
 		announce?: boolean;
 		onannounce?: () => void;
 		ondismiss: () => void;
 	} = $props();
+
+	// The names of controls and key words are marked **like this** in the copy and shown in bold; {more} and {menu}
+	// stand for the More options (⋯) and row menu (⋮) icons and are drawn as those icons.
+	const parts = $derived(body.split(/\*\*(.+?)\*\*/));
+	const plain = $derived(parts.join('').replace(/\{(?:more|menu)\}\s?/g, ''));
 
 	let tip = $state<HTMLElement>();
 	let announced = $state(false);
@@ -49,6 +57,13 @@
 		// Moved out of the place Svelte rendered it, so Svelte cannot remove it on its own.
 		return () => node.remove();
 	}
+
+	$effect(() => {
+		if (!reveal) return;
+		const el = anchor;
+		el.setAttribute('data-tip-revealed', '');
+		return () => el.removeAttribute('data-tip-revealed');
+	});
 
 	const opposite = { bottom: 'top', top: 'bottom', left: 'right', right: 'left' } as const;
 	$effect(() => {
@@ -145,8 +160,20 @@
 	}
 </script>
 
+{#snippet text(
+	copy: string
+)}{#each copy.split(/(\{more\}|\{menu\})/) as piece, index (index)}{#if piece === '{more}'}<Ellipsis
+				class="tip-glyph"
+				size={14}
+				aria-hidden="true"
+			/>{:else if piece === '{menu}'}<EllipsisVertical
+				class="tip-glyph"
+				size={14}
+				aria-hidden="true"
+			/>{:else}{piece}{/if}{/each}{/snippet}
+
 <div class="tip-layer" {@attach inLayer}>
-	<p class="sr" role="status">{announce && announced ? `${title}. ${body}` : ''}</p>
+	<p class="sr" role="status">{announce && announced ? `${title}. ${plain}` : ''}</p>
 	<!-- Not a popover: the app reads an open popover as an open menu and pauses stage keys and zoom for it. -->
 	<section
 		bind:this={tip}
@@ -160,7 +187,10 @@
 			<span class="tip-icon" aria-hidden="true"><Lightbulb size={18} /></span>
 			<div class="tip-copy">
 				<h2 id={titleId}>{title}</h2>
-				<p>{body}</p>
+				<p>
+					{#each parts as part, index (index)}{#if index % 2}<strong>{@render text(part)}</strong
+							>{:else}{@render text(part)}{/if}{/each}
+				</p>
 			</div>
 			<button
 				type="button"
@@ -224,6 +254,14 @@
 		font-weight: 600;
 		text-wrap: balance;
 	}
+	:global(.tip-glyph) {
+		display: inline-block;
+		vertical-align: -2px;
+	}
+	strong {
+		font-weight: 600;
+		color: var(--bu-text);
+	}
 	p {
 		margin: 0;
 		font-size: var(--fs-sm);
@@ -239,6 +277,15 @@
 		height: 44px;
 		padding: 0;
 		margin: -10px 0 -10px -6px;
+	}
+	/* A row's ⋮ shows only on hover (hoverActions.css); while a tip points at it, it stays shown. */
+	@media (hover: hover) and (pointer: fine) {
+		:global(
+			.hover-actions:not(:hover):not(:has(:focus-visible))
+				> .hover-actions-button[data-tip-revealed]:not([aria-expanded='true'])
+		) {
+			opacity: 1;
+		}
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		.tip:global([data-positioned]) {

@@ -3651,25 +3651,25 @@
 	},
 	"tips": {
 		"customizeTitle": "Dress up the demo",
-		"customizeBody": "Try on gear and export it for your game. The demo needs no PixelLab key.",
+		"customizeBody": "Try on gear or export the **demo character** for your game. No PixelLab key needed.",
 		"gearTitle": "Try on gear",
-		"gearBody": "Choose an item in the Wardrobe to put it on or take it off.",
+		"gearBody": "Choose an item in the **Wardrobe** to put it on or take it off.",
 		"exportTitle": "Take it into your game",
-		"exportBody": "Export can save the body and each item as separate spritesheets.",
-		"exportInMoreBody": "Find Export in More options. It can save the body and each item as separate spritesheets.",
+		"exportBody": "**Export** the body, gear and animations, plus optional ready-made code to swap gear in your game.",
+		"exportInMoreBody": "Find **Export** in **{more} More options**: the body, gear and animations, plus optional code to swap gear in your game.",
 		"close": "Close tip",
 		"showAgain": "Show tips again",
 		"pixellabTitle": "What is PixelLab?",
 		"pixellabBody": "An AI pixel art service that draws the characters and gear you create here, using generations from your PixelLab account.",
 		"newCharacterTitle": "Make your own",
-		"newCharacterBody": "Create a character from a description, or import one you already have.",
+		"newCharacterBody": "Create a **character** from a description or reference image, or import one you already have.",
 		"addItemTitle": "Add gear",
-		"addItemBody": "Use + on any slot to describe an item. PixelLab draws it to fit this character in every frame.",
+		"addItemBody": "Use **+** on a slot to describe an item or add a reference image. PixelLab fits it to your character.",
 		"generateItemsTitle": "Fit gear to this move",
-		"generateItemsBody": "Open this move's menu and choose Generate items to draw your gear's missing frames.",
+		"generateItemsBody": "Open this move's **{menu} menu** and choose **Generate items** to draw your gear in this move.",
 		"addMoveTitle": "Add a move",
 		"addMoveBody": "Animate your character, such as Idle, Walk or Attack.",
 		"addStateTitle": "Add a state",
-		"addStateBody": "Make a new still pose or look, such as sitting or a costume, to start moves from."
+		"addStateBody": "Make a **new still pose** to start moves from, such as an attack wind-up, mid-walk step or sitting stance."
 	}
 }

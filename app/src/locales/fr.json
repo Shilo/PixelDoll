@@ -3651,25 +3651,25 @@
 	},
 	"tips": {
 		"customizeTitle": "Habillez la démo",
-		"customizeBody": "Essayez de l’équipement et exportez-le pour votre jeu. La démo ne nécessite aucune clé PixelLab.",
+		"customizeBody": "Essayez de l’équipement ou exportez le **personnage de démo** pour votre jeu. Aucune clé PixelLab requise.",
 		"gearTitle": "Essayez de l’équipement",
-		"gearBody": "Choisissez un objet dans la Garde-robe pour l’équiper ou le retirer.",
+		"gearBody": "Choisissez un objet dans la **Garde-robe** pour l’équiper ou le retirer.",
 		"exportTitle": "Emmenez-le dans votre jeu",
-		"exportBody": "Exporter peut enregistrer le corps de base et chaque objet dans des feuilles de sprites séparées.",
-		"exportInMoreBody": "Exporter se trouve dans Plus d’options. Il peut enregistrer le corps de base et chaque objet dans des feuilles de sprites séparées.",
+		"exportBody": "**Exporter** fournit le corps, l’équipement et les animations, plus du code prêt à l’emploi facultatif pour changer d’équipement dans votre jeu.",
+		"exportInMoreBody": "**Exporter** se trouve dans **{more} Plus d’options** : le corps, l’équipement et les animations, plus du code facultatif pour changer d’équipement dans votre jeu.",
 		"close": "Fermer le conseil",
 		"showAgain": "Réafficher les conseils",
 		"pixellabTitle": "Qu’est-ce que PixelLab ?",
 		"pixellabBody": "Un service de pixel art par IA qui dessine les personnages et l’équipement que vous créez ici, avec les générations de votre compte PixelLab.",
 		"newCharacterTitle": "Créez le vôtre",
-		"newCharacterBody": "Créez un personnage à partir d’une description, ou importez-en un que vous avez déjà.",
+		"newCharacterBody": "Créez un **personnage** à partir d’une description ou d’une image de référence, ou importez-en un que vous avez déjà.",
 		"addItemTitle": "Ajoutez de l’équipement",
-		"addItemBody": "Utilisez + sur un emplacement pour décrire un objet. PixelLab le dessine pour qu’il s’adapte à ce personnage dans chaque image.",
+		"addItemBody": "Utilisez **+** sur un emplacement pour décrire un objet ou ajouter une image de référence. PixelLab l’adapte à votre personnage.",
 		"generateItemsTitle": "Adaptez l’équipement à cette animation",
-		"generateItemsBody": "Ouvrez le menu de cette animation et choisissez Générer des objets pour dessiner les images manquantes de votre équipement.",
+		"generateItemsBody": "Ouvrez le **{menu} menu** de cette animation et choisissez **Générer des objets** pour dessiner votre équipement dans cette animation.",
 		"addMoveTitle": "Ajoutez une animation",
 		"addMoveBody": "Animez votre personnage, par exemple avec Idle, Walk ou Attack.",
 		"addStateTitle": "Ajoutez un état",
-		"addStateBody": "Créez une nouvelle pose ou apparence, assise ou costumée par exemple, d’où partiront des animations."
+		"addStateBody": "Créez une **nouvelle pose fixe** d’où partiront des animations, comme l’élan d’une attaque, un pas en pleine marche ou une position assise."
 	}
 }

@@ -25,13 +25,17 @@ Welcome page and the unmerged hint-card attempt on `t3/quickstart-onboarding` (c
    | 4   | Try on gear            | A whole Wardrobe tile: unworn first (ready for the move on screen first), then worn      | Any character's Customize, in Preview, Wardrobe open                                                        | The outfit changes from what was worn on arrival                  |
    | 5   | Take it into your game | Export, or More options when the bar has moved Export into it                            | Same place, after #4                                                                                        | Export opens                                                      |
    | 6   | Add gear               | A slot's + (the New tile is easy to find and disappears once the slot has gear; + stays) | Your own character's Wardrobe (never the bundled demo)                                                      | New item opens                                                    |
-   | 7   | Fit gear to this move  | The ⋮ of a move whose menu offers Generate items (its row while ⋮ shows only on hover)   | Your own character's Moves                                                                                  | Generate items opens                                              |
+   | 7   | Fit gear to this move  | The ⋮ of a move whose menu offers Generate items, kept visible while the tip shows       | Your own character's Moves                                                                                  | Generate items opens                                              |
    | 8   | Add a move             | New move                                                                                 | Your own character's Moves                                                                                  | New move is pressed                                               |
    | 9   | Add a state            | New State                                                                                | Your own character's States                                                                                 | New State is pressed                                              |
 
    Every tip also ends on its X. A tip's action ends it even when it never showed. Someone who creates a character
    first never sees #2; on that character's empty Wardrobe, #6 comes first and #4 follows once an item exists. An
-   editable copy of the demo counts as your own character.
+   editable copy of the demo counts as your own character. #6 to #9 show at most one per arrival on a tab: on Moves,
+   #7 comes first when a move's gear lacks frames for it, and #8 waits until the person leaves the tab and comes back.
+
+   Copy marks control names and key words in bold (`**…**` in the strings), and `{more}` / `{menu}` draw the More
+   options (⋯) and row menu (⋮) icons inline, so people can tell which words name something on screen.
 
 5. **Show tips again** clears every done tip and lets them show again from where the person is (nothing navigates).
    Tips that otherwise greet only a newcomer show for the rest of that visit. It is in **More options > Help** and
@@ -48,7 +52,8 @@ tips read existing app state read-only instead of the app emitting tip events.
 - `app/src/studio/tips/catalog.svelte.ts` defines every tip in priority order: `anchor` (finds the control), `placement`
   (preferred side; flips to the opposite side, then across), `when` (the app context), `after` (tips done first),
   `doneWhen` (app state meaning the action happened) and `doneOn` (controls whose press, typing or paste means it
-  happened), plus copy keys. Conditions only read app state and the page.
+  happened), `fallbacks` (sides to try when the preferred one has no room), `reveal` (point at a hover-only control and
+  keep it shown) and `onePerVisit`, plus copy keys. Conditions only read app state and the page.
 - `app/src/studio/tips/TipsHost.svelte`, mounted once in Studio, completes tips on a rising `doneWhen` (so a reset is
   never consumed by a state that already held) or a delegated `doneOn` event, and shows at most one tip: the first
   whose context holds and whose control is whole on screen (`visibility.ts`) and not under an open dialog or menu.

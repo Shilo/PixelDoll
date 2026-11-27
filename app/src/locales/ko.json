@@ -3549,25 +3549,25 @@
 	},
 	"tips": {
 		"customizeTitle": "데모 꾸미기",
-		"customizeBody": "장비를 입혀 보고 게임용으로 내보내 보세요. 데모에는 PixelLab 키가 필요 없어요.",
+		"customizeBody": "장비를 입혀 보거나 **데모 캐릭터**를 게임용으로 내보내 보세요. PixelLab 키가 필요 없어요.",
 		"gearTitle": "장비 입어 보기",
-		"gearBody": "옷장에서 아이템을 골라 착용하거나 벗어 보세요.",
+		"gearBody": "**옷장**에서 아이템을 골라 착용하거나 벗어 보세요.",
 		"exportTitle": "게임으로 가져가기",
-		"exportBody": "내보내기로 기본 몸체와 각 아이템을 별도의 스프라이트 시트로 저장할 수 있어요.",
-		"exportInMoreBody": "내보내기는 더 많은 옵션에 있어요. 기본 몸체와 각 아이템을 별도의 스프라이트 시트로 저장할 수 있어요.",
+		"exportBody": "**내보내기**로 몸체, 장비, 동작과 함께 게임에서 장비를 바꿔 주는 선택형 기성 코드도 받을 수 있어요.",
+		"exportInMoreBody": "**내보내기**는 **{more} 더 많은 옵션**에 있어요. 몸체, 장비, 동작과 게임에서 장비를 바꿔 주는 선택형 코드를 받을 수 있어요.",
 		"close": "팁 닫기",
 		"showAgain": "팁 다시 보기",
 		"pixellabTitle": "PixelLab이란?",
 		"pixellabBody": "여기서 만드는 캐릭터와 장비를 그려 주는 AI 픽셀 아트 서비스예요. PixelLab 계정의 생성을 사용해요.",
 		"newCharacterTitle": "나만의 캐릭터 만들기",
-		"newCharacterBody": "설명으로 캐릭터를 만들거나 가지고 있는 캐릭터를 가져오세요.",
+		"newCharacterBody": "설명이나 참고 이미지로 **캐릭터**를 만들거나, 가지고 있는 캐릭터를 가져오세요.",
 		"addItemTitle": "장비 추가",
-		"addItemBody": "슬롯의 +로 아이템을 설명하면 PixelLab이 모든 프레임에서 이 캐릭터에 맞게 그려 줘요.",
+		"addItemBody": "슬롯의 **+**로 아이템을 설명하거나 참고 이미지를 추가하세요. PixelLab이 캐릭터에 맞춰 줘요.",
 		"generateItemsTitle": "이 동작에 장비 맞추기",
-		"generateItemsBody": "이 동작의 메뉴를 열고 아이템 생성을 선택하면 장비에 없는 프레임을 그려 줘요.",
+		"generateItemsBody": "이 동작의 **{menu} 메뉴**를 열고 **아이템 생성**을 선택하면 이 동작에 맞는 장비를 그려 줘요.",
 		"addMoveTitle": "동작 추가",
 		"addMoveBody": "Idle, Walk, Attack 같은 동작으로 캐릭터를 움직여 보세요.",
 		"addStateTitle": "상태 추가",
-		"addStateBody": "앉은 자세나 의상처럼 동작의 시작점이 될 새 포즈나 모습을 만들어요."
+		"addStateBody": "공격 준비 자세, 걷는 도중, 앉은 자세처럼 동작의 시작점이 될 **새 정지 포즈**를 만들어요."
 	}
 }

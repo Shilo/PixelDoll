@@ -3651,25 +3651,25 @@
 	},
 	"tips": {
 		"customizeTitle": "Demo einkleiden",
-		"customizeBody": "Probiere Ausrüstung an und exportiere sie für dein Spiel. Für die Demo brauchst du keinen PixelLab-Schlüssel.",
+		"customizeBody": "Probiere Ausrüstung an oder exportiere die **Demo-Figur** für dein Spiel. Kein PixelLab-Schlüssel nötig.",
 		"gearTitle": "Ausrüstung anprobieren",
-		"gearBody": "Wähle in der Garderobe einen Gegenstand, um ihn anzulegen oder abzulegen.",
+		"gearBody": "Wähle in der **Garderobe** einen Gegenstand, um ihn anzulegen oder abzulegen.",
 		"exportTitle": "Ab in dein Spiel",
-		"exportBody": "Exportieren kann den Grundkörper und jeden Gegenstand als eigenes Spritesheet speichern.",
-		"exportInMoreBody": "Exportieren findest du unter Weitere Optionen. Es kann den Grundkörper und jeden Gegenstand als eigenes Spritesheet speichern.",
+		"exportBody": "**Exportieren** liefert Grundkörper, Ausrüstung und Animationen, dazu optional fertigen Code, der Ausrüstung in deinem Spiel tauscht.",
+		"exportInMoreBody": "**Exportieren** findest du unter **{more} Weitere Optionen**: Grundkörper, Ausrüstung und Animationen, dazu optional Code, der Ausrüstung in deinem Spiel tauscht.",
 		"close": "Tipp schließen",
 		"showAgain": "Tipps erneut anzeigen",
 		"pixellabTitle": "Was ist PixelLab?",
 		"pixellabBody": "Ein KI-Dienst für Pixel-Art, der die Figuren und Ausrüstung zeichnet, die du hier erstellst. Dafür nutzt er Generierungen deines PixelLab-Kontos.",
 		"newCharacterTitle": "Eigene Figur",
-		"newCharacterBody": "Erstelle eine Figur aus einer Beschreibung oder importiere eine vorhandene.",
+		"newCharacterBody": "Erstelle eine **Figur** aus einer Beschreibung oder einem Referenzbild, oder importiere eine vorhandene.",
 		"addItemTitle": "Ausrüstung hinzufügen",
-		"addItemBody": "Tippe bei einem Platz auf +, um einen Gegenstand zu beschreiben. PixelLab zeichnet ihn passend zu dieser Figur in jedem Frame.",
+		"addItemBody": "Tippe bei einem Platz auf **+**, um einen Gegenstand zu beschreiben oder ein Referenzbild hinzuzufügen. PixelLab passt ihn an deine Figur an.",
 		"generateItemsTitle": "Ausrüstung an diese Animation anpassen",
-		"generateItemsBody": "Öffne das Menü dieser Animation und wähle „Gegenstände generieren“, um die fehlenden Frames deiner Ausrüstung zu zeichnen.",
+		"generateItemsBody": "Öffne das **{menu} Menü** dieser Animation und wähle **Gegenstände generieren**, um deine Ausrüstung in dieser Animation zu zeichnen.",
 		"addMoveTitle": "Animation hinzufügen",
 		"addMoveBody": "Animiere deine Figur, zum Beispiel mit Idle, Walk oder Attack.",
 		"addStateTitle": "Zustand hinzufügen",
-		"addStateBody": "Erstelle eine neue Pose oder einen neuen Look, etwa sitzend oder im Kostüm, als Start für Animationen."
+		"addStateBody": "Erstelle eine **neue Standpose** als Start für Animationen, etwa das Ausholen zum Angriff, einen Schritt mitten im Gehen oder eine Sitzhaltung."
 	}
 }

@@ -3651,25 +3651,25 @@
 	},
 	"tips": {
 		"customizeTitle": "Viste la demo",
-		"customizeBody": "Pruébate equipo y expórtalo para tu juego. La demo no necesita clave de PixelLab.",
+		"customizeBody": "Pruébate equipo o exporta el **personaje de demo** para tu juego. No necesitas clave de PixelLab.",
 		"gearTitle": "Pruébate equipo",
-		"gearBody": "Elige un objeto del Armario para ponértelo o quitártelo.",
+		"gearBody": "Elige un objeto del **Armario** para ponértelo o quitártelo.",
 		"exportTitle": "Llévalo a tu juego",
-		"exportBody": "Exportar puede guardar el cuerpo base y cada objeto en hojas de sprites separadas.",
-		"exportInMoreBody": "Encontrarás Exportar en Más opciones. Puede guardar el cuerpo base y cada objeto en hojas de sprites separadas.",
+		"exportBody": "**Exportar** incluye el cuerpo, el equipo y las animaciones, además de código listo opcional para cambiar el equipo en tu juego.",
+		"exportInMoreBody": "Encontrarás **Exportar** en **{more} Más opciones**: el cuerpo, el equipo y las animaciones, además de código opcional para cambiar el equipo en tu juego.",
 		"close": "Cerrar consejo",
 		"showAgain": "Volver a mostrar consejos",
 		"pixellabTitle": "¿Qué es PixelLab?",
 		"pixellabBody": "Un servicio de pixel art con IA que dibuja los personajes y el equipo que creas aquí, con generaciones de tu cuenta de PixelLab.",
 		"newCharacterTitle": "Crea el tuyo",
-		"newCharacterBody": "Crea un personaje a partir de una descripción o importa uno que ya tengas.",
+		"newCharacterBody": "Crea un **personaje** a partir de una descripción o una imagen de referencia, o importa uno que ya tengas.",
 		"addItemTitle": "Añade equipo",
-		"addItemBody": "Usa + en cualquier hueco para describir un objeto. PixelLab lo dibuja para que encaje con este personaje en cada fotograma.",
+		"addItemBody": "Usa **+** en un hueco para describir un objeto o añadir una imagen de referencia. PixelLab lo ajusta a tu personaje.",
 		"generateItemsTitle": "Ajusta el equipo a esta animación",
-		"generateItemsBody": "Abre el menú de esta animación y elige Generar objetos para dibujar los fotogramas que le faltan a tu equipo.",
+		"generateItemsBody": "Abre el **{menu} menú** de esta animación y elige **Generar objetos** para dibujar tu equipo en ella.",
 		"addMoveTitle": "Añade una animación",
 		"addMoveBody": "Anima a tu personaje, por ejemplo con Idle, Walk o Attack.",
 		"addStateTitle": "Añade un estado",
-		"addStateBody": "Crea una nueva pose o aspecto, como sentado o con disfraz, desde el que empezar animaciones."
+		"addStateBody": "Crea una **nueva pose fija** desde la que empezar animaciones, como el inicio de un ataque, un paso a mitad de caminar o una postura sentada."
 	}
 }

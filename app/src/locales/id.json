@@ -3549,25 +3549,25 @@
 	},
 	"tips": {
 		"customizeTitle": "Dandani demo",
-		"customizeBody": "Coba perlengkapan dan ekspor untuk game Anda. Demo tidak perlu kunci PixelLab.",
+		"customizeBody": "Coba perlengkapan atau ekspor **karakter demo** untuk game Anda. Tidak perlu kunci PixelLab.",
 		"gearTitle": "Coba perlengkapan",
-		"gearBody": "Pilih item di Lemari untuk memakainya atau melepasnya.",
+		"gearBody": "Pilih item di **Lemari** untuk memakainya atau melepasnya.",
 		"exportTitle": "Bawa ke game Anda",
-		"exportBody": "Ekspor dapat menyimpan tubuh dasar dan setiap item sebagai sprite sheet terpisah.",
-		"exportInMoreBody": "Ekspor ada di Opsi lainnya. Ekspor dapat menyimpan tubuh dasar dan setiap item sebagai sprite sheet terpisah.",
+		"exportBody": "**Ekspor** tubuh, perlengkapan, dan animasi, plus kode siap pakai opsional untuk mengganti perlengkapan di game Anda.",
+		"exportInMoreBody": "Temukan **Ekspor** di **{more} Opsi lainnya**: tubuh, perlengkapan, dan animasi, plus kode opsional untuk mengganti perlengkapan di game Anda.",
 		"close": "Tutup tips",
 		"showAgain": "Tampilkan tips lagi",
 		"pixellabTitle": "Apa itu PixelLab?",
 		"pixellabBody": "Layanan pixel art AI yang menggambar karakter dan perlengkapan yang Anda buat di sini, memakai generasi dari akun PixelLab Anda.",
 		"newCharacterTitle": "Buat milik Anda",
-		"newCharacterBody": "Buat karakter dari deskripsi, atau impor karakter yang sudah Anda miliki.",
+		"newCharacterBody": "Buat **karakter** dari deskripsi atau gambar referensi, atau impor karakter yang sudah Anda miliki.",
 		"addItemTitle": "Tambah perlengkapan",
-		"addItemBody": "Pakai + di slot mana pun untuk menjelaskan sebuah item. PixelLab menggambarnya agar pas dengan karakter ini di setiap frame.",
+		"addItemBody": "Pakai **+** di slot untuk menjelaskan item atau menambahkan gambar referensi. PixelLab menyesuaikannya dengan karakter Anda.",
 		"generateItemsTitle": "Sesuaikan perlengkapan dengan animasi ini",
-		"generateItemsBody": "Buka menu animasi ini dan pilih Buat item untuk menggambar frame perlengkapan yang belum ada.",
+		"generateItemsBody": "Buka **{menu} menu** animasi ini dan pilih **Buat item** untuk menggambar perlengkapan Anda di animasi ini.",
 		"addMoveTitle": "Tambah animasi",
 		"addMoveBody": "Animasikan karakter Anda, misalnya Idle, Walk, atau Attack.",
 		"addStateTitle": "Tambah status",
-		"addStateBody": "Buat pose diam atau tampilan baru, seperti duduk atau kostum, sebagai awal animasi."
+		"addStateBody": "Buat **pose diam baru** sebagai awal animasi, seperti ancang-ancang serangan, langkah di tengah berjalan, atau sikap duduk."
 	}
 }
