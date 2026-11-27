@@ -16,4 +16,4 @@ Rules:
 - Headlines and titles use sentence case where the language has case; no final period.
 - Keep the sentence shape and length of the English: do not turn "You can now ..." into "This release adds ...".
 - When a note names a control or screen of the app, use its label from the `labels` list in the input (English label mapped to the app's label in the target language), without quotation marks.
-- Fix sentences describe what the player saw, in the past tense or the language's natural equivalent of "Fixed ...".
+- Fix sentences sit under a Fixed heading: keep them as statements of what works now, without a word for "fixed" at the start.

@@ -8,7 +8,7 @@
 		type ReleaseEntry
 	} from '../lib/releases.ts';
 	import { repository } from '../lib/repository.ts';
-	import { ExternalLink } from './icons.ts';
+	import { ChevronRight, ExternalLink } from './icons.ts';
 
 	let {
 		entry,
@@ -120,7 +120,8 @@
 				if (event.currentTarget.open && changes === undefined) void loadChanges();
 			}}
 		>
-			<summary>
+			<summary class="bu-action release-toggle" data-variant="outline">
+				<ChevronRight size={16} aria-hidden="true" />
 				{changes
 					? t('releaseNews.allChangesCount', {
 							count: changes.total,
@@ -183,6 +184,7 @@
 	}
 	ul {
 		padding-inline-start: 1.25em;
+		list-style: disc;
 	}
 	.banner img {
 		display: block;
@@ -194,12 +196,35 @@
 	a {
 		color: var(--bu-accent);
 	}
-	details {
-		border-block-start: 1px solid var(--bu-line);
-	}
-	summary {
-		padding-block: 12px;
+	/* Collapsed sections are full-width touch targets: an outlined row with a chevron that turns when open. */
+	:global(.release-toggle) {
+		display: flex;
+		align-items: center;
+		justify-content: flex-start;
+		gap: 8px;
+		inline-size: 100%;
+		min-block-size: 44px;
+		text-align: start;
+		list-style: none;
 		cursor: pointer;
+	}
+	:global(.release-toggle::-webkit-details-marker) {
+		display: none;
+	}
+	:global(.release-toggle > svg) {
+		flex: none;
+		transition: rotate 150ms ease;
+	}
+	:global(details[open] > .release-toggle > svg) {
+		rotate: 90deg;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		:global(.release-toggle > svg) {
+			transition: none;
+		}
+	}
+	details[open] > :global(.release-toggle) {
+		margin-block-end: 12px;
 	}
 	.change-group + .change-group {
 		margin-block-start: 12px;

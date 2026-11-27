@@ -14,14 +14,14 @@ Reply only with the JSON object the response schema defines.
 
 1. `headline`: a catchy theme for the release as a player benefit, at most 8 words, that makes a player want to read on. Sentence case, no period, no version number, no emoji, no exclamation mark, no pun that only works in English. It must not share a distinctive word or phrase with any highlight title (such as Phaser AE, Trash or frames). Example: with highlights about Phaser AE export and Trash, "More ways to ship and undo your work".
 2. `intro`: the summary, one short paragraph of 1 or 2 sentences and at most 40 words, speaking to the reader as "you". Plain and warm; a light, kind touch is welcome when it fits, never sarcastic and never about bugs, users, competitors or AI. It names the overall benefit; it does not list the highlights or reuse their titles or the headline's wording.
-3. `highlights`: 1 to 3 of the biggest changes a player would notice, most valuable first. Each has:
+3. `highlights`: the biggest changes a player would notice, most valuable first. Write 4 when the release has 4 or more changes worth a player's attention (most weeks do); write fewer only when there truly are fewer, and never pad with minor work to reach 4. Each has:
    - `title`: at most 6 words, sentence case, names what the player can now do or what got better.
    - `text`: 1 or 2 sentences, at most 35 words in total, explaining the benefit in plain words: what changed and why it helps.
    - `commits`: the ids of every input commit this highlight describes (at least one).
 
    Prefer `feat` commits. Group several commits about the same feature into one highlight. Never pad: if only one change is worth highlighting, return one.
 
-4. `fixes`: 0 to 3 bug fixes a player could actually have noticed, most noticeable first. Each has `text` (one sentence, at most 15 words, starting with "Fixed" and describing the symptom the player saw, never its cause or an internal name; skip a fix whose visible symptom the commit does not state) and `commits` (ids, at least one). Use only `fix` commits. Do not repeat anything already in highlights.
+4. `fixes`: 0 to 3 bug fixes a player could actually have noticed, most noticeable first. Each has `text` (one sentence, at most 15 words, under a heading that already says Fixed, so never start with "Fixed"; state what works now in terms of the symptom the player saw, for example "Restore no longer rejects a whole backup when some artwork is missing", never its cause or an internal name; skip a fix whose visible symptom the commit does not state) and `commits` (ids, at least one). Use only `fix` commits. Do not repeat anything already in highlights.
 
 ## Rules
 

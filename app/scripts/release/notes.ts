@@ -27,7 +27,7 @@ const commits = { type: 'array', items: string, minItems: 1, uniqueItems: true }
 export const releaseNotesSchema = article({
 	headline: string,
 	intro: string,
-	highlights: list(article({ title: string, text: string, commits }), 1, 3),
+	highlights: list(article({ title: string, text: string, commits }), 1, 4),
 	fixes: list(article({ text: string, commits }), 0, 3)
 });
 
@@ -122,7 +122,7 @@ function validate(
 			errors.push('intro repeats the headline');
 	}
 	for (const [key, min, max] of [
-		['highlights', original?.highlights.length ?? 1, original?.highlights.length ?? 3],
+		['highlights', original?.highlights.length ?? 1, original?.highlights.length ?? 4],
 		['fixes', original?.fixes.length ?? 0, original?.fixes.length ?? 3]
 	] as const) {
 		const items = notes[key];
@@ -145,7 +145,8 @@ function validate(
 					errors.push(`${path}.title repeats the headline`);
 			}
 			if (english) {
-				if (fix && !/^Fixed\b/.test(copy)) errors.push(`${path}.text must start with "Fixed"`);
+				if (fix && /^Fixed\b/i.test(copy))
+					errors.push(`${path}.text must not start with "Fixed" (the heading says it)`);
 				citations(entry.commits, `${path}.commits`, fix);
 			}
 		});

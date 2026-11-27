@@ -3,6 +3,7 @@
 	import { formatDate, getLocale, t } from 'svelte-whisper';
 	import Sheet from './Sheet.svelte';
 	import ReleaseArticle from './ReleaseArticle.svelte';
+	import { ChevronRight } from './icons.ts';
 	import { releaseNews } from './releaseNews.svelte.ts';
 
 	const latest = $derived(releaseNews.entries?.[0]);
@@ -57,13 +58,16 @@
 							if (event.currentTarget.open) expanded.add(entry.version);
 						}}
 					>
-						<summary>
-							<bdi>v{entry.version}</bdi> ·
-							<time datetime={entry.date}>{dateLabel(entry.date)}</time>
-							·
-							<span lang={entry.headline[locale] ? locale : 'en'}
-								>{entry.headline[locale] || entry.headline.en}</span
-							>
+						<summary class="bu-action release-toggle" data-variant="outline">
+							<ChevronRight size={16} aria-hidden="true" />
+							<span>
+								<bdi>v{entry.version}</bdi> ·
+								<time datetime={entry.date}>{dateLabel(entry.date)}</time>
+								·
+								<span lang={entry.headline[locale] ? locale : 'en'}
+									>{entry.headline[locale] || entry.headline.en}</span
+								>
+							</span>
 						</summary>
 						{#if expanded.has(entry.version)}
 							<ReleaseArticle {entry} {locale} date={dateLabel(entry.date)} />
@@ -87,15 +91,12 @@
 	.past-releases h3 {
 		margin-block: 0 4px;
 	}
-	.past-releases details {
-		border-block-start: 1px solid var(--bu-line);
+	.past-releases {
+		display: grid;
+		gap: 8px;
 	}
 	.past-releases details[open] {
 		padding-block-end: 16px;
-	}
-	.past-releases summary {
-		padding-block: 12px;
-		cursor: pointer;
 	}
 	.release-error p {
 		margin-block-start: 0;

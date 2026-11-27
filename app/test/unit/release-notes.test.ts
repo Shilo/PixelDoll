@@ -33,7 +33,7 @@ const notes = {
 	highlights: [
 		{ title: 'Save a sprite', text: 'Save your work as a PNG file.', commits: [feature.id] }
 	],
-	fixes: [{ text: 'Fixed outfits disappearing when you opened a character.', commits: [fix.id] }]
+	fixes: [{ text: 'Outfits no longer disappear when you open a character.', commits: [fix.id] }]
 };
 
 afterEach(() => vi.unstubAllGlobals());
@@ -49,7 +49,7 @@ it('checks release prose, shape, word limits and unique citations to eligible co
 				highlights: [
 					{ title: '**CAPS**', text: 'Go to https://example.com ⚔️', commits: ['bad', feature.id] }
 				],
-				fixes: [{ text: 'This is a fix.', commits: [feature.id] }],
+				fixes: [{ text: 'Fixed this.', commits: [feature.id] }],
 				ignored: true
 			},
 			commits
@@ -63,7 +63,7 @@ it('checks release prose, shape, word limits and unique citations to eligible co
 			'highlights[0].title contains an all-caps word',
 			'highlights[0].text contains an exclamation mark, emoji, link or markup',
 			'highlights[0].commits cites an unknown commit id',
-			'fixes[0].text must start with "Fixed"',
+			'fixes[0].text must not start with "Fixed" (the heading says it)',
 			`fixes[0].commits repeats commit ${feature.id}`,
 			'fixes[0].commits must cite only fix commits'
 		])
