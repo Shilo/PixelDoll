@@ -338,7 +338,7 @@ export class Paperdoll {
     const move = this.m.rig.animations.find((a) => a.id === anim);
     if (!move || !available(this.m, move).some((d) => d.id === dir)) throw new Error('PixelDoll: unavailable move/direction ' + anim + '/' + dir);
     const layered = this.layerActions && this.canLayerAction(anim, dir);
-    this.action = { move, dir, elapsed: 0, layered, stamp: this.frameNow() };
+    this.action = { move, dir, elapsed: 0, layered, lower: layered ? this.walkCell() : null, stamp: this.frameNow() };
     this.sync();
     return layered ? 'layered' : 'full';
   }
@@ -364,7 +364,9 @@ export class Paperdoll {
   setVariants(variants) { this.variants = { ...variants }; this.version++; this.sync(); }
 
   checkActionOutfit() {
-    if (this.action?.layered) this.action.layered = this.canLayerAction(this.action.move.id, this.action.dir);
+    const action = this.action;
+    if (action?.layered && action.lower)
+      action.layered = canExportLayerAction(this.m, this.equipped, action.lower.clip, action.dir, action.move.id);
   }
 
   /** The item drawn in a slot: "<item>~<other>" (baked: hair tucked under a worn helmet, slots[].clips) when it exists. */
@@ -380,8 +382,8 @@ export class Paperdoll {
   sync() {
     const cell = this.cell(), action = this.action;
     const pose = action && { clip: action.move.id, direction: action.dir, cell: sampleTimeline(action.move.frames, action.elapsed + BOUNDARY_MS, false) };
-    const walk = this.walkCell();
-    const signature = JSON.stringify([this.anim, this.dir, cell, pose, action?.layered, walk, this.version]);
+    if (action?.layered) action.lower = holdActionWalk(action.lower, this.walkCell(), action.dir);
+    const signature = JSON.stringify([this.anim, this.dir, cell, pose, action?.layered, action?.lower, this.version]);
     if (signature === this.drawn) return;
     this.drawn = signature;
     const placed = [];
@@ -395,7 +397,7 @@ export class Paperdoll {
     };
     // A whole-body action needs no gait; a layered one was only allowed with one.
     if (action)
-      for (const draw of exportedActionDraws(this.m, this.equipped, pose, walk, action.layered))
+      for (const draw of exportedActionDraws(this.m, this.equipped, pose, action.lower, action.layered))
         show(draw.item, draw.layer, draw.clip, draw.part, draw.direction, draw.cell, draw.point);
     else if (cell !== null)
       for (const draw of drawList(this.m, this.equipped, this.anim, this.dir, cell))
@@ -623,7 +625,7 @@ pauses with that scene and is removed when the scene is left (doll.alive turns f
 load in enter() would belong to whatever scene is current then. A clip started with play() counts from the next step.
 Read doll.completed for a once-only move that has ended.
 Switch outfits with doll.applyPreset(outfitId) (an id from manifest.json's presets, or a preset object); it replaces the equipped items and the color selections, so call setVariants after it to keep custom colors. Unknown outfit IDs throw without changing the doll.
-Call setActionLayering(true) to enable moving attacks when the ZIP contains precut fragments (manifest.actionLayers). canLayerAction(move, direction) checks the whole action set and equipped gear. Invalid playAction calls throw without changing playback. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running; a full action also plays on a doll with no move yet. Read actionPlaying for completion. Calling play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action. Turning the gait away from the action's direction shows the full action until the doll faces that direction again.
+Call setActionLayering(true) to enable moving attacks when the ZIP contains precut fragments (manifest.actionLayers). canLayerAction(move, direction) checks the whole action set and equipped gear. Invalid playAction calls throw without changing playback. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running; a full action also plays on a doll with no move yet. Read actionPlaying for completion. Calling play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
 
 play(anim, dir) preserves an active clip's progress, starts changed moves/directions at the beginning and replays a completed once-only clip. Pass true as the third argument to restart explicitly.
 doll.setDirection(dir) turns the active move (e.g. an aimed attack) while keeping its frame, time, loop position and completion. The current direction is a no-op; an unavailable direction or no active move throws before changing state.

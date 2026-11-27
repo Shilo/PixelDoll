@@ -212,7 +212,7 @@ export class Paperdoll {
     if (!move || !available(this.m, move).some((d) => d.id === dir)) throw new Error('PixelDoll: unavailable move/direction ' + anim + '/' + dir);
     const layered = this.layerActions && this.canLayerAction(anim, dir);
     if (!this.action) this.scene.events.on('update', this.tickAction);
-    this.action = { move, dir, elapsed: 0, layered };
+    this.action = { move, dir, elapsed: 0, layered, lower: layered ? this.walkCell() : null };
     this.sync();
     return layered ? 'layered' : 'full';
   }
@@ -240,7 +240,9 @@ export class Paperdoll {
   setVariants(variants) { this.variants = { ...variants }; this.sync(); }
 
   checkActionOutfit() {
-    if (this.action?.layered) this.action.layered = this.canLayerAction(this.action.move.id, this.action.dir);
+    const action = this.action;
+    if (action?.layered && action.lower)
+      action.layered = canExportLayerAction(this.m, this.equipped, action.lower.clip, action.dir, action.move.id);
   }
 
   /** @param {'lower' | 'upper' | null} [part] */
@@ -282,9 +284,11 @@ export class Paperdoll {
   sync() {
     for (const sprite of this.actionNodes) sprite.setVisible(false);
     if (this.action) {
-      const { move, dir, elapsed, layered } = this.action;
+      const action = this.action;
+      const { move, dir, elapsed, layered } = action;
+      if (layered) action.lower = holdActionWalk(action.lower, this.walkCell(), dir);
       const pose = { clip: move.id, direction: dir, cell: sampleTimeline(move.frames, elapsed, false) };
-      const draws = exportedActionDraws(this.m, this.equipped, pose, this.walkCell(), layered);
+      const draws = exportedActionDraws(this.m, this.equipped, pose, action.lower, layered);
       for (const n of this.nodes) n.sprite.setVisible(false);
       draws.forEach((draw, order) => {
         let sprite = this.actionNodes[order];
@@ -357,7 +361,7 @@ export function phaserFiles(m: Manifest): OutFile[] {
      }
 Switch outfits with doll.applyPreset(outfitId) (an id from manifest.json's presets, or a preset object); it replaces the equipped items and the color selections, so call setVariants after it to keep custom colors. Unknown outfit IDs throw without changing the doll.
 Phaser does not await an async create(): nothing may use the doll until loadPaperdoll resolves, so guard update() on it or create the doll in a scene that starts after loading. The loader path is relative to document.baseURI.
-Call setActionLayering(true) to enable moving attacks when the ZIP contains precut fragments (manifest.actionLayers). canLayerAction(move, direction) checks the whole action set and equipped gear. Invalid playAction calls throw without changing playback. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read actionPlaying for completion. Calling play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action.
+Call setActionLayering(true) to enable moving attacks when the ZIP contains precut fragments (manifest.actionLayers). canLayerAction(move, direction) checks the whole action set and equipped gear. Invalid playAction calls throw without changing playback. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read actionPlaying for completion. Calling play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
 
 play(anim, dir) preserves an active clip's progress, starts changed moves/directions at the beginning and replays a completed once-only clip. Pass true as the third argument to restart explicitly.
 doll.setDirection(dir) turns the active move (e.g. an aimed attack) while keeping its frame, time, loop position and completion; it emits no start or complete events. The current direction is a no-op; an unavailable direction or no active move throws before changing state.

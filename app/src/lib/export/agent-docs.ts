@@ -50,6 +50,9 @@ this file first, then the doc for your engine in docs/, then that engine's READM
   the equipment API refuses variant items (each engine reference says whether that throws or returns an error).
 - Nearest-neighbor filtering and whole-pixel positions. No atlas packing, rotation or trimming.
 - The base body is always worn. A layer that a move or an item does not provide is simply absent.
+- With moving attack layers enabled, turning the gait away during a layered action holds the last gait cell in the
+  action's facing. Turning back resumes drawing the current gait cell. Both clocks keep running. An unsupported
+  outfit can downgrade the action to full for the rest of that action.
 - Mirroring is already baked into the exported views; do not flip a sheet that manifest.json lists on its own.
 - Sheet paths in manifest.json are relative to the folder that holds it, and each engine folder's files point back at
   layers/: keep the folder together when you copy it into a project.

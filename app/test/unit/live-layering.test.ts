@@ -12,8 +12,10 @@ import {
 	actionSeamLimits,
 	actionSetScore,
 	actionWaist,
+	canExportLayerAction,
 	composeLayeredAction,
 	exportedActionDraws,
+	holdActionWalk,
 	layerOffset,
 	over,
 	splitLower,
@@ -512,6 +514,29 @@ test('only gear visible through the full attack can block the layered attack', a
 		expect(
 			exportedActionDraws(manifest, gear, action, walk, layered).map(({ item }) => item.id)
 		).toEqual(layered ? ['base', 'base'] : ['base']);
+	const turned = holdActionWalk(walk, { ...walk, direction: 'east', cell: 1 }, action.direction);
+	const drawCells = (lower: typeof turned, upperCell: number, layered = true) =>
+		exportedActionDraws(manifest, gear, { ...action, cell: upperCell }, lower, layered).map(
+			({ part, direction, cell }) => [part, direction, cell]
+		);
+	expect(drawCells(turned, 1)).toEqual([
+		['lower', 'south', 0],
+		['upper', 'south', 1]
+	]);
+	const resumed = holdActionWalk(turned, { ...walk, cell: 1 }, action.direction);
+	expect(drawCells(resumed, 1)).toEqual([
+		['lower', 'south', 1],
+		['upper', 'south', 1]
+	]);
+	const supported = canExportLayerAction(
+		manifest,
+		{ ...gear, legs: 'trousers' },
+		walk.clip,
+		walk.direction,
+		action.clip
+	);
+	expect(supported).toBe(false);
+	expect(drawCells(resumed, 1, supported)).toEqual([[null, 'south', 1]]);
 });
 
 test.each([
@@ -557,6 +582,7 @@ test.skipIf(!process.env.GODOT_BIN)(
 	'Godot draws the precut stacks while the native walk clock stays active',
 	async () => {
 		const p = withGearCoverageGaps(await fixture());
+		p.manifest.rig.directions.push({ id: 'west', mirrorOf: 'south' });
 		const exported = await exportFiles(p, {
 			engines: ['godot'],
 			baked: false,
@@ -568,7 +594,8 @@ test.skipIf(!process.env.GODOT_BIN)(
 			spawnSync(process.env.GODOT_BIN!, ['--headless', '--path', folder, ...args], {
 				encoding: 'utf8',
 				timeout: 40000,
-				windowsHide: true
+				windowsHide: true,
+				env: { ...process.env, APPDATA: folder, LOCALAPPDATA: folder, TEMP: folder, TMP: folder }
 			});
 		try {
 			for (const { name, data } of exported.entries) {
@@ -599,27 +626,37 @@ func verify():
 	ok = ok and doll.play_action("missing", "south") == "" and doll.is_action_playing()
 	doll.set_action_layering(false)
 	doll.body.frame = 1
+	var lower_region = doll._action_nodes[0].texture.region
+	var upper_region = doll._action_nodes[1].texture.region
+	ok = ok and doll.set_direction("west") and doll.body.frame == 1
+	doll.body.frame = 0
 	doll._process(0.06)
-	ok = ok and doll.is_action_playing() and doll._action_nodes[0].texture.atlas.resource_path.contains("/action/lower/")
-	ok = ok and doll._action_nodes[1].texture.atlas.resource_path.contains("/action/upper/")
+	ok = ok and doll.is_action_playing() and doll._action_layered
+	ok = ok and doll._action_nodes[0].visible and doll._action_nodes[0].texture.region == lower_region
+	ok = ok and doll._action_nodes[1].visible and doll._action_nodes[1].texture.region.position.x != upper_region.position.x
+	ok = ok and doll.set_direction("south") and doll.body.frame == 0
+	ok = ok and doll._action_nodes[0].texture.region.position.x != lower_region.position.x
+	ok = ok and doll._action_elapsed == 60.0
 	doll._process(0.05)
 	ok = ok and not doll.is_action_playing() and doll.body.is_visible() and doll.body.is_playing()
 	doll.set_action_layering(true)
 	ok = ok and doll.play_action("slash", "south") == "layered"
+	ok = ok and doll.set_direction("west")
 	ok = ok and doll.equip("back", "cape") and doll.equip("feet", "boots") and doll._action_layered and doll.is_action_playing()
 	doll._process(0.01)
 	ok = ok and doll._action_nodes.filter(func(node): return node.visible).size() == 2
 	ok = ok and doll.equip("legs", "trousers") and not doll._action_layered and doll.is_action_playing()
 	ok = ok and doll.equip("legs", "") and not doll._action_layered and doll.is_action_playing()
+	ok = ok and doll.set_direction("south") and not doll._action_layered and doll._action_elapsed == 10.0
 	doll.play_anim("walk", "south")
 	ok = ok and not doll.is_action_playing()
 	print("ACTION_GODOT_PASS" if ok else "ACTION_GODOT_FAIL")
 	quit(0 if ok else 1)
 `
 			);
-			const imported = godot('--editor', '--import');
+			const imported = godot('--editor', '--import', '--quit');
 			expect(imported.status, imported.stdout + imported.stderr).toBe(0);
-			const result = godot('--script', 'verify.gd');
+			const result = godot('--fixed-fps', '60', '--script', 'verify.gd');
 			expect(result.status, result.stdout + result.stderr).toBe(0);
 			expect(result.stdout).toContain('ACTION_GODOT_PASS');
 		} finally {

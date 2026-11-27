@@ -509,7 +509,7 @@ test('a one-shot action plays over the walk clock, with optional precut stacks',
 	m.presets = [{ id: 'bare', name: 'Bare', items: { body: 'base', head: null }, variants: {} }];
 	const walk = m.rig.animations[0];
 	m.rig.animations = [
-		{ ...walk, directions: ['south'] },
+		{ ...walk, directions: ['south', 'east'] },
 		{
 			...walk,
 			id: 'slash',
@@ -588,14 +588,40 @@ test('a one-shot action plays over the walk clock, with optional precut stacks',
 	expect(h.drawn(doll)[1].x - h.drawn(doll)[0].x).toBe(2);
 	expect(() => doll.playAction('missing', 'south')).toThrow('unavailable');
 	expect(doll.action.layered).toBe(true);
-	h.advance(6);
+	const cells = () => h.drawn(doll).map((d: any) => [d.key[3], d.row, d.cell]);
+	doll.setDirection('east');
+	h.advance(5);
+	expect(doll.cell()).toBe(1);
+	expect(cells()).toEqual([
+		['lower:walk', 0, 1],
+		['upper:slash', 0, 1]
+	]);
+	h.advance(1);
+	expect(doll.cell()).toBe(0);
+	expect(cells()).toEqual([
+		['lower:walk', 0, 1],
+		['upper:slash', 0, 1]
+	]);
+	const time = doll.action.elapsed;
+	doll.setDirection('south');
+	expect(cells()).toEqual([
+		['lower:walk', 0, 0],
+		['upper:slash', 0, 1]
+	]);
+	expect(doll.action.elapsed).toBe(time);
 	expect(doll.actionPlaying).toBe(true);
+	doll.setDirection('east');
+	doll.equip('head', null);
+	expect(doll.action.layered).toBe(true);
 	doll.equip('head', 'hat');
 	expect(doll.action.layered).toBe(false);
 	expect(parts()).toEqual(['slash', 'slash']);
+	doll.equip('head', null);
+	doll.setDirection('south');
+	expect(parts()).toEqual(['slash']);
 	h.advance(1);
 	expect(doll.actionPlaying).toBe(false);
-	expect(parts()).toEqual(['walk', 'walk']);
+	expect(parts()).toEqual(['walk']);
 	doll.playAction('slash', 'south');
 	doll.play('walk', 'south');
 	expect(doll.actionPlaying).toBe(false);

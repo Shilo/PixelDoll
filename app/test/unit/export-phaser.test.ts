@@ -599,15 +599,20 @@ test('Phaser plays a one-shot over its native walk clock, with optional precut s
 			{ cell: 1, ms: 40 }
 		]
 	};
+	walk.directions = ['south', 'east'];
 	m.rig.animations.push(slash);
 	m.materials = [];
 	for (const item of m.items)
 		for (const layer of item.layers) {
 			layer.actionSheets = { lower: { walk: 'low.png' }, upper: { slash: 'up.png' } };
 		}
-	h.animations.set(api.animKey(m, 'walk', 'south'), { frames: [{ frame: 'walk_south_1' }] });
+	for (const dir of ['south', 'east'])
+		h.animations.set(api.animKey(m, 'walk', dir), {
+			frames: [{ frame: `walk_${dir}_1` }, { frame: `walk_${dir}_0` }]
+		});
 	const doll = new api.Paperdoll(h.scene, 0, 0, m, 'two');
 	doll.play('walk', 'south');
+	doll.body.anims.currentFrame.index = 1;
 	expect(doll.canLayerAction('slash', 'south')).toBe(false);
 	expect(doll.playAction('slash', 'south')).toBe('full');
 	expect(doll.actionPlaying).toBe(true);
@@ -671,13 +676,17 @@ test('Phaser plays a one-shot over its native walk clock, with optional precut s
 	doll.setVariants({});
 	doll.equip('hair', null);
 	doll.setActionLayering(false);
-	doll.body.anims.currentFrame.textureFrame = 'walk_south_0';
+	doll.setDirection('east');
+	doll.body.anims.setCurrentFrame(h.scene.anims.get(api.animKey(m, 'walk', 'east')).frames[1]);
 	h.scene.events.emit('update', 60, 60);
-	expect(
+	const shownFrames = () =>
 		doll.actionNodes
 			.filter((node: { visible: boolean }) => node.visible)
-			.map((node: { frame: string }) => node.frame)
-	).toEqual(expect.arrayContaining(['walk_south_0', 'slash_south_1']));
+			.map((node: { frame: string }) => node.frame);
+	expect(shownFrames()).toEqual(['walk_south_1', 'slash_south_1']);
+	doll.setDirection('south');
+	expect(shownFrames()).toEqual(['walk_south_0', 'slash_south_1']);
+	expect(doll.action.elapsed).toBe(60);
 	expect(() => doll.playAction('unavailable', 'south')).toThrow('unavailable');
 	h.scene.events.emit('update', 99, 39);
 	expect(doll.action.layered).toBe(true);
@@ -685,9 +694,13 @@ test('Phaser plays a one-shot over its native walk clock, with optional precut s
 	expect(doll.actionPlaying).toBe(false);
 	doll.setActionLayering(true);
 	expect(doll.playAction('slash', 'south')).toBe('layered');
+	doll.setDirection('east');
+	doll.equip('hair', null);
+	expect(doll.action.layered).toBe(true);
 	doll.equip('head', 'hat');
 	expect(doll.action.layered).toBe(false);
 	doll.equip('head', null);
+	doll.setDirection('south');
 	expect(doll.action.layered).toBe(false);
 	expect(doll.actionPlaying).toBe(true);
 	doll.play('walk', 'south');

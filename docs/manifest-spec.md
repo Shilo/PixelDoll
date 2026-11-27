@@ -1132,6 +1132,8 @@ The Export checkbox **Moving attack layers** is off by default and independent o
 
 Each `actionLayers.pairs` entry is a set that passed the geometry and seam gate for all reachable cells of the Walk, Attack and shared direction. Its `blocked` IDs are items without drawable art on their required clip. The `cells` array is row-major by Walk cell then Attack cell. Unused combinations are null; the rest contain the integer correction to add to the hip difference. This optional data is rebuilt with the same archive, not separately versioned or updated in place. Re-export when the source art, timing, or Waist setting changes. See the [controller contract](architecture/javascript-runtime.md#one-shot-actions-over-a-loop).
 
+During a layered action, use the last Walk cell sampled in the Attack's direction to index the pair. Hold that cell while the gait faces away and resume sampling it when the gait returns to the Attack's direction. Both clocks keep advancing. An unsupported outfit can switch the action to full for the rest of that action.
+
 ## 7. Editable import copy
 
 Every new export ZIP also contains `project.json` and `cells/<rgba-sha256>.png`. Engine readers continue to consume `manifest.json` and `layers/`.

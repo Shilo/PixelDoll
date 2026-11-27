@@ -128,8 +128,9 @@ namespace PixelDollNativeReview
             Check((bool)Invoke(doll, "SetDirection", from) && animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f && shows(move.id + "_" + from + "_" + move.frames[entry].cell), label + ": turning a completed once-only clip holds its final entry " + move.id);
             Invoke(doll, "Play", move.id, from); animator.Update(0); Invoke(doll, "Sync");
             Check(animator.GetCurrentAnimatorStateInfo(0).normalizedTime < .01f && shows(move.id + "_" + from + "_" + move.frames[0].cell), label + ": a turned completed clip still replays " + move.id);
+        }
 
-static void VerifyAction(string label, object doll, Animator animator, SpriteRenderer clock)
+        static void VerifyAction(string label, object doll, Animator animator, SpriteRenderer clock)
         {
             var state = doll.GetType().GetProperty("IsActionPlaying");
             bool Playing() => (bool)state.GetValue(doll);
@@ -149,6 +150,18 @@ static void VerifyAction(string label, object doll, Animator animator, SpriteRen
             Check((string)Invoke(doll, "PlayAction", "missing", "south") == "" && Playing(), label + ": invalid action preserves playback");
             Invoke(doll, "SetActionLayering", false);
             var elapsed = doll.GetType().GetField("actionElapsed", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            string Lower() => renderers.Single(r => r.name == "body_fg").sprite.name;
+            bool UsesUpper(string frame = null) => renderers.Any(r => r.enabled && r.name.StartsWith("action_upper_") && (frame == null || r.sprite.name == frame));
+            var held = Lower();
+            var normalized = animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
+            Check((bool)Invoke(doll, "SetDirection", "west"), label + ": can turn the gait away from the attack");
+            Check(Mathf.Approximately(animator.GetCurrentAnimatorStateInfo(0).normalizedTime, normalized), label + ": turning preserves the gait clock");
+            elapsed.SetValue(doll, 84d);
+            animator.Update(.18f);
+            Invoke(doll, "Sync");
+            Check(clock.sprite.name == "walk_west_0" && Lower() == held && UsesUpper("jump_south_1"), label + ": turn holds the lower cell while the upper clock advances");
+            Check((bool)Invoke(doll, "SetDirection", "south"), label + ": can turn the gait back to the action");
+            Check(clock.sprite.name == "walk_south_0" && Lower() == clock.sprite.name && UsesUpper("jump_south_1") && (double)elapsed.GetValue(doll) == 84d, label + ": returning resumes the gait and keeps the action time");
             var phases = new HashSet<string>();
             foreach (var ms in new[] { 84, 174, 265, 359 })
             {
@@ -169,7 +182,7 @@ static void VerifyAction(string label, object doll, Animator animator, SpriteRen
             Check((string)Invoke(doll, "PlayAction", "jump", "south") == "layered", label + ": starts another layered action");
             double actionTime = 84;
             elapsed.SetValue(doll, actionTime);
-            bool UsesUpper() => renderers.Any(r => r.enabled && r.name.StartsWith("action_upper_"));
+            Check((bool)Invoke(doll, "SetDirection", "west"), label + ": can turn before equipping");
             Check((bool)Invoke(doll, "Equip", "head", "walk_only_hat"), label + ": equips walk-only hat");
             Invoke(doll, "Sync");
 			Check(Playing() && UsesUpper() && (double)elapsed.GetValue(doll) == actionTime, label + ": walk-only hat does not downgrade or reset the action");
@@ -178,7 +191,7 @@ static void VerifyAction(string label, object doll, Animator animator, SpriteRen
             Check(Playing() && !UsesUpper() && (double)elapsed.GetValue(doll) == actionTime, label + ": unsupported outfit downgrades without resetting action time");
             Check((bool)Invoke(doll, "Equip", "head", "hat"), label + ": restores supported hat");
 			Check((bool)Invoke(doll, "Equip", "legs", ""), label + ": removes attack-only legs");
-            Invoke(doll, "Sync");
+            Check((bool)Invoke(doll, "SetDirection", "south"), label + ": can turn back after the outfit downgrade");
             Check((bool)Invoke(doll, "CanLayerAction", "jump", "south") && Playing() && !UsesUpper() && (double)elapsed.GetValue(doll) == actionTime, label + ": restoring outfit does not upgrade an active action");
             Invoke(doll, "Play", "walk", "south");
             Invoke(doll, "Sync");
