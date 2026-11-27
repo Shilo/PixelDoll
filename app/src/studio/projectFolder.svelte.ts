@@ -151,12 +151,23 @@ const statusFor = (characterId: string, link: FolderLink | null): FolderStatus =
 	const known = problems.get(characterId);
 	return known && link && known.linkedAt === link.linkedAt ? known.status : { kind: 'idle' };
 };
-/** Counts this tab's own changes to the link (Update automatically), so a read that started before one never shows the
- *  older value over it. */
-let linkChanges = 0;
-/** @param readAt linkChanges when the shown value was read; a change made since wins. */
-const showLink = (characterId: string, link: FolderLink | null, readAt = linkChanges) => {
-	if (loadedFor === characterId && readAt === linkChanges) projectFolder.link = link;
+/** Counts this tab's own changes to each character's link (Update automatically, relink, Unlink), so a read of that
+ *  character's link that started before one never shows the older value over it. Kept per character: a change to
+ *  one character never discards another character's read. */
+const linkChanges = new Map<string, number>();
+const changesOf = (characterId: string) => linkChanges.get(characterId) ?? 0;
+const noteLinkChange = (characterId: string) => {
+	const n = changesOf(characterId) + 1;
+	linkChanges.set(characterId, n);
+	return n;
+};
+/** @param readAt changesOf(characterId) when the shown value was read; a change made since wins. */
+const showLink = (
+	characterId: string,
+	link: FolderLink | null,
+	readAt = changesOf(characterId)
+) => {
+	if (loadedFor === characterId && readAt === changesOf(characterId)) projectFolder.link = link;
 };
 
 /** Reads the open character's link when the character changes, and again when asked for the same character (Export
@@ -170,19 +181,21 @@ export async function loadFolderLink(characterId: string) {
 		projectFolder.offer = null;
 	}
 	if ((await checkFolderSupport()) !== 'supported' || !characterId) return;
-	const readAt = linkChanges;
+	const readAt = changesOf(characterId);
 	try {
 		const link = await getLink(characterId);
-		if (loadedFor !== characterId || readAt !== linkChanges) return;
+		if (loadedFor !== characterId || readAt !== changesOf(characterId)) return;
 		const changed = !again || projectFolder.link?.linkedAt !== link?.linkedAt;
 		showLink(characterId, link, readAt);
 		// A problem this character's folder reported while another character was open, if it is still the same link.
 		if (changed) projectFolder.status = statusFor(characterId, link);
 		projectFolder.offer = offerFor(link);
 	} catch (error) {
-		// Shown in Settings, so a storage failure never looks like "no folder".
+		// Shown in Settings, so a storage failure never looks like "no folder"; a read overtaken by this tab's own change
+		// (such as Unlink) reports nothing.
 		console.warn('Could not read the linked project folder', error);
-		setStatus(characterId, { kind: 'failed', reason: 'unknown' });
+		if (readAt === changesOf(characterId))
+			setStatus(characterId, { kind: 'failed', reason: 'unknown' });
 	}
 }
 
@@ -328,7 +341,7 @@ async function superseded(id: string, readAt: number, stale?: string) {
 		return; // the next publish or reopening reads it again
 	}
 	showLink(id, current, readAt);
-	if (loadedFor === id && readAt === linkChanges) projectFolder.status = statusFor(id, current);
+	if (loadedFor === id && readAt === changesOf(id)) projectFolder.status = statusFor(id, current);
 	// The superseded link's notice and problem go with it.
 	if (stale) {
 		clearNotice(id, stale);
@@ -375,7 +388,7 @@ async function publish(link: FolderLink, request: Request) {
 		// Taken once this publish holds the folder, so it is as fresh as it can be: one that waited behind another tab's
 		// publish never writes the look from before that wait. Only a saved character is published.
 		const settings = await readExportSettings();
-		let readAt = linkChanges;
+		let readAt = changesOf(id);
 		const checked = await stillLinked(link);
 		// Without a fresh read this tab cannot know whether the folder was stopped elsewhere, so it waits.
 		if (checked === 'unknown') return report({ kind: 'failed', reason: 'unknown' });
@@ -428,7 +441,7 @@ async function publish(link: FolderLink, request: Request) {
 		/** Stores what this publish learned on its link, unless the link changed meanwhile. */
 		const remember = async (patch: Parameters<typeof updateLink>[2]) => {
 			try {
-				readAt = linkChanges;
+				readAt = changesOf(id);
 				const stored = await updateLink(id, link.linkedAt, patch);
 				if (stored) showLink(id, stored, readAt);
 			} catch (error) {
@@ -494,7 +507,7 @@ async function publish(link: FolderLink, request: Request) {
 		files ??= await buildFiles(link, input, settings, now);
 		if (!files) return report({ kind: 'unavailable' });
 		// Building takes a moment: recheck that the link was not stopped or replaced meanwhile.
-		readAt = linkChanges;
+		readAt = changesOf(id);
 		const recheck = await stillLinked(link);
 		if (recheck === 'unknown') return report({ kind: 'failed', reason: 'unknown' });
 		if (!recheck) return superseded(id, readAt, link.linkedAt);
@@ -529,7 +542,7 @@ async function publish(link: FolderLink, request: Request) {
 			);
 		switch (outcome.kind) {
 			case 'stopped': {
-				readAt = linkChanges;
+				readAt = changesOf(id);
 				const latest = await stillLinked(link);
 				return typeof latest === 'object' && latest
 					? report({ kind: 'idle' })
@@ -795,7 +808,7 @@ export async function linkProjectFolder(engine: Engine) {
 		});
 		if (!saved) return setStatus(characterId, { kind: 'taken' });
 		link = saved;
-		linkChanges++; // this tab's own link change: an older read never shows the previous link over it
+		noteLinkChange(characterId); // this tab's own link change: an older read never shows the previous link over it
 		for (const [linkedAt, pending] of timers)
 			if (linkedAt !== link.linkedAt && pending.characterId === characterId) {
 				clearTimeout(pending.timer);
@@ -847,7 +860,7 @@ export async function reconnectProjectFolder(expected?: FolderLink) {
 export async function setFolderAutoPublish(auto: boolean) {
 	const link = projectFolder.link;
 	if (!link) return;
-	const change = ++linkChanges;
+	const change = noteLinkChange(link.characterId);
 	try {
 		// Null means another tab stopped or replaced this link.
 		showLink(link.characterId, await updateLink(link.characterId, link.linkedAt, { auto }), change);
@@ -876,7 +889,7 @@ export async function unlinkProjectFolder() {
 		setStatus(link.characterId, { kind: 'failed', reason: 'unknown' });
 		return;
 	}
-	linkChanges++;
+	noteLinkChange(link.characterId);
 	showLink(link.characterId, null);
 	if (loadedFor === link.characterId) projectFolder.offer = null;
 	problems.delete(link.characterId);
