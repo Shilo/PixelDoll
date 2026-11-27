@@ -976,7 +976,7 @@
 						bind:element={sections.moves}
 						bind:open={open.moves}
 					>
-						<div class="section-body">
+						<div class="window-body">
 							{#if restorable.length || copyOffer}
 								<div class="tool-list">
 									{#if restorable.length}<ToolRow
@@ -1145,7 +1145,7 @@
 						bind:element={sections.quality}
 						bind:open={open.quality}
 					>
-						<div class="section-body">
+						<div class="window-body">
 							{#if designReasons.length && !it.refit}
 								<div class="finding-group">
 									<h4>{t('itemPane.acceptedAppearanceWarnings')}</h4>
@@ -1387,7 +1387,7 @@
 					bind:open={open.outfit}
 				>
 					<!-- The outfit preview stays beside every control here, so each change shows where it is made. -->
-					<div class="section-body outfit-body">
+					<div class="window-body outfit-body">
 						{#if otherHand}
 							<!-- First: how the item is held (functional), before how the outfit is layered and drawn. Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
 							<section class="hide-rules hand-rules">
@@ -1617,10 +1617,10 @@
 					bind:element={sections.about}
 					bind:open={open.about}
 				>
-					<div class="section-body">
+					<div class="window-body">
 						<GenerationDetails {m} {it} />
 						<WindowSection nested label={t('itemPane.technicalDetails')}>
-							<div class="section-body">
+							<div class="window-body">
 								<dl class="kv">
 									<dt>{t('itemPane.iD')}</dt>
 									<dd class="mono">{it.id}</dd>

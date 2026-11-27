@@ -1,6 +1,6 @@
 <script lang="ts">
 	// One collapsible section of a View and edit window: chevron, name, and its state at the far end (as in the API calls
-	// popover). The caller's body goes in a `.section-body` child.
+	// popover). The caller's body goes in a `.window-body` child.
 	import type { Snippet } from 'svelte';
 	import { Check, ChevronRight, TriangleAlert } from './icons.ts';
 
@@ -100,17 +100,18 @@
 	.section-state[data-tone='ok'] {
 		color: var(--ok);
 	}
-	.window-section > :global(.section-body) {
+	/* Defaults at one class's weight, so a section's own body layout (Outfit's two columns) wins. */
+	:global(:where(.window-section) > .window-body) {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		gap: 12px;
 		padding: 4px 4px 16px 28px;
 	}
-	.window-section.nested > :global(.section-body) {
+	:global(:where(.window-section.nested) > .window-body) {
 		padding-inline-start: 24px;
 	}
 	@media (max-width: 420px) {
-		.window-section > :global(.section-body) {
+		:global(:where(.window-section:not(.nested)) > .window-body) {
 			padding-inline-start: 4px;
 		}
 	}

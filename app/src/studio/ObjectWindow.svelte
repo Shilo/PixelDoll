@@ -118,6 +118,10 @@
 		display: grid;
 		color: var(--text-2);
 	}
+	/* A scope with nothing to pick (one move) takes no room. */
+	.window-scope:empty {
+		display: none;
+	}
 	/* The scope picker ends the line; it keeps its width (up to 40%) while the name truncates. */
 	.window-scope {
 		flex: none;
