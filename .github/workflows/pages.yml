@@ -1,6 +1,8 @@
-# CI on every push and PR that changes what ships (check, unit tests, keyless browser tests, build + dist guard); on push to main also deploy app/dist to GitHub Pages.
+# CI on every push and PR that changes what ships (check, unit tests, keyless browser tests, build + dist guard).
+# Pushes to main deploy app/dist to GitHub Pages. Manual runs deploy only from main with deploy=true.
 # Enable Pages once: Settings > Pages > Source = "GitHub Actions". No secrets or env: the PixelLab key never touches CI.
 name: CI and Pages
+run-name: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy && 'Deploy release notes' || '' }}
 
 # The site is built from app/ alone. Keep these paths equal to SHIPPED in app/version.ts so every deploy bumps the version.
 # GitHub checks only a push's first 300 changed files against them, so push large docs-only sweeps apart from app/ changes.
@@ -11,14 +13,19 @@ on:
   pull_request:
     paths: [app/**, .github/workflows/pages.yml]
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy to GitHub Pages from main after CI passes
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 # A newer push to the same branch or PR supersedes its running checks; main always finishes so every deploy is tested.
-# Manual runs get their own group: they never deploy, so they must not replace a pending deployable push.
+# Manual checks, manual deploys and pushes have separate groups so their pending runs stay independent.
 concurrency:
-  group: ci-${{ github.event_name == 'workflow_dispatch' && 'manual-' || '' }}${{ github.ref }}
+  group: ci-${{ github.event_name == 'workflow_dispatch' && (inputs.deploy && 'manual-deploy-' || 'manual-') || '' }}${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
@@ -43,9 +50,9 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run build
-      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy))
         uses: actions/configure-pages@v6
-      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy))
         uses: actions/upload-pages-artifact@v5
         with:
           path: app/dist
@@ -95,10 +102,11 @@ jobs:
           if-no-files-found: ignore
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy))
     needs: [build, e2e]
     runs-on: ubuntu-24.04
     permissions:
+      contents: read
       pages: write
       id-token: write
     concurrency:
@@ -108,5 +116,18 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Check current main head
+        id: head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILT_SHA: ${{ github.sha }}
+        run: |
+          main_sha=$(gh api "/repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [[ "$main_sha" == "$BUILT_SHA" ]]; then
+            echo 'current=true' >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Skipping Pages deploy because main moved past $BUILT_SHA to $main_sha."
+          fi
       - id: deployment
+        if: steps.head.outputs.current == 'true'
         uses: actions/deploy-pages@v5
