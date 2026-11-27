@@ -1,6 +1,6 @@
 import { validAnimationId } from '../rig/rig.ts';
 import { playbackClips } from '../runtime/timeline.js';
-import { message, type Message } from '../message.ts';
+import { LocalizedError, message, type Message } from '../message.ts';
 import { EXPORT_ENGINES, type Engine, type Manifest } from './manifest.ts';
 import * as db from './db.ts';
 import { workspaceCopy } from './workspace-mode.ts';
@@ -26,7 +26,15 @@ export const defaultExportSettings = (): ExportSettings => ({
 	playOnce: []
 });
 const CHANNEL = 'pixeldoll-export-settings';
-export class InvalidExportSettings extends Error {}
+/** Only the explicit Reset in Export repairs these, so every reader that surfaces one points the user there. */
+export class InvalidExportSettings extends LocalizedError {
+	constructor(english: string) {
+		super(
+			`${english} Open Export, then choose Reset export settings.`,
+			'export.settings.resetRequired'
+		);
+	}
+}
 export class InvalidAnimationNames extends Error {}
 
 /** Notifications carry no preferences. Opening or refocusing Export remains the fallback when channels are unavailable. */

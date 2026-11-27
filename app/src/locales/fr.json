@@ -1243,6 +1243,7 @@
 		},
 		"settings": {
 			"loadInvalid": "Impossible de lire les réglages d’export enregistrés.",
+			"resetRequired": "Impossible de lire les réglages d’export enregistrés. Ouvrez « Exporter », puis choisissez « Réinitialiser les réglages d’export ».",
 			"loadFailed": "Impossible de charger les réglages d’export. Essayez de rouvrir la fenêtre d’export.",
 			"saveFailed": "Impossible d’enregistrer les réglages d’export. Réessayez.",
 			"resetHint": "Rétablit uniquement les préférences d’export par défaut. Vos personnages et tenues sont conservés.",

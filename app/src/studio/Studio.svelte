@@ -64,6 +64,7 @@
 		stepPreviewFrame
 	} from './state.svelte.ts';
 	import { lazy } from '../lib/lazy.ts';
+	import { loadExportBuild } from './download.svelte.ts';
 	import { WifiOff } from './icons.ts';
 	import { PRE_RELEASE, PREVIEW_NOTICE } from './previewNotice.ts';
 	import Toast from './Toast.svelte';
@@ -179,7 +180,8 @@
 			if (import.meta.env.PROD)
 				void Promise.allSettled([
 					...Object.values(parts).map((load) => lazy<unknown>(load)),
-					prefetchFlows()
+					prefetchFlows(),
+					loadExportBuild()
 				]);
 		})().catch(startupFailed);
 		return () => {
