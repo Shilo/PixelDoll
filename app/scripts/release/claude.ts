@@ -83,7 +83,10 @@ async function ask<T>(
 		if (attempt === 1) throw new Error(`Claude returned invalid notes: ${errors.join('; ')}`);
 		// Send the whole reply back unchanged (thinking blocks included) and ask for a corrected one.
 		messages.push(
-			{ role: 'assistant', content: response.content as Message['content'] },
+			{
+				role: 'assistant',
+				content: response.content as Anthropic.Beta.Messages.BetaContentBlockParam[]
+			},
 			{
 				role: 'user',
 				content: `Correct these problems and reply with the full corrected JSON:\n${errors.join('\n')}`
