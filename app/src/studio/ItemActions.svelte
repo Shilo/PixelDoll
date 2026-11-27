@@ -108,6 +108,7 @@
 				class="row bu-action"
 				data-variant="quiet"
 				role="menuitem"
+				data-trail="itemActions.moveBack"
 				onclick={() => void showTargets(false)}
 			>
 				<ChevronLeft size={16} aria-hidden="true" />{t('export.sheet.back')}
@@ -118,6 +119,7 @@
 					data-variant="quiet"
 					role="menuitem"
 					data-move-target
+					data-trail="itemActions.moveTo"
 					onclick={() => act(() => onmove(target.key))}
 				>
 					{displayMessage(slotLabelMessage(m, target.key))}
@@ -131,6 +133,7 @@
 					data-variant="quiet"
 					role="menuitem"
 					aria-describedby={attention ? attentionId : undefined}
+					data-trail="itemActions.details"
 					onclick={() =>
 						act(() => {
 							ui.selected = it.id;
@@ -148,6 +151,7 @@
 					data-variant="quiet"
 					role="menuitem"
 					aria-label={t('itemPane.recolor')}
+					data-trail="itemActions.recolor"
 					aria-disabled={worn ? undefined : 'true'}
 					aria-describedby={worn ? undefined : recolorReason}
 					onclick={() => {
@@ -164,6 +168,7 @@
 					data-variant="quiet"
 					role="menuitem"
 					aria-haspopup="dialog"
+					data-trail="itemActions.appearance"
 					onclick={() => act(() => leave(() => openAppearance(doc.id, it.id, back)))}
 					><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron
 					/></button
@@ -174,6 +179,7 @@
 					class="row bu-action"
 					data-variant="quiet"
 					role="menuitem"
+					data-trail="itemActions.remake"
 					onclick={() =>
 						act(() =>
 							remakeOnly
@@ -191,6 +197,7 @@
 					data-variant="quiet"
 					role="menuitem"
 					data-move-trigger
+					data-trail="itemActions.move"
 					onclick={() => void showTargets(true)}
 				>
 					<ArrowRightLeft size={16} aria-hidden="true" />{openerLabel(
@@ -199,6 +206,7 @@
 				</button>
 			{/if}
 			{#if !it.variantOf}<RenameRow
+					trail="itemActions.rename"
 					class="bu-action"
 					locked={isDemo() ? t('itemMenu.demoRenameLocked') : ''}
 					onclick={() => act(() => leave(() => openRename(doc.id, { itemId: it.id, back })))}
@@ -207,12 +215,14 @@
 				class="row bu-action"
 				data-variant="quiet"
 				role="menuitem"
+				data-trail="itemActions.download"
 				onclick={() => act(() => void downloadItemZip(it.id))}
 				><Download size={16} aria-hidden="true" />{t('common.downloadZip')}</button
 			>
 			<hr class="bu-separator" />
 			<DeleteRow
 				opens
+				trail="itemActions.delete"
 				class="bu-action"
 				label={t('itemMenu.labelDeleteItem')}
 				locked={isDemo() ? t('itemMenu.demoDeleteLocked') : ''}

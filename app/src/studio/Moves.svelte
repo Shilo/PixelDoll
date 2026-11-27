@@ -165,6 +165,7 @@
 	<button
 		class="move-row bu-action"
 		data-variant="tile"
+		data-trail="moves.reviewState"
 		onclick={() => openStateReview(attempt.token)}
 	>
 		{#if progress.status !== 'ready'}<span
@@ -205,6 +206,7 @@
 						<button
 							class="move-row bu-action"
 							data-variant="tile"
+							data-trail="moves.reviewMove"
 							onclick={() => openMoveReview(candidate.spec.id)}
 						>
 							<span class="move-text"
@@ -233,6 +235,7 @@
 								class="move-row bu-action"
 								data-variant="tile"
 								aria-pressed={ui.anim === a.id}
+								data-trail="moves.pick"
 								onclick={() => {
 									ui.anim = a.id;
 									ui.frame = 0;
@@ -300,6 +303,7 @@
 						<button
 							class="move-row bu-action"
 							data-variant="tile"
+							data-trail="moves.openRunning"
 							onclick={() => (ui.sheet = 'move')}
 							><span class="move-thumb"
 								><span
@@ -329,6 +333,7 @@
 						<button
 							class="move-row bu-action"
 							data-variant="tile"
+							data-trail="moves.openQueued"
 							onclick={() => (ui.sheet = 'move')}
 							><span class="move-thumb"><span class="bu-ring ring" aria-hidden="true"></span></span
 							><span class="move-text"
@@ -372,12 +377,14 @@
 						class="bu-action add-row cta"
 						data-variant="outline"
 						data-tip-anchor="add-move"
+						data-trail="moves.add"
 						onclick={() => (ui.sheet = 'move')}
 						><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
 					>{:else if kind === 'state' && onaddstate}<button
 						class="bu-action add-row cta"
 						data-variant="outline"
 						data-tip-anchor="add-state"
+						data-trail="moves.addState"
 						onclick={onaddstate}
 						><Plus size={16} />{openerLabel(t('moves.addState'))}<SurfaceChevron /></button
 					>{/if}

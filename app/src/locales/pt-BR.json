@@ -3533,7 +3533,7 @@
 		"actionLabel": "Relatar este problema",
 		"actionLabelFor": "Relatar este problema: {name}",
 		"title": "Relatar este problema",
-		"intro": "Isso abre uma issue pública no GitHub só com o texto abaixo. Não inclui imagens, prompts, nomes nem chaves. Você publica com sua conta do GitHub.",
+		"intro": "Isso abre uma issue pública no GitHub só com o texto abaixo, incluindo as telas e botões do PixelDoll que você usou logo antes. Não inclui imagens, prompts, nomes, arquivos nem chaves. Você publica com sua conta do GitHub.",
 		"preview": "Prévia do relatório",
 		"copy": "Copiar relatório",
 		"copied": "Copiado",

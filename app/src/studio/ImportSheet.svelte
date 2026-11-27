@@ -574,6 +574,7 @@
 					class="bu-action btn"
 					data-variant="outline"
 					disabled={busy}
+					data-trail="import.chooseZip"
 					onclick={() => fileInput?.click()}>{t('import.chooseZip')}</button
 				>
 				<input
@@ -603,6 +604,7 @@
 					class="bu-action btn"
 					data-variant="outline"
 					disabled={busy}
+					data-trail="import.connect"
 					onclick={() =>
 						withKey(() => {
 							ui.sheet = 'importPixelLab';
@@ -615,6 +617,7 @@
 							class="bu-action btn plain small"
 							data-variant="quiet"
 							disabled={busy || loading}
+							data-trail="import.refresh"
 							onclick={() => load(offset)}>{t('import.refresh')}</button
 						></span
 					>
@@ -634,6 +637,7 @@
 							<button
 								class="library-character"
 								disabled={busy || loading}
+								data-trail="import.pickCharacter"
 								onclick={() => fromPixelLab(ch.id)}
 							>
 								{#if ch.preview_url}{#key `${previewRevision}:${ch.preview_url}`}<ApiPreview
@@ -660,6 +664,7 @@
 							class="bu-action btn icon page-button"
 							data-variant="outline"
 							aria-label={t('import.previousPage')}
+							data-trail="import.previousPage"
 							disabled={busy || loading || offset === 0}
 							onclick={() => load(Math.max(0, offset - 20))}><ChevronLeft size={18} /></button
 						></span
@@ -680,6 +685,7 @@
 							class="bu-action btn icon page-button"
 							data-variant="outline"
 							aria-label={t('import.nextPage')}
+							data-trail="import.nextPage"
 							disabled={busy || loading || offset + characters.length >= total}
 							onclick={() => load(offset + 20)}><ChevronRight size={18} /></button
 						></span
@@ -709,6 +715,7 @@
 							data-variant="outline"
 							type="submit"
 							aria-label={t('import.previewCharacter')}
+							data-trail="import.preview"
 							disabled={busy || !id.trim()}>{t('import.preview')}</button
 						></span
 					>
@@ -858,6 +865,7 @@
 			class="bu-action btn primary"
 			data-variant="primary"
 			disabled={!prepared || !previewValid || busy || !name.trim() || !!directionError}
+			data-trail="import.save"
 			onclick={save}
 			><Download size={16} />{busy ? t('import.working') : t('import.importCharacter')}</button
 		>

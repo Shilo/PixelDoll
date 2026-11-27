@@ -39,6 +39,7 @@
 {#if !inWindow}<button
 		class="row"
 		role="menuitem"
+		data-trail="characterMenu.details"
 		onclick={() =>
 			go(() => {
 				ui.details = id;
@@ -49,11 +50,13 @@
 		class="row"
 		role="menuitem"
 		aria-haspopup="dialog"
+		data-trail="characterMenu.appearance"
 		onclick={() => go(() => openAppearance(id))}
 		><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron /></button
 	>{/if}
 <DemoCopyRow {id} {close} />
 <RenameRow
+	trail="characterMenu.rename"
 	locked={id.startsWith('fixture:') ? t('characterActions.demoRenameLocked') : ''}
 	onclick={() =>
 		go(() => {
@@ -61,12 +64,17 @@
 			openRename(id, inWindow ? { back: 'details' } : {});
 		})}
 />
-<button class="row" role="menuitem" onclick={() => go(() => void downloadCharacterZip(id))}
+<button
+	class="row"
+	role="menuitem"
+	data-trail="characterMenu.download"
+	onclick={() => go(() => void downloadCharacterZip(id))}
 	><Download size={16} />{t('common.downloadZip')}</button
 >
 <hr class="bu-separator" />
 <DeleteRow
 	opens
+	trail="characterMenu.delete"
 	label={t('characterActions.labelDeleteCharacter')}
 	locked={id.startsWith('fixture:') ? t('characterActions.demoDeleteLocked') : ''}
 	onclick={() =>

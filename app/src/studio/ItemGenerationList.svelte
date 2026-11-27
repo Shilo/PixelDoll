@@ -52,6 +52,7 @@
 			data-variant="tile"
 			disabled={disabled || !offer?.specs.length}
 			aria-pressed={selected.includes(item.id)}
+			data-trail="itemGeneration.toggleItem"
 			onclick={() =>
 				(selected = selected.includes(item.id)
 					? selected.filter((value) => value !== item.id)

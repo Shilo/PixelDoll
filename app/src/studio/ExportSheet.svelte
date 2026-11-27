@@ -698,12 +698,16 @@
 							: t('export.sheet.free')}</span
 	>
 	{#if ready && !pendingExport && result?.kind === 'failed' && result.retryable}
-		<button class="bu-action btn primary lg" data-variant="primary" onclick={() => attempt++}
-			>{t('common.tryAgain')}</button
+		<button
+			class="bu-action btn primary lg"
+			data-variant="primary"
+			data-trail="export.retry"
+			onclick={() => attempt++}>{t('common.tryAgain')}</button
 		>
 	{:else}<button
 			class="bu-action btn primary lg"
 			data-variant="primary"
+			data-trail="export.download"
 			onclick={download}
 			disabled={pendingExport || !ready || !result?.zip}
 			><Download size={16} aria-hidden="true" />{(ready && busy) || refreshing
@@ -729,12 +733,17 @@
 			{t('export.settings.resetHint')}
 		</p>
 		{#if inSettings}
-			<SettingsItemButton onclick={resetSettings} disabled={saving || refreshing}
-				>{t('export.settings.reset')}</SettingsItemButton
+			<SettingsItemButton
+				data-trail="export.resetSettings"
+				onclick={resetSettings}
+				disabled={saving || refreshing}>{t('export.settings.reset')}</SettingsItemButton
 			>
 		{:else}
-			<button class="bu-action btn" onclick={resetSettings} disabled={saving || refreshing}
-				>{t('export.settings.reset')}</button
+			<button
+				class="bu-action btn"
+				data-trail="export.resetSettings"
+				onclick={resetSettings}
+				disabled={saving || refreshing}>{t('export.settings.reset')}</button
 			>
 		{/if}
 	{/if}

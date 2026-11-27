@@ -201,6 +201,7 @@
 			data-variant="primary"
 			type="submit"
 			form="rename-identity-form"
+			data-trail="rename.save"
 			disabled={!canSave}>{busy ? t('directionsSheet.saving') : t('common.save')}</button
 		>
 	{/snippet}

@@ -179,7 +179,9 @@ import {
 import { acceptCopy, copyMoreFrames, freeFrames, itemKey } from '../lib/equipment/copy.ts';
 import { demoItemsShown } from './wardrobeVisibility.svelte.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
-import { onceShown, type Problem } from '../lib/report/report.ts';
+import { knownErrorName, onceShown, type Problem } from '../lib/report/report.ts';
+import { track } from '../lib/report/trail.ts';
+import { captureProblem } from './problemCapture.svelte.ts';
 import type { FramesFile, PreparedFrames } from '../lib/frames/save.ts';
 import { mountSeatOffset, validMountSeatOffset } from '../lib/rig/riderSeat.ts';
 import type { Img } from '../lib/image/png.ts';
@@ -524,6 +526,7 @@ export function initUi() {
 	};
 	// Actions started without awaiting them (Make item, Keep it, Reset, a review check) would otherwise drop a load failure.
 	const unhandled = (e: PromiseRejectionEvent) => {
+		track({ kind: 'error', name: knownErrorName(e.reason) });
 		if (e.reason instanceof LoadError) {
 			e.preventDefault();
 			toast(errorMessage(e.reason), { tone: 'danger', error: e.reason });
@@ -531,8 +534,10 @@ export function initUi() {
 	};
 	// Cross-origin scripts (extensions, embeds) and browser notices such as ResizeObserver loops carry no error object.
 	const uncaught = (e: ErrorEvent) => {
-		if (e.error && (!e.filename || new URL(e.filename, location.href).origin === location.origin))
+		if (e.error && (!e.filename || new URL(e.filename, location.href).origin === location.origin)) {
+			track({ kind: 'error', name: knownErrorName(e.error) });
 			unexpectedError(e.error);
+		}
 	};
 	addEventListener('unhandledrejection', unhandled);
 	addEventListener('error', uncaught);
@@ -665,12 +670,16 @@ export function toast(
 	options: number | ToastOptions = 4000
 ) {
 	const o: ToastOptions = typeof options === 'number' ? { duration: options } : options;
-	if (o.tone === 'danger' || o.tone === 'warning')
+	if (o.tone === 'danger' || o.tone === 'warning') {
 		recordDebug(o.tone === 'danger' ? 'error' : 'warn', 'toast', [
 			toastText(o.title),
 			toastText(s),
 			...(o.error === undefined ? [] : [o.error])
 		]);
+		// Only the message key: the text can hold names or provider replies.
+		const key = (firstMessage(s) ?? firstMessage(o.title))?.key;
+		if (key) track({ kind: 'notice', key, tone: o.tone === 'danger' ? 'error' : 'warning' });
+	}
 	if (ui.toast && ui.toastTone === 'danger' && o.tone !== 'danger') return false;
 	stopToastTimer();
 	toastRevision++;
@@ -686,13 +695,16 @@ export function toast(
 		(o.tone === 'warning' && (o.error != null || o.report === true || o.report === 'uncaught'));
 	ui.toastProblem =
 		reportable && o.report !== false
-			? {
-					message: firstMessage(s) ?? firstMessage(o.title),
-					error: o.error,
-					facts: o.facts,
-					tone: o.tone === 'danger' ? 'error' : 'warning',
-					uncaught: o.report === 'uncaught'
-				}
+			? captureProblem(
+					{
+						message: firstMessage(s) ?? firstMessage(o.title),
+						error: o.error,
+						facts: o.facts,
+						tone: o.tone === 'danger' ? 'error' : 'warning',
+						uncaught: o.report === 'uncaught'
+					},
+					performance.now()
+				)
 			: null;
 	toastRemaining = o.duration ?? (o.tone === 'danger' ? 0 : o.tone === 'warning' ? 8000 : 4000);
 	armToast();

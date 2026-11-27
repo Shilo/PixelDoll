@@ -515,8 +515,12 @@
 			{#if changed}
 				<div class="notice warn small source-changed" role="status">
 					<p>{t('stateCapture.concurrentEdit')}</p>
-					<button class="bu-btn" data-variant="outline" type="button" onclick={reloadSource}
-						>{t('stateCapture.reload')}</button
+					<button
+						class="bu-btn"
+						data-variant="outline"
+						type="button"
+						data-trail="stateCapture.reload"
+						onclick={reloadSource}>{t('stateCapture.reload')}</button
 					>
 				</div>
 			{:else if !views}
@@ -690,6 +694,7 @@
 					data-variant="outline"
 					type="button"
 					disabled={!!busy || !formReady}
+					data-trail="stateCapture.retryPrice"
 					onclick={() => priceRetry++}>{t('common.tryAgain')}</button
 				>
 			{:else}
@@ -698,6 +703,7 @@
 					data-variant="primary"
 					type="button"
 					disabled={!!busy || !formReady || !quote}
+					data-trail="stateCapture.generate"
 					onclick={generate}>{t('stateGeneration.generate')}</button
 				>
 			{/if}
@@ -707,6 +713,7 @@
 				data-variant="primary"
 				type="submit"
 				form={formId}
+				data-trail="stateCapture.save"
 				disabled={!!busy || !formReady}
 				>{t(
 					busy === 'stateCapture.saving'

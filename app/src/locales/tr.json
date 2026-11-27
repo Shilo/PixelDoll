@@ -3524,7 +3524,7 @@
 		"actionLabel": "Bu sorunu bildir",
 		"actionLabelFor": "Bu sorunu bildir: {name}",
 		"title": "Bu sorunu bildir",
-		"intro": "Yalnızca aşağıdaki metni içeren herkese açık bir GitHub kaydı açar. Görsel, istem, ad veya anahtar eklenmez. Kendi GitHub hesabınızla gönderin.",
+		"intro": "Yalnızca aşağıdaki metni içeren herkese açık bir GitHub kaydı açar; buna az önce kullandığınız PixelDoll ekranları ve düğmeleri de dahildir. Görsel, istem, ad, dosya veya anahtar eklenmez. Kendi GitHub hesabınızla gönderin.",
 		"preview": "Bildirim önizlemesi",
 		"copy": "Bildirimi kopyala",
 		"copied": "Kopyalandı",

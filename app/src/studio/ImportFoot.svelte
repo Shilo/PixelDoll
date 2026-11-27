@@ -10,5 +10,6 @@
 	class="bu-action btn primary"
 	data-variant="primary"
 	disabled={disabled || busy}
+	data-trail="import.start"
 	onclick={onimport}>{busy ? t('moveImport.importing') : t('moveImport.import')}</button
 >

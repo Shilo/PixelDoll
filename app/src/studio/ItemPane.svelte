@@ -855,6 +855,7 @@
 				class="bu-action btn item-wear"
 				data-variant={on ? 'outline' : 'primary'}
 				data-item-wear-toggle
+				data-trail="itemPane.wear"
 				onclick={() => wear(it!.id)}
 			>
 				{on ? t('common.takeOff') : t('common.wear')}
@@ -922,6 +923,7 @@
 					{#if hiddenNow}<button
 							class="bu-action btn plain"
 							data-variant="quiet"
+							data-trail="itemPane.stopHiding"
 							onclick={() => {
 								showHiddenItem(it.slot);
 								// The row goes away: keep the keyboard in the body, on where hiding is set.
@@ -942,6 +944,7 @@
 						<button
 							class="bu-action btn plain callout-link"
 							data-variant="quiet"
+							data-trail="itemPane.calloutAction"
 							onclick={() => action.run()}>{action.label}</button
 						>
 					{/if}
@@ -953,6 +956,7 @@
 					<button
 						class="bu-action btn plain callout-link"
 						data-variant="quiet"
+						data-trail="itemPane.viewPendingWork"
 						onclick={() => void openPendingWork({ flows: true })}
 						>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
 					>
@@ -991,6 +995,7 @@
 												}),
 												aside: t('common.free'),
 												disabled: !!shared.adding,
+												trail: 'itemPane.restoreStanding',
 												onclick: () => restoreFromDesign(it.id)
 											}}
 										/>{/if}
@@ -1006,6 +1011,7 @@
 												}),
 												aside: t('common.free'),
 												disabled: !!shared.adding,
+												trail: 'itemPane.copyFromSource',
 												onclick: () => copyFromSource(it.id)
 											}}
 										/>{/if}
@@ -1022,6 +1028,7 @@
 										type="button"
 										class="bu-action btn plain select-all"
 										data-variant="quiet"
+										data-trail="itemPane.selectAllMoves"
 										onclick={() => (chosen = all ? [] : [...eligible])}
 										>{t(all ? 'itemPane.clearSelection' : 'itemPane.selectAllMoves')}</button
 									>
@@ -1098,6 +1105,7 @@
 									<button
 										class="bu-action btn plain callout-link"
 										data-variant="quiet"
+										data-trail="itemPane.editDemoCopy"
 										onclick={() => {
 											const itemId = id;
 											void copyDemo().then(
@@ -1136,6 +1144,7 @@
 										aria-describedby={tierBlocked(missingTier)
 											? 'item-missing-tier'
 											: 'item-missing-help'}
+										data-trail="itemPane.generateMoves"
 										onclick={generateMoves}
 									>
 										{selected.length
@@ -1199,6 +1208,7 @@
 													class="bu-action btn plain finding-link"
 													data-variant="quiet"
 													title={t('itemPane.titleShowThisFrame')}
+													data-trail="itemPane.showFitFrame"
 													onclick={() => {
 														// A fit is judged on the body: show the frame on the stage, which the sheet covers.
 														showFrame(note.anim, note.dir, note.frame);
@@ -1219,6 +1229,7 @@
 											detail: t('itemPane.remakeFits', { name: m.name }),
 											aside: '',
 											opens: true,
+											trail: 'itemPane.remake',
 											onclick: () => openCopyForSelf(it)
 										}}
 									/>
@@ -1233,6 +1244,7 @@
 											<button
 												class="bu-action btn plain callout-link"
 												data-variant="quiet"
+												data-trail="itemPane.reviewMissingMoves"
 												onclick={() => void reveal('moves')}
 												>{t('itemPane.reviewMissingMoves')}</button
 											>
@@ -1259,6 +1271,7 @@
 														: t('itemPane.acceptsTheCurrentArtworkWithoutSpendingCredits'),
 													aside: t('common.free'),
 													disabled: acceptingIssues || acceptWaits,
+													trail: 'itemPane.accept',
 													onclick: () => void acceptIssues(!!gaps.length)
 												}}
 											/>
@@ -1280,6 +1293,7 @@
 										detail: t('itemPane.fixFramesDetail', { move: moveName }),
 										aside: t('common.free'),
 										opens: true,
+										trail: 'itemPane.fixFrames',
 										onclick: () => leaveFor(() => openFrames(it.id, animId, 'item'))
 									}}
 								/>
@@ -1331,6 +1345,7 @@
 													aside: t('common.free'),
 													disabled: colorBusy || repairBusy,
 													describedby: mirrored ? 'item-fix-scope' : undefined,
+													trail: 'itemPane.matchColors',
 													onclick: () => void matchColors()
 												}}
 											/>{/if}
@@ -1355,6 +1370,7 @@
 															: mirrored
 																? 'item-fix-scope'
 																: undefined,
+														trail: 'itemPane.fixView',
 														onclick: () => repairFrames(choice.offer, choice.tier)
 													}}
 												/>
@@ -1426,6 +1442,7 @@
 												detail: t('itemPane.makeForSlotDetail', { slot: slotName(otherHand) }),
 												aside: '',
 												opens: true,
+												trail: 'itemPane.makeForOtherHand',
 												onclick: () =>
 													openNewItem(otherHand, { slot: otherHand, prompt: it.prompt })
 											}}
@@ -1439,6 +1456,7 @@
 										type="checkbox"
 										role="switch"
 										checked={twoHanded(m, it)}
+										data-trail="itemPane.twoHanded"
 										onchange={() => toggleTwoHanded(it.id)}
 									/>
 								</label>
@@ -1454,6 +1472,7 @@
 									data-variant="quiet"
 									aria-haspopup="dialog"
 									aria-label={t('itemPane.openOutfit', { name: it.name })}
+									data-trail="itemPane.openOutfit"
 									disabled={!outfitCell}
 									onclick={() =>
 										(viewer = {
@@ -1487,6 +1506,7 @@
 											data-variant="quiet"
 											aria-label={t('itemPane.turnLeft')}
 											title={t('itemPane.turnLeft')}
+											data-trail="itemPane.turnLeft"
 											onclick={() => turnOutfit(-1)}
 											><ChevronLeft size={18} aria-hidden="true" /></button
 										>
@@ -1509,6 +1529,7 @@
 											data-variant="quiet"
 											aria-label={t('itemPane.turnRight')}
 											title={t('itemPane.turnRight')}
+											data-trail="itemPane.turnRight"
 											onclick={() => turnOutfit(1)}
 											><ChevronRight size={18} aria-hidden="true" /></button
 										>
@@ -1547,6 +1568,7 @@
 											data-variant="outline"
 											aria-label={t('itemPane.resetOrder')}
 											title={t('itemPane.resetOrder')}
+											data-trail="itemPane.resetOrder"
 											onclick={() => void resetOrder()}
 											><RotateCcw size={18} aria-hidden="true" /></button
 										>{/if}
@@ -1557,6 +1579,7 @@
 										aria-label={t('itemPane.sendBackward')}
 										title={t('itemPane.sendBackward')}
 										disabled={!neighbors?.behind || hiddenNow}
+										data-trail="itemPane.sendBackward"
 										onclick={() => void stepLayer(-1)}
 										><ArrowDown size={18} aria-hidden="true" /></button
 									>
@@ -1567,6 +1590,7 @@
 										aria-label={t('itemPane.bringForward')}
 										title={t('itemPane.bringForward')}
 										disabled={!neighbors?.ahead || hiddenNow}
+										data-trail="itemPane.bringForward"
 										onclick={() => void stepLayer(1)}
 										><ArrowUp size={18} aria-hidden="true" /></button
 									>

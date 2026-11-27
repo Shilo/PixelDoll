@@ -2406,6 +2406,12 @@ test('quick download reports a missing module, then recovers working images afte
 	expect(fields.get('details')).toContain('Download: Character ZIP');
 	expect(fields.get('details')).toContain('Message key: common.loadFailed');
 	expect(fields.get('details')).toContain('Service worker: not controlling page');
+	// The step, the import's own failure, and the presses that led there (issue #9 had none of these).
+	expect(fields.get('details')).toContain('Download step: builder');
+	expect(fields.get('details')).toContain('Error type: LoadError, caused by TypeError');
+	expect(fields.get('details')).toMatch(
+		/Recent actions \(newest first, time before the problem\):\n- \d+ s: error common\.loadFailed\n- \d+ s: press characterMenu\.download in Characters/
+	);
 	expect(fields.get('details')).not.toContain('Character:');
 	expect([...fields.values()].join('\n')).not.toContain('Export settings test');
 

@@ -13,6 +13,7 @@
 	type="button"
 	class={['bu-action btn report-problem', outlined ? 'sm' : 'link small']}
 	data-variant={outlined ? 'outline' : 'quiet'}
+	data-trail-skip
 	aria-label={name ? t('report.actionLabelFor', { name }) : t('report.actionLabel')}
 	onclick={() => reportProblem({ ...problem })}>{t('report.action')}</button
 >

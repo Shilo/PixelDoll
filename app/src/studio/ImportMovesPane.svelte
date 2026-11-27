@@ -197,6 +197,7 @@
 									class="bu-action btn motion"
 									data-variant="outline"
 									disabled={busy}
+									data-trail="importMoves.useMotion"
 									onclick={() => useMotion(row)}
 									>{offer.warnings?.length
 										? t('moveSheet.checkpoint.generateAnyway', {

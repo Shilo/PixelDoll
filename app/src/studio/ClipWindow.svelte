@@ -195,6 +195,7 @@
 	{#snippet footer()}
 		{#if clip}<button
 				class="bu-action btn on-stage"
+				data-trail="clipWindow.showOnStage"
 				data-variant="primary"
 				onclick={() => {
 					ui.anim = id;
@@ -243,6 +244,7 @@
 										detail: t('clipWindow.fixFramesDetail', { move: name }),
 										aside: t('common.free'),
 										opens: true,
+										trail: 'clipWindow.fixFrames',
 										onclick: () => tool('frames', () => openFrames('', id, 'clip'))
 									}}
 								/>
@@ -255,6 +257,7 @@
 											detail: t('clipWindow.redrawDetail', { move: name }),
 											aside: '',
 											opens: true,
+											trail: 'clipWindow.redraw',
 											onclick: () =>
 												tool('redraw', () => {
 													ui.redrawMove = id;
@@ -271,6 +274,7 @@
 											detail: t('clipWindow.captureDetail', { move: name }),
 											aside: '',
 											opens: true,
+											trail: 'clipWindow.addState',
 											onclick: () =>
 												tool('capture', () => {
 													ui.stateCaptureMove = id;
@@ -318,6 +322,7 @@
 												detail: t('clipWindow.itemsDetail', { move: name }),
 												aside: '',
 												opens: true,
+												trail: 'clipWindow.drawItems',
 												onclick: () =>
 													tool('items', () => {
 														ui.itemGeneration = id;

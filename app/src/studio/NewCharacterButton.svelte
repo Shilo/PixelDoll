@@ -24,6 +24,7 @@
 	aria-label={t('newCharacterButton.addCharacter')}
 	title={row ? undefined : t('newCharacterButton.addCharacter')}
 	aria-haspopup="menu"
+	data-trail="newCharacter.open"
 	popovertarget={id}
 >
 	<span class={{ 'new-character-icon': row }}><Plus size={row ? 24 : 16} aria-hidden="true" /></span
@@ -48,6 +49,7 @@
 			role="menuitem"
 			aria-labelledby="{id}-create"
 			aria-describedby="{id}-paid"
+			data-trail="newCharacter.create"
 			onclick={() => choose('create')}
 			><Sparkles size={16} /><span class="row-name"
 				><span id="{id}-create">{openerLabel(t('newCharacterButton.createFromScratch'))}</span><span
@@ -56,11 +58,19 @@
 				></span
 			><SurfaceChevron /></button
 		>
-		<button class="row" role="menuitem" onclick={() => choose('importZip')}
+		<button
+			class="row"
+			role="menuitem"
+			data-trail="newCharacter.importZip"
+			onclick={() => choose('importZip')}
 			><FileArchive size={16} />{openerLabel(t('newCharacterButton.fromFile'))}<SurfaceChevron
 			/></button
 		>
-		<button class="row" role="menuitem" onclick={() => choose('importPixelLab')}
+		<button
+			class="row"
+			role="menuitem"
+			data-trail="newCharacter.importPixelLab"
+			onclick={() => choose('importPixelLab')}
 			><CloudDownload size={16} />{openerLabel(t('newCharacterButton.fromPixelLab'))}<SurfaceChevron
 			/></button
 		>

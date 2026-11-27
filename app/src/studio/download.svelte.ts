@@ -10,7 +10,7 @@ import { retainMoveMetadata } from '../lib/rig/moves.ts';
 import { moveLabel } from './model.ts';
 import { doc, store, readCharacterForExport, toast } from './state.svelte.ts';
 import { errorTranslation, message, type Message } from '../lib/message.ts';
-import type { DownloadAction } from '../lib/report/report.ts';
+import type { DownloadAction, DownloadStep } from '../lib/report/report.ts';
 import { playAudioCue } from './audio.svelte.ts';
 
 /** The saved record's rig data, so the ZIP imports back as an editable character (the demo has none). `build` names the app
@@ -95,8 +95,15 @@ export async function exportSource(projectId: string): Promise<DownloadSource> {
  *  so a tab without the service worker would lose it when a deploy replaced the files. */
 export const loadExportBuild = () => lazy(() => import('../lib/export/build.ts'));
 
-async function zipOf({ project, look, record }: DownloadSource) {
+/** Names the step a download is on, so its report can say where it failed. */
+type MarkStep = (step: DownloadStep) => void;
+
+async function zipOf({ project, look, record }: DownloadSource, mark: MarkStep) {
+	mark('builder');
 	const { buildExport } = await loadExportBuild();
+	mark('settings');
+	const settings = await readExportSettings();
+	mark('build');
 	const original = editableData(record);
 	const extra = original && {
 		...original,
@@ -106,7 +113,7 @@ async function zipOf({ project, look, record }: DownloadSource) {
 		engine: 'generic',
 		baked: false,
 		look,
-		settings: await readExportSettings(),
+		settings,
 		projectData: extra
 	});
 	return {
@@ -119,8 +126,13 @@ async function zipOf({ project, look, record }: DownloadSource) {
 
 const pending = new Set<string>();
 
-function downloadFailed(action: DownloadAction, label: string | Message, error: unknown) {
-	console.error('download', action, error);
+function downloadFailed(
+	action: DownloadAction,
+	label: string | Message,
+	error: unknown,
+	step?: DownloadStep
+) {
+	console.error('download', action, step, error);
 	// Catch-site evidence distinguishes a stale tab from a failed request in a page the worker already controls.
 	let serviceWorkerControlled: boolean | undefined;
 	if (error instanceof LoadError) {
@@ -134,7 +146,7 @@ function downloadFailed(action: DownloadAction, label: string | Message, error: 
 	toast(errorTranslation(error) ?? message('download.failedRetry', { label }), {
 		tone: 'danger',
 		error,
-		facts: { download: action, serviceWorkerControlled }
+		facts: { download: action, step, serviceWorkerControlled }
 	});
 }
 
@@ -143,21 +155,23 @@ async function download(
 	action: DownloadAction,
 	id: string,
 	label: string,
-	build: () => Promise<Awaited<ReturnType<typeof zipOf>> & { name: string }>
+	build: (mark: MarkStep) => Promise<Awaited<ReturnType<typeof zipOf>> & { name: string }>
 ) {
 	const key = `${action}:${id}`;
 	if (pending.has(key)) return;
 	pending.add(key);
 	toast(message('download.preparing', { label }), { pending: true });
+	let step: DownloadStep = 'source';
 	try {
-		const { zip, name, recovery, hasNotes, problem } = await build();
+		const { zip, name, recovery, hasNotes, problem } = await build((next) => (step = next));
 		if (!zip) {
 			toast(problem ?? message('download.failed', { label }), {
 				tone: 'danger',
-				facts: { download: action }
+				facts: { download: action, step }
 			});
 			return;
 		}
+		step = 'save';
 		saveZip(zip, recovery ? `${name}-recovered-artwork.zip` : `${name}.pixeldoll.zip`);
 		toast(
 			recovery
@@ -168,7 +182,7 @@ async function download(
 			{ tone: recovery || hasNotes ? 'warning' : 'info' }
 		);
 	} catch (e) {
-		downloadFailed(action, label, e);
+		downloadFailed(action, label, e, step);
 	} finally {
 		pending.delete(key);
 	}
@@ -176,10 +190,10 @@ async function download(
 
 export function downloadCharacterZip(projectId: string) {
 	const name = store.projects.find((p) => p.id === projectId)?.name ?? 'Character';
-	return download('character', projectId, name, async () => {
+	return download('character', projectId, name, async (mark) => {
 		const snapshot = await exportSource(projectId);
 		return {
-			...(await zipOf(snapshot)),
+			...(await zipOf(snapshot, mark)),
 			name: characterZipId(snapshot.project.manifest)
 		};
 	});
@@ -190,13 +204,15 @@ export function downloadItemZip(itemId: string) {
 	const projectId = doc.id,
 		it = store.project?.manifest.items.find((i) => i.id === itemId);
 	if (!it) return Promise.resolve();
-	return download('item', `${projectId}/${itemId}`, it.name, async () => {
+	return download('item', `${projectId}/${itemId}`, it.name, async (mark) => {
 		const { project, look, record } = await exportSource(projectId);
+		mark('builder');
 		const { itemProject } = await loadExportBuild();
+		mark('build');
 		const selected = itemProject(project, itemId, look);
 		const item = project.manifest.items.find((entry) => entry.id === itemId)!;
 		return {
-			...(await zipOf({ ...selected, record })),
+			...(await zipOf({ ...selected, record }, mark)),
 			name: `${characterZipId(project.manifest)}-${itemExportId(item)}`
 		};
 	});
@@ -208,10 +224,12 @@ export function downloadOutfitZip(outfitId: string) {
 	if (!outfit) return Promise.resolve();
 	const project = { ...store.project!, manifest: structuredClone(store.project!.manifest) };
 	const record = store.exportRecord;
-	return download('outfit', `${projectId}/${outfitId}`, outfit.name, async () => {
+	return download('outfit', `${projectId}/${outfitId}`, outfit.name, async (mark) => {
+		mark('builder');
 		const { outfitProject } = await loadExportBuild();
+		mark('build');
 		return {
-			...(await zipOf({ ...outfitProject(project, outfitId), record })),
+			...(await zipOf({ ...outfitProject(project, outfitId), record }, mark)),
 			name: `${characterZipId(project.manifest)}-${fileSlug(outfit.name)}`
 		};
 	});
@@ -222,15 +240,20 @@ export function downloadMoveZip(moveId: string) {
 	const moves = store.project?.manifest.rig.animations ?? [];
 	const label = moveLabel(moveId, moves);
 	const move = moves.find((entry) => entry.id === moveId);
-	return download('move', `${projectId}/${moveId}`, label, async () => {
+	return download('move', `${projectId}/${moveId}`, label, async (mark) => {
 		const { project, look, record } = await exportSource(projectId);
+		mark('builder');
 		const { moveProject } = await loadExportBuild();
+		mark('build');
 		return {
-			...(await zipOf({
-				project: await moveProject(project, moveId),
-				look,
-				record
-			})),
+			...(await zipOf(
+				{
+					project: await moveProject(project, moveId),
+					look,
+					record
+				},
+				mark
+			)),
 			name: `${characterZipId(project.manifest)}-${fileSlug(move ? moveExportId(move, moves) : moveId)}`
 		};
 	});

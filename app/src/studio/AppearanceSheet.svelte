@@ -374,6 +374,7 @@
 				class="bu-action btn plain icon"
 				data-variant="quiet"
 				aria-label={t('paidReview.download')}
+				data-trail="appearance.downloadResults"
 				title={t('paidReview.download')}
 				disabled={saving}
 				onclick={() =>
@@ -437,8 +438,11 @@
 				</p>
 			{:else if !review.complete}<p class="notice">{t('appearance.incomplete')}</p>{/if}
 			{#if !running && review && !review.complete}
-				<button class="bu-action" data-variant="quiet" onclick={() => (ui.sheet = 'activity')}
-					>{t('itemMenu.activity')}</button
+				<button
+					class="bu-action"
+					data-variant="quiet"
+					data-trail="appearance.activity"
+					onclick={() => (ui.sheet = 'activity')}>{t('itemMenu.activity')}</button
 				>
 			{/if}
 			{#if confirmDiscard}
@@ -531,6 +535,7 @@
 							class="bu-action"
 							data-variant="outline"
 							disabled={saving}
+							data-trail="appearance.discard"
 							onclick={() => (confirmDiscard ? void discard() : (confirmDiscard = true))}
 							>{t(confirmDiscard ? 'stateGeneration.confirmDiscard' : 'common.discard')}</button
 						>
@@ -540,6 +545,7 @@
 								class="bu-action"
 								data-variant="primary"
 								disabled={saving}
+								data-trail="appearance.save"
 								onclick={() => void save()}
 								>{t(item ? 'appearance.saveItem' : 'appearance.saveCharacter')}</button
 							>
@@ -549,14 +555,18 @@
 			{/if}
 		{:else if source && !connected}
 			{#if quote}<span class="foot-note">{stateCostText(quote.cost)}</span>{/if}
-			<button class="bu-action appearance-primary" data-variant="primary" onclick={connect}
-				>{t('toolbar.connectPixelLab2')}</button
+			<button
+				class="bu-action appearance-primary"
+				data-variant="primary"
+				data-trail="appearance.connect"
+				onclick={connect}>{t('toolbar.connectPixelLab2')}</button
 			>
 		{:else if source}
 			<button
 				class="bu-action appearance-primary"
 				data-variant="primary"
 				type="submit"
+				data-trail="appearance.generate"
 				{form}
 				disabled={generating || enhancing || referenceLoading || !quote || !valid || tierBlocked}
 			>

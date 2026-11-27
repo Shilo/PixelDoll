@@ -83,6 +83,7 @@
 	<button
 		type="button"
 		class={['clip-trigger bu-action', { compact, boxed }]}
+		data-trail="movePicker.open"
 		data-variant={bulk || field || boxed ? 'field' : 'quiet'}
 		aria-label={bulk || field || label ? `${menuLabel}: ${value}` : undefined}
 		aria-haspopup="menu"
@@ -113,6 +114,7 @@
 {#if settings}
 	<SettingsItemButton
 		aria-label={`${menuLabel}: ${value}`}
+		data-trail="movePicker.open"
 		value={selected}
 		aria-haspopup="menu"
 		aria-expanded={expanded}
@@ -205,6 +207,7 @@
 		data-variant="quiet"
 		role="menuitemradio"
 		aria-checked={selected === key}
+		data-trail="movePicker.pick"
 		value={key}
 		{disabled}
 		aria-disabled={reason ? 'true' : undefined}

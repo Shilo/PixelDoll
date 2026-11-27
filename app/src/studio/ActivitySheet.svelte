@@ -288,6 +288,7 @@
 					<button
 						class="bu-action btn sm"
 						data-variant="outline"
+						data-trail="activity.cancelRequest"
 						onclick={() => (canReturnToCreator() ? returnToCreator() : (ui.sheet = null))}
 						>{t('activity.cancelRequest')}</button
 					>
@@ -301,6 +302,7 @@
 							class="bu-action btn icon plain"
 							data-variant="quiet"
 							aria-label={t('activity.refreshBalance')}
+							data-trail="activity.refreshBalance"
 							onclick={() =>
 								refreshBalance({
 									activityScope: balanceScope,
@@ -312,6 +314,7 @@
 					>{:else if !ui.waitingForTab}<button
 						class="bu-action btn sm"
 						data-variant="outline"
+						data-trail="activity.connect"
 						onclick={() => (ui.sheet = 'connect')}
 						>{openerLabel(t('connectSheet.connect'))}<SurfaceChevron /></button
 					>{/if}
@@ -345,6 +348,7 @@
 						><button
 							class="bu-action btn sm"
 							data-variant="outline"
+							data-trail="activity.resume"
 							onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}
 							>{$queue.paused === 'auth'
 								? openerLabel(t('connectSheet.connect'))
@@ -395,6 +399,7 @@
 											aria-describedby={r.state === 'submitting'
 												? 'activity-submitting-stop'
 												: undefined}
+											data-trail="activity.stop"
 											onclick={() => cancelRecord(r.id)}>{t('activity.stop')}</button
 										>{/if}</span
 								></span
@@ -429,6 +434,7 @@
 								><button
 									class="bu-action btn link small"
 									data-variant="quiet"
+									data-trail="activity.cancelQueued"
 									onclick={() => cancelRecord(r.id)}>{t('common.cancel')}</button
 								></span
 							>
@@ -487,6 +493,7 @@
 					<button
 						class="bu-action btn sm"
 						data-variant="outline"
+						data-trail="activity.clear"
 						onclick={clear}
 						disabled={$queue.role === 'follower'}
 						title={$queue.role === 'follower' ? t('activity.clearFollower') : undefined}
@@ -528,11 +535,13 @@
 				class="bu-action btn sm"
 				data-variant="outline"
 				disabled={doc.loading || $queue.role === 'follower'}
+				data-trail="activity.dismiss"
 				onclick={dismiss}>{t('setup.dismiss')}</button
 			>{:else if open}<button
 				class="bu-action btn sm"
 				data-variant="outline"
 				aria-label={t('activity.openWorkNamed', { label })}
+				data-trail="activity.openWork"
 				disabled={doc.loading || $queue.role === 'follower'}
 				onclick={open}>{openerLabel(t('activity.openWork'))}<SurfaceChevron /></button
 			>{/if}

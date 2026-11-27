@@ -227,6 +227,7 @@
 						class="bu-action btn icon plain"
 						data-variant="quiet"
 						aria-label={refreshLabel}
+						data-trail="connect.refresh"
 						title={refreshLabel}
 						onclick={refresh}
 						aria-disabled={refreshing}><RefreshCw size={17} aria-hidden="true" /></button
@@ -259,8 +260,11 @@
 					>{t('connectSheet.viewPixelLabPlans')} <ExternalLink size={16} aria-hidden="true" /></a
 				>
 				{#if limitedAccess}
-					<button class="bu-action btn sm" data-variant="outline" onclick={finishConnection}
-						>{t('connectSheet.continueWithLimitedAccess')}</button
+					<button
+						class="bu-action btn sm"
+						data-variant="outline"
+						data-trail="connect.continueLimited"
+						onclick={finishConnection}>{t('connectSheet.continueWithLimitedAccess')}</button
 					>
 				{/if}
 			</div>
@@ -271,19 +275,24 @@
 				data-variant="outline"
 				bind:this={replaceButton}
 				aria-label={t('connectSheet.replaceKey')}
+				data-trail="connect.replaceKey"
 				onclick={() => {
 					replacing = true;
 					remember = app.remembered;
 					void focusKey();
 				}}>{t('connectSheet.replaceKey')}</button
 			>
-			<button class="bu-action btn sm" data-variant="outline" onclick={forget}
-				>{t('connectSheet.forgetKey')}</button
+			<button
+				class="bu-action btn sm"
+				data-variant="outline"
+				data-trail="connect.forget"
+				onclick={forget}>{t('connectSheet.forgetKey')}</button
 			>
 		</div>
 		<a
 			class="small"
 			href={accountUrl}
+			data-trail="connect.openAccount"
 			target="_blank"
 			rel="noreferrer"
 			aria-describedby={externalHint}
@@ -379,6 +388,7 @@
 							class="bu-action btn sm"
 							data-variant="outline"
 							disabled={checking}
+							data-trail="connect.useSavedKey"
 							onclick={useSavedKey}>{t('workspaceCopy.useSavedKey')}</button
 						>
 					</div>{/if}
@@ -412,12 +422,14 @@
 							type="button"
 							class="bu-action btn plain"
 							data-variant="quiet"
+							data-trail="connect.forgetRejected"
 							onclick={forget}>{t('connectSheet.forgetKey')}</button
 						>{/if}
 					{#if replacing && !checking}<button
 							type="button"
 							class="bu-action btn plain"
 							data-variant="quiet"
+							data-trail="connect.keepKey"
 							onclick={cancelReplace}>{t('connectSheet.keepKey')}</button
 						>{/if}
 					<span class="api-action"
@@ -425,6 +437,7 @@
 							class="bu-action btn primary"
 							data-variant="primary"
 							type="submit"
+							data-trail="connect.submit"
 							disabled={!key.trim() || checking}
 							>{t(
 								checking

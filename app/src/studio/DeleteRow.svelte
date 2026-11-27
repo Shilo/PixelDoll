@@ -9,13 +9,16 @@
 		opens = false,
 		locked = '',
 		onclick,
-		class: className = ''
+		class: className = '',
+		trail
 	}: {
 		label: string;
 		opens?: boolean;
 		locked?: string;
 		onclick: () => void;
 		class?: string;
+		/** Static name for the problem-report trail (a string literal, never data). */
+		trail?: string;
 	} = $props();
 	const reason = $props.id();
 </script>
@@ -24,6 +27,7 @@
 	class={['row danger', className]}
 	data-variant="quiet"
 	role="menuitem"
+	data-trail={trail}
 	aria-label={label}
 	aria-disabled={locked ? 'true' : undefined}
 	aria-describedby={locked ? reason : undefined}

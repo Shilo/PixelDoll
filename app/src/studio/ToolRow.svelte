@@ -12,6 +12,7 @@
 		disabled = false,
 		describedby,
 		opens = false,
+		trail,
 		onclick
 	}: {
 		icon: Component<{ size?: number; 'aria-hidden'?: 'true' }>;
@@ -25,6 +26,8 @@
 		describedby?: string;
 		/** It opens another surface, so it shows the chevron. */
 		opens?: boolean;
+		/** Static name for the problem-report trail (a string literal, never data). */
+		trail?: string;
 		onclick: () => void;
 	} = $props();
 	const id = $props.id();
@@ -37,6 +40,7 @@
 	aria-labelledby="{id}-label"
 	aria-describedby={[describedby, `${id}-detail`, `${id}-aside`].filter(Boolean).join(' ')}
 	aria-haspopup={opens ? 'dialog' : undefined}
+	data-trail={trail}
 	{onclick}
 >
 	<Icon size={18} aria-hidden="true" />

@@ -5,6 +5,8 @@ import type { Message } from '../message.ts';
 import { repository } from '../repository.ts';
 import { DIRECTIONS } from '../rig/rig.ts';
 import { CREATION_MODEL_LABELS } from '../store/generation.ts';
+import { areaName } from './areas.ts';
+import { TRAIL_SIZE, type TrailEntry, type TrailEvent } from './trail.ts';
 
 export type ProblemTone = 'error' | 'warning';
 
@@ -28,6 +30,12 @@ export interface ProblemFacts {
 	download?: DownloadAction;
 	/** Whether a service worker controlled the page when a download error was caught. */
 	serviceWorkerControlled?: boolean;
+	/** The step a download was on when it failed. */
+	step?: DownloadStep;
+	/** The browser said it was offline when the problem happened. */
+	offline?: boolean;
+	/** A new PixelDoll version was waiting to load when the problem happened. */
+	updateWaiting?: boolean;
 	/** HTTP status of the failed PixelLab request. */
 	status?: number;
 	method?: string;
@@ -58,6 +66,10 @@ const DOWNLOAD_LABELS = {
 	paid: 'Paid results'
 } as const;
 export type DownloadAction = keyof typeof DOWNLOAD_LABELS;
+/** What a download was doing: reading the character, loading the export code, reading export settings, building the ZIP,
+ *  or handing it to the browser. */
+export const DOWNLOAD_STEPS = ['source', 'builder', 'settings', 'build', 'save'] as const;
+export type DownloadStep = (typeof DOWNLOAD_STEPS)[number];
 
 export interface Problem {
 	/** The failing area in English, such as "Add a move"; the Studio fills in the current one. */
@@ -70,6 +82,16 @@ export interface Problem {
 	facts?: ProblemFacts;
 	/** Caught by the global handlers: the report is titled by the error, not by the generic notice. */
 	uncaught?: boolean;
+	/** Recent app actions, newest first (trail.ts); left out when the failure is not from this page's session. */
+	trail?: readonly TrailEntry[];
+	/** performance.now() when the problem happened, when known; trail times are counted back from it. */
+	failedAt?: number;
+	/** Seconds the app had been open when the problem was captured. */
+	uptime?: number;
+	/** A stored failure (an Activity row): it may come from an earlier visit, another tab or another character. */
+	record?: boolean;
+	/** Already frozen at the failure (studio/report.svelte.ts captureProblem). */
+	captured?: boolean;
 }
 
 export interface ReportEnvironment {
@@ -94,6 +116,10 @@ export interface ReportContext {
 	english?: (message: Message) => string | undefined;
 	/** Wall-clock seconds since the app loaded, including time the device slept. */
 	uptime?: number;
+	/** This page's origin: only stack frames of PixelDoll's own built files there are reported. */
+	origin?: string;
+	/** performance.now() when Report was pressed: the trail is counted back from it when the failure time is unknown. */
+	now?: number;
 }
 
 /** The issue form fields PixelDoll fills, in the order of .github/ISSUE_TEMPLATE/problem-report.yml. Steps to reproduce
@@ -108,11 +134,12 @@ export interface ProblemReport {
 export const ISSUE_TEMPLATE = 'problem-report.yml';
 /** GitHub and browsers accept far longer URLs; staying well under 8 KB keeps every proxy and browser safe. */
 export const MAX_URL_LENGTH = 7000;
-const LIMITS = { title: 120, problem: 700, environment: 300, details: 1500 } as const;
+const LIMITS = { title: 120, problem: 700, environment: 300, details: 3000 } as const;
 
 // ---------- sanitizer ----------
 
-const WORD_SEGMENT = /^(?:[a-z]{1,24}|[a-z]+(?:[A-Z][a-z]+){1,8}|v\d{1,2}|\d{1,3})$/;
+const WORD_SEGMENT =
+	/^(?:[a-z]{1,24}|[a-z]+(?:[A-Z][a-z]+){1,8}|(?:[A-Z][a-z]+){1,8}|v\d{1,2}|\d{1,3})$/;
 /** Long runs of key-like characters: kept only when they read as words joined by - / _ (endpoint paths) or as one
  *  camelCase name (message keys). */
 const tokenRun = (run: string) =>
@@ -149,7 +176,8 @@ const RULES: [RegExp, string | ((match: string) => string)][] = [
 	// Quoted text is how prompts and names usually travel inside messages.
 	[/"[^"\n]*"|“[^”\n]*”|«[^»\n]*»|「[^」\n]*」/g, '"[text]"'],
 	[/[A-Za-z0-9+/=_-]{20,}/g, tokenRun],
-	[/\d{7,}/g, '[number]']
+	// A column of a built file (Studio.js:1:1234567) is a code position, not an ID.
+	[/(?<!\.js:\d{1,6}:)\d{7,}/g, '[number]']
 ];
 
 const truncate = (text: string, max: number) =>
@@ -216,10 +244,76 @@ const METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
 const JOB_STATUSES = new Set(['queued', 'processing', 'completed', 'failed', 'cancelled', 'lost']);
 /** A thrown value that is not an error object, or cannot be read. */
 const NON_ERROR = 'Non-error value';
-/** Error class and DOMException names; anything else (a name a script made up) is reported as Error. */
-const ERROR_NAME = /^[A-Z][A-Za-z]{0,40}(?:Error|Exception)$/;
+/** JavaScript, DOMException and PixelDoll error names. Any other name (one a library or script made up) is reported as
+ *  Error: a name is the one part of an error a report prints, so it must be app or platform vocabulary. */
+const ERROR_NAMES = new Set([
+	'Error',
+	'TypeError',
+	'RangeError',
+	'ReferenceError',
+	'SyntaxError',
+	'EvalError',
+	'URIError',
+	'AggregateError',
+	'InternalError',
+	// DOMException names (WebIDL).
+	'IndexSizeError',
+	'HierarchyRequestError',
+	'InvalidCharacterError',
+	'NoModificationAllowedError',
+	'NotFoundError',
+	'NotSupportedError',
+	'InvalidStateError',
+	'InvalidModificationError',
+	'InvalidAccessError',
+	'TypeMismatchError',
+	'SecurityError',
+	'NetworkError',
+	'AbortError',
+	'QuotaExceededError',
+	'TimeoutError',
+	'DataCloneError',
+	'EncodingError',
+	'NotReadableError',
+	'UnknownError',
+	'ConstraintError',
+	'DataError',
+	'TransactionInactiveError',
+	'ReadOnlyError',
+	'VersionError',
+	'OperationError',
+	'NotAllowedError',
+	// PixelDoll's own named errors.
+	'ApiError',
+	'LoadError',
+	'NotAFileError',
+	'ChangedError',
+	'UnsafePathError'
+]);
 const errorName = (value: unknown) =>
-	typeof value === 'string' && ERROR_NAME.test(value) ? value : 'Error';
+	typeof value === 'string' && ERROR_NAMES.has(value) ? value : 'Error';
+/** A thrown value's name for the trail: only a listed name, never a made-up one. Never throws. */
+export function knownErrorName(error: unknown): string {
+	try {
+		return errorName((error as { name?: unknown } | null | undefined)?.name);
+	} catch {
+		return 'Error';
+	}
+}
+const ERROR_KINDS = new Set(['auth', 'credits', 'invalid', 'policy', 'retry', 'notfound', 'other']);
+const RECORD_STATES = new Set([
+	'queued',
+	'submitting',
+	'running',
+	'done',
+	'failed',
+	'canceled',
+	'lost'
+]);
+const PHASES = new Set(['running', 'review', 'failed']);
+const QUEUE_ROLES = new Set(['leader', 'follower']);
+const oneOf = (set: ReadonlySet<string>, value: unknown) =>
+	typeof value === 'string' && set.has(value) ? value : undefined;
 
 /** The rig's supported square cell sides, as validateRig enforces (32–256 whole pixels). */
 const FRAME_MIN = 32;
@@ -257,11 +351,51 @@ interface ErrorFacts {
 	method?: string;
 	endpoint?: string;
 	kind?: string;
+	/** Names of the errors behind it (error.cause), outermost first. */
+	causes?: string[];
+	/** Where it was thrown in PixelDoll's own built files, as chunk.js:line:col. */
+	frames?: string[];
+	/** The built file a failed code load asked for, as chunk.js. */
+	module?: string;
+}
+
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** PixelDoll's own built files at this origin, without their content hash: assets/Studio-AbCd_123.js:1:2 becomes Studio.js:1:2.
+ *  The commit in the report pins the build, so a frame maps back to source through that build's source map. */
+const ownFiles = (origin: string) =>
+	new RegExp(
+		`${escapeRegExp(origin)}/assets/([A-Za-z][A-Za-z0-9_-]{0,59})-[A-Za-z0-9_-]{8}\\.js(?::(\\d{1,7}):(\\d{1,7}))?`,
+		'g'
+	);
+const MAX_FRAMES = 4;
+
+/** Up to MAX_FRAMES own-code positions from a stack. The message is removed first: provider or user text inside it could
+ *  imitate a frame. Frames of other origins (extensions, embeds) are never read. */
+function ownFrames(stack: unknown, message: unknown, origin: string | undefined): string[] {
+	if (!origin || typeof stack !== 'string') return [];
+	const text = typeof message === 'string' && message ? stack.split(message).join(' ') : stack;
+	const frames: string[] = [];
+	for (const [, file, line, column] of text.matchAll(ownFiles(origin))) {
+		if (!line) continue;
+		const frame = `${file}.js:${line}:${column}`;
+		if (!frames.includes(frame)) frames.push(frame);
+		if (frames.length === MAX_FRAMES) break;
+	}
+	return frames;
+}
+
+/** The built file a failed dynamic import named ("Failed to fetch dynamically imported module: <url>"), when it is one of
+ *  PixelDoll's own. */
+function failedModule(message: unknown, origin: string | undefined): string | undefined {
+	if (!origin || typeof message !== 'string') return undefined;
+	const [match] = message.matchAll(ownFiles(origin));
+	return match && !match[2] ? `${match[1]}.js` : undefined;
 }
 
 /** What an error may contribute: its name, a localized message, and for a PixelLab error its status, kind and endpoint
- *  path, read from the "METHOD /path -> status" prefix the client writes. Never its message text. */
-function readErrorFacts(error: unknown): ErrorFacts {
+ *  path, read from the "METHOD /path -> status" prefix the client writes; the names of its causes; and where in
+ *  PixelDoll's own code it was thrown. Never its message text. */
+function readErrorFacts(error: unknown, origin?: string): ErrorFacts {
 	// Text is never reported: it may be anything, including what the user typed.
 	if (error === undefined || error === null || typeof error === 'string') return {};
 	if (typeof error !== 'object') return { name: NON_ERROR };
@@ -284,7 +418,7 @@ function readErrorFacts(error: unknown): ErrorFacts {
 			? errorName(e.name)
 			: NON_ERROR;
 	if (api) {
-		out.kind = word(e.kind);
+		out.kind = oneOf(ERROR_KINDS, e.kind);
 		out.status = count(e.status, 999) || undefined; // 0 and -1 mean no response
 		const request =
 			typeof e.message === 'string'
@@ -295,14 +429,30 @@ function readErrorFacts(error: unknown): ErrorFacts {
 			out.endpoint = endpointPath(request[2]);
 		}
 	}
+	const frames = ownFrames((error as { stack?: unknown }).stack, e.message, origin);
+	if (frames.length) out.frames = frames;
+	// A cycle or a long chain stops after three causes.
+	const causes: string[] = [];
+	let cause = (error as { cause?: unknown }).cause;
+	for (let depth = 0; depth < 3 && cause !== undefined && cause !== null; depth++) {
+		const c = cause as { name?: unknown; message?: unknown; stack?: unknown; cause?: unknown };
+		causes.push(typeof cause === 'object' ? errorName(c.name) : NON_ERROR);
+		out.module ??= failedModule(c.message, origin);
+		if (!out.frames) {
+			const own = ownFrames(c.stack, c.message, origin);
+			if (own.length) out.frames = own;
+		}
+		cause = typeof cause === 'object' ? c.cause : undefined;
+	}
+	if (causes.length) out.causes = causes;
 	return out;
 }
 
 /** Any value can be thrown, including a null-prototype object or one whose getters throw: reading it must never throw
  *  in turn, or the report would describe this code instead of the failure. */
-export function errorFacts(error: unknown): ErrorFacts {
+export function errorFacts(error: unknown, origin?: string): ErrorFacts {
 	try {
-		return readErrorFacts(error);
+		return readErrorFacts(error, origin);
 	} catch {
 		return { name: NON_ERROR };
 	}
@@ -430,20 +580,97 @@ const duration = (seconds: number) =>
 			? `${Math.round(seconds / 60)} min`
 			: `${Math.round(seconds / 3600)} h`;
 
+/** A data-trail control name: a dotted camelCase path such as toolbar.download. */
+const TRAIL_CONTROL = /^[a-z][A-Za-z0-9]{0,30}(?:\.[a-z][A-Za-z0-9]{0,30}){0,3}$/;
+const PAGE_STATES = new Set(['hidden', 'visible', 'online', 'offline']);
+const SCREENS = new Set(['Characters', 'Studio']);
+
+/** One trail event in fixed words, or undefined when any part is not app vocabulary. */
+function trailEvent(event: TrailEvent, context: ReportContext): string | undefined {
+	switch (event.kind) {
+		case 'press': {
+			const area = areaName(event.area);
+			if (!area) return undefined;
+			return typeof event.control === 'string' && TRAIL_CONTROL.test(event.control)
+				? `press ${event.control} in ${area}`
+				: `press a control in ${area}`;
+		}
+		case 'open':
+		case 'close': {
+			const area = areaName(event.area);
+			return area && `${event.kind} ${area}`;
+		}
+		case 'screen':
+			return SCREENS.has(event.area) ? `show ${event.area}` : undefined;
+		case 'notice':
+			// Only one of the app's own messages, never text.
+			return typeof event.key === 'string' &&
+				context.english?.({ key: event.key } as Message) &&
+				(event.tone === 'error' || event.tone === 'warning')
+				? `${event.tone} ${event.key}`
+				: undefined;
+		case 'job': {
+			const endpoint = endpointPath(event.endpoint ?? '');
+			return endpoint && METHODS.has(event.method) && RECORD_STATES.has(event.state)
+				? `request ${event.method} ${endpoint} ${event.state}`
+				: undefined;
+		}
+		case 'page':
+			return PAGE_STATES.has(event.state) ? `page ${event.state}` : undefined;
+		case 'error':
+			return `uncaught ${errorName(event.name)}`;
+		default:
+			return undefined;
+	}
+}
+
+/** The trail, newest first, each line timed back from the problem. Unknown or malformed entries are left out. */
+function trailText(problem: Problem, context: ReportContext): string | undefined {
+	const trail = Array.isArray(problem.trail) ? problem.trail : [];
+	const end =
+		typeof problem.failedAt === 'number' && Number.isFinite(problem.failedAt)
+			? problem.failedAt
+			: context.now;
+	if (end === undefined) return undefined;
+	const lines: string[] = [];
+	for (const entry of trail.slice(0, TRAIL_SIZE)) {
+		if (!entry || typeof entry.at !== 'number' || entry.at > end) continue;
+		let line: string | undefined;
+		try {
+			line = trailEvent(entry.event, context);
+		} catch {
+			line = undefined;
+		}
+		if (!line) continue;
+		const times = count(entry.times, 1e6);
+		lines.push(
+			`- ${duration(Math.max(0, (end - entry.at) / 1000))}: ${line}${times && times > 1 ? ` (${times} times)` : ''}`
+		);
+	}
+	if (!lines.length) return undefined;
+	const before =
+		problem.failedAt === undefined ? 'before Report was pressed' : 'before the problem';
+	return [`Recent actions (newest first, time ${before}):`, ...lines].join('\n');
+}
+
 export function buildReport(problem: Problem, context: ReportContext): ProblemReport {
 	const facts = problem.facts ?? {},
-		fromError = errorFacts(problem.error);
+		fromError = errorFacts(problem.error, context.origin);
+	const errorChain = [fromError.name, ...(fromError.causes ?? [])].filter(
+		(name): name is string => !!name
+	);
 	const shown = problem.message ?? fromError.message;
 	// A key is reported only when it is one of the app's own English messages.
 	const english = (shown && context.english?.(shown)) || undefined;
-	const area = word(problem.area) ?? 'PixelDoll';
+	const area = areaName(problem.area) ?? 'PixelDoll';
 	const kind = problem.tone === 'warning' ? 'warning' : 'error';
 	const unexpected = `Unexpected ${fromError.name && fromError.name !== NON_ERROR ? fromError.name : 'problem'}`;
 	const text = english || unexpected;
 	const endpoint = endpointPath(facts.endpoint ?? '') ?? fromError.endpoint;
 	const method = METHODS.has(facts.method ?? '') ? facts.method : fromError.method;
 	const seconds = count(facts.seconds);
-	const uptime = count(context.uptime === undefined ? undefined : Math.round(context.uptime));
+	const opened = problem.uptime ?? context.uptime;
+	const uptime = count(typeof opened === 'number' ? Math.round(opened) : undefined);
 	const lines: [string, string | number | undefined][] = [
 		['Area', area],
 		['Kind', kind],
@@ -464,23 +691,41 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 		['Character', characterFacts(facts.character, area)],
 		// The message itself is already the problem text; a plain "Error" name says nothing more.
 		['Message key', english && shown?.key],
-		['Error type', fromError.name === 'Error' ? undefined : fromError.name],
+		['Download step', oneOf(new Set<string>(DOWNLOAD_STEPS), facts.step)],
+		// A lone plain "Error" says nothing more than the message; a cause behind it does.
+		[
+			'Error type',
+			errorChain.length > 1 || (errorChain[0] && errorChain[0] !== 'Error')
+				? errorChain.join(', caused by ')
+				: undefined
+		],
+		['Failed file', fromError.module],
+		['Thrown at', fromError.frames?.join(' < ')],
 		['Error kind', fromError.kind],
 		['HTTP status', count(facts.status, 999) || fromError.status],
 		['Endpoint', endpoint && (method ? `${method} ${endpoint}` : endpoint)],
-		['Queue state', word(facts.state)],
+		['Queue state', oneOf(RECORD_STATES, facts.state)],
 		['Job status', JOB_STATUSES.has(facts.jobStatus ?? '') ? facts.jobStatus : undefined],
-		['Phase', word(facts.phase)],
-		['Queue role', word(facts.queueRole)],
+		['Phase', oneOf(PHASES, facts.phase)],
+		['Queue role', oneOf(QUEUE_ROLES, facts.queueRole)],
 		['Error code', count(facts.errorCode, 99999)],
 		['Attempts', count(facts.attempts, 999)],
 		['Ran for', seconds === undefined ? undefined : duration(seconds)],
-		['App open for', uptime === undefined ? undefined : duration(uptime)]
+		['App open for', uptime === undefined ? undefined : duration(uptime)],
+		['Connection', facts.offline === true ? 'offline' : undefined],
+		['Update', facts.updateWaiting === true ? 'a newer version was waiting to load' : undefined]
 	];
-	const details = lines
-		.filter(([, value]) => value !== undefined && value !== '')
-		.map(([label, value]) => `${label}: ${value}`)
-		.join('\n');
+	const trail = trailText(problem, context);
+	// The trail comes last: if the URL must shrink, its oldest entries go first.
+	const details = [
+		lines
+			.filter(([, value]) => value !== undefined && value !== '')
+			.map(([label, value]) => `${label}: ${value}`)
+			.join('\n'),
+		trail
+	]
+		.filter(Boolean)
+		.join('\n\n');
 	return fit({
 		title: sanitize(
 			problem.uncaught ? `${unexpected} in ${area}` : `${area}: ${text}`,

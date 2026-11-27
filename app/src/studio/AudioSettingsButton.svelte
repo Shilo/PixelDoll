@@ -8,6 +8,7 @@
 <button
 	type="button"
 	class="bu-action header-audio"
+	data-trail="toolbar.audio"
 	data-variant="quiet"
 	style:display={hasEnabledAudio() ? undefined : 'none'}
 	aria-label={t('settings.audio.open')}

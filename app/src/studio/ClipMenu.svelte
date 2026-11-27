@@ -48,6 +48,7 @@
 		class="row"
 		role="menuitem"
 		data-tip-anchor={fitsGear ? 'generate-items' : undefined}
+		data-trail="clipMenu.details"
 		onclick={() => {
 			close();
 			ui.clip = id;
@@ -55,6 +56,7 @@
 		}}><Eye size={16} />{openerLabel(t('common.detailsMenu'))}<SurfaceChevron /></button
 	>{/if}
 <RenameRow
+	trail="clipMenu.rename"
 	locked={isDemo() ? t('savedActions.demoRenameLocked') : ''}
 	onclick={() => {
 		close();
@@ -65,6 +67,7 @@
 <button
 	class="row"
 	role="menuitem"
+	data-trail="clipMenu.download"
 	onclick={() => {
 		close();
 		void downloadMoveZip(id);
@@ -73,6 +76,7 @@
 <hr class="bu-separator" />
 <DeleteRow
 	opens
+	trail="clipMenu.delete"
 	label={kind === 'move' ? t('savedActions.labelDeleteMove') : t('savedActions.labelDeleteState')}
 	locked={trashLocked}
 	onclick={() => {

@@ -320,6 +320,7 @@ ${name}` !== typedAtStart || reference !== openedReference
 			data-variant="primary"
 			disabled={!canMake}
 			aria-describedby={tierBlocked ? 'new-item-tier' : undefined}
+			data-trail="newItem.make"
 			onclick={go}
 			>{t('newItem.make')}
 			<span class="cost">{t('moves.estimate', { gens: plan ? formatNumber(plan.gens) : '–' })}</span
@@ -370,12 +371,14 @@ ${name}` !== typedAtStart || reference !== openedReference
 			<button
 				class="bu-action btn primary"
 				data-variant="primary"
+				data-trail="newItem.createCharacter"
 				onclick={() => (ui.sheet = 'create')}
 				>{openerLabel(t('welcome.createYourCharacter'))}<SurfaceChevron /></button
 			>
 			<button
 				class="bu-action btn copy-demo"
 				data-variant="outline"
+				data-trail="newItem.copyDemo"
 				onclick={useCopy}
 				disabled={busy}
 			>
@@ -394,6 +397,7 @@ ${name}` !== typedAtStart || reference !== openedReference
 				<TriangleAlert size={16} /><span>{t('newItem.needsSetup')}</span><button
 					class="bu-action btn small"
 					data-variant="outline"
+					data-trail="newItem.setup"
 					onclick={() => (ui.sheet = 'setup')}
 					>{openerLabel(t('setup.title'))}<SurfaceChevron /></button
 				>
@@ -476,6 +480,7 @@ ${name}` !== typedAtStart || reference !== openedReference
 					<Info size={16} /><span>{t('newItem.offHandHint')}</span><button
 						class="bu-action btn sm"
 						data-variant="outline"
+						data-trail="newItem.useOffHand"
 						onclick={() => (group = 'off_hand')}>{t('newItem.useOffHand')}</button
 					>
 				</p>{/if}
@@ -489,6 +494,7 @@ ${name}` !== typedAtStart || reference !== openedReference
 						role="radio"
 						aria-checked={!color}
 						tabindex={!color ? 0 : -1}
+						data-trail="newItem.anyColor"
 						onclick={() => (color = '')}>{t('newItem.anyColor')}</button
 					>
 					{#each Object.entries(SWATCHES) as [n, hex] (n)}
@@ -500,6 +506,7 @@ ${name}` !== typedAtStart || reference !== openedReference
 							aria-label={displaySwatch(n)}
 							title={displaySwatch(n)}
 							style:background={hex}
+							data-trail="newItem.color"
 							onclick={() => (color = n)}
 						></button>
 					{/each}

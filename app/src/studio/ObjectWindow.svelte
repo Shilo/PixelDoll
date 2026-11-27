@@ -73,6 +73,7 @@
 				data-variant="quiet"
 				popovertarget={menuId}
 				aria-haspopup="menu"
+				data-trail="window.menu"
 				aria-label={menuLabel}
 				title={menuLabel}><EllipsisVertical size={20} aria-hidden="true" /></button
 			>

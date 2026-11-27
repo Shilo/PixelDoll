@@ -199,6 +199,7 @@
 				class="bu-action btn plain"
 				data-variant="quiet"
 				disabled={busy}
+				data-trail="directions.downloadBackup"
 				onclick={() => void downloadCharacterZip(id)}
 				><Download size={16} />{t('directionsSheet.downloadBackup')}</button
 			>
@@ -207,6 +208,7 @@
 			class="bu-action btn primary"
 			data-variant="primary"
 			disabled={!changed || !!problem || !!blocked || busy}
+			data-trail="directions.save"
 			onclick={() => {
 				error = '';
 				if (excluded.length || replaced.length) confirm = true;
@@ -224,6 +226,7 @@
 {#snippet viewPending()}
 	<button
 		class="bu-btn"
+		data-trail="directions.viewPendingWork"
 		onclick={() => {
 			confirm = false;
 			void openPendingWork({

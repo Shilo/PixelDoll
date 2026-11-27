@@ -20,6 +20,7 @@
 <button
 	type="button"
 	class="bu-action btn plain icon surface-close"
+	data-trail="sheet.close"
 	data-variant="quiet"
 	aria-label={name}
 	aria-describedby={describedBy}

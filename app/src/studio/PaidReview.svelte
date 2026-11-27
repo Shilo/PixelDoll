@@ -79,6 +79,7 @@
 					class:primary={option.primary}
 					data-variant={option.primary ? 'primary' : 'outline'}
 					disabled={busy || running || (option.paid && blocked)}
+					data-trail="paidReview.choose"
 					onclick={() => onchoose(option)}
 					>{displayNestedMessage(option.label)}
 					<span class="cost">{cost(option.gens)}</span></button
@@ -88,6 +89,7 @@
 		{#if review.recordIds.length}<button
 				class="bu-action btn"
 				data-variant="outline"
+				data-trail="paidReview.download"
 				onclick={() => void downloadPaidResults(review.recordIds, name)}
 				>{t('paidReview.download')}</button
 			>{/if}

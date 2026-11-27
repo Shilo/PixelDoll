@@ -60,6 +60,7 @@
 {#if available && row}
 	<button
 		class="row bu-action mobile-fullscreen"
+		data-trail="more.fullscreen"
 		data-variant="quiet"
 		disabled={pending}
 		onclick={toggle}
@@ -70,6 +71,7 @@
 {:else if available}
 	<button
 		class="bu-action header-fullscreen"
+		data-trail="toolbar.fullscreen"
 		data-variant="quiet"
 		aria-label={label}
 		title={label}

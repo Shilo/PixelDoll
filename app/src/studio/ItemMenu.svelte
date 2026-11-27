@@ -164,6 +164,7 @@
 							data-variant="quiet"
 							role="menuitem"
 							disabled={cancelBusy}
+							data-trail="itemMenu.saveCancellation"
 							onclick={cancel}
 							><Check size={16} aria-hidden="true" />{t(
 								'generation.status.saveCancellation'
@@ -174,6 +175,7 @@
 							class="row bu-action"
 							data-variant="quiet"
 							role="menuitem"
+							data-trail="itemMenu.review"
 							onclick={() => act(() => void openGenerationReview(generation!.draft.spec.id))}
 							><Info size={16} />{openerLabel(t('itemMenu.reviewItem'))}<SurfaceChevron /></button
 						>
@@ -182,6 +184,7 @@
 						class="row bu-action"
 						data-variant="quiet"
 						role="menuitem"
+						data-trail="itemMenu.activity"
 						onclick={() => act(() => (ui.sheet = 'activity'))}
 						><Info size={16} />{openerLabel(t('itemMenu.activity'))}<SurfaceChevron /></button
 					>
@@ -191,6 +194,7 @@
 							class="row bu-action danger"
 							data-variant="quiet"
 							role="menuitem"
+							data-trail="itemMenu.cancelGeneration"
 							onclick={() => ask(() => (cancelling = true))}
 							><Trash size={16} />{openerLabel(t('itemMenu.cancelGeneration'))}<SurfaceChevron
 							/></button
@@ -223,6 +227,7 @@
 					class="row bu-action"
 					data-variant="quiet"
 					role="menuitem"
+					data-trail="itemMenu.remakeShared"
 					onclick={() =>
 						act(() =>
 							openNewItem(entry.item.slot, {

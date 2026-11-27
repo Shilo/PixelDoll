@@ -1,0 +1,232 @@
+import { beforeEach, describe, expect, test } from 'vitest';
+import { LoadError } from '../../src/lib/lazy.ts';
+import { message } from '../../src/lib/message.ts';
+import { englishMessage } from '../../src/lib/report/english.ts';
+import {
+	buildReport,
+	MAX_URL_LENGTH,
+	reportText,
+	reportUrl,
+	type Problem,
+	type ReportEnvironment
+} from '../../src/lib/report/report.ts';
+import {
+	clearTrail,
+	track,
+	trailSnapshot,
+	TRAIL_SIZE,
+	type TrailEntry
+} from '../../src/lib/report/trail.ts';
+
+const env: ReportEnvironment = {
+	version: '1.2.34',
+	commit: 'abc1234',
+	channel: 'stable',
+	userAgent: 'Mozilla/5.0 (Windows NT 10.0) Chrome/131.0.0.0 Safari/537.36',
+	locale: 'en',
+	coarsePointer: false,
+	screenWidth: 1920,
+	screenHeight: 1080,
+	viewportWidth: 1440,
+	viewportHeight: 900
+};
+const ORIGIN = 'https://pixeldoll.app';
+const context = { env, english: englishMessage, origin: ORIGIN, now: 100_000 };
+const NAME = 'Alice Smith';
+
+const entry = (at: number, event: TrailEntry['event'], times = 1): TrailEntry => ({
+	at,
+	event,
+	times
+});
+const all = (problem: Problem) => {
+	const report = buildReport(problem, context);
+	return `${reportText(report)}\n${decodeURIComponent(reportUrl(report))}`;
+};
+
+describe('trail ring', () => {
+	beforeEach(clearTrail);
+
+	test('keeps the newest entries, newest first, within its bound', () => {
+		for (let i = 0; i < TRAIL_SIZE + 5; i++) track({ kind: 'open', area: `${i}` }, i);
+		const trail = trailSnapshot();
+		expect(trail).toHaveLength(TRAIL_SIZE);
+		expect(trail[0].event).toEqual({ kind: 'open', area: `${TRAIL_SIZE + 4}` });
+		expect(trail.at(-1)?.event).toEqual({ kind: 'open', area: '5' });
+	});
+
+	test('counts a repeated event once, and a snapshot ends where asked', () => {
+		track({ kind: 'press', area: 'Studio', control: 'zoom.in' }, 1);
+		track({ kind: 'press', area: 'Studio', control: 'zoom.in' }, 2);
+		track({ kind: 'open', area: 'Export' }, 3);
+		expect(trailSnapshot()).toMatchObject([
+			{ at: 3, times: 1 },
+			{ at: 2, times: 2 }
+		]);
+		expect(trailSnapshot(2)).toHaveLength(1);
+	});
+
+	test('a snapshot is a copy', () => {
+		track({ kind: 'open', area: 'Export' }, 1);
+		const [first] = trailSnapshot();
+		first.times = 99;
+		expect(trailSnapshot()[0].times).toBe(1);
+	});
+});
+
+describe('trail in a report', () => {
+	test('lists app actions newest first, timed back from the problem', () => {
+		const text = all({
+			message: message('download.failedRetry', { label: NAME }),
+			failedAt: 50_000,
+			trail: [
+				entry(51_000, { kind: 'open', area: 'Settings' }),
+				entry(50_000, { kind: 'notice', key: 'download.failedRetry', tone: 'error' }),
+				entry(48_000, { kind: 'press', area: 'Studio', control: 'characterMenu.download' }),
+				entry(47_000, { kind: 'press', area: 'Studio' }, 3),
+				entry(46_000, {
+					kind: 'job',
+					method: 'POST',
+					endpoint: '/characters/abc123def/animations',
+					state: 'failed'
+				}),
+				entry(40_000, { kind: 'screen', area: 'Studio' }),
+				entry(10_000, { kind: 'page', state: 'visible' })
+			]
+		});
+		expect(text).toContain(
+			[
+				'Recent actions (newest first, time before the problem):',
+				'- 0 s: error download.failedRetry',
+				'- 2 s: press characterMenu.download in Studio',
+				'- 3 s: press a control in Studio (3 times)',
+				'- 4 s: request POST /characters/{id}/animations failed',
+				'- 10 s: show Studio',
+				'- 40 s: page visible'
+			].join('\n')
+		);
+		// Later than the problem: not part of it.
+		expect(text).not.toContain('open Settings');
+		expect(text).not.toContain(NAME);
+	});
+
+	test('without a failure time, the trail is timed back from Report', () => {
+		const text = all({ trail: [entry(99_000, { kind: 'open', area: 'Export' })] });
+		expect(text).toContain('time before Report was pressed');
+		expect(text).toContain('- 1 s: open Export');
+	});
+
+	test('free text in any trail field never reaches the report', () => {
+		const text = all({
+			failedAt: 100_000,
+			trail: [
+				entry(1, { kind: 'press', area: NAME, control: 'export.start' }),
+				entry(2, { kind: 'press', area: 'Studio', control: NAME }),
+				entry(3, { kind: 'open', area: NAME }),
+				entry(4, { kind: 'screen', area: NAME }),
+				entry(5, { kind: 'notice', key: NAME, tone: 'error' }),
+				entry(6, { kind: 'job', method: 'POST', endpoint: `/${NAME}`, state: NAME }),
+				entry(7, { kind: 'page', state: NAME as 'hidden' }),
+				entry(8, { kind: 'error', name: NAME }),
+				entry(9, { kind: NAME } as unknown as TrailEntry['event']),
+				null as unknown as TrailEntry
+			]
+		});
+		expect(text).not.toContain('Alice');
+		expect(text).toContain('press a control in Studio');
+		expect(text).toContain('uncaught Error');
+	});
+
+	test('a full trail keeps the URL in bounds and the facts intact', () => {
+		const trail = Array.from({ length: 40 }, (_, i) =>
+			entry(99_000 - i * 1000, {
+				kind: 'job',
+				method: 'POST',
+				endpoint: '/create-character-with-8-directions',
+				state: i % 2 ? 'failed' : 'running'
+			})
+		);
+		const report = buildReport(
+			{
+				message: message('download.failedRetry', { label: 'x' }),
+				trail,
+				facts: { download: 'character', step: 'build' }
+			},
+			context
+		);
+		expect(reportUrl(report).length).toBeLessThanOrEqual(MAX_URL_LENGTH);
+		expect(report.details).toContain('Download step: build');
+		// At most TRAIL_SIZE entries are shown.
+		expect(report.details.match(/^- /gm)).toHaveLength(TRAIL_SIZE);
+	});
+});
+
+describe('error facts', () => {
+	test('a failed code load names its cause and the file it asked for, not the URL', () => {
+		const cause = new TypeError(
+			`Failed to fetch dynamically imported module: ${ORIGIN}/assets/build-AbC_12-x.js`
+		);
+		const details = buildReport({ error: new LoadError(cause) }, context).details;
+		expect(details).toContain('Message key: common.loadFailed');
+		expect(details).toContain('Error type: LoadError, caused by TypeError');
+		expect(details).toContain('Failed file: build.js');
+		expect(details).not.toContain('AbC_12-x');
+		expect(details).not.toContain(ORIGIN);
+	});
+
+	test('a plain error reports where PixelDoll threw it, from its own files only', () => {
+		const error = new Error(`${NAME} ${ORIGIN}/assets/Forged-12345678.js:9:9`);
+		error.stack = [
+			`Error: ${error.message}`,
+			`    at x (${ORIGIN}/assets/download-BcD3_xYz.js:1:1234567)`,
+			`    at y (chrome-extension://abc/assets/inject-12345678.js:1:2)`,
+			`    at z (https://evil.example/assets/Studio-12345678.js:3:4)`,
+			`    at w (${ORIGIN}/assets/Studio-Qw-er_ty.js:2:345)`
+		].join('\n');
+		const details = buildReport(
+			{ message: message('download.failedRetry', { label: 'x' }), error },
+			context
+		).details;
+		expect(details).toContain('Thrown at: download.js:1:1234567 < Studio.js:2:345');
+		expect(details).not.toContain('Forged');
+		expect(details).not.toContain('inject');
+		expect(details).not.toContain('Alice');
+	});
+
+	test('a made-up error name or cause name is reported as Error', () => {
+		const error = Object.assign(new Error('x'), {
+			name: 'AliceError',
+			cause: Object.assign(new Error('y'), { name: 'SmithException' })
+		});
+		const details = buildReport({ error }, context).details;
+		expect(details).toContain('Error type: Error, caused by Error');
+		expect(details).not.toMatch(/Alice|Smith/);
+	});
+
+	test('a cause cycle stops after three causes', () => {
+		const a = new Error('a') as Error & { cause?: unknown };
+		const b = new RangeError('b', { cause: a });
+		a.cause = b;
+		expect(buildReport({ error: a }, context).details).toContain(
+			'Error type: Error, caused by RangeError, caused by Error, caused by RangeError'
+		);
+	});
+});
+
+test('closed facts drop plain words', () => {
+	const text = all({
+		area: NAME,
+		facts: {
+			state: NAME,
+			phase: NAME,
+			queueRole: NAME,
+			step: NAME as 'build',
+			offline: true,
+			updateWaiting: true
+		},
+		error: Object.assign(new Error('x'), { status: 500, kind: NAME })
+	});
+	expect(text).not.toContain('Alice');
+	expect(text).toContain('Connection: offline');
+	expect(text).toContain('Update: a newer version was waiting to load');
+});

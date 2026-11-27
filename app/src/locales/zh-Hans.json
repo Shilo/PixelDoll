@@ -3424,7 +3424,7 @@
 		"actionLabel": "报告此问题",
 		"actionLabelFor": "报告此问题：{name}",
 		"title": "报告此问题",
-		"intro": "这会在 GitHub 上打开一个公开问题，只包含下方文字。不包含图像、提示词、名称或密钥。你需要用自己的 GitHub 账号发布。",
+		"intro": "这会在 GitHub 上打开一个公开问题，只包含下方文字，其中包括你刚才使用的 PixelDoll 界面和按钮。不包含图像、提示词、名称、文件或密钥。你需要用自己的 GitHub 账号发布。",
 		"preview": "报告预览",
 		"copy": "复制报告",
 		"copied": "已复制",

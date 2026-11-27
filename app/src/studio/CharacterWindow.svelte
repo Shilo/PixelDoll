@@ -198,6 +198,7 @@
 	{#snippet footer()}
 		{#if id !== doc.id}<button
 				class="bu-action btn open-character"
+				data-trail="characterWindow.open"
 				data-variant="primary"
 				onclick={() => {
 					ui.sheet = null;
@@ -249,6 +250,7 @@
 											detail: t('characterWindow.adjustFrameDetail'),
 											aside: '',
 											opens: true,
+											trail: 'characterWindow.adjustFrame',
 											onclick: () => tool('adjustFrame')
 										}}
 									/>
@@ -261,6 +263,7 @@
 											detail: t('characterWindow.directionsDetail'),
 											aside: '',
 											opens: true,
+											trail: 'characterWindow.directions',
 											onclick: () => tool('directions')
 										}}
 									/>
@@ -284,6 +287,7 @@
 										detail: t('characterWindow.costEstimateDetail'),
 										aside: '',
 										opens: true,
+										trail: 'characterWindow.costEstimate',
 										onclick: () => tool('cost')
 									}}
 								/>

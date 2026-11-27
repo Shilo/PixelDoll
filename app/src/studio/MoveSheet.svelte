@@ -1530,14 +1530,19 @@
 			{/each}
 		</select>
 	</label>
-	<button class="bu-action" data-variant="quiet" type="button" onclick={device}
-		>{t('moveSheet.fromDevice')}</button
+	<button
+		class="bu-action"
+		data-variant="quiet"
+		type="button"
+		data-trail="move.frameFromDevice"
+		onclick={device}>{t('moveSheet.fromDevice')}</button
 	>
 	{#if kind === 'end' ? frameReference?.start || standingImage : model !== 'skeleton-v3' && frameReference?.end}
 		<button
 			class="bu-action"
 			data-variant="quiet"
 			type="button"
+			data-trail="move.copyFrame"
 			onclick={() => {
 				close();
 				copyFrame(direction, kind);
@@ -1553,6 +1558,7 @@
 		<button
 			class="bu-action btn primary"
 			data-variant="primary"
+			data-trail="move.done"
 			onclick={() => {
 				void dismissMove();
 				ui.sheet = null;
@@ -1563,6 +1569,7 @@
 				class="bu-action btn"
 				data-variant="outline"
 				disabled={moving.resolvingRepair || queue.role === 'follower'}
+				data-trail="move.keepCurrent"
 				onclick={() => void resolveRepairReview(false)}>{t('moveSheet.review.keepCurrent')}</button
 			>{/if}
 		<button
@@ -1571,6 +1578,7 @@
 			disabled={moving.resolvingRepair ||
 				queue.role === 'follower' ||
 				(!moving.repairApplied && nothingChosen)}
+			data-trail="move.useRepairs"
 			onclick={() => void resolveRepairReview(true, keepFailed)}
 			>{moving.repairApplied
 				? t('moveSheet.review.finish')
@@ -1584,14 +1592,18 @@
 		>
 	{:else if progress && moving.error}
 		<div class="recovery-actions">
-			<button class="bu-action btn plain" data-variant="quiet" onclick={() => leaveFailedMove(true)}
-				>{t('common.discard')}</button
+			<button
+				class="bu-action btn plain"
+				data-variant="quiet"
+				data-trail="move.discard"
+				onclick={() => leaveFailedMove(true)}>{t('common.discard')}</button
 			>
 			<div class="recovery-options">
 				{#if !moving.spec?.itemsOnly && ok}
 					<button
 						class="bu-action btn"
 						data-variant="outline"
+						data-trail="move.newSetup"
 						onclick={() => leaveFailedMove(false)}>{t('moveSheet.newSetup')}</button
 					>
 				{/if}
@@ -1602,6 +1614,7 @@
 						data-variant={freeWayOn ? 'outline' : 'primary'}
 						disabled={!!retryAccess.error || tierBlocked(retryTier) || paidRunning}
 						aria-describedby={tierBlocked(retryTier) ? 'move-retry-tier' : undefined}
+						data-trail="move.retry"
 						onclick={() =>
 							moving.spec &&
 							withKey(() => {
@@ -1625,8 +1638,11 @@
 		<!-- new seed re-rolls body + item poses (R6 P2-7) -->
 	{:else if progress}
 		<span class="foot-note" id="sheet-exit-note">{t('common.keepsRunning')}</span>
-		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.moveFormOpen = true)}
-			>{t('moveSheet.queueAnother')}</button
+		<button
+			class="bu-action btn"
+			data-variant="outline"
+			data-trail="move.queueAnother"
+			onclick={() => (ui.moveFormOpen = true)}>{t('moveSheet.queueAnother')}</button
 		>
 	{:else if ok}
 		{@const review = skeletonReview?.review}
@@ -1653,6 +1669,7 @@
 					(!!settingUp.spec && !settingUp.done) ||
 					(!needsConnection && tierBlocked(requiredTier))}
 				aria-describedby={tierBlocked(requiredTier) ? 'move-action-tier' : undefined}
+				data-trail="move.generate"
 				onclick={go}
 				><span>
 					{t(
@@ -2022,12 +2039,17 @@
 			><button
 				class="bu-action btn sm"
 				data-variant="outline"
+				data-trail="move.openCharacter"
 				onclick={() => void openProject(moving.projectId)}
 				>{t('moveSheet.open', { character: holder })}</button
 			>
 		</p>{/if}
 	{#if mine && ui.moveFormOpen && moving.repairReview}
-		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.moveFormOpen = false)}
+		<button
+			class="bu-action btn"
+			data-variant="outline"
+			data-trail="move.backToReview"
+			onclick={() => (ui.moveFormOpen = false)}
 			>{redrawing ? t('moveSheet.review.redrawTitle') : t('moveSheet.review.repairTitle')}</button
 		>
 	{/if}
@@ -2192,6 +2214,7 @@
 				{#if moving.error && !moving.done && !recoveryAccess.error}<button
 						class="bu-action btn primary frame-recovery-action"
 						data-variant="primary"
+						data-trail="move.useSaved"
 						onclick={() =>
 							moving.spec &&
 							void startMove(moving.projectId, {
@@ -2250,6 +2273,7 @@
 					{#if moving.error && !moving.done}<button
 							class="bu-action btn primary frame-recovery-action"
 							data-variant="primary"
+							data-trail="move.keepFrames"
 							onclick={keepBody}>{t('moveSheet.keepFrames')}</button
 						>{/if}
 				</section>
@@ -2279,6 +2303,7 @@
 						data-variant="primary"
 						disabled={!!recoveryAccess.error || tierBlocked(recoveryTier)}
 						aria-describedby={tierBlocked(recoveryTier) ? 'move-retry-tier' : undefined}
+						data-trail="move.retryChecks"
 						onclick={retryChecks}
 						>{recovery.checks ? t('moveSheet.retryChecks') : t('moveSheet.reuseCached')}</button
 					>{/if}
@@ -2313,13 +2338,18 @@
 						data-variant="primary"
 						disabled={!!recoveryAccess.error || tierBlocked(recoveryTier)}
 						aria-describedby={tierBlocked(recoveryTier) ? 'move-retry-tier' : undefined}
+						data-trail="move.matchColors"
 						onclick={matchColors}>{t('moveSheet.matchColors')}</button
 					>{/if}
 			{/if}
 			{#if recoveryError}<ProblemNotice error={recoveryError} />{/if}
 			{#if paidUnread}<p class="notice warn small">{t('paidReview.loadFailed')}</p>
-				<button class="bu-action" type="button" data-variant="quiet" onclick={() => paidReads++}
-					>{t('common.tryAgain')}</button
+				<button
+					class="bu-action"
+					type="button"
+					data-variant="quiet"
+					data-trail="move.retryPaidRead"
+					onclick={() => paidReads++}>{t('common.tryAgain')}</button
 				>{/if}
 			{#each moving.warnings as warning (warning)}<p class="notice warn small">
 					<CircleAlert size={14} />{bodyQualityNote(warning, t)}
@@ -2330,6 +2360,7 @@
 					<button
 						class="bu-action btn sm"
 						data-variant="outline"
+						data-trail="move.skeletonReview"
 						onclick={() => (reviewingSkeletonFor = moving.spec)}
 					>
 						{t('moveSheet.skeleton.title')}
@@ -2352,6 +2383,7 @@
 		{#if !isDemo()}<button
 				class="bu-action btn primary"
 				data-variant="primary"
+				data-trail="move.setup"
 				onclick={() => (ui.sheet = 'setup')}
 				>{openerLabel(t('setup.title'))}<SurfaceChevron /></button
 			>{/if}
@@ -2441,6 +2473,7 @@
 									class="bu-action"
 									data-variant="primary"
 									disabled={fitBusy}
+									data-trail="move.saveFit"
 									onclick={saveFit}
 								>
 									{t('stateJointFit.save')}
@@ -2449,7 +2482,12 @@
 									{t('moveSheet.skeleton.back')}
 								</button>
 							{:else if fitQuote}
-								<button class="bu-action" data-variant="primary" onclick={measureFit}>
+								<button
+									class="bu-action"
+									data-variant="primary"
+									data-trail="move.measureFit"
+									onclick={measureFit}
+								>
 									{t('stateJointFit.measure')}
 									<span class="cost"
 										>{fitQuote.generations
@@ -2462,6 +2500,7 @@
 									class="bu-action"
 									data-variant="outline"
 									disabled={fitBusy}
+									data-trail="move.checkFitCost"
 									onclick={checkFitCost}
 								>
 									{t(
@@ -2614,6 +2653,7 @@
 								data-variant="quiet"
 								aria-expanded={advancedOpen}
 								aria-controls="{advancedId}-advanced"
+								data-trail="move.advanced"
 								onclick={() => void toggleAdvanced()}
 								><ChevronRight size={14} />{t('common.advanced')}{#if advancedNote}<span
 										class="faint advanced-note">{advancedNote}</span
@@ -2653,6 +2693,7 @@
 									class="bu-action btn"
 									data-variant="outline"
 									disabled={enlarging || !!frameEditsBlocked(doc.id)}
+									data-trail="move.makeRoom"
 									onclick={() => void room()}>{t('moveSheet.makeRoom')}</button
 								>
 								{#if enlargeError}<p class="notice bad small" role="alert">

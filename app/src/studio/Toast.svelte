@@ -11,7 +11,6 @@
 	import { pwa } from '../lib/pwa.ts';
 	import PendingIndicator from './PendingIndicator.svelte';
 	import ReportButton from './ReportButton.svelte';
-	import { areaOf } from './report.svelte.ts';
 
 	let host = $state<HTMLDivElement>();
 	const showUpdate = $derived(updateNotice.visible && !updateNotice.aboutOpen);
@@ -197,14 +196,11 @@
 								type="button"
 								class="bu-action btn sm"
 								data-variant="outline"
+								data-trail="toast.action"
 								onclick={activate}>{displayNestedMessage(ui.toastActionLabel)}</button
 							>
 						{/if}
-						{#if ui.toastProblem}<ReportButton
-								{...ui.toastProblem}
-								area={areaOf(ui.toastSheet)}
-								outlined
-							/>{/if}
+						{#if ui.toastProblem}<ReportButton {...ui.toastProblem} outlined />{/if}
 					</div>
 				{/if}
 			</Notice>{/if}

@@ -26,5 +26,5 @@ body:
     id: details
     attributes:
       label: Technical details
-      description: Filled in by the Report button in PixelDoll. It holds only app, browser and error facts.
+      description: Filled in by the Report button in PixelDoll. It holds only app, browser and error facts and the PixelDoll screens and buttons used just before.
       render: text

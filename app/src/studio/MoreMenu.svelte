@@ -72,6 +72,7 @@
 			class="row bu-action"
 			data-variant="quiet"
 			aria-haspopup="dialog"
+			data-trail="more.connect"
 			onclick={() => {
 				closeOptions();
 				ui.sheet = 'connect';
@@ -94,6 +95,7 @@
 		{#if studio}<DemoCopyRow id={doc.id} close={closeOptions} />{/if}
 		{#if studio}<button
 				class="row bu-action mobile-random"
+				data-trail="more.randomLook"
 				data-variant="quiet"
 				disabled={!m}
 				onclick={() => {
@@ -103,6 +105,7 @@
 			>{/if}
 		{#if studio}<button
 				class="row bu-action mobile-undo"
+				data-trail="more.undo"
 				data-variant="quiet"
 				disabled={!undoText}
 				onclick={() => {
@@ -112,6 +115,7 @@
 			>{/if}
 		{#if studio}<button
 				class="row bu-action mobile-redo"
+				data-trail="more.redo"
 				data-variant="quiet"
 				disabled={!redoText}
 				onclick={() => {
@@ -121,6 +125,7 @@
 			>{/if}
 		{#if studio}<button
 				class="row bu-action mobile-share"
+				data-trail="more.share"
 				data-variant="quiet"
 				disabled={!m}
 				onclick={() => {
@@ -132,6 +137,7 @@
 			>{/if}
 		{#if studio}<button
 				class="row bu-action mobile-export"
+				data-trail="more.export"
 				data-variant="quiet"
 				aria-haspopup="dialog"
 				disabled={!m}
@@ -146,6 +152,7 @@
 		<!-- Narrow phones move Inspect here from the playback bar so its controls keep full-size targets. -->
 		{#if studio && experience.mode === 'preview'}<button
 				class="row bu-action mobile-inspect"
+				data-trail="more.inspect"
 				data-variant="quiet"
 				aria-label={t('experience.inspect')}
 				disabled={!m}
@@ -158,6 +165,7 @@
 			>{/if}
 		{#if studio && experience.mode === 'preview'}<button
 				class="row bu-action mobile-mount"
+				data-trail="more.mountSettings"
 				data-variant="quiet"
 				aria-haspopup="dialog"
 				disabled={!m}
@@ -175,6 +183,7 @@
 			data-variant="quiet"
 			aria-haspopup="dialog"
 			aria-keyshortcuts={ariaShortcut(SETTINGS_KEYS)}
+			data-trail="more.settings"
 			onclick={() => {
 				closeOptions();
 				openSettings();
@@ -200,6 +209,7 @@
 		<button
 			class="row bu-action"
 			data-variant="quiet"
+			data-trail="more.activity"
 			onclick={() => {
 				closeOptions();
 				ui.sheet = 'activity';
@@ -217,6 +227,7 @@
 				class="row bu-action"
 				data-variant="quiet"
 				aria-haspopup="dialog"
+				data-trail="more.workspaceActivity"
 				onclick={() => {
 					closeOptions();
 					ui.sheet = 'workspaceReport';
@@ -232,6 +243,7 @@
 				class="row bu-action"
 				data-variant="quiet"
 				disabled={$pwa.installing}
+				data-trail="more.install"
 				onclick={() => {
 					void installApp();
 				}}
@@ -243,6 +255,7 @@
 				class="row bu-action"
 				data-variant="quiet"
 				disabled={!$pwa.ready}
+				data-trail="more.update"
 				onclick={() => requestUpdate()}
 				><RefreshCw size={18} /><span class="row-name"
 					>{t('toolbar.updateToVVersion', { version: $pwa.available.version })}</span
@@ -252,6 +265,7 @@
 			class="row bu-action"
 			data-variant="quiet"
 			popovertarget="help-options"
+			data-trail="more.help"
 			aria-controls="help-options"
 		>
 			<CircleHelp size={18} aria-hidden="true" />
@@ -272,6 +286,7 @@
 				{#if tipsEnabled}<button
 						class="row bu-action"
 						data-variant="quiet"
+						data-trail="more.showTips"
 						onclick={() => {
 							closeOptions();
 							showTipsAgain();
@@ -284,6 +299,7 @@
 					class="row bu-action"
 					data-variant="quiet"
 					href={`${repository}/blob/main/docs/user-guide.md`}
+					data-trail="more.userGuide"
 					target="_blank"
 					rel="noopener"
 					onclick={closeOptions}
@@ -299,6 +315,7 @@
 					target="_blank"
 					rel="noreferrer"
 					aria-labelledby="problem-report-label"
+					data-trail="more.reportProblem"
 					aria-describedby="problem-report-notice"
 					onclick={closeOptions}
 				>
@@ -312,7 +329,12 @@
 					<ExternalLink size={16} aria-hidden="true" />
 				</a>
 				{#if import.meta.env.PROD && !workspaceCopy}
-					<button class="row bu-action" data-variant="quiet" onclick={requestInstallHelp}>
+					<button
+						class="row bu-action"
+						data-variant="quiet"
+						data-trail="more.installHelp"
+						onclick={requestInstallHelp}
+					>
 						<MonitorDown size={18} /><span class="row-name"
 							>{openerLabel(t('pwaRuntime.installationHelp'))}</span
 						>

@@ -82,6 +82,7 @@
 								class="bu-action btn make"
 								data-variant="outline"
 								disabled={busy}
+								data-trail="importItems.remake"
 								onclick={() => onmake(entry)}>{t('itemMenu.remake')}<SurfaceChevron /></button
 							>{/if}
 					</span>

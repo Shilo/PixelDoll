@@ -69,13 +69,20 @@
 	</p>
 	<!-- Whole buttons wrap, never their labels; the last (primary) one then fills its own row. -->
 	<div class="report-actions">
-		<button bind:this={closeButton} class="bu-btn" onclick={closeReport}>{t('common.close')}</button
+		<button bind:this={closeButton} class="bu-btn" data-trail="report.close" onclick={closeReport}
+			>{t('common.close')}</button
 		>
-		<button class="bu-btn" onclick={copy}
+		<button class="bu-btn" data-trail="report.copy" onclick={copy}
 			>{t(copied === 'done' ? 'report.copied' : 'report.copy')}</button
 		>
 		<!-- It stays open: a blocked popup would otherwise lose the report. -->
-		<a class="bu-btn" data-variant="primary" href={url} target="_blank" rel="noreferrer"
+		<a
+			class="bu-btn"
+			data-variant="primary"
+			data-trail="report.open"
+			href={url}
+			target="_blank"
+			rel="noreferrer"
 			>{t('report.open')}<ExternalLink size={16} aria-hidden="true" /><span class="bu-sr"
 				>{' ' + t('noticeLink.opensInANewTab')}</span
 			></a

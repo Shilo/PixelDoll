@@ -28,7 +28,7 @@
 </script>
 
 {#if id.startsWith('fixture:')}
-	<button class="row" role="menuitem" disabled={busy} onclick={editCopy}>
+	<button class="row" role="menuitem" data-trail="demo.editCopy" disabled={busy} onclick={editCopy}>
 		<Copy size={16} /><span class="row-name">{t('demoCopyRow.editACopy')}</span>
 	</button>
 {/if}
