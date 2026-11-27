@@ -171,6 +171,46 @@ describe('buildReport', () => {
 		}
 	});
 
+	test('a service worker fact reports only whether it controlled the page', () => {
+		const controlling = buildReport(
+			{ facts: { download: 'character', serviceWorkerControlled: true } },
+			context
+		);
+		expect(controlling.details).toContain('Download: Character ZIP');
+		expect(controlling.details).toContain('Service worker: controlling page');
+		const notControlling = buildReport(
+			{ facts: { download: 'character', serviceWorkerControlled: false } },
+			context
+		);
+		expect(notControlling.details).toContain('Service worker: not controlling page');
+	});
+
+	test('a missing or malformed service worker fact is left out', () => {
+		expect(buildReport({ facts: { download: 'character' } }, context).details).not.toContain(
+			'Service worker'
+		);
+		for (const value of ['true', 1, null, {}, 'yes', undefined]) {
+			const report = buildReport(
+				{ facts: { serviceWorkerControlled: value } as unknown as ProblemFacts },
+				context
+			);
+			expect(report.details).not.toContain('Service worker');
+		}
+	});
+
+	test('a download report keeps character facts it was given', () => {
+		const report = buildReport(
+			{
+				facts: {
+					download: 'character',
+					character: { frame: { w: 64, h: 64 }, moveFailure: true, moveKind: 'custom' }
+				}
+			},
+			context
+		);
+		expect(report.details).toContain('Character: 64x64 px frame, custom move');
+	});
+
 	test('a PixelLab failure reports its status, endpoint and message key, but no text from the request', () => {
 		const error = new ApiError(
 			422,

@@ -1,7 +1,7 @@
 // Download ZIP in the ⋮ menus: one click, no format choice. PNG + JSON works in any engine with a little code, and its
 // editable copy imports back into PixelDoll; engine formats stay in Export.
 import type { Look } from '../lib/export/build.ts';
-import { lazy } from '../lib/lazy.ts';
+import { lazy, LoadError } from '../lib/lazy.ts';
 import { readExportSettings } from '../lib/store/export-settings.ts';
 import type { StoredProject } from '../lib/store/project.ts';
 import type { Manifest, Project } from '../lib/store/manifest.ts';
@@ -109,10 +109,20 @@ const pending = new Set<string>();
 
 function downloadFailed(action: DownloadAction, label: string | Message, error: unknown) {
 	console.error('download', action, error);
+	// Catch-site evidence distinguishes a stale tab from a failed request in a page the worker already controls.
+	let serviceWorkerControlled: boolean | undefined;
+	if (error instanceof LoadError) {
+		try {
+			const worker = navigator.serviceWorker;
+			if (worker) serviceWorkerControlled = worker.controller !== null;
+		} catch (diagnosticError) {
+			console.warn('Could not read service worker state for the download report.', diagnosticError);
+		}
+	}
 	toast(errorTranslation(error) ?? message('download.failedRetry', { label }), {
 		tone: 'danger',
 		error,
-		facts: { download: action }
+		facts: { download: action, serviceWorkerControlled }
 	});
 }
 

@@ -2465,6 +2465,8 @@ test('quick download reports a missing module, then recovers working images afte
 	const fields = new URL(href!).searchParams;
 	expect(fields.get('details')).toContain('Download: Character ZIP');
 	expect(fields.get('details')).toContain('Message key: common.loadFailed');
+	expect(fields.get('details')).toContain('Service worker: not controlling page');
+	expect(fields.get('details')).not.toContain('Character:');
 	expect([...fields.values()].join('\n')).not.toContain('Export settings test');
 
 	await page.unroute(buildModule);

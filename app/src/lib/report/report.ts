@@ -26,6 +26,8 @@ export interface CharacterFacts {
 export interface ProblemFacts {
 	/** The Studio download action, independent of the name of the file or character. */
 	download?: DownloadAction;
+	/** Whether a service worker controlled the page when a download error was caught. */
+	serviceWorkerControlled?: boolean;
 	/** HTTP status of the failed PixelLab request. */
 	status?: number;
 	method?: string;
@@ -449,6 +451,14 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 			'Download',
 			typeof facts.download === 'string' && Object.hasOwn(DOWNLOAD_LABELS, facts.download)
 				? DOWNLOAD_LABELS[facts.download]
+				: undefined
+		],
+		[
+			'Service worker',
+			typeof facts.serviceWorkerControlled === 'boolean'
+				? facts.serviceWorkerControlled
+					? 'controlling page'
+					: 'not controlling page'
 				: undefined
 		],
 		['Character', characterFacts(facts.character, area)],
