@@ -7,7 +7,7 @@ import {
 	folderText,
 	savedExport
 } from './project-folder-helpers.ts';
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
 
 const devURL = (info: { config: { projects: { name: string; use: { baseURL?: string } }[] } }) =>
 	info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!;
@@ -494,6 +494,13 @@ test('phone width, light theme and keyboard-only use show a readable Project fol
 	await expect
 		.poll(() => page.evaluate(() => document.documentElement.dataset.theme))
 		.toBe('light');
+	// Not linked yet, Export's card wraps its longer state line instead of widening the sheet past the screen.
+	const right = async (locator: Locator) => {
+		const box = (await locator.boundingBox())!;
+		return box.x + box.width;
+	};
+	expect(await right(await projectFolderCard(page))).toBeLessThanOrEqual(390);
+	expect(await right(page.getByRole('dialog'))).toBeLessThanOrEqual(390);
 	await linkFolder(page);
 	expect(id).toBeTruthy();
 	// The link click left focus on the (now replaced) Choose button, so re-enter as Export's card does.

@@ -56,7 +56,10 @@
 				<span class="folder-title">{t('projectFolder.title')}</span>
 				<!-- Where the files land, before their state: browsers give only the picked folder's name, never its full
 				     path. One line; a long path ends in the browser's ellipsis character. -->
-				{#if projectFolder.link}<span class="folder-path" id="project-folder-path"
+				{#if projectFolder.link}<span
+						class="folder-path"
+						id="project-folder-path"
+						title="{projectFolder.link.handle.name}/{projectFolder.link.subfolder}/"
 						>{projectFolder.link.handle.name}/{projectFolder.link.subfolder}/</span
 					>{/if}
 				<span class="folder-state" id="project-folder-summary" class:attention>{summary}</span>
@@ -89,6 +92,8 @@
 		display: grid;
 		flex: 1;
 		min-width: 0;
+		/* Buttons keep their label on one line; this card's state wraps so it never widens Export on a phone. */
+		white-space: normal;
 	}
 	.folder-title {
 		font-weight: 600;
