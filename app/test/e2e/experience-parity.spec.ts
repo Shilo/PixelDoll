@@ -4156,9 +4156,9 @@ test.describe('customization panel on compact touch screens', () => {
 		await toggle.tap();
 		await page.keyboard.press('Control+,');
 		const search = page.getByRole('searchbox', { name: 'Search settings' });
-		await search.fill('Hide panel when entering Live Views');
-		await page.getByRole('button', { name: /Hide panel when entering Live Views/ }).click();
-		const autoHide = page.getByRole('switch', { name: 'Hide panel when entering Live Views' });
+		await search.fill('Hide panel in Top-down and Side-scroller');
+		await page.getByRole('button', { name: /Hide panel in Top-down and Side-scroller/ }).click();
+		const autoHide = page.getByRole('switch', { name: 'Hide panel in Top-down and Side-scroller' });
 		await expect(autoHide).toBeChecked();
 		await autoHide.uncheck();
 		await page.keyboard.press('Escape');
@@ -5693,7 +5693,7 @@ test.describe('live views actions', () => {
 		}
 		await page.keyboard.press('Control+,');
 		const settings = page.getByRole('dialog', { name: 'Settings' });
-		await settings.getByRole('button', { name: 'Live views', exact: true }).click();
+		await settings.getByRole('button', { name: 'Play mode', exact: true }).click();
 		expect(
 			await settings
 				.locator('[data-setting^="live-"]')
@@ -5759,12 +5759,15 @@ test.describe('live views actions', () => {
 		await attackFrame('false', 'disabled');
 	});
 
-	test('Live views settings save the clip each action plays per character', async ({ page }) => {
+	test('Play mode settings save the clip each action plays per character', async ({ page }) => {
 		await customize(page);
 		await page.keyboard.press('Control+,');
 		const settings = page.getByRole('dialog', { name: 'Settings' });
-		const open = () => settings.getByRole('button', { name: 'Live views', exact: true }).click();
+		const open = () => settings.getByRole('button', { name: 'Play mode', exact: true }).click();
 		await open();
+		await expect(
+			settings.getByText('Animations your character uses in Top-down and Side-scroller.')
+		).toBeVisible();
 		const attack = settings.getByRole('button', { name: /^Attack: / });
 		await expect(attack).toHaveAccessibleName('Attack: Automatic: Cross punch');
 		await attack.click();

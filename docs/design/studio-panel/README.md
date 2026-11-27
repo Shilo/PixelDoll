@@ -20,7 +20,7 @@ Treat a visit as one trip from Preview into either Live View and back. Resolve a
 Save two preferences in local app settings, scoped to the browser and independent of character data.
 
 - **Settings → Appearance → Panel side** offers **Left** and **Right**, with **Right** selected by default. This preference applies to side-by-side layouts. Portrait bottom sheets keep their position. A side preference controls panel placement. The Attack, Jump, Sprint, and Mount cluster keeps its position relative to the stage and uses the existing safe-area rules.
-- **Settings → Live Views → Hide panel when entering Live Views** defaults on for eligible layouts. Supporting text names the scope and recovery: “On compact touch screens. Open it anytime from the toolbar.” A preference change applies on the next visit.
+- **Settings → Play mode → Hide panel in Top-down and Side-scroller** defaults on for eligible layouts. Supporting text names the scope and recovery: “On compact touch screens. Open it anytime from the toolbar.” A preference change applies on the next visit.
 
 Keep the selected tab, browsing offset, and panel visibility in the current Studio session. Equipment and other character edits continue to save under the existing rules. If Moves or States is selected in Preview, Live Views can show an available tab while Preview keeps the original selection and offset.
 
