@@ -54,6 +54,47 @@ export function failureReason(error: unknown): FailureReason {
 	return 'unknown';
 }
 
+/** Files read or written at once. A file operation mostly waits on the browser and the disk (on Windows, replacing a
+ *  file takes tens of milliseconds while the browser checks it), so a few in flight make a publish of hundreds of files
+ *  several times faster; measured in Edge and Brave, more than eight gained little. */
+const AT_ONCE = 8;
+
+/** Runs `work` on every item, at most AT_ONCE at a time, and resolves with each result in item order; the first failure
+ *  in item order (not in finishing order) is thrown once all have settled, so what is reported does not depend on timing. */
+async function allAtOnce<T, R>(items: readonly T[], work: (item: T) => Promise<R>): Promise<R[]> {
+	const results = await settleAtOnce(items, work);
+	for (const r of results) if (r.status === 'rejected') throw r.reason;
+	return results.map((r) => (r as PromiseFulfilledResult<R>).value);
+}
+
+async function settleAtOnce<T, R>(
+	items: readonly T[],
+	work: (item: T) => Promise<R>
+): Promise<PromiseSettledResult<R>[]> {
+	const results: PromiseSettledResult<R>[] = new Array(items.length);
+	let next = 0;
+	const worker = async () => {
+		while (next < items.length) {
+			const i = next++;
+			try {
+				results[i] = { status: 'fulfilled', value: await work(items[i]) };
+			} catch (reason) {
+				results[i] = { status: 'rejected', reason };
+			}
+		}
+	};
+	await Promise.all(Array.from({ length: Math.min(AT_ONCE, items.length) }, worker));
+	return results;
+}
+
+/** A staged write given up because another file of the same publish failed; its file was never replaced. */
+class Stopped extends Error {}
+
+/** Image payloads, written several at a time. Every other file (an engine's resources, scenes and indexes, which point
+ *  at the images or at each other) is written one at a time afterwards in the export's own order, and the manifest last,
+ *  so nothing that names a file lands before it. */
+const isPayload = (path: string) => path.endsWith('.png');
+
 export async function hashFiles(files: readonly FolderFile[]) {
 	const next = new Map<string, string>();
 	for (const file of files) next.set(file.name, await sha256(file.data));
@@ -87,9 +128,9 @@ export async function inSync(
 	const kept = new Set(record.kept);
 	try {
 		await target.check();
-		for (const [path, hash] of next)
-			if (!kept.has(path) && (await hashAt(target, path)) !== hash) return false;
-		return true;
+		const paths = [...next].filter(([path]) => !kept.has(path));
+		const found = await allAtOnce(paths, ([path]) => hashAt(target, path));
+		return paths.every(([, hash], i) => found[i] === hash);
 	} catch {
 		// Unreadable here means the full publish runs and reports the real problem.
 		return false;
@@ -101,7 +142,8 @@ export async function inSync(
  * @param overwrite conflicting paths the user approved replacing, each with the bytes they saw there
  * @param onRecord updates the trusted record for a path: PENDING just before a write (the path is untrusted while its
  *   swap may or may not have happened, so a crash there leaves it to the user), then the new hash after it, or the
- *   previous hash again (null: none) when the write failed before swapping. If recording fails, publishing stops.
+ *   previous hash again (null: none) when the write failed before swapping. If recording fails, no further write
+ *   starts; writes already under way finish and are recorded, each under its own PENDING mark.
  * @param proceed asked once the plan is ready, just before the first write; false stops without writing (such as
  *   automatic updates having been turned off meanwhile).
  */
@@ -125,7 +167,9 @@ export async function publishFiles(
 		const disk = new Map<string, string | null>();
 		// Kept files are the user's and never written, so they are not read either (one may be locked or unreadable).
 		const kept = new Set(o.record.kept);
-		for (const path of next.keys()) if (!kept.has(path)) disk.set(path, await hashAt(target, path));
+		const paths = [...next.keys()].filter((path) => !kept.has(path));
+		const found = await allAtOnce(paths, (path) => hashAt(target, path));
+		paths.forEach((path, i) => disk.set(path, found[i]));
 		const plan = planPublish({ next, record: o.record, disk, overwrite: o.overwrite });
 		// Files already holding the export's bytes that PixelDoll did not write: still the user's, but worth offering.
 		const matching = plan.actions.filter((a) => a.kind === 'foreign');
@@ -133,23 +177,33 @@ export async function publishFiles(
 		approved = plan.approved;
 		if (!plan.writes.length) return { kind: 'unchanged', kept: o.record.kept.length, matching };
 		if (o.proceed && !(await o.proceed())) return { kind: 'stopped' };
-		// The manifest goes last, so a game that reads it never sees it ahead of its images.
-		const order = [...plan.writes].sort(
-			(a, b) => Number(a.path === 'manifest.json') - Number(b.path === 'manifest.json')
-		);
-		for (const a of order) {
+		// Once any file fails, no further write starts, and one still checking its staged bytes is given up; writes
+		// already past that check finish and are recorded under their own PENDING mark.
+		let stop = false;
+		const failures: { path: string; error: unknown }[] = [];
+		const fail = (path: string, error: unknown) => {
+			stop = true;
+			failures.push({ path, error });
+		};
+		const write = async (a: PlanAction) => {
+			if (stop) return;
 			const expected = disk.get(a.path) ?? null;
-			// Checked again with the new bytes staged, just before they replace the file: anything changed since planning
-			// pauses the publish instead. (The browser has no compare-and-swap, so a change in the instant between this
-			// check and the swap can still be lost.)
 			const previous = Object.hasOwn(o.record.written, a.path) ? o.record.written[a.path] : null;
-			await o.onRecord(a.path, PENDING);
+			try {
+				await o.onRecord(a.path, PENDING);
+			} catch (error) {
+				return fail(a.path, error);
+			}
 			let created = false;
 			try {
+				// Checked again with the new bytes staged, just before they replace the file: anything changed since
+				// planning pauses the publish instead. (The browser has no compare-and-swap, so a change in the instant
+				// between this check and the swap can still be lost.)
 				await target.write(
 					a.path,
 					bytes.get(a.path)!,
 					async (createdHere) => {
+						if (stop) throw new Stopped();
 						const now = await hashAt(target, a.path);
 						return now === expected || (expected === null && createdHere && now === EMPTY_HASH);
 					},
@@ -157,45 +211,85 @@ export async function publishFiles(
 					() => (created = true)
 				);
 			} catch (error) {
+				if (!(error instanceof Stopped)) fail(a.path, error);
 				// The swap only happens when a write completes, so the file still holds its previous bytes. A new path
 				// this write created (the browser creates it empty on opening) stays pending, whether that file is still
 				// there or someone removed it meanwhile: it is the user's to delete or approve, never one PixelDoll
 				// recreates unasked.
+				// Given up only because another file failed: if the file this write created is still exactly the empty one
+				// it made, it is PixelDoll's, so the next publish may fill it rather than ask about it.
+				const untouched =
+					error instanceof Stopped &&
+					created &&
+					(await hashAt(target, a.path).catch(() => null)) === EMPTY_HASH;
 				const left = previous === null && created;
-				await o.onRecord(a.path, left ? PENDING : previous).catch((recordError: unknown) => {
+				const restore = untouched ? EMPTY_HASH : left ? PENDING : previous;
+				await o.onRecord(a.path, restore).catch((recordError: unknown) => {
 					console.warn('Could not restore the project folder record', recordError);
 				});
-				throw error;
+				return;
 			}
 			written++;
 			approved = approved.filter((c) => c.path !== a.path);
-			await o.onRecord(a.path, next.get(a.path)!);
+			try {
+				await o.onRecord(a.path, next.get(a.path)!);
+			} catch (error) {
+				// The file holds the new bytes but stays PENDING: untrusted, never mistaken for the older ones.
+				fail(a.path, error);
+			}
+		};
+		const payload = plan.writes.filter((a) => isPayload(a.path));
+		const rest = plan.writes.filter((a) => !isPayload(a.path) && a.path !== 'manifest.json');
+		await settleAtOnce(payload, write);
+		for (const a of rest) await write(a);
+		// The manifest goes last, so a game that reads it never sees it ahead of the files it describes.
+		for (const a of plan.writes) if (a.path === 'manifest.json') await write(a);
+		if (failures.length) {
+			// Reported the same way whatever finished first: every conflict in the export's order (with the approved
+			// files not yet written), else the first other failure in that order.
+			const rank = new Map(plan.writes.map((a, i) => [a.path, i]));
+			failures.sort((x, y) => rank.get(x.path)! - rank.get(y.path)!);
+			const conflicts: PlanAction[] = [];
+			for (const { error } of failures) {
+				const c = await conflictFor(target, error);
+				if (c) conflicts.push(c);
+			}
+			if (conflicts.length) {
+				const listed = new Set(conflicts.map((c) => c.path));
+				return {
+					kind: 'blocked',
+					conflicts: [...conflicts, ...approved.filter((c) => !listed.has(c.path))]
+				};
+			}
+			throw failures[0].error;
 		}
 		return { kind: 'published', written, kept: o.record.kept.length, matching };
 	} catch (error) {
-		// A folder that appeared where a file belongs: the user's, never replaced.
-		if (error instanceof NotAFileError)
+		const conflict = await conflictFor(target, error);
+		if (conflict)
 			return {
 				kind: 'blocked',
-				conflicts: [{ path: error.path, kind: 'conflict', reason: 'folder', found: NOT_A_FILE }]
+				conflicts: [conflict, ...approved.filter((c) => c.path !== conflict.path)]
 			};
-		if (error instanceof ChangedError) {
-			// What is there now decides what the user can approve. Unreadable bytes cannot be approved at all, so the
-			// review offers Try again instead of a Replace that would cover whatever turns up there later.
-			let conflict: PlanAction = { path: error.path, kind: 'conflict', reason: 'edited-outside' };
-			try {
-				const found = await hashAt(target, error.path);
-				if (found === null) conflict = { ...conflict, reason: 'deleted', found: DELETED };
-				else if (found === NOT_A_FILE) conflict = { ...conflict, reason: 'folder', found };
-				else conflict = { ...conflict, found };
-			} catch {
-				// The pause stands either way.
-			}
-			return {
-				kind: 'blocked',
-				conflicts: [conflict, ...approved.filter((c) => c.path !== error.path)]
-			};
-		}
 		return { kind: 'failed', reason: failureReason(error), error, written };
+	}
+}
+
+/** The conflict an error stands for, or null when it is not one. A folder that appeared where a file belongs is the
+ *  user's, never replaced. For a file changed while publishing, what is there now decides what the user can approve:
+ *  unreadable bytes cannot be approved at all, so the review offers Try again instead of a Replace that would cover
+ *  whatever turns up there later. */
+async function conflictFor(target: FolderTarget, error: unknown): Promise<PlanAction | null> {
+	if (error instanceof NotAFileError)
+		return { path: error.path, kind: 'conflict', reason: 'folder', found: NOT_A_FILE };
+	if (!(error instanceof ChangedError)) return null;
+	const conflict: PlanAction = { path: error.path, kind: 'conflict', reason: 'edited-outside' };
+	try {
+		const found = await hashAt(target, error.path);
+		if (found === null) return { ...conflict, reason: 'deleted', found: DELETED };
+		if (found === NOT_A_FILE) return { ...conflict, reason: 'folder', found };
+		return { ...conflict, found };
+	} catch {
+		return conflict; // the pause stands either way
 	}
 }

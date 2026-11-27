@@ -164,12 +164,31 @@ describe('publishFiles', () => {
 		expect(await folder.publish({ 'a.png': '2', 'b.png': '2' })).toMatchObject({
 			kind: 'failed'
 		});
-		expect(folder.text('b.png')).toBe('1');
+		// Images are written several at a time, so b.png may have been under way and finished; either way its record
+		// says exactly what it holds, never an older hash.
+		expect(folder.record.written['b.png']).toBe(await hash(folder.text('b.png')!));
 		folder.failRecord = undefined;
 		expect(await folder.publish({ 'a.png': '3', 'b.png': '2' })).toMatchObject({
 			kind: 'blocked',
 			conflicts: [{ path: 'a.png' }]
 		});
+	});
+
+	it('starts no further write once one fails, and still writes the manifest only after every other file', async () => {
+		const folder = memoryFolder();
+		const entries = Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`f${i}.png`, 'x']));
+		folder.failRecord = (path) => (path === 'f0.png' ? new Error('storage full') : undefined);
+		expect(await folder.publish({ ...entries, 'manifest.json': 'm' })).toMatchObject({
+			kind: 'failed'
+		});
+		// At most the writes already under way when f0.png failed (eight at a time) finished; the rest never started.
+		expect(folder.log.length).toBeLessThanOrEqual(8);
+		expect(folder.text('manifest.json')).toBeNull();
+
+		folder.failRecord = undefined;
+		const again = memoryFolder();
+		await again.publish({ ...entries, 'manifest.json': 'm', 'godot/library.tres': 'lib' });
+		expect(again.log.slice(-2)).toEqual(['write godot/library.tres', 'write manifest.json']);
 	});
 
 	it('pauses on a deleted published file and restores it only when approved', async () => {
@@ -268,4 +287,28 @@ describe('folderSupport', () => {
 			})
 		).toBe('unsupported');
 	});
+});
+
+it('records a new file left empty by a write given up after another file failed, so the next publish fills it', async () => {
+	const folder = memoryFolder({ 'a.png': 'old' });
+	folder.record.written['a.png'] = await hash('old');
+	// a.png is edited in the game while its new bytes are staged. b.png is written at the same time: whether it finished
+	// or was given up still empty depends on timing, so this checks what must hold either way.
+	folder.onStage = (path) => {
+		if (path === 'a.png') folder.set(path, 'game edit');
+	};
+	expect(await folder.publish({ 'a.png': 'new', 'b.png': 'new b' })).toMatchObject({
+		kind: 'blocked',
+		conflicts: [{ path: 'a.png' }]
+	});
+	folder.onStage = undefined;
+	// b.png's record says exactly what it holds (its new bytes, or the empty file it created), never PENDING.
+	expect(folder.record.written['b.png']).toBe(await hash(folder.text('b.png') ?? ''));
+	expect(
+		await folder.publish(
+			{ 'a.png': 'game edit', 'b.png': 'new b' },
+			new Map([['a.png', await hash('game edit')]])
+		)
+	).toMatchObject({ kind: expect.stringMatching(/published|unchanged/) });
+	expect(folder.text('b.png')).toBe('new b');
 });

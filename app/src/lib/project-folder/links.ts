@@ -1,7 +1,7 @@
 // Linked project folders, one per character, and PixelDoll's trusted record of what it wrote into each, in their own small
 // database. Kept apart from the library so the feature can be absent, fail or be cleared without touching saved
 // characters, so backups never carry a device's folder handle, and so nothing in the user's folder can claim ownership.
-import type { FolderRecord, PlanAction } from './plan.ts';
+import { PENDING, type FolderRecord, type PlanAction } from './plan.ts';
 import type { Engine } from '../store/manifest.ts';
 
 export interface FolderLink {
@@ -149,12 +149,13 @@ type FileEntry = { link: string; path: string; hash?: string; kept?: true };
 
 async function inFiles<T>(
 	mode: IDBTransactionMode,
-	work: (store: IDBObjectStore, done: (value: T) => void) => void
+	work: (store: IDBObjectStore, done: (value: T) => void) => void,
+	durability?: IDBTransactionDurability
 ): Promise<T> {
 	const db = await open();
 	try {
 		return await new Promise<T>((resolve, reject) => {
-			const tx = db.transaction(FILES, mode);
+			const tx = db.transaction(FILES, mode, durability ? { durability } : undefined);
 			let result: T;
 			work(tx.objectStore(FILES), (value) => (result = value));
 			tx.oncomplete = () => resolve(result);
@@ -183,17 +184,24 @@ export function readRecord(key: string): Promise<FolderRecord> {
 
 /** Records that PixelDoll just left these bytes at the path; null marks it untrusted while a write is in flight. */
 export function recordWritten(key: string, path: string, hash: string | null): Promise<void> {
-	return inFiles('readwrite', (store, done) => {
-		const read = store.get([key, path]);
-		read.onsuccess = () => {
-			const { hash: _old, ...entry } = (read.result as FileEntry | undefined) ?? {
-				link: key,
-				path
+	// A PENDING mark must be on disk before its file is written: on a power loss the browser's default (relaxed) commit
+	// could otherwise lose it and leave the written file trusted under its older hash. Losing a final hash is harmless:
+	// the path just stays PENDING.
+	return inFiles(
+		'readwrite',
+		(store, done) => {
+			const read = store.get([key, path]);
+			read.onsuccess = () => {
+				const { hash: _old, ...entry } = (read.result as FileEntry | undefined) ?? {
+					link: key,
+					path
+				};
+				store.put(hash ? { ...entry, link: key, path, hash } : { ...entry, link: key, path });
+				done(undefined);
 			};
-			store.put(hash ? { ...entry, link: key, path, hash } : { ...entry, link: key, path });
-			done(undefined);
-		};
-	});
+		},
+		hash === PENDING ? 'strict' : undefined
+	);
 }
 
 /** Marks paths as kept by the user (never written again), or, with `keep` false, clears every kept mark. */
