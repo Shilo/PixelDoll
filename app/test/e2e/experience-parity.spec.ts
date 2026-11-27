@@ -447,6 +447,9 @@ test('full screen stays reachable from the header or More on narrow and landscap
 			expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
 			// A real pointer activation also detects overlapping header controls or navigation tabs.
 			await toggle.click();
+			await expect
+				.poll(() => page.evaluate(() => document.fullscreenElement === document.documentElement))
+				.toBe(true);
 			const exit = page.getByRole('button', { name: 'Exit full screen', exact: true });
 			if (!(await exit.isVisible())) await more.click();
 			await exit.click();
