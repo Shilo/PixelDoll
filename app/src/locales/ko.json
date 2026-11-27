@@ -375,6 +375,7 @@
 		"categories": "색상 카테고리"
 	},
 	"colorSections": {
+		"notWorn": "미착용",
 		"randomLowerColors": "{lower} 색상 무작위 지정",
 		"randomCharacterColors": "캐릭터 색상 무작위 지정",
 		"resetLowerColors": "{lower} 색상 초기화",
@@ -529,7 +530,6 @@
 		"matchingColors": "색상 맞추는 중…",
 		"matchItemColors": "아이템 색상 맞추기",
 		"recolor": "색상 변경",
-		"recolorWearFirst": "색을 바꾸려면 먼저 착용하세요",
 		"whenWornHide": "착용 중 다른 아이템 숨기기",
 		"iD": "ID",
 		"slot": "장착 슬롯",

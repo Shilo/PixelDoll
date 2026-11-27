@@ -2175,6 +2175,35 @@ test('saving an outfit never replaces another one, including a default name afte
 	expect(presets[0].name).toBe('Adventurer'); // the first (default) outfit keeps its place
 });
 
+test('saved outfits keep their linked colors and leave other item colors in the current look', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	const manifest = fixtureManifest();
+	const material = (owner: string, id: string, linkTo?: string) => {
+		manifest.items.find((item: { id: string }) => item.id === owner).materials.push(id);
+		return { owner, id, label: id, ramp: ['#123456'], variants: {}, linkTo };
+	};
+	manifest.materials = [
+		material('hat_wizard', 'hat'),
+		material('cape_red', 'cape', 'hair'),
+		material('hair_brown', 'hair')
+	];
+	s.store.project = { manifest, images: new Map() };
+	s.doc.id = 'fixture:s2';
+	s.doc.items = { back: 'cape_red' };
+	s.doc.variants = { hair: 'azure' };
+	s.savePreset('With a cape');
+	const saved = s.store.project!.manifest.presets.at(-1)!;
+	s.setVariant('hat', 'gold');
+	expect(s.sameOutfit(saved)).toBe(true);
+	s.setVariant('hair', 'gold');
+	expect(s.sameOutfit(saved)).toBe(false);
+	s.applyPreset(saved);
+	expect(s.doc.variants).toEqual({ hat: 'gold', hair: 'azure' });
+	s.savePreset('Another cape outfit');
+	expect(s.store.project!.manifest.presets.at(-1)!.variants).toEqual({ hair: 'azure' });
+	await s.flushSave();
+});
+
 test('Try again keeps the draft when Connect is closed without a key', async () => {
 	const s = await import('../../src/studio/state.svelte.ts');
 	const g = {

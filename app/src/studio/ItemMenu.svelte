@@ -21,7 +21,6 @@
 	import { queue } from '../lib/pixellab/queue.ts';
 	import {
 		ui,
-		doc,
 		store,
 		view,
 		openNewItem,
@@ -80,7 +79,6 @@
 	const m = $derived(store.project?.manifest);
 	const it = $derived(m?.items.find((i) => i.id === id));
 	let pickingSlot = $state(false);
-	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	// The header names the category; the lines below it explain each of the tile's icons (two hands among them).
 	const sentence = $derived(it ? displayMessage(slotLabelMessage(m, it.slot)) : '');
 	function close() {
@@ -252,7 +250,6 @@
 			<ItemActions
 				{m}
 				{it}
-				worn={on}
 				labelledby="item-menu-name"
 				bind:picking={pickingSlot}
 				{act}

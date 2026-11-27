@@ -1,41 +1,51 @@
 <script lang="ts">
 	import { t } from 'svelte-whisper';
 	import { message } from '../lib/message.ts';
-	// Colors tab: the character, then each worn item, in one continuous list with sticky headers like Wardrobe, and a rail
-	// of item icons that follows and drives it.
+	// The character and worn items have a continuous color list. Wardrobe Recolor can bring one unworn item into it.
 	import { onDestroy, tick } from 'svelte';
 	import { edgeFade, stickyFade } from '@shilo/bronze-ui/svelte';
 	import Colors from './Colors.svelte';
 	import GroupIcon from './GroupIcon.svelte';
 	import ListSearch from './ListSearch.svelte';
+	import Thumb from './Thumb.svelte';
 	import { matchesSearch } from '../lib/search/match.ts';
 	import { watchListSpacer } from './listSpacer.ts';
 	import { itemMaterialNames } from './materialNames.ts';
 	import { createSearchVisibility } from './searchVisibility.svelte.ts';
 	import { scrollToSection, sectionInView } from './sectionScroll.ts';
 	import { categories } from './slots.ts';
-	import { ui, doc, store, randomizeColors, resetColors } from './state.svelte.ts';
+	import { ui, doc, store, view, randomizeColors, resetColors } from './state.svelte.ts';
 	import { RotateCcw, Shuffle } from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
+	let target = $state.raw<typeof ui.colorsFocus>(null);
+	const targeted = $derived(target?.project === doc.id ? target?.item : undefined);
 	// The same order as Wardrobe's categories, so an item is in the same place in both tabs.
 	const order = $derived(new Map(m ? categories(m).map((c, i) => [c.key, i]) : []));
 	const sections = $derived(
 		m
 			? m.items
-					.filter((it) => it.id === m.rig.baseItem || doc.items[it.slot] === it.id)
+					.filter(
+						(it) => it.id === targeted || it.id === m.rig.baseItem || doc.items[it.slot] === it.id
+					)
+					.map((it) => ({
+						it,
+						base: it.id === m.rig.baseItem,
+						unworn: it.id !== m.rig.baseItem && doc.items[it.slot] !== it.id
+					}))
 					.sort(
 						(a, b) =>
-							+(b.id === m.rig.baseItem) - +(a.id === m.rig.baseItem) ||
-							(order.get(a.slot) ?? Number.MAX_SAFE_INTEGER) -
-								(order.get(b.slot) ?? Number.MAX_SAFE_INTEGER)
+							Number(b.unworn) - Number(a.unworn) ||
+							Number(b.base) - Number(a.base) ||
+							(order.get(a.it.slot) ?? Number.MAX_SAFE_INTEGER) -
+								(order.get(b.it.slot) ?? Number.MAX_SAFE_INTEGER)
 					)
-					.map((it) => {
+					.map(({ it, base, unworn }) => {
 						const mats = m.materials.filter((x) => x.owner === it.id);
-						const base = it.id === m.rig.baseItem;
 						return {
 							it,
 							base,
+							unworn,
 							name: base ? t('common.character') : it.name,
 							mats,
 							names: itemMaterialNames(it, mats, m),
@@ -118,12 +128,22 @@
 		if (list && last) return watchListSpacer(list, last, (h) => (spacer = h));
 	});
 	$effect(() => {
-		// Recolor in an item's details opens this tab on that item's section, once.
-		const id = ui.colorsFocus;
-		if (!id || !list) return;
+		// A Recolor shortcut should land even when the current search would filter the item out.
+		const request = ui.colorsFocus;
+		if (!request || !list) return;
+		const { project, item } = request;
+		if (doc.id === project) {
+			target = request;
+			query = '';
+		}
 		void tick().then(() => {
-			if (list?.querySelector(`[data-owner="${CSS.escape(id)}"]`)) void show(id, true);
-			ui.colorsFocus = '';
+			if (ui.colorsFocus !== request) return;
+			ui.colorsFocus = null;
+			if (doc.id !== project) return;
+			void show(item, true);
+			list
+				?.querySelector<HTMLElement>(`#${CSS.escape(`colors-${item}`)}`)
+				?.focus({ preventScroll: true });
 		});
 	});
 </script>
@@ -155,7 +175,14 @@
 				<section class="slot-section" data-owner={s.it.id} aria-labelledby="colors-{s.it.id}">
 					<div class="bu-section-head" data-current={active === s.it.id || undefined}>
 						<GroupIcon group={s.it.slot} surface="header" />
-						<h3 class="bu-section-title" id="colors-{s.it.id}">{s.name}</h3>
+						<h3
+							class="bu-section-title"
+							id="colors-{s.it.id}"
+							tabindex="-1"
+							aria-describedby={s.unworn ? `colors-status-${s.it.id}` : undefined}
+						>
+							{s.name}
+						</h3>
 						<button
 							class="bu-action section-action"
 							data-variant="quiet"
@@ -178,7 +205,19 @@
 								)}><RotateCcw size={16} /></button
 						>
 					</div>
-					<div class="section-body"><Colors only={s.it.id} /></div>
+					<div class="section-body">
+						{#if s.unworn && view.project}
+							<div class="unworn-summary">
+								<span class="unworn-art" aria-hidden="true">
+									<Thumb project={view.project} item={s.it} box={64} />
+								</span>
+								<span class="muted small" id="colors-status-{s.it.id}"
+									>{t('colorSections.notWorn')}</span
+								>
+							</div>
+						{/if}
+						<Colors only={s.it.id} />
+					</div>
 				</section>
 			{/each}
 			{#if !matched.length}
@@ -212,6 +251,7 @@
 									data-color-rail={s.it.id}
 									aria-current={active === s.it.id ? 'true' : undefined}
 									aria-label={s.name}
+									aria-describedby={s.unworn ? `colors-status-${s.it.id}` : undefined}
 									tabindex={active === s.it.id ? 0 : -1}
 									onclick={() => void show(s.it.id)}
 									><GroupIcon group={s.it.slot} surface="rail" /><span class="bu-rail-label"
@@ -226,3 +266,18 @@
 		{/if}
 	</div>
 </div>
+
+<style>
+	.unworn-summary {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.unworn-art {
+		display: grid;
+		place-items: center;
+		width: 64px;
+		height: 64px;
+		flex: none;
+	}
+</style>

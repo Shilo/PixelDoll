@@ -34,6 +34,11 @@ but not changes. The stage's frame-by-frame window, formerly Inspect, is now **V
 
 Every menu ends with **Rename…, Download ZIP, Move to Trash…**, in that order.
 
+**Recolor** opens an item's Colors section from its menu. For an unworn item, Colors adds a temporary **Not worn**
+section and rail entry with an item-only preview. This makes every item with a palette reachable from Wardrobe
+without filling Colors with gear the current outfit does not use. Leaving Colors closes the temporary section.
+Color changes use the usual undo and save behavior and apply when the item is worn.
+
 Words: anything the Trash keeps (characters, items, categories, moves, states, outfits) is **moved to the Trash**,
 in every label, lock reason, history step and error. **Delete** means gone for good: Delete forever in the Trash and
 Delete local work.
