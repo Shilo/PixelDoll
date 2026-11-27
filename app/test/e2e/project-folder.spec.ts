@@ -211,7 +211,7 @@ test('two tabs: turning off Update automatically in one tab blocks the other, an
 	await expect(await projectFolderCard(page)).toHaveAccessibleDescription(/Automatic updates off/);
 	// The card also says where the files land: the picked folder's name and the character's subfolder.
 	await expect(await projectFolderCard(page)).toHaveAccessibleDescription(
-		new RegExp(`game/${sub}/$`)
+		new RegExp(`^game/${sub}/ `)
 	);
 	expect(await folderText(page, manifestPath)).toBe(before);
 	const row = await openProjectFolderRow(page);

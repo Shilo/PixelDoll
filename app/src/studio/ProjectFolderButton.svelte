@@ -47,18 +47,19 @@
 			data-variant="field"
 			aria-label={t('projectFolder.title')}
 			aria-describedby={projectFolder.link
-				? 'project-folder-summary project-folder-path'
+				? 'project-folder-path project-folder-summary'
 				: 'project-folder-summary'}
 			onclick={onopen}
 		>
 			<FolderSync size={18} aria-hidden="true" />
 			<span class="folder-text">
 				<span class="folder-title">{t('projectFolder.title')}</span>
-				<span class="folder-state" id="project-folder-summary" class:attention>{summary}</span>
-				<!-- Where the files land: browsers give only the picked folder's name, never its full path. -->
+				<!-- Where the files land, before their state: browsers give only the picked folder's name, never its full
+				     path. One line; a long path ends in the browser's ellipsis character. -->
 				{#if projectFolder.link}<span class="folder-path" id="project-folder-path"
 						>{projectFolder.link.handle.name}/{projectFolder.link.subfolder}/</span
 					>{/if}
+				<span class="folder-state" id="project-folder-summary" class:attention>{summary}</span>
 			</span>
 			<ChevronRight size={16} aria-hidden="true" />
 		</button>
@@ -78,7 +79,7 @@
 		align-items: center;
 		gap: 10px;
 		width: 100%;
-		/* Three lines (title, state, location): the button grows with them instead of the theme's fixed height. */
+		/* Three lines (title, location, state): the button grows with them instead of the theme's fixed height. */
 		height: auto;
 		min-height: 44px;
 		padding-block: 8px;
