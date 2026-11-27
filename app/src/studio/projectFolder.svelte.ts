@@ -118,7 +118,11 @@ const problems = new Map<string, { linkedAt: string; status: FolderStatus }>();
 /** A link's offer of already matching files, stored on the link until answered, so it waits for a character that was
  *  not open when its first publish finished and survives a reload. */
 const offerFor = (link: FolderLink | null) =>
-	link?.offered?.length ? { linkedAt: link.linkedAt, files: link.offered } : null;
+	link?.offered?.length && !answeredHere.has(link.linkedAt)
+		? { linkedAt: link.linkedAt, files: link.offered }
+		: null;
+/** Offers this tab answered, so a refresh reading the link before the answer is stored never shows them again. */
+const answeredHere = new Set<string>();
 /** Background notices already shown this session, so a lasting problem is reported once rather than on every edit. */
 const noticed = new Set<string>();
 
@@ -448,7 +452,7 @@ async function publish(link: FolderLink, request: Request) {
 			return finished({ kind: 'done', kept: record.kept.length, already: false });
 		// It first tries the last time, so an export whose files did not change matches what is there and writes nothing.
 		let same: FolderFile[] | null = null;
-		if (link.exportedAt && !request.overwrite) {
+		if (link.exportedAt && !request.overwrite && !first) {
 			same = await buildFiles(link, input, settings, link.exportedAt);
 			const next = same && (await hashFiles(same));
 			if (
@@ -470,11 +474,12 @@ async function publish(link: FolderLink, request: Request) {
 		// over this character's own earlier export, that export's time) reproduces it byte for byte, that build is used,
 		// so only files that really differ are written and the manifest never pauses over its time alone. Otherwise the
 		// export gets a new time.
-		const there = await sameEarlierExport(target);
+		// A manifest the user keeps is never written, so it is not read either.
+		const there = record.kept.includes(MANIFEST) ? null : await sameEarlierExport(target);
 		const earlier = link.exportedAt ?? (first ? there?.exportedAt : undefined);
 		let exportedAt = now;
 		let files: FolderFile[] | null = null;
-		if (there && earlier && !request.overwrite) {
+		if (there && earlier) {
 			const built =
 				same && earlier === link.exportedAt
 					? same
@@ -706,6 +711,7 @@ export async function adoptMatchingFiles() {
 					await recordWritten(key, file.path, file.found);
 		});
 		// Gone once they are recorded, so the offer's disappearing means it took effect.
+		answeredHere.add(offer.linkedAt);
 		await answered(link);
 		if (projectFolder.offer?.linkedAt === offer.linkedAt) projectFolder.offer = null;
 	} catch (error) {
@@ -719,7 +725,9 @@ export async function leaveMatchingFiles() {
 	const offer = projectFolder.offer;
 	const link = offer && current(offer.linkedAt);
 	projectFolder.offer = null;
-	if (link) await answered(link);
+	if (!offer || !link) return;
+	answeredHere.add(offer.linkedAt);
+	await answered(link);
 }
 
 /** Forgets a link's answered offer, so it is not asked again after a reload. */
