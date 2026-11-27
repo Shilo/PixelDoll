@@ -680,8 +680,10 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 	const area = areaName(problem.area) ?? 'PixelDoll';
 	const kind = problem.tone === 'warning' ? 'warning' : 'error';
 	const unexpected = `Unexpected ${fromError.name && fromError.name !== NON_ERROR ? fromError.name : 'problem'}`;
-	const text = english || unexpected;
 	const endpoint = endpointPath(facts.endpoint ?? '') ?? fromError.endpoint;
+	// A stored PixelLab failure often keeps only provider text, which is never reported: say what kind of problem it was.
+	const text =
+		english || (endpoint && !problem.uncaught ? 'A PixelLab request failed' : unexpected);
 	const method = METHODS.has(facts.method ?? '') ? facts.method : fromError.method;
 	const seconds = count(facts.seconds);
 	const uptime = count(typeof problem.uptime === 'number' ? Math.round(problem.uptime) : undefined);
@@ -726,6 +728,12 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 		['Attempts', count(facts.attempts, 999)],
 		['Ran for', seconds === undefined ? undefined : duration(seconds)],
 		['App open for', uptime === undefined ? undefined : duration(uptime)],
+		[
+			'Seen',
+			problem.record && problem.failedAt === undefined
+				? 'in an earlier visit or another tab'
+				: undefined
+		],
 		['Connection', facts.offline === true ? 'offline' : undefined],
 		['Update', facts.updateWaiting === true ? 'a newer version was waiting to load' : undefined]
 	];

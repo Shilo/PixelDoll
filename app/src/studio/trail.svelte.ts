@@ -48,16 +48,23 @@ export function installTrail(): () => void {
 			if (before === record.state) continue;
 			states.set(record.id, record.state);
 			const settled = SETTLED.has(record.state);
-			if (settled && runsHere) settledHere.set(record.id, performance.now());
 			// A record from an earlier visit is history until it settles here.
-			const started = before === undefined && record.createdAt >= performance.timeOrigin;
-			if (runsHere && (started || (settled && before !== undefined)))
-				track({
+			const thisVisit = record.createdAt >= performance.timeOrigin;
+			const started = before === undefined && thisVisit;
+			const settledNow = settled && (before !== undefined || thisVisit);
+			if (!runsHere || !(started || settledNow)) continue;
+			// One clock reading, so the report of this failure keeps its own "failed" line.
+			const now = performance.now();
+			if (settledNow) settledHere.set(record.id, now);
+			track(
+				{
 					kind: 'job',
 					method: record.method,
 					endpoint: record.endpoint,
 					state: record.state
-				});
+				},
+				now
+			);
 		}
 		for (const id of states.keys())
 			if (!seen.has(id)) {

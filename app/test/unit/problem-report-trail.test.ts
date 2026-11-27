@@ -75,6 +75,14 @@ describe('trail ring', () => {
 		expect(trailSnapshot()).toMatchObject([{ at: 101, first: 95, times: 3 }]);
 	});
 
+	test('a clipped repeat takes its place by its first time', () => {
+		track({ kind: 'press', area: 'Studio', control: 'playback.play' }, 95);
+		track({ kind: 'press', area: 'Studio', control: 'zoom.in' }, 99);
+		track({ kind: 'press', area: 'Studio', control: 'playback.play' }, 101);
+		track({ kind: 'press', area: 'Studio', control: 'playback.play' }, 102);
+		expect(trailSnapshot(100).map((entry) => entry.at)).toEqual([99, 95]);
+	});
+
 	test('unnamed presses are never merged: they may be different controls', () => {
 		track({ kind: 'press', area: 'Studio' }, 1);
 		track({ kind: 'press', area: 'Studio' }, 2);
@@ -256,6 +264,18 @@ describe('error facts', () => {
 			'Error type: Error, caused by RangeError, caused by Error, caused by RangeError'
 		);
 	});
+});
+
+test('a stored PixelLab failure says what failed and that it is from another visit or tab', () => {
+	const report = buildReport(
+		{ area: 'Activity', record: true, facts: { method: 'POST', endpoint: '/inpaint-v3' } },
+		context
+	);
+	expect(report.title).toBe('Activity: A PixelLab request failed');
+	expect(report.details).toContain('Seen: in an earlier visit or another tab');
+	expect(
+		buildReport({ area: 'Activity', record: true, failedAt: 5 }, context).details
+	).not.toContain('Seen:');
 });
 
 test('closed facts drop plain words', () => {

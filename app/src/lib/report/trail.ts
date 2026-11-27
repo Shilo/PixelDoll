@@ -70,7 +70,8 @@ export function trailSnapshot(until = Infinity): TrailEntry[] {
 				: { at: entry.first, first: entry.first, event: { ...entry.event }, times: 1 }
 		);
 	}
-	return out;
+	// A clipped repeat moves back to its first time, which can be older than its neighbors.
+	return out.sort((a, b) => b.at - a.at);
 }
 
 /** For tests. */

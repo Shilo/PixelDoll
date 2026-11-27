@@ -128,7 +128,12 @@ export function captureProblem(problem: Problem, failedAt: number | undefined): 
 		},
 		trail,
 		failedAt,
-		uptime: (Date.now() - performance.timeOrigin) / 1000,
+		// How long the app had been open when it failed; unknown for a stored failure this tab did not see happen.
+		uptime:
+			problem.record && failedAt === undefined
+				? undefined
+				: (Date.now() - performance.timeOrigin) / 1000 -
+					(failedAt === undefined ? 0 : Math.max(0, performance.now() - failedAt) / 1000),
 		captured: true
 	};
 }

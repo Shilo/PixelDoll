@@ -510,8 +510,8 @@
 							...(outcome ? jobProblem(outcome.record).facts : {}),
 							phase: g.phase
 						},
-						// Only a request this tab saw settle has a failure time; otherwise its trail runs up to Report.
-						failedAt: outcome ? jobProblem(outcome.record).failedAt : undefined
+						// A request's failure time is known only when this tab saw it settle; otherwise its trail runs up to Report.
+						...(outcome && { failedAt: jobProblem(outcome.record).failedAt })
 					}}
 				/>{/if}
 			{#if providerFailed && !g.canceled}
