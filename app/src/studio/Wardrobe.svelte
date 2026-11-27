@@ -226,7 +226,13 @@
 						kind: 'hidden',
 						label: t('wardrobe.notShownInMove'),
 						text: t('wardrobe.notShownInMoveNote')
-					}
+					},
+			!!m &&
+				twoHanded(m, it) && {
+					kind: 'twoHanded',
+					label: t('itemMenu.twoHanded'),
+					text: t('wardrobe.twoHandedNote')
+				}
 		]);
 	}
 	/** An accessible tile name: the item, then what its icons say (a worn tile says so with aria-pressed), then any

@@ -901,6 +901,7 @@
 		"copiedFree": "{from} 캐릭터에서 무료로 복사했어요.",
 		"statusNote": "{status}.",
 		"hiddenNote": "다른 아이템에 가려짐.",
+		"twoHandedNote": "양손을 사용합니다.",
 		"fromOthers": "출처: {sources}. 아이템을 착용하면 {name} 캐릭터에 이 카테고리가 추가돼요.",
 		"source": "출처: {from}",
 		"sourceFree": "{from} 캐릭터에서 무료로 가져옴",

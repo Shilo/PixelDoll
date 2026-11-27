@@ -925,6 +925,7 @@
 		"copiedFree": "{from} karakterinden ücretsiz kopyalandı.",
 		"statusNote": "{status}.",
 		"hiddenNote": "Başka bir eşya tarafından gizleniyor.",
+		"twoHandedNote": "İki eli de kullanır.",
 		"fromOthers": "Kaynak: {sources}. Bir eşya giydirdiğinizde bu kategori {name} karakterine eklenir.",
 		"source": "Kaynak: {from}",
 		"sourceFree": "Ücretsiz · Kaynak: {from}",

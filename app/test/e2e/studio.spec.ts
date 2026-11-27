@@ -12384,8 +12384,14 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await expect(shield).toHaveAttribute('aria-pressed', 'false');
 	await expect(sword).toHaveAttribute('aria-pressed', 'true');
 	await expect(off).toContainText('Held by Steel longsword (two-handed).');
+	// Its tile says so with a grip icon, which its ⋮ explains.
+	await expect(sword).toHaveAccessibleName(/^Steel longsword, two-handed/);
+	await expect(sword.locator('.tile-status[data-kind="twoHanded"]')).toHaveAttribute(
+		'title',
+		'Uses both hands.'
+	);
 	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
-	await expect(itemMenu(page).locator('.item-menu-title small')).toContainText('Two-handed');
+	await expect(itemMenu(page).locator('.item-menu-marks')).toContainText('Uses both hands.');
 	await page.keyboard.press('Escape');
 
 	// Putting something in the other hand takes the two-handed item off.

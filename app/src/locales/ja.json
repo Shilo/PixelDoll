@@ -901,6 +901,7 @@
 		"copiedFree": "{from}から無料でコピーしました。",
 		"statusNote": "{status}。",
 		"hiddenNote": "他のアイテムで隠れています。",
+		"twoHandedNote": "両手を使います。",
 		"fromOthers": "{sources}のアイテムです。装備すると、この装備カテゴリーが{name}に追加されます。",
 		"source": "{from}から",
 		"sourceFree": "{from}から無料でコピー",

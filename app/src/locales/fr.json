@@ -925,6 +925,7 @@
 		"copiedFree": "Copié gratuitement depuis {from}.",
 		"statusNote": "{status}.",
 		"hiddenNote": "Masqué par un autre objet.",
+		"twoHandedNote": "Occupe les deux mains.",
 		"fromOthers": "Provenance : {sources}. Porter un objet ajoute cette catégorie à {name}.",
 		"source": "Provenance : {from}",
 		"sourceFree": "Objet gratuit provenant de {from}",

@@ -925,6 +925,7 @@
 		"copiedFree": "Kostenlos von {from} kopiert.",
 		"statusNote": "{status}.",
 		"hiddenNote": "Von einem anderen Gegenstand verdeckt.",
+		"twoHandedNote": "Belegt beide Hände.",
 		"fromOthers": "Von {sources}. Beim Anlegen eines Gegenstands wird diese Kategorie zu {name} hinzugefügt.",
 		"source": "Von {from}",
 		"sourceFree": "Kostenlos von {from}",

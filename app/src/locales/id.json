@@ -901,6 +901,7 @@
 		"copiedFree": "Disalin dari {from} secara gratis.",
 		"statusNote": "{status}.",
 		"hiddenNote": "Tertutup oleh item lain.",
+		"twoHandedNote": "Memakai kedua tangan.",
 		"fromOthers": "Dari {sources}. Mengenakan item akan menambahkan kategori ini ke {name}.",
 		"source": "Dari {from}",
 		"sourceFree": "Gratis dari {from}",

@@ -901,6 +901,7 @@
 		"copiedFree": "已免费从{from}复制。",
 		"statusNote": "{status}。",
 		"hiddenNote": "被另一件装备遮挡。",
+		"twoHandedNote": "需要双手持握。",
 		"fromOthers": "来自{sources}。穿戴一件装备会在{name}上显示此类别。",
 		"source": "来自{from}",
 		"sourceFree": "免费来自{from}",

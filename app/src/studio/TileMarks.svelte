@@ -5,6 +5,7 @@
 		Clapperboard,
 		Copy,
 		EyeOff,
+		HandGrab,
 		Puzzle,
 		TriangleAlert,
 		UsersRound
@@ -12,7 +13,15 @@
 
 	/** What a wardrobe tile's corner icons can say about an item; several can apply at once. */
 	type MarkKind =
-		'worn' | 'shared' | 'copied' | 'blocked' | 'unfitted' | 'check' | 'missing' | 'hidden';
+		| 'worn'
+		| 'shared'
+		| 'copied'
+		| 'blocked'
+		| 'unfitted'
+		| 'check'
+		| 'missing'
+		| 'hidden'
+		| 'twoHanded';
 	export interface Mark {
 		kind: MarkKind;
 		/** A few words, for accessible names. */
@@ -32,9 +41,11 @@
 		unfitted: { icon: Puzzle, tone: 'warning' },
 		check: { icon: TriangleAlert, tone: 'warning' },
 		missing: { icon: Clapperboard, tone: 'warning' },
-		hidden: { icon: EyeOff, tone: 'hidden' }
+		hidden: { icon: EyeOff, tone: 'hidden' },
+		twoHanded: { icon: HandGrab, tone: 'hidden' }
 	};
-	/** Left to right, on the tile and in its ⋮ menu: worn, where it came from, then problems worst first. */
+	/** Left to right, on the tile and in its ⋮ menu: worn, where it came from, problems worst first, then how it is held
+	 *  (a crowded tile keeps the problems in view). */
 	const ORDER: MarkKind[] = [
 		'worn',
 		'shared',
@@ -43,7 +54,8 @@
 		'unfitted',
 		'check',
 		'missing',
-		'hidden'
+		'hidden',
+		'twoHanded'
 	];
 	export const sortMarks = (marks: (Mark | false | undefined | null | '')[]) =>
 		(marks.filter(Boolean) as Mark[]).sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));

@@ -17,7 +17,6 @@
 	import { popoverFocus } from './experience/focus.ts';
 	import { swallowTilePress } from './tilePress.ts';
 	import { slotLabelMessage } from './slots.ts';
-	import { twoHanded } from '../lib/compose/compose.ts';
 	import type { generationStatus } from './generationStatus.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import {
@@ -82,15 +81,8 @@
 	const it = $derived(m?.items.find((i) => i.id === id));
 	let pickingSlot = $state(false);
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
-	const both = $derived(!!m && !!it && twoHanded(m, it));
-	// The header names the category; the lines below it explain each of the tile's icons.
-	const sentence = $derived(
-		it
-			? [displayMessage(slotLabelMessage(m, it.slot)), both ? t('itemMenu.twoHanded') : '']
-					.filter(Boolean)
-					.join(' · ')
-			: ''
-	);
+	// The header names the category; the lines below it explain each of the tile's icons (two hands among them).
+	const sentence = $derived(it ? displayMessage(slotLabelMessage(m, it.slot)) : '');
 	function close() {
 		menu?.hidePopover();
 	}
