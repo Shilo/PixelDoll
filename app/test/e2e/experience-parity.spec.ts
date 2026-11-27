@@ -867,6 +867,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 		// A one-cell State drawn from Walk's first column stands in for a saved riding stance.
 		fixture.rig.animations.push({
 			id: 'riding',
+			name: 'Sidesaddle',
 			kind: 'state',
 			cells: 1,
 			loop: false,
@@ -1135,7 +1136,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await page.setViewportSize({ width: 1920, height: 900 });
 	await toggle.click();
 	const riderPose = mountMenu.getByRole('button', { name: /^Riding pose:/ });
-	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic');
+	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic: Sidesaddle');
 	await riderPose.click();
 	const poseMenu = page.getByRole('menu', { name: 'Riding pose', exact: true });
 	await expect(poseMenu).toBeVisible();
@@ -1244,7 +1245,8 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await page.getByRole('alertdialog').getByRole('button', { name: 'Reset this page' }).click();
 	await expect(shown).not.toBeChecked();
 	await expect(legMode('Far leg')).toBeChecked();
-	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic');
+	// After reload the bundled demo can fall back to its Walk artwork without the injected State.
+	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic: Walk');
 	expect(await savedMount()).toEqual({ show: false, legs: 'far', poses: {} });
 	// The bundled demo keeps its own seat edit even though its source artwork is read-only.
 	const facing = mountMenu.getByRole('combobox', { name: 'Seat direction', exact: true });
@@ -1291,6 +1293,12 @@ touchTest(
 				frames: [{ cell: 0, ms: 100 }]
 			});
 			const body = m.items.find(({ id }) => id === m.rig.baseItem)!.layers[0];
+			m.rig.animations.push({
+				...m.rig.animations.find(({ id }) => id === 'walk')!,
+				id: 'ride',
+				name: 'Saddle trot'
+			});
+			body.cells!.ride = { north: body.cells!.walk.north };
 			body.cells!.riding = Object.fromEntries(
 				Object.entries(body.cells!.walk).map(([dir, row]) => [dir, row!.slice(0, 1)])
 			);
@@ -1343,8 +1351,10 @@ touchTest(
 		await expect(marker).toBeVisible();
 		await expect(facing.locator('option')).toHaveText(['South', 'East', 'North', 'West']);
 		await facing.selectOption('north');
+		await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic: Saddle trot');
 		const wide = (await facing.boundingBox())!.width;
 		await facing.selectOption('east');
+		await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic: Riding');
 		await expect.poll(async () => (await facing.boundingBox())!.width).toBe(wide);
 		await expect(canvas).toHaveAttribute('data-facing', 'east');
 		await expect(play).toBeEnabled();
