@@ -69,16 +69,9 @@
 	const outfit = $derived(
 		doc.id === id ? $state.snapshot(doc.items) : (m?.presets[0]?.items ?? {})
 	);
-	// Whole device pixels per sprite pixel, about 300 CSS px tall (220 on phones, 160 in phone landscape).
-	const k = $derived(
-		Math.max(
-			1,
-			Math.floor(
-				(ui.dpr * (ui.size === 'landscape' ? 160 : ui.size === 'compact' ? 220 : 300)) /
-					Math.max(1, size)
-			)
-		)
-	);
+	// Use whole device pixels when enlarging, and fit larger frames inside the same preview area.
+	const previewLimit = $derived(ui.size === 'landscape' ? 160 : 208);
+	const k = $derived(Math.max(1, Math.floor((ui.dpr * previewLimit) / Math.max(1, size))));
 	// The view as Save will store it: re-centered on the new frame and moved; anything outside the frame is cut off.
 	const view = $derived.by((): Img | null => {
 		if (!loaded || !m || !valid || !inRange) return null;
@@ -172,7 +165,6 @@
 
 <Sheet
 	title={t('adjustFrame.title')}
-	wide
 	locked={busy}
 	dirty={!!facts && (size !== current || dy !== 0)}
 	backDiscards
@@ -204,6 +196,7 @@
 						{k}
 						w={size}
 						h={size}
+						limit={previewLimit}
 						checker
 						label={t('adjustFrame.preview', {
 							direction: displayDirection(dir),
@@ -221,13 +214,14 @@
 				{#if note}<p class="notice small" role="status">{displayMessage(note)}</p>{/if}
 				{#if short && !changed}<p class="notice warn small">{t('adjustFrame.short')}</p>{/if}
 				{#if directions.length > 1}
-					<div class="seg" role="group" aria-label={t('adjustFrame.direction')}>
-						{#each directions as d (d)}
-							<button type="button" aria-pressed={dir === d} onclick={() => (dir = d)}
-								>{displayDirection(d)}</button
-							>
-						{/each}
-					</div>
+					<label class="control-row direction">
+						<span class="label">{t('adjustFrame.direction')}</span>
+						<select class="bu-input input" bind:value={dir}>
+							{#each directions as d (d)}
+								<option value={d}>{displayDirection(d)}</option>
+							{/each}
+						</select>
+					</label>
 				{/if}
 				<div class="control-row">
 					<span class="label">{t('adjustFrame.position')}</span>
@@ -247,7 +241,7 @@
 					</div>
 					<span class="readout" aria-live="polite">{moved}</span>
 				</div>
-				<div class="control-row">
+				<div class="control-row frame-size">
 					<span class="label" id="adjust-frame-size">{t('adjustFrame.size')}</span>
 					<NumberStepper
 						bind:value={size}
@@ -305,15 +299,15 @@
 	/* Two columns only when the sheet itself has room; a narrow sheet (phone landscape) stacks instead of squeezing the preview. */
 	.adjust {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-		gap: 24px;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 224px), 1fr));
+		gap: 16px;
 		align-items: start;
 	}
 	.preview {
 		display: grid;
 		justify-items: center;
 		gap: 8px;
-		padding: 12px;
+		padding: 8px;
 		border-radius: var(--r-ctl);
 		min-width: 0;
 	}
@@ -340,14 +334,20 @@
 		display: grid;
 		gap: 6px;
 	}
+	.direction {
+		justify-self: start;
+		max-inline-size: 100%;
+	}
+	.direction select {
+		min-inline-size: 0;
+	}
+	.frame-size {
+		inline-size: min(100%, 12rem);
+	}
 	.buttons {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 8px;
-		align-items: stretch;
-	}
-	.buttons > .btn {
-		min-height: 44px;
-		flex: 1 1 auto;
 	}
 	.readout {
 		font-variant-numeric: tabular-nums;
@@ -356,10 +356,5 @@
 	.room {
 		min-height: 44px;
 		justify-self: start;
-	}
-	@media (max-width: 760px) {
-		.adjust {
-			gap: 16px;
-		}
 	}
 </style>
