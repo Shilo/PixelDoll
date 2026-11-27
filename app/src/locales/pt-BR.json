@@ -32,13 +32,13 @@
 			"full": "O navegador está sem espaço, então nada foi movido. Exclua algo na lixeira para liberar espaço.",
 			"wrongKind": "Esse item excluído pertence a um personagem. Restaure o personagem primeiro.",
 			"movePresent": "Este movimento já está no personagem.",
-			"moveGeometry": "O tamanho do quadro ou as direções deste personagem mudaram desde que este movimento foi excluído, então ele não se alinha mais.",
-			"partsGeometry": "O tamanho do quadro ou as direções deste personagem mudaram desde que isso foi excluído, então não se alinha mais.",
+			"moveGeometry": "O tamanho do quadro ou as direções deste personagem mudaram depois que este movimento foi para a lixeira, então ele não se alinha mais.",
+			"partsGeometry": "O tamanho do quadro ou as direções deste personagem mudaram depois que isto foi para a lixeira, então não se alinha mais.",
 			"moveItemsMissing": "Um dos itens deste movimento está excluído. Restaure o item primeiro e depois o movimento.",
 			"outfitPresent": "Esta roupa já está no personagem."
 		},
 		"restoring": "Restaurando…",
-		"confirmBodyCharacter": "Tudo o mais excluído dele vai junto. Some para sempre; não pode ser desfeito.",
+		"confirmBodyCharacter": "Todo o resto dele na lixeira também é excluído. Isso não pode ser desfeito.",
 		"confirmRestore": "Pressione de novo para restaurar",
 		"confirmRestoreNamed": "Pressione de novo para restaurar {name}",
 		"daysLeft": {
@@ -97,7 +97,7 @@
 		"deleteWork": {
 			"deleteAll": "Excluir tudo",
 			"confirm": "Confirmar",
-			"description": "Remove os personagens, roupas, rascunhos, a lixeira e a atividade deste dispositivo.",
+			"description": "Exclui permanentemente os personagens, trajes, rascunhos, a lixeira e a atividade deste dispositivo.",
 			"kept": "Dados arquivados, preferências, backups baixados e sua chave do PixelLab são mantidos.",
 			"action": "Excluir dados locais…",
 			"title": "Excluir todo o trabalho local?",
@@ -323,7 +323,7 @@
 		"unavailable": "Essa direção não está disponível para este personagem.",
 		"mirrorSource": "Mantenha {source} ou desative o espelhamento de {mirror}.",
 		"moveArtwork": "Mantenha uma direção com arte para {moves}.",
-		"equipmentArtwork": "Mantenha uma direção com arte para {items} ou tire esse equipamento primeiro."
+		"equipmentArtwork": "Mantenha uma direção com arte para {items} ou mova esses itens para a lixeira primeiro."
 	},
 	"directionNames": {
 		"south": "Sul",
@@ -364,7 +364,7 @@
 		"costEstimate": "Estimativa de custo…",
 		"adjustFrame": "Ajustar quadro…",
 		"directions": "Direções…",
-		"demoDeleteLocked": "Não é possível excluir o personagem da demo",
+		"demoDeleteLocked": "O personagem da demo não pode ir para a lixeira",
 		"labelDeleteCharacter": "Mover para a lixeira…",
 		"demoRenameLocked": "Edite uma cópia para renomear a demo"
 	},
@@ -429,7 +429,7 @@
 	"deleteSheet": {
 		"viewPendingWork": "Ver trabalho pendente",
 		"character": "personagem",
-		"demo": "Não é possível excluir a demo incluída no app.",
+		"demo": "A demo incluída não pode ir para a lixeira.",
 		"itsOutfitsAndChangesAreRemovedFrom": "As roupas, itens e rascunhos não salvos vão junto; itens copiados para outros personagens ficam. Você pode recuperar por até 30 dias."
 	},
 	"demoCopyRow": {
@@ -492,7 +492,7 @@
 		"preparing": "Preparando seu item",
 		"remake": "Fazer cópia para este personagem…",
 		"makeForSlot": "Criar um item para o espaço {slot}…",
-		"demoDeleteLocked": "Não é possível excluir itens da demo",
+		"demoDeleteLocked": "Os itens da demo não podem ir para a lixeira",
 		"cancelItem": "Cancelar item",
 		"canceling": "Cancelando…",
 		"keep": "Manter",
@@ -744,9 +744,9 @@
 		"thisRemovesTheMoveFromTheBody": "O corpo e cada item perdem seus quadros. Você pode recuperar o movimento por até 30 dias.",
 		"demoRenameLocked": "Movimentos e estados da demo não podem ser renomeados",
 		"removeOutfit": "Os itens continuam no guarda-roupa. Você pode recuperá-lo da Lixeira por até 30 dias.",
-		"demoOutfitLocked": "Os trajes próprios da demo não podem ir para a Lixeira",
+		"demoOutfitLocked": "Os trajes próprios da demo não podem ir para a lixeira",
 		"labelRemoveOutfit": "Remover",
-		"outfitGone": "Este traje já foi removido."
+		"outfitGone": "Este traje não está mais disponível."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Grátis: nunca gera de novo os itens já criados.",
@@ -767,7 +767,7 @@
 		"theSlotAndItsItemsAreDeleted": "Os itens vão junto e as roupas deixam de usá-los. Você pode recuperar por até 30 dias.",
 		"labelAddedAtTheEndOfWardrobe": "{label}: novo espaço no fim do guarda-roupa.",
 		"valueShownAtTheEndOfWardrobe": "{value}: agora visível no fim do guarda-roupa.",
-		"demoDeleteLocked": "Não é possível excluir itens da demo incluída no app.",
+		"demoDeleteLocked": "Os itens da demo incluída não podem ir para a lixeira.",
 		"renameNote": "Mudar o nome mantém os itens, os trajes e o nome de exportação ({slot}).",
 		"drawOrder": "A parte da frente dos itens, inclusive os que já existem, aparece sobre {slot} e sob o espaço seguinte. A ordem que depende do lado, como a da mão mais próxima, muda junto.",
 		"behindBody": "As partes desenhadas atrás do corpo continuam atrás.",
@@ -1086,14 +1086,14 @@
 		"restoredStanding": "{name} foi restaurado nas direções {directions}. Nenhuma geração usada.",
 		"restoredQualityNotes": "Há avisos de qualidade. Confira-os.",
 		"noStandingToRestore": "Não há mais vistas em pé de {name} para restaurar.",
-		"characterChangedNothingDeleted": "O personagem mudou nesse meio-tempo. Nada foi excluído.",
+		"characterChangedNothingDeleted": "O personagem mudou nesse meio-tempo. Nada foi para a lixeira.",
 		"categoryNowHasItems": {
-			"one": "A categoria “{label}” agora tem {count} item. Confira a categoria de novo antes de excluí-la.",
-			"other": "A categoria “{label}” agora tem {count} itens. Confira a categoria de novo antes de excluí-la."
+			"one": "{label} agora tem {count} item. Revise de novo antes de mover para a lixeira.",
+			"other": "{label} agora tem {count} itens. Revise de novo antes de mover para a lixeira."
 		},
-		"categoryNowHasNoItems": "A categoria “{label}” agora está sem itens. Confira a categoria de novo antes de excluí-la.",
+		"categoryNowHasNoItems": "{label} agora não tem itens. Revise de novo antes de mover para a lixeira.",
 		"categoryItemsGettingMoves": "Há novas animações em andamento para os itens da categoria “{label}”. Primeiro, aguarde a conclusão ou descarte as tarefas em andamento.",
-		"reasonNothingDeleted": "{reason} Nada foi excluído.",
+		"reasonNothingDeleted": "{reason} Nada foi para a lixeira.",
 		"itemsPosedForMove": "Itens animados pelo esqueleto em {moveName}: {names}",
 		"itemsRedrawnForMove": "Itens redesenhados para {moveName}: {names}",
 		"equipmentPosedForMove": "Equipamento animado pelo esqueleto em {moveName}",
@@ -1109,9 +1109,9 @@
 		"waitForCharacter": "Aguarde o personagem terminar de carregar.",
 		"manageMovesInOtherTab": "Gerencie as animações na outra aba do PixelDoll ou feche essa aba primeiro.",
 		"manageCharactersInOtherTab": "Gerencie os personagens na outra aba do PixelDoll ou feche essa aba primeiro.",
-		"finishBeforeCharacterRemoval": "Conclua ou descarte as gerações pendentes antes de excluir um personagem.",
+		"finishBeforeCharacterRemoval": "Conclua ou dispense as gerações pendentes antes de mover um personagem para a lixeira.",
 		"finishBeforeRestore": "Conclua ou descarte o trabalho de geração pendente antes de restaurar este personagem.",
-		"finishBeforeMoveRemoval": "Conclua ou descarte as gerações pendentes antes de excluir uma animação.",
+		"finishBeforeMoveRemoval": "Conclua ou dispense as gerações pendentes antes de mover um movimento para a lixeira.",
 		"finishBeforeDirectionRemoval": "Conclua ou descarte as gerações pendentes antes de alterar as direções.",
 		"finishBeforeFixFrames": "Aguarde a geração em andamento terminar antes de corrigir quadros.",
 		"couldNotReadYourSavedCharactersReason": "Não foi possível ler seus personagens salvos: {reason}",
@@ -1159,8 +1159,8 @@
 		"savedItemAttemptsCouldNotBeRead": "Não foi possível ler as tentativas salvas do item: {reason}",
 		"theCharacterChangedMeanwhileTryAgain": "O personagem mudou nesse meio-tempo. Tente novamente.",
 		"noCharacterIsOpen": "Nenhum personagem está aberto.",
-		"labelChangedMeanwhileReviewItAgainBefore": "{label} mudou nesse meio-tempo. Revise novamente antes de excluir.",
-		"labelHasNewItemsReviewItAgain": "{label} tem novos itens. Revise novamente antes de excluir.",
+		"labelChangedMeanwhileReviewItAgainBefore": "{label} mudou nesse meio-tempo. Revise de novo antes de mover para a lixeira.",
+		"labelHasNewItemsReviewItAgain": "{label} tem itens novos. Revise de novo antes de mover para a lixeira.",
 		"categoryAndItemsDeleted": {
 			"one": "{label} e seu {count} item movidos para a lixeira",
 			"other": "{label} e seus {count} itens movidos para a lixeira"
@@ -1201,7 +1201,7 @@
 		"resetColors": "Restaurar cores",
 		"randomItem": "Sortear item: {name}",
 		"saveOutfit": "Salvar traje",
-		"deleteOutfit": "Mover traje para a Lixeira",
+		"deleteOutfit": "Mover traje para a lixeira",
 		"removeOutfit": "Remover traje",
 		"renameOutfit": "Renomear traje",
 		"show": "Mostrar {name}",
@@ -1213,9 +1213,9 @@
 		"moveCategory": "Mover {name}",
 		"addCategory": "Adicionar categoria",
 		"changeCategory": "Alterar {name}",
-		"deleteCategory": "Excluir {name}",
-		"deleteItem": "Excluir {name}",
-		"deleteMove": "Excluir {name}",
+		"deleteCategory": "Mover {name} para a lixeira",
+		"deleteItem": "Mover {name} para a lixeira",
+		"deleteMove": "Mover {name} para a lixeira",
 		"moveItem": "Mover {name}",
 		"changeDirections": "Alterar direções",
 		"restoreOriginals": "Restaurar originais",
@@ -1827,7 +1827,7 @@
 			"fixedDrawOrder": "A ordem de desenho padrão não pode ser alterada.",
 			"fixedSettings": "Categorias padrão só podem ser mostradas, ocultadas ou movidas.",
 			"fixedRemoval": "Categorias padrão só podem ser ocultadas.",
-			"nonemptyRemoval": "Remova os itens antes de excluir a categoria."
+			"nonemptyRemoval": "Mova os itens dela para a lixeira primeiro."
 		},
 		"use": {
 			"making": {
@@ -1841,7 +1841,7 @@
 		},
 		"busy": {
 			"hide": "{label} tem {items}. Só é possível ocultar uma categoria vazia{stopped}.",
-			"delete": "{label} tem {items}. Só é possível excluir uma categoria vazia{stopped}.",
+			"delete": "{label} tem {items}. Só uma categoria sem nada sendo criado pode ir para a lixeira{stopped}.",
 			"reattach": "{label} tem {items}. Só é possível mudar como o item se prende ao corpo se a categoria estiver vazia{stopped}.",
 			"hideWardrobe": "{label} tem {items}. Só é possível ocultar espaços vazios{stopped}.",
 			"dismissStopped": "; descarte primeiro as tentativas interrompidas em Atividade"
@@ -2374,7 +2374,7 @@
 			"chooseReference": "Escolha uma animação de referência em pé.",
 			"noStandingReference": "{move} não tem uma vista em pé para cada direção. Escolha uma animação com todas as vistas.",
 			"needsStandingViews": "A configuração do rig precisa das vistas em pé originais salvas ou das quatro direções cardeais. Importe primeiro as rotações que faltam.",
-			"emptyBodyFrame": "{move} tem um quadro do corpo vazio. Corrija ou exclua essa animação e configure novamente."
+			"emptyBodyFrame": "{move} tem um quadro do corpo vazio. Corrija esse movimento ou mova-o para a lixeira e configure de novo."
 		},
 		"newRegistration": "Registrar de novo"
 	},
@@ -2416,7 +2416,7 @@
 			"partialRepairMustKeep": "Uma correção parcial precisa manter a quantidade de quadros existente.",
 			"selectedEquipmentLongerStanding": "O equipamento selecionado não tem mais arte da pose em pé para todas as vistas selecionadas. Confira a seleção de equipamento antes de tentar novamente. Nenhuma geração foi solicitada.",
 			"itemFramesChangedGeneration": "Os quadros do item mudaram antes da geração. Abra o item novamente para revisá-los.",
-			"itemChangedWasRemoved": "Este item mudou ou foi removido enquanto a animação estava sendo preparada.",
+			"itemChangedWasRemoved": "Este item mudou ou foi para a lixeira enquanto o movimento era preparado.",
 			"characterChangedAnotherTab": "Este personagem mudou em outra aba durante a geração da animação. Abra o personagem novamente antes de tentar de novo.",
 			"bodyFramesTheirQuality": "Os quadros do corpo ou suas verificações de qualidade mudaram desde a revisão. Nada foi salvo e nenhuma solicitação foi enviada. Revise os quadros novamente.",
 			"characterChangedAnotherTab2": "Este personagem mudou em outra aba antes que a animação pudesse ser salva. Abra o personagem novamente antes de tentar de novo.",
@@ -3148,11 +3148,11 @@
 		"unavailable": "Esta animação não está mais disponível.",
 		"keepStanding": "Mantenha as vistas da pose em pé usadas para criar itens e estendê-los a outras animações.",
 		"keepOne": "Mantenha pelo menos uma animação neste personagem.",
-		"demo": "Não é possível excluir animações da demo.",
-		"resolveDrafts": "Conclua ou descarte os rascunhos de itens deste personagem antes de excluir uma animação.",
+		"demo": "Os movimentos da demo não podem ir para a lixeira.",
+		"resolveDrafts": "Conclua ou descarte os rascunhos de itens deste personagem antes de mover um movimento para a lixeira.",
 		"required": "Esta animação da pose em pé é necessária para reaproveitar os itens existentes em novas animações.",
 		"selectedCharacterChanged": "O personagem selecionado mudou.",
-		"concurrentEdit": "Este personagem mudou antes que a animação pudesse ser excluída. Tente novamente."
+		"concurrentEdit": "O personagem mudou antes que o movimento pudesse ir para a lixeira. Tente de novo."
 	},
 	"characterFacts": {
 		"body": "{measure} de corpo",

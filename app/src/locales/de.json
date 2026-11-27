@@ -32,13 +32,13 @@
 			"full": "Dem Browser geht der Speicher aus, daher wurde nichts verschoben. Lösche etwas im Papierkorb, um Platz zu schaffen.",
 			"wrongKind": "Dieser gelöschte Eintrag gehört zu einem Charakter. Stellen Sie zuerst den Charakter wieder her.",
 			"movePresent": "Diese Bewegung ist bereits auf dem Charakter.",
-			"moveGeometry": "Framegröße oder Richtungen dieses Charakters haben sich seit dem Löschen dieser Bewegung geändert, daher passt sie nicht mehr.",
-			"partsGeometry": "Framegröße oder Richtungen dieses Charakters haben sich seit dem Löschen geändert, daher passt es nicht mehr.",
+			"moveGeometry": "Rahmengröße oder Richtungen dieser Figur haben sich geändert, seit diese Animation im Papierkorb ist, daher passt sie nicht mehr.",
+			"partsGeometry": "Rahmengröße oder Richtungen dieser Figur haben sich geändert, seit dies im Papierkorb ist, daher passt es nicht mehr.",
 			"moveItemsMissing": "Einer der Gegenstände dieser Bewegung ist gelöscht. Stellen Sie zuerst den Gegenstand wieder her, dann die Bewegung.",
 			"outfitPresent": "Dieses Outfit ist schon bei der Figur."
 		},
 		"restoring": "Wird wiederhergestellt…",
-		"confirmBodyCharacter": "Alles andere davon Gelöschte geht mit. Endgültig weg, nicht rückgängig zu machen.",
+		"confirmBodyCharacter": "Alles andere davon im Papierkorb wird ebenfalls gelöscht. Das lässt sich nicht rückgängig machen.",
 		"confirmRestore": "Zum Wiederherstellen erneut drücken",
 		"confirmRestoreNamed": "Zum Wiederherstellen von {name} erneut drücken",
 		"daysLeft": {
@@ -97,7 +97,7 @@
 		"deleteWork": {
 			"deleteAll": "Alles löschen",
 			"confirm": "Bestätigen",
-			"description": "Entfernt die Charaktere, Outfits, Entwürfe, den Papierkorb und die Aktivität auf diesem Gerät.",
+			"description": "Löscht Figuren, Outfits, Entwürfe, Papierkorb und Aktivität auf diesem Gerät endgültig.",
 			"kept": "Archivierte Daten, Einstellungen, heruntergeladene Sicherungen und dein PixelLab-Schlüssel bleiben erhalten.",
 			"action": "Lokale Arbeit löschen…",
 			"title": "Alle lokale Arbeit löschen?",
@@ -323,7 +323,7 @@
 		"unavailable": "Diese Blickrichtung ist für die Figur nicht verfügbar.",
 		"mirrorSource": "Behalte {source} oder schalte die Spiegelung für {mirror} aus.",
 		"moveArtwork": "Behalte eine Blickrichtung mit Grafiken für {moves}.",
-		"equipmentArtwork": "Behalte eine Blickrichtung mit Grafiken für {items} oder entferne zuerst diese Ausrüstung."
+		"equipmentArtwork": "Behalte eine Richtung mit Grafik für {items} oder verschiebe diese Gegenstände zuerst in den Papierkorb."
 	},
 	"directionNames": {
 		"south": "Süden",
@@ -364,7 +364,7 @@
 		"costEstimate": "Kostenschätzung…",
 		"adjustFrame": "Frame anpassen…",
 		"directions": "Blickrichtungen…",
-		"demoDeleteLocked": "Die Demo-Figur kann nicht gelöscht werden",
+		"demoDeleteLocked": "Die Demo-Figur kann nicht in den Papierkorb",
 		"labelDeleteCharacter": "In den Papierkorb…",
 		"demoRenameLocked": "Bearbeite eine Kopie, um die Demo umzubenennen"
 	},
@@ -429,7 +429,7 @@
 	"deleteSheet": {
 		"viewPendingWork": "Ausstehende Aufgaben ansehen",
 		"character": "Figur",
-		"demo": "Die mitgelieferte Demo kann nicht gelöscht werden.",
+		"demo": "Die mitgelieferte Demo kann nicht in den Papierkorb.",
 		"itsOutfitsAndChangesAreRemovedFrom": "Outfits, Gegenstände und nicht behaltene Entwürfe gehen mit; auf andere Charaktere kopierte Gegenstände bleiben. bis zu 30 Tage lang kannst du den Charakter zurückholen."
 	},
 	"demoCopyRow": {
@@ -492,7 +492,7 @@
 		"preparing": "Dein Gegenstand wird vorbereitet",
 		"remake": "Kopie für diese Figur…",
 		"makeForSlot": "Für {slot} erstellen…",
-		"demoDeleteLocked": "Demo-Gegenstände können nicht gelöscht werden",
+		"demoDeleteLocked": "Demo-Gegenstände können nicht in den Papierkorb",
 		"cancelItem": "Gegenstand abbrechen",
 		"canceling": "Wird abgebrochen…",
 		"keep": "Behalten",
@@ -744,9 +744,9 @@
 		"thisRemovesTheMoveFromTheBody": "Körper und jeder Gegenstand verlieren die Frames dieser Bewegung. bis zu 30 Tage lang kannst du sie zurückholen.",
 		"demoRenameLocked": "Bewegungen und Zustände der Demo lassen sich nicht umbenennen",
 		"removeOutfit": "Seine Gegenstände bleiben in der Garderobe. Du kannst es bis zu 30 Tage aus dem Papierkorb zurückholen.",
-		"demoOutfitLocked": "Die eigenen Outfits der Demo lassen sich nicht in den Papierkorb verschieben",
+		"demoOutfitLocked": "Die eigenen Outfits der Demo können nicht in den Papierkorb",
 		"labelRemoveOutfit": "Entfernen",
-		"outfitGone": "Dieses Outfit wurde bereits entfernt."
+		"outfitGone": "Dieses Outfit ist nicht mehr vorhanden."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Kostenlos: Bereits erstellte Gegenstände werden nie neu generiert.",
@@ -767,7 +767,7 @@
 		"theSlotAndItsItemsAreDeleted": "Die Gegenstände gehen mit und Outfits tragen sie nicht mehr. bis zu 30 Tage lang kannst du alles zurückholen.",
 		"labelAddedAtTheEndOfWardrobe": "{label} wurde am Ende der Garderobe hinzugefügt.",
 		"valueShownAtTheEndOfWardrobe": "{value} wird am Ende der Garderobe angezeigt.",
-		"demoDeleteLocked": "Gegenstände der mitgelieferten Demo können nicht gelöscht werden.",
+		"demoDeleteLocked": "Gegenstände der mitgelieferten Demo können nicht in den Papierkorb.",
 		"renameNote": "Gegenstände, Outfits und Exportname ({slot}) bleiben beim Umbenennen erhalten.",
 		"drawOrder": "Die Vorderseite der Gegenstände dieses Platzes liegt über {slot} und unter dem nächsten Platz. Das gilt auch für vorhandene Gegenstände. Seitenspezifische Ebenen, etwa die Hand im Vordergrund, werden mitverschoben.",
 		"behindBody": "Teile hinter dem Grundkörper bleiben dahinter.",
@@ -1083,14 +1083,14 @@
 		"restoredStanding": "{name} wurde für {directions} wiederhergestellt. Keine Generierungen verbraucht.",
 		"restoredQualityNotes": "Es gibt Qualitätshinweise. Bitte prüfen.",
 		"noStandingToRestore": "Für {name} gibt es keine weiteren Standansichten zum Wiederherstellen.",
-		"characterChangedNothingDeleted": "Die Figur hat sich inzwischen geändert. Es wurde nichts gelöscht.",
+		"characterChangedNothingDeleted": "Die Figur hat sich inzwischen geändert. Nichts wurde in den Papierkorb verschoben.",
 		"categoryNowHasItems": {
-			"one": "Die Kategorie „{label}“ enthält jetzt {count} Gegenstand. Prüfe sie erneut, bevor du sie löschst.",
-			"other": "Die Kategorie „{label}“ enthält jetzt {count} Gegenstände. Prüfe sie erneut, bevor du sie löschst."
+			"one": "{label} hat jetzt {count} Gegenstand. Prüfe es erneut, bevor du es in den Papierkorb verschiebst.",
+			"other": "{label} hat jetzt {count} Gegenstände. Prüfe es erneut, bevor du es in den Papierkorb verschiebst."
 		},
-		"categoryNowHasNoItems": "Die Kategorie „{label}“ enthält jetzt keine Gegenstände mehr. Prüfe sie erneut, bevor du sie löschst.",
+		"categoryNowHasNoItems": "{label} hat jetzt keine Gegenstände. Prüfe es erneut, bevor du es in den Papierkorb verschiebst.",
 		"categoryItemsGettingMoves": "Für Gegenstände in „{label}“ werden neue Animationen erstellt. Warte, bis sie fertig sind, oder verwirf die laufenden Aufgaben zuerst.",
-		"reasonNothingDeleted": "{reason} Es wurde nichts gelöscht.",
+		"reasonNothingDeleted": "{reason} Nichts wurde in den Papierkorb verschoben.",
 		"itemsPosedForMove": "Per Skelett an {moveName} angepasst: {names}",
 		"itemsRedrawnForMove": "Für {moveName} neu gezeichnet: {names}",
 		"equipmentPosedForMove": "Ausrüstung per Skelett an {moveName} angepasst",
@@ -1106,9 +1106,9 @@
 		"waitForCharacter": "Warte, bis die Figur vollständig geladen ist.",
 		"manageMovesInOtherTab": "Verwalte Animationen im anderen PixelDoll-Tab oder schließe ihn zuerst.",
 		"manageCharactersInOtherTab": "Verwalte Figuren im anderen PixelDoll-Tab oder schließe ihn zuerst.",
-		"finishBeforeCharacterRemoval": "Schließe offene Generierungen ab oder verwirf sie, bevor du eine Figur löschst.",
+		"finishBeforeCharacterRemoval": "Schließe ausstehende Generierungen ab oder verwirf sie, bevor du eine Figur in den Papierkorb verschiebst.",
 		"finishBeforeRestore": "Beenden oder verwerfen Sie laufende Generierungen, bevor Sie diesen Charakter wiederherstellen.",
-		"finishBeforeMoveRemoval": "Schließe offene Generierungen ab oder verwirf sie, bevor du eine Animation löschst.",
+		"finishBeforeMoveRemoval": "Schließe ausstehende Generierungen ab oder verwirf sie, bevor du eine Animation in den Papierkorb verschiebst.",
 		"finishBeforeDirectionRemoval": "Schließe offene Generierungen ab oder verwirf sie, bevor du die Blickrichtungen änderst.",
 		"finishBeforeFixFrames": "Warte, bis die laufenden Generierungen abgeschlossen sind, bevor du Frames korrigierst.",
 		"couldNotReadYourSavedCharactersReason": "Deine gespeicherten Figuren konnten nicht gelesen werden: {reason}",
@@ -1156,8 +1156,8 @@
 		"savedItemAttemptsCouldNotBeRead": "Gespeicherte Versuche für Gegenstände konnten nicht gelesen werden: {reason}",
 		"theCharacterChangedMeanwhileTryAgain": "Die Figur wurde inzwischen geändert. Versuch es noch einmal.",
 		"noCharacterIsOpen": "Es ist keine Figur geöffnet.",
-		"labelChangedMeanwhileReviewItAgainBefore": "{label} wurde inzwischen geändert. Prüfe den Eintrag vor dem Löschen erneut.",
-		"labelHasNewItemsReviewItAgain": "{label} enthält neue Gegenstände. Prüfe den Eintrag vor dem Löschen erneut.",
+		"labelChangedMeanwhileReviewItAgainBefore": "{label} hat sich inzwischen geändert. Prüfe es erneut, bevor du es in den Papierkorb verschiebst.",
+		"labelHasNewItemsReviewItAgain": "{label} hat neue Gegenstände. Prüfe es erneut, bevor du es in den Papierkorb verschiebst.",
 		"categoryAndItemsDeleted": {
 			"one": "{label} und {count} Gegenstand in den Papierkorb verschoben",
 			"other": "{label} und {count} Gegenstände in den Papierkorb verschoben"
@@ -1210,9 +1210,9 @@
 		"moveCategory": "{name} verschieben",
 		"addCategory": "Kategorie hinzufügen",
 		"changeCategory": "{name} ändern",
-		"deleteCategory": "{name} löschen",
-		"deleteItem": "{name} löschen",
-		"deleteMove": "{name} löschen",
+		"deleteCategory": "{name} in den Papierkorb",
+		"deleteItem": "{name} in den Papierkorb",
+		"deleteMove": "{name} in den Papierkorb",
 		"moveItem": "{name} verschieben",
 		"changeDirections": "Blickrichtungen ändern",
 		"restoreOriginals": "Originale wiederherstellen",
@@ -1821,7 +1821,7 @@
 			"fixedDrawOrder": "Die Ebenenreihenfolge vorgegebener Kategorien ist fest.",
 			"fixedSettings": "Vorgegebene Kategorien lassen sich nur einblenden, ausblenden oder verschieben.",
 			"fixedRemoval": "Vorgegebene Kategorien lassen sich nur ausblenden.",
-			"nonemptyRemoval": "Entferne die Gegenstände, bevor du die Kategorie löschst."
+			"nonemptyRemoval": "Verschiebe zuerst seine Gegenstände in den Papierkorb."
 		},
 		"use": {
 			"making": {
@@ -1835,7 +1835,7 @@
 		},
 		"busy": {
 			"hide": "{label}: {items}. Nur leere Kategorien lassen sich ausblenden{stopped}.",
-			"delete": "{label}: {items}. Nur leere Kategorien lassen sich löschen{stopped}.",
+			"delete": "{label} hat {items}. Nur eine Kategorie, in der nichts entsteht, kann in den Papierkorb{stopped}.",
 			"reattach": "{label}: {items}. Nur bei leeren Kategorien lässt sich die Befestigung ändern{stopped}.",
 			"hideWardrobe": "{label}: {items}. Nur leere Ausrüstungsplätze lassen sich ausblenden{stopped}.",
 			"dismissStopped": "; verwirf zuerst gestoppte Versuche unter „Aktivität“"
@@ -2365,7 +2365,7 @@
 			"chooseReference": "Wähle eine Animation als Standreferenz.",
 			"noStandingReference": "{move} hat nicht für jede Blickrichtung eine Standansicht. Wähle eine Animation mit allen Ansichten.",
 			"needsStandingViews": "Die Rig-Einrichtung braucht gespeicherte Original-Standansichten oder alle vier Hauptrichtungen. Importiere zuerst die fehlenden Drehungen.",
-			"emptyBodyFrame": "{move} hat einen leeren Körper-Frame. Korrigiere oder lösche diese Animation und richte dann erneut ein."
+			"emptyBodyFrame": "{move} hat ein leeres Körperbild. Korrigiere diese Animation oder verschiebe sie in den Papierkorb und richte sie dann erneut ein."
 		},
 		"newRegistration": "Neu registrieren"
 	},
@@ -2407,7 +2407,7 @@
 			"partialRepairMustKeep": "Bei einer Teilreparatur muss die Anzahl der Frames unverändert bleiben.",
 			"selectedEquipmentLongerStanding": "Für die gewählte Ausrüstung fehlen jetzt Standdesigns in einigen gewählten Ansichten. Prüfe die Ausrüstungsauswahl erneut, bevor du es noch einmal versuchst. Es wurde keine Generierung angefordert.",
 			"itemFramesChangedGeneration": "Die Gegenstandsframes haben sich vor der Generierung geändert. Öffne den Gegenstand erneut, um sie zu prüfen.",
-			"itemChangedWasRemoved": "Dieser Gegenstand hat sich während der Vorbereitung der Animation geändert oder wurde entfernt.",
+			"itemChangedWasRemoved": "Dieser Gegenstand hat sich geändert oder ist in den Papierkorb gewandert, während die Animation vorbereitet wurde.",
 			"characterChangedAnotherTab": "Diese Figur wurde während der Generierung der Animation in einem anderen Tab geändert. Öffne sie vor einem neuen Versuch erneut.",
 			"bodyFramesTheirQuality": "Diese Grundkörperframes oder ihre Qualitätsprüfungen haben sich seit der Prüfung geändert. Es wurde nichts gespeichert und keine Anfrage gesendet. Prüfe sie erneut.",
 			"characterChangedAnotherTab2": "Diese Figur wurde in einem anderen Tab geändert, bevor die Animation gespeichert werden konnte. Öffne sie vor einem neuen Versuch erneut.",
@@ -3139,11 +3139,11 @@
 		"unavailable": "Diese Animation ist nicht mehr verfügbar.",
 		"keepStanding": "Behalte die Standansichten, die zum Erstellen und Erweitern von Gegenständen dienen.",
 		"keepOne": "Behalte mindestens eine Animation für diese Figur.",
-		"demo": "Demo-Animationen können nicht gelöscht werden.",
-		"resolveDrafts": "Schließe die Gegenstandsentwürfe dieser Figur ab oder verwirf sie, bevor du eine Animation löschst.",
+		"demo": "Demo-Animationen können nicht in den Papierkorb.",
+		"resolveDrafts": "Schließe die Gegenstandsentwürfe dieser Figur ab oder verwirf sie, bevor du eine Animation in den Papierkorb verschiebst.",
 		"required": "Diese Standanimation wird benötigt, um vorhandene Gegenstände um neue Animationen zu erweitern.",
 		"selectedCharacterChanged": "Die ausgewählte Figur hat sich geändert.",
-		"concurrentEdit": "Diese Figur hat sich geändert, bevor die Animation gelöscht werden konnte. Versuch es noch einmal."
+		"concurrentEdit": "Die Figur hat sich geändert, bevor die Animation in den Papierkorb konnte. Versuche es erneut."
 	},
 	"characterFacts": {
 		"body": "{measure} Grundkörper",

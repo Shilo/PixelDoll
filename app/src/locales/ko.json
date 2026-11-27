@@ -30,13 +30,13 @@
 			"full": "브라우저 공간이 부족하여 아무것도 이동되지 않았습니다. 휴지통에서 항목을 삭제해 공간을 확보하세요.",
 			"wrongKind": "삭제된 항목은 캐릭터에 속합니다. 먼저 캐릭터를 복원하세요.",
 			"movePresent": "이 모션은 이미 캐릭터에 있습니다.",
-			"moveGeometry": "이 모션을 삭제한 뒤 캐릭터의 프레임 크기나 방향이 바뀌어 더 이상 맞출 수 없습니다.",
-			"partsGeometry": "삭제한 뒤 캐릭터의 프레임 크기나 방향이 바뀌어 더 이상 맞출 수 없습니다.",
+			"moveGeometry": "이 모션을 휴지통으로 옮긴 뒤 캐릭터의 프레임 크기나 방향이 바뀌어 더 이상 맞출 수 없습니다.",
+			"partsGeometry": "휴지통으로 옮긴 뒤 캐릭터의 프레임 크기나 방향이 바뀌어 더 이상 맞출 수 없습니다.",
 			"moveItemsMissing": "이 모션의 아이템 중 하나가 삭제되었습니다. 먼저 그 아이템을 복원한 뒤 이 모션을 복원하세요.",
 			"outfitPresent": "이 의상은 이미 캐릭터에 있습니다."
 		},
 		"restoring": "복원 중…",
-		"confirmBodyCharacter": "그 안에서 삭제한 것도 함께 사라집니다. 완전히 사라지며 되돌릴 수 없습니다.",
+		"confirmBodyCharacter": "휴지통에 있는 이 캐릭터의 다른 항목도 모두 삭제됩니다. 되돌릴 수 없습니다.",
 		"confirmRestore": "한 번 더 누르면 복원됩니다",
 		"confirmRestoreNamed": "한 번 더 누르면 {name}을(를) 복원합니다",
 		"daysLeft": {
@@ -91,7 +91,7 @@
 		"deleteWork": {
 			"deleteAll": "모두 삭제",
 			"confirm": "확인",
-			"description": "이 기기의 캐릭터, 의상, 초안, 휴지통, 활동 기록을 제거합니다.",
+			"description": "이 기기의 캐릭터, 코디, 초안, 휴지통, 활동을 영구 삭제합니다.",
 			"kept": "보관된 데이터, 환경설정, 다운로드한 백업, PixelLab 키는 유지됩니다.",
 			"action": "로컬 데이터 삭제…",
 			"title": "모든 로컬 작업을 삭제할까요?",
@@ -317,7 +317,7 @@
 		"unavailable": "이 캐릭터에는 해당 방향을 사용할 수 없어요.",
 		"mirrorSource": "{source} 방향을 유지하거나 {mirror} 대칭을 끄세요.",
 		"moveArtwork": "{moves} 동작에 아트워크가 있는 방향을 유지하세요.",
-		"equipmentArtwork": "{items} 아이템에 아트워크가 있는 방향을 유지하거나, 해당 장비를 먼저 제거하세요."
+		"equipmentArtwork": "{items}의 그림이 있는 방향을 하나 남기거나, 먼저 그 아이템을 휴지통으로 옮기세요."
 	},
 	"directionNames": {
 		"south": "남쪽",
@@ -358,7 +358,7 @@
 		"costEstimate": "비용 예상…",
 		"adjustFrame": "프레임 조정…",
 		"directions": "방향…",
-		"demoDeleteLocked": "데모 캐릭터는 삭제할 수 없어요",
+		"demoDeleteLocked": "데모 캐릭터는 휴지통으로 옮길 수 없습니다",
 		"labelDeleteCharacter": "휴지통으로 이동…",
 		"demoRenameLocked": "사본을 편집하면 데모 이름을 바꿀 수 있습니다"
 	},
@@ -423,7 +423,7 @@
 	"deleteSheet": {
 		"viewPendingWork": "대기 중인 작업 보기",
 		"character": "캐릭터",
-		"demo": "함께 제공되는 데모는 삭제할 수 없어요.",
+		"demo": "기본 제공 데모는 휴지통으로 옮길 수 없습니다.",
 		"itsOutfitsAndChangesAreRemovedFrom": "의상, 아이템, 저장하지 않은 초안도 함께 이동합니다. 다른 캐릭터에 복사한 아이템은 남습니다. 최대 30일 동안 되돌릴 수 있습니다."
 	},
 	"demoCopyRow": {
@@ -483,7 +483,7 @@
 		"preparing": "아이템 준비 중",
 		"remake": "이 캐릭터용 복사본 만들기…",
 		"makeForSlot": "{slot} 아이템 만들기…",
-		"demoDeleteLocked": "데모 아이템은 삭제할 수 없어요",
+		"demoDeleteLocked": "데모 아이템은 휴지통으로 옮길 수 없습니다",
 		"cancelItem": "아이템 취소",
 		"canceling": "취소 중…",
 		"keep": "유지",
@@ -723,9 +723,9 @@
 		"thisRemovesTheMoveFromTheBody": "몸과 모든 아이템에서 프레임이 빠집니다. 최대 30일 동안 되돌릴 수 있습니다.",
 		"demoRenameLocked": "데모의 동작과 상태는 이름을 바꿀 수 없습니다",
 		"removeOutfit": "아이템은 옷장에 남습니다. 30일 동안 휴지통에서 되돌릴 수 있습니다.",
-		"demoOutfitLocked": "데모 기본 의상은 휴지통으로 옮길 수 없습니다",
+		"demoOutfitLocked": "데모 기본 코디는 휴지통으로 옮길 수 없습니다",
 		"labelRemoveOutfit": "제거",
-		"outfitGone": "이 코디는 이미 제거되었습니다."
+		"outfitGone": "이 코디는 더 이상 없습니다."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "무료: 이미 만든 아이템은 다시 생성하지 않아요.",
@@ -746,7 +746,7 @@
 		"theSlotAndItsItemsAreDeleted": "아이템도 함께 이동하고 의상에서는 더 이상 착용하지 않습니다. 최대 30일 동안 되돌릴 수 있습니다.",
 		"labelAddedAtTheEndOfWardrobe": "옷장 끝에 {label} 항목이 추가됐어요.",
 		"valueShownAtTheEndOfWardrobe": "옷장 끝에 {value} 항목이 표시돼요.",
-		"demoDeleteLocked": "함께 제공되는 데모의 아이템은 삭제할 수 없어요.",
+		"demoDeleteLocked": "기본 제공 데모의 아이템은 휴지통으로 옮길 수 없습니다.",
 		"renameNote": "이름을 바꿔도 아이템, 코디, 내보내기 이름({slot})은 유지돼요.",
 		"drawOrder": "이 슬롯 아이템의 앞면은 이미 만든 아이템까지 포함해 {slot} 위, 다음 슬롯 아래에 그려져요. 가까운 손처럼 좌우별 순서도 함께 이동해요.",
 		"behindBody": "몸체 뒤에 그리는 부위는 계속 뒤에 있어요.",
@@ -1053,13 +1053,13 @@
 		"restoredStanding": "{directions} 방향의 {name}을 복구했습니다. 생성 횟수는 사용하지 않았습니다.",
 		"restoredQualityNotes": "품질 관련 안내가 있습니다. 확인하세요.",
 		"noStandingToRestore": "{name}에 복구할 서 있는 방향이 더 이상 없습니다.",
-		"characterChangedNothingDeleted": "그동안 캐릭터가 변경됐어요. 삭제된 항목은 없어요.",
+		"characterChangedNothingDeleted": "그사이 캐릭터가 바뀌었습니다. 휴지통으로 옮긴 것은 없습니다.",
 		"categoryNowHasItems": {
-			"other": "이제 {label} 항목에 아이템이 {count}개 있어요. 삭제하기 전에 다시 확인하세요."
+			"other": "{label}에 이제 아이템이 {count}개 있습니다. 휴지통으로 옮기기 전에 다시 확인하세요."
 		},
-		"categoryNowHasNoItems": "이제 {label} 항목에 아이템이 없어요. 삭제하기 전에 다시 확인하세요.",
+		"categoryNowHasNoItems": "{label}에 이제 아이템이 없습니다. 휴지통으로 옮기기 전에 다시 확인하세요.",
 		"categoryItemsGettingMoves": "{label} 항목의 아이템에 새 동작을 만드는 중이에요. 완료될 때까지 기다리거나 먼저 버려 주세요.",
-		"reasonNothingDeleted": "{reason} 삭제된 항목은 없어요.",
+		"reasonNothingDeleted": "{reason} 휴지통으로 옮긴 것은 없습니다.",
 		"itemsPosedForMove": "{names}: {moveName} 자세를 맞췄어요",
 		"itemsRedrawnForMove": "{names}: {moveName} 동작용으로 다시 그렸어요",
 		"equipmentPosedForMove": "{moveName} 동작에 맞춰 장비 자세를 잡았어요",
@@ -1075,9 +1075,9 @@
 		"waitForCharacter": "캐릭터 로딩이 끝날 때까지 기다려 주세요.",
 		"manageMovesInOtherTab": "다른 PixelDoll 탭에서 동작을 관리하거나, 그 탭을 먼저 닫아 주세요.",
 		"manageCharactersInOtherTab": "다른 PixelDoll 탭에서 캐릭터를 관리하거나, 그 탭을 먼저 닫아 주세요.",
-		"finishBeforeCharacterRemoval": "캐릭터를 삭제하기 전에 대기 중인 생성 작업을 끝내거나 버려 주세요.",
+		"finishBeforeCharacterRemoval": "캐릭터를 휴지통으로 옮기기 전에 대기 중인 생성 작업을 끝내거나 닫으세요.",
 		"finishBeforeRestore": "이 캐릭터를 복원하기 전에 대기 중인 생성 작업을 완료하거나 버리세요.",
-		"finishBeforeMoveRemoval": "동작을 삭제하기 전에 대기 중인 생성 작업을 끝내거나 버려 주세요.",
+		"finishBeforeMoveRemoval": "모션을 휴지통으로 옮기기 전에 대기 중인 생성 작업을 끝내거나 닫으세요.",
 		"finishBeforeDirectionRemoval": "방향을 바꾸기 전에 대기 중인 생성 작업을 끝내거나 버려 주세요.",
 		"finishBeforeFixFrames": "프레임을 수정하기 전에 진행 중인 생성 작업이 끝날 때까지 기다려 주세요.",
 		"couldNotReadYourSavedCharactersReason": "저장된 캐릭터를 읽지 못했어요: {reason}",
@@ -1124,8 +1124,8 @@
 		"savedItemAttemptsCouldNotBeRead": "저장된 아이템 시도를 읽지 못했어요: {reason}",
 		"theCharacterChangedMeanwhileTryAgain": "그사이 캐릭터가 변경됐어요. 다시 시도해 주세요.",
 		"noCharacterIsOpen": "열린 캐릭터가 없어요.",
-		"labelChangedMeanwhileReviewItAgainBefore": "{label} 항목이 그사이 변경됐어요. 삭제 전에 다시 검토해 주세요.",
-		"labelHasNewItemsReviewItAgain": "{label} 항목에 새 아이템이 있어요. 삭제 전에 다시 검토해 주세요.",
+		"labelChangedMeanwhileReviewItAgainBefore": "그사이 {label}이(가) 바뀌었습니다. 휴지통으로 옮기기 전에 다시 확인하세요.",
+		"labelHasNewItemsReviewItAgain": "{label}에 새 아이템이 있습니다. 휴지통으로 옮기기 전에 다시 확인하세요.",
 		"categoryAndItemsDeleted": {
 			"other": "{label} 및 아이템 {count}개를 휴지통으로 이동했습니다"
 		},
@@ -1176,9 +1176,9 @@
 		"moveCategory": "{name} 이동",
 		"addCategory": "카테고리 추가",
 		"changeCategory": "{name} 변경",
-		"deleteCategory": "{name} 삭제",
-		"deleteItem": "{name} 삭제",
-		"deleteMove": "{name} 삭제",
+		"deleteCategory": "{name}을(를) 휴지통으로 이동",
+		"deleteItem": "{name}을(를) 휴지통으로 이동",
+		"deleteMove": "{name}을(를) 휴지통으로 이동",
 		"moveItem": "{name} 옮기기",
 		"changeDirections": "방향 변경",
 		"restoreOriginals": "원본 복원",
@@ -1767,7 +1767,7 @@
 			"fixedDrawOrder": "기본 제공 그리기 순서는 바꿀 수 없어요.",
 			"fixedSettings": "기본 제공 카테고리는 표시, 숨기기, 이동만 할 수 있어요.",
 			"fixedRemoval": "기본 제공 카테고리는 숨기기만 할 수 있어요.",
-			"nonemptyRemoval": "카테고리를 삭제하기 전에 아이템을 제거하세요."
+			"nonemptyRemoval": "먼저 그 아이템을 휴지통으로 옮기세요."
 		},
 		"use": {
 			"making": {
@@ -1779,7 +1779,7 @@
 		},
 		"busy": {
 			"hide": "{label} 항목: {items}. 빈 카테고리만 숨길 수 있어요{stopped}.",
-			"delete": "{label} 항목: {items}. 빈 카테고리만 삭제할 수 있어요{stopped}.",
+			"delete": "{label}에 {items}이(가) 있습니다. 만드는 중인 것이 없는 카테고리만 휴지통으로 옮길 수 있습니다{stopped}.",
 			"reattach": "{label} 항목: {items}. 빈 카테고리만 붙는 방식을 바꿀 수 있어요{stopped}.",
 			"hideWardrobe": "{label} 항목: {items}. 빈 슬롯만 숨길 수 있어요{stopped}.",
 			"dismissStopped": "; 먼저 활동에서 중지된 시도를 버려 주세요"
@@ -2294,7 +2294,7 @@
 			"chooseReference": "서 있는 자세의 기준 동작을 선택하세요.",
 			"noStandingReference": "{move}에는 모든 방향의 서 있는 모습이 없어요. 모든 방향이 있는 동작을 선택하세요.",
 			"needsStandingViews": "리그 설정에는 저장된 원래 서 있는 모습이나 네 방향 모두가 필요해요. 먼저 빠진 회전을 가져오세요.",
-			"emptyBodyFrame": "{move}에 빈 몸체 프레임이 있어요. 그 동작을 고치거나 삭제한 뒤 다시 설정하세요."
+			"emptyBodyFrame": "{move}에 빈 몸 프레임이 있습니다. 그 모션을 고치거나 휴지통으로 옮긴 뒤 다시 설정하세요."
 		},
 		"newRegistration": "다시 등록"
 	},
@@ -2336,7 +2336,7 @@
 			"partialRepairMustKeep": "부분 복구는 기존 프레임 수를 유지해야 해요.",
 			"selectedEquipmentLongerStanding": "선택한 장비에 모든 선택 뷰의 서 있는 디자인이 더 이상 없어요. 다시 시도하기 전에 장비 선택을 검토하세요. 생성은 요청되지 않았어요.",
 			"itemFramesChangedGeneration": "생성 전에 아이템 프레임이 바뀌었어요. 아이템을 다시 열어 검토하세요.",
-			"itemChangedWasRemoved": "동작을 준비하는 동안 이 아이템이 바뀌거나 제거됐어요.",
+			"itemChangedWasRemoved": "모션을 준비하는 동안 이 아이템이 바뀌었거나 휴지통으로 옮겨졌습니다.",
 			"characterChangedAnotherTab": "동작을 생성하는 동안 다른 탭에서 이 캐릭터가 바뀌었어요. 다시 시도하기 전에 다시 여세요.",
 			"bodyFramesTheirQuality": "검토 후 이 몸체 프레임이나 품질 검사가 바뀌었어요. 저장된 것도 요청도 없어요. 다시 검토하세요.",
 			"characterChangedAnotherTab2": "동작을 저장하기 전에 다른 탭에서 이 캐릭터가 바뀌었어요. 다시 시도하기 전에 다시 여세요.",
@@ -3059,11 +3059,11 @@
 		"unavailable": "이 동작은 더 이상 사용할 수 없어요.",
 		"keepStanding": "아이템을 만들고 확장하는 데 쓰는 서 있는 뷰를 유지하세요.",
 		"keepOne": "이 캐릭터에 동작을 하나 이상 유지하세요.",
-		"demo": "데모 동작은 삭제할 수 없어요.",
-		"resolveDrafts": "동작을 삭제하기 전에 이 캐릭터의 아이템 초안을 끝내거나 버리세요.",
+		"demo": "데모 모션은 휴지통으로 옮길 수 없습니다.",
+		"resolveDrafts": "모션을 휴지통으로 옮기기 전에 이 캐릭터의 아이템 초안을 끝내거나 버리세요.",
 		"required": "기존 아이템을 새 동작으로 확장하려면 이 서 있는 동작이 필요해요.",
 		"selectedCharacterChanged": "선택한 캐릭터가 바뀌었어요.",
-		"concurrentEdit": "동작을 삭제하기 전에 이 캐릭터가 바뀌었어요. 다시 시도해 주세요."
+		"concurrentEdit": "모션을 휴지통으로 옮기기 전에 캐릭터가 바뀌었습니다. 다시 시도하세요."
 	},
 	"characterFacts": {
 		"body": "{measure} 몸체",

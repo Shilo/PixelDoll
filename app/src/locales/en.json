@@ -32,13 +32,13 @@
 			"full": "Your browser is out of space, so nothing was moved to Trash. Delete something in Trash to free space.",
 			"wrongKind": "That item is in Trash with its character. Restore the character first.",
 			"movePresent": "This move is already on the character.",
-			"moveGeometry": "This character's frame size or directions changed since this move was deleted, so it can no longer line up.",
-			"partsGeometry": "This character's frame size or directions changed since this was deleted, so it can no longer line up.",
+			"moveGeometry": "This character's frame size or directions changed after this move went to the Trash, so it can no longer line up.",
+			"partsGeometry": "This character's frame size or directions changed after this went to the Trash, so it can no longer line up.",
 			"moveItemsMissing": "One of this move’s items is in the Trash. Restore that item first, then this move.",
 			"outfitPresent": "This outfit is already on the character."
 		},
 		"restoring": "Restoring…",
-		"confirmBodyCharacter": "Anything else deleted from it goes too. It is gone for good. This cannot be undone.",
+		"confirmBodyCharacter": "Everything else of it in the Trash is deleted too. This cannot be undone.",
 		"confirmRestore": "Press again to restore",
 		"confirmRestoreNamed": "Press again to restore {name}",
 		"daysLeft": {
@@ -97,7 +97,7 @@
 		"deleteWork": {
 			"deleteAll": "Delete all",
 			"confirm": "Confirm",
-			"description": "Removes the characters, outfits, drafts, Trash and Activity on this device.",
+			"description": "Permanently deletes the characters, outfits, drafts, Trash and Activity on this device.",
 			"kept": "Archived data, preferences, downloaded backups and your PixelLab key stay.",
 			"action": "Delete local work…",
 			"title": "Delete all local work?",
@@ -323,7 +323,7 @@
 		"unavailable": "That direction is not available for this character.",
 		"mirrorSource": "Keep {source} or turn off its {mirror} mirror.",
 		"moveArtwork": "Keep a direction with artwork for {moves}.",
-		"equipmentArtwork": "Keep a direction with artwork for {items} or remove that equipment first."
+		"equipmentArtwork": "Keep a direction with artwork for {items}, or move those items to the Trash first."
 	},
 	"directionNames": {
 		"south": "South",
@@ -364,7 +364,7 @@
 		"costEstimate": "Cost estimate…",
 		"adjustFrame": "Adjust frame…",
 		"directions": "Directions…",
-		"demoDeleteLocked": "Demo character can't be deleted",
+		"demoDeleteLocked": "The demo character can’t be moved to the Trash",
 		"labelDeleteCharacter": "Move to Trash…",
 		"demoRenameLocked": "Edit a copy to rename the demo"
 	},
@@ -429,7 +429,7 @@
 	"deleteSheet": {
 		"viewPendingWork": "View pending work",
 		"character": "character",
-		"demo": "The bundled demo cannot be deleted.",
+		"demo": "The bundled demo can’t be moved to the Trash.",
 		"itsOutfitsAndChangesAreRemovedFrom": "Its outfits, items and unkept drafts go too; items copied to other characters stay. You can bring it back for up to 30 days."
 	},
 	"demoCopyRow": {
@@ -492,7 +492,7 @@
 		"preparing": "Preparing your item",
 		"remake": "Make copy for self…",
 		"makeForSlot": "Make one for the {slot}…",
-		"demoDeleteLocked": "Demo items can't be deleted",
+		"demoDeleteLocked": "Demo items can’t be moved to the Trash",
 		"cancelItem": "Cancel item",
 		"canceling": "Canceling…",
 		"keep": "Keep",
@@ -746,7 +746,7 @@
 		"removeOutfit": "Its items stay in the Wardrobe. You can bring it back from the Trash for up to 30 days.",
 		"demoOutfitLocked": "The demo’s own outfits can’t be moved to the Trash",
 		"labelRemoveOutfit": "Remove",
-		"outfitGone": "This outfit was already removed."
+		"outfitGone": "This outfit is no longer available."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Free: never regenerates items already made.",
@@ -767,7 +767,7 @@
 		"theSlotAndItsItemsAreDeleted": "Its items go too and outfits stop wearing them. You can bring it back for up to 30 days.",
 		"labelAddedAtTheEndOfWardrobe": "{label} added at the end of Wardrobe.",
 		"valueShownAtTheEndOfWardrobe": "{value} shown at the end of Wardrobe.",
-		"demoDeleteLocked": "Items of the bundled demo can’t be deleted.",
+		"demoDeleteLocked": "Items in the bundled demo can’t be moved to the Trash.",
 		"renameNote": "Renaming keeps its items, outfits and export name ({slot}).",
 		"drawOrder": "The front of its items, including ones already made, draws over {slot} and under the next slot. Side-specific order, like a near hand, moves with it.",
 		"behindBody": "Parts drawn behind the body stay behind it.",
@@ -1083,14 +1083,14 @@
 		"restoredStanding": "Restored {name} facing {directions}. No generations used.",
 		"restoredQualityNotes": "It has quality notes. Check it.",
 		"noStandingToRestore": "{name} has no standing views left to restore.",
-		"characterChangedNothingDeleted": "The character changed meanwhile. Nothing was deleted.",
+		"characterChangedNothingDeleted": "The character changed meanwhile. Nothing was moved to the Trash.",
 		"categoryNowHasItems": {
-			"one": "{label} now has {count} item. Review it again before deleting.",
-			"other": "{label} now has {count} items. Review it again before deleting."
+			"one": "{label} now has {count} item. Review it again before moving it to the Trash.",
+			"other": "{label} now has {count} items. Review it again before moving it to the Trash."
 		},
-		"categoryNowHasNoItems": "{label} now has no items. Review it again before deleting.",
+		"categoryNowHasNoItems": "{label} now has no items. Review it again before moving it to the Trash.",
 		"categoryItemsGettingMoves": "New moves are being made for {label} items. Wait for them or dismiss them first.",
-		"reasonNothingDeleted": "{reason} Nothing was deleted.",
+		"reasonNothingDeleted": "{reason} Nothing was moved to the Trash.",
 		"itemsPosedForMove": "{names} posed for {moveName}",
 		"itemsRedrawnForMove": "{names} redrawn for {moveName}",
 		"equipmentPosedForMove": "Equipment posed for {moveName}",
@@ -1106,9 +1106,9 @@
 		"waitForCharacter": "Wait for the character to finish loading.",
 		"manageMovesInOtherTab": "Manage moves in the other PixelDoll tab, or close it first.",
 		"manageCharactersInOtherTab": "Manage characters in the other PixelDoll tab, or close it first.",
-		"finishBeforeCharacterRemoval": "Finish or dismiss pending generation work before deleting a character.",
+		"finishBeforeCharacterRemoval": "Finish or dismiss pending generation work before moving a character to the Trash.",
 		"finishBeforeRestore": "Finish or dismiss pending generation work before restoring this character.",
-		"finishBeforeMoveRemoval": "Finish or dismiss pending generation work before deleting a move.",
+		"finishBeforeMoveRemoval": "Finish or dismiss pending generation work before moving a move to the Trash.",
 		"finishBeforeDirectionRemoval": "Finish or dismiss pending generation work before changing directions.",
 		"finishBeforeFixFrames": "Wait for the current generation work to finish before fixing frames.",
 		"couldNotReadYourSavedCharactersReason": "Could not read your saved characters: {reason}",
@@ -1156,8 +1156,8 @@
 		"savedItemAttemptsCouldNotBeRead": "Saved item attempts could not be read: {reason}",
 		"theCharacterChangedMeanwhileTryAgain": "The character changed meanwhile. Try again.",
 		"noCharacterIsOpen": "No character is open.",
-		"labelChangedMeanwhileReviewItAgainBefore": "{label} changed meanwhile. Review it again before deleting.",
-		"labelHasNewItemsReviewItAgain": "{label} has new items. Review it again before deleting.",
+		"labelChangedMeanwhileReviewItAgainBefore": "{label} changed meanwhile. Review it again before moving it to the Trash.",
+		"labelHasNewItemsReviewItAgain": "{label} has new items. Review it again before moving it to the Trash.",
 		"categoryAndItemsDeleted": {
 			"one": "Moved {label} and its {count} item to Trash",
 			"other": "Moved {label} and its {count} items to Trash"
@@ -1210,9 +1210,9 @@
 		"moveCategory": "Move {name}",
 		"addCategory": "Add category",
 		"changeCategory": "Change {name}",
-		"deleteCategory": "Delete {name}",
-		"deleteItem": "Delete {name}",
-		"deleteMove": "Delete {name}",
+		"deleteCategory": "Move {name} to Trash",
+		"deleteItem": "Move {name} to Trash",
+		"deleteMove": "Move {name} to Trash",
 		"moveItem": "Move {name}",
 		"changeDirections": "Change directions",
 		"restoreOriginals": "Restore originals",
@@ -1821,7 +1821,7 @@
 			"fixedDrawOrder": "Built-in drawing order stays fixed.",
 			"fixedSettings": "Built-in categories can only be shown, hidden or moved.",
 			"fixedRemoval": "Built-in categories can only be hidden.",
-			"nonemptyRemoval": "Remove its items before deleting the category."
+			"nonemptyRemoval": "Move its items to the Trash first."
 		},
 		"use": {
 			"making": {
@@ -1835,7 +1835,7 @@
 		},
 		"busy": {
 			"hide": "{label} has {items}. Only an empty category can be hidden{stopped}.",
-			"delete": "{label} has {items}. Only an empty category can be deleted{stopped}.",
+			"delete": "{label} has {items}. Only a category with nothing being made can be moved to the Trash{stopped}.",
 			"reattach": "{label} has {items}. Only an empty category can change how it attaches{stopped}.",
 			"hideWardrobe": "{label} has {items}. Only empty slots can be hidden{stopped}.",
 			"dismissStopped": "; dismiss stopped attempts in Activity first"
@@ -2365,7 +2365,7 @@
 			"chooseReference": "Choose a standing reference move.",
 			"noStandingReference": "{move} has no standing view for every direction. Choose a move with every view.",
 			"needsStandingViews": "Rig setup needs saved original standing views or all four cardinal views. Import the missing rotations first.",
-			"emptyBodyFrame": "{move} has an empty body frame. Fix or delete that move, then set up again."
+			"emptyBodyFrame": "{move} has an empty body frame. Fix that move or move it to the Trash, then set up again."
 		},
 		"newRegistration": "Register again"
 	},
@@ -2407,7 +2407,7 @@
 			"partialRepairMustKeep": "A partial repair must keep the existing frame count.",
 			"selectedEquipmentLongerStanding": "Selected equipment no longer has standing designs for all selected views. Review the equipment selection before trying again. No generation was requested.",
 			"itemFramesChangedGeneration": "The item frames changed before generation. Reopen the item to review them again.",
-			"itemChangedWasRemoved": "This item changed or was removed while the move was being prepared.",
+			"itemChangedWasRemoved": "This item changed or went to the Trash while the move was being prepared.",
 			"characterChangedAnotherTab": "This character changed in another tab while the move was generating. Reopen it before trying again.",
 			"bodyFramesTheirQuality": "These body frames or their quality checks changed since review. Nothing was saved and no request was made. Review them again.",
 			"characterChangedAnotherTab2": "This character changed in another tab before the move could be saved. Reopen it before trying again.",
@@ -3139,11 +3139,11 @@
 		"unavailable": "This move is no longer available.",
 		"keepStanding": "Keep the standing views used to create and extend items.",
 		"keepOne": "Keep at least one move on this character.",
-		"demo": "Demo moves can't be deleted.",
-		"resolveDrafts": "Finish or discard this character's item drafts before deleting a move.",
+		"demo": "Demo moves can’t be moved to the Trash.",
+		"resolveDrafts": "Finish or discard this character's item drafts before moving a move to the Trash.",
 		"required": "This standing move is needed to extend existing items to new moves.",
 		"selectedCharacterChanged": "The selected character changed.",
-		"concurrentEdit": "This character changed before the move could be deleted. Try again."
+		"concurrentEdit": "This character changed before the move could go to the Trash. Try again."
 	},
 	"characterFacts": {
 		"body": "{measure} body",

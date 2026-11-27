@@ -532,7 +532,7 @@ export async function editIdleCharacter(
 				)
 					throw action === 'delete'
 						? new LocalizedError(
-								'Finish or dismiss pending generation work before deleting a character.',
+								'Finish or dismiss pending generation work before moving a character to the Trash.',
 								'state.finishBeforeCharacterRemoval'
 							)
 						: action === 'restore'

@@ -458,7 +458,9 @@ export async function deleteItems<T>(
 			const m = rec.manifest,
 				saved = new Set(m.items.map((i) => i.id));
 			if (itemIds.some((i) => i === m.rig.baseItem || !saved.has(i)))
-				throw new Error('Its items changed meanwhile. Review it again before deleting.');
+				throw new Error(
+					'Its items changed meanwhile. Review it again before moving it to the Trash.'
+				);
 			removeItems(rec, new Set(itemIds));
 			finish(rec);
 			return rec;

@@ -418,7 +418,7 @@ export async function restoreParts(id: string): Promise<{
 			out = { ...restored, name: e.name, projectId: e.projectId };
 			if (restored.refused === 'geometry')
 				throw new LocalizedError(
-					"This character's frame size or directions changed since this was deleted, so it can no longer line up.",
+					"This character's frame size or directions changed after this went to the Trash, so it can no longer line up.",
 					'recentlyDeleted.errors.partsGeometry'
 				);
 			return rec;
@@ -458,7 +458,7 @@ export async function restoreMoveEntry(id: string): Promise<{ name: string; proj
 		);
 	if (result === 'geometry')
 		throw new LocalizedError(
-			"This character's frame size or directions changed since this move was deleted, so it can no longer line up.",
+			"This character's frame size or directions changed after this move went to the Trash, so it can no longer line up.",
 			'recentlyDeleted.errors.moveGeometry'
 		);
 	await db.update<StoredProject>(

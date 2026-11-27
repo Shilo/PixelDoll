@@ -30,13 +30,13 @@
 			"full": "浏览器空间不足，因此没有移动任何内容。请在回收站中删除一些内容以释放空间。",
 			"wrongKind": "该已删除项目属于一个角色。请先恢复该角色。",
 			"movePresent": "该角色已经有这个动作。",
-			"moveGeometry": "删除此动作后，角色的帧尺寸或方向已更改，因此无法再对齐。",
-			"partsGeometry": "删除后，角色的帧尺寸或方向已更改，因此无法再对齐。",
+			"moveGeometry": "此动作移到回收站后，角色的画框尺寸或方向已更改，因此无法再对齐。",
+			"partsGeometry": "移到回收站后，角色的画框尺寸或方向已更改，因此无法再对齐。",
 			"moveItemsMissing": "此动作的一个物品已被删除。请先恢复该物品，再恢复此动作。",
 			"outfitPresent": "此服装已在角色上。"
 		},
 		"restoring": "正在恢复…",
-		"confirmBodyCharacter": "从它那里删除的其他内容也会一起消失。彻底消失，无法撤销。",
+		"confirmBodyCharacter": "回收站中属于它的其他内容也会一并删除。此操作无法撤销。",
 		"confirmRestore": "再按一次即可恢复",
 		"confirmRestoreNamed": "再按一次即可恢复 {name}",
 		"daysLeft": {
@@ -91,7 +91,7 @@
 		"deleteWork": {
 			"deleteAll": "全部删除",
 			"confirm": "确认",
-			"description": "删除此设备上的角色、服装、草稿、回收站和活动记录。",
+			"description": "永久删除此设备上的角色、套装、草稿、回收站和活动。",
 			"kept": "归档数据、偏好设置、已下载的备份和你的 PixelLab 密钥都会保留。",
 			"action": "删除本地数据…",
 			"title": "要删除所有本地作品吗？",
@@ -317,7 +317,7 @@
 		"unavailable": "此角色无法使用该朝向。",
 		"mirrorSource": "请保留{source}，或关闭其{mirror}镜像。",
 		"moveArtwork": "请保留一个有{moves}图像的朝向。",
-		"equipmentArtwork": "请保留一个有{items}图像的朝向，或先移除该装备。"
+		"equipmentArtwork": "请保留一个有 {items} 图像的方向，或先将这些物品移到回收站。"
 	},
 	"directionNames": {
 		"south": "南",
@@ -358,7 +358,7 @@
 		"costEstimate": "费用估算…",
 		"adjustFrame": "调整帧…",
 		"directions": "朝向…",
-		"demoDeleteLocked": "演示角色无法删除",
+		"demoDeleteLocked": "演示角色无法移到回收站",
 		"labelDeleteCharacter": "移到回收站…",
 		"demoRenameLocked": "编辑副本即可重命名演示"
 	},
@@ -423,7 +423,7 @@
 	"deleteSheet": {
 		"viewPendingWork": "查看待处理工作",
 		"character": "角色",
-		"demo": "内置演示无法删除。",
+		"demo": "内置演示无法移到回收站。",
 		"itsOutfitsAndChangesAreRemovedFrom": "其服装、物品和未保存的草稿也会一起移动；复制到其他角色的物品会留下。最多 30 天内可以恢复。"
 	},
 	"demoCopyRow": {
@@ -483,7 +483,7 @@
 		"preparing": "正在准备你的装备",
 		"remake": "为此角色制作副本…",
 		"makeForSlot": "为{slot}制作一件…",
-		"demoDeleteLocked": "演示装备无法删除",
+		"demoDeleteLocked": "演示物品无法移到回收站",
 		"cancelItem": "取消生成",
 		"canceling": "正在取消…",
 		"keep": "保留",
@@ -723,9 +723,9 @@
 		"thisRemovesTheMoveFromTheBody": "身体和每个物品都会失去它的帧。最多 30 天内可以恢复。",
 		"demoRenameLocked": "演示的动作和状态无法重命名",
 		"removeOutfit": "其中的物品留在衣橱中。30 天内可从废纸篓中恢复。",
-		"demoOutfitLocked": "演示自带的套装无法移到废纸篓",
+		"demoOutfitLocked": "演示自带的套装无法移到回收站",
 		"labelRemoveOutfit": "移除",
-		"outfitGone": "此套装已被移除。"
+		"outfitGone": "此套装已不存在。"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "免费：不会重新生成已制作的装备。",
@@ -746,7 +746,7 @@
 		"theSlotAndItsItemsAreDeleted": "其物品也会一起移动，服装不再穿着它们。最多 30 天内可以恢复。",
 		"labelAddedAtTheEndOfWardrobe": "{label}已添加到衣橱末尾。",
 		"valueShownAtTheEndOfWardrobe": "{value}显示在衣橱末尾。",
-		"demoDeleteLocked": "内置演示的装备无法删除。",
+		"demoDeleteLocked": "内置演示的物品无法移到回收站。",
 		"renameNote": "重命名会保留其装备、套装和导出名称（{slot}）。",
 		"drawOrder": "其装备的正面（包括已制作的装备）会绘制在{slot}之上、下一装备栏之下。针对具体一侧的顺序（如近侧的手）会随之移动。",
 		"behindBody": "绘制在身体后方的部件会保持在身体后方。",
@@ -1053,13 +1053,13 @@
 		"restoredStanding": "已恢复 {name} 在 {directions} 朝向的画面。未使用生成次数。",
 		"restoredQualityNotes": "有画面质量提示，请检查。",
 		"noStandingToRestore": "{name} 已没有可恢复的站立视图。",
-		"characterChangedNothingDeleted": "角色在此期间发生了变化。未删除任何内容。",
+		"characterChangedNothingDeleted": "角色已在此期间更改。没有移动任何内容到回收站。",
 		"categoryNowHasItems": {
-			"other": "{label}现在有 {count} 件装备。删除前请再次检查。"
+			"other": "{label} 现在有 {count} 件物品。移到回收站前请再检查一次。"
 		},
-		"categoryNowHasNoItems": "{label}现在没有装备。删除前请再次检查。",
+		"categoryNowHasNoItems": "{label} 现在没有物品。移到回收站前请再检查一次。",
 		"categoryItemsGettingMoves": "正在为{label}的装备制作新动作。请等待完成或先放弃这些动作。",
-		"reasonNothingDeleted": "{reason} 未删除任何内容。",
+		"reasonNothingDeleted": "{reason} 没有移动任何内容到回收站。",
 		"itemsPosedForMove": "{names}已为{moveName}摆好姿势",
 		"itemsRedrawnForMove": "已为{moveName}重新绘制{names}",
 		"equipmentPosedForMove": "已为{moveName}摆好装备姿势",
@@ -1075,9 +1075,9 @@
 		"waitForCharacter": "请等待角色加载完成。",
 		"manageMovesInOtherTab": "请在另一个 PixelDoll 标签页中管理动作，或先关闭该标签页。",
 		"manageCharactersInOtherTab": "请在另一个 PixelDoll 标签页中管理角色，或先关闭该标签页。",
-		"finishBeforeCharacterRemoval": "删除角色前，请完成或放弃待处理的生成任务。",
+		"finishBeforeCharacterRemoval": "将角色移到回收站前，请完成或关闭待处理的生成任务。",
 		"finishBeforeRestore": "恢复此角色前，请先完成或放弃待处理的生成任务。",
-		"finishBeforeMoveRemoval": "删除动作前，请完成或放弃待处理的生成任务。",
+		"finishBeforeMoveRemoval": "将动作移到回收站前，请完成或关闭待处理的生成任务。",
 		"finishBeforeDirectionRemoval": "更改朝向之前，请完成或放弃待处理的生成任务。",
 		"finishBeforeFixFrames": "修正帧之前，请等待当前生成任务完成。",
 		"couldNotReadYourSavedCharactersReason": "无法读取已保存的角色：{reason}",
@@ -1124,8 +1124,8 @@
 		"savedItemAttemptsCouldNotBeRead": "无法读取已保存的装备尝试：{reason}",
 		"theCharacterChangedMeanwhileTryAgain": "角色在此期间发生了变化。请重试。",
 		"noCharacterIsOpen": "未打开任何角色。",
-		"labelChangedMeanwhileReviewItAgainBefore": "{label}在此期间发生了变化。删除前请再次检查。",
-		"labelHasNewItemsReviewItAgain": "{label}有新装备。删除前请再次检查。",
+		"labelChangedMeanwhileReviewItAgainBefore": "{label} 已在此期间更改。移到回收站前请再检查一次。",
+		"labelHasNewItemsReviewItAgain": "{label} 有新物品。移到回收站前请再检查一次。",
 		"categoryAndItemsDeleted": {
 			"other": "已将 {label} 及其 {count} 个物品移到回收站"
 		},
@@ -1164,7 +1164,7 @@
 		"resetColors": "重置颜色",
 		"randomItem": "随机{name}装备",
 		"saveOutfit": "保存套装",
-		"deleteOutfit": "将套装移到废纸篓",
+		"deleteOutfit": "将套装移到回收站",
 		"removeOutfit": "移除套装",
 		"renameOutfit": "重命名套装",
 		"show": "显示{name}",
@@ -1176,9 +1176,9 @@
 		"moveCategory": "移动{name}",
 		"addCategory": "添加类别",
 		"changeCategory": "更改{name}",
-		"deleteCategory": "删除{name}",
-		"deleteItem": "删除 {name}",
-		"deleteMove": "删除 {name}",
+		"deleteCategory": "将 {name} 移到回收站",
+		"deleteItem": "将 {name} 移到回收站",
+		"deleteMove": "将 {name} 移到回收站",
 		"moveItem": "移动{name}",
 		"changeDirections": "更改朝向",
 		"restoreOriginals": "恢复原始帧",
@@ -1767,7 +1767,7 @@
 			"fixedDrawOrder": "内置绘制顺序保持固定。",
 			"fixedSettings": "内置类别只能显示、隐藏或移动。",
 			"fixedRemoval": "内置类别只能隐藏。",
-			"nonemptyRemoval": "请先移除其装备，再删除该类别。"
+			"nonemptyRemoval": "请先将其中的物品移到回收站。"
 		},
 		"use": {
 			"making": {
@@ -1779,7 +1779,7 @@
 		},
 		"busy": {
 			"hide": "{label}有 {items}。只有空类别可以隐藏{stopped}。",
-			"delete": "{label}有 {items}。只有空类别可以删除{stopped}。",
+			"delete": "{label} 有 {items}。只有没有正在制作内容的分类才能移到回收站{stopped}。",
 			"reattach": "{label}有 {items}。只有空类别可以更改附着方式{stopped}。",
 			"hideWardrobe": "{label}有 {items}。只有空装备栏可以隐藏{stopped}。",
 			"dismissStopped": "；请先在“活动”中放弃已停止的尝试"
@@ -2294,7 +2294,7 @@
 			"chooseReference": "请选择一个站立参考动作。",
 			"noStandingReference": "{move}并非每个朝向都有站立视图。请选择包含所有视图的动作。",
 			"needsStandingViews": "绑定设置需要已保存的原始站立视图或全部四个基本朝向。请先导入缺少的朝向。",
-			"emptyBodyFrame": "{move}中有空的身体帧。请修正或删除该动作，然后重新设置。"
+			"emptyBodyFrame": "{move} 有空白的身体帧。请修复该动作或将其移到回收站，然后重新设置。"
 		},
 		"newRegistration": "重新登记"
 	},
@@ -2336,7 +2336,7 @@
 			"partialRepairMustKeep": "部分修复必须保持现有帧数。",
 			"selectedEquipmentLongerStanding": "所选装备不再为所有所选视图提供站立设计。重试前请检查装备选择。未请求生成。",
 			"itemFramesChangedGeneration": "装备帧在生成前已更改。请重新打开装备再次检查。",
-			"itemChangedWasRemoved": "准备动作时，此装备已更改或被移除。",
+			"itemChangedWasRemoved": "准备动作时，此物品已更改或被移到回收站。",
 			"characterChangedAnotherTab": "生成动作时，此角色在另一个标签页中已更改。重试前请重新打开它。",
 			"bodyFramesTheirQuality": "这些身体帧或其质量检查自检查以来已更改。未保存任何内容，也未发出请求。请再次检查。",
 			"characterChangedAnotherTab2": "保存动作前，此角色在另一个标签页中已更改。重试前请重新打开它。",
@@ -3059,11 +3059,11 @@
 		"unavailable": "此动作已不可用。",
 		"keepStanding": "请保留用于创建和扩展装备的站立视图。",
 		"keepOne": "请在此角色上保留至少一个动作。",
-		"demo": "演示动作无法删除。",
-		"resolveDrafts": "删除动作前，请先完成或放弃此角色的装备草稿。",
+		"demo": "演示动作无法移到回收站。",
+		"resolveDrafts": "将动作移到回收站前，请完成或丢弃此角色的物品草稿。",
 		"required": "需要此站立动作才能将现有装备扩展到新动作。",
 		"selectedCharacterChanged": "所选角色已更改。",
-		"concurrentEdit": "删除动作前此角色已更改。请重试。"
+		"concurrentEdit": "动作移到回收站前角色已更改。请重试。"
 	},
 	"characterFacts": {
 		"body": "{measure} 身体",

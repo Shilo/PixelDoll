@@ -2541,7 +2541,9 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 		.getByRole('menu', { name: 'Actions for Adventurer (demo)', exact: true })
 		.getByRole('menuitem', { name: 'Move to Trash…', exact: true });
 	await expect(demoDelete).toHaveAttribute('aria-disabled', 'true');
-	await expect(demoDelete).toHaveAccessibleDescription("Demo character can't be deleted");
+	await expect(demoDelete).toHaveAccessibleDescription(
+		'The demo character can’t be moved to the Trash'
+	);
 	await demoDelete.click({ force: true });
 	await expect(page.getByRole('alertdialog')).toHaveCount(0);
 	await expect(page.getByRole('menuitemradio', { name: /^Imported/ })).toHaveCount(0);
@@ -3426,7 +3428,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		.click();
 	// A higher-priority notice can take the toast; the history step is the durable signal that it moved to Trash.
 	await expect(
-		page.getByRole('button', { name: 'Undo Delete Rest pose', exact: true })
+		page.getByRole('button', { name: 'Undo Move Rest pose to Trash', exact: true })
 	).toBeVisible();
 	const remaining = await read();
 	expect(remaining.manifest.rig.animations).toEqual(after.manifest.rig.animations);

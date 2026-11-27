@@ -68,7 +68,7 @@ export function removeDemoOutfit(id: string) {
 }
 
 const gone = () =>
-	new LocalizedError('This outfit was already removed.', 'savedActions.outfitGone');
+	new LocalizedError('This outfit is no longer available.', 'savedActions.outfitGone');
 
 export async function removeOutfit(id: string) {
 	const projectId = doc.id;

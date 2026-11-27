@@ -32,13 +32,13 @@
 			"full": "El navegador se quedó sin espacio, así que no se movió nada. Elimina algo en la papelera para liberar espacio.",
 			"wrongKind": "Ese elemento eliminado pertenece a un personaje. Restaura primero el personaje.",
 			"movePresent": "Este movimiento ya está en el personaje.",
-			"moveGeometry": "El tamaño de fotograma o las direcciones de este personaje han cambiado desde que se eliminó este movimiento, así que ya no encaja.",
-			"partsGeometry": "El tamaño de fotograma o las direcciones de este personaje han cambiado desde que se eliminó, así que ya no encaja.",
+			"moveGeometry": "El tamaño del marco o las direcciones de este personaje cambiaron después de mover este movimiento a la papelera, así que ya no encaja.",
+			"partsGeometry": "El tamaño del marco o las direcciones de este personaje cambiaron después de moverlo a la papelera, así que ya no encaja.",
 			"moveItemsMissing": "Uno de los objetos de este movimiento está eliminado. Restaura primero el objeto y luego el movimiento.",
 			"outfitPresent": "Este atuendo ya está en el personaje."
 		},
 		"restoring": "Restaurando…",
-		"confirmBodyCharacter": "Lo demás eliminado de él se va también. Desaparece para siempre; no se puede deshacer.",
+		"confirmBodyCharacter": "También se elimina todo lo demás suyo que está en la papelera. No se puede deshacer.",
 		"confirmRestore": "Pulsa de nuevo para restaurar",
 		"confirmRestoreNamed": "Pulsa de nuevo para restaurar {name}",
 		"daysLeft": {
@@ -97,7 +97,7 @@
 		"deleteWork": {
 			"deleteAll": "Eliminar todo",
 			"confirm": "Confirmar",
-			"description": "Elimina los personajes, conjuntos, borradores, la papelera y la actividad de este dispositivo.",
+			"description": "Elimina para siempre los personajes, atuendos, borradores, la papelera y la actividad de este dispositivo.",
 			"kept": "Los datos archivados, las preferencias, las copias descargadas y tu clave de PixelLab se conservan.",
 			"action": "Eliminar trabajo local…",
 			"title": "¿Eliminar todo el trabajo local?",
@@ -323,7 +323,7 @@
 		"unavailable": "Esa dirección no está disponible para este personaje.",
 		"mirrorSource": "Conserva {source} o desactiva la vista reflejada {mirror}.",
 		"moveArtwork": "Conserva una dirección con imágenes para {moves}.",
-		"equipmentArtwork": "Conserva una dirección con imágenes para {items} o quita antes ese equipamiento."
+		"equipmentArtwork": "Conserva una dirección con arte para {items} o mueve primero esos objetos a la papelera."
 	},
 	"directionNames": {
 		"south": "Sur",
@@ -364,7 +364,7 @@
 		"costEstimate": "Estimación de costo…",
 		"adjustFrame": "Ajustar marco…",
 		"directions": "Direcciones…",
-		"demoDeleteLocked": "El personaje de la demo no se puede eliminar",
+		"demoDeleteLocked": "El personaje de la demo no se puede mover a la papelera",
 		"labelDeleteCharacter": "Mover a la papelera…",
 		"demoRenameLocked": "Edita una copia para renombrar la demo"
 	},
@@ -429,7 +429,7 @@
 	"deleteSheet": {
 		"viewPendingWork": "Ver trabajo pendiente",
 		"character": "personaje",
-		"demo": "La demo incluida no se puede eliminar.",
+		"demo": "La demo incluida no se puede mover a la papelera.",
 		"itsOutfitsAndChangesAreRemovedFrom": "Sus conjuntos, objetos y borradores no conservados se van también; los objetos copiados a otros personajes se quedan. Puedes recuperar el personaje durante hasta 30 días."
 	},
 	"demoCopyRow": {
@@ -492,7 +492,7 @@
 		"preparing": "Preparando tu objeto",
 		"remake": "Hacer copia para este personaje…",
 		"makeForSlot": "Crear uno para la ranura {slot}…",
-		"demoDeleteLocked": "Los objetos de la demo no se pueden eliminar",
+		"demoDeleteLocked": "Los objetos de la demo no se pueden mover a la papelera",
 		"cancelItem": "Cancelar generación",
 		"canceling": "Cancelando…",
 		"keep": "Conservar",
@@ -744,9 +744,9 @@
 		"thisRemovesTheMoveFromTheBody": "El cuerpo y cada objeto pierden sus fotogramas. Puedes recuperar el movimiento durante hasta 30 días.",
 		"demoRenameLocked": "Los movimientos y estados de la demo no se pueden renombrar",
 		"removeOutfit": "Sus objetos se quedan en el guardarropa. Puedes recuperarlo de la papelera durante 30 días.",
-		"demoOutfitLocked": "Los atuendos propios de la demo no se pueden mover a la Papelera",
+		"demoOutfitLocked": "Los atuendos propios de la demo no se pueden mover a la papelera",
 		"labelRemoveOutfit": "Quitar",
-		"outfitGone": "Este atuendo ya se quitó."
+		"outfitGone": "Este atuendo ya no está disponible."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratis: nunca vuelve a generar objetos ya creados.",
@@ -767,7 +767,7 @@
 		"theSlotAndItsItemsAreDeleted": "Sus objetos se van y los conjuntos dejan de llevarlos. Puedes recuperarlo durante hasta 30 días.",
 		"labelAddedAtTheEndOfWardrobe": "{label} se agregó al final del Armario.",
 		"valueShownAtTheEndOfWardrobe": "{value} se muestra al final del Armario.",
-		"demoDeleteLocked": "Los objetos de la demo incluida no se pueden eliminar.",
+		"demoDeleteLocked": "Los objetos de la demo incluida no se pueden mover a la papelera.",
 		"renameNote": "Cambiarle el nombre conserva sus objetos, atuendos y nombre de exportación ({slot}).",
 		"drawOrder": "La parte frontal de los objetos de esta ranura, incluidos los ya creados, se dibuja sobre {slot} y bajo la ranura siguiente. También se desplaza el orden específico de cada lado, como el de la mano más cercana.",
 		"behindBody": "Las partes dibujadas detrás del cuerpo se quedan detrás.",
@@ -1083,14 +1083,14 @@
 		"restoredStanding": "Se restauró {name} en las direcciones {directions}. No se usaron generaciones.",
 		"restoredQualityNotes": "Hay avisos de calidad. Revísalos.",
 		"noStandingToRestore": "No quedan vistas de pie de {name} por restaurar.",
-		"characterChangedNothingDeleted": "El personaje cambió mientras tanto. No se eliminó nada.",
+		"characterChangedNothingDeleted": "El personaje cambió mientras tanto. No se movió nada a la papelera.",
 		"categoryNowHasItems": {
-			"one": "{label} ahora tiene {count} objeto. Revísala de nuevo antes de eliminarla.",
-			"other": "{label} ahora tiene {count} objetos. Revísala de nuevo antes de eliminarla."
+			"one": "{label} ahora tiene {count} objeto. Revísalo otra vez antes de moverlo a la papelera.",
+			"other": "{label} ahora tiene {count} objetos. Revísalo otra vez antes de moverlo a la papelera."
 		},
-		"categoryNowHasNoItems": "{label} ya no tiene objetos. Revísala de nuevo antes de eliminarla.",
+		"categoryNowHasNoItems": "{label} ya no tiene objetos. Revísalo otra vez antes de moverlo a la papelera.",
 		"categoryItemsGettingMoves": "Se están creando animaciones nuevas para los objetos de {label}. Espera a que terminen o descártalas primero.",
-		"reasonNothingDeleted": "{reason} No se eliminó nada.",
+		"reasonNothingDeleted": "{reason} No se movió nada a la papelera.",
 		"itemsPosedForMove": "{names}: posados para {moveName}",
 		"itemsRedrawnForMove": "{names}: redibujados para {moveName}",
 		"equipmentPosedForMove": "Equipamiento posado para {moveName}",
@@ -1106,9 +1106,9 @@
 		"waitForCharacter": "Espera a que el personaje termine de cargar.",
 		"manageMovesInOtherTab": "Gestiona las animaciones en la otra pestaña de PixelDoll, o ciérrala primero.",
 		"manageCharactersInOtherTab": "Gestiona los personajes en la otra pestaña de PixelDoll, o ciérrala primero.",
-		"finishBeforeCharacterRemoval": "Termina o descarta la generación pendiente antes de eliminar un personaje.",
+		"finishBeforeCharacterRemoval": "Termina o descarta las generaciones pendientes antes de mover un personaje a la papelera.",
 		"finishBeforeRestore": "Termina o descarta el trabajo de generación pendiente antes de restaurar este personaje.",
-		"finishBeforeMoveRemoval": "Termina o descarta la generación pendiente antes de eliminar una animación.",
+		"finishBeforeMoveRemoval": "Termina o descarta las generaciones pendientes antes de mover un movimiento a la papelera.",
 		"finishBeforeDirectionRemoval": "Termina o descarta la generación pendiente antes de cambiar las direcciones.",
 		"finishBeforeFixFrames": "Espera a que termine la generación en curso antes de corregir fotogramas.",
 		"couldNotReadYourSavedCharactersReason": "No se pudieron leer tus personajes guardados: {reason}",
@@ -1156,8 +1156,8 @@
 		"savedItemAttemptsCouldNotBeRead": "No se pudieron leer los intentos de objetos guardados: {reason}",
 		"theCharacterChangedMeanwhileTryAgain": "El personaje cambió mientras tanto. Inténtalo de nuevo.",
 		"noCharacterIsOpen": "No hay ningún personaje abierto.",
-		"labelChangedMeanwhileReviewItAgainBefore": "{label} cambió mientras tanto. Revísala de nuevo antes de eliminarla.",
-		"labelHasNewItemsReviewItAgain": "{label} tiene objetos nuevos. Revísala de nuevo antes de eliminarla.",
+		"labelChangedMeanwhileReviewItAgainBefore": "{label} cambió mientras tanto. Revísalo otra vez antes de moverlo a la papelera.",
+		"labelHasNewItemsReviewItAgain": "{label} tiene objetos nuevos. Revísalo otra vez antes de moverlo a la papelera.",
 		"categoryAndItemsDeleted": {
 			"one": "{label} y su {count} objeto movidos a la papelera",
 			"other": "{label} y sus {count} objetos movidos a la papelera"
@@ -1198,7 +1198,7 @@
 		"resetColors": "Restablecer colores",
 		"randomItem": "Objeto aleatorio de {name}",
 		"saveOutfit": "Guardar atuendo",
-		"deleteOutfit": "Mover atuendo a la Papelera",
+		"deleteOutfit": "Mover atuendo a la papelera",
 		"removeOutfit": "Quitar atuendo",
 		"renameOutfit": "Cambiar nombre del atuendo",
 		"show": "Mostrar {name}",
@@ -1210,9 +1210,9 @@
 		"moveCategory": "Mover {name}",
 		"addCategory": "Agregar categoría",
 		"changeCategory": "Cambiar {name}",
-		"deleteCategory": "Eliminar {name}",
-		"deleteItem": "Eliminar {name}",
-		"deleteMove": "Eliminar {name}",
+		"deleteCategory": "Mover {name} a la papelera",
+		"deleteItem": "Mover {name} a la papelera",
+		"deleteMove": "Mover {name} a la papelera",
 		"moveItem": "Mover {name}",
 		"changeDirections": "Cambiar direcciones",
 		"restoreOriginals": "Restaurar originales",
@@ -1821,7 +1821,7 @@
 			"fixedDrawOrder": "El orden de dibujo integrado no se puede cambiar.",
 			"fixedSettings": "Las categorías integradas solo se pueden mostrar, ocultar o mover.",
 			"fixedRemoval": "Las categorías integradas solo se pueden ocultar.",
-			"nonemptyRemoval": "Quita sus objetos antes de eliminar la categoría."
+			"nonemptyRemoval": "Mueve primero sus objetos a la papelera."
 		},
 		"use": {
 			"making": {
@@ -1835,7 +1835,7 @@
 		},
 		"busy": {
 			"hide": "{label} tiene {items}. Solo se puede ocultar una categoría vacía{stopped}.",
-			"delete": "{label} tiene {items}. Solo se puede eliminar una categoría vacía{stopped}.",
+			"delete": "{label} tiene {items}. Solo una categoría sin nada en creación se puede mover a la papelera{stopped}.",
 			"reattach": "{label} tiene {items}. Solo se puede cambiar el modo de sujeción de una ranura vacía{stopped}.",
 			"hideWardrobe": "{label} tiene {items}. Solo se pueden ocultar ranuras vacías{stopped}.",
 			"dismissStopped": "; primero descarta los intentos detenidos en Actividad"
@@ -2365,7 +2365,7 @@
 			"chooseReference": "Elige una animación de referencia de pie.",
 			"noStandingReference": "{move} no tiene una vista de pie para cada dirección. Elige una animación con todas las vistas.",
 			"needsStandingViews": "La configuración del rig necesita las vistas de pie originales guardadas o las cuatro direcciones cardinales. Importa primero las rotaciones que faltan.",
-			"emptyBodyFrame": "{move} tiene un fotograma del cuerpo vacío. Corrige o elimina esa animación y vuelve a configurar."
+			"emptyBodyFrame": "{move} tiene un fotograma del cuerpo vacío. Corrige ese movimiento o muévelo a la papelera y vuelve a configurar."
 		},
 		"newRegistration": "Registrar de nuevo"
 	},
@@ -2407,7 +2407,7 @@
 			"partialRepairMustKeep": "Una reparación parcial debe conservar la cantidad de fotogramas existente.",
 			"selectedEquipmentLongerStanding": "El equipamiento seleccionado ya no tiene diseños de pie para todas las vistas seleccionadas. Revisa la selección de equipamiento antes de reintentar. No se solicitó ninguna generación.",
 			"itemFramesChangedGeneration": "Los fotogramas del objeto cambiaron antes de la generación. Vuelve a abrir el objeto para revisarlos de nuevo.",
-			"itemChangedWasRemoved": "Este objeto cambió o se quitó mientras se preparaba la animación.",
+			"itemChangedWasRemoved": "Este objeto cambió o se movió a la papelera mientras se preparaba el movimiento.",
 			"characterChangedAnotherTab": "Este personaje cambió en otra pestaña mientras se generaba la animación. Vuelve a abrirlo antes de reintentar.",
 			"bodyFramesTheirQuality": "Estos fotogramas del cuerpo o sus comprobaciones de calidad cambiaron desde la revisión. No se guardó nada ni se hizo ninguna solicitud. Revísalos de nuevo.",
 			"characterChangedAnotherTab2": "Este personaje cambió en otra pestaña antes de que se pudiera guardar la animación. Vuelve a abrirlo antes de reintentar.",
@@ -3139,11 +3139,11 @@
 		"unavailable": "Esta animación ya no está disponible.",
 		"keepStanding": "Conserva las vistas de la pose de pie que se usan para crear objetos y añadirles fotogramas.",
 		"keepOne": "Conserva al menos una animación en este personaje.",
-		"demo": "Las animaciones de la demo no se pueden eliminar.",
-		"resolveDrafts": "Termina o descarta los borradores de objetos de este personaje antes de eliminar una animación.",
+		"demo": "Los movimientos de la demo no se pueden mover a la papelera.",
+		"resolveDrafts": "Termina o descarta los borradores de objetos de este personaje antes de mover un movimiento a la papelera.",
 		"required": "La animación de la pose de pie es necesaria para añadir fotogramas de los objetos existentes a nuevas animaciones.",
 		"selectedCharacterChanged": "El personaje seleccionado cambió.",
-		"concurrentEdit": "Este personaje cambió antes de que se pudiera eliminar la animación. Inténtalo de nuevo."
+		"concurrentEdit": "El personaje cambió antes de que el movimiento pudiera ir a la papelera. Inténtalo de nuevo."
 	},
 	"characterFacts": {
 		"body": "{measure} de cuerpo",

@@ -30,13 +30,13 @@
 			"full": "ブラウザの空き容量が不足しているため、何も移動されませんでした。ゴミ箱の項目を削除して容量を空けてください。",
 			"wrongKind": "その削除された項目はキャラクターに属しています。先にキャラクターを復元してください。",
 			"movePresent": "このモーションはすでにキャラクターにあります。",
-			"moveGeometry": "このモーションを削除した後にキャラクターのフレームサイズまたは向きが変わったため、位置合わせできません。",
-			"partsGeometry": "削除した後にキャラクターのフレームサイズまたは向きが変わったため、位置合わせできません。",
+			"moveGeometry": "このモーションをゴミ箱に移動した後でキャラクターのフレームサイズまたは向きが変わったため、もう位置が合いません。",
+			"partsGeometry": "ゴミ箱に移動した後でキャラクターのフレームサイズまたは向きが変わったため、もう位置が合いません。",
 			"moveItemsMissing": "このモーションのアイテムの 1 つが削除されています。先にそのアイテムを復元してから、このモーションを復元してください。",
 			"outfitPresent": "この衣装はすでにキャラクターにあります。"
 		},
 		"restoring": "復元中…",
-		"confirmBodyCharacter": "そこから削除したものも一緒に消えます。完全に削除され、元に戻せません。",
+		"confirmBodyCharacter": "ゴミ箱にあるこのキャラクターの他のものもすべて削除されます。元に戻せません。",
 		"confirmRestore": "もう一度押すと復元します",
 		"confirmRestoreNamed": "もう一度押すと {name} を復元します",
 		"daysLeft": {
@@ -91,7 +91,7 @@
 		"deleteWork": {
 			"deleteAll": "すべて削除",
 			"confirm": "確定",
-			"description": "このデバイスのキャラクター、衣装、下書き、ゴミ箱、アクティビティを削除します。",
+			"description": "この端末のキャラクター、コーディネート、下書き、ゴミ箱、アクティビティを完全に削除します。",
 			"kept": "アーカイブ済みデータ、設定、ダウンロードしたバックアップ、PixelLab キーは残ります。",
 			"action": "ローカルデータを削除…",
 			"title": "ローカルの作業をすべて削除しますか？",
@@ -317,7 +317,7 @@
 		"unavailable": "その向きはこのキャラクターでは利用できません。",
 		"mirrorSource": "{source}を残すか、{mirror}の反転をオフにしてください。",
 		"moveArtwork": "{moves}のアートワークがある向きを残してください。",
-		"equipmentArtwork": "{items}のアートワークがある向きを残すか、先にその装備を削除してください。"
+		"equipmentArtwork": "{items} の画像がある向きを 1 つ残すか、先にそれらのアイテムをゴミ箱に移動してください。"
 	},
 	"directionNames": {
 		"south": "南",
@@ -358,7 +358,7 @@
 		"costEstimate": "コストの見積もり…",
 		"adjustFrame": "フレームを調整…",
 		"directions": "向き…",
-		"demoDeleteLocked": "デモのキャラクターは削除できません",
+		"demoDeleteLocked": "デモのキャラクターはゴミ箱に移動できません",
 		"labelDeleteCharacter": "ゴミ箱に移動…",
 		"demoRenameLocked": "コピーを編集するとデモの名前を変えられます"
 	},
@@ -423,7 +423,7 @@
 	"deleteSheet": {
 		"viewPendingWork": "保留中の作業を表示",
 		"character": "キャラクター",
-		"demo": "同梱のデモは削除できません。",
+		"demo": "同梱のデモはゴミ箱に移動できません。",
 		"itsOutfitsAndChangesAreRemovedFrom": "衣装、アイテム、未保存の下書きも一緒に移動します。他のキャラクターにコピーしたアイテムは残ります。最大 30 日間は元に戻せます。"
 	},
 	"demoCopyRow": {
@@ -483,7 +483,7 @@
 		"preparing": "アイテムを準備中",
 		"remake": "このキャラ用にコピー…",
 		"makeForSlot": "{slot}用に作成…",
-		"demoDeleteLocked": "デモのアイテムは削除できません",
+		"demoDeleteLocked": "デモのアイテムはゴミ箱に移動できません",
 		"cancelItem": "生成をキャンセル",
 		"canceling": "キャンセル中…",
 		"keep": "続ける",
@@ -723,9 +723,9 @@
 		"thisRemovesTheMoveFromTheBody": "体とすべてのアイテムからフレームが外れます。最大 30 日間は元に戻せます。",
 		"demoRenameLocked": "デモの動きと状態は名前を変えられません",
 		"removeOutfit": "アイテムはワードローブに残ります。30日間はゴミ箱から戻せます。",
-		"demoOutfitLocked": "デモ付属の衣装はゴミ箱に移動できません",
+		"demoOutfitLocked": "デモ付属のコーディネートはゴミ箱に移動できません",
 		"labelRemoveOutfit": "外す",
-		"outfitGone": "このコーディネートはすでに外されています。"
+		"outfitGone": "このコーディネートはもうありません。"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "無料：作成済みのアイテムを再生成することはありません。",
@@ -746,7 +746,7 @@
 		"theSlotAndItsItemsAreDeleted": "アイテムも一緒に移動し、衣装では着用されなくなります。最大 30 日間は元に戻せます。",
 		"labelAddedAtTheEndOfWardrobe": "{label}をワードローブの最後に追加しました。",
 		"valueShownAtTheEndOfWardrobe": "{value}をワードローブの最後に表示しました。",
-		"demoDeleteLocked": "同梱のデモのアイテムは削除できません。",
+		"demoDeleteLocked": "同梱デモのアイテムはゴミ箱に移動できません。",
 		"renameNote": "名前を変更しても、アイテム、コーディネート、エクスポート名（{slot}）はそのままです。",
 		"drawOrder": "作成済みのアイテムも含め、この装備スロットの前面レイヤーは{slot}の手前、次の装備スロットの奥に描画されます。手前側の手など、向きごとの描画順も一緒に移動します。",
 		"behindBody": "素体の奥に描画される部分は、そのまま奥に残ります。",
@@ -1053,13 +1053,13 @@
 		"restoredStanding": "{directions}向きの{name}を復元しました。生成は行っていません。",
 		"restoredQualityNotes": "品質に関する注意点があります。確認してください。",
 		"noStandingToRestore": "{name}には復元できる立ち姿が残っていません。",
-		"characterChangedNothingDeleted": "操作中にキャラクターが変更されました。何も削除していません。",
+		"characterChangedNothingDeleted": "その間にキャラクターが変更されました。何もゴミ箱に移動していません。",
 		"categoryNowHasItems": {
-			"other": "現在、{label}にはアイテムが{count}個あります。削除する前に、もう一度内容を確認してください。"
+			"other": "{label} のアイテムが {count} 件になりました。ゴミ箱に移動する前にもう一度確認してください。"
 		},
-		"categoryNowHasNoItems": "現在、{label}にアイテムはありません。削除する前に、もう一度内容を確認してください。",
+		"categoryNowHasNoItems": "{label} にアイテムがなくなりました。ゴミ箱に移動する前にもう一度確認してください。",
 		"categoryItemsGettingMoves": "{label}のアイテムに新しいモーションを生成中です。完了まで待つか、先に該当する生成作業を破棄してください。",
-		"reasonNothingDeleted": "何も削除していません。{reason}",
+		"reasonNothingDeleted": "何もゴミ箱に移動していません。{reason}",
 		"itemsPosedForMove": "{names}を{moveName}のポーズに合わせました",
 		"itemsRedrawnForMove": "{names}を{moveName}用に描き直しました",
 		"equipmentPosedForMove": "装備を{moveName}のポーズに合わせました",
@@ -1075,9 +1075,9 @@
 		"waitForCharacter": "キャラクターの読み込みが終わるまでお待ちください。",
 		"manageMovesInOtherTab": "モーションは別のPixelDollタブで管理するか、先にそのタブを閉じてください。",
 		"manageCharactersInOtherTab": "キャラクターは別のPixelDollタブで管理するか、先にそのタブを閉じてください。",
-		"finishBeforeCharacterRemoval": "キャラクターを削除する前に、保留中の生成を完了するか破棄してください。",
+		"finishBeforeCharacterRemoval": "キャラクターをゴミ箱に移動する前に、保留中の生成を完了するか閉じてください。",
 		"finishBeforeRestore": "このキャラクターを復元する前に、保留中の生成を完了するか破棄してください。",
-		"finishBeforeMoveRemoval": "モーションを削除する前に、保留中の生成を完了するか破棄してください。",
+		"finishBeforeMoveRemoval": "モーションをゴミ箱に移動する前に、保留中の生成を完了するか閉じてください。",
 		"finishBeforeDirectionRemoval": "向きを変更する前に、保留中の生成を完了するか破棄してください。",
 		"finishBeforeFixFrames": "フレームを修正する前に、実行中の生成が終わるまでお待ちください。",
 		"couldNotReadYourSavedCharactersReason": "保存したキャラクターを読み込めませんでした：{reason}",
@@ -1124,8 +1124,8 @@
 		"savedItemAttemptsCouldNotBeRead": "保存済みのアイテム生成の試行記録を読み込めませんでした：{reason}",
 		"theCharacterChangedMeanwhileTryAgain": "その間にキャラクターが変更されました。もう一度お試しください。",
 		"noCharacterIsOpen": "開いているキャラクターはありません。",
-		"labelChangedMeanwhileReviewItAgainBefore": "その間に{label}が変更されました。削除する前にもう一度確認してください。",
-		"labelHasNewItemsReviewItAgain": "{label}に新しいアイテムがあります。削除する前にもう一度確認してください。",
+		"labelChangedMeanwhileReviewItAgainBefore": "その間に {label} が変更されました。ゴミ箱に移動する前にもう一度確認してください。",
+		"labelHasNewItemsReviewItAgain": "{label} に新しいアイテムがあります。ゴミ箱に移動する前にもう一度確認してください。",
 		"categoryAndItemsDeleted": {
 			"other": "{label} と {count} 件のアイテムをゴミ箱に移動しました"
 		},
@@ -1176,9 +1176,9 @@
 		"moveCategory": "{name}の移動",
 		"addCategory": "カテゴリーの追加",
 		"changeCategory": "{name}の変更",
-		"deleteCategory": "{name}の削除",
-		"deleteItem": "{name} を削除",
-		"deleteMove": "{name} を削除",
+		"deleteCategory": "{name} をゴミ箱に移動",
+		"deleteItem": "{name} をゴミ箱に移動",
+		"deleteMove": "{name} をゴミ箱に移動",
 		"moveItem": "{name}を移動",
 		"changeDirections": "向きを変更",
 		"restoreOriginals": "オリジナルを復元",
@@ -1767,7 +1767,7 @@
 			"fixedDrawOrder": "標準の描画順序は変更できません。",
 			"fixedSettings": "標準のカテゴリーは、表示、非表示、移動のみできます。",
 			"fixedRemoval": "標準のカテゴリーは非表示にすることしかできません。",
-			"nonemptyRemoval": "カテゴリーを削除する前に、そのアイテムを削除してください。"
+			"nonemptyRemoval": "先にそのアイテムをゴミ箱に移動してください。"
 		},
 		"use": {
 			"making": {
@@ -1779,7 +1779,7 @@
 		},
 		"busy": {
 			"hide": "{label}には{items}があります。非表示にできるのは空のカテゴリーだけです{stopped}。",
-			"delete": "{label}には{items}があります。削除できるのは空のカテゴリーだけです{stopped}。",
+			"delete": "{label} には {items} があります。作成中のものがないカテゴリだけをゴミ箱に移動できます{stopped}。",
 			"reattach": "{label}には{items}があります。装備方法を変更できるのは空のカテゴリーだけです{stopped}。",
 			"hideWardrobe": "{label}には{items}があります。非表示にできるのは空の装備スロットだけです{stopped}。",
 			"dismissStopped": "。先にアクティビティで停止した試行を破棄してください"
@@ -2294,7 +2294,7 @@
 			"chooseReference": "立ちポーズの参照にするモーションを選んでください。",
 			"noStandingReference": "{move}にはすべての向きの立ちポーズがありません。すべての向きがあるモーションを選んでください。",
 			"needsStandingViews": "リグのセットアップには、保存された元の立ちポーズか、東西南北の4方向すべてが必要です。足りない向きを先に読み込んでください。",
-			"emptyBodyFrame": "{move}に空の素体フレームがあります。そのモーションを修正または削除してから、もう一度セットアップしてください。"
+			"emptyBodyFrame": "{move} に空の体フレームがあります。そのモーションを修正するかゴミ箱に移動してから、もう一度設定してください。"
 		},
 		"newRegistration": "もう一度登録"
 	},
@@ -2336,7 +2336,7 @@
 			"partialRepairMustKeep": "部分的な修復では、既存のフレーム数を保つ必要があります。",
 			"selectedEquipmentLongerStanding": "選んだ装備には、立ちポーズのデザインが揃っていない向きがあります。やり直す前に装備の選択を確認してください。生成リクエストは送信していません。",
 			"itemFramesChangedGeneration": "生成前にアイテムのフレームが変更されました。アイテムを開き直して、もう一度確認してください。",
-			"itemChangedWasRemoved": "モーションの準備中に、このアイテムが変更または削除されました。",
+			"itemChangedWasRemoved": "モーションの準備中にこのアイテムが変更されたか、ゴミ箱に移動されました。",
 			"characterChangedAnotherTab": "モーションの生成中に、別のタブでこのキャラクターが変更されました。やり直す前に開き直してください。",
 			"bodyFramesTheirQuality": "確認後に、これらの体のフレームまたは品質チェックが変更されました。何も保存しておらず、リクエストも送信していません。もう一度確認してください。",
 			"characterChangedAnotherTab2": "モーションを保存する前に、別のタブでこのキャラクターが変更されました。やり直す前に開き直してください。",
@@ -3059,11 +3059,11 @@
 		"unavailable": "このモーションは利用できなくなりました。",
 		"keepStanding": "アイテムの作成や、既存のアイテムを別のモーションに対応させるときに使う立ちポーズの画像は残してください。",
 		"keepOne": "このキャラクターには少なくとも1つのモーションを残してください。",
-		"demo": "デモのモーションは削除できません。",
-		"resolveDrafts": "モーションを削除する前に、このキャラクターのアイテムの下書きを完了するか破棄してください。",
+		"demo": "デモのモーションはゴミ箱に移動できません。",
+		"resolveDrafts": "モーションをゴミ箱に移動する前に、このキャラクターのアイテム下書きを完了するか破棄してください。",
 		"required": "既存のアイテムを新しいモーションでも使えるようにするには、この立ちポーズのモーションが必要です。",
 		"selectedCharacterChanged": "選択したキャラクターが変更されました。",
-		"concurrentEdit": "モーションを削除する前に、このキャラクターが変更されました。もう一度お試しください。"
+		"concurrentEdit": "モーションをゴミ箱に移動する前にキャラクターが変更されました。もう一度お試しください。"
 	},
 	"characterFacts": {
 		"body": "{measure} の素体",

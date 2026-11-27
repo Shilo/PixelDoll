@@ -601,7 +601,7 @@ export function deleteCustom(m: Editable, key: string) {
 		);
 	if (m.items.some((it) => it.slot === key))
 		throw new LocalizedError(
-			'Remove its items before deleting the category.',
+			'Move its items to the Trash first.',
 			'studioSlots.errors.nonemptyRemoval'
 		);
 	m.slots = m.slots.filter((s) => s.id !== key);

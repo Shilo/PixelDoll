@@ -3372,7 +3372,7 @@ async function addMoveUnlocked(
 		const it = fresh.rec.manifest.items.find((i) => i.id === id);
 		if (!it)
 			throw new LocalizedError(
-				'This item changed or was removed while the move was being prepared.',
+				'This item changed or went to the Trash while the move was being prepared.',
 				'create.errors.itemChangedWasRemoved'
 			);
 		return {
@@ -3478,7 +3478,7 @@ async function addMoveUnlocked(
 			it = ctx.rec.manifest.items.find((i) => i.id === plan.id);
 		if (!it)
 			throw new LocalizedError(
-				'This item changed or was removed while the move was being prepared.',
+				'This item changed or went to the Trash while the move was being prepared.',
 				'create.errors.itemChangedWasRemoved'
 			);
 		assertArtwork(ctx.rec.manifest, plan.id, plan.dirs);
@@ -3509,7 +3509,7 @@ async function addMoveUnlocked(
 					item = current.rec.manifest.items.find((i) => i.id === plan.id);
 				if (!item)
 					throw new LocalizedError(
-						'This item changed or was removed while the move was being prepared.',
+						'This item changed or went to the Trash while the move was being prepared.',
 						'create.errors.itemChangedWasRemoved'
 					);
 				assertArtwork(current.rec.manifest, plan.id, [d]);

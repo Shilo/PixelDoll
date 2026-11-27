@@ -32,13 +32,13 @@
 			"full": "Votre navigateur est à court d’espace, rien n’a donc été déplacé. Supprimez un élément dans la corbeille pour libérer de l’espace.",
 			"wrongKind": "Cet élément supprimé appartient à un personnage. Restaurez d’abord le personnage.",
 			"movePresent": "Ce mouvement est déjà sur le personnage.",
-			"moveGeometry": "La taille de cadre ou les directions de ce personnage ont changé depuis la suppression de ce mouvement, il ne s'aligne donc plus.",
-			"partsGeometry": "La taille de cadre ou les directions de ce personnage ont changé depuis la suppression, cela ne s’aligne donc plus.",
+			"moveGeometry": "La taille du cadre ou les directions de ce personnage ont changé depuis que ce mouvement est dans la corbeille : il ne peut plus s’aligner.",
+			"partsGeometry": "La taille du cadre ou les directions de ce personnage ont changé depuis que ceci est dans la corbeille : il ne peut plus s’aligner.",
 			"moveItemsMissing": "L’un des objets de ce mouvement est supprimé. Restaurez d’abord l’objet, puis le mouvement.",
 			"outfitPresent": "Cette tenue est déjà sur le personnage."
 		},
 		"restoring": "Restauration…",
-		"confirmBodyCharacter": "Tout ce qui en a été supprimé part aussi. Disparition définitive, irréversible.",
+		"confirmBodyCharacter": "Tout le reste de ce personnage dans la corbeille est aussi supprimé. Action irréversible.",
 		"confirmRestore": "Appuyez à nouveau pour restaurer",
 		"confirmRestoreNamed": "Appuyez à nouveau pour restaurer {name}",
 		"daysLeft": {
@@ -97,7 +97,7 @@
 		"deleteWork": {
 			"deleteAll": "Tout supprimer",
 			"confirm": "Confirmer",
-			"description": "Supprime les personnages, tenues, brouillons, la corbeille et l’activité de cet appareil.",
+			"description": "Supprime définitivement les personnages, tenues, brouillons, la corbeille et l’activité sur cet appareil.",
 			"kept": "Les données archivées, les préférences, les sauvegardes téléchargées et votre clé PixelLab sont conservées.",
 			"action": "Supprimer les données locales…",
 			"title": "Supprimer tout le travail local ?",
@@ -323,7 +323,7 @@
 		"unavailable": "Cette direction n’est pas disponible pour ce personnage.",
 		"mirrorSource": "Conservez la vue {source} ou désactivez le miroir pour la vue {mirror}.",
 		"moveArtwork": "Conservez une direction avec des images pour {moves}.",
-		"equipmentArtwork": "Conservez une direction avec des images pour {items}, ou retirez d’abord cet équipement."
+		"equipmentArtwork": "Gardez une direction avec un visuel pour {items}, ou placez d’abord ces objets dans la corbeille."
 	},
 	"directionNames": {
 		"south": "Sud",
@@ -364,7 +364,7 @@
 		"costEstimate": "Estimation du coût…",
 		"adjustFrame": "Ajuster le cadre…",
 		"directions": "Directions…",
-		"demoDeleteLocked": "Le personnage de la démo ne peut pas être supprimé",
+		"demoDeleteLocked": "Le personnage de démo ne peut pas aller dans la corbeille",
 		"labelDeleteCharacter": "Vers la corbeille…",
 		"demoRenameLocked": "Modifiez une copie pour renommer la démo"
 	},
@@ -429,7 +429,7 @@
 	"deleteSheet": {
 		"viewPendingWork": "Voir les travaux en attente",
 		"character": "ce personnage",
-		"demo": "La démo intégrée ne peut pas être supprimée.",
+		"demo": "La démo fournie ne peut pas aller dans la corbeille.",
 		"itsOutfitsAndChangesAreRemovedFrom": "Ses tenues, objets et brouillons non conservés partent aussi ; les objets copiés vers d’autres personnages restent. Vous pouvez tout récupérer pendant jusqu’à 30 jours."
 	},
 	"demoCopyRow": {
@@ -492,7 +492,7 @@
 		"preparing": "Préparation de votre objet",
 		"remake": "Faire une copie pour ce personnage…",
 		"makeForSlot": "En créer un pour l’emplacement {slot}…",
-		"demoDeleteLocked": "Les objets de la démo ne peuvent pas être supprimés",
+		"demoDeleteLocked": "Les objets de la démo ne peuvent pas aller dans la corbeille",
 		"cancelItem": "Annuler la génération",
 		"canceling": "Annulation…",
 		"keep": "Garder",
@@ -744,9 +744,9 @@
 		"thisRemovesTheMoveFromTheBody": "Le corps et chaque objet perdent leurs images. Vous pouvez récupérer le mouvement pendant jusqu’à 30 jours.",
 		"demoRenameLocked": "Les mouvements et états de la démo ne peuvent pas être renommés",
 		"removeOutfit": "Ses objets restent dans la garde-robe. Vous pouvez le récupérer dans la corbeille pendant 30 jours.",
-		"demoOutfitLocked": "Les tenues propres à la démo ne peuvent pas être placées dans la Corbeille",
+		"demoOutfitLocked": "Les tenues propres à la démo ne peuvent pas aller dans la corbeille",
 		"labelRemoveOutfit": "Retirer",
-		"outfitGone": "Cette tenue a déjà été retirée."
+		"outfitGone": "Cette tenue n’est plus disponible."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratuit : ne régénère jamais les objets déjà créés.",
@@ -767,7 +767,7 @@
 		"theSlotAndItsItemsAreDeleted": "Ses objets partent aussi et les tenues ne les portent plus. Vous pouvez tout récupérer pendant jusqu’à 30 jours.",
 		"labelAddedAtTheEndOfWardrobe": "{label} ajouté à la fin de la Garde-robe.",
 		"valueShownAtTheEndOfWardrobe": "{value} affiché à la fin de la Garde-robe.",
-		"demoDeleteLocked": "Les objets de la démo intégrée ne peuvent pas être supprimés.",
+		"demoDeleteLocked": "Les objets de la démo fournie ne peuvent pas aller dans la corbeille.",
 		"renameNote": "Changer le nom ne modifie ni les objets, ni les tenues, ni le nom utilisé à l’export ({slot}).",
 		"drawOrder": "La partie avant des objets, même de ceux déjà créés, s’affiche devant {slot} et derrière l’emplacement suivant. L’ordre propre à un côté, par exemple celui de la main au premier plan, est déplacé avec eux.",
 		"behindBody": "Les parties dessinées derrière le corps restent derrière lui.",
@@ -1083,14 +1083,14 @@
 		"restoredStanding": "{name} a été restauré dans les directions {directions}. Aucune génération utilisée.",
 		"restoredQualityNotes": "Des remarques de qualité sont disponibles. Vérifiez-les.",
 		"noStandingToRestore": "Il ne reste aucune vue debout de {name} à restaurer.",
-		"characterChangedNothingDeleted": "Le personnage a changé entre-temps. Rien n’a été supprimé.",
+		"characterChangedNothingDeleted": "Le personnage a changé entre-temps. Rien n’a été placé dans la corbeille.",
 		"categoryNowHasItems": {
-			"one": "La catégorie « {label} » contient maintenant {count} objet. Vérifiez-la de nouveau avant de la supprimer.",
-			"other": "La catégorie « {label} » contient maintenant {count} objets. Vérifiez-la de nouveau avant de la supprimer."
+			"one": "{label} contient maintenant {count} objet. Vérifiez à nouveau avant de le placer dans la corbeille.",
+			"other": "{label} contient maintenant {count} objets. Vérifiez à nouveau avant de le placer dans la corbeille."
 		},
-		"categoryNowHasNoItems": "La catégorie « {label} » ne contient plus d’objets. Vérifiez-la de nouveau avant de la supprimer.",
+		"categoryNowHasNoItems": "{label} ne contient plus d’objet. Vérifiez à nouveau avant de le placer dans la corbeille.",
 		"categoryItemsGettingMoves": "De nouvelles animations sont en cours de création pour les objets de la catégorie « {label} ». Attendez qu’elles soient prêtes ou abandonnez les tâches en cours.",
-		"reasonNothingDeleted": "{reason} Rien n’a été supprimé.",
+		"reasonNothingDeleted": "{reason} Rien n’a été placé dans la corbeille.",
 		"itemsPosedForMove": "Objets posés sur le squelette pour {moveName} : {names}",
 		"itemsRedrawnForMove": "Objets redessinés pour {moveName} : {names}",
 		"equipmentPosedForMove": "Équipement posé sur le squelette pour {moveName}",
@@ -1106,9 +1106,9 @@
 		"waitForCharacter": "Attendez la fin du chargement du personnage.",
 		"manageMovesInOtherTab": "Gérez les animations dans l’autre onglet PixelDoll, ou fermez-le d’abord.",
 		"manageCharactersInOtherTab": "Gérez les personnages dans l’autre onglet PixelDoll, ou fermez-le d’abord.",
-		"finishBeforeCharacterRemoval": "Terminez ou abandonnez la génération en attente avant de supprimer un personnage.",
+		"finishBeforeCharacterRemoval": "Terminez ou ignorez les générations en attente avant de placer un personnage dans la corbeille.",
 		"finishBeforeRestore": "Terminez ou abandonnez le travail de génération en attente avant de restaurer ce personnage.",
-		"finishBeforeMoveRemoval": "Terminez ou abandonnez la génération en attente avant de supprimer une animation.",
+		"finishBeforeMoveRemoval": "Terminez ou ignorez les générations en attente avant de placer un mouvement dans la corbeille.",
 		"finishBeforeDirectionRemoval": "Terminez ou abandonnez la génération en attente avant de changer les directions.",
 		"finishBeforeFixFrames": "Attendez la fin de la génération en cours avant de corriger les images.",
 		"couldNotReadYourSavedCharactersReason": "Impossible de lire vos personnages enregistrés : {reason}",
@@ -1156,8 +1156,8 @@
 		"savedItemAttemptsCouldNotBeRead": "Impossible de lire les tentatives d’objets enregistrées : {reason}",
 		"theCharacterChangedMeanwhileTryAgain": "Le personnage a changé entre-temps. Réessayez.",
 		"noCharacterIsOpen": "Aucun personnage n’est ouvert.",
-		"labelChangedMeanwhileReviewItAgainBefore": "{label} a changé entre-temps. Vérifiez-le à nouveau avant de le supprimer.",
-		"labelHasNewItemsReviewItAgain": "{label} contient de nouveaux objets. Vérifiez-le à nouveau avant de le supprimer.",
+		"labelChangedMeanwhileReviewItAgainBefore": "{label} a changé entre-temps. Vérifiez à nouveau avant de le placer dans la corbeille.",
+		"labelHasNewItemsReviewItAgain": "{label} contient de nouveaux objets. Vérifiez à nouveau avant de le placer dans la corbeille.",
 		"categoryAndItemsDeleted": {
 			"one": "{label} et son {count} objet déplacés vers la corbeille",
 			"other": "{label} et ses {count} objets déplacés vers la corbeille"
@@ -1198,7 +1198,7 @@
 		"resetColors": "Réinitialisation des couleurs",
 		"randomItem": "Objet aléatoire : {name}",
 		"saveOutfit": "Enregistrement de la tenue",
-		"deleteOutfit": "Placement de la tenue dans la Corbeille",
+		"deleteOutfit": "Tenue vers la corbeille",
 		"removeOutfit": "Retrait de la tenue",
 		"renameOutfit": "Renommage de la tenue",
 		"show": "Afficher {name}",
@@ -1210,9 +1210,9 @@
 		"moveCategory": "Déplacer {name}",
 		"addCategory": "Ajout d’une catégorie",
 		"changeCategory": "Modifier {name}",
-		"deleteCategory": "Supprimer {name}",
-		"deleteItem": "Supprimer {name}",
-		"deleteMove": "Supprimer {name}",
+		"deleteCategory": "{name} vers la corbeille",
+		"deleteItem": "{name} vers la corbeille",
+		"deleteMove": "{name} vers la corbeille",
 		"moveItem": "Déplacer {name}",
 		"changeDirections": "Modifier les directions",
 		"restoreOriginals": "Restaurer les originaux",
@@ -1821,7 +1821,7 @@
 			"fixedDrawOrder": "L’ordre de dessin intégré ne peut pas être modifié.",
 			"fixedSettings": "Les catégories intégrées peuvent seulement être affichées, masquées ou déplacées.",
 			"fixedRemoval": "Les catégories intégrées peuvent seulement être masquées.",
-			"nonemptyRemoval": "Retirez ses objets avant de supprimer la catégorie."
+			"nonemptyRemoval": "Placez d’abord ses objets dans la corbeille."
 		},
 		"use": {
 			"making": {
@@ -1835,7 +1835,7 @@
 		},
 		"busy": {
 			"hide": "{label} contient {items}. Seule une catégorie vide peut être masquée{stopped}.",
-			"delete": "{label} contient {items}. Seule une catégorie vide peut être supprimée{stopped}.",
+			"delete": "{label} contient {items}. Seule une catégorie sans création en cours peut aller dans la corbeille{stopped}.",
 			"reattach": "{label} contient {items}. Seule une catégorie vide peut changer de mode d’attache{stopped}.",
 			"hideWardrobe": "{label} contient {items}. Seuls les emplacements vides peuvent être masqués{stopped}.",
 			"dismissStopped": " ; fermez d’abord les tentatives arrêtées dans Activité"
@@ -2365,7 +2365,7 @@
 			"chooseReference": "Choisissez une animation de référence debout.",
 			"noStandingReference": "{move} n’a pas de vue debout pour chaque direction. Choisissez une animation avec toutes les vues.",
 			"needsStandingViews": "La configuration du rig nécessite les vues debout d’origine enregistrées ou les quatre directions cardinales. Importez d’abord les rotations manquantes.",
-			"emptyBodyFrame": "{move} contient une image du corps vide. Corrigez ou supprimez cette animation, puis relancez la configuration."
+			"emptyBodyFrame": "{move} a une image du corps vide. Corrigez ce mouvement ou placez-le dans la corbeille, puis reconfigurez."
 		},
 		"newRegistration": "Réenregistrer"
 	},
@@ -2407,7 +2407,7 @@
 			"partialRepairMustKeep": "Une réparation partielle doit conserver le nombre d’images existant.",
 			"selectedEquipmentLongerStanding": "L’équipement sélectionné n’a plus de visuel en pose debout pour toutes les vues choisies. Vérifiez votre sélection avant de réessayer. Aucune génération n’a été demandée.",
 			"itemFramesChangedGeneration": "Les images de l’objet ont changé avant la génération. Rouvrez l’objet pour les vérifier à nouveau.",
-			"itemChangedWasRemoved": "Cet objet a été modifié ou supprimé pendant la préparation de l’animation.",
+			"itemChangedWasRemoved": "Cet objet a changé ou est allé dans la corbeille pendant la préparation du mouvement.",
 			"characterChangedAnotherTab": "Ce personnage a été modifié dans un autre onglet pendant la génération de l’animation. Rouvrez-le avant de réessayer.",
 			"bodyFramesTheirQuality": "Ces images du corps ou leurs contrôles de qualité ont changé depuis la vérification. Rien n’a été enregistré et aucune requête n’a été envoyée. Vérifiez-les à nouveau.",
 			"characterChangedAnotherTab2": "Ce personnage a été modifié dans un autre onglet avant que l’animation puisse être enregistrée. Rouvrez-le avant de réessayer.",
@@ -3139,11 +3139,11 @@
 		"unavailable": "Cette animation n’est plus disponible.",
 		"keepStanding": "Conservez les vues debout qui servent à créer des objets ou à les adapter à d’autres animations.",
 		"keepOne": "Conservez au moins une animation pour ce personnage.",
-		"demo": "Les animations de la démo ne peuvent pas être supprimées.",
-		"resolveDrafts": "Terminez ou abandonnez les brouillons d’objets de ce personnage avant de supprimer une animation.",
+		"demo": "Les mouvements de la démo ne peuvent pas aller dans la corbeille.",
+		"resolveDrafts": "Terminez ou abandonnez les brouillons d’objets de ce personnage avant de placer un mouvement dans la corbeille.",
 		"required": "Ces vues debout sont nécessaires pour adapter les objets existants à de nouvelles animations.",
 		"selectedCharacterChanged": "Le personnage sélectionné a changé.",
-		"concurrentEdit": "Ce personnage a changé avant que l’animation puisse être supprimée. Réessayez."
+		"concurrentEdit": "Le personnage a changé avant que le mouvement puisse aller dans la corbeille. Réessayez."
 	},
 	"characterFacts": {
 		"body": "{measure} de corps",

@@ -1741,7 +1741,7 @@ const WORK_BLOCKS = new Set([
 export const blockedByWork = (reason: LocalizedError | '') =>
 	!!reason && WORK_BLOCKS.has(reason.translation.key);
 const DELETE_GENERATION_BLOCK = new LocalizedError(
-	'Finish or dismiss pending generation work before deleting a character.',
+	'Finish or dismiss pending generation work before moving a character to the Trash.',
 	'state.finishBeforeCharacterRemoval'
 );
 
@@ -1803,7 +1803,7 @@ function characterEditBlocked(
 			? DELETE_GENERATION_BLOCK
 			: action === 'delete move'
 				? new LocalizedError(
-						'Finish or dismiss pending generation work before deleting a move.',
+						'Finish or dismiss pending generation work before moving a move to the Trash.',
 						'state.finishBeforeMoveRemoval'
 					)
 				: action === 'fix frames of'
@@ -1833,7 +1833,7 @@ export function deletionBlocked(
 	kind: 'character' | 'move' = 'character'
 ): LocalizedError | '' {
 	return id.startsWith('fixture:')
-		? new LocalizedError('The bundled demo cannot be deleted.', 'deleteSheet.demo')
+		? new LocalizedError('The bundled demo can’t be moved to the Trash.', 'deleteSheet.demo')
 		: characterEditBlocked(kind === 'character' ? 'delete' : 'delete move', id);
 }
 
@@ -5145,7 +5145,7 @@ export async function saveSlotSettings(key: string, o: SlotSettings): Promise<st
 /** Delete a custom category. An empty one is an undoable organization step. One with saved items (exactly `items`, the count
  *  the person confirmed) goes with them in one atomic write, rechecked against the saved record: the category, its items, their
  *  colors and outfit entries are all deleted or nothing is. That cannot be undone. Attempts being made or stopped and new moves
- *  for its items must finish or be dismissed first. Returns why it cannot be deleted, or ''. */
+ *  for its items must finish or be dismissed first. Returns why it cannot go to the Trash, or ''. */
 export async function deleteSlot(key: string, items = 0): Promise<Message | string> {
 	const projectId = doc.id,
 		request = openRequest,
@@ -5180,13 +5180,13 @@ export async function deleteSlot(key: string, items = 0): Promise<Message | stri
 			(rec) => {
 				if (JSON.stringify(rec.manifest.slots.find((s) => s.id === key)) !== definition)
 					throw new LocalizedError(
-						`${label} changed meanwhile. Review it again before deleting.`,
+						`${label} changed meanwhile. Review it again before moving it to the Trash.`,
 						'state.labelChangedMeanwhileReviewItAgainBefore',
 						{ label }
 					);
 				if (rec.manifest.items.some((it) => it.slot === key))
 					throw new LocalizedError(
-						`${label} has new items. Review it again before deleting.`,
+						`${label} has new items. Review it again before moving it to the Trash.`,
 						'state.labelHasNewItemsReviewItAgain',
 						{ label }
 					);

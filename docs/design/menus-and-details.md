@@ -34,6 +34,10 @@ but not changes. The stage's frame-by-frame window, formerly Inspect, is now **V
 
 Every menu ends with **Rename…, Download ZIP, Move to Trash…**, in that order.
 
+Words: anything the Trash keeps (characters, items, categories, moves, states, outfits) is **moved to the Trash**,
+in every label, lock reason, history step and error. **Delete** means gone for good: Delete forever in the Trash and
+Delete local work.
+
 | Object    | Menu                                                                                                                                                               | Details                                                                                                                                                                                                                          |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Item      | View and edit, Recolor, Make copy with new look, Create a variant (or Make copy for self as a blocker shortcut), Move to slot, Rename, Download ZIP, Move to Trash | Preview and facings, coverage and drawing missing frames, Quality findings with Fix frames and one-view repair or redraw, the re-fit beside its findings, Outfit (hand settings, layer order, hiding), About; Wear in the footer |
