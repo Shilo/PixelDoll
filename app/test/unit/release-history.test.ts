@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildChanges, collectCommits, userCommits } from '../../scripts/release/changes.ts';
 import { liveBuilds } from '../../scripts/release/deployments.ts';
@@ -212,4 +213,30 @@ it('schedules the release workflow on the release day and the day after, just af
 	expect(Number(minute)).toBeLessThan(60);
 	expect(Number(hour)).toBe(schedule.hourUtc);
 	expect(days).toBe(`${day},${(day + 1) % 7}`);
+});
+
+it('leaves the withdrawn whole-direction alignment out of the October 30 release', () => {
+	const root = fileURLToPath(new URL('../../../', import.meta.url));
+	const ids = collectCommits(
+		root,
+		'd4c5785f00b288505275a90a7a0f6d91047f30a8',
+		'45c7a225ba6821740aff487b3ca8c0092799f5f2'
+	).map(({ sha }) => sha.slice(0, 9));
+	expect(ids).not.toContain('53b02f185');
+	expect(ids).not.toContain('390b98e52');
+});
+
+it('nets a revert listed in the manual revert map', () => {
+	const commit = (sha: string, subject: string) => ({
+		sha: sha.padEnd(40, '0'),
+		subject,
+		body: ''
+	});
+	expect(
+		userCommits(
+			[commit('bbbbbbb', 'revert(studio): withdraw a trial'), commit('aaaaaaa', 'feat: trial')],
+			() => [],
+			{ bbbbbbb: ['aaaaaaa'.padEnd(40, '0')] }
+		)
+	).toEqual([]);
 });

@@ -37,7 +37,7 @@ for (const rel of readdirSync(dist, { recursive: true })) {
 	if (!statSync(file).isFile()) continue;
 	const name = basename(file);
 	const category = pwaCategory(rel.split(sep).join('/'));
-	if (category === 'releases' && ['source.json', 'schedule.json'].includes(name))
+	if (category === 'releases' && ['reverts.json', 'source.json', 'schedule.json'].includes(name))
 		bad.push(`${file}: private release metadata`);
 	if (name.startsWith('.env')) bad.push(`${file}: .env file`);
 	else if (name.endsWith('.map')) bad.push(`${file}: source map`);

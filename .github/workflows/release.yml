@@ -11,6 +11,10 @@ on:
         description: Preview the release without writing or calling Claude
         type: boolean
         default: false
+      max:
+        description: Most releases to publish in this run (backfill one at a time to check each)
+        type: number
+        default: 1
 
 permissions:
   contents: write
@@ -51,7 +55,8 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           gh auth setup-git
       - name: Run release pipeline
-        run: npm run release ${{ inputs.dry_run && '-- --dry-run' || '' }}
+        # One release per run by default: a failure never repeats more than one release's paid Claude calls.
+        run: npm run release -- --max ${{ inputs.max || 1 }} ${{ inputs.dry_run && '--dry-run' || '' }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

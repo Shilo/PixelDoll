@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { shippedPathspec } from '../../version.ts';
 import { git } from './git.ts';
 
@@ -14,10 +16,14 @@ const skipped = /^(test|e2e|dev|ci|agent)$/i;
 const conventional = /^(feat|perf|fix)(?:\(([^)]+)\))?!?:\s+(.+)$/;
 const revertSubject = /^(?:revert(?:\([^)]+\))?!?:|revert ")/i;
 
-/** `mergeContent` lists the commits a merge brought in, so reverting a merged branch nets its commits too. */
+/**
+ * `mergeContent` lists the commits a merge brought in, so reverting a merged branch nets its commits too.
+ * `manualReverts` maps a revert whose message names no commit to the commits it withdrew (releases/reverts.json).
+ */
 export function userCommits(
 	commits: GitCommit[],
-	mergeContent: (prefix: string) => string[] = () => []
+	mergeContent: (prefix: string) => string[] = () => [],
+	manualReverts: Record<string, string[]> = {}
 ): ReleaseCommit[] {
 	const reverted = new Set<string>();
 	const result: ReleaseCommit[] = [];
@@ -32,7 +38,10 @@ export function userCommits(
 				/^(?:Reverts |Revert [^\n:]+:\s*)([a-f\d]{7,64}(?:(?:,?\s+|\s+and\s+)[a-f\d]{7,64})*)/i.exec(
 					body
 				)?.[1];
-			const prefixes = [...standard, ...(combined?.match(/\b[a-f\d]{7,64}\b/gi) ?? [])];
+			const manual = Object.entries(manualReverts).flatMap(([revert, targets]) =>
+				sha.startsWith(revert) ? targets : []
+			);
+			const prefixes = [...standard, ...(combined?.match(/\b[a-f\d]{7,64}\b/gi) ?? []), ...manual];
 			for (const prefix of prefixes) {
 				const matches = commits.filter((commit) => commit.sha.startsWith(prefix.toLowerCase()));
 				if (matches.length === 1) reverted.add(matches[0].sha);
@@ -75,19 +84,24 @@ export function collectCommits(cwd: string, sha: string, previousSha?: string) {
 	const commits: GitCommit[] = [];
 	for (let i = 0; i + 2 < fields.length; i += 3)
 		commits.push({ sha: fields[i], subject: fields[i + 1], body: fields[i + 2].trim() });
-	return userCommits(commits, (prefix) => {
-		let target: string;
-		try {
-			target = git(cwd, 'rev-parse', '--verify', '--quiet', `${prefix}^{commit}`);
-		} catch {
-			return []; // Not in this repository: nothing to net.
-		}
-		const parents = git(cwd, 'rev-list', '--parents', '-n', '1', target).split(' ').length - 1;
-		if (parents < 2) return [];
-		return git(cwd, 'rev-list', '--no-merges', `${target}^1..${target}`)
-			.split('\n')
-			.filter(Boolean);
-	});
+	const manual = join(cwd, 'releases', 'reverts.json');
+	return userCommits(
+		commits,
+		(prefix) => {
+			let target: string;
+			try {
+				target = git(cwd, 'rev-parse', '--verify', '--quiet', `${prefix}^{commit}`);
+			} catch {
+				return []; // Not in this repository: nothing to net.
+			}
+			const parents = git(cwd, 'rev-list', '--parents', '-n', '1', target).split(' ').length - 1;
+			if (parents < 2) return [];
+			return git(cwd, 'rev-list', '--no-merges', `${target}^1..${target}`)
+				.split('\n')
+				.filter(Boolean);
+		},
+		existsSync(manual) ? JSON.parse(readFileSync(manual, 'utf8')) : {}
+	);
 }
 
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);

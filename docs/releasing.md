@@ -6,9 +6,10 @@ Releases are fully automatic: a scheduled workflow tags the build that was live 
 
 - `app/version.ts` stays the only version source. A release's version is the shipped-commit count at the tagged commit.
 - `releases/schedule.json` sets the UTC cadence. For `week` and `2 weeks`, cutoffs repeat every 7 or 14 days from `anchor` at `hourUtc`. For `month`, they fall on the first matching weekday `day` of each month at `hourUtc`, on or after `anchor`. A cadence change applies after the last published release or the cutoff already staged for publication.
-- `.github/workflows/release.yml` runs at 15:17 UTC on the release day and the day after (a backup for a dropped run), and on demand from the Actions tab (Run workflow). Each run publishes every cutoff that has passed since the last release, oldest first, so a missed run catches up. A run with nothing due exits in seconds. Changing `day` or `hourUtc` also means changing the cron line; a unit test checks they match.
+- `.github/workflows/release.yml` runs at 15:17 UTC on the release day and the day after (a backup for a dropped run), and on demand from the Actions tab (Run workflow). Each run publishes the oldest cutoff that has passed since the last release (the Run workflow `max` input allows more), so a missed run catches up one release at a time and a failure never repeats more than one release's Claude calls. A run with nothing due exits in seconds. Changing `day` or `hourUtc` also means changing the cron line; a unit test checks they match.
 - `app/scripts/release/` holds the release script (`npm run release -- --dry-run` from `app/`), its unit tests live in `app/test/unit/release-*.test.ts`.
 - `docs/release-notes.md` and `docs/release-notes-translate.md` are the Claude instructions, sent verbatim (the translation prompt is followed by `app/src/locales/TRANSLATING.md`).
+- `releases/reverts.json` maps a revert whose message names no commit to the commits it withdrew, so withdrawn work stays out of the notes.
 - `releases/<version>/` holds what the app shows; `releases/index.json` lists published releases, newest first.
 
 ## One release, step by step
@@ -25,7 +26,8 @@ Releases are fully automatic: a scheduled workflow tags the build that was live 
 
 1. In the Anthropic Console, create a workspace for releases with a monthly spend limit, keep auto-reload off, and create an API key in it.
 2. In GitHub: Settings > Environments > New environment `release`, limited to the `main` branch, with secret `ANTHROPIC_API_KEY`.
-3. Settings > Secrets and variables > Actions > Variables: set `RELEASES_ENABLED` to `true`. Until then the workflow only dry-runs. Once it is `true`, a missing key fails the run instead of skipping publication. The first enabled run backfills every weekly cutoff since the anchor (about six releases and their translations in one run).
+3. Settings > Secrets and variables > Actions > Variables: set `RELEASES_ENABLED` to `true`. Until then the workflow only dry-runs. Once it is `true`, a missing key fails the run instead of skipping publication.
+4. Backfill one release at a time: Actions > Release > Run workflow. After the first one, check the published release (banner visible signed out, Latest badge, All changes) and that What's new shows it on pixeldoll.app before running the next. About six runs reach the current week.
 
 The release workflow uses its built-in GitHub token to read deployments, publish tags and releases, push the generated commits to `main`, and dispatch Pages. The repository's rules for `main` must allow those generated commits.
 

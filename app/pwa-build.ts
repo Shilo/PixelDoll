@@ -29,7 +29,7 @@ export function copyReleaseFiles(source: string, outDir: string) {
 	if (!existsSync(source)) return;
 	cpSync(source, join(outDir, 'releases'), {
 		recursive: true,
-		filter: (path) => !['schedule.json', 'source.json'].includes(basename(path))
+		filter: (path) => !['reverts.json', 'schedule.json', 'source.json'].includes(basename(path))
 	});
 }
 

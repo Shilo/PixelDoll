@@ -22,11 +22,15 @@
 		return fetchReleaseNotes(entry.version, locale);
 	});
 	$effect(() => {
-		// The {:catch} block below shows a failed load; only a shown article counts as read.
+		// The {:catch} block below shows a failed load; only an article still on screen once loaded counts as read.
+		let shown = true;
 		notes.then(
-			() => onshown?.(),
+			() => shown && onshown?.(),
 			() => undefined
 		);
+		return () => {
+			shown = false;
+		};
 	});
 	let changes = $state.raw<ReleaseChanges | null>();
 	let fetchingChanges = false;

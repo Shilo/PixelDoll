@@ -231,7 +231,8 @@ async function main() {
 			writeStage(folder, source, notes, changes, composed.native);
 			commitReleaseFiles(cwd, `chore(release): stage v${version}`, `releases/${version}`);
 		}
-		await publishRelease(github, source, notes.en, changes, banner, indexInRun === plans.length);
+		// Cutoffs publish oldest first, so each new release is the highest version so far and becomes Latest.
+		await publishRelease(github, source, notes.en, changes, banner, true);
 		index.releases.unshift({
 			version,
 			date,
@@ -242,8 +243,9 @@ async function main() {
 		});
 		writeJson(indexPath, index);
 		commitReleaseFiles(cwd, `chore(release): list v${version}`, 'releases/index.json');
-		await deployIndex(github);
 	}
+	// One Pages deploy carries every release this run listed.
+	if (!dryRun && plans.length) await deployIndex(github);
 }
 
 main().catch((error: unknown) => {

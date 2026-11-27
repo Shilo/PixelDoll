@@ -91,6 +91,14 @@ export async function publishRelease(
 	}
 	await verifyAsset(github, asset, banner);
 	if (release.draft)
-		await github.publish(release.id, name, render(asset.browser_download_url), latest);
+		// The public download URL, not the draft's asset URL, so the banner keeps working after publication.
+		await github.publish(
+			release.id,
+			name,
+			render(
+				`https://github.com/${github.repository}/releases/download/${tag}/${encodeURIComponent(asset.name)}`
+			),
+			latest
+		);
 	await ensureTag(false);
 }

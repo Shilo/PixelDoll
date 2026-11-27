@@ -12,13 +12,14 @@
 	function dateLabel(date: string) {
 		return formatDate(new Date(date), { dateStyle: 'medium', timeZone: 'UTC' });
 	}
-	function close() {
-		if (latest) releaseNews.markShown(latest.version);
-		releaseNews.close();
-	}
 </script>
 
-<Sheet title={t('releaseNews.title')} className="release-news-sheet" overlay onclose={close}>
+<Sheet
+	title={t('releaseNews.title')}
+	className="release-news-sheet"
+	overlay
+	onclose={releaseNews.close}
+>
 	<div class="release-news">
 		{#if latest}
 			{#key latest.version}

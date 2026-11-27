@@ -26,7 +26,7 @@ const asset = {
 	size: banner.length,
 	state: 'uploaded',
 	digest: 'sha256:' + createHash('sha256').update(banner).digest('hex'),
-	browser_download_url: 'https://github.com/Shilo/PixelDoll/releases/download/v1.2.3/banner.4x.png'
+	browser_download_url: 'https://github.com/Shilo/PixelDoll/releases/download/untagged-1a2b3c/banner.4x.png'
 } satisfies Asset;
 const publish = (github: Parameters<typeof publishRelease>[0]) =>
 	publishRelease(github, source, emptyNotes, { total: 0, groups: [] }, banner, true);
@@ -73,7 +73,7 @@ it('creates and verifies a release once, resuming an already published release w
 	expect(github.publish).toHaveBeenCalledExactlyOnceWith(
 		draft.id,
 		'PixelDoll 1.2.3: A PixelDoll maintenance release',
-		expect.stringContaining(asset.browser_download_url),
+		expect.stringContaining('https://github.com/Shilo/PixelDoll/releases/download/v1.2.3/banner.4x.png'),
 		true
 	);
 	expect(github.tagCommit).toHaveBeenCalledTimes(5);

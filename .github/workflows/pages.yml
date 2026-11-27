@@ -126,13 +126,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           BUILT_SHA: ${{ github.sha }}
         run: |
-          # The live build is the newest deployment whose latest status is a success with a page URL. This job's own
-          # deployment record exists already but is not successful yet, so it never counts.
+          # The live build is the newest deployment that ever succeeded with a page URL (a later deploy marks it inactive).
+          # This job's own record is not successful yet, so it never counts. Every lookup must succeed: an API error fails
+          # the job instead of letting an unchecked build through.
+          set -euo pipefail
+          ids=$(gh api --paginate "repos/$GITHUB_REPOSITORY/deployments?environment=github-pages&per_page=100" --jq '.[].id')
           live_sha=''
-          for id in $(gh api "/repos/$GITHUB_REPOSITORY/deployments?environment=github-pages&per_page=30" --jq '.[].id'); do
-            state=$(gh api "/repos/$GITHUB_REPOSITORY/deployments/$id/statuses?per_page=1" --jq '.[0] | select(.environment_url != null and .environment_url != "") | .state')
-            if [[ "$state" == success ]]; then
-              live_sha=$(gh api "/repos/$GITHUB_REPOSITORY/deployments/$id" --jq '.sha')
+          for id in $ids; do
+            statuses=$(gh api --paginate "repos/$GITHUB_REPOSITORY/deployments/$id/statuses?per_page=100" --jq '.[] | select(.state == "success" and (.environment_url // "") != "") | .id')
+            if [[ -n "$statuses" ]]; then
+              live_sha=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$id" --jq '.sha')
               break
             fi
           done
