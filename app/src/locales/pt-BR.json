@@ -381,6 +381,7 @@
 		"categories": "Categorias de cores"
 	},
 	"colorSections": {
+		"notWorn": "Não equipado",
 		"randomLowerColors": "Sortear cores: {lower}",
 		"randomCharacterColors": "Sortear cores do personagem",
 		"resetLowerColors": "Restaurar cores: {lower}",
@@ -540,7 +541,6 @@
 		"matchingColors": "Ajustando cores…",
 		"matchItemColors": "Ajustar cores do item",
 		"recolor": "Mudar cores",
-		"recolorWearFirst": "Vista para mudar as cores",
 		"whenWornHide": "Ocultar outros itens ao usar",
 		"iD": "ID",
 		"slot": "Espaço",

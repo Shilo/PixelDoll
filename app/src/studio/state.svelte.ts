@@ -359,7 +359,7 @@ export const ui = $state({
 	dpr: devicePixelRatio || 1,
 	theme: (lsGet(K.theme) === 'light' ? 'light' : 'dark') as 'light' | 'dark',
 	tab: 'wardrobe' as 'wardrobe' | 'colors' | 'outfits' | 'states' | 'moves', // phone
-	colorsFocus: '', // item id whose Colors section the Colors tab scrolls to once (Recolor in item details)
+	colorsFocus: null as { project: string; item: string } | null, // one Recolor shortcut to a section
 	group: 'head', // a Wardrobe category: its slot key
 	wardrobeOpenRevision: 0,
 	selected: '', // item id, or "gen:<draft id>"
@@ -2621,7 +2621,7 @@ export function randomizeGroup(groupId: string) {
 	ui.selected = it.id;
 	if (wearing || recolored) playAudioCue('recolor');
 }
-/** Colors-only Random for the given item ids (the character or one worn item). Never changes what is worn. */
+/** Colors-only Random for the given item ids. */
 export function randomizeColors(owners: string[], label: Message) {
 	const m = store.project?.manifest;
 	if (!m) return;
@@ -2644,30 +2644,70 @@ export function characterName() {
 		'Character'
 	);
 }
+
+/** A look owns the colors its equipped items use, including the source of any linked color. */
+function outfitColorIds(m: Manifest, items: Preset['items']) {
+	const materials = new Map(m.materials.map((material) => [material.id, material]));
+	const seen = new Set<string>();
+	const ids = new Set<string>();
+	for (const item of equipped(m, items)) {
+		for (const id of item.materials) {
+			let material = materials.get(id);
+			while (material && !seen.has(material.id)) {
+				seen.add(material.id);
+				if (!material.linkTo) ids.add(material.id);
+				material = material.linkTo ? materials.get(material.linkTo) : undefined;
+			}
+		}
+	}
+	return ids;
+}
+
+/** A look with only its own colors, so Save outfit and exports leave out colors chosen for unworn items. */
+export function lookOf(
+	m: Manifest,
+	items: Preset['items'],
+	variants: Preset['variants']
+): Pick<Preset, 'items' | 'variants'> {
+	const ids = outfitColorIds(m, items);
+	return {
+		items: { ...items },
+		variants: Object.fromEntries(Object.entries(variants).filter(([id]) => ids.has(id)))
+	};
+}
+
+/** What is worn now, with only its colors. */
+export const currentLook = (m: Manifest) =>
+	lookOf(m, $state.snapshot(doc.items), $state.snapshot(doc.variants));
+
+function wearLook(m: Manifest, items: Preset['items'], variants: Preset['variants']) {
+	doc.items = settleHands(m, items, 'main_hand').items;
+	const ids = outfitColorIds(m, doc.items);
+	doc.variants = Object.fromEntries([
+		...Object.entries(doc.variants).filter(([id]) => !ids.has(id)),
+		...Object.entries(variants).filter(([id]) => ids.has(id))
+	]);
+}
+
 export function randomize() {
 	const manifest = store.project?.manifest;
 	if (!manifest) return;
 	const r = randomOutfit(manifest);
 	commit(
 		message('common.randomLook'),
-		() => {
-			doc.items = { ...r.items, body: manifest.rig.baseItem };
-			doc.variants = r.variants;
-		},
+		() => wearLook(manifest, { ...r.items, body: manifest.rig.baseItem }, r.variants),
 		{ keepHand: 'main_hand', quiet: true }
 	);
 	playAudioCue('recolor');
 }
 export function applyPreset(p: Preset) {
-	commit(
-		message('history.wear', { name: p.name }),
-		() => {
-			doc.items = { ...p.items };
-			doc.variants = { ...p.variants };
-		},
-		{ keepHand: 'main_hand', quiet: true }
-	);
-	if (store.project?.manifest.rig.animations.some((move) => move.id === DEFAULT_MOVE)) {
+	const m = store.project?.manifest;
+	if (!m) return;
+	commit(message('history.wear', { name: p.name }), () => wearLook(m, { ...p.items }, p.variants), {
+		keepHand: 'main_hand',
+		quiet: true
+	});
+	if (m.rig.animations.some((move) => move.id === DEFAULT_MOVE)) {
 		ui.anim = DEFAULT_MOVE;
 		ui.frame = 0;
 	}
@@ -2684,24 +2724,19 @@ export function savePreset(name: string) {
 	for (let n = 2; id === CURRENT_OUTFIT_ID || m.presets.some((p) => p.id === id); n++)
 		id = `${base}-${n}`;
 	commit(message('history.saveOutfit'), () => {
-		const pr: Preset = {
-			id,
-			name,
-			items: $state.snapshot(doc.items),
-			variants: $state.snapshot(doc.variants)
-		};
+		const pr: Preset = { id, name, ...currentLook(m) };
 		m.presets = [...m.presets, pr];
 	});
 }
 export const sameOutfit = (p: Preset) => {
 	// an outfit saved before one of its hand items became two-handed is worn with the Main hand kept
-	const items = store.project ? settleHands(store.project.manifest, p.items).items : p.items;
+	const m = store.project?.manifest;
+	if (!m) return false;
+	const items = settleHands(m, p.items, 'main_hand').items;
 	return (
 		Object.keys({ ...items, ...doc.items }).every(
 			(k) => (items[k] ?? null) === (doc.items[k] ?? null) || k === 'body'
-		) &&
-		JSON.stringify(Object.entries(p.variants).sort()) ===
-			JSON.stringify(Object.entries($state.snapshot(doc.variants)).sort())
+		) && [...outfitColorIds(m, items)].every((id) => p.variants[id] === doc.variants[id])
 	);
 };
 

@@ -12135,14 +12135,13 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	);
 	expect(iconOffsets).toEqual(Array(iconOffsets.length).fill(iconOffsets.at(-1)));
 	await expect(itemMenu(page).getByRole('menuitem', { name: /Wear|Take off/ })).toHaveCount(0);
-	// Worn or not, the menu keeps the same rows: Recolor stays in place while it is off, saying why.
+	// Worn or not, the menu keeps the same rows and Recolor stays available.
 	const rows = await items.evaluateAll((list) =>
 		list.map((row) => row.getAttribute('aria-label') ?? row.textContent)
 	);
 	await page.keyboard.press('ArrowDown');
 	await expect(items.nth(1)).toHaveAccessibleName('Recolor');
-	await expect(items.nth(1)).toHaveAttribute('aria-disabled', 'true');
-	await expect(items.nth(1)).toHaveAccessibleDescription('Wear it to change its colors');
+	await expect(items.nth(1)).toBeEnabled();
 	await expect(items.nth(1)).toBeFocused();
 	await page.keyboard.press('ArrowDown');
 	await expect(items.nth(2)).toHaveAccessibleName('Make copy with new look…');
@@ -12319,6 +12318,58 @@ test('tile status shows on the tile and in its name, and Recolor opens the item�
 	await expect(heading).toBeInViewport();
 	const list = (await page.locator('.color-sections').boundingBox())!;
 	expect(Math.abs((await heading.boundingBox())!.y - list.y)).toBeLessThan(24);
+
+	await equipmentGroup(page, 'Head');
+	const hat = section(page, 'Head').getByRole('button', { name: /^Wizard hat\b/ });
+	await expect(hat).toHaveAttribute('aria-pressed', 'false');
+	await expect(
+		section(page, 'Head').getByRole('button', { name: /^Steel helmet\b/ })
+	).toHaveAttribute('aria-pressed', 'true');
+	await hat.click({ button: 'right' });
+	await itemMenu(page).getByRole('menuitem', { name: 'Recolor', exact: true }).click();
+	const unworn = section(page, 'Wizard hat');
+	await expect(unworn.getByRole('heading', { name: 'Wizard hat' })).toBeFocused();
+	await expect(unworn.getByText('Not worn', { exact: true })).toBeVisible();
+	const rail = page.locator('.color-panes nav');
+	const hatOnRail = rail.getByRole('button', { name: 'Wizard hat', exact: true });
+	await expect(hatOnRail).toHaveAccessibleDescription('Not worn');
+	await expect(hatOnRail).toHaveAttribute('aria-current', 'true');
+	await rail.getByRole('button', { name: 'Character', exact: true }).click();
+	await hatOnRail.click();
+	await expect(unworn.getByRole('heading', { name: 'Wizard hat' })).toBeInViewport();
+	const canvas = unworn.locator('canvas');
+	const pixels = () => canvas.evaluate((element: HTMLCanvasElement) => element.toDataURL());
+	const before = await pixels();
+	const swatch = unworn.getByRole('radio', { name: 'azure', exact: true }).first();
+	const picker = unworn.locator('input[type="color"]').first();
+	await picker.evaluate((input: HTMLInputElement) => {
+		input.value = '#00ff00';
+		input.dispatchEvent(new Event('input', { bubbles: true }));
+	});
+	await expect.poll(pixels).not.toBe(before);
+	await picker.evaluate((input) => input.dispatchEvent(new Event('blur')));
+	await expect.poll(pixels).toBe(before);
+	await swatch.click();
+	await expect.poll(pixels).not.toBe(before);
+	await expect(swatch).toBeChecked();
+	await page.getByRole('button', { name: /^Undo/ }).click();
+	await expect.poll(pixels).toBe(before);
+	await swatch.click();
+
+	await equipmentGroup(page, 'Head');
+	await expect(hat).toHaveAttribute('aria-pressed', 'false');
+	await expect(
+		section(page, 'Head').getByRole('button', { name: /^Steel helmet\b/ })
+	).toHaveAttribute('aria-pressed', 'true');
+	await equipmentMode(page, 'Colors');
+	await expect(unworn).toHaveCount(0);
+	await equipmentGroup(page, 'Head');
+	await hat.click();
+	await expect(hat).toHaveAttribute('aria-pressed', 'true');
+	await hat.click({ button: 'right' });
+	await itemMenu(page).getByRole('menuitem', { name: 'Recolor', exact: true }).click();
+	await expect(swatch).toBeChecked();
+	await expect(unworn.getByText('Not worn', { exact: true })).toHaveCount(0);
 });
 
 /** Page-data tests load the dev server, whose /src modules the preview server does not serve. */

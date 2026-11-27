@@ -38,7 +38,7 @@
 		type ExportSettings
 	} from '../lib/store/export-settings.ts';
 	import type { DirectionName, Engine } from '../lib/store/manifest.ts';
-	import { ui, doc, store, toast } from './state.svelte.ts';
+	import { ui, doc, store, toast, currentLook } from './state.svelte.ts';
 	import { displayMove } from './displayMove.ts';
 	import { ChevronRight, Download, Settings2, TriangleAlert } from './icons.ts';
 	import ExportVersionCard from './ExportVersionCard.svelte';
@@ -573,7 +573,7 @@
 		if (!p || !ready || saving) return;
 		busy = true;
 		result = null;
-		const look = { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) };
+		const look = currentLook(p.manifest);
 		const snapshot = { ...p, manifest: structuredClone(p.manifest) };
 		const actionLayering = exportActionLayering(
 			doc.id,
