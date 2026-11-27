@@ -487,8 +487,14 @@ test('the offline status stays compact and leaves the character and controls vis
 		await checkLayout('.equipment-rail,.experience-playback,.toast');
 		await context.setOffline(false);
 		await expect(banner).toHaveCount(0);
-		await page.getByRole('button', { name: 'More options', exact: true }).click();
-		await page.locator('#experience-options .mobile-export').click();
+		// Back online, Export works again: from the header when it fits there, else from More options (the header's width
+		// depends on the platform's font, so both happen at 390 px).
+		const exportButton = page.getByRole('button', { name: 'Export', exact: true });
+		if (await exportButton.isVisible()) await exportButton.click();
+		else {
+			await page.getByRole('button', { name: 'More options', exact: true }).click();
+			await page.locator('#experience-options .mobile-export').click();
+		}
 		await expect(page.getByRole('dialog', { name: 'Export', exact: true })).toBeVisible();
 	} finally {
 		await context.setOffline(false);
