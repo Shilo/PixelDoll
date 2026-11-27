@@ -816,8 +816,11 @@ test('tips point at each control in order, end on their action, and come back in
 	await tip.getByRole('button', { name: 'Close tip' }).click();
 	await page.getByRole('tab', { name: 'Moves', exact: true }).click();
 	await expect(heading('Fit gear to this move')).toBeVisible();
-	await tip.getByRole('button', { name: 'Close tip' }).click();
+	await tip.locator('.tip-copy p').click();
 	await expect(tip).toHaveCount(0);
+	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toContain(
+		'"generate-items"'
+	);
 	await page.getByRole('tab', { name: 'States', exact: true }).click();
 	await expect(heading('Add a state')).toBeVisible();
 	await pointsAt(page.locator('[data-tip-anchor="add-state"]'));
@@ -830,6 +833,11 @@ test('tips point at each control in order, end on their action, and come back in
 	await expect(heading('Fit gear to this move')).toBeVisible();
 	await expect(page.locator('h1')).toHaveText('Adventurer copy');
 	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toBe('[]');
+	await tip.locator('.bu-popover-arrow').click();
+	await expect(tip).toHaveCount(0);
+	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toBe(
+		'["generate-items"]'
+	);
 });
 
 test('the startup preview notice expires after eight seconds', async ({ page }, info) => {
