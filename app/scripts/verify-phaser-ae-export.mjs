@@ -20,6 +20,8 @@ const app = fileURLToPath(new URL('..', import.meta.url));
 const { values } = parseArgs({
 	options: {
 		only: { type: 'string' },
+		// webgpu needs a headed browser on this kind of machine: headless Chromium has no WebGPU device
+		renderer: { type: 'string' },
 		game: { type: 'string' },
 		output: { type: 'string' },
 		zip: { type: 'string', multiple: true }
@@ -200,7 +202,12 @@ function serve(dist, files = new Map()) {
 }
 
 const results = [];
-const browser = await chromium.launch({ headless: true });
+assert(
+	[undefined, 'webgl2', 'webgpu'].includes(values.renderer),
+	'--renderer is webgl2 (headless, the default) or webgpu (headed)'
+);
+const browser = await chromium.launch({ headless: values.renderer !== 'webgpu' });
+const renderers = new Set();
 async function open(url) {
 	const page = await browser.newPage({
 		viewport: { width: SCREEN, height: SCREEN },
@@ -208,10 +215,32 @@ async function open(url) {
 	});
 	const errors = [];
 	page.on('pageerror', (e) => errors.push(e.message));
-	page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+	// failed requests are reported by URL (a headed browser also asks for /favicon.ico, which no game serves)
+	page.on(
+		'console',
+		(m) =>
+			m.type() === 'error' &&
+			!m.text().startsWith('Failed to load resource') &&
+			errors.push(m.text())
+	);
+	page.on('response', (r) => {
+		if (r.status() >= 400 && !r.url().endsWith('/favicon.ico'))
+			errors.push(`${r.status()} loading ${r.url()}`);
+	});
 	await page.goto(url);
 	await page.waitForFunction(() => globalThis.game?.isReady === true, null, { timeout: 60000 });
 	await page.evaluate(() => globalThis.game.clock.hold());
+	// the backend render-auto chose: WebGPU first, WebGL2 when the browser has no WebGPU device
+	const backend = await page.evaluate(() => {
+		const r = globalThis.game.renderer;
+		return String(r?.backend ?? r?.status ?? 'unknown');
+	});
+	renderers.add(backend);
+	if (values.renderer)
+		assert(
+			backend.includes(values.renderer),
+			`expected the ${values.renderer} renderer, the game chose ${backend}`
+		);
 	return { page, errors };
 }
 async function shot(page) {
@@ -764,10 +793,13 @@ game.scenes.go('stage');
 	writeFileSync(join(gameDir, 'manifest.json'), JSON.stringify(original, null, 2) + '\n');
 }
 mkdirSync(dirname(output), { recursive: true });
-writeFileSync(output, JSON.stringify({ engine: engineRelease, results }, null, 2) + '\n');
+writeFileSync(
+	output,
+	JSON.stringify({ engine: engineRelease, renderers: [...renderers], results }, null, 2) + '\n'
+);
 for (const r of results.filter((r) => !r.passed))
 	console.log(`FAILED ${r.label}:\n  ${r.failures.join('\n  ') || 'control was not detected'}`);
 console.log(
-	`${results.filter((r) => r.passed).length}/${results.length} passed, engine ${engineRelease.id} (kernel ${engineRelease.kernel ?? '?'}) -> ${output}`
+	`${results.filter((r) => r.passed).length}/${results.length} passed, engine ${engineRelease.id} (kernel ${engineRelease.kernel ?? '?'}), renderer ${[...renderers].join(', ')} -> ${output}`
 );
 if (results.some((r) => !r.passed)) process.exitCode = 1;

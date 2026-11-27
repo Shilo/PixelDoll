@@ -7,7 +7,9 @@ The Phaser AE export (`phaser-ae/` in the ZIP) was run in the real Phaser AE eng
 
 - Engine: Phaser AE v3-82bf126, kernel 3.0.0-2, installed by `npx -y @phaser-ae/cli blank` under a free (basic)
   phaser.io account. The engine is not public on npm, so the verifier is opt-in and takes that game folder (`--game`).
-- Browser: Playwright headless Chromium, WebGL2 (AE's WebGPU path was not available headless on this machine).
+- Browsers: headless Chromium, where AE's render-auto falls back to WebGL2, and headed Chromium on an NVIDIA Ampere GPU,
+  where it picks WebGPU (its default). `--renderer webgl2|webgpu` asserts the backend the game chose; headless
+  Chromium on this machine cannot create a WebGPU device.
 - Worlds: the default side-on world (`core-2d`) and `world-topdown`, a 1024 × 1024 fixed screen with `pixelArt: true`
   and a plain clear color (AE's background packs dither, which would hide one-step pixel errors).
 - Archives: the three synthetic archives shared with the Phaser 3/4 verifier (`scripts/export-review-fixtures.mjs`:
@@ -104,8 +106,11 @@ missing step-order stamp and an unturned pivot.
 
 - Moving-attack layering (`playAction` with precut fragments) and the headless manifest path ran only in
   `test/unit/export-phaser-ae.test.ts` against a stub kernel: the shared archives have no action layers.
-- WebGPU rendering, and grids larger than an atlas page in the verifier itself (the Opus reviewer forced them with
+- Grids larger than an atlas page in the verifier itself (the Opus reviewer forced them with
   `"atlas": 256` and saw the same pixels).
-- Exact recolors of translucent pixels go through a canvas round trip; they matched within ±1 on WebGL2 only.
+- Exact recolors of translucent pixels go through a canvas round trip; they matched within ±1 on WebGL2 and WebGPU.
 - Publishing to phaser.io with files from the manifest `assets` list, and AE's `npm run -s play` tool (its half-size
   viewport cuts off a `fixed` screen larger than it; games normally use `letterbox`).
+
+Final run on both backends: 41 of 41 on WebGPU (headed) and 41 of 41 on WebGL2 (headless), pixel-exact against
+`baked/` with every negative control caught.
