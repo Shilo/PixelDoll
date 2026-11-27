@@ -86,7 +86,7 @@ export interface Problem {
 	trail?: readonly TrailEntry[];
 	/** performance.now() when the problem happened, when known; trail times are counted back from it. */
 	failedAt?: number;
-	/** Wall-clock seconds the app had been open when the problem was captured, including time the device slept. */
+	/** Wall-clock seconds the app had been open when the problem happened, including time the device slept. */
 	uptime?: number;
 	/** A stored failure (an Activity row): it may come from an earlier visit, another tab or another character. */
 	record?: boolean;

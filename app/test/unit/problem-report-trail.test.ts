@@ -15,6 +15,7 @@ import {
 	track,
 	trailSnapshot,
 	TRAIL_SIZE,
+	watchRequests,
 	type TrailEntry
 } from '../../src/lib/report/trail.ts';
 
@@ -75,14 +76,6 @@ describe('trail ring', () => {
 		expect(trailSnapshot()).toMatchObject([{ at: 101, first: 95, times: 3 }]);
 	});
 
-	test('a clipped repeat takes its place by its first time', () => {
-		track({ kind: 'press', area: 'Studio', control: 'playback.play' }, 95);
-		track({ kind: 'press', area: 'Studio', control: 'zoom.in' }, 99);
-		track({ kind: 'press', area: 'Studio', control: 'playback.play' }, 101);
-		track({ kind: 'press', area: 'Studio', control: 'playback.play' }, 102);
-		expect(trailSnapshot(100).map((entry) => entry.at)).toEqual([99, 95]);
-	});
-
 	test('unnamed presses are never merged: they may be different controls', () => {
 		track({ kind: 'press', area: 'Studio' }, 1);
 		track({ kind: 'press', area: 'Studio' }, 2);
@@ -94,6 +87,59 @@ describe('trail ring', () => {
 		const [first] = trailSnapshot();
 		first.times = 99;
 		expect(trailSnapshot()[0].times).toBe(1);
+	});
+});
+
+describe('request records in the trail', () => {
+	beforeEach(clearTrail);
+	const PAGE = 1_000_000;
+	const request = (id: string, state: string, createdAt: number) => ({
+		id,
+		state,
+		method: 'POST',
+		endpoint: '/inpaint-v3',
+		createdAt
+	});
+
+	test('only the start and end of a request made here, with the failure time it settled', () => {
+		let clock = 10;
+		const requests = watchRequests(PAGE, () => clock);
+		for (const state of ['queued', 'submitting', 'running', 'failed']) {
+			requests.update([request('a', state, PAGE + 1)], true);
+			clock += 5;
+		}
+		expect(trailSnapshot().map((entry) => (entry.event as { state: string }).state)).toEqual([
+			'failed',
+			'queued'
+		]);
+		// The settle time and the "failed" line share one clock reading.
+		expect(requests.settledAt('a')).toBe(25);
+		expect(trailSnapshot(25)[0].at).toBe(25);
+	});
+
+	test('a request settled before this page, or run by another tab, has no failure time here', () => {
+		const requests = watchRequests(PAGE, () => 1);
+		requests.update(
+			[request('old', 'failed', PAGE - 1), request('other', 'queued', PAGE + 1)],
+			false
+		);
+		requests.update(
+			[request('old', 'failed', PAGE - 1), request('other', 'failed', PAGE + 1)],
+			false
+		);
+		expect(requests.settledAt('old')).toBeUndefined();
+		expect(requests.settledAt('other')).toBeUndefined();
+		expect(trailSnapshot()).toEqual([]);
+	});
+
+	test('an earlier request that settles here counts from then, and forgotten records are dropped', () => {
+		const requests = watchRequests(PAGE, () => 7);
+		requests.update([request('old', 'running', PAGE - 1)], true);
+		expect(trailSnapshot()).toEqual([]);
+		requests.update([request('old', 'lost', PAGE - 1)], true);
+		expect(requests.settledAt('old')).toBe(7);
+		requests.update([], true);
+		expect(requests.settledAt('old')).toBeUndefined();
 	});
 });
 

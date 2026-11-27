@@ -1,17 +1,16 @@
 // Feeds the problem report trail (lib/report/trail.ts) from the page: presses, sheets, screens, page visibility and
 // connection, and PixelLab request transitions; problem notices record themselves in toast(). Only app vocabulary is recorded: a press names its control only through a static data-trail attribute,
 // never through visible text or an accessible name, which can hold a character name or a prompt.
-import { track } from '../lib/report/trail.ts';
+import { track, watchRequests } from '../lib/report/trail.ts';
 import { queue } from '../lib/pixellab/queue.ts';
 import { experience } from './experience/state.svelte.ts';
 import { areaOf } from './problemCapture.svelte.ts';
 import { ui } from './state.svelte.ts';
 
-const SETTLED = new Set(['done', 'failed', 'canceled', 'lost']);
-const settledHere = new Map<string, number>();
+const requests = watchRequests(performance.timeOrigin);
 /** performance.now() when this tab saw the request settle, or undefined when it settled before this page or elsewhere: a
  *  report of it then has no trail, since this page's actions did not lead to it. */
-export const settledAt = (id: string) => settledHere.get(id);
+export const settledAt = (id: string) => requests.settledAt(id);
 
 /** Controls a press can land on. A press elsewhere (text, the canvas, a dialog backdrop) is not an action. */
 const CONTROL =
@@ -36,42 +35,10 @@ export function installTrail(): () => void {
 	addEventListener('offline', offline);
 	document.addEventListener('visibilitychange', visibility);
 
-	// A request's start and end only: its steps in between would push the person's own actions out of the trail. Only the
-	// tab that runs the requests records them; another tab's requests are not this tab's actions.
-	const states = new Map<string, string>();
-	const unsubscribe = queue.subscribe((snapshot) => {
-		const seen = new Set<string>();
-		const runsHere = snapshot.role !== 'follower';
-		for (const record of snapshot.jobs) {
-			seen.add(record.id);
-			const before = states.get(record.id);
-			if (before === record.state) continue;
-			states.set(record.id, record.state);
-			const settled = SETTLED.has(record.state);
-			// A record from an earlier visit is history until it settles here.
-			const thisVisit = record.createdAt >= performance.timeOrigin;
-			const started = before === undefined && thisVisit;
-			const settledNow = settled && (before !== undefined || thisVisit);
-			if (!runsHere || !(started || settledNow)) continue;
-			// One clock reading, so the report of this failure keeps its own "failed" line.
-			const now = performance.now();
-			if (settledNow) settledHere.set(record.id, now);
-			track(
-				{
-					kind: 'job',
-					method: record.method,
-					endpoint: record.endpoint,
-					state: record.state
-				},
-				now
-			);
-		}
-		for (const id of states.keys())
-			if (!seen.has(id)) {
-				states.delete(id);
-				settledHere.delete(id);
-			}
-	});
+	// A follower tab only mirrors the requests another tab runs.
+	const unsubscribe = queue.subscribe((snapshot) =>
+		requests.update(snapshot.jobs, snapshot.role !== 'follower')
+	);
 
 	let sheet: typeof ui.sheet = null;
 	let screen = experience.screen;

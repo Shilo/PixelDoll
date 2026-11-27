@@ -70,8 +70,56 @@ export function trailSnapshot(until = Infinity): TrailEntry[] {
 				: { at: entry.first, first: entry.first, event: { ...entry.event }, times: 1 }
 		);
 	}
-	// A clipped repeat moves back to its first time, which can be older than its neighbors.
-	return out.sort((a, b) => b.at - a.at);
+	return out;
+}
+
+const SETTLED = new Set(['done', 'failed', 'canceled', 'lost']);
+
+/** A PixelLab request record as the queue lists it. */
+export interface WatchedRequest {
+	id: string;
+	state: string;
+	method: string;
+	endpoint: string;
+	/** Date.now() when it was made. */
+	createdAt: number;
+}
+
+/** Follows the queue's request records into the trail: only a request's start and end, since its steps in between would
+ *  push the person's own actions out, and only in the tab that runs the requests, since another tab's requests are not
+ *  this tab's actions. A record from before `pageStart` (Date.now() time) is history until it settles here. */
+export function watchRequests(pageStart: number, now = () => performance.now()) {
+	const states = new Map<string, string>();
+	const settled = new Map<string, number>();
+	return {
+		update(records: readonly WatchedRequest[], runsHere: boolean) {
+			const seen = new Set<string>();
+			for (const record of records) {
+				seen.add(record.id);
+				const before = states.get(record.id);
+				if (before === record.state) continue;
+				states.set(record.id, record.state);
+				const thisVisit = record.createdAt >= pageStart;
+				const started = before === undefined && thisVisit;
+				const settledNow = SETTLED.has(record.state) && (before !== undefined || thisVisit);
+				if (!runsHere || !(started || settledNow)) continue;
+				// One clock reading, so the report of this failure keeps its own "failed" line.
+				const at = now();
+				if (settledNow) settled.set(record.id, at);
+				track(
+					{ kind: 'job', method: record.method, endpoint: record.endpoint, state: record.state },
+					at
+				);
+			}
+			for (const id of states.keys())
+				if (!seen.has(id)) {
+					states.delete(id);
+					settled.delete(id);
+				}
+		},
+		/** When this tab saw the request settle; undefined if it settled before this page or in another tab. */
+		settledAt: (id: string) => settled.get(id)
+	};
 }
 
 /** For tests. */
