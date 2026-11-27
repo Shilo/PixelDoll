@@ -5858,6 +5858,30 @@ test.describe('live views actions', () => {
 			) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
 			const x = async () => Number((await host.getAttribute('data-position'))!.split(',')[0]);
 			try {
+				for (const name of ['Sprint', 'Mount']) {
+					const toggle = actions.getByRole('button', { name, exact: true });
+					const { x, y } = boxes[name];
+					const fill = () => toggle.evaluate((button) => getComputedStyle(button).backgroundColor);
+					await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+					const offFill = await fill();
+					const beforeToggle = await cueCount();
+					await touch('touchStart', [{ x: Math.round(x), y: Math.round(y), id: 3 }]);
+					await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+					await expect(toggle).toHaveCSS('scale', '0.92');
+					const heldFill = await fill();
+					expect(heldFill).not.toBe(offFill);
+					expect(await cueCount(), `${name} plays its cue on touchdown`).toBe(beforeToggle + 1);
+					await touch('touchEnd', []);
+					await expect(toggle).not.toHaveAttribute('data-pressed', '');
+					const onFill = await fill();
+					expect(onFill).not.toBe(heldFill);
+					expect(onFill).not.toBe(offFill);
+					expect(await cueCount()).toBe(beforeToggle + 1);
+					await toggle.tap();
+					await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+					await expect(toggle).toHaveCSS('background-color', offFill);
+				}
+
 				const beforeAttack = await cueCount();
 				await touch('touchStart', [move]);
 				await touch('touchMove', [{ ...move, x: move.x + 42 }]);
