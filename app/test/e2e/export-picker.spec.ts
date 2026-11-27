@@ -2299,7 +2299,9 @@ for (const corruption of ['null-list', 'sparse-array'] as const)
 		);
 		await page.getByRole('button', { name: 'Export', exact: true }).click();
 		const dialog = page.getByRole('dialog');
-		await expect(dialog.locator('.notice.warn')).toContainText('Broken library character');
+		await expect(
+			dialog.locator('.bu-notice[data-size="compact"][data-tone="warning"]')
+		).toContainText('Broken library character');
 		await expect(dialog.getByRole('alert')).toHaveCount(0);
 		await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
 		const walk = dialog.getByRole('checkbox', { name: 'Walk', exact: true });
@@ -2362,7 +2364,9 @@ test('invalid move names still allow artwork recovery and storage outages do not
 	});
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	await expect(
-		dialog.locator('.notice.warn').filter({ hasText: 'Some moves from this character' })
+		dialog
+			.locator('.bu-notice[data-size="compact"][data-tone="warning"]')
+			.filter({ hasText: 'Some moves from this character' })
 	).toBeVisible();
 	await expect(dialog.getByRole('button', { name: 'Reset export settings' })).toHaveCount(0);
 	await expect(dialog.getByRole('button', { name: 'Download artwork ZIP' })).toBeEnabled();

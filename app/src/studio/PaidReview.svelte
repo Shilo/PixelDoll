@@ -65,7 +65,12 @@
 							label={displayNestedMessage(frame.label)}
 						/>{/each}
 				</div>{/if}
-			{#each view.notes as note, i (i)}<p class="notice small" class:warn={view.state !== 'ready'}>
+			{#each view.notes as note, i (i)}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="neutral"
+					class:warn={view.state !== 'ready'}
+				>
 					{#if view.state === 'failed'}<CircleAlert size={14} />{/if}{displayNestedMessage(note)}
 				</p>{/each}
 		</div>

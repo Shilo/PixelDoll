@@ -182,14 +182,19 @@
 			ontoggle={(dir) => toggle(dir, 'direction')}
 			onmirror={(dir) => toggle(dir, 'mirror')}
 		/>
-		{#if problem || blocked}<p class="notice warn small" role="status">
+		{#if problem || blocked}<p
+				class="bu-notice"
+				data-size="compact"
+				data-tone="warning"
+				role="status"
+			>
 				{problem ? displayDirectionProblem(problem.translation) : displayError(blocked)}
 			</p>{/if}
 		{#if !problem && blockedByWork(blocked)}{@render viewPending()}{/if}
-		{#if error && !confirm}<p class="notice bad small" role="alert">
+		{#if error && !confirm}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 				{displayDirectionProblem(error)}<ReportButton {error} />
 			</p>{/if}
-	{:else if error}<p class="notice bad small" role="alert">
+	{:else if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			{displayDirectionProblem(error)}<ReportButton {error} />
 		</p>
 	{:else}<p class="muted" role="status">{t('directionsSheet.loadingDirections')}</p>{/if}

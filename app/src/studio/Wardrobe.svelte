@@ -1499,10 +1499,20 @@
 						</div>
 					</div>
 				{/if}
-				{#if shared.framesError}<p class="notice warn small" role="alert">
+				{#if shared.framesError}<p
+						class="bu-notice"
+						data-size="compact"
+						data-tone="warning"
+						role="alert"
+					>
 						{displayNestedMessage(shared.framesError)}
 					</p>{/if}
-				{#if !sharedHidden && shared.error}<p class="notice warn small" role="alert">
+				{#if !sharedHidden && shared.error}<p
+						class="bu-notice"
+						data-size="compact"
+						data-tone="warning"
+						role="alert"
+					>
 						{displayNestedMessage(shared.error)}
 					</p>{/if}
 				{#if !sharedHidden && shared.skipped}<p class="faint small">

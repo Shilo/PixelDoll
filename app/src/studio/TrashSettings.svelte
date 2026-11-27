@@ -118,7 +118,7 @@
 <div class="trash-settings" tabindex="-1" bind:this={section}>
 	<p class="bu-muted settings-description">{t('recentlyDeleted.kept')}</p>
 	{#if deleted.loadFailed}
-		<p class="notice bad small" role="alert">
+		<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			{t('recentlyDeleted.loadFailed')}
 			<button
 				class="bu-action btn sm"
@@ -205,7 +205,7 @@
 			{#if armedEntry}{t('recentlyDeleted.confirmRestoreNamed', { name: armedEntry.name })}{/if}
 		</p>
 	{/if}
-	{#if failure}<p class="notice bad small" role="alert">
+	{#if failure}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(failure)}<ReportButton
 				error={failure}
 			/>

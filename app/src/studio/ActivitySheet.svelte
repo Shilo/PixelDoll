@@ -278,7 +278,7 @@
 			</section>
 		{/if}
 		{#if ui.waitingForTab}
-			<div class="notice warn" role="status">
+			<div class="bu-notice" data-size="compact" data-tone="warning" role="status">
 				<CircleAlert size={18} />
 				<div class="waiting-copy">
 					<h3>{t('activity.waitingTitle')}</h3>
@@ -321,19 +321,19 @@
 			{t('activity.capacity', { count: $queue.concurrency })}
 		</p>
 		{#if $queue.capacityRetryAt > now}
-			<p class="notice small" role="status">
+			<p class="bu-notice" data-size="compact" data-tone="neutral" role="status">
 				{t('activity.busy', {
 					seconds: formatNumber(Math.ceil(($queue.capacityRetryAt - now) / 1000))
 				})}
 			</p>
 		{/if}
 		{#if $queue.role === 'follower' && !ui.waitingForTab}
-			<p class="notice small">
+			<p class="bu-notice" data-size="compact" data-tone="neutral">
 				<CircleAlert size={14} />{t('activity.follower')}
 			</p>
 		{/if}
 		{#if $queue.paused}
-			<p class="notice warn small">
+			<p class="bu-notice" data-size="compact" data-tone="warning">
 				<CircleAlert size={14} />{$queue.paused === 'auth'
 					? t('activity.pausedAuth')
 					: $queue.paused === 'offline'

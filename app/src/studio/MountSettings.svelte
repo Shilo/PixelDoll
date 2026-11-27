@@ -104,7 +104,7 @@
 						view.project && lookClipThumbnail(view.project, view.items, key, ui.dir)}
 					onselect={choosePose}
 				/>
-				{#if hidden}<p class="notice warn small" role="status">
+				{#if hidden}<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
 						<TriangleAlert size={14} aria-hidden="true" />{t('toolbar.riderPoseHides', {
 							items: hidden
 						})}
@@ -132,7 +132,7 @@
 		display: grid;
 		gap: 6px;
 	}
-	.riding-pose .notice {
+	.riding-pose .bu-notice {
 		margin: 0;
 	}
 </style>

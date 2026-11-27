@@ -115,11 +115,11 @@
 				</li>
 			{/each}
 		</ul>
-		{#if review.skipped}<p class="notice warn small" role="status">
+		{#if review.skipped}<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
 				{t('itemImport.skipped', { count: review.skipped })}
 			</p>{/if}
 	{/if}
-	{#if importer.error}<p class="notice bad small" role="alert">
+	{#if importer.error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			{displayNestedMessage(importer.error)}{#if importer.cause}<ReportButton
 					error={importer.cause}
 				/>{/if}

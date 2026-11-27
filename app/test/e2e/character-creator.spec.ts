@@ -286,8 +286,12 @@ test.describe('creation safety', () => {
 			})
 		).toBeVisible();
 		await page.setViewportSize({ width: 390, height: 844 });
-		await expect(sheet.locator('.notice.warn')).toHaveCount(2);
-		for (const note of await sheet.locator('.notice.warn').all()) {
+		await expect(sheet.locator('.bu-notice[data-size="compact"][data-tone="warning"]')).toHaveCount(
+			2
+		);
+		for (const note of await sheet
+			.locator('.bu-notice[data-size="compact"][data-tone="warning"]')
+			.all()) {
 			await expect(note).toBeVisible();
 			const box = (await note.boundingBox())!;
 			expect(box.x).toBeGreaterThanOrEqual(0);

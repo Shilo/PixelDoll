@@ -400,7 +400,7 @@
 			<p class="faint small" id="slot-hint-note">
 				{hintError ? displayError(hintError) : t('slotsSheet.hintNote')}
 			</p>
-			{#if formError}<p class="notice bad small" role="alert">
+			{#if formError}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 					<TriangleAlert size={16} /><span>{displayMessage(formError)}</span><ReportButton
 						error={formError}
 					/>
@@ -420,7 +420,7 @@
 	</Sheet>
 {:else}
 	<Sheet title={t('slotsSheet.titleAddSlot')} onclose={close}>
-		{#if problem}<p class="notice warn small" role="alert">
+		{#if problem}<p class="bu-notice" data-size="compact" data-tone="warning" role="alert">
 				<TriangleAlert size={16} /><span>{displayMessage(problem)}</span>
 			</p>{/if}
 		<form

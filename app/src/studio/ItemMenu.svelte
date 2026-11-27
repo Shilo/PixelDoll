@@ -200,7 +200,12 @@
 				{#if generation.phase === 'running' && $queue.role === 'follower'}<p class="small">
 						{t('itemMenu.cancelFromTheTabThatIsGenerating')}
 					</p>{/if}
-				{#if cancelError && !cancelling}<p class="notice bad small" role="alert">
+				{#if cancelError && !cancelling}<p
+						class="bu-notice"
+						data-size="compact"
+						data-tone="danger"
+						role="alert"
+					>
 						{displayMessage(cancelError)}<ReportButton error={cancelError} />
 					</p>{/if}
 			</div>

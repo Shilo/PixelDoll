@@ -2578,7 +2578,7 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 			.setInputFiles({ name: 'saved-character.zip', mimeType: 'application/zip', buffer: bytes });
 		await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
 		const appearanceNote = page
-			.locator('.notice')
+			.locator('.bu-notice[data-size="compact"]')
 			.filter({ hasText: 'Clothes drawn on the character' });
 		await expect(appearanceNote).toContainText('To remove or change them after import:');
 		await page.getByLabel('Character name', { exact: true }).fill(name);
@@ -2973,7 +2973,9 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await page.getByRole('button', { name: /Page two hero/ }).click();
 	await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
 	await expect(
-		dialog.locator('.notice').filter({ hasText: 'Clothes drawn on the character' })
+		dialog
+			.locator('.bu-notice[data-size="compact"]')
+			.filter({ hasText: 'Clothes drawn on the character' })
 	).toBeVisible();
 	// Back drops the staged review, so it asks first.
 	await dialog.getByRole('button', { name: 'Back', exact: true }).click();

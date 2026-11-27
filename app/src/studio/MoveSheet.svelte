@@ -1725,7 +1725,13 @@
 				{/each}
 			</select>
 			{#if templateNote === 'error'}
-				<p class="notice warn small" id={`${advancedId}-template-note`} role="status">
+				<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+					id={`${advancedId}-template-note`}
+					role="status"
+				>
 					<CircleAlert size={14} />{templateAccess?.error}
 				</p>
 			{:else if templateNote === 'blocked'}
@@ -2014,7 +2020,7 @@
 				ui.moveFormOpen = false;
 			}}
 		/>{/if}
-	{#if holder}<p class="notice small">
+	{#if holder}<p class="bu-notice" data-size="compact" data-tone="neutral">
 			<CircleAlert size={14} /><span
 				>{moving.repairReview
 					? t('moveSheet.review.heldBy', { character: holder })
@@ -2048,7 +2054,11 @@
 						: t('moveSheet.review.repairIssues')}
 					{t('moveSheet.review.noCost')}
 				</p>{/if}
-			{#if repairReview.kept && !moving.repairApplied}<p class="notice warn small">
+			{#if repairReview.kept && !moving.repairApplied}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+				>
 					{displayNestedMessage(
 						message('moveSheet.review.stopped', {
 							frames: repairReview.kept.map((index) => formatNumber(index + 1)),
@@ -2058,7 +2068,11 @@
 					)}
 					{#if repairReview.stoppedBy}{displayNestedMessage(repairReview.stoppedBy)}{/if}
 				</p>{/if}
-			{#if repairReview.skipped?.length}<p class="small notice">
+			{#if repairReview.skipped?.length}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="neutral"
+				>
 					<CircleAlert size={14} /><span
 						>{t('moveSheet.review.skippedViews', {
 							views: repairReview.skipped.map(directionLabel).join(', ')
@@ -2113,7 +2127,7 @@
 					</ul>
 				</details>{/if}
 			{#if moving.error}<ProblemNotice error={moving.error} />{/if}
-			{#if queue.role === 'follower'}<p class="notice small">
+			{#if queue.role === 'follower'}<p class="bu-notice" data-size="compact" data-tone="neutral">
 					{redrawing
 						? t('moveSheet.review.redrawInManagingTab')
 						: t('moveSheet.review.repairInManagingTab')}
@@ -2137,7 +2151,7 @@
 			{#if review.approvedDirs?.some((dir) => moving.spec?.animation?.references?.[dir]?.end)}
 				<p class="small">{t('moveSheet.endFrame')}: {t('moveSheet.endUnavailable')}</p>
 			{/if}
-			{#if review.replace}<p class="notice small">
+			{#if review.replace}<p class="bu-notice" data-size="compact" data-tone="neutral">
 					{t('moveSheet.redrawHidesEquipment')}
 					{t('moveSheet.redrawOtherMoves')}
 				</p>{/if}
@@ -2178,7 +2192,12 @@
 			<!-- The paid review names each stopped view's reason under its frames; the summary shows only a reason it does not. -->
 			{#if moving.error && !errorInReview}<ProblemNotice error={moving.error} />{/if}
 			{#if moving.error}
-				{#if retryAccess.error || recoveryAccess.error}<p class="notice warn small" role="status">
+				{#if retryAccess.error || recoveryAccess.error}<p
+						class="bu-notice"
+						data-size="compact"
+						data-tone="warning"
+						role="status"
+					>
 						{retryAccess.error || recoveryAccess.error}
 					</p>{/if}
 				{#if retryTier || recoveryTier}<TierNotice
@@ -2208,7 +2227,7 @@
 					blocked={!!retryAccess.error || tierBlocked(retryTier)}
 					onchoose={choosePaid}
 				/>{/if}
-			{#if recoveryUnavailable.length}<p class="notice small">
+			{#if recoveryUnavailable.length}<p class="bu-notice" data-size="compact" data-tone="neutral">
 					{recoveryUnavailable.map(displayNestedMessage).join(' ')}
 				</p>{/if}
 			{#if ownQueued.length}<p class="muted small">
@@ -2242,7 +2261,11 @@
 										})}
 									/>{/each}
 							</div>
-							{#each view.warnings as warning (warning)}<p class="notice warn small">
+							{#each view.warnings as warning (warning)}<p
+									class="bu-notice"
+									data-size="compact"
+									data-tone="warning"
+								>
 									<CircleAlert size={14} />{bodyQualityNote(warning, t)}
 								</p>{/each}
 						</div>
@@ -2255,7 +2278,7 @@
 				</section>
 			{/if}
 			{#if recovery}
-				<p class="notice warn small">
+				<p class="bu-notice" data-size="compact" data-tone="warning">
 					{[
 						t('moveSheet.recovery.reuse'),
 						recovery.checks
@@ -2284,7 +2307,7 @@
 					>{/if}
 			{/if}
 			{#if colorRepair}
-				<p class="notice warn small">
+				<p class="bu-notice" data-size="compact" data-tone="warning">
 					{[
 						t('moveSheet.color.match', {
 							pixels: t('moveSheet.color.pixels', { count: colorRepair.changedPixels }),
@@ -2317,15 +2340,21 @@
 					>{/if}
 			{/if}
 			{#if recoveryError}<ProblemNotice error={recoveryError} />{/if}
-			{#if paidUnread}<p class="notice warn small">{t('paidReview.loadFailed')}</p>
+			{#if paidUnread}<p class="bu-notice" data-size="compact" data-tone="warning">
+					{t('paidReview.loadFailed')}
+				</p>
 				<button class="bu-action" type="button" data-variant="quiet" onclick={() => paidReads++}
 					>{t('common.tryAgain')}</button
 				>{/if}
-			{#each moving.warnings as warning (warning)}<p class="notice warn small">
+			{#each moving.warnings as warning (warning)}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+				>
 					<CircleAlert size={14} />{bodyQualityNote(warning, t)}
 				</p>{/each}
 			{#if skeletonOffer && !tierBlocked(skeletonOffer.tier)}
-				<p class="notice small">
+				<p class="bu-notice" data-size="compact" data-tone="neutral">
 					<span>{t('moveSheet.skeleton.hint')}</span>
 					<button
 						class="bu-action btn sm"
@@ -2346,7 +2375,7 @@
 	{:else if !isDemo() && !ok && recFor !== doc.id}
 		<!-- Still reading the character: no setup notice flashes before readiness is known. -->
 	{:else if isDemo() || !ok}
-		<p class="notice small">
+		<p class="bu-notice" data-size="compact" data-tone="neutral">
 			<CircleAlert size={14} />{isDemo() ? t('moveSheet.demo') : t('moveSheet.needsSetup')}
 		</p>
 		{#if !isDemo()}<button
@@ -2359,7 +2388,7 @@
 		<div class="form move-form" class:redraw-form={replacing} class:split={showAdvanced}>
 			<div class="move-main">
 				{#if frameFallback}
-					<p class="notice warn small" role="status">
+					<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
 						{t('creationSettings.fallback', {
 							setting: t('moveSheet.frames'),
 							value: t('creationSettings.autoFrames', { count: defaultFrames })
@@ -2427,12 +2456,22 @@
 										</div>
 									{/each}
 								</div>
-								{#if fitReview.unchecked.length}<p class="notice warn small" role="status">
+								{#if fitReview.unchecked.length}<p
+										class="bu-notice"
+										data-size="compact"
+										data-tone="warning"
+										role="status"
+									>
 										{t('stateJointFit.notChecked', {
 											directions: displayDirectionList(fitReview.unchecked)
 										})}
 									</p>{/if}
-								{#if fitReview.notFitted.length}<p class="notice warn small" role="status">
+								{#if fitReview.notFitted.length}<p
+										class="bu-notice"
+										data-size="compact"
+										data-tone="warning"
+										role="status"
+									>
 										{t('stateJointFit.notFitted', {
 											directions: displayDirectionList(fitReview.notFitted)
 										})}
@@ -2473,7 +2512,12 @@
 									)}
 								</button>
 							{/if}
-							{#if fitError}<p class="notice small" role="alert">
+							{#if fitError}<p
+									class="bu-notice"
+									data-size="compact"
+									data-tone="neutral"
+									role="alert"
+								>
 									{displayNestedMessage(fitError)}
 								</p>{/if}
 						</div>
@@ -2533,7 +2577,12 @@
 											? selectedDirs.filter((selected) => selected !== dir)
 											: [...selectedDirs, dir])}
 								/>
-								<p class="notice warn small" id="move-redraw-warning">
+								<p
+									class="bu-notice"
+									data-size="compact"
+									data-tone="warning"
+									id="move-redraw-warning"
+								>
 									{t('moveSheet.redrawHidesEquipment')}
 									{#if affectedMirrors}{t('moveSheet.redrawMirrors', {
 											directions: affectedMirrors
@@ -2631,7 +2680,9 @@
 						{/if}
 					</div>
 					{#if motionAccess?.error}
-						<p class="notice warn small"><CircleAlert size={14} />{motionAccess.error}</p>
+						<p class="bu-notice" data-size="compact" data-tone="warning">
+							<CircleAlert size={14} />{motionAccess.error}
+						</p>
 						<button
 							class="bu-action"
 							type="button"
@@ -2639,12 +2690,18 @@
 							onclick={() => motionProbe++}>{t('common.tryAgain')}</button
 						>
 					{/if}
-					{#if reservedMove(id, replacing)}<p class="notice warn small">
+					{#if reservedMove(id, replacing)}<p
+							class="bu-notice"
+							data-size="compact"
+							data-tone="warning"
+						>
 							<CircleAlert size={14} />{displayError(reservedMove(id, replacing))}
-						</p>{:else if motionIssue}<p class="notice warn small">
+						</p>{:else if motionIssue}<p class="bu-notice" data-size="compact" data-tone="warning">
 							<CircleAlert size={14} />{displayError(motionIssue)}
 						</p>{:else if preflight.length}{#each preflight as warning (warning.id)}<p
-								class="notice warn small"
+								class="bu-notice"
+								data-size="compact"
+								data-tone="warning"
 							>
 								<CircleAlert size={14} />{displayError(warning)}
 							</p>
@@ -2655,15 +2712,29 @@
 									disabled={enlarging || !!frameEditsBlocked(doc.id)}
 									onclick={() => void room()}>{t('moveSheet.makeRoom')}</button
 								>
-								{#if enlargeError}<p class="notice bad small" role="alert">
+								{#if enlargeError}<p
+										class="bu-notice"
+										data-size="compact"
+										data-tone="danger"
+										role="alert"
+									>
 										{displayError(enlargeError)}<ReportButton error={enlargeError} />
 									</p>{/if}
-							{/if}{/each}{:else if pendingIds.includes(id)}<p class="notice small">
+							{/if}{/each}{:else if pendingIds.includes(id)}<p
+							class="bu-notice"
+							data-size="compact"
+							data-tone="neutral"
+						>
 							<CircleAlert size={14} />{t('moveSheet.alreadyQueued', { move: nice(id) })}
 						</p>{:else if busy}<p class="faint small">
 							{t('moveSheet.waitsForCurrent')}
 						</p>{/if}
-					{#if addAccess.error}<p class="notice warn small" role="status">
+					{#if addAccess.error}<p
+							class="bu-notice"
+							data-size="compact"
+							data-tone="warning"
+							role="status"
+						>
 							{addAccess.error}
 						</p>{/if}
 					<TierNotice
@@ -2777,7 +2848,7 @@
 		align-items: center;
 		gap: 8px 12px;
 	}
-	.redraw-directions .notice {
+	.redraw-directions .bu-notice {
 		flex: 1 1 125px;
 	}
 	.move-cost-note {

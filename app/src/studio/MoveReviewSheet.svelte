@@ -318,7 +318,9 @@
 >
 	{#if error}<ProblemNotice {error} />{/if}
 	{#if changed}
-		<p class="notice small">{t('moveSheet.checkpoint.changed')}</p>
+		<p class="bu-notice" data-size="compact" data-tone="neutral">
+			{t('moveSheet.checkpoint.changed')}
+		</p>
 	{:else if itemsStep}
 		<p class="muted small checkpoint-note">{t('moveSheet.checkpoint.chooseFor', { move: name })}</p>
 		{#if project}<ItemGenerationList
@@ -330,14 +332,16 @@
 				label={t('moveSheet.checkpoint.titleItems')}
 			/>{/if}
 		<p class="muted small checkpoint-note">{t('moveSheet.checkpoint.later', { move: name })}</p>
-		{#if access.error}<p class="notice warn small" role="status">{access.error}</p>{/if}
-		{#each unposedNotes as note, i (i)}<p class="notice warn small">
+		{#if access.error}<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
+				{access.error}
+			</p>{/if}
+		{#each unposedNotes as note, i (i)}<p class="bu-notice" data-size="compact" data-tone="warning">
 				{displayNestedMessage(note)}
 			</p>{/each}
 		<PoseIssues issues={[...new Set(chosen.flatMap(({ offer }) => offer?.poseIssues ?? []))]} />
 	{:else if candidate}
 		{#if candidate.warnings.length}
-			<div class="notice warn small quality-notice">
+			<div class="bu-notice quality-notice" data-size="compact" data-tone="warning">
 				<details class="disclosure" open={hardFailure}>
 					<summary id="move-quality-notes"
 						><ChevronRight size={14} />{t('moveSheet.checkpoint.findings')}</summary
@@ -434,10 +438,21 @@
 				{t('moveSheet.checkpoint.reviewNote', { move: name })}
 			</p>
 		{/if}
-		{#if hardFailure}<p class="notice warn small">{t('moveSheet.checkpoint.hardFailure')}</p>{/if}
-		{#if blocked && !busy}<p class="notice small" role="status">{t(blocked)}</p>{/if}
+		{#if hardFailure}<p class="bu-notice" data-size="compact" data-tone="warning">
+				{t('moveSheet.checkpoint.hardFailure')}
+			</p>{/if}
+		{#if blocked && !busy}<p
+				class="bu-notice"
+				data-size="compact"
+				data-tone="neutral"
+				role="status"
+			>
+				{t(blocked)}
+			</p>{/if}
 	{:else}
-		<p class="notice small">{t('moveSheet.checkpoint.changed')}</p>
+		<p class="bu-notice" data-size="compact" data-tone="neutral">
+			{t('moveSheet.checkpoint.changed')}
+		</p>
 	{/if}
 </Sheet>
 

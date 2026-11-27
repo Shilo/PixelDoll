@@ -317,27 +317,47 @@
 					{/if}
 				</div>
 			{/if}
-			{#if blankViews.length}<p class="notice warn small" role="status">
+			{#if blankViews.length}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+					role="status"
+				>
 					{t('stateGeneration.missingViews', { directions: displayDirectionList(blankViews) })}
 				</p>{/if}
-			{#if review.unfetched.length}<p class="notice warn small" role="status">
+			{#if review.unfetched.length}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+					role="status"
+				>
 					{t('stateGeneration.unfetchedViews', {
 						directions: displayDirectionList(review.unfetched)
 					})}
 				</p>{/if}
-			{#if review.canceled.length}<p class="notice warn small" role="status">
+			{#if review.canceled.length}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+					role="status"
+				>
 					{t('stateGeneration.canceledViews', {
 						directions: displayDirectionList(review.canceled)
 					})}
 				</p>{/if}
-			{#if review.unmade.length}<p class="notice warn small" role="status">
+			{#if review.unmade.length}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+					role="status"
+				>
 					{t('stateGeneration.unmadeViews', {
 						directions: displayDirectionList(review.unmade)
 					})}
 				</p>{/if}
 			{#if continuation}
 				{@const { keptViews, remainingViews, cost } = continuation}
-				<div class="notice small" role="status">
+				<div class="bu-notice" data-size="compact" data-tone="neutral" role="status">
 					<p>
 						{t('stateGeneration.continueViews', {
 							kept: formatNumber(keptViews),
@@ -351,7 +371,7 @@
 			{#if review.description?.trim()}<PromptLine text={review.description.trim()} />{/if}
 			{#if reviewRiding}<p class="muted small">{t('stateGeneration.ridingCheck')}</p>{/if}
 			{#if !sourceCurrent}
-				<p class="notice warn small" role="status">
+				<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
 					{t(sourceFits ? 'stateGeneration.sourceChangedKeep' : 'stateGeneration.sourceChanged')}
 				</p>
 			{/if}
@@ -375,7 +395,12 @@
 					/>
 				</label>
 			{/if}
-			{#if confirmDiscard}<p class="notice warn small" role="status">
+			{#if confirmDiscard}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+					role="status"
+				>
 					{t('stateGeneration.discardWarning')}
 				</p>{/if}
 		</div>
@@ -405,7 +430,7 @@
 				<p>{t('stateGeneration.continueIntro')}</p>
 				{#if continuation}
 					{@const { keptViews, remainingViews, cost } = continuation}
-					<div class="notice small" role="status">
+					<div class="bu-notice" data-size="compact" data-tone="neutral" role="status">
 						<p>
 							{t('stateGeneration.continueViews', {
 								kept: formatNumber(keptViews),
@@ -417,7 +442,12 @@
 					</div>
 				{/if}
 			{/if}
-			{#if confirmDiscard}<p class="notice warn small" role="status">
+			{#if confirmDiscard}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+					role="status"
+				>
 					{t('stateGeneration.discardWarning')}
 				</p>{/if}
 		</div>

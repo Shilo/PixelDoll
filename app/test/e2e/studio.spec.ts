@@ -9819,7 +9819,10 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 	await expect(page.getByRole('button', { name: /^Generate \d+ moves?/ })).toBeEnabled();
 	await expect(page.getByRole('button', { name: /^Generate \d+ moves?/ })).toContainText('gens');
 	await expect(
-		page.locator('.notice').filter({ hasText: 'Some measured joints look unusual' }).first()
+		page
+			.locator('.bu-notice[data-size="compact"]')
+			.filter({ hasText: 'Some measured joints look unusual' })
+			.first()
 	).toContainText('frame 2');
 	await page
 		.locator('dialog.item-detail[open]')
@@ -9828,7 +9831,9 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 	await inspectStage(page);
 	await expect(stageMake).toBeEnabled();
 	await expect(
-		page.locator('.stage-note .notice').filter({ hasText: 'Some measured joints look unusual' })
+		page
+			.locator('.stage-note .bu-notice[data-size="compact"]')
+			.filter({ hasText: 'Some measured joints look unusual' })
 	).toBeVisible();
 	expect(posts).toEqual([]);
 	expect(errors).toEqual([]);

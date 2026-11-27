@@ -75,9 +75,13 @@
 	footer={available ? foot : undefined}
 >
 	{#if !manifest}
-		<p class="notice small">{t('moveSheet.checkpoint.changed')}</p>
+		<p class="bu-notice" data-size="compact" data-tone="neutral">
+			{t('moveSheet.checkpoint.changed')}
+		</p>
 	{:else if !rows.length}
-		<p class="notice small">{t('itemGeneration.allDrawn', { move: name })}</p>
+		<p class="bu-notice" data-size="compact" data-tone="neutral">
+			{t('itemGeneration.allDrawn', { move: name })}
+		</p>
 	{:else}
 		<p class="muted small note">
 			{#if available}{t('moveSheet.checkpoint.chooseFor', { move: name })}
@@ -92,8 +96,10 @@
 				disabled={!!ui.waitingForTab}
 				label={t('moveSheet.checkpoint.titleItems')}
 			/>{/if}
-		{#if access.error}<p class="notice warn small" role="status">{access.error}</p>{/if}
-		{#if unposedNote}<p class="notice warn small">
+		{#if access.error}<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
+				{access.error}
+			</p>{/if}
+		{#if unposedNote}<p class="bu-notice" data-size="compact" data-tone="warning">
 				{displayNestedMessage(unposedNote)}
 			</p>{/if}
 	{/if}

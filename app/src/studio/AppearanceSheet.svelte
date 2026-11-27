@@ -386,7 +386,9 @@
 	{/snippet}
 	{#if failure}<ProblemNotice error={failure} />{/if}
 	{#if !loaded && !failure}<p role="status">{t('common.loading')}</p>{/if}
-	{#if loaded && !source && !attempt}<p class="notice">{t('appearance.unavailable')}</p>{/if}
+	{#if loaded && !source && !attempt}<p class="bu-notice" data-size="compact" data-tone="neutral">
+			{t('appearance.unavailable')}
+		</p>{/if}
 	{#if source || attempt}
 		{#if !attempt}<div class="appearance-context">
 				{#if source}<strong>{source.name}</strong>{/if}
@@ -431,18 +433,29 @@
 			{/if}
 			{#if running || !review}<p role="status">{t('appearance.running')}</p>
 				<p id={`${form}-running`} class="faint">{t('common.keepsRunning')}</p>
-			{:else if blocked}<p class="notice">{t('appearance.changed')}</p>
-			{:else if keptDirections.length}<p class="notice warn" role="status">
+			{:else if blocked}<p class="bu-notice" data-size="compact" data-tone="neutral">
+					{t('appearance.changed')}
+				</p>
+			{:else if keptDirections.length}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+					role="status"
+				>
 					{t('appearance.keptDirections', { directions: displayDirectionList(keptDirections) })}
 				</p>
-			{:else if !review.complete}<p class="notice">{t('appearance.incomplete')}</p>{/if}
+			{:else if !review.complete}<p class="bu-notice" data-size="compact" data-tone="neutral">
+					{t('appearance.incomplete')}
+				</p>{/if}
 			{#if !running && review && !review.complete}
 				<button class="bu-action" data-variant="quiet" onclick={() => (ui.sheet = 'activity')}
 					>{t('itemMenu.activity')}</button
 				>
 			{/if}
 			{#if confirmDiscard}
-				<p class="notice warn" role="status">{t('appearance.discardNotice')}</p>
+				<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
+					{t('appearance.discardNotice')}
+				</p>
 			{/if}
 		{:else if source}
 			<form id={form} class="appearance-edit-form" onsubmit={generate}>
@@ -483,7 +496,7 @@
 								enhanceDisabled={referenceLoading}
 								onconnect={connect}
 							/>
-							{#if tooLong}<p class="notice">
+							{#if tooLong}<p class="bu-notice" data-size="compact" data-tone="neutral">
 									{t('studioSlots.tooLong', { count: maxPrompt })}
 								</p>{/if}
 							<ReferenceField
@@ -513,7 +526,11 @@
 					{t('stateGeneration.sheetWarning')}
 				</p>{/if}
 			{#if quoteFailure}<ProblemNotice error={quoteFailure} />
-			{:else if !quote && !quoting && (connected || draft.model !== 'pro-flash')}<p class="notice">
+			{:else if !quote && !quoting && (connected || draft.model !== 'pro-flash')}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="neutral"
+				>
 					{t('appearance.unsupported')}
 				</p>{/if}
 		{/if}

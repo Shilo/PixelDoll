@@ -364,7 +364,7 @@ ${name}` !== typedAtStart || reference !== openedReference
 
 	{#if importing}<ImportItemsPane {importer} onmake={makeFrom} />{/if}
 	{#if isDemo()}
-		<div class="notice small">
+		<div class="bu-notice" data-size="compact" data-tone="neutral">
 			<Sparkles size={16} />
 			<span>{t('newItem.demo')}</span>
 		</div>
@@ -392,7 +392,7 @@ ${name}` !== typedAtStart || reference !== openedReference
 			feature={t('newItem.feature')}
 		/>
 		<PoseIssues issues={plan?.poseIssues ?? []} />
-		{#if rec && !rigReady(rec)}<p class="notice small">
+		{#if rec && !rigReady(rec)}<p class="bu-notice" data-size="compact" data-tone="neutral">
 				<TriangleAlert size={16} /><span>{t('newItem.needsSetup')}</span><button
 					class="bu-action btn small"
 					data-variant="outline"
@@ -401,14 +401,14 @@ ${name}` !== typedAtStart || reference !== openedReference
 				>
 			</p>{/if}
 		{#if planned.fallback}
-			<p class="notice warn small" role="status">
+			<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
 				{t('creationSettings.fallback', {
 					setting: t('newItem.method'),
 					value: planned.method ? t(METHODS[planned.method].label) : t('creationSettings.automatic')
 				})}
 			</p>
 		{/if}
-		{#if planned.error}<p class="notice warn small" role="alert">
+		{#if planned.error}<p class="bu-notice" data-size="compact" data-tone="warning" role="alert">
 				<TriangleAlert size={16} /><span>{planned.error}</span>
 			</p>{/if}
 		<div class="form">
@@ -474,7 +474,7 @@ ${name}` !== typedAtStart || reference !== openedReference
 				hint={t('newItem.referenceHint')}
 				disabled={busy}
 			/>
-			{#if offHandHint}<p class="notice small">
+			{#if offHandHint}<p class="bu-notice" data-size="compact" data-tone="neutral">
 					<Info size={16} /><span>{t('newItem.offHandHint')}</span><button
 						class="bu-action btn sm"
 						data-variant="outline"

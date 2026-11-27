@@ -513,14 +513,16 @@
 				onstep={step}
 			/>
 			{#if changed}
-				<div class="notice warn small source-changed" role="status">
+				<div class="bu-notice source-changed" data-size="compact" data-tone="warning" role="status">
 					<p>{t('stateCapture.concurrentEdit')}</p>
 					<button class="bu-btn" data-variant="outline" type="button" onclick={reloadSource}
 						>{t('stateCapture.reload')}</button
 					>
 				</div>
 			{:else if !views}
-				<p class="notice warn small" role="status">{t('stateCapture.unavailable')}</p>
+				<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
+					{t('stateCapture.unavailable')}
+				</p>
 			{/if}
 			<label class="field">
 				<span class="label">{t('stateCapture.name')}</span>
@@ -538,7 +540,9 @@
 				/>
 			</label>
 			{#if nameIssue}
-				<p class="notice warn small" role="status">{t(nameIssue)}</p>
+				<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
+					{t(nameIssue)}
+				</p>
 			{:else if name.trim() !== moveLabel(id)}
 				<p class="muted small">{t('stateCapture.savedAs', { name: moveLabel(id) })}</p>
 			{/if}
@@ -599,7 +603,7 @@
 				/>
 				{#if !guided}
 					{#if !modelEdited && savedModel !== undefined && initialModel !== savedModel}
-						<p class="notice warn small" role="status">
+						<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
 							{t('creationSettings.fallback', {
 								setting: t('create.form.model'),
 								value: t('create.form.models.pro.label')
@@ -630,7 +634,7 @@
 				{/if}
 				{#if quote}
 					{@const managed = quote.plan.endpoint === '/create-character-state'}
-					<div class="notice small" role="status">
+					<div class="bu-notice" data-size="compact" data-tone="neutral" role="status">
 						<div>
 							{#if managed}
 								<p>
@@ -653,10 +657,15 @@
 		{/if}
 	</form>
 	<p class="faint small" role="status">{busy ? t(busy) : ''}</p>
-	{#if failure}<p class="notice bad small" role="alert">
+	{#if failure}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			{displayNestedMessage(failure)}<ReportButton error={failure} />
 		</p>{/if}
-	{#if priceFailure && editing}<p class="notice bad small" role="alert">
+	{#if priceFailure && editing}<p
+			class="bu-notice"
+			data-size="compact"
+			data-tone="danger"
+			role="alert"
+		>
 			{displayNestedMessage(priceFailure)}<ReportButton error={priceFailure} />
 		</p>{/if}
 </Sheet>

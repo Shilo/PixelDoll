@@ -209,12 +209,12 @@
 		<ApiPeek copyId={m && !id.startsWith('fixture:') ? id : undefined} />
 	{/snippet}
 
-	{#if error}<p class="notice bad small" role="alert">
+	{#if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			{displayMessage(error)}<ReportButton {error} />
 		</p>
 	{:else if m}
 		<div class="character-body" bind:this={body}>
-			{#if previewError}<p class="notice bad small" role="alert">
+			{#if previewError}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 					{displayMessage(previewError)}<ReportButton error={previewError} />
 				</p>{/if}
 			{#if project}<FacingStrip

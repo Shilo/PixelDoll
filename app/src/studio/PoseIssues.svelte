@@ -7,7 +7,7 @@
 	let { issues }: { issues: readonly string[] } = $props();
 </script>
 
-{#if issues.length}<div class="notice warn small" role="status">
+{#if issues.length}<div class="bu-notice" data-size="compact" data-tone="warning" role="status">
 		<p>{t('newItem.poseIssues')}</p>
 		<ul>
 			{#each issues as issue (issue)}<li>{displayMessage(plainReasonMessage(issue))}</li>{/each}

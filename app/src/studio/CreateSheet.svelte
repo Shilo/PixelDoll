@@ -373,7 +373,9 @@
 						name={creating.spec?.name ?? ''}
 						busy={creating.running}
 						onchoose={choosePaid}
-					/>{:else if paidUnread}<p class="notice warn small">{t('paidReview.loadFailed')}</p>
+					/>{:else if paidUnread}<p class="bu-notice" data-size="compact" data-tone="warning">
+						{t('paidReview.loadFailed')}
+					</p>
 					<button class="bu-action" type="button" data-variant="quiet" onclick={() => paidReads++}
 						>{t('common.tryAgain')}</button
 					>{/if}

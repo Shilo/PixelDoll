@@ -513,33 +513,8 @@ dialog select option {
 	color: var(--text-2);
 	overflow-wrap: anywhere;
 }
-.notice {
-	display: flex;
-	align-items: flex-start;
-	gap: 8px;
-	padding: 8px 12px;
-	border-radius: var(--r-ctl);
-	background: var(--bg-hover);
-}
-.notice > svg {
-	margin-top: 1px;
-}
-.notice.warn {
-	background: color-mix(in srgb, var(--warn) 12%, transparent);
-}
-.notice.warn > svg {
-	color: var(--warn);
-}
-.notice.bad {
-	background: color-mix(in srgb, var(--bad) 12%, transparent);
-}
-.notice.bad > svg {
-	color: var(--bad);
-}
-.notice.ok > svg {
-	color: var(--ok);
-}
-.notice .btn {
+/* Inline notices take Bronze's compact notice look; an action inside one sits at the end of the row. */
+.bu-notice .btn {
 	margin-left: auto;
 }
 

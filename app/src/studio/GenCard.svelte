@@ -415,7 +415,9 @@
 
 		{#if g.phase === 'review'}
 			{#if !res?.qa && store.resultsUnread[g.draft.spec.id]}
-				<p class="notice warn small">{t('paidReview.loadFailed')}</p>
+				<p class="bu-notice" data-size="compact" data-tone="warning">
+					{t('paidReview.loadFailed')}
+				</p>
 				<button
 					class="bu-action"
 					type="button"
@@ -435,7 +437,7 @@
 			{:else}
 				<p class="muted small">{t('genCard.someChecks')}</p>
 			{/if}
-			{#if !clean}<p class="notice warn small">
+			{#if !clean}<p class="bu-notice" data-size="compact" data-tone="warning">
 					{t(
 						!keepBlocked
 							? 'genCard.noRetryStarted'
@@ -473,11 +475,11 @@
 					disabled={busy}>{t('common.discard')}</button
 				>
 			</div>
-			{#if incomplete}<p class="notice warn small">
+			{#if incomplete}<p class="bu-notice" data-size="compact" data-tone="warning">
 					{t(freeKeep ? 'genCard.incompleteFreeKeep' : 'genCard.incomplete')}
 				</p>{/if}
 		{:else if g.phase === 'failed'}
-			{#if g.canceled}<p class="notice bad small">
+			{#if g.canceled}<p class="bu-notice" data-size="compact" data-tone="danger">
 					<CircleAlert size={14} />{t('genCard.canceledDetail')}
 				</p>
 			{:else}<ProblemNotice
@@ -554,7 +556,9 @@
 				blocked={retryBlocked}
 				onchoose={choosePaid}
 			/>{:else if paidUnread && (g.phase === 'review' || g.phase === 'failed')}<p
-				class="notice warn small"
+				class="bu-notice"
+				data-size="compact"
+				data-tone="warning"
 			>
 				{t('paidReview.loadFailed')}
 			</p>
@@ -572,7 +576,11 @@
 				minimumTier={retryTier}
 				feature={t('genCard.retryFeature')}
 			/>{/if}
-		{#if g.phase !== 'running' && retryEstimateError}<p class="notice bad small">
+		{#if g.phase !== 'running' && retryEstimateError}<p
+				class="bu-notice"
+				data-size="compact"
+				data-tone="danger"
+			>
 				<CircleAlert size={14} />{t('genCard.estimateFailed')}<ReportButton
 					area="Item generation"
 					message={message('genCard.estimateFailed')}

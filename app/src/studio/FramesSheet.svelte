@@ -283,7 +283,7 @@
 				</div>
 			{:else}
 				{#if isBody && prepared.fitted.length && prepared.plan.changed.length}
-					<p class="notice warn small" role="status">
+					<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
 						<TriangleAlert size={16} /><span
 							>{t('fixFrames.notes.fitted', { names: formatList(prepared.fitted) })}</span
 						>
@@ -428,10 +428,15 @@
 				{/if}
 				{#if dragging}<p class="drop-note" aria-live="polite">{t('fixFrames.release')}</p>{/if}
 			{/if}
-			{#if blocked && !demo}<p class="notice warn small" role="status">
+			{#if blocked && !demo}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+					role="status"
+				>
 					{displayError(blocked)}
 				</p>{/if}
-			{#if error}<p class="notice bad small" role="alert">
+			{#if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 					{displayError(error)}<ReportButton {error} />
 				</p>{/if}
 		</div>

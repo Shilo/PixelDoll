@@ -61,7 +61,12 @@
 		role="region"
 		tabindex="0"
 		aria-label={t('report.preview')}>{text}</pre>
-	{#if copied === 'failed'}<p class="notice warn small" role="alert">
+	{#if copied === 'failed'}<p
+			class="bu-notice"
+			data-size="compact"
+			data-tone="warning"
+			role="alert"
+		>
 			{t('report.copyFailed')}
 		</p>{/if}
 	<p class="bu-sr" role="status" aria-live="polite">
@@ -130,7 +135,7 @@
 		overflow-wrap: anywhere;
 		user-select: text;
 	}
-	.notice {
+	.bu-notice {
 		margin: 12px 0 0;
 	}
 	.report-actions {

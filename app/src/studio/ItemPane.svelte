@@ -935,7 +935,13 @@
 			{/if}
 
 			{#if callout}
-				<p class="notice small item-callout" class:warn={callout.tone === 'warn'} role="status">
+				<p
+					class="bu-notice item-callout"
+					data-size="compact"
+					data-tone="neutral"
+					class:warn={callout.tone === 'warn'}
+					role="status"
+				>
 					<span>{callout.text}</span>
 					{#if callout.action}
 						{@const action = callout.action}
@@ -948,7 +954,7 @@
 				</p>
 			{/if}
 			{#if !isDemo() && pendingBlocks}
-				<p class="notice small" role="status">
+				<p class="bu-notice" data-size="compact" data-tone="neutral" role="status">
 					{t('itemPane.pendingWorkBusy')}
 					<button
 						class="bu-action btn plain callout-link"
@@ -1011,7 +1017,11 @@
 										/>{/if}
 								</div>
 							{/if}
-							{#each unposedMoves as { note }, i (i)}<p class="notice warn small">
+							{#each unposedMoves as { note }, i (i)}<p
+									class="bu-notice"
+									data-size="compact"
+									data-tone="warning"
+								>
 									{displayNestedMessage(note)}
 								</p>{/each}
 							<fieldset class="clip-list">
@@ -1093,7 +1103,7 @@
 							</fieldset>
 							{#if isDemo() && incomplete}
 								<!-- Why nothing here can be picked: the demo never spends; its copy can. -->
-								<p class="notice small demo-missing">
+								<p class="bu-notice demo-missing" data-size="compact" data-tone="neutral">
 									<span>{t('itemPane.demoMissing')}</span>
 									<button
 										class="bu-action btn plain callout-link"
@@ -1113,11 +1123,18 @@
 								</p>
 							{/if}
 							{#if eligible.length && !copyOffer}
-								{#if missingOffer?.error}<p class="notice warn small" role="status">
+								{#if missingOffer?.error}<p
+										class="bu-notice"
+										data-size="compact"
+										data-tone="warning"
+										role="status"
+									>
 										{displayMessage(missingOffer.error)}
 									</p>{/if}
 								{#each missingOffer?.unposed ?? [] as note, i (i)}
-									<p class="notice warn small">{displayNestedMessage(note)}</p>
+									<p class="bu-notice" data-size="compact" data-tone="warning">
+										{displayNestedMessage(note)}
+									</p>
 								{/each}
 								<PoseIssues issues={missingOffer?.poseIssues ?? []} />
 								{#if missingTier}<TierNotice
@@ -1267,7 +1284,12 @@
 											/>
 										</div>
 									{/if}
-									{#if acceptanceError}<p class="notice bad small" role="alert">
+									{#if acceptanceError}<p
+											class="bu-notice"
+											data-size="compact"
+											data-tone="danger"
+											role="alert"
+										>
 											{displayMessage(acceptanceError)}<ReportButton error={acceptanceError} />
 										</p>{/if}
 								</div>
@@ -1366,7 +1388,12 @@
 									</div>
 									{#if !isDemo() && repairSpec}
 										{#each fixChoices as choice (choice.id)}
-											{#if choice.offer?.error}<p class="notice warn small" role="status">
+											{#if choice.offer?.error}<p
+													class="bu-notice"
+													data-size="compact"
+													data-tone="warning"
+													role="status"
+												>
 													{displayMessage(choice.offer.error)}
 												</p>{/if}
 											{#if choice.tier}<TierNotice
@@ -1376,12 +1403,17 @@
 												/>{/if}
 										{/each}
 									{/if}
-									{#if colorError}<p class="notice bad small">
+									{#if colorError}<p class="bu-notice" data-size="compact" data-tone="danger">
 											<TriangleAlert size={14} />{displayMessage(colorError)}<ReportButton
 												error={colorError}
 											/>
 										</p>{/if}
-									{#if colorDone}<p class="notice small" role="status">
+									{#if colorDone}<p
+											class="bu-notice"
+											data-size="compact"
+											data-tone="neutral"
+											role="status"
+										>
 											{t('itemPane.colorsMatched', {
 												pixels: t('itemPane.pixels', {
 													count: colorDone.pixels,

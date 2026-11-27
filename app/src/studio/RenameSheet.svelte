@@ -144,7 +144,7 @@
 	onclose={close}
 >
 	{#if missing}
-		<p class="notice bad small" role="alert">{missing}</p>
+		<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">{missing}</p>
 	{:else}
 		<form
 			class="form"
@@ -186,13 +186,18 @@
 					{idError ||
 						(idLocked ? t('renameSheet.defaultMoveExportId') : t('renameSheet.exportIdHelp'))}
 				</p>
-				{#if characterConflict}<p class="notice small" role="status">
+				{#if characterConflict}<p
+						class="bu-notice"
+						data-size="compact"
+						data-tone="neutral"
+						role="status"
+					>
 						{t('renameSheet.characterIdConflict')}
 					</p>{/if}
 			</details>
 		</form>
 	{/if}
-	{#if error}<p class="notice bad small" role="alert">
+	{#if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			{displayNestedMessage(error)}<ReportButton {error} />
 		</p>{/if}
 	{#snippet footer()}

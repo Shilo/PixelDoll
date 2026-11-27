@@ -278,16 +278,16 @@
 			{#if preview.edited}<p class="bu-muted settings-description">
 					{t('librarySettings.edited')}
 				</p>{/if}
-			{#if preview.warning}<p class="notice warn small">
+			{#if preview.warning}<p class="bu-notice" data-size="compact" data-tone="warning">
 					<TriangleAlert size={14} aria-hidden="true" />{displayMessage(preview.warning)}
 				</p>{/if}
-			{#if preview.blocked}<p class="notice bad small" role="alert">
+			{#if preview.blocked}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 					<TriangleAlert size={14} aria-hidden="true" />
 					{t('librarySettings.incomplete', { count: preview.blocked })}<ReportButton
 						message={message('librarySettings.incomplete', { count: preview.blocked })}
 					/>
 				</p>{/if}
-			{#if preview.trimmed}<p class="notice warn small">
+			{#if preview.trimmed}<p class="bu-notice" data-size="compact" data-tone="warning">
 					<TriangleAlert size={14} aria-hidden="true" />{t('librarySettings.trimmedHistory', {
 						count: preview.trimmed
 					})}
@@ -458,13 +458,13 @@
 			<p class="bu-muted">{t('librarySettings.deleteWork.kept')}</p>
 			<!-- While it runs, the dialog stays open and Delete waits, so the deletion never races its own backup. -->
 			<LibraryBackupButton disabled={busy} bind:pending={backingUp} onbackup={backupBeforeDelete} />
-			{#if deleteNote}<p class="notice warn small" role="status">
+			{#if deleteNote}<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
 					<TriangleAlert size={14} aria-hidden="true" />{displayMessage(deleteNote)}
 				</p>{/if}
 		</ConfirmDialog>
 	{/if}
 	{#if busy}<p class="bu-muted settings-description" role="status">{t('common.preparing')}</p>{/if}
-	{#if error}<p class="notice bad small" role="alert">
+	{#if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(error)}
 		</p>{/if}
 	{#if status}<p class="settings-description" role="status">{displayMessage(status)}</p>{/if}
@@ -484,7 +484,7 @@
 		display: grid;
 		gap: 6px;
 	}
-	.library-settings .notice {
+	.library-settings .bu-notice {
 		margin: 0;
 	}
 	.library-settings hr {

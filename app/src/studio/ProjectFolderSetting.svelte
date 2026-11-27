@@ -210,7 +210,7 @@
 		{#if projectFolder.support === 'brave-disabled'}
 			<p class="bu-muted settings-description">{t('projectFolder.hint')}</p>
 			<!-- Browsers never let a page open their internal pages, so the address is copied rather than linked. -->
-			<div class="notice small brave-note">
+			<div class="bu-notice brave-note" data-size="compact" data-tone="neutral">
 				<p>{t('projectFolder.brave')}</p>
 				<div class="bu-code brave-flag">
 					<code>{BRAVE_FLAG}</code>
@@ -244,7 +244,7 @@
 					onclick={() => location.reload()}
 					><RefreshCw size={16} aria-hidden="true" />{t('projectFolder.reload')}</button
 				>{/if}
-			{#if problem}<p class="notice warn small" role="alert">
+			{#if problem}<p class="bu-notice" data-size="compact" data-tone="warning" role="alert">
 					<TriangleAlert size={14} aria-hidden="true" />{problem}
 				</p>{/if}
 		{:else}
@@ -280,7 +280,7 @@
 				>{updating ? t('projectFolder.status.publishing') : summary}</span
 			>
 			{#if offer}
-				<div class="notice small offer" role="status">
+				<div class="bu-notice offer" data-size="compact" data-tone="neutral" role="status">
 					<p>{t('projectFolder.matching', { count: offer.files.length })}</p>
 					<div class="offer-actions">
 						<button
@@ -301,7 +301,7 @@
 				</div>
 			{/if}
 			{#if problem}
-				<div class="notice warn small" role="alert">
+				<div class="bu-notice" data-size="compact" data-tone="warning" role="alert">
 					<TriangleAlert size={14} aria-hidden="true" />
 					<div class="problem">
 						<p>{problem}</p>

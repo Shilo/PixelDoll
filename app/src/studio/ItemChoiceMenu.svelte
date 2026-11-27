@@ -139,7 +139,12 @@
 							: t('common.wear')}{/if}</button
 				>
 			</div>
-			{#if access.error}<p class="notice warn small item-choice-note" role="status">
+			{#if access.error}<p
+					class="bu-notice item-choice-note"
+					data-size="compact"
+					data-tone="warning"
+					role="status"
+				>
 					{access.error}
 				</p>{/if}
 		</div>

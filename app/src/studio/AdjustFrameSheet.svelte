@@ -215,8 +215,12 @@
 					><WandSparkles size={16} />{t('adjustFrame.makeRoom')}</button
 				>
 				<p class="muted small">{t('adjustFrame.makeRoomHelp')}</p>
-				{#if note}<p class="notice small" role="status">{displayMessage(note)}</p>{/if}
-				{#if short && !changed}<p class="notice warn small">{t('adjustFrame.short')}</p>{/if}
+				{#if note}<p class="bu-notice" data-size="compact" data-tone="neutral" role="status">
+						{displayMessage(note)}
+					</p>{/if}
+				{#if short && !changed}<p class="bu-notice" data-size="compact" data-tone="warning">
+						{t('adjustFrame.short')}
+					</p>{/if}
 				{#if directions.length > 1}
 					<label class="control-row direction">
 						<span class="label">{t('adjustFrame.direction')}</span>
@@ -261,10 +265,16 @@
 						onchange={() => (note = '')}
 					/>
 				</div>
-				{#if issue}<p class="notice warn small" role="status">{displayError(issue)}</p>
-				{:else if step}<p class="notice small">{t(STEP_TEXT[step])}</p>{/if}
+				{#if issue}<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
+						{displayError(issue)}
+					</p>
+				{:else if step}<p class="bu-notice" data-size="compact" data-tone="neutral">
+						{t(STEP_TEXT[step])}
+					</p>{/if}
 				{#if changed}<p class="muted small">{t('adjustFrame.consequences')}</p>{/if}
-				{#if blocked}<p class="notice warn small" role="status">{displayError(blocked)}</p>{/if}
+				{#if blocked}<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
+						{displayError(blocked)}
+					</p>{/if}
 				{#if blockedByWork(blocked)}<button
 						class="bu-btn"
 						onclick={() =>
@@ -273,12 +283,12 @@
 								flows: !!blocked && blocked.translation.key !== 'adjustFrame.errors.resolveDrafts'
 							})}>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
 					>{/if}
-				{#if error}<p class="notice bad small" role="alert">
+				{#if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 						{displayNestedMessage(error)}<ReportButton {error} />
 					</p>{/if}
 			</div>
 		</div>
-	{:else if error}<p class="notice bad small" role="alert">
+	{:else if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			{displayNestedMessage(error)}<ReportButton {error} />
 		</p>
 	{:else}<p class="muted" role="status">{t('adjustFrame.loading')}</p>{/if}

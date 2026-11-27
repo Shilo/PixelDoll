@@ -74,7 +74,7 @@
 >
 	<h2 id="{id}-title">{title}</h2>
 	{#if children}<div id="{id}-body" class="confirm-body">{@render children()}</div>{/if}
-	{#if problem}<p class="notice warn small" role="alert">
+	{#if problem}<p class="bu-notice" data-size="compact" data-tone="warning" role="alert">
 			<TriangleAlert size={16} aria-hidden="true" /><span>{problem}</span>
 		</p>{/if}
 	{#if problemAction}<div class="problem-action">{@render problemAction()}</div>{/if}
@@ -117,7 +117,7 @@
 	.confirm-body :global(p) {
 		margin: 0;
 	}
-	.notice {
+	.bu-notice {
 		margin: 12px 0 0;
 		text-align: left;
 	}

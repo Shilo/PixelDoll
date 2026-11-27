@@ -99,7 +99,9 @@
 				>
 				<span>{t('openWorkspace.orChoose')}</span>
 			</button>
-			{#if error}<p class="notice warn" role="alert">{displayMessage(error)}</p>{/if}
+			{#if error}<p class="bu-notice" data-size="compact" data-tone="warning" role="alert">
+					{displayMessage(error)}
+				</p>{/if}
 		{:else}
 			<p>{t('workspaceCopy.developerRequired')}</p>
 		{/if}

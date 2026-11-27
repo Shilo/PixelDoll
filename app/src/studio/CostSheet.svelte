@@ -371,7 +371,7 @@
 			{/each}
 		</div>
 
-		{#if error}<p class="notice bad small" role="alert">
+		{#if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 				{displayMessage(errorMessage(error))}<ReportButton {error} />
 			</p>
 		{:else if !character && scope !== 'all'}<p class="muted" role="status">
@@ -380,7 +380,12 @@
 		{:else}
 			<!-- Reset keeps one place and stays mounted through a pricing error and its recovery. -->
 			<div class="headline">
-				{#if priced.failure}<p class="notice bad small" role="alert">
+				{#if priced.failure}<p
+						class="bu-notice"
+						data-size="compact"
+						data-tone="danger"
+						role="alert"
+					>
 						{priced.failure}<ReportButton error={priced.error} />
 					</p>
 				{:else}<p class="readout" role="status" aria-atomic="true">

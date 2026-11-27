@@ -250,7 +250,7 @@
 			{/snippet}
 		</PixelLabUsage>
 		{#if app.balanceError}
-			<p class="notice bad small" role="status">
+			<p class="bu-notice" data-size="compact" data-tone="danger" role="status">
 				{t('usage.loadFailed')}<ReportButton
 					message={message('usage.loadFailed')}
 					facts={balanceFacts()}
@@ -262,7 +262,9 @@
 		</p>
 		<TierNotice {minimumTier} feature={t('connectSheet.thisGeneration')} />
 		{#if accountTier(app.balance) === 0}
-			<p class="notice warn small" role="status">{t('connectSheet.freePlanNotice')}</p>
+			<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
+				{t('connectSheet.freePlanNotice')}
+			</p>
 			<div class="field-row">
 				<a
 					class="bu-action btn sm"
@@ -347,7 +349,7 @@
 		<TierNotice {minimumTier} feature={t('connectSheet.thisGeneration')} />
 		{#if replacementError}
 			<!-- Only a failed check is a problem to report: a rejected key or a change from another tab is the person's to act on. -->
-			<p class="notice bad small" role="status">
+			<p class="bu-notice" data-size="compact" data-tone="danger" role="status">
 				{t(
 					replacementError
 				)}{#if replacementError === 'connectSheet.balanceError' || replacementError === 'connectSheet.replacementUnverified'}<ReportButton
@@ -356,11 +358,11 @@
 					/>{/if}
 			</p>
 		{:else if app.keyRejected}
-			<p class="notice bad small" role="status">
+			<p class="bu-notice" data-size="compact" data-tone="danger" role="status">
 				{t('connectSheet.keyRejected')}
 			</p>
 		{:else if connectionFailed}
-			<p class="notice bad small" role="status">
+			<p class="bu-notice" data-size="compact" data-tone="danger" role="status">
 				{t('connectSheet.balanceError')}<ReportButton
 					message={message('connectSheet.balanceError')}
 					facts={balanceFacts()}
@@ -405,7 +407,11 @@
 					/></label
 				>
 			{/if}
-			{#if !workspaceCopy && remember && sharedOrigin}<p class="notice warn small">
+			{#if !workspaceCopy && remember && sharedOrigin}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+				>
 					{t('connectSheet.sharedOriginWarning', { host: location.host })}
 				</p>{/if}
 			<p class="small bu-muted">{t('connectSheet.sentOnlyToApiPixellabAi')}</p>

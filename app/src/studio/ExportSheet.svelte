@@ -717,7 +717,12 @@
 {/snippet}
 
 {#snippet preferencesStatus(inSettings = false)}
-	{#if loadError || saveError}<p class="notice bad small" role="alert">
+	{#if loadError || saveError}<p
+			class="bu-notice"
+			data-size="compact"
+			data-tone="danger"
+			role="alert"
+		>
 			<TriangleAlert size={14} aria-hidden="true" />{saveError
 				? displayMessage(saveError)
 				: loadError
@@ -741,7 +746,11 @@
 	{#if !ready && refreshing}<p class="bu-muted settings-description" role="status">
 			{t('export.settings.loading')}
 		</p>{/if}
-	{#each catalog.warningMessages as warning}<p class="notice warn small">
+	{#each catalog.warningMessages as warning}<p
+			class="bu-notice"
+			data-size="compact"
+			data-tone="warning"
+		>
 			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(warning)}
 		</p>{/each}
 {/snippet}
@@ -962,7 +971,9 @@
 					<ProjectFolderButton onopen={() => openSettings('export', 'project-folder')} />
 					{#if ready && !pendingExport && (result?.kind === 'recovery' || result?.kind === 'failed')}
 						<p
-							class="notice {result.kind === 'recovery' ? 'warn' : 'bad'} small"
+							class="bu-notice"
+							data-size="compact"
+							data-tone={result.kind === 'recovery' ? 'warning' : 'danger'}
 							role={result.kind === 'recovery' ? 'status' : 'alert'}
 						>
 							<TriangleAlert size={14} aria-hidden="true" />
@@ -1002,7 +1013,7 @@
 								)}
 							</p>{/if}
 						{#if reviewItems.length || result.rigIssues.length}
-							<p class="notice warn small">
+							<p class="bu-notice" data-size="compact" data-tone="warning">
 								<TriangleAlert size={14} aria-hidden="true" /><span
 									>{t('export.notes.artworkWarning')}</span
 								>

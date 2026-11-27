@@ -594,7 +594,7 @@
 			</p>
 		{:else}
 			{#if !app.key || app.keyRejected}
-				{#if libraryError}<p class="notice bad small" role="alert">
+				{#if libraryError}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 						<TriangleAlert size={16} /><span>{displayMessage(libraryError)}</span><ReportButton
 							error={libraryError}
 						/>
@@ -620,7 +620,12 @@
 					>
 				</div>
 				<div class="character-library" aria-label={t('import.libraryLabel')} aria-busy={loading}>
-					{#if libraryError}<p class="notice bad small" role="alert">
+					{#if libraryError}<p
+							class="bu-notice"
+							data-size="compact"
+							data-tone="danger"
+							role="alert"
+						>
 							<TriangleAlert size={16} /><span>{displayMessage(libraryError)}</span><ReportButton
 								error={libraryError}
 							/>
@@ -745,7 +750,7 @@
 				</p>{/if}
 		</div>
 		{#if preview && previewValid}
-			<p class="notice small">
+			<p class="bu-notice" data-size="compact" data-tone="neutral">
 				<Info size={16} aria-hidden="true" />
 				<span>
 					{t('import.appearanceTip')}<br />
@@ -777,7 +782,12 @@
 				<p class="muted small">
 					{t('import.directionsHint')}
 				</p>
-				{#if replaced.length}<p class="notice warn small" role="status">
+				{#if replaced.length}<p
+						class="bu-notice"
+						data-size="compact"
+						data-tone="warning"
+						role="status"
+					>
 						{t('import.replaceDirectionArt', { directions: displayDirectionList(replaced) })}
 					</p>{/if}
 				<DirectionPresets
@@ -821,11 +831,15 @@
 					</label>{/if}
 			</details>
 		{/if}
-		{#if directionError}<p class="notice warn small" role="status">
+		{#if directionError}<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
 				<TriangleAlert size={16} /><span>{displayDirectionProblem(directionError.translation)}</span
 				>
 			</p>{/if}
-		{#each prepared.warnings as warning, index (warning)}<p class="notice warn small">
+		{#each prepared.warnings as warning, index (warning)}<p
+				class="bu-notice"
+				data-size="compact"
+				data-tone="warning"
+			>
 				<TriangleAlert size={16} /><span
 					>{displayMessage(prepared.warningKeys?.[index] ?? warning)}</span
 				>
@@ -848,7 +862,7 @@
 	{#if busy && (!prepared || saving)}<p class="muted" role="status">
 			{saving ? t('import.saving') : t('import.preparing')}
 		</p>{/if}
-	{#if error}<p class="notice bad small" role="alert">
+	{#if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			<TriangleAlert size={16} /><span>{displayDirectionProblem(error)}</span
 			>{#if cause !== undefined}<ReportButton error={cause} />{/if}
 		</p>{/if}

@@ -547,7 +547,9 @@
 				{/each}
 			</div>
 		</div>
-		{#if failure}<p class="notice bad small" role="alert">{displayNestedMessage(failure)}</p>{/if}
+		{#if failure}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
+				{displayNestedMessage(failure)}
+			</p>{/if}
 		<div class="seat-footer">
 			<p class="seat-help">
 				<span>{t('settings.seatMarkerHelp')}</span><br />
