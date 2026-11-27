@@ -110,10 +110,14 @@ export function offerReleaseNews() {
 	const { version } = candidate;
 
 	const deadline = performance.now() + 10_000;
+	// After this, a notice that never clears (such as a lasting error) leaves only the unread dot.
+	const giveUp = deadline + 60_000;
 	let timer: ReturnType<typeof setTimeout>;
 	function offer() {
 		if (latest?.version !== version || !unseen || ui.releaseOverlay) return;
-		const expired = performance.now() >= deadline;
+		const now = performance.now();
+		if (now >= giveUp) return;
+		const expired = now >= deadline;
 		if (!document.hidden && !updateNotice.visible && !get(pwa).checking && !ui.toast) {
 			if (expired) {
 				let opened = false;

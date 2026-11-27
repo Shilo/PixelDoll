@@ -44,6 +44,9 @@ export function releaseMarkdown(
 			);
 			return [[`### ${kindLabels[kind]}`, '', ...lines].join('\n')];
 		});
+		if (!changes.total)
+			return `${head}
+`;
 		if (limit < changes.total) groups.push(`[See all ${changes.total} changes](${compareUrl})`);
 		const all = [
 			`<details><summary>All changes (${changes.total})</summary>`,

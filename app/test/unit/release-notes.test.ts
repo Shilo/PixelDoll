@@ -214,3 +214,16 @@ it('accepts the app feature name State in release prose', () => {
 		)
 	).toEqual([]);
 });
+
+it('leaves out All changes when a maintenance release has none', () => {
+	const body = releaseMarkdown(
+		'0.0.2',
+		'2026-11-27',
+		publicNotes(notes),
+		{ total: 0, groups: [] },
+		'Shilo/PixelDoll',
+		'banner.png',
+		'https://example.com/compare'
+	);
+	expect(body).not.toContain('<details>');
+});

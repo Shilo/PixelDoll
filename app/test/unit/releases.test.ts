@@ -34,14 +34,22 @@ afterEach(() => {
 });
 
 describe('release data', () => {
-	it('uses a mutable, app-relative index and reports failed or malformed data', async () => {
+	it('uses a mutable, app-relative index, skips damaged entries and reports failed or malformed data', async () => {
 		fetchMock.mockResolvedValueOnce(Response.json(index));
 		expect(await fetchReleaseIndex()).toEqual(index.releases);
 		expect(fetchMock).toHaveBeenCalledWith(
 			scope + 'releases/index.json',
 			expect.objectContaining({ cache: 'no-store' })
 		);
-		fetchMock.mockResolvedValueOnce(Response.json({ releases: [{ version: '../wrong' }] }));
+		// A damaged entry is skipped with a warning; a damaged file still fails.
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+		fetchMock.mockResolvedValueOnce(
+			Response.json({ releases: [{ version: '../wrong' }, ...index.releases] })
+		);
+		expect(await fetchReleaseIndex()).toEqual(index.releases);
+		expect(warn).toHaveBeenCalledOnce();
+		warn.mockRestore();
+		fetchMock.mockResolvedValueOnce(Response.json({ releases: 'none' }));
 		await expect(fetchReleaseIndex()).rejects.toThrow('Invalid release index');
 		fetchMock.mockResolvedValueOnce(new Response(null, { status: 503 }));
 		await expect(fetchReleaseIndex()).rejects.toThrow('HTTP 503');
@@ -105,4 +113,9 @@ it('ignores a damaged read-release value so the unread dot can still show', () =
 	vi.stubGlobal('localStorage', { getItem: () => 'not-a-version', setItem: () => undefined });
 	expect(createSeenRelease().sync()).toBeNull();
 	vi.unstubAllGlobals();
+});
+
+it('compares a development build by its version numbers', () => {
+	expect(compareVersions('0.4.12-dev', '0.4.12')).toBe(0);
+	expect(compareVersions('0.4.11-dev', '0.4.12')).toBeLessThan(0);
 });

@@ -21,7 +21,8 @@ export const SEEN_RELEASE_KEY = 'pixeldoll.seenRelease';
 
 /** Orders major.minor.patch versions; negative when `a` is older. */
 export function compareVersions(a: string, b: string) {
-	const [x, y] = [a, b].map((version) => version.split('.').map(Number));
+	// A development build reports "<version>-dev": compare only the numbers.
+	const [x, y] = [a, b].map((version) => version.split('-')[0].split('.').map(Number));
 	return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
 }
 
@@ -89,9 +90,14 @@ function isReleaseEntry(value: unknown): value is ReleaseEntry {
 
 export async function fetchReleaseIndex(): Promise<ReleaseEntry[]> {
 	const value = await read('index.json', true);
-	if (!record(value) || !Array.isArray(value.releases) || !value.releases.every(isReleaseEntry))
-		throw new Error('Invalid release index');
-	return value.releases;
+	if (!record(value) || !Array.isArray(value.releases)) throw new Error('Invalid release index');
+	// One damaged entry hides only itself, not every release and the unread dot.
+	const valid = value.releases.filter(isReleaseEntry);
+	if (valid.length < value.releases.length)
+		console.warn(
+			`PixelDoll skipped ${value.releases.length - valid.length} invalid release index entries`
+		);
+	return valid;
 }
 
 async function notes(version: string, locale: string): Promise<ReleaseNotes> {
@@ -118,8 +124,10 @@ export async function fetchReleaseNotes(version: string, locale: string) {
 	if (locale !== 'en') {
 		try {
 			return { locale, notes: await notes(version, locale) };
-		} catch {
-			// A translation may be missing or unavailable offline. Try the English notes.
+		} catch (error) {
+			// A missing translation falls back to English by design; anything else is worth seeing in the console.
+			if (!/HTTP 404/.test(String(error)))
+				console.warn(`PixelDoll used English release notes for ${locale}:`, error);
 		}
 	}
 	return { locale: 'en', notes: await notes(version, 'en') };

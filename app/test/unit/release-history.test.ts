@@ -240,3 +240,14 @@ it('nets a revert listed in the manual revert map', () => {
 		)
 	).toEqual([]);
 });
+
+it('treats an unfinished manual Pages run as the pending release deploy', async () => {
+	const runs = (event: string, status: string) =>
+		vi.fn(async () => Response.json({ workflow_runs: [{ event, status }] }));
+	const github = new GitHub('Shilo/PixelDoll', 'token');
+	vi.stubGlobal('fetch', runs('workflow_dispatch', 'queued'));
+	await expect(github.pagesDeployPending('abc')).resolves.toBe(true);
+	vi.stubGlobal('fetch', runs('workflow_dispatch', 'completed'));
+	await expect(github.pagesDeployPending('abc')).resolves.toBe(false);
+	vi.unstubAllGlobals();
+});
