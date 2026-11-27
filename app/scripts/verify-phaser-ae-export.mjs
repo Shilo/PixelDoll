@@ -60,16 +60,13 @@ for (const archive of archives) {
 
 // Each control mutates the delivered runtime; every check that should notice it must fail, or the check proves nothing.
 const CONTROLS = {
-	'wrong-pivot': [
-		'sprite.x = x + (point.x + f.w / 2 - f.x) * scale;',
-		'sprite.x = x + (point.x + f.w / 2 - f.x + 1) * scale;'
-	],
+	'wrong-pivot': ['ox: point.x + f.w / 2 - f.x,', 'ox: point.x + f.w / 2 - f.x + 1,'],
 	'restart-every-play': [
 		'if (restart || anim !== this.anim || dir !== this.dir || this.completed) this.elapsed = 0;',
 		'this.elapsed = 0;'
 	],
 	'uniform-duration': [
-		'return move ? sampleTimeline(move.frames, this.elapsed, move.loop) : null;',
+		'return move ? sampleTimeline(move.frames, this.elapsed + BOUNDARY_MS, move.loop) : null;',
 		'return move ? sampleTimeline(move.frames.map((f) => ({ ...f, ms: 100 })), this.elapsed, move.loop) : null;'
 	],
 	'no-palette': ['if (!table.size) return original;', 'return original;'],
@@ -83,11 +80,11 @@ const CONTROLS = {
 		'    this.dir = dir;\n    this.sync();',
 		'    this.dir = dir; this.elapsed = 0;\n    this.sync();'
 	],
-	'no-feet': ["const feet = this.game.world?.kind === 'topdown';", 'const feet = false;'],
-	'reverse-pool': [
-		'show(this.pool[order], draw.item, draw.layer, this.anim',
-		'show(this.pool[this.pool.length - 1 - order], draw.item, draw.layer, this.anim'
+	'no-feet': [
+		"a.z = z - (this.game.world?.kind === 'topdown' ? (f.h - f.y) * scale : 0);",
+		'a.z = z;'
 	],
+	'reverse-order': ['this.placed = placed;', 'this.placed = placed.reverse();'],
 	'state-loop': [
 		'return !!move && !move.loop && this.elapsed',
 		'return !!move && false && this.elapsed'
@@ -96,12 +93,7 @@ const CONTROLS = {
 const controlsFor = (archive, world) => [
 	'none',
 	...(archive.label === 'global-settings-pipeline'
-		? [
-				'wrong-pivot',
-				'restart-every-play',
-				'uniform-duration',
-				...(world === 'side' ? ['reverse-pool'] : [])
-			]
+		? ['wrong-pivot', 'restart-every-play', 'uniform-duration']
 		: []),
 	...(archive.label === 'eight-direction-masks-hands-alpha'
 		? [
@@ -110,6 +102,7 @@ const controlsFor = (archive, world) => [
 				'no-hides',
 				'wrong-direction',
 				'turn-restarts',
+				'reverse-order',
 				...(world === 'topdown' ? ['no-feet'] : [])
 			]
 		: []),
@@ -249,10 +242,7 @@ async function pixels(page, archive, check) {
 						return d;
 					});
 					await t.game.advance(1 / 60);
-					return t.dolls.map((d) => ({
-						cell: d.cell(),
-						depths: d.placed.map((p) => p.sprite.depth)
-					}));
+					return t.dolls.map((d) => ({ cell: d.cell() }));
 				},
 				{ preset: preset.id, clip: move.id, specs, pivot }
 			);
@@ -260,11 +250,6 @@ async function pixels(page, archive, check) {
 			for (const [i, s] of specs.entries()) {
 				const where = `${preset.id}/${move.id}/${s.dir}/${s.cell}`;
 				check(shown[i].cell === s.cell, `clock: ${where} showed cell ${shown[i].cell}`);
-				const depths = shown[i].depths;
-				check(
-					depths.every((d, k) => k === 0 || d >= depths[k - 1]),
-					`order: ${where} engine depths ${depths.join(',')} run against drawList`
-				);
 				let bad = null;
 				for (let y = 0; y < size.h && !bad; y++)
 					for (let x = 0; x < size.w && !bad; x++) {
@@ -301,26 +286,46 @@ async function overlap(page, archive, check) {
 		row = m.rig.directions.findIndex((d) => !move.directions || move.directions.includes(d.id)),
 		cell = move.frames[0].cell,
 		front = { x: 200 + pivot.x, y: 200 + pivot.y },
-		back = { x: front.x + 20, y: front.y - 6 };
+		// A 12-unit green prop whose bottom edge is 2 units below the front doll's feet must draw over it: in a top-down
+		// world that holds only when the doll sorts at its feet, not at its cell's bottom edge.
+		prop = { x: front.x, y: front.y - 4, size: 12 },
+		// six units higher, and level with the front doll's feet (spawn order decides): both must stay whole
+		pairs = [
+			[{ x: front.x + 20, y: front.y - 6 }, front],
+			[
+				{ x: front.x + 20 + 400, y: front.y },
+				{ x: front.x + 400, y: front.y }
+			]
+		];
 	await page.evaluate(
-		async ({ preset, clip, dir, front, back }) => {
+		async ({ preset, clip, dir, pairs, prop }) => {
 			const t = globalThis.pdTest;
 			for (const d of t.dolls ?? []) d.destroy();
-			t.dolls = [back, front].map((at) => {
+			t.prop?.destroy();
+			t.dolls = pairs.flat().map((at) => {
 				const d = new t.api.Paperdoll(t.game, at.x, at.y, t.m, preset);
 				d.play(clip, dir, true);
 				return d;
 			});
+			t.prop = t.game.spawn({
+				id: 'pdprop',
+				layer: 'world',
+				x: prop.x,
+				y: prop.y,
+				width: prop.size,
+				height: prop.size,
+				tint: '#00ff00'
+			});
 			await t.game.advance(1 / 60);
 		},
-		{ preset: preset.id, clip: move.id, dir: m.rig.directions[row].id, front, back }
+		{ preset: preset.id, clip: move.id, dir: m.rig.directions[row].id, pairs, prop }
 	);
 	const image = await shot(page),
 		sheet = await decodePngBytes(archive.files.get(bakedSheetPath(preset.id, move.id)));
 	const wanted = new Float64Array(image.w * image.h * 3);
 	for (let i = 0; i < image.w * image.h; i++) wanted.set(BACKGROUND, i * 3);
 	const touched = new Set();
-	for (const at of [back, front])
+	for (const at of pairs.flat())
 		for (let y = 0; y < size.h; y++)
 			for (let x = 0; x < size.w; x++) {
 				const src = ((row * size.h + y) * sheet.w + cell * size.w + x) * 4,
@@ -333,12 +338,18 @@ async function overlap(page, archive, check) {
 						sheet.data[src + c] * alpha + wanted[dst * 3 + c] * (1 - alpha)
 					);
 			}
+	for (let y = prop.y - prop.size / 2; y < prop.y + prop.size / 2; y++)
+		for (let x = prop.x - prop.size / 2; x < prop.x + prop.size / 2; x++) {
+			const dst = y * image.w + x;
+			touched.add(dst);
+			wanted.set([0, 255, 0], dst * 3);
+		}
 	let bad = null;
 	for (const dst of touched)
 		for (let c = 0; c < 3 && !bad; c++)
 			if (Math.abs(image.data[dst * 4 + c] - wanted[dst * 3 + c]) > 2)
 				bad = `${dst % image.w},${Math.floor(dst / image.w)} channel ${c}: actual ${image.data[dst * 4 + c]}, wanted ${wanted[dst * 3 + c]}`;
-	check(!bad, `overlap: ${preset.id}/${move.id} front doll does not cover the back one at ${bad}`);
+	check(!bad, `overlap: ${preset.id}/${move.id} dolls and the prop draw out of order at ${bad}`);
 }
 
 /** Playlist timing, layer synchronization, repeat/restart/replay, turning and rejection atomicity, through the API. */
@@ -349,16 +360,16 @@ async function behavior(page, archive, check) {
 			out = { notes: [] };
 		const note = (ok, text) => ok || out.notes.push(text);
 		const step = (n) => game.advance(n / 60);
-		// The cell every visible layer sprite shows, read from the engine's frames, not from the doll.
-		const showing = (d) =>
-			d.placed
-				.filter((p) => p.sprite.visible)
-				.map((p) => {
-					const key = p.sprite.texture,
-						local = p.sprite.frame - game.assets.frames(key),
-						cells = m.rig.animations.find((a) => a.id === d.anim).cells;
-					return `${m.rig.directions[Math.floor(local / cells)].id}/${local % cells}`;
-				});
+		// The cell every emitted layer shows, as the aggregate hands it to the renderer.
+		const showing = (d) => {
+			const cells = m.rig.animations.find((a) => a.id === d.anim).cells,
+				out = [];
+			d.emit({ add: (x, y, w, h, frame) => out.push(frame) }, 1);
+			return out.map((frame, i) => {
+				const local = frame - game.assets.frames(d.placed[i].key);
+				return `${m.rig.directions[Math.floor(local / cells)].id}/${local % cells}`;
+			});
+		};
 		const state = (d) =>
 			JSON.stringify([d.anim, d.dir, d.elapsed, d.equipped, d.variants, d.actionPlaying]);
 		const rejects = (d, call, text) => {
@@ -427,14 +438,13 @@ async function behavior(page, archive, check) {
 			d.setDirection(dirs[1]);
 			note(d.elapsed === time, 'turn: the current direction is a no-op');
 		}
-		const spots = () =>
-			d.placed.map((p) => [p.sprite.x, p.sprite.y, p.sprite.scale, p.sprite.visible]);
+		const spots = () => [[d.actor.x, d.actor.y, d.actor.scale, d.actor.visible]];
 		const at = spots();
 		d.x += 5;
 		d.y -= 3;
 		note(
 			spots().every((s, i) => s[0] === at[i][0] + 5 && s[1] === at[i][1] - 3),
-			'move: every layer must follow x and y'
+			'move: the actor must follow x and y'
 		);
 		d.scale = 2;
 		note(
@@ -445,7 +455,7 @@ async function behavior(page, archive, check) {
 		d.visible = false;
 		note(
 			spots().every((s) => !s[3]),
-			'visible: hiding the doll must hide every layer'
+			'visible: hiding the doll must hide its actor'
 		);
 		d.visible = true;
 		d.teleport(100, 120);
@@ -502,8 +512,9 @@ try {
 			withWorld('side', { assets }),
 			`import { game } from './engine.js';
 import { loadPaperdoll, Paperdoll } from './pixeldoll/hero/phaser-ae/paperdoll.js';
+import heroData from './pixeldoll/hero/manifest.json';
 import { expose } from './harness.js';
-const hero = await loadPaperdoll(game, 'pixeldoll/hero/');
+const hero = await loadPaperdoll(game, 'pixeldoll/hero/', heroData);
 export const Stage = { name: 'stage', enter(): void { expose({ game, api: { Paperdoll }, m: hero }); } };
 game.scenes.register(Stage);
 await game.start();

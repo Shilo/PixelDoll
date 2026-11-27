@@ -1266,7 +1266,7 @@
 				"detail": "Hojas y tiras por capa con datos de tiempos, pivotes, equipamiento y paleta. Tu motor necesita código para leer estas reglas."
 			},
 			"phaserae": {
-				"detail": "Hojas de sprites por capa y un runtime para juegos de Phaser AE, con equipamiento, colores y reproducción sincronizada. Añade las hojas a la lista assets del manifiesto de tu juego; no necesitas subir nada ni tener el plan Pro."
+				"detail": "Hojas de sprites por capa y un runtime para juegos de Phaser AE, con equipamiento, colores y reproducción sincronizada. Añade las hojas a la lista assets del manifiesto de tu juego y la compilación del juego las copiará en él."
 			}
 		},
 		"version": {

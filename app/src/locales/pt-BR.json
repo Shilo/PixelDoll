@@ -1269,7 +1269,7 @@
 				"detail": "Folhas e tiras de camadas com tempos dos quadros, pivôs e dados de equipamentos e paletas. Sua engine precisa de código para ler essas regras."
 			},
 			"phaserae": {
-				"detail": "Folhas de sprites por camada e um runtime para jogos do Phaser AE, com equipamentos, cores e reprodução sincronizada. Inclua as folhas na lista assets do manifesto do seu jogo; não é preciso enviar nada nem ter o plano Pro."
+				"detail": "Folhas de sprites por camada e um runtime para jogos do Phaser AE, com equipamentos, cores e reprodução sincronizada. Inclua as folhas na lista assets do manifesto do seu jogo, e o build do jogo as copia para dentro dele."
 			}
 		},
 		"version": {

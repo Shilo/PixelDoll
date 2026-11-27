@@ -94,10 +94,16 @@ function gameHarness(m: Manifest, { world = 'side', fail = '' } = {}) {
 			{ src: unknown; w: number; h: number; cols: number; rows: number; first: number }
 		>(),
 		sprites: any[] = [],
+		aggregates = new Map<unknown, { emit: (out: unknown, alpha: number) => void } | null>(),
 		steps = new Set<(dt: number) => void>();
 	let frames = 0;
 	const game = {
 		world: { kind: world, layers: ['back', 'world', 'front'] },
+		roster: {
+			wrap: null,
+			aggregate: (handle: unknown, aggregate: { emit: () => void } | null) =>
+				aggregates.set(handle, aggregate)
+		},
 		assets: {
 			load(items: { kind: string; key: string; url: string }[]) {
 				const failed = items
@@ -121,23 +127,17 @@ function gameHarness(m: Manifest, { world = 'side', fail = '' } = {}) {
 		spawn(spec: { layer?: string; tags: string[] }) {
 			const sprite = {
 				...spec,
+				prev: { x: 0, y: 0 },
 				x: 0,
 				y: 0,
 				z: 0,
 				width: 32,
 				height: 32,
 				scale: 1,
-				visible: false,
+				visible: true,
 				alive: true,
-				snaps: 0,
-				texture: null as string | null,
-				frame: 0,
-				setTexture(key: string, frame = 0) {
-					this.texture = key;
-					this.frame = grids.get(key)!.first + frame;
-				},
 				snap() {
-					this.snaps++;
+					this.prev = { x: this.x, y: this.y };
 				},
 				destroy() {
 					this.alive = false;
@@ -151,23 +151,41 @@ function gameHarness(m: Manifest, { world = 'side', fail = '' } = {}) {
 			return { cancel: () => steps.delete(fn) };
 		}
 	};
-	const advance = (n: number) => {
-		for (let i = 0; i < n; i++) for (const fn of steps) fn(1 / 60);
+	const advance = (n: number, dt = 1 / 60) => {
+		for (let i = 0; i < n; i++) for (const fn of steps) fn(dt);
 	};
-	/** What each visible sprite shows, in draw order: texture key parts and the local [row, cell]. */
-	const drawn = (doll: any) =>
-		doll.placed
-			.filter((p: any) => p.sprite.visible)
-			.map((p: any) => {
-				const grid = grids.get(p.sprite.texture)!,
-					local = p.sprite.frame - grid.first;
-				return {
-					key: JSON.parse(p.sprite.texture.slice(3).split(':palette:')[0]),
-					row: Math.floor(local / grid.cols),
-					cell: local % grid.cols
-				};
-			});
-	return { game, grids, sprites, steps, advance, drawn };
+	/** What the doll's aggregate draws at `alpha`, in order: texture key parts, local [row, cell] and the instance. */
+	const drawn = (doll: any, alpha = 1) => {
+		const out: any[] = [];
+		aggregates.get(doll.actor)!.emit(
+			{
+				add: (
+					x: number,
+					y: number,
+					w: number,
+					height: number,
+					frame: number,
+					tint: number,
+					...rest: number[]
+				) => out.push({ x, y, w, h: height, frame, tint, alpha: rest[3] })
+			},
+			alpha
+		);
+		return out.map((instance) => {
+			const [key, grid] = [...grids].find(
+				([, g]) => instance.frame >= g.first && instance.frame < g.first + g.cols * g.rows
+			)!;
+			const local = instance.frame - grid.first;
+			return {
+				...instance,
+				texture: key,
+				key: JSON.parse(key.slice(3).split(':palette:')[0]),
+				row: Math.floor(local / grid.cols),
+				cell: local % grid.cols
+			};
+		});
+	};
+	return { game, grids, sprites, steps, aggregates, advance, drawn };
 }
 
 test('the Phaser AE export lists every sheet for the game manifest and ships typed runtime files', () => {
@@ -186,7 +204,7 @@ test('the Phaser AE export lists every sheet for the game manifest and ships typ
 		'pixeldoll/hero/layers/hat-walk.png',
 		'pixeldoll/hero/layers/hat-jump.png'
 	]);
-	expect(files[4].data).toContain("loadPaperdoll(game, 'pixeldoll/hero/')");
+	expect(files[4].data).toContain("loadPaperdoll(game, 'pixeldoll/hero/', heroData)");
 	expect(files[4].data).toContain('doll.play("walk", "south")');
 });
 
@@ -194,7 +212,7 @@ test('loading registers one grid per layer and move from the source sheets, and 
 	const api = runtime(),
 		h = gameHarness(fixture());
 	const m = await api.loadPaperdoll(h.game, 'pixeldoll/hero');
-	expect(m._base).toBe('pixeldoll/hero/');
+	expect(m._base).toBe('|pixeldoll/hero/');
 	expect(await api.loadPaperdoll(h.game, 'pixeldoll/hero/')).toBe(m);
 	expect(
 		[...h.grids.values()].map(({ w, h: height, cols, rows }) => [w, height, cols, rows])
@@ -209,31 +227,47 @@ test('loading registers one grid per layer and move from the source sheets, and 
 		'failed to load hero/layers/hat-jump.png'
 	);
 	await expect(api.loadPaperdoll(broken.game, 'hero/')).rejects.toThrow('failed to load');
+	// a headless replay fetches nothing: the manifest passed in still builds every grid
+	const headless = gameHarness(fixture(), { fail: 'manifest.json' });
+	const data = await api.loadPaperdoll(headless.game, 'hero/', fixture());
+	expect([data.rig.cell.w, headless.grids.size]).toEqual([64, 4]);
 });
 
-test('a doll draws its layers from one pool in draw order, sorted at its feet in a top-down world', async () => {
+test('a doll is one actor that emits its layers in draw order around one interpolated pivot', async () => {
 	for (const world of ['side', 'topdown']) {
 		const api = runtime(),
 			h = gameHarness(fixture(), { world }),
 			m = await api.loadPaperdoll(h.game, 'hero/');
-		const doll = new api.Paperdoll(h.game, 100, 200, m, 'dressed', { z: 3 });
+		const doll = new api.Paperdoll(h.game, 100, 200, m, 'dressed', { z: 3, tags: ['hero'] });
 		doll.play('walk', 'south');
-		expect(h.sprites.every((s) => s.layer === 'world')).toBe(true);
-		expect(h.drawn(doll).map((d: any) => d.key[1])).toEqual(['base', 'hat']);
-		expect(doll.placed.map((p: any) => p.sprite)).toEqual(h.sprites.slice(0, 2));
-		const [body, hat] = doll.placed.map((p: any) => p.sprite);
-		// centers that put both cells' pivots on 100,200
-		expect([body.x, body.y, body.width, hat.x, hat.y, hat.width]).toEqual([
-			100, 172, 64, 100, 172, 96
+		expect(h.sprites).toEqual([doll.actor]);
+		expect([doll.actor.layer, doll.actor.tags]).toEqual(['world', ['hero']]);
+		const actor = doll.actor;
+		// the actor's box is the rig cell around the pivot; a top-down world sorts it at the feet
+		expect([actor.x, actor.y, actor.width, actor.height]).toEqual([100, 172, 64, 64]);
+		expect(actor.y + actor.height / 2 + actor.z).toBe(world === 'side' ? 207 : 203);
+		expect(h.drawn(doll).map((d: any) => [d.key[1], d.x, d.y, d.w])).toEqual([
+			['base', 100, 172, 64],
+			['hat', 100, 172, 96]
 		]);
-		if (world === 'side') expect([body.z, hat.z]).toEqual([3, 3]);
-		else expect([body, hat].map((s) => s.y + s.height / 2 + s.z)).toEqual([203, 203 + 1 / 1024]);
+		// moving without a cut: every layer is drawn at the same in-between position
+		doll.x = 110;
 		doll.equip('head', null);
-		expect(hat.visible).toBe(false);
+		doll.equip('head', 'hat');
+		expect(h.drawn(doll, 0.5).map((d: any) => d.x)).toEqual([105, 105]);
+		doll.teleport(110, 200);
+		expect(h.drawn(doll, 0.5).map((d: any) => d.x)).toEqual([110, 110]);
 		doll.scale = 2;
-		expect([body.x, body.y, body.scale]).toEqual([100, 144, 2]);
+		expect(h.drawn(doll).map((d: any) => [d.x, d.y, d.w])).toEqual([
+			[110, 144, 128],
+			[110, 144, 192]
+		]);
+		doll.alpha = 0.5;
+		doll.tint = '#ff0000';
+		expect(h.drawn(doll).map((d: any) => [d.tint, d.alpha])[0]).toEqual([0xff0000ff, 0.5]);
+		expect(() => (doll.tint = 'red')).toThrow('#rrggbb');
 		doll.visible = false;
-		expect(body.visible).toBe(false);
+		expect(actor.visible).toBe(false);
 	}
 });
 
@@ -256,6 +290,21 @@ test('the doll clock follows each playlist entry on fixed steps, including exact
 		...Array(3).fill('1/1')
 	]);
 	expect(seen.every((cells) => new Set(cells).size === 1)).toBe(true);
+});
+
+test('frame boundaries land on the step that reaches them at any fixed step rate', async () => {
+	const api = runtime(),
+		h = gameHarness(fixture()),
+		m = await api.loadPaperdoll(h.game, 'hero/');
+	const doll = new api.Paperdoll(h.game, 0, 0, m);
+	// jump: 50 ms of cell 0, then 50 ms of cell 1, once; 1/120 s steps sum to 49.99… and 99.99… ms
+	doll.play('jump', 'south');
+	h.advance(5, 1 / 120);
+	expect([h.drawn(doll)[0].cell, doll.completed]).toEqual([0, false]);
+	h.advance(1, 1 / 120);
+	expect([h.drawn(doll)[0].cell, doll.completed]).toEqual([1, false]);
+	h.advance(6, 1 / 120);
+	expect(doll.completed).toBe(true);
 });
 
 test('repeated play keeps progress, restart and completed one-shots start over, and turning keeps time', async () => {
@@ -295,14 +344,14 @@ test('recoloring adds one palette grid per sheet and colors, and an outfit witho
 		m = await api.loadPaperdoll(h.game, 'hero/');
 	const doll = new api.Paperdoll(h.game, 0, 0, m, 'red');
 	doll.play('walk', 'south');
-	const body = doll.placed[0].sprite;
-	expect(body.texture).toContain(':palette:');
-	expect(h.grids.get(body.texture)).toMatchObject({ src: null, w: 64, cols: 2, rows: 2 });
+	const body = () => h.drawn(doll)[0].texture;
+	expect(body()).toContain(':palette:');
+	expect(h.grids.get(body())).toMatchObject({ src: null, w: 64, cols: 2, rows: 2 });
 	const grids = h.grids.size;
 	new api.Paperdoll(h.game, 0, 0, m, 'red').play('walk', 'south');
 	expect(h.grids.size).toBe(grids);
 	doll.applyPreset('dressed');
-	expect(body.texture).not.toContain(':palette:');
+	expect(body()).not.toContain(':palette:');
 });
 
 test('a one-shot action plays over the walk clock, with optional precut stacks', async () => {
@@ -377,6 +426,9 @@ test('a one-shot action plays over the walk clock, with optional precut stacks',
 		h = gameHarness(m),
 		model = await api.loadPaperdoll(h.game, 'hero/');
 	const doll = new api.Paperdoll(h.game, 10, 20, model);
+	// a whole-body action needs no move first
+	expect(doll.playAction('slash', 'south')).toBe('full');
+	expect(h.drawn(doll).map((d: any) => d.key[3])).toEqual(['slash']);
 	doll.play('walk', 'south');
 	expect(doll.canLayerAction('slash', 'south')).toBe(true);
 	expect(doll.playAction('slash', 'south')).toBe('full');
@@ -384,7 +436,7 @@ test('a one-shot action plays over the walk clock, with optional precut stacks',
 	expect(doll.playAction('slash', 'south')).toBe('layered');
 	const parts = () => h.drawn(doll).map((d: any) => d.key[3]);
 	expect(parts()).toEqual(['lower:walk', 'upper:slash']);
-	expect(doll.placed[1].sprite.x).toBe(10 + 2);
+	expect(h.drawn(doll)[1].x - h.drawn(doll)[0].x).toBe(2);
 	expect(() => doll.playAction('missing', 'south')).toThrow('unavailable');
 	expect(doll.action.layered).toBe(true);
 	h.advance(5);
@@ -399,6 +451,6 @@ test('a one-shot action plays over the walk clock, with optional precut stacks',
 	doll.play('walk', 'south');
 	expect(doll.actionPlaying).toBe(false);
 	doll.destroy();
-	expect(h.sprites.every((s) => !s.alive)).toBe(true);
+	expect([h.sprites.every((s) => !s.alive), h.aggregates.get(doll.actor)]).toEqual([true, null]);
 	expect(h.steps.size).toBe(0);
 });

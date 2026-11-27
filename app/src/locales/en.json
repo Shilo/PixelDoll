@@ -1266,7 +1266,7 @@
 				"detail": "Layer sheets and strips with timing, pivots, equipment and palette data. Your engine needs code to read these rules."
 			},
 			"phaserae": {
-				"detail": "Layer sheets and a runtime for Phaser AE games, with equipment, colors and synchronized playback. List the sheets in your game’s manifest assets; no upload or Pro plan needed."
+				"detail": "Layer sheets and a runtime for Phaser AE games, with equipment, colors and synchronized playback. Add the sheets to the assets list in your game’s manifest, and its build copies them in."
 			}
 		},
 		"version": {

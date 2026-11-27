@@ -1266,7 +1266,7 @@
 				"detail": "Zamanlama, pivot noktaları, ekipman ve palet verileriyle katman sayfaları ve şeritleri. Oyun motorunuzun bu kuralları okuyacak koda ihtiyacı var."
 			},
 			"phaserae": {
-				"detail": "Phaser AE oyunları için katman başına sprite sayfaları ve ekipman, renkler ve eşzamanlı oynatma sunan bir çalışma zamanı. Sayfaları oyununuzun manifest dosyasındaki assets listesine ekleyin; yükleme veya Pro plan gerekmez."
+				"detail": "Phaser AE oyunları için katman başına sprite sayfaları ve ekipman, renkler ve eşzamanlı oynatma sunan bir çalışma zamanı. Sayfaları oyununuzun manifest dosyasındaki assets listesine ekleyin; oyunun derleme işlemi bunları oyuna kopyalar."
 			}
 		},
 		"version": {

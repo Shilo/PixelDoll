@@ -1266,7 +1266,7 @@
 				"detail": "Feuilles de sprites et bandes d’animation par calque, avec durées, pivots, données d’équipement et palettes. Votre moteur a besoin de code pour interpréter ces données."
 			},
 			"phaserae": {
-				"detail": "Feuilles de sprites par calque et runtime pour les jeux Phaser AE, avec l’équipement, les couleurs et la lecture synchronisée. Ajoutez les feuilles à la liste assets du manifeste de votre jeu ; aucun envoi ni forfait Pro requis."
+				"detail": "Feuilles de sprites par calque et runtime pour les jeux Phaser AE, avec l’équipement, les couleurs et la lecture synchronisée. Ajoutez les feuilles à la liste assets du manifeste de votre jeu, et la compilation du jeu les y copiera."
 			}
 		},
 		"version": {

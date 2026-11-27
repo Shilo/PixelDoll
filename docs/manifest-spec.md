@@ -996,26 +996,32 @@ Historical verification [M5] covered Phaser 3.80, 3.90 and 4.2.1. The current
 2026-10-23 smoke: Phaser 3.90.0 and 4.1.0, Canvas and WebGL, passed exact 80/180/100 ms timing, palette switching,
 layer synchronization and oversized pivots with zero page errors. Phaser 3.80 compatibility was source-reviewed only.
 
-### 6.4.1 Phaser AE — layer grids and a pooled runtime
+### 6.4.1 Phaser AE — layer grids and one aggregate per doll
 
 Phaser AE is a separate engine (the Phaser Game Agent's kernel), not a Phaser 3/4 version, and has its own API: no loader
 atlases, scenes or animation manager. Its export reuses the layer sheets and adds `phaser-ae/`:
 
-- `paperdoll.js`: the canonical runtime modules plus the AE adapter. `loadPaperdoll(game, folder)` loads `manifest.json`
-  as JSON and every sheet as bytes through `game.assets.load` (retries, the loading screen, the game's base URL), decodes
-  them and registers each as a `cols × rows` grid (`game.assets.addGrid`, cell = the layer's cell, rows = rig directions).
+- `paperdoll.js`: the canonical runtime modules plus the AE adapter. `loadPaperdoll(game, folder, manifest?)` takes the
+  folder's `manifest.json` (a static JSON import, so a headless replay that fetches nothing builds the same frames) or
+  fetches it, loads every sheet as bytes through `game.assets.load` (retries, the loading screen, the game's base URL),
+  decodes them and registers each as a `cols × rows` grid (`game.assets.addGrid`, cell = the layer's cell, rows = rig
+  directions). The whole preparation is tracked; it throws naming the file, and calling it again retries it all.
   Palette swaps redraw a sheet once into another grid. `Paperdoll` owns one clock per doll, stepped by `game.step`
-  (scene-scoped, rounded to a microsecond so fixed steps land on frame boundaries), and samples the shared timeline.
-  The doll spawns a pool of sprites in draw order; the k-th sprite shows the k-th `drawList` entry, centered so its
-  layer pivot sits on the doll's `x, y`. Side-on worlds draw by `z`, then spawn order, so a doll stays one unit; a
-  top-down world sorts by each sprite's bottom edge, so `z` moves every layer's sort point to the doll's feet, 1/1024
-  apart in draw order. `paperdoll.d.ts` types the doll API and `types.d.ts` the manifest data.
-- `assets.json`: the manifest and every sheet path under `pixeldoll/<export id>/`, for the game manifest's `assets`
-  list. AE builds copy those files next to the bundle, so a free phaser.io account needs no Pro upload.
+  (scene-scoped), and samples the shared timeline with a 1 µs tolerance so frame boundaries land on the step that
+  reaches them at any fixed step rate.
+  The doll is one roster object, `doll.actor`, whose box is the rig cell around the pivot (for picking, collision and
+  camera follow) and which carries the doll's tags. `game.roster.aggregate` makes it emit every `drawList` (or
+  `exportedActionDraws`) layer itself, in order, around its interpolated pivot, so the layers neither drift between
+  steps nor interleave with other objects. Side-on worlds sort the actor by `z`, then spawn order; in a top-down world
+  `z` puts its sort point at the feet. `paperdoll.d.ts` types the doll API and `types.d.ts` the manifest data.
+- `assets.json`: the manifest and every sheet path under `pixeldoll/<export id>/`, a fragment for the game manifest's
+  `assets` list (not `game/assets.json`). The local build copies those files next to the bundle. Phaser's hosted route
+  for a person's files, the Pro `upload` command, is not used.
 
 2026-11-26 native run: AE engine v3-82bf126 (kernel 3.0.0-2), side-on and top-down worlds, WebGL2, every outfit, move,
-direction and playlist entry of three synthetic archives and the demo export pixel-equal to `baked/`; overlap, clock,
-turning, rejection and recolor checks with negative controls. See [Phaser AE export](testing/phaser-ae-export-2026-11-26.md).
+direction and playlist entry of three synthetic archives and the demo export pixel-equal to `baked/`; overlap (including
+dolls level at their feet and a prop at the feet), clock, turning, rejection and recolor checks with negative controls.
+See [Phaser AE export](testing/phaser-ae-export-2026-11-26.md).
 
 ### 6.5 Aseprite — layered `.aseprite` as the zero-code alternative (B11)
 

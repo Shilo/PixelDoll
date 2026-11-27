@@ -1266,7 +1266,7 @@
 				"detail": "Spritesheets und Streifen pro Ebene mit Frame-Dauer, Drehpunkten, Ausrüstungs- und Palettendaten. Deine Engine braucht Code, der diese Regeln liest."
 			},
 			"phaserae": {
-				"detail": "Spritesheets pro Ebene und Laufzeitcode für Phaser-AE-Spiele, mit Ausrüstung, Farben und synchronisierter Wiedergabe. Trage die Spritesheets unter assets im Manifest deines Spiels ein; kein Upload und kein Pro-Tarif nötig."
+				"detail": "Spritesheets pro Ebene und Laufzeitcode für Phaser-AE-Spiele, mit Ausrüstung, Farben und synchronisierter Wiedergabe. Trage die Spritesheets in die assets-Liste im Manifest deines Spiels ein, dann kopiert der Build deines Spiels sie hinein."
 			}
 		},
 		"version": {

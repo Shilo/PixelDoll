@@ -53,9 +53,9 @@ Deliberate boundaries:
   `sync()` consumes the same `drawList()` used by internal composition, not a second visibility or z rule.
 - The Phaser AE export (`phaser-ae/paperdoll.js`) appends its adapter to the same canonical modules. AE has no animation
   manager with per-frame durations, so the adapter keeps one clock per doll in a scene step and samples it with
-  `sampleTimeline`. Its sprites are a pool spawned in draw order: the k-th sprite shows the k-th `drawList` (or
-  `exportedActionDraws`) entry, so AE's z-then-spawn order keeps a doll whole in side-on worlds, and in top-down worlds
-  `z` moves each layer's sort point to the doll's feet. Grid registration, palette grids and sprite placement stay
+  `sampleTimeline`. A doll is one roster object (`doll.actor`) made an aggregate: once a frame it emits each
+  `drawList` (or `exportedActionDraws`) layer as an instance around its own interpolated pivot, so the layers sort as
+  one object and cannot drift between fixed steps. Grid registration, palette grids and instance placement stay
   adapter responsibilities.
 - GDevelop's native JavaScript event embeds the canonical modules inside its controller factory, removing
   only ES module `export` keywords. Its adapter uses `sampleTimeline`, `drawList`, `paletteMap` and

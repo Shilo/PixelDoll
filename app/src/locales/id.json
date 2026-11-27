@@ -1231,7 +1231,7 @@
 				"detail": "Sprite sheet dan strip lapisan beserta data pengaturan waktu, titik pivot, perlengkapan, dan palet. Engine Anda memerlukan kode untuk membaca aturan ini."
 			},
 			"phaserae": {
-				"detail": "Sprite sheet per lapisan dan runtime untuk game Phaser AE, dengan perlengkapan, warna, dan pemutaran yang tersinkron. Cantumkan sheet tersebut di daftar assets pada manifes game Anda; tanpa perlu mengunggah file atau berlangganan paket Pro."
+				"detail": "Sprite sheet per lapisan dan runtime untuk game Phaser AE, dengan perlengkapan, warna, dan pemutaran yang tersinkron. Cantumkan sheet tersebut di daftar assets pada manifes game Anda, lalu proses build game akan menyalinnya ke dalam game."
 			}
 		},
 		"version": {
