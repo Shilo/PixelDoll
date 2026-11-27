@@ -2251,11 +2251,27 @@ for (const corruption of ['unsupported-format', 'sparse-array'] as const)
 					key,
 					corruption === 'sparse-array'
 						? { engine: 'godot', dressedCharacterSheets: true, playOnce: Array(1) }
-						: { engine: 'unsupported', dressedCharacterSheets: true, playOnce: [] }
+						: { engine: 'rpgmaker', dressedCharacterSheets: true, playOnce: [] }
 				);
 			},
 			{ key: EXPORT_SETTINGS_KEY, corruption }
 		);
+		const actions = page.locator('#project-menu').getByRole('button', {
+				name: 'More actions for Export settings test',
+				exact: true
+			}),
+			downloadZip = page.getByRole('menuitem', { name: 'Download ZIP', exact: true }),
+			// One variant covers the quick ZIP entry point; both share the same reader and error.
+			quick = corruption === 'unsupported-format';
+		if (quick) {
+			await page.locator('.project-btn').click();
+			await actions.click();
+			await downloadZip.click();
+			await expect(page.locator('.toast')).toContainText(
+				'Saved export settings could not be read. Open Export, then choose Reset export settings.'
+			);
+			await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click();
+		}
 		await page.getByRole('button', { name: 'Export', exact: true }).click();
 		const dialog = page.getByRole('dialog');
 		await expect(dialog.getByRole('alert')).toContainText('Saved export settings');
@@ -2299,6 +2315,12 @@ for (const corruption of ['unsupported-format', 'sparse-array'] as const)
 			})
 		).toEqual(before);
 		await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+		if (quick) {
+			await page.locator('.project-btn').click();
+			await actions.click();
+			const [download] = await Promise.all([page.waitForEvent('download'), downloadZip.click()]);
+			expect(download.suggestedFilename()).toMatch(/\.pixeldoll\.zip$/);
+		}
 		await page.evaluate(() => location.reload());
 		await enterStudio(page);
 		await page.getByRole('button', { name: 'Export', exact: true }).click();

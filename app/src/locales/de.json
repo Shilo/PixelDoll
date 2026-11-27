@@ -1243,6 +1243,7 @@
 		},
 		"settings": {
 			"loadInvalid": "Gespeicherte Exporteinstellungen konnten nicht gelesen werden.",
+			"resetRequired": "Gespeicherte Exporteinstellungen konnten nicht gelesen werden. Öffne „Exportieren“ und wähle „Exporteinstellungen zurücksetzen“.",
 			"loadFailed": "Die Exporteinstellungen konnten nicht geladen werden. Öffne den Export erneut.",
 			"saveFailed": "Die Exporteinstellungen konnten nicht gespeichert werden. Versuch es noch einmal.",
 			"resetHint": "Setzt nur die Exporteinstellungen auf die Standardwerte zurück. Deine Figuren und Outfits bleiben erhalten.",

@@ -1208,6 +1208,7 @@
 		},
 		"settings": {
 			"loadInvalid": "Pengaturan ekspor tersimpan tidak dapat dibaca.",
+			"resetRequired": "Pengaturan ekspor tersimpan tidak dapat dibaca. Buka Ekspor, lalu pilih “Atur ulang pengaturan ekspor”.",
 			"loadFailed": "Pengaturan ekspor tidak dapat dimuat. Coba buka kembali Ekspor.",
 			"saveFailed": "Pengaturan ekspor tidak dapat disimpan. Coba lagi.",
 			"resetHint": "Hanya pengaturan Ekspor yang dikembalikan ke bawaan. Karakter dan setelan Anda tetap tersimpan.",

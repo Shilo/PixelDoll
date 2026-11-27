@@ -1243,6 +1243,7 @@
 		},
 		"settings": {
 			"loadInvalid": "No se pudieron leer los ajustes de exportación guardados.",
+			"resetRequired": "No se pudieron leer los ajustes de exportación guardados. Abre Exportar y elige «Restablecer ajustes de exportación».",
 			"loadFailed": "No se pudieron cargar los ajustes de exportación. Prueba a abrir Exportar de nuevo.",
 			"saveFailed": "No se pudieron guardar los ajustes de exportación. Inténtalo de nuevo.",
 			"resetHint": "Restablece solo las preferencias de Exportar a sus valores predeterminados. Tus personajes y atuendos se conservan.",

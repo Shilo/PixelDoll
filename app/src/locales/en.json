@@ -1243,6 +1243,7 @@
 		},
 		"settings": {
 			"loadInvalid": "Saved export settings could not be read.",
+			"resetRequired": "Saved export settings could not be read. Open Export, then choose Reset export settings.",
 			"loadFailed": "Could not load export settings. Try reopening Export.",
 			"saveFailed": "Could not save export settings. Try again.",
 			"resetHint": "Reset only Export preferences to their defaults. Your characters and outfits are kept.",

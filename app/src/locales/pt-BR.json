@@ -1246,6 +1246,7 @@
 		},
 		"settings": {
 			"loadInvalid": "Não foi possível ler as configurações de exportação salvas.",
+			"resetRequired": "Não foi possível ler as configurações de exportação salvas. Abra Exportar e escolha “Restaurar configurações de exportação”.",
 			"loadFailed": "Não foi possível carregar as configurações de exportação. Tente reabrir o painel Exportar.",
 			"saveFailed": "Não foi possível salvar as configurações de exportação. Tente novamente.",
 			"resetHint": "Restaura apenas as preferências de exportação. Seus personagens e trajes são mantidos.",
