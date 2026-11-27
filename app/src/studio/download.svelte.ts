@@ -9,7 +9,8 @@ import { itemExportId, moveExportId } from '../lib/store/identity.ts';
 import { retainMoveMetadata } from '../lib/rig/moves.ts';
 import { moveLabel } from './model.ts';
 import { doc, store, readCharacterForExport, toast } from './state.svelte.ts';
-import { errorMessage, LocalizedError, message } from '../lib/message.ts';
+import { errorTranslation, message, type Message } from '../lib/message.ts';
+import type { DownloadAction } from '../lib/report/report.ts';
 import { playAudioCue } from './audio.svelte.ts';
 
 /** The saved record's rig data, so the ZIP imports back as an editable character (the demo has none). `build` names the app
@@ -59,8 +60,7 @@ export async function downloadFrames(itemId: string, anim: string) {
 		if (files.length === 1) saveFile(files[0].data, files[0].name, 'image/png');
 		else saveZip(await zip(files), `${stem}.zip`);
 	} catch (e) {
-		console.error('download frames', e);
-		toast(message('download.failedRetry', { label: item.name }), { tone: 'danger' });
+		downloadFailed('frames', item.name, e);
 	}
 }
 
@@ -106,19 +106,34 @@ async function zipOf({ project, look, record }: DownloadSource) {
 }
 
 const pending = new Set<string>();
+
+function downloadFailed(action: DownloadAction, label: string | Message, error: unknown) {
+	console.error('download', action, error);
+	toast(errorTranslation(error) ?? message('download.failedRetry', { label }), {
+		tone: 'danger',
+		error,
+		facts: { download: action }
+	});
+}
+
 /** A second click while the same ZIP is being prepared does nothing. */
 async function download(
-	key: string,
+	action: DownloadAction,
+	id: string,
 	label: string,
 	build: () => Promise<Awaited<ReturnType<typeof zipOf>> & { name: string }>
 ) {
+	const key = `${action}:${id}`;
 	if (pending.has(key)) return;
 	pending.add(key);
 	toast(message('download.preparing', { label }), { pending: true });
 	try {
 		const { zip, name, recovery, hasNotes, problem } = await build();
 		if (!zip) {
-			toast(problem ?? message('download.failed', { label }), { tone: 'danger' });
+			toast(problem ?? message('download.failed', { label }), {
+				tone: 'danger',
+				facts: { download: action }
+			});
 			return;
 		}
 		saveZip(zip, recovery ? `${name}-recovered-artwork.zip` : `${name}.pixeldoll.zip`);
@@ -131,8 +146,7 @@ async function download(
 			{ tone: recovery || hasNotes ? 'warning' : 'info' }
 		);
 	} catch (e) {
-		console.error('download', e);
-		toast(message('download.failedRetry', { label }), { tone: 'danger' });
+		downloadFailed(action, label, e);
 	} finally {
 		pending.delete(key);
 	}
@@ -140,7 +154,7 @@ async function download(
 
 export function downloadCharacterZip(projectId: string) {
 	const name = store.projects.find((p) => p.id === projectId)?.name ?? 'Character';
-	return download(`character:${projectId}`, name, async () => {
+	return download('character', projectId, name, async () => {
 		const snapshot = await source(projectId);
 		return {
 			...(await zipOf(snapshot)),
@@ -154,7 +168,7 @@ export function downloadItemZip(itemId: string) {
 	const projectId = doc.id,
 		it = store.project?.manifest.items.find((i) => i.id === itemId);
 	if (!it) return Promise.resolve();
-	return download(`item:${projectId}/${itemId}`, it.name, async () => {
+	return download('item', `${projectId}/${itemId}`, it.name, async () => {
 		const { project, look, record } = await source(projectId);
 		const { itemProject } = await lazy(() => import('../lib/export/build.ts'));
 		const selected = itemProject(project, itemId, look);
@@ -172,7 +186,7 @@ export function downloadOutfitZip(outfitId: string) {
 	if (!outfit) return Promise.resolve();
 	const project = { ...store.project!, manifest: structuredClone(store.project!.manifest) };
 	const record = store.exportRecord;
-	return download(`outfit:${projectId}/${outfitId}`, outfit.name, async () => {
+	return download('outfit', `${projectId}/${outfitId}`, outfit.name, async () => {
 		const { outfitProject } = await lazy(() => import('../lib/export/build.ts'));
 		return {
 			...(await zipOf({ ...outfitProject(project, outfitId), record })),
@@ -186,7 +200,7 @@ export function downloadMoveZip(moveId: string) {
 	const moves = store.project?.manifest.rig.animations ?? [];
 	const label = moveLabel(moveId, moves);
 	const move = moves.find((entry) => entry.id === moveId);
-	return download(`move:${projectId}/${moveId}`, label, async () => {
+	return download('move', `${projectId}/${moveId}`, label, async () => {
 		const { project, look, record } = await source(projectId);
 		const { moveProject } = await lazy(() => import('../lib/export/build.ts'));
 		return {
@@ -255,13 +269,7 @@ export async function downloadOriginalGenerations() {
 			});
 		else toast(message('librarySettings.originalsStarted'));
 	} catch (e) {
-		console.error('download original generations', e);
-		toast(
-			e instanceof LocalizedError
-				? errorMessage(e)
-				: message('download.failedRetry', { label: message('librarySettings.originalsName') }),
-			{ tone: 'danger', error: e }
-		);
+		downloadFailed('originals', message('librarySettings.originalsName'), e);
 	} finally {
 		pending.delete(key);
 	}
@@ -285,8 +293,7 @@ export async function downloadPaidResults(recordIds: readonly string[], label: s
 		saveZip(await zip(entries), `${fileSlug(label)}-paid-results.zip`);
 		toast(message('download.paidStarted'));
 	} catch (e) {
-		console.error('download paid results', e);
-		toast(message('download.failedRetry', { label }), { tone: 'danger' });
+		downloadFailed('paid', label, e);
 	} finally {
 		pending.delete(key);
 	}

@@ -163,6 +163,14 @@ test('englishMessage hides text variables and fills numbers and nested messages'
 });
 
 describe('buildReport', () => {
+	test('drops download labels supplied as free text or inherited properties', () => {
+		for (const download of ['My private character', 'constructor', '__proto__']) {
+			const report = buildReport({ facts: { download } as unknown as ProblemFacts }, context);
+			expect(report.details).not.toContain('Download:');
+			expect(report.details).not.toContain(download);
+		}
+	});
+
 	test('a PixelLab failure reports its status, endpoint and message key, but no text from the request', () => {
 		const error = new ApiError(
 			422,

@@ -2407,7 +2407,7 @@ test('invalid move names still allow artwork recovery and storage outages do not
 	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 });
 
-test('quick download recovers working images from an unopened character with a missing image', async ({
+test('quick download reports a missing module, then recovers working images after reload', async ({
 	page
 }, info) => {
 	await savedExport(
@@ -2426,11 +2426,31 @@ test('quick download recovers working images from an unopened character with a m
 	});
 	await page.reload();
 	await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click();
-	await page
-		.getByRole('button', { name: 'More actions for Export settings test', exact: true })
-		.click();
+	const actions = page.getByRole('button', {
+		name: 'More actions for Export settings test',
+		exact: true
+	});
+	const downloadZip = page.getByRole('menuitem', { name: 'Download ZIP', exact: true });
+	const buildModule = '**/src/lib/export/build.ts*';
+	await page.route(buildModule, (route) => route.abort());
+	await actions.click();
+	await downloadZip.click();
+	const notice = page.locator('.toast');
+	await expect(notice).toContainText('Part of PixelDoll could not load. Reload to try again.');
+	await notice.getByRole('button', { name: 'Report this problem', exact: true }).click();
+	const report = page.getByRole('dialog', { name: 'Report this problem', exact: true });
+	const href = await report.getByRole('link', { name: 'Open on GitHub' }).getAttribute('href');
+	const fields = new URL(href!).searchParams;
+	expect(fields.get('details')).toContain('Download: Character ZIP');
+	expect(fields.get('details')).toContain('Message key: common.loadFailed');
+	expect([...fields.values()].join('\n')).not.toContain('Export settings test');
+
+	await page.unroute(buildModule);
+	await page.reload();
+	await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click();
+	await actions.click();
 	const downloaded = page.waitForEvent('download');
-	await page.getByRole('menuitem', { name: 'Download ZIP', exact: true }).click();
+	await downloadZip.click();
 	const download = await downloaded;
 	expect(download.suggestedFilename()).toMatch(
 		/^export_settings_test_[a-f0-9]{12}-recovered-artwork\.zip$/
