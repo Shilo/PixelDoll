@@ -3,6 +3,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { atlasJson, atlasName, phaserFiles, PAPERDOLL_JS } from '../../src/lib/export/phaser.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 
 // Execute the actual generated module; no copied runtime logic in this harness.
 const runtime = () =>
@@ -106,7 +107,7 @@ const fixture = () =>
 		]
 	}) as unknown as Manifest;
 
-function sceneHarness() {
+function sceneHarness(sourcePixels = [100, 100, 100, 255]) {
 	const textures = new Map<string, any>(),
 		animations = new Map<string, any>();
 	const load = Object.assign(new EventEmitter(), {
@@ -121,7 +122,7 @@ function sceneHarness() {
 				if (this.fail && i === 1) this.emit('loaderror', { key: e.key, src: e.url });
 				else
 					textures.set(e.key, {
-						getSourceImage: () => ({ width: 1, height: 1, pixels: [100, 100, 100, 255] })
+						getSourceImage: () => ({ width: 1, height: 1, pixels: sourcePixels })
 					});
 			});
 			this.emit('complete');
@@ -213,11 +214,15 @@ function sceneHarness() {
 	return { scene, textures, animations };
 }
 
-function browserHarness(m: Manifest) {
+function browserHarness(m: Manifest, pixels = [100, 100, 100, 255]) {
+	let png: ReturnType<typeof encodePngBytes> | undefined;
 	vi.stubGlobal(
 		'fetch',
 		vi.fn(async (url: string) => ({
 			ok: true,
+			arrayBuffer: async () =>
+				(await (png ??= encodePngBytes({ w: 1, h: 1, data: new Uint8ClampedArray(pixels) })))
+					.buffer,
 			json: async () =>
 				url.endsWith('manifest.json') ? structuredClone(m) : atlasJson(m, ...atlasArgs(url, m))
 		}))
@@ -232,6 +237,7 @@ function browserHarness(m: Manifest) {
 				getContext: () => ctx
 			};
 			const ctx = {
+				createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
 				drawImage: (source: any) => {
 					canvas.pixels = new Uint8ClampedArray(source.pixels);
 				},
@@ -434,6 +440,21 @@ test('concurrent scenes share a folder load through the game-global TextureManag
 	).toHaveLength(1);
 });
 
+test('a scene that shuts down mid-load rejects and evicts the shared load, so the folder can load again', async () => {
+	const m = fixture(),
+		api = runtime(),
+		h = sceneHarness();
+	browserHarness(m);
+	const stopped = api.loadPaperdoll(h.scene, '/hero/');
+	h.scene.events.emit('shutdown');
+	await expect(stopped).rejects.toThrow('shut down before the load finished');
+	expect(h.scene.events.listenerCount('shutdown')).toBe(0);
+	// the stopped load was evicted: loading the folder again runs a fresh load
+	const loaded = await api.loadPaperdoll(h.scene, '/hero/');
+	expect(loaded.rig.baseItem).toBe('base');
+	expect(h.scene.load.queued).toHaveLength(4);
+});
+
 test('generated Phaser runtime recolors source pixels per owner, resolves linked presets and tucked layers, and restores defaults', async () => {
 	const m = fixture(),
 		api = runtime(),
@@ -464,6 +485,18 @@ test('generated Phaser runtime recolors source pixels per owner, resolves linked
 	expect(() => doll.equip('hair', 'hat')).toThrow('invalid equipment');
 	doll.destroy();
 	expect(doll.container.destroy).toHaveBeenCalledOnce();
+});
+
+test('Phaser recolors a translucent ramp pixel from the exact source PNG bytes', async () => {
+	const m = fixture(),
+		api = runtime(),
+		h = sceneHarness([52, 100, 151, 64]); // RGB after a Canvas 2D round trip at alpha 64
+	m.materials[0].ramp = ['#326496'];
+	browserHarness(m, [50, 100, 150, 64]);
+	const loaded = await api.loadPaperdoll(h.scene, '/hero/');
+	const doll = new api.Paperdoll(h.scene, 0, 0, loaded);
+	doll.play('walk', 'south');
+	expect([...h.textures.get(doll.body.key).canvas.pixels]).toEqual([0, 0, 255, 64]);
 });
 
 test('Phaser accepts outfit IDs and rejects unknown outfits without clearing equipment or colors', async () => {
@@ -498,8 +531,20 @@ test('generated loader reports HTTP failures and removes partial textures before
 	await expect(api.loadPaperdoll(h.scene, '/bad/')).rejects.toThrow('HTTP 404');
 	expect(h.textures.size).toBe(0);
 	browserHarness(m);
+	const fetchFile = fetch;
+	vi.stubGlobal('fetch', (url: string) =>
+		url.endsWith('sources/body.png') ? new Response('invalid PNG') : fetchFile(url)
+	);
+	await expect(api.loadPaperdoll(h.scene, '/hero/')).rejects.toThrow(
+		'https://game.test/hero/sources/body.png: png: not a PNG'
+	);
+	expect(h.scene.load.queued).toHaveLength(0);
+	expect(h.textures.size).toBe(0);
+	browserHarness(m);
 	h.scene.load.fail = true;
-	await expect(api.loadPaperdoll(h.scene, '/hero/')).rejects.toThrow('failed to load');
+	await expect(api.loadPaperdoll(h.scene, '/hero/')).rejects.toThrow(
+		'failed to load https://game.test/hero/layers/hair.png'
+	);
 	expect(h.textures.size).toBe(0);
 	expect(h.animations.size).toBe(0);
 	h.scene.load.fail = false;
@@ -569,15 +614,20 @@ test('Phaser plays a one-shot over its native walk clock, with optional precut s
 			{ cell: 1, ms: 40 }
 		]
 	};
+	walk.directions = ['south', 'east'];
 	m.rig.animations.push(slash);
 	m.materials = [];
 	for (const item of m.items)
 		for (const layer of item.layers) {
 			layer.actionSheets = { lower: { walk: 'low.png' }, upper: { slash: 'up.png' } };
 		}
-	h.animations.set(api.animKey(m, 'walk', 'south'), { frames: [{ frame: 'walk_south_1' }] });
+	for (const dir of ['south', 'east'])
+		h.animations.set(api.animKey(m, 'walk', dir), {
+			frames: [{ frame: `walk_${dir}_1` }, { frame: `walk_${dir}_0` }]
+		});
 	const doll = new api.Paperdoll(h.scene, 0, 0, m, 'two');
 	doll.play('walk', 'south');
+	doll.body.anims.currentFrame.index = 1;
 	expect(doll.canLayerAction('slash', 'south')).toBe(false);
 	expect(doll.playAction('slash', 'south')).toBe('full');
 	expect(doll.actionPlaying).toBe(true);
@@ -641,13 +691,17 @@ test('Phaser plays a one-shot over its native walk clock, with optional precut s
 	doll.setVariants({});
 	doll.equip('hair', null);
 	doll.setActionLayering(false);
-	doll.body.anims.currentFrame.textureFrame = 'walk_south_0';
+	doll.setDirection('east');
+	doll.body.anims.setCurrentFrame(h.scene.anims.get(api.animKey(m, 'walk', 'east')).frames[1]);
 	h.scene.events.emit('update', 60, 60);
-	expect(
+	const shownFrames = () =>
 		doll.actionNodes
 			.filter((node: { visible: boolean }) => node.visible)
-			.map((node: { frame: string }) => node.frame)
-	).toEqual(expect.arrayContaining(['walk_south_0', 'slash_south_1']));
+			.map((node: { frame: string }) => node.frame);
+	expect(shownFrames()).toEqual(['walk_south_1', 'slash_south_1']);
+	doll.setDirection('south');
+	expect(shownFrames()).toEqual(['walk_south_0', 'slash_south_1']);
+	expect(doll.action.elapsed).toBe(60);
 	expect(() => doll.playAction('unavailable', 'south')).toThrow('unavailable');
 	h.scene.events.emit('update', 99, 39);
 	expect(doll.action.layered).toBe(true);
@@ -655,9 +709,13 @@ test('Phaser plays a one-shot over its native walk clock, with optional precut s
 	expect(doll.actionPlaying).toBe(false);
 	doll.setActionLayering(true);
 	expect(doll.playAction('slash', 'south')).toBe('layered');
+	doll.setDirection('east');
+	doll.equip('hair', null);
+	expect(doll.action.layered).toBe(true);
 	doll.equip('head', 'hat');
 	expect(doll.action.layered).toBe(false);
 	doll.equip('head', null);
+	doll.setDirection('south');
 	expect(doll.action.layered).toBe(false);
 	expect(doll.actionPlaying).toBe(true);
 	doll.play('walk', 'south');

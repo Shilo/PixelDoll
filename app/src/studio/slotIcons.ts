@@ -1,54 +1,120 @@
-// Wardrobe slot icons, drawn as filled pixel silhouettes on Lucide's 24px grid. At 16px a 1.6px Lucide outline lands on
-// barely one device pixel and fine interior lines average into grey, so each slot is one bold outer shape with at most one
-// cut-out hint (a visor slit, a belt buckle, a sole line). Every icon fills 3-21 on the grid, shares currentColor and is
-// tested as a solid contact sheet in both themes: the silhouette, not the detail, has to name the slot. Custom categories
-// choose one of these instead of borrowing their behavior's drawing.
+// Wardrobe slot icons in Lucide's own style, so categories read like the rest of the app's icons: Lucide core wherever it
+// has the item, three Lucide Lab icons, and six drawings for gear Lucide lacks, made to its design guide (24 grid, 2 px
+// round stroke, simple geometric parts). Hair and Back use core Scissors and Backpack: drawn hair and capes read as an arch
+// or a skirt at 16 px. Each drawing keeps one outline that names the slot, so pairs that sit near each other (shirt and
+// coat, trousers and underwear, necklace and ring) stay apart at the smallest size.
 import type { SlotIcon } from '../lib/store/manifest.ts';
 
-/** One `d` per icon: disjoint parts and even-odd holes share a path, so overlapping parts are avoided. */
-export const SLOT_ICON_PATHS: Record<SlotIcon, string> = {
-	// Base: a standing figure, never a clothing shape.
-	body: 'M12 2.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM8 9h8v6H8zM5 9h2v6H5zM17 9h2v6h-2zM9 16h2.5v6H9zM12.5 16H15v6h-2.5z',
-	// A hat with a brim and band: headgear, unlike hair's open fringe.
-	head: 'M5.5 15a6.5 6.5 0 0 1 13 0v1h-13zM3 16h18v3H3zM7 12.5h10v1.5H7z',
-	// A cap with three hanging locks and uneven notches between them.
-	hair: 'M5 21v-7a7 7 0 0 1 14 0v7h-3v-6l-2 1v5h-2.5v-5l-2 1v4z',
-	// A pair of lenses with a bridge.
-	face_acc:
-		'M5 9h3a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2zM16 9h3a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2zM10 11h4v2h-4z',
-	// A short-sleeved tee with a neck notch.
-	torso_inner: 'M9 3h6l5 2.5-1.5 3.5-2-1V21H7.5V8L5.5 9 4 5.5zM10 3.2h4v1.5h-4z',
-	// A long coat with a V collar and sleeves: clearly longer and narrower than the tee.
-	torso_outer: 'M8 3h8l2 2v14h-2v2H8v-2H6V5zM10.5 3.2 12 6l1.5-2.8z',
-	// Briefs: a short waist with two leg openings.
-	underwear: 'M4 5h16v6l-4 6h-3v-5h-2v5H7l-3-6z',
-	// A belt with a buckle opening and prong.
-	waist: 'M3 9h18v6H3zM9 10h6v4H9zM11.5 10.2h1v3.6h-1z',
-	// Trousers: a long waist with two tapering legs.
-	legs: 'M6 3h12l1.5 18h-5.5l-1-8.5-1 8.5H4.5z',
-	// A side-view boot with its sole separated by a cut line.
-	feet: 'M7 3h7v9l5 3v6H7zM7.5 18h11v1.5h-11z',
-	// A mitten with a thumb and cuff: the gear worn on hands.
-	arms: 'M7 16v-6a5 5 0 0 1 10 0v6zM5.5 10a2.5 2.5 0 0 0 0 5H7v-5zM5.5 16h13v5h-13z',
-	// A pair of shoulder caps with a neck gap: shoulder armor, wider than it is tall.
-	shoulders: 'M3 19c0-5 2.5-9 6-9 2 0 3 1 3 3v6zM15 13c0-2 1-3 3-3 3.5 0 6 4 6 9h-9z',
-	// A necklace: a chain U with a pendant.
-	neck: 'M6 3v5a6 6 0 0 0 12 0V3h-2.5v5a3.5 3.5 0 0 1-7 0V3zM12 14l3 3-3 3-3-3z',
-	// A flared cape with a neck notch and a ragged hem.
-	back: 'M8 3h8l5 17-2 1.5-1.5-2-1.5 2-1.5-2-1.5 2-1.5-2-1.5 2-1.5-2L4 20zM10 3.2h4v2h-4z',
-	// A sword standing on its point, so blade, guard, grip and pommel all read straight on.
-	main_hand: 'M9.5 4.5 12 2l2.5 2.5V15h-5zM6.5 15h11v2.5h-11zM10.5 17.5h3V21h-3zM9 21h6v1.5H9z',
-	// A heater shield with a boss.
-	off_hand:
-		'M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5zM12 8a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z',
-	// A mustache with a goatee: two strokes around an implied mouth.
-	facial_hair:
-		'M12 12c-2-1-4-2-6.5-1.5C3 11 2 13 3 15c2 .5 4-.5 5.8-1.8 1.2-.8 2.2-.8 3.2.3 1-1.1 2-1.1 3.2-.3C17 14.5 19 15.5 21 15c1-2 0-4-2.5-4.5C16 10 14 11 12 12zM10 15.5h4L12 19z',
-	// A ring with a stone: jewelry with no chain.
-	accessory:
-		'M12 9a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM12 11.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7zM9 2.5h6l2 4-5 2.5-5-2.5z',
-	// Generic custom-category icons, so Wings does not have to look like Back.
-	tag: 'M4 4h9l7 7-9 9-7-7zM8 6.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z',
-	star: 'M12 2.5l2.9 6.2 6.6.8-4.9 4.7 1.3 6.6L12 17.6l-5.9 3.2 1.3-6.6L2.5 9.5l6.6-.8z',
-	gem: 'M7 3h10l4 6-9 12L3 9zM4.6 8.4h14.8v1.2H4.6z'
+/** The grid every drawing is authored on: Lucide's. GroupIcon draws it at whatever size a surface asks for. */
+export const SLOT_ICON_VIEW_BOX = 24;
+
+/**
+ * The surfaces an icon appears on, named instead of measured. Where text carries the row the icon matches the 16 px
+ * Lucide actions beside it; where the icon is the target it is 24, so Lucide's 2 px stroke lands on whole pixels at
+ * every device pixel ratio. List rows sit between at 18: the icon names the row, so it outranks the 16 px chevrons and
+ * checks there. The stroke scales with the size (no absoluteStrokeWidth), so small icons never look bolder than the rail.
+ */
+export const SLOT_ICON_SIZES = {
+	/** A sticky section title in Wardrobe or Colors. */
+	header: 16,
+	/** A vertical category tab in the Wardrobe or Colors rail. */
+	rail: 24,
+	/** An item, outfit or slot tile, and the empty tile while it generates. */
+	thumbnail: 24,
+	/** A control or list row: slot picker, slot settings, not-shown rows. */
+	inline: 18,
+	/** One unlabeled drawing in the custom-slot icon picker, the same size as the rail it chooses for. */
+	choice: 24
+} as const;
+
+export type SlotIconSurface = keyof typeof SLOT_ICON_SIZES;
+
+/** One SVG element of a drawing, in Lucide's icon-node shape. */
+export type SlotIconElement =
+	['path', { d: string }] | ['circle', { cx: number; cy: number; r: number }];
+
+/** Lucide core icons the set uses, by their Lucide name; GroupIcon maps each to its component. */
+export type LucideSlotIcon =
+	| 'person-standing'
+	| 'crown'
+	| 'scissors'
+	| 'glasses'
+	| 'shirt'
+	| 'hand'
+	| 'backpack'
+	| 'sword'
+	| 'shield'
+	| 'tag'
+	| 'star'
+	| 'gem';
+
+/** A Lucide core icon, or the elements of a drawing GroupIcon renders with Lucide's stroke attributes. */
+export type SlotIconArt = LucideSlotIcon | readonly SlotIconElement[];
+
+const path = (...ds: string[]): SlotIconElement[] => ds.map((d) => ['path', { d }]);
+
+export const SLOT_ICONS: Record<SlotIcon, SlotIconArt> = {
+	body: 'person-standing',
+	head: 'crown',
+	hair: 'scissors',
+	face_acc: 'glasses',
+	torso_inner: 'shirt',
+	// A long coat with a V collar and a center opening: clearly longer than the shirt and open at the front.
+	torso_outer: path('M9 3 5 6v15h14V6l-4-3', 'M9 3l3 6 3-6', 'M12 9v12'),
+	// Lucide Lab shorts-boxer (ISC, notice at the end of this file).
+	underwear: path(
+		'M10.7 15.8 9 20H4a2 2 0 0 1-2-2V5c0-.6.4-1 1-1h18c.6 0 1 .4 1 1v13a2 2 0 0 1-2 2h-5l-1.7-4.2',
+		'M2 8h20',
+		'M16 8v4a4 4 0 0 1-8 0V8'
+	),
+	// A strap with a square buckle and prong.
+	waist: path('M3 8h18v8H3z', 'M9 8h6v8H9z', 'M12 10v4'),
+	// A waistband over two long legs split by one crotch notch: far taller than the underwear.
+	legs: path('M6 4h12', 'M6 4v16h4l2-8 2 8h4V4'),
+	// A side-view boot: shaft, toe and a sole line.
+	feet: path('M6 4h8v9l4 3v4H6z', 'M6 16h12'),
+	arms: 'hand',
+	// Two sloping pads joined by a neck curve: shoulder armor with no torso below it.
+	shoulders: path(
+		'M2 18c0-3 2-7 6-8l2 4c-2 1-3 2-3 4z',
+		'M22 18c0-3-2-7-6-8l-2 4c2 1 3 2 3 4z',
+		'M8 10c1-2 2-3 4-3s3 1 4 3'
+	),
+	// A chain with a hanging pendant: jewelry worn at the neck, unlike the ring's closed band.
+	neck: path('M6 3v4a6 6 0 0 0 12 0V3', 'M12 14l3 3-3 3-3-3z'),
+	back: 'backpack',
+	main_hand: 'sword',
+	off_hand: 'shield',
+	// Lucide Lab mustache (ISC, notice at the end of this file).
+	facial_hair: path(
+		'M18.2 8.6a3.9 3.9 0 0 0-6.2-.2 3.75 3.75 0 0 0-6.2.2l-.6.8C4.5 10.4 3.3 11 2 11a5.55 5.55 0 0 0 10 3.2A5.45 5.45 0 0 0 22 11c-1.3 0-2.5-.6-3.2-1.6Z'
+	),
+	// Lucide Lab gem-ring (ISC, notice at the end of this file).
+	accessory: [
+		...path('M13.2 8.1 16 4.4 14.4 2H9.6L8 4.4l2.8 3.7'),
+		['circle', { cx: 12, cy: 15, r: 7 }]
+	],
+	tag: 'tag',
+	star: 'star',
+	gem: 'gem'
 };
+
+/* The license the three Lucide Lab drawings above are copied under
+   (https://github.com/lucide-icons/lucide-lab).
+
+   ISC License
+
+   Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.
+
+   Permission to use, copy, modify, and/or distribute this software for any
+   purpose with or without fee is hereby granted, provided that the above
+   copyright notice and this permission notice appear in all copies.
+
+   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/

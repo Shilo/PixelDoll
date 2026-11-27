@@ -11,7 +11,6 @@ export function workspaceUrl(copy: boolean): string {
 
 export const workspaceKeys = {
 	theme: 'pixeldoll.theme',
-	welcomed: 'pixeldoll.welcomed',
 	last: 'pixeldoll.studio.project'
 };
 export const copyPreferences = new Map<string, string>();
@@ -24,6 +23,5 @@ export const copyMissingArtwork = new Set<string>();
 export function setWorkspaceInfo(info: NonNullable<typeof workspaceInfo>, project: string) {
 	workspaceInfo = info;
 	for (const hash of info.missing) copyMissingArtwork.add(`sha256:${hash}`);
-	copyPreferences.set(workspaceKeys.welcomed, '1');
 	copyPreferences.set(workspaceKeys.last, project);
 }

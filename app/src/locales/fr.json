@@ -644,10 +644,12 @@
 		"billingNote": "Les estimations comparent des générations, pas des prix en dollars. PixelLab peut facturer en dollars américains ; le temps d’attente peut varier."
 	},
 	"newCharacterButton": {
+		"addCharacter": "Ajouter un personnage",
 		"newCharacter": "Nouveau personnage",
-		"createFromScratch": "Créer à partir de zéro…",
-		"importFromDevice": "Importer depuis l’appareil…",
-		"importFromPixelLab": "Importer depuis PixelLab…"
+		"createFromScratch": "Créer…",
+		"fromFile": "Depuis un fichier…",
+		"fromPixelLab": "Depuis PixelLab…",
+		"createNeedsKey": "Nécessite une clé PixelLab et utilise des générations payantes"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(s’ouvre dans un nouvel onglet)"
@@ -923,25 +925,7 @@
 		"itemQueued": "en attente pour {move}"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "Aucun compte n’est nécessaire pour essayer la démo. Créer des visuels utilise des générations de votre compte {pixelLab}.",
-		"steps": {
-			"create": "Créer",
-			"describeBody": "Décrivez le corps",
-			"addItems": "Ajouter des objets",
-			"examples": "Chapeaux, hauts, armes",
-			"dressUp": "Habiller",
-			"wearRecolorPlay": "Porter, recolorer, jouer",
-			"export": "Exporter",
-			"anyEngine": "N’importe quel moteur de jeu"
-		},
-		"switchToLightMode": "Passer en mode clair",
-		"switchToDarkMode": "Passer en mode sombre",
-		"labelDemoCharacterWalking": "Personnage de démo en train de marcher",
-		"dressUpYour2DGameCharactersWith": "Habillez vos personnages de jeu 2D au pixel près, comme des poupées à habiller",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "Générez avec PixelLab AI des calques d’équipement interchangeables, alignés image par image, et exportez-les vers n’importe quel moteur de jeu.",
-		"createYourCharacter": "Créer votre personnage",
-		"tryTheDemo": "Essayer la démo",
-		"importAnExistingCharacter": "Importer un personnage existant"
+		"createYourCharacter": "Créer votre personnage"
 	},
 	"experience": {
 		"movesOffMounted": "Choisissez les animations dans « Aperçu ». Le déplacement à dos de monture suit la pose du cavalier des réglages de la monture.",
@@ -1224,7 +1208,9 @@
 			"versionMenu": "Version de RPG Maker",
 			"version": "Version",
 			"versionLabel": "Version de RPG Maker : {version}",
-			"walkMove": "Animation de marche"
+			"walkMove": "Animation de marche",
+			"phaserVersionMenu": "Version de Phaser",
+			"phaserVersionLabel": "Version de Phaser : {version}"
 		},
 		"group": {
 			"engines": "Moteurs et frameworks",
@@ -1247,11 +1233,11 @@
 				"sub": "Projet modifiable",
 				"detail": "Projet GDevelop modifiable avec des calques Sprite, une lecture synchronisée et des commandes d’équipement. Testez le projet ou copiez les objets et l’événement dans votre jeu."
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "Sprites de marche",
 				"detail": "Une feuille de sprites de marche par tenue, à la taille d’origine de votre personnage. Copiez les fichiers PNG dans img/characters (MZ, MV) ou Graphics/Characters (VX Ace, VX). Les vues de face, de profil et de dos sont nécessaires."
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "Une feuille de sprites de marche à 4 images par tenue, à la taille d’origine du personnage, pour RPG Maker XP et Pokémon Essentials. Copiez les fichiers PNG dans Graphics/Characters. Les vues de face, de profil et de dos sont nécessaires."
 			},
 			"aseprite": {
@@ -1261,6 +1247,9 @@
 			"generic": {
 				"sub": "Intégration personnalisée",
 				"detail": "Feuilles de sprites et bandes d’animation par calque, avec durées, pivots, données d’équipement et palettes. Votre moteur a besoin de code pour interpréter ces données."
+			},
+			"phaserAe": {
+				"detail": "Feuilles de sprites par calque et runtime pour les jeux Phaser AE, avec l’équipement, les couleurs et la lecture synchronisée. Ajoutez les feuilles à la liste assets du manifeste de votre jeu, et la compilation du jeu les y copiera."
 			}
 		},
 		"version": {
@@ -1269,7 +1258,13 @@
 			"standardSub": "Disposition 3 × 4 · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP et Pokémon Essentials",
-			"xpSub": "Disposition 4 × 4 · Name.png"
+			"xpSub": "Disposition 4 × 4 · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Le moteur du Phaser Game Agent",
+			"phaser": "3 et 4",
+			"phaserTitle": "Phaser 3 et 4",
+			"phaserSub": "Bibliothèque open source, 3.80 ou ultérieure"
 		},
 		"playback": {
 			"all": "Toutes"
@@ -1342,7 +1337,7 @@
 			"noVisibleFrames": "Le corps n’a aucune image visible.",
 			"godot": "Godot n’a pas pu utiliser ces feuilles de sprites.",
 			"gdevelop": "GDevelop n’a pas pu utiliser ces feuilles de sprites.",
-			"rpgmaker": "RPG Maker nécessite les vues de face, de profil et de dos.",
+			"rpgMaker": "RPG Maker nécessite les vues de face, de profil et de dos.",
 			"aseprite": "L’animation ne correspond pas au format Aseprite.",
 			"unsafeNames": "Certains noms de fichiers ne peuvent pas être empaquetés en toute sécurité.",
 			"tooLarge": "Cet export est trop volumineux.",
@@ -1403,7 +1398,7 @@
 		"posesTitle": "Importer aussi comme états",
 		"posesHint": "Choisissez des poses du même corps sans équipement intégré au dessin. Importez une apparence différente comme personnage distinct. Sélectionnez les animations plus bas.",
 		"poseMismatch": "Les dimensions des images, les directions ou les réglages de caméra de cet état diffèrent. Importez-le comme personnage distinct.",
-		"titleDevice": "Importer depuis l’appareil",
+		"titleFile": "Importer depuis un fichier",
 		"titlePixelLab": "Importer depuis PixelLab",
 		"browseLibrary": "Parcourir les personnages PixelLab",
 		"standingState": "État à utiliser pour la pose debout",
@@ -1490,6 +1485,7 @@
 			"skippedStanding": "« {move} » vers {direction} a été laissée de côté : le personnage n’a pas de vue debout dans cette direction.",
 			"semiAlpha": "Les pixels partiellement transparents en bordure ont été convertis en pixels opaques ou transparents, comme en pixel art.",
 			"upscaledBase": "L’illustration debout semble agrandie {scale} fois. Elle est conservée telle quelle : les objets qui en dérivent utilisent plus de pixels, mélangent des tailles de pixel et se recolorent moins proprement. Importez l’original en 1x si possible.",
+			"compressedBase": "L'illustration debout semble compressée ou redimensionnée : beaucoup de ses couleurs n'apparaissent qu'une fois. Elle est conservée telle quelle : les objets qui en dérivent sont plus difficiles à détourer, recolorer et aligner. Importez l'original si possible.",
 			"detailsDropped": "Certaines informations enregistrées du personnage étaient endommagées et ont été ignorées. Configurez de nouveau son rig de pose si nécessaire."
 		},
 		"error": {
@@ -3463,9 +3459,7 @@
 			"other": "{n} appels sans prix"
 		}
 	},
-	"shortcut": {
-		"control": "Ctrl"
-	},
+	"shortcut": { "control": "Ctrl" },
 	"report": {
 		"action": "Signaler",
 		"actionLabel": "Signaler ce problème",
@@ -3726,5 +3720,28 @@
 		"adopt": "Garder à jour",
 		"leave": "Laisser tel quel",
 		"section": "Projet de jeu"
+	},
+	"tips": {
+		"customizeTitle": "Habillez la démo",
+		"customizeBody": "Essayez de l’équipement ou exportez le **personnage de démo** pour votre jeu. Aucune clé PixelLab requise.",
+		"gearTitle": "Essayez de l’équipement",
+		"gearBody": "Choisissez un objet dans la **Garde-robe** pour l’équiper ou le retirer.",
+		"exportTitle": "Emmenez-le dans votre jeu",
+		"exportBody": "**Exporter** fournit le personnage, l’équipement et les animations, plus du code prêt à l’emploi facultatif pour changer d’équipement dans votre jeu.",
+		"exportInMoreBody": "**Exporter** se trouve dans **{more} plus d’options** : le personnage, l’équipement et les animations, plus du code facultatif pour changer d’équipement dans votre jeu.",
+		"close": "Fermer le conseil",
+		"showAgain": "Réafficher les conseils",
+		"pixellabTitle": "Qu’est-ce que PixelLab ?",
+		"pixellabBody": "Un service de pixel art par IA qui dessine les personnages et l’équipement que vous créez ici, avec les générations de votre compte PixelLab.",
+		"newCharacterTitle": "Créez le vôtre",
+		"newCharacterBody": "Créez un **personnage** à partir d’une description ou d’une image de référence, ou importez-en un que vous avez déjà.",
+		"addItemTitle": "Ajoutez de l’équipement",
+		"addItemBody": "Utilisez **+** sur un emplacement pour décrire un objet ou ajouter une image de référence. PixelLab l’adapte à votre personnage.",
+		"generateItemsTitle": "Adaptez l’équipement à cette animation",
+		"generateItemsBody": "Ouvrez **{menu} plus d’options** de cette animation et choisissez **Générer des objets** pour dessiner votre équipement dans cette animation.",
+		"addMoveTitle": "Ajoutez une animation",
+		"addMoveBody": "Animez votre personnage, par exemple avec Idle, Walk ou Attack.",
+		"addStateTitle": "Ajoutez un état",
+		"addStateBody": "Créez une **nouvelle pose fixe** d’où partiront des animations, comme l’élan d’une attaque, un pas en pleine marche ou une position assise."
 	}
 }

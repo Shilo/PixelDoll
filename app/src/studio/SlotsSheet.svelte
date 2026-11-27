@@ -378,7 +378,7 @@
 							title={name}
 							onclick={() => (form.icon = icon)}
 						>
-							<GroupIcon {icon} size={20} />
+							<GroupIcon {icon} surface="choice" />
 						</button>
 					{/each}
 				</div>
@@ -483,7 +483,7 @@
 							aria-label={t('slotsSheet.showLabel', { label: labelOf(c.key) })}
 							onclick={() => show(c.key)}
 						>
-							<GroupIcon group={c.key} size={18} /><span class="row-name"
+							<GroupIcon group={c.key} surface="inline" /><span class="row-name"
 								>{labelOf(c.key)}{#if sub}<small class="row-reason faint">{sub}</small>{/if}</span
 							><Eye size={18} aria-hidden="true" />
 						</button>

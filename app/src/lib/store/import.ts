@@ -2,6 +2,7 @@
 import { decodePng, makeImg, pngSize, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { detectUpscale } from '../image/upscale.ts';
+import { ALPHA_THRESHOLD, detectCompressedPalette } from '../image/resampling.ts';
 import { cellImg, layerFrame } from '../compose/compose.ts';
 import { validate } from '../export/generic.ts';
 import {
@@ -919,7 +920,9 @@ async function pixelLab(
 				return work;
 			};
 		// An integer upscale shows in the standing rotations, which are the base cells every direction shares; animation and
-		// pose cells would only repeat the same warning, so the detector runs on the standing cells only.
+		// pose cells would only repeat the same warning, so the detector runs on the standing cells only. Compression is
+		// judged over every direction: a clean upscale repeats its palette and never trips it, while a damaged direction
+		// still does.
 		const standingCells = await Promise.all(rotations.map((r) => decode(r.path)));
 		const upscale = standingCells.reduce((max, im) => Math.max(max, detectUpscale(im)), 1);
 		if (upscale >= 2) {
@@ -928,10 +931,19 @@ async function pixelLab(
 			);
 			warningKeys.push(message('import.warning.upscaledBase', { scale: upscale }));
 		}
+		// The compression check judges each standing cell on its own palette: pooling would let one clean direction hide
+		// a damaged one. Editable project imports are not checked here; they carry PixelDoll's hashed cells, and this
+		// warning targets externally produced PixelLab art.
+		if (standingCells.some(detectCompressedPalette)) {
+			warnings.push(
+				'The standing artwork looks compressed or resampled: many of its colors appear only once. It is kept as it is: items made from it are harder to cut out, recolor and line up. Import the original art if you can.'
+			);
+			warningKeys.push(message('import.warning.compressedBase'));
+		}
 		// PixelLab draws standing feet about 1 px above its canvas edge and a walk steps lower, so the frame adds room for moves
 		// (lib/rig/reframe.ts roomFrame), centered as PixelLab centers its own larger animation canvases.
 		const room = standingRoom(
-				standingCells.map((im) => normalize(im, char, char, 128, char).img),
+				standingCells.map((im) => normalize(im, char, char, ALPHA_THRESHOLD, char).img),
 				char
 			),
 			roomy = room ? roomFrame(char, room) : char,
@@ -952,7 +964,7 @@ async function pixelLab(
 			const cached = importedPaths.get(path);
 			if (cached) return cached;
 			const im = await decode(path),
-				n = normalize(im, frame, frame, 128, centered ? frame : char);
+				n = normalize(im, frame, frame, ALPHA_THRESHOLD, centered ? frame : char);
 			decoded.delete(path); // importedPaths keeps the result; the source need not stay in memory
 			if (n.cutPx)
 				throw new LocalizedError(

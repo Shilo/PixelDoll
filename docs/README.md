@@ -56,6 +56,7 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 
 ## Current review handoffs and research
 
+- [Engine priority (2026-11-26)](research/2026-11-26-engine-priority.md) ranks Phaser (with Phaser AE as the default Phaser export), then Godot 4, then Unity 6 for PixelDoll's 2D, pixel-art and AI-built-game niche, from jam, itch.io, Steam and npm data.
 - [Automatic project-folder publishing](research/2026-11-26-project-folder-sync/README.md) tested a real Edge folder grant end to end with Godot: automatic one-way publishing after saves, restart with "Allow on every visit", crash and lock recovery, conflict pause and stable engine sidecars. Recommends a Chromium project folder with automatic updates, ZIP everywhere, one-way only and no native edition yet, now implemented as an optional Project folder in Settings > Export with its design goals.
 - [AutoSprite layer-design study](research/2026-11-25-autosprite-layer-design/README.md) reads the current docs, client bundle, free CC0 export and first-party Unity/Godot importers: AutoSprite has a design-time gear picker and bakes one sheet per animation, not equipment layers; measured soft alpha, per-sheet pivot/scale/loop drift, and a PixelDoll fixture projection. No pipeline change.
 - [Attack while moving: layering, split bodies, and what to build](research/2026-11-24-animation-blending/README.md) rejects automatic body splitting but accepts reviewed same-facing action layering from existing art as a free pilot, with authored relative-angle or strafe art for independent aim and whole-body clips for pelvis-driven attacks. Includes [industry research](research/2026-11-24-animation-blending/research-industry.md), an [architecture map](research/2026-11-24-animation-blending/architecture-map.md), a [rendered composite probe](research/2026-11-24-animation-blending/composite-probe.md) and an [independent challenge with its own experiments](research/2026-11-24-animation-blending/review-gpt62/README.md). Research only; no behavior change.
@@ -65,6 +66,10 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 - [Animation model default audit](research/2026-11-19-animation-model-audit.md) records a data-only 216-frame archival screen and the matched live protocol for Skeleton V3, PixMiniMax, and Text V3.
 - [PixelLab Character Creator states and animations](research/2026-11-18-character-creator-states.md) describes the website workflow, public endpoint lifecycle, and how PixelDoll currently imports and uses standing references.
 - [PixelDoll state authoring study](research/2026-11-18-pixeldoll-states/README.md) proposes reusable poses, shared playback, state-derived move generation and independent removal. It includes an interactive layout comparison and runtime probe.
+
+- [First-run onboarding: tips](design/onboarding.md): why PixelDoll onboards with a few self-ending tips pointed at real
+  controls instead of a welcome screen, slideshow or tour; the reusable tips module, per-tip saved state, placement,
+  accessibility, and best practices for future onboarding.
 
 - [Modular visual-slot workshop](design/2026-11-16-slot-system/README.md): council-challenged slot inventory, identity, hiding, customization and export proposal with an isolated interactive comparison. Awaiting prototype review; no production behavior change.
 
@@ -98,6 +103,7 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 
 - [External mounts: research and prototypes](research/2026-11-16-mounts/README.md): source comparisons, runtime ownership limits and the interactive schematic.
 - [External mounts: live trial results](research/2026-11-16-mounts/live-results.md): isolated Studio implementation, real-art baseline, paid trial and qualification gaps.
+- [Mount seating and occlusion](architecture/mount-seating.md): seat coordinates, rider leg coverage, mount draw order, and prepared-art requirements.
 - [Riding State](research/2026-11-21-riding-state/README.md): Riding template, Mount settings, riding order, terminology and the failed prompt probes.
 
 - [Paper-doll generation cost risks](research/2026-11-16-generation-costs/README.md): Tier 3 examples, direction and retry tradeoffs, a smaller MVP, and a standalone summary image.
@@ -205,6 +211,7 @@ Screenshots for all reports: [`testing/img/` at 1f95029](https://github.com/Shil
 | [Integration and crash recovery](testing/integration-and-crash-2026-10-28.md)             | Coordinated main integration, abrupt browser termination, durable Export choices and submission recovery.                                                                                                  |
 | [Share review and acceptance](testing/share-review-2026-11-03.md)                         | Shared draft/accepted rendering, concurrent acceptance publication, real-browser persistence boundaries and local stress limits.                                                                           |
 | [Phaser playback](testing/phaser-playback-2026-10-28.md)                                  | Native runtime verification of exported frame timing, looping, play once and layer synchronization.                                                                                                        |
+| [Phaser AE export (2026-11-26)](testing/phaser-ae-export-2026-11-26.md)                   | The Phaser AE runtime in the real engine (kernel 3.0.0-2): side-on and top-down pixels, overlap, clock and API checks with negative controls.                                                              |
 | [Engine shared copies (2026-11-09)](testing/engine-shared-copy-2026-11-09.md)             | Two shared helmet copies, independent palettes, a later Cast move and sparse coverage executed in Godot 4.7.1, Phaser 3.80/3.90/4.1 and Aseprite (0 px); Godot Aseprite Wizard import settings and limits. |
 | [Live four-direction idle + walk (2026-11-09)](testing/live-four-direction-2026-11-09.md) | Fresh paid rerun with independent N/E/S/W: 46 gens, no unknown outcomes or failed gates, two retained warnings, byte-identical keyless ZIP round trip, one cost-display bug.                               |
 | [Unity playback](testing/unity-playback-2026-10-28.md)                                    | Installed Editor activation prerequisite, offline C# compilation and remaining native checks.                                                                                                              |

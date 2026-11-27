@@ -142,6 +142,7 @@ var _action_duration := 0.0
 var _action_layered := false
 var _layer_actions := false
 var _action_dir := ""
+var _action_lower_index := 0
 var _action_nodes: Array[Sprite2D] = []
 @onready var body: AnimatedSprite2D = $body_fg
 
@@ -219,6 +220,10 @@ func can_layer_action(a: String, d: String) -> bool:
 	var move := _find(manifest["rig"]["animations"], a)
 	if move.is_empty() or dir != d or (move.has("directions") and not move["directions"].has(d)):
 		return false
+	return _action_outfit_supported(a, d)
+
+
+func _action_outfit_supported(a: String, d: String) -> bool:
 	var pair := _action_pair(a, d)
 	if pair.is_empty():
 		return false
@@ -236,6 +241,7 @@ func play_action(a: String, d: String) -> String:
 	_action_layered = _layer_actions and can_layer_action(a, d)
 	_action = move
 	_action_dir = d
+	_action_lower_index = body.frame
 	_action_elapsed = 0.0
 	_action_duration = 0.0
 	for frame in move["frames"]:
@@ -265,10 +271,8 @@ func _action_pair(a: String, d: String) -> Dictionary:
 
 
 func _pair_offset(a: String, d: String, action_cell: int) -> Dictionary:
-	if anim.is_empty() or dir != d:
-		return {}
 	var frames: Array = _find(manifest["rig"]["animations"], anim)["frames"]
-	var cell := int(frames[mini(body.frame, frames.size() - 1)]["cell"])
+	var cell := int(frames[mini(_action_lower_index, frames.size() - 1)]["cell"])
 	var layers: Dictionary = manifest.get("actionLayers", {})
 	var pair := _action_pair(a, d)
 	if not pair.is_empty():
@@ -300,6 +304,8 @@ func _render_action() -> void:
 		elapsed -= float(frames[index]["ms"])
 		index += 1
 	var a: String = _action["id"]
+	if _action_layered and dir == _action_dir:
+		_action_lower_index = body.frame
 	var offset := _pair_offset(a, _action_dir, int(frames[index]["cell"])) if _action_layered else {}
 	var omitted: Array = []
 	for row in manifest.get("actionLayers", {}).get("omissions", []):
@@ -310,7 +316,7 @@ func _render_action() -> void:
 	if offset.is_empty():
 		_action_stack(draws, a, _action_dir, index, "", Vector2.ZERO, omitted)
 	else:
-		_action_stack(draws, anim, dir, body.frame, "lower", Vector2.ZERO, omitted)
+		_action_stack(draws, anim, _action_dir, _action_lower_index, "lower", Vector2.ZERO, omitted)
 		_action_stack(draws, a, _action_dir, index, "upper", Vector2(offset["x"], offset["y"]), omitted)
 	draws.sort_custom(func(x, y): return x["z"] < y["z"] if x["z"] != y["z"] else x["order"] < y["order"])
 	var start := maxi(-4096, mini(0, 4097 - draws.size()))
@@ -449,7 +455,7 @@ func _refresh() -> void:
 				hidden[h] = true
 	_hidden = hidden
 	if _action_layered and is_action_playing():
-		_action_layered = can_layer_action(_action["id"], _action_dir)
+		_action_layered = _action_outfit_supported(_action["id"], _action_dir)
 	for node in _layers():
 		var layer := _layer_of(node)
 		node.visible = not layer.is_empty() and not hidden.has(node.get_meta("slot"))
@@ -637,7 +643,7 @@ export function godotFiles(m: Manifest): OutFile[] {
 		name: 'godot/README.txt',
 		data: `Copy the whole export folder into your Godot 4 project, then instance godot/Paperdoll.tscn.
 API: play_anim(anim, dir, restart = false), set_direction(dir), equip(slot, item_id) ("" = empty slot), set_preset(preset_id), set_variant(material_id, variant_name).
-Call set_action_layering(true) to enable moving attacks when the ZIP contains precut fragments. can_layer_action(move, direction) checks the whole action set and equipped gear. Invalid play_action calls warn and return an empty string without changing playback. play_action(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Call is_action_playing() to check completion. Calling play_anim cancels the action.
+Call set_action_layering(true) to enable moving attacks when the ZIP contains precut fragments. can_layer_action(move, direction) checks the whole action set and equipped gear. Invalid play_action calls warn and return an empty string without changing playback. play_action(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Call is_action_playing() to check completion. Calling play_anim cancels the action. An unsupported outfit switches a layered action to full for the rest of that action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
 play_anim preserves active progress, starts changed moves/directions at the beginning and replays completed once-only clips. Pass true to restart explicitly.
 set_direction turns the active move (e.g. an aimed attack) and keeps its frame, progress and completion without replaying it; the current direction is a no-op.
 These methods return true on success; invalid move/direction, equipment, outfit or material IDs, or set_direction without an active move, return false and emit an engine warning before changing state.

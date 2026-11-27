@@ -622,10 +622,12 @@
 		"billingNote": "예상치는 생성 횟수를 비교한 것이며 달러 가격이 아니에요. PixelLab에서 달러로 요금이 청구될 수 있고 대기 시간은 달라질 수 있어요."
 	},
 	"newCharacterButton": {
+		"addCharacter": "캐릭터 추가",
 		"newCharacter": "새 캐릭터",
-		"createFromScratch": "처음부터 만들기…",
-		"importFromDevice": "기기에서 가져오기…",
-		"importFromPixelLab": "PixelLab에서 가져오기…"
+		"createFromScratch": "만들기…",
+		"fromFile": "파일에서…",
+		"fromPixelLab": "PixelLab에서…",
+		"createNeedsKey": "PixelLab 키가 필요하고 유료 생성을 사용해요"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(새 탭에서 열림)"
@@ -897,25 +899,7 @@
 		"itemQueued": "{move}용으로 대기 중"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "데모는 계정이 필요 없어요. 캐릭터를 만들 때는 {pixelLab} 계정의 생성 횟수를 사용해요.",
-		"steps": {
-			"create": "만들기",
-			"describeBody": "몸체 설명",
-			"addItems": "아이템 추가",
-			"examples": "모자, 상의, 무기",
-			"dressUp": "꾸미기",
-			"wearRecolorPlay": "착용, 색상 변경, 플레이",
-			"export": "내보내기",
-			"anyEngine": "모든 게임 엔진"
-		},
-		"switchToLightMode": "라이트 모드로 전환",
-		"switchToDarkMode": "다크 모드로 전환",
-		"labelDemoCharacterWalking": "걷는 데모 캐릭터",
-		"dressUpYour2DGameCharactersWith": "픽셀 단위로 정확한 종이 인형으로 2D 게임 캐릭터를 꾸며 보세요",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "PixelLab AI로 교체 가능한 프레임 정렬 장비 레이어를 생성하고 모든 게임 엔진으로 내보내세요.",
-		"createYourCharacter": "캐릭터 만들기",
-		"tryTheDemo": "데모 사용해 보기",
-		"importAnExistingCharacter": "기존 캐릭터 가져오기"
+		"createYourCharacter": "캐릭터 만들기"
 	},
 	"experience": {
 		"movesOffMounted": "동작은 미리보기에서 선택해요. 탑승 이동은 탈것 설정의 탑승 포즈를 따라요.",
@@ -1189,7 +1173,9 @@
 			"versionMenu": "RPG Maker 버전",
 			"version": "버전",
 			"versionLabel": "RPG Maker 버전: {version}",
-			"walkMove": "걷기 동작"
+			"walkMove": "걷기 동작",
+			"phaserVersionMenu": "Phaser 버전",
+			"phaserVersionLabel": "Phaser 버전: {version}"
 		},
 		"group": {
 			"engines": "엔진 및 프레임워크",
@@ -1212,11 +1198,11 @@
 				"sub": "편집 가능한 프로젝트",
 				"detail": "Sprite 레이어, 동기화 재생, 장비 컨트롤이 있는 편집 가능한 GDevelop 프로젝트예요. 미리 보거나 오브젝트와 이벤트를 복사해 게임에 넣으세요."
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "걷기 시트",
 				"detail": "캐릭터 자체 크기로 코디마다 걷기 시트를 만들어요. PNG 파일을 img/characters(MZ, MV) 또는 Graphics/Characters(VX Ace, VX)에 복사하세요. 앞, 옆, 뒤 뷰가 필요해요."
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "캐릭터 자체 크기로 코디마다 4프레임 걷기 시트를 만들어요. RPG Maker XP와 Pokémon Essentials용이에요. PNG 파일을 Graphics/Characters에 복사하세요. 앞, 옆, 뒤 뷰가 필요해요."
 			},
 			"aseprite": {
@@ -1226,6 +1212,9 @@
 			"generic": {
 				"sub": "직접 연동",
 				"detail": "타이밍, 피벗, 장비, 팔레트 데이터가 담긴 레이어 시트와 스트립이에요. 이 규칙을 읽으려면 엔진에 코드가 필요해요."
+			},
+			"phaserAe": {
+				"detail": "장비, 색상, 동기화 재생을 지원하는 Phaser AE 게임용 레이어별 스프라이트 시트와 런타임이에요. 게임 매니페스트의 assets 목록에 시트를 추가하면 게임을 빌드할 때 시트가 게임에 복사돼요."
 			}
 		},
 		"version": {
@@ -1234,7 +1223,13 @@
 			"standardSub": "3 × 4 레이아웃 · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP 및 Pokémon Essentials",
-			"xpSub": "4 × 4 레이아웃 · Name.png"
+			"xpSub": "4 × 4 레이아웃 · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Phaser Game Agent의 엔진",
+			"phaser": "3 & 4",
+			"phaserTitle": "Phaser 3 및 4",
+			"phaserSub": "오픈 소스 라이브러리, 3.80 이상"
 		},
 		"playback": {
 			"all": "전체"
@@ -1300,7 +1295,7 @@
 			"noVisibleFrames": "몸체에 표시되는 프레임이 없어요.",
 			"godot": "Godot에서 이 스프라이트 시트를 사용할 수 없어요.",
 			"gdevelop": "GDevelop에서 이 스프라이트 시트를 사용할 수 없어요.",
-			"rpgmaker": "RPG Maker에는 앞, 옆, 뒤 뷰가 필요해요.",
+			"rpgMaker": "RPG Maker에는 앞, 옆, 뒤 뷰가 필요해요.",
 			"aseprite": "애니메이션이 Aseprite 형식에 맞지 않아요.",
 			"unsafeNames": "일부 파일 이름을 안전하게 패키징할 수 없어요.",
 			"tooLarge": "이 내보내기는 너무 커요.",
@@ -1357,7 +1352,7 @@
 		"posesTitle": "상태로도 가져오기",
 		"posesHint": "장비가 함께 그려져 있지 않은 같은 몸체의 자세를 선택하세요. 외형이 다르면 별도의 캐릭터로 가져오세요. 동작은 아래에서 선택할 수 있어요.",
 		"poseMismatch": "이 상태는 이미지 크기, 방향 또는 카메라 설정이 달라요. 별도의 캐릭터로 가져오세요.",
-		"titleDevice": "기기에서 가져오기",
+		"titleFile": "파일에서 가져오기",
 		"titlePixelLab": "PixelLab에서 가져오기",
 		"browseLibrary": "PixelLab 캐릭터 둘러보기",
 		"standingState": "서 있는 자세 상태",
@@ -1441,6 +1436,7 @@
 			"skippedStanding": "“{move}”의 {direction} 방향은 제외됐어요. 캐릭터에 그 방향의 서 있는 뷰가 없어요.",
 			"semiAlpha": "부분적으로 투명한 가장자리를 픽셀 아트 투명도로 변환했어요.",
 			"upscaledBase": "서 있는 그림이 {scale}배 확대된 것 같습니다. 그대로 유지됩니다. 여기서 만든 아이템은 픽셀이 더 많이 들고 픽셀 크기가 섞이며 색상 교체도 덜 깔끔합니다. 가능하면 원본 1x 이미지를 가져오세요.",
+			"compressedBase": "서 있는 그림이 압축되거나 다시 조정된 것 같습니다. 많은 색이 한 번만 쓰였습니다. 그대로 가져오지만, 여기서 만든 아이템은 잘라내기, 색 변경, 정렬이 더 어렵습니다. 가능하면 원본을 가져오세요.",
 			"detailsDropped": "저장된 캐릭터 정보 일부가 손상되어 제외했어요. 필요하면 자세 리그를 다시 설정하세요."
 		},
 		"error": {
@@ -3363,9 +3359,7 @@
 			"other": "요금 정보 없는 호출 {n}건"
 		}
 	},
-	"shortcut": {
-		"control": "Ctrl"
-	},
+	"shortcut": { "control": "Ctrl" },
 	"report": {
 		"action": "신고",
 		"actionLabel": "이 문제 신고",
@@ -3622,5 +3616,28 @@
 		"adopt": "계속 업데이트",
 		"leave": "그대로 두기",
 		"section": "게임 프로젝트"
+	},
+	"tips": {
+		"customizeTitle": "데모 꾸미기",
+		"customizeBody": "장비를 입혀 보거나 **데모 캐릭터**를 게임용으로 내보내 보세요. PixelLab 키가 필요 없어요.",
+		"gearTitle": "장비 입어 보기",
+		"gearBody": "**옷장**에서 아이템을 골라 착용하거나 벗어 보세요.",
+		"exportTitle": "게임으로 가져가기",
+		"exportBody": "**내보내기**로 캐릭터, 장비, 동작과 함께 게임에서 장비를 바꿔 주는 선택형 기성 코드도 받을 수 있어요.",
+		"exportInMoreBody": "**내보내기**는 **{more} 더 많은 옵션**에 있어요. 캐릭터, 장비, 동작과 게임에서 장비를 바꿔 주는 선택형 코드를 받을 수 있어요.",
+		"close": "팁 닫기",
+		"showAgain": "팁 다시 보기",
+		"pixellabTitle": "PixelLab이란?",
+		"pixellabBody": "여기서 만드는 캐릭터와 장비를 그려 주는 AI 픽셀 아트 서비스예요. PixelLab 계정의 생성을 사용해요.",
+		"newCharacterTitle": "나만의 캐릭터 만들기",
+		"newCharacterBody": "설명이나 참고 이미지로 **캐릭터**를 만들거나, 가지고 있는 캐릭터를 가져오세요.",
+		"addItemTitle": "장비 추가",
+		"addItemBody": "슬롯의 **+**로 아이템을 설명하거나 참고 이미지를 추가하세요. PixelLab이 캐릭터에 맞춰 줘요.",
+		"generateItemsTitle": "이 동작에 장비 맞추기",
+		"generateItemsBody": "이 동작의 **{menu} 더 많은 옵션**을 열고 **아이템 생성**을 선택하면 이 동작에 맞는 장비를 그려 줘요.",
+		"addMoveTitle": "동작 추가",
+		"addMoveBody": "Idle, Walk, Attack 같은 동작으로 캐릭터를 움직여 보세요.",
+		"addStateTitle": "상태 추가",
+		"addStateBody": "공격 준비 자세, 걷는 도중, 앉은 자세처럼 동작의 시작점이 될 **새 정지 포즈**를 만들어요."
 	}
 }

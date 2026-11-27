@@ -28,7 +28,44 @@ import {
 	slotLabelMessage,
 	slotUse
 } from '../../src/studio/slots.ts';
-import { SLOT_ICON_PATHS } from '../../src/studio/slotIcons.ts';
+import { SLOT_ICONS, SLOT_ICON_SIZES, SLOT_ICON_VIEW_BOX } from '../../src/studio/slotIcons.ts';
+
+// The drawing contract: one icon per SlotIcon key, either a Lucide core icon or stroke elements on Lucide's 24 grid that
+// GroupIcon draws with Lucide's attributes, so every drawing stays inside the grid it shares with the core icons.
+test('the icon set keeps its keys and Lucide drawing contract', () => {
+	const keys = Object.keys(SLOT_ICONS).sort();
+	// ICON_CHOICES lists the pickable icons (Base is not a category); the drawing set adds Base.
+	expect(keys).toEqual([...ICON_CHOICES, 'body'].sort());
+	expect(SLOT_ICON_VIEW_BOX).toBe(24);
+	for (const [key, art] of Object.entries(SLOT_ICONS)) {
+		if (typeof art === 'string') continue;
+		expect(art.length, key).toBeGreaterThan(0);
+		for (const [tag, attrs] of art) {
+			const numbers =
+				tag === 'path'
+					? (attrs.d.match(/-?\d*\.?\d+/g) ?? []).map(Number)
+					: [attrs.cx - attrs.r, attrs.cx + attrs.r, attrs.cy - attrs.r, attrs.cy + attrs.r];
+			if (tag === 'path') expect(attrs.d, key).toMatch(/^M[MmLlHhVvCcSsQqTtAaZz0-9.,\-\s]+$/);
+			for (const n of numbers) expect(Math.abs(n), key).toBeLessThanOrEqual(SLOT_ICON_VIEW_BOX);
+		}
+	}
+});
+
+// Every surface takes its size from one table, so a set swap changes that table instead of each call site.
+test('every icon surface draws at a whole CSS pixel size', () => {
+	for (const [role, size] of Object.entries(SLOT_ICON_SIZES)) {
+		expect(Number.isInteger(size), role).toBe(true);
+		expect(size, role).toBeGreaterThanOrEqual(16);
+	}
+});
+
+test('Base draws its standing figure even when its slot carries no profile', () => {
+	const m = character();
+	// Base is not a wearable category, so profileOf treats an empty slot as an accessory; the icon must not.
+	const base = m.slots.find((s) => s.id === 'body')!;
+	delete base.profile;
+	expect(iconOf(m, 'body')).toBe('body');
+});
 
 const item = (id: string, slot: string) =>
 	({ id, name: id, slot, layers: [], materials: [] }) as unknown as Item;
@@ -76,7 +113,7 @@ test('every slot has its own drawing: built-ins their profile, custom slots a sa
 	const m = character();
 	// The default ladder covers all 18 profiles, Base included, and no two draw the same shape.
 	for (const slot of SLOTS) expect(iconOf(m, slot.id)).toBe(slot.id);
-	const shapes = Object.values(SLOT_ICON_PATHS);
+	const shapes = Object.values(SLOT_ICONS).map((art) => JSON.stringify(art));
 	expect(new Set(shapes).size).toBe(shapes.length);
 	expect(ICON_CHOICES).toEqual(
 		expect.arrayContaining(SLOTS.filter((s) => s.id !== 'body').map((s) => s.id))

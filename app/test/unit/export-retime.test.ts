@@ -78,9 +78,9 @@ test('another export time is byte-identical for RPG Maker and action-layered exp
 		const second = await filesAt(project, engine, B, extra);
 		expectSameFiles(first.retime!(B)!, second.entries, `${engine} ${JSON.stringify(extra)}`);
 	}
-	const rpg = await filesAt(project, 'rpgmaker', A);
-	const rpgLater = await filesAt(project, 'rpgmaker', B);
-	expectSameFiles(rpg.retime!(B)!, rpgLater.entries, 'rpgmaker');
+	const rpg = await filesAt(project, 'rpg-maker', A);
+	const rpgLater = await filesAt(project, 'rpg-maker', B);
+	expectSameFiles(rpg.retime!(B)!, rpgLater.entries, 'rpg-maker');
 });
 
 test('names with replacement patterns such as $& and $$ are copied as written', async () => {

@@ -151,7 +151,11 @@ test('Free/Trial is a valid connection, and equipment shows Tier 1 required with
 	);
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await context.route('https://api.pixellab.ai/**', async (route) => {
 		if (route.request().method() === 'GET')
@@ -223,7 +227,11 @@ test('a Free/Trial connection resumes a permitted pending enhancement', async ({
 	const posts: string[] = [];
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await context.route('https://api.pixellab.ai/**', async (route) => {
 		if (route.request().method() === 'GET')
@@ -245,9 +253,9 @@ test('a Free/Trial connection resumes a permitted pending enhancement', async ({
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'New character', exact: true });
 	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A patient elf');
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
@@ -312,7 +320,11 @@ test('a follower tab lists the move another tab is running in Moves, read-only',
 	const requests: string[] = [];
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await context.route('https://api.pixellab.ai/**', (route) => {
 		requests.push(route.request().url());

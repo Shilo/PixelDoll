@@ -8,7 +8,11 @@ export async function savedExport(page: Page, dev: string) {
 	await page.setViewportSize({ width: 800, height: 600 }); // Eight parallel settings runs do not need eight full-size animated worlds.
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await page.route('https://*.pixellab.ai/**', (route) => route.abort());
 	await openStudio(page, dev);

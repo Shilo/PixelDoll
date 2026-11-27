@@ -5,7 +5,8 @@ import {
 	equipmentMode,
 	openPlaybackPicker,
 	playbackPicker,
-	selectPlaybackClip
+	selectPlaybackClip,
+	skipTips
 } from './immersive-helpers.ts';
 import { layout } from '../../src/studio/experience/geometry.ts';
 import { focalSlot, pickFacings } from '../../src/studio/experience/lineup.ts';
@@ -22,6 +23,8 @@ test.beforeEach(async ({ context }) => {
 			/* Opaque initial pages have no storage. */
 		}
 	});
+	// Not about onboarding: tips sit over the controls these checks press.
+	await skipTips(context);
 	await context.route('https://*.pixellab.ai/**', async (route) => {
 		await route.abort();
 		expect(route.request().method(), 'Parity checks must never submit a paid request').toBe('GET');
@@ -394,7 +397,6 @@ test('full screen stays reachable beside More on narrow and landscape screens', 
 	page
 }) => {
 	await landing(page);
-	await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click();
 	for (const viewport of [
 		{ width: 320, height: 568 },
 		{ width: 360, height: 800 },
@@ -725,10 +727,10 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	await expect(world(page)).toBeFocused();
 	await page.keyboard.press('Escape');
 	await expect(selection(page)).toBeFocused();
-	const create = page.getByRole('button', { name: 'New character', exact: true }).first();
+	const create = page.getByRole('button', { name: 'Add character', exact: true }).first();
 	await create.focus();
 	await page.keyboard.press('Enter');
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'New character', exact: true });
 	const name = dialog.getByRole('textbox', { name: 'Name', exact: true });
 	await name.fill('Keyboard draft');
@@ -1147,6 +1149,35 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(riderPose).toHaveAttribute('value', 'walk');
 	await expect(world(page)).toHaveAttribute('data-clip', 'walk');
 	await expect(legMode('Far leg')).toBeEnabled();
+	// A paused draft seat lets us compare the same pose and gait with and without hiding.
+	const seatEditor = mountMenu.getByRole('button', { name: 'Seat position', exact: true });
+	const seatDirection = mountMenu.getByRole('combobox', { name: 'Seat direction', exact: true });
+	const mountCanvas = mountMenu.locator('.mount-preview canvas');
+	const mountPixels = () =>
+		mountCanvas.evaluate(async (canvas: HTMLCanvasElement) => {
+			await new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+			);
+			const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
+			return new Uint8Array(await crypto.subtle.digest('SHA-256', data.buffer)).join(',');
+		});
+	await seatEditor.click();
+	await seatDirection.selectOption('east');
+	await expect(mountCanvas).toHaveAttribute('data-facing', 'east');
+	await expect(mountCanvas).toHaveAttribute('data-rider', /.+/);
+	await legMode('None').check();
+	const uncutSeated = await mountPixels();
+	await legMode('Both legs').check();
+	expect(await mountPixels()).not.toBe(uncutSeated);
+	await mountMenu.getByRole('button', { name: 'Move seat up', exact: true }).focus();
+	for (let step = 0; step < 32; step++) await page.keyboard.press('ArrowUp');
+	// The raised outfit's sword still reaches the neck. Move it clear horizontally too.
+	for (let step = 0; step < 8; step++) await page.keyboard.press('ArrowLeft');
+	await expect(mountMenu.locator('[data-setting="rider-seat"] output')).toHaveText('x -8, y -32');
+	const raisedWithHiding = await mountPixels();
+	await legMode('None').check();
+	expect(await mountPixels()).toBe(raisedWithHiding);
+	await seatEditor.click();
 	await legMode('Far leg').check();
 	// The live views follow the Move pose too, not just Preview's selection.
 	await closeMount();
@@ -1479,11 +1510,11 @@ test('imported move names remain readable, distinct and contained in Preview and
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.first()
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
-	const importing = page.getByRole('dialog', { name: 'Import from device', exact: true });
+	await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
+	const importing = page.getByRole('dialog', { name: 'Import from file', exact: true });
 	await importing.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'move-labels.zip',
 		mimeType: 'application/zip',
@@ -2655,11 +2686,11 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 		await page.locator('.project-btn').click();
 		await page
 			.locator('#project-menu')
-			.getByRole('button', { name: 'New character', exact: true })
+			.getByRole('button', { name: 'Add character', exact: true })
 			.first()
 			.click();
-		await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
-		const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true });
+		await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
+		const dialog = page.getByRole('dialog', { name: 'Import from file', exact: true });
 		await dialog
 			.getByLabel('Character ZIP', { exact: true })
 			.setInputFiles({ name: 'wheel-character.zip', mimeType: 'application/zip', buffer: bytes });
@@ -2885,6 +2916,14 @@ async function pause(page: Page) {
 test('phone More preserves Redo and closes after restoring a taken-off item state', async ({
 	page
 }) => {
+	// Not about onboarding: the first-visit tips are already done.
+	await page.addInitScript(() => {
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
+	});
 	await page.setViewportSize({ width: 360, height: 844 });
 	await customize(page);
 	await pause(page);
@@ -3280,9 +3319,15 @@ test.describe('two-finger equipment input', () => {
 		page,
 		context
 	}) => {
+		// Not about onboarding: the first-visit tips are already done.
+		await page.addInitScript(() => {
+			localStorage.setItem(
+				'pixeldoll.tips',
+				'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+			);
+			localStorage.setItem('pixeldoll.visited', '1');
+		});
 		await landing(page);
-		// The startup warning overlays part of the world until explicitly dismissed.
-		await page.locator('.toast').getByRole('button', { name: 'Dismiss notification' }).click();
 		await page.locator('.customize-action').click();
 		await equipmentGroup(page, 'Head');
 		await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
@@ -3492,6 +3537,14 @@ for (const screen of [
 test('category Random is one named undo step and Random look stays reachable on a 320 px phone', async ({
 	page
 }) => {
+	// Not about onboarding: the first-visit tips are already done.
+	await page.addInitScript(() => {
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
+	});
 	await page.setViewportSize({ width: 1440, height: 900 });
 	await customize(page);
 	await pause(page);
@@ -4575,6 +4628,14 @@ test.describe('Preview facing lineup', () => {
 	});
 
 	test('wrapped Preview controls reserve their actual height above the panel', async ({ page }) => {
+		// Not about onboarding: the first-visit tips are already done.
+		await page.addInitScript(() => {
+			localStorage.setItem(
+				'pixeldoll.tips',
+				'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+			);
+			localStorage.setItem('pixeldoll.visited', '1');
+		});
 		await customize(page);
 		await pause(page);
 		await page.evaluate(async (directions) => {

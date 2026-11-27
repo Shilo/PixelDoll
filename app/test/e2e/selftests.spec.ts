@@ -989,7 +989,11 @@ test('copying a demo publishes its images atomically against concurrent garbage 
 }) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await page.route('https://*.pixellab.ai/**', (route) => route.abort());
 	await openStudio(page, '/');
@@ -1120,7 +1124,11 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 		errors: string[] = [];
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await page.route('https://*.pixellab.ai/**', (route) => {
 		requests.push(route.request().method());
@@ -2123,9 +2131,9 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'starter.pixeldoll.zip',
 		mimeType: 'application/zip',

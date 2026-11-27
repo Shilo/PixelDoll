@@ -42,6 +42,7 @@
 		reviewFailedCreate,
 		settingUp,
 		initUi,
+		claimFirstVisit,
 		generationPending,
 		refreshProjects,
 		openProject,
@@ -71,6 +72,7 @@
 	import LibraryBackupButton from './LibraryBackupButton.svelte';
 	import { downloadLibraryBackupWithFeedback } from './downloadLibraryBackup.ts';
 	import PwaRuntime from './PwaRuntime.svelte';
+	import TipsHost from './tips/TipsHost.svelte';
 
 	// On-demand parts, out of the startup bundle.
 	const parts = {
@@ -130,12 +132,22 @@
 				reviewFailedCreate,
 				loadGens
 			};
-		if (workspaceCopy) ui.welcome = false;
 		const off = initUi();
-		if (PRE_RELEASE && !workspaceCopy)
+		const previewNotice = () =>
 			toast(previewNoticeDetails, { ...PREVIEW_NOTICE, action: downloadLibraryBackupWithFeedback });
+		// A first visit has no work at risk yet, so the warning waits for a later visit instead of greeting a newcomer
+		// with it. Any saved character brings it back at once.
+		const firstVisit = claimFirstVisit();
+		if (PRE_RELEASE && !workspaceCopy && !firstVisit) previewNotice();
 		void (async () => {
 			const listed = await refreshProjects();
+			if (
+				PRE_RELEASE &&
+				!workspaceCopy &&
+				firstVisit &&
+				(!listed || store.projects.some((p) => !p.demo))
+			)
+				previewNotice();
 			const initial = lastProject();
 			const initialProject = store.projects.find((project) => project.id === initial);
 			await openProject(
@@ -406,6 +418,7 @@
 			onLoadError={() => {}}
 		/>{/if}
 	<Experience />
+	<TipsHost />
 	{#if !workspaceCopy && offline}<div class="offline-banner" role="status">
 			<WifiOff size={14} aria-hidden="true" />{t('studio.youReOfflineEditAndExportLocally')}
 		</div>{/if}

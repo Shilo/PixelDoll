@@ -5,7 +5,11 @@ import { pwaServer, testRelease, type TestRelease } from './pwa-test-server.ts';
 test.beforeEach(async ({ context }) => {
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort());
 });
@@ -355,8 +359,8 @@ test('an offline launch needs no optional languages and retains a language used 
 		await expect(page.locator('html')).toHaveAttribute('lang', 'de');
 		await expect(customize).not.toHaveText(english);
 		const german = await customize.innerText();
-		await page.getByRole('button', { name: 'Neue Figur', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Neu erstellen...', exact: true }).click();
+		await page.getByRole('button', { name: 'Figur hinzufügen', exact: true }).first().click();
+		await page.getByRole('menuitem', { name: 'Erstellen...', exact: true }).click();
 		const creator = page.getByRole('dialog', { name: 'Neue Figur', exact: true });
 		await creator.getByRole('button', { name: 'Zurück', exact: true }).click();
 		await expect(creator).toBeHidden();
@@ -508,8 +512,8 @@ test('updates in an already-used tab require an explicit click, preserve its rel
 		other = await context.newPage();
 		await other.goto(server.url);
 		await expect(other.locator('.customize-action')).toBeVisible();
-		await other.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await other.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await other.getByRole('button', { name: 'Add character', exact: true }).first().click();
+		await other.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		const prompt = other.getByRole('dialog').getByRole('textbox', { name: 'Name', exact: true });
 		await prompt.fill('Do not discard this unfinished form');
 		await page.evaluate(() => {
@@ -752,8 +756,8 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await page.clock.fastForward(20000);
 		await aboutSettings.getByRole('button', { name: 'Close', exact: true }).click();
 		await expect(notice).toBeVisible();
-		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await page.getByRole('button', { name: 'Add character', exact: true }).first().click();
+		await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
 		// A hovered Help tooltip would receive Escape before the sheet.
 		await page.mouse.move(0, 0);
@@ -776,8 +780,8 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await expect(reopenedAbout.getByRole('button', { name: 'Update to v8.9.2' })).toBeEnabled();
 		await reopenedAbout.getByRole('button', { name: 'Close', exact: true }).click();
 		await expect(notice).toHaveCount(0);
-		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await page.getByRole('button', { name: 'Add character', exact: true }).first().click();
+		await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
 		await expect(notice).toHaveCount(0);
 		await page.mouse.move(0, 0);
@@ -1228,8 +1232,8 @@ test('Update now preserves the draft when verification fails and opens the verif
 		server = await pwaServer(a);
 	try {
 		await openInstalled(page, server.url, a);
-		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await page.getByRole('button', { name: 'Add character', exact: true }).first().click();
+		await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		const draft = page
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });
@@ -1282,8 +1286,8 @@ test('slow or blocked updates stay in Studio and offer a direct link to the veri
 		server = await pwaServer(a);
 	try {
 		await openInstalled(page, server.url, a);
-		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await page.getByRole('button', { name: 'Add character', exact: true }).first().click();
+		await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		const draft = page
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });

@@ -159,7 +159,8 @@ namespace PixelDoll
         bool dirty = true;
         bool layerActions, actionLayered;
         PdAnim action;
-        string actionDirection;
+        string actionDirection, actionWalk;
+        int actionLowerCell;
         double actionElapsed, actionDuration;
         readonly List<SpriteRenderer> upperNodes = new List<SpriteRenderer>();
 
@@ -192,14 +193,16 @@ namespace PixelDoll
             if (move == null) { Debug.LogWarning("PixelDoll: no active move", this); return false; }
             if (Array.IndexOf(move.directions, dir) < 0) { Debug.LogWarning("PixelDoll: unavailable move/direction " + move.id + "/" + dir, this); return false; }
             if (dir == active) return true;
+            if (action != null && actionLayered && active == actionDirection) Sync();
             // Directions of one move share their timeline, so the normalized time (whole loops included) carries over.
             animator.Play(move.id + "_" + dir, 0, current.normalizedTime);
             animator.Update(0f);
             dirty = true;
             Sync();
             return true;
+        }
 
-public bool IsActionPlaying => action != null;
+        public bool IsActionPlaying => action != null;
 
         public void SetActionLayering(bool enabled)
         {
@@ -211,7 +214,12 @@ public bool IsActionPlaying => action != null;
             var move = Array.Find(data.animations, a => a.id == anim);
             if (move == null || Array.IndexOf(move.directions, dir) < 0 || !clock || clock.sprite == null) return false;
             ParsePose(clock.sprite.name, out var walk, out var facing, out _);
-            var pair = facing == dir ? ActionPair(walk, dir, anim) : null;
+            return facing == dir && ActionOutfitSupported(walk, dir, anim);
+        }
+
+        bool ActionOutfitSupported(string walk, string dir, string anim)
+        {
+            var pair = ActionPair(walk, dir, anim);
             if (pair == null) return false;
             var hidden = HiddenSlots();
             return !equipped.Exists(e => !hidden.Contains(e.slot) && Array.IndexOf(pair.blocked, Shown(e.item)) >= 0);
@@ -225,6 +233,7 @@ public bool IsActionPlaying => action != null;
                 Debug.LogWarning("PixelDoll: unavailable move/direction " + anim + "/" + dir, this);
                 return "";
             }
+            GetComponent<Animator>().Update(0f); // applies a Play requested earlier this frame before reading the gait it layers over
             actionLayered = layerActions && CanLayerAction(anim, dir);
             action = move;
             actionDirection = dir;
@@ -240,7 +249,7 @@ public bool IsActionPlaying => action != null;
 
         void CheckActionOutfit()
         {
-            if (action != null && actionLayered) actionLayered = CanLayerAction(action.id, actionDirection);
+            if (action != null && actionLayered) actionLayered = ActionOutfitSupported(actionWalk, actionDirection, action.id);
         }
 
         Vector2Int? PairOffset(string walk, string dir, int lower, string move, int upper)
@@ -343,13 +352,18 @@ public bool IsActionPlaying => action != null;
                     index++;
                 }
                 int upperCell = action.frames[index].cell;
-                var offset = actionLayered && dir == actionDirection
-                    ? PairOffset(anim, dir, cell, action.id, upperCell) : null;
+                if (actionLayered && dir == actionDirection)
+                {
+                    actionWalk = anim;
+                    actionLowerCell = cell;
+                }
+                var offset = actionLayered
+                    ? PairOffset(actionWalk, actionDirection, actionLowerCell, action.id, upperCell) : null;
                 var omitted = Array.Find(data.actionOmissions, row => row.clip == action.id && row.direction == actionDirection)?.items;
                 if (offset == null) RenderStack(visible, action.id, actionDirection, upperCell, "", hidden, false, Vector3.zero, omitted);
                 else
                 {
-                    RenderStack(visible, anim, dir, cell, "lower", hidden, false, Vector3.zero, omitted);
+                    RenderStack(visible, actionWalk, actionDirection, actionLowerCell, "lower", hidden, false, Vector3.zero, omitted);
                     RenderStack(visible, action.id, actionDirection, upperCell, "upper", hidden, true,
                         new Vector3(offset.Value.x / data.ppu, -offset.Value.y / data.ppu), omitted);
                 }
@@ -733,7 +747,7 @@ Output in unity/Generated/: sliced sheets (Point, no compression, PPU ${m.export
 <anim>_<dir>.anim clips for supported views, ${unityJson(m).name}.controller and ${unityJson(m).name}.prefab
 (Sorting Group + Paperdoll + one SpriteRenderer per slot/role and a hidden animation clock).
 Runtime namespace: ${ns}. Paperdoll.Play(anim, dir, restart = false), SetDirection(dir), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).
-Call SetActionLayering(true) to enable moving attacks when the ZIP contains precut fragments. CanLayerAction(move, direction) checks the whole action set and equipped gear. Invalid PlayAction calls warn and return an empty string without changing playback. PlayAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read IsActionPlaying for completion. Calling Play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action.
+Call SetActionLayering(true) to enable moving attacks when the ZIP contains precut fragments. CanLayerAction(move, direction) checks the whole action set and equipped gear. Invalid PlayAction calls warn and return an empty string without changing playback. PlayAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read IsActionPlaying for completion. Calling Play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
 Play preserves an active clip's progress. Calling it again after the same non-looping clip completes replays that clip.
 Changed moves/directions start at the beginning. Pass true as Play's third argument to restart explicitly.
 SetDirection turns the active move (e.g. an aimed attack) and keeps its frame, time, loop count and completion without replaying it; the current direction is a no-op.

@@ -5,7 +5,11 @@ const key = 'synthetic-shared-token-a';
 test.beforeEach(async ({ context }) => {
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await context.route('https://api.pixellab.ai/**', (route) => {
 		expect(route.request().method()).toBe('GET');

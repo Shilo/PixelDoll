@@ -211,7 +211,6 @@
 		const id = creating?.projectId;
 		if (!id) return;
 		ui.sheet = null;
-		ui.welcome = false;
 		await openProject(id);
 		customize();
 	}

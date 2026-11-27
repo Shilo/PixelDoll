@@ -622,10 +622,12 @@
 		"billingNote": "Estimasi ini membandingkan generasi, bukan harga dalam dolar. PixelLab mungkin menagih dalam dolar, dan waktu antrean bisa berbeda."
 	},
 	"newCharacterButton": {
+		"addCharacter": "Tambahkan karakter",
 		"newCharacter": "Karakter baru",
-		"createFromScratch": "Buat dari awal…",
-		"importFromDevice": "Impor dari perangkat…",
-		"importFromPixelLab": "Impor dari PixelLab…"
+		"createFromScratch": "Buat…",
+		"fromFile": "Dari file…",
+		"fromPixelLab": "Dari PixelLab…",
+		"createNeedsKey": "Perlu kunci PixelLab dan memakai generasi berbayar"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(terbuka di tab baru)"
@@ -897,25 +899,7 @@
 		"itemQueued": "dalam antrean untuk {move}"
 	},
 	"welcome": {
-		"demoNeedsNoAccount": "Demo tidak memerlukan akun. Pembuatan menggunakan jatah generasi {pixelLab} Anda.",
-		"steps": {
-			"create": "Buat",
-			"describeBody": "Deskripsikan tubuh",
-			"addItems": "Tambah item",
-			"examples": "Topi, atasan, senjata",
-			"dressUp": "Dandani",
-			"wearRecolorPlay": "Kenakan, warnai ulang, putar animasi",
-			"export": "Ekspor",
-			"anyEngine": "Ke game engine apa pun"
-		},
-		"switchToLightMode": "Beralih ke mode terang",
-		"switchToDarkMode": "Beralih ke mode gelap",
-		"labelDemoCharacterWalking": "Karakter demo sedang berjalan",
-		"dressUpYour2DGameCharactersWith": "Dandani karakter game 2D Anda dengan teknik boneka kertas yang presisi hingga tiap piksel",
-		"generateSwappableFrameAlignedEquipmentLayersWith": "Buat lapisan perlengkapan yang bisa ditukar dan sejajar di setiap frame dengan PixelLab AI, lalu ekspor ke game engine apa pun.",
-		"createYourCharacter": "Buat karakter Anda",
-		"tryTheDemo": "Coba demo",
-		"importAnExistingCharacter": "Impor karakter yang sudah ada"
+		"createYourCharacter": "Buat karakter Anda"
 	},
 	"experience": {
 		"movesOffMounted": "Pilih animasi di Pratinjau. Saat menunggang, gerakan mengikuti Pose penunggang di pengaturan tunggangan.",
@@ -1189,7 +1173,9 @@
 			"versionMenu": "Versi RPG Maker",
 			"version": "Versi",
 			"versionLabel": "Versi RPG Maker: {version}",
-			"walkMove": "Animasi berjalan"
+			"walkMove": "Animasi berjalan",
+			"phaserVersionMenu": "Versi Phaser",
+			"phaserVersionLabel": "Versi Phaser: {version}"
 		},
 		"group": {
 			"engines": "Engine dan framework",
@@ -1212,11 +1198,11 @@
 				"sub": "Proyek yang bisa diedit",
 				"detail": "Proyek GDevelop yang bisa diedit, dengan lapisan Sprite, pemutaran tersinkron, dan kontrol perlengkapan. Lihat pratinjaunya atau salin objek dan event ke game Anda."
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "Sprite sheet berjalan",
 				"detail": "Satu sprite sheet berjalan per setelan dengan ukuran asli karakter. Salin file PNG ke img/characters (MZ, MV) atau Graphics/Characters (VX Ace, VX). Memerlukan tampilan depan, samping, dan belakang."
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "Satu sprite sheet berjalan berisi 4 frame per setelan dengan ukuran asli karakter, untuk RPG Maker XP dan Pokémon Essentials. Salin file PNG ke Graphics/Characters. Memerlukan tampilan depan, samping, dan belakang."
 			},
 			"aseprite": {
@@ -1226,6 +1212,9 @@
 			"generic": {
 				"sub": "Integrasi khusus",
 				"detail": "Sprite sheet dan strip lapisan beserta data pengaturan waktu, titik pivot, perlengkapan, dan palet. Engine Anda memerlukan kode untuk membaca aturan ini."
+			},
+			"phaserAe": {
+				"detail": "Sprite sheet per lapisan dan runtime untuk game Phaser AE, dengan perlengkapan, warna, dan pemutaran yang tersinkron. Cantumkan sheet tersebut di daftar assets pada manifes game Anda, lalu proses build game akan menyalinnya ke dalam game."
 			}
 		},
 		"version": {
@@ -1234,7 +1223,13 @@
 			"standardSub": "Tata letak 3 × 4 · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP dan Pokémon Essentials",
-			"xpSub": "Tata letak 4 × 4 · Name.png"
+			"xpSub": "Tata letak 4 × 4 · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Engine Phaser Game Agent",
+			"phaser": "3 & 4",
+			"phaserTitle": "Phaser 3 dan 4",
+			"phaserSub": "Pustaka sumber terbuka, 3.80 atau yang lebih baru"
 		},
 		"playback": {
 			"all": "Semua"
@@ -1300,7 +1295,7 @@
 			"noVisibleFrames": "Tubuh tidak memiliki frame yang terlihat.",
 			"godot": "Godot tidak dapat menggunakan sprite sheet ini.",
 			"gdevelop": "GDevelop tidak dapat menggunakan sprite sheet ini.",
-			"rpgmaker": "RPG Maker memerlukan tampilan depan, samping, dan belakang.",
+			"rpgMaker": "RPG Maker memerlukan tampilan depan, samping, dan belakang.",
 			"aseprite": "Animasi ini tidak sesuai dengan format Aseprite.",
 			"unsafeNames": "Sebagian nama file tidak dapat dikemas dengan aman.",
 			"tooLarge": "Hasil ekspor ini terlalu besar.",
@@ -1357,7 +1352,7 @@
 		"posesTitle": "Impor juga sebagai varian",
 		"posesHint": "Pilih pose dari tubuh yang sama tanpa perlengkapan yang menyatu dengan gambar. Impor tampilan yang berbeda sebagai karakter terpisah. Pilih animasinya di bawah.",
 		"poseMismatch": "Varian ini memiliki ukuran gambar, arah hadap, atau pengaturan kamera yang berbeda. Impor sebagai karakter terpisah.",
-		"titleDevice": "Impor dari perangkat",
+		"titleFile": "Impor dari file",
 		"titlePixelLab": "Impor dari PixelLab",
 		"browseLibrary": "Jelajahi karakter PixelLab",
 		"standingState": "Varian pose berdiri",
@@ -1441,6 +1436,7 @@
 			"skippedStanding": "“{move}” yang menghadap {direction} tidak disertakan: karakter tidak punya tampilan berdiri ke arah itu.",
 			"semiAlpha": "Tepi yang transparan sebagian diubah menjadi transparansi khas pixel art.",
 			"upscaledBase": "Gambar berdiri tampak diperbesar {scale}x. Gambar tetap seperti apa adanya: item yang dibuat darinya memakai lebih banyak piksel, mencampur ukuran piksel, dan pewarnaan ulang kurang bersih. Impor gambar asli 1x jika ada.",
+			"compressedBase": "Gambar berdiri tampak terkompresi atau diskalakan ulang: banyak warnanya hanya muncul sekali. Gambar tetap seperti apa adanya: item yang dibuat darinya lebih sulit dipotong, diwarnai ulang, dan disejajarkan. Impor gambar aslinya jika bisa.",
 			"detailsDropped": "Beberapa detail karakter yang tersimpan rusak dan tidak disertakan. Siapkan rig pose-nya lagi jika perlu."
 		},
 		"error": {
@@ -3363,9 +3359,7 @@
 			"other": "{n} panggilan tanpa harga"
 		}
 	},
-	"shortcut": {
-		"control": "Ctrl"
-	},
+	"shortcut": { "control": "Ctrl" },
 	"report": {
 		"action": "Laporkan",
 		"actionLabel": "Laporkan masalah ini",
@@ -3622,5 +3616,28 @@
 		"adopt": "Tetap perbarui",
 		"leave": "Biarkan",
 		"section": "Proyek game"
+	},
+	"tips": {
+		"customizeTitle": "Dandani demo",
+		"customizeBody": "Coba perlengkapan atau ekspor **karakter demo** untuk game Anda. Tidak perlu kunci PixelLab.",
+		"gearTitle": "Coba perlengkapan",
+		"gearBody": "Pilih item di **Lemari** untuk memakainya atau melepasnya.",
+		"exportTitle": "Bawa ke game Anda",
+		"exportBody": "**Ekspor** karakter, perlengkapan, dan animasi, plus kode siap pakai opsional untuk mengganti perlengkapan di game Anda.",
+		"exportInMoreBody": "Temukan **Ekspor** di **{more} opsi lainnya**: karakter, perlengkapan, dan animasi, plus kode opsional untuk mengganti perlengkapan di game Anda.",
+		"close": "Tutup tips",
+		"showAgain": "Tampilkan tips lagi",
+		"pixellabTitle": "Apa itu PixelLab?",
+		"pixellabBody": "Layanan pixel art AI yang menggambar karakter dan perlengkapan yang Anda buat di sini, memakai generasi dari akun PixelLab Anda.",
+		"newCharacterTitle": "Buat milik Anda",
+		"newCharacterBody": "Buat **karakter** dari deskripsi atau gambar referensi, atau impor karakter yang sudah Anda miliki.",
+		"addItemTitle": "Tambah perlengkapan",
+		"addItemBody": "Pakai **+** di slot untuk menjelaskan item atau menambahkan gambar referensi. PixelLab menyesuaikannya dengan karakter Anda.",
+		"generateItemsTitle": "Sesuaikan perlengkapan dengan animasi ini",
+		"generateItemsBody": "Buka **{menu} opsi lainnya** pada animasi ini dan pilih **Buat item** untuk menggambar perlengkapan Anda di animasi ini.",
+		"addMoveTitle": "Tambah animasi",
+		"addMoveBody": "Animasikan karakter Anda, misalnya Idle, Walk, atau Attack.",
+		"addStateTitle": "Tambah status",
+		"addStateBody": "Buat **pose diam baru** sebagai awal animasi, seperti ancang-ancang serangan, langkah di tengah berjalan, atau sikap duduk."
 	}
 }

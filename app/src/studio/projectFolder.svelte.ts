@@ -3,7 +3,7 @@
 // nothing, and every failure becomes a status (and, in the background, at most one notice), never a thrown error.
 import { buildExport } from '../lib/export/build.ts';
 import { ACTION_LAYER_ENGINES } from '../lib/export/export.ts';
-import { walkMoves } from '../lib/export/rpgmaker.ts';
+import { walkMoves } from '../lib/export/rpg-maker.ts';
 import { message, sameMessage, type Message } from '../lib/message.ts';
 import {
 	allLinks,
@@ -255,7 +255,7 @@ async function buildFiles(
 	settings: Awaited<ReturnType<typeof readExportSettings>>,
 	exportedAt: string
 ): Promise<BuiltFiles | null> {
-	const rpg = link.engine === 'rpgmaker' || link.engine === 'rpgmakerxp';
+	const rpg = link.engine === 'rpg-maker' || link.engine === 'rpg-maker-xp';
 	const result = await buildExport(input.project, {
 		engine: link.engine,
 		baked: settings.dressedCharacterSheets ?? true,

@@ -24,7 +24,11 @@ async function setup(page: Page) {
 		unexpected: string[] = [];
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 		localStorage.setItem('pixeldoll.developerMode', '1');
 		Object.defineProperty(navigator, 'clipboard', {
 			configurable: true,
@@ -66,9 +70,9 @@ async function setup(page: Page) {
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'New character', exact: true });
 	await sheet.getByRole('textbox', { name: 'Name', exact: true }).fill('Local library name only');
 	const closedAdvanced = sheet.locator('details.advanced:not([open]) > summary');

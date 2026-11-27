@@ -14,7 +14,11 @@ import type { Preset } from '../../src/lib/store/manifest.ts';
 test.beforeEach(async ({ context }) => {
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem(
+			'pixeldoll.tips',
+			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+		);
+		localStorage.setItem('pixeldoll.visited', '1');
 	});
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort()); // stay offline by default; a test's own route overrides this
 });
@@ -290,9 +294,9 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 	await page.getByRole('button', { name: 'Characters', exact: true }).click();
 	await page
 		.locator('.experience-header')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	// The creator reaches Wardrobe visibility through its own More menu.
 	const creatorMore = creator.getByRole('button', { name: 'More options', exact: true });

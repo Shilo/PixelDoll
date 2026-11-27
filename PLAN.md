@@ -209,6 +209,11 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
     trimmed.
   - Add more templates only after the same blind protocol
     ([template study](docs/research/2026-11-24-template-study/README.md)).
+- D33 (2026-11-26, user-requested): first-run onboarding is self-ending tips, each an arrow callout on its control, one
+  at a time: Customize, try on gear, Export, Make your own and What is PixelLab? for everyone, plus add gear, generate
+  items for a move, add a move and add a state on own characters only. No welcome screen, slideshow or tour. The tips
+  system (`app/src/studio/tips/`) observes app state read-only; the app never reports to it. **Show tips again** (Help
+  and Settings > Appearance) resets them in place ([record](docs/design/onboarding.md)).
 
 ## Progressive equipment generation (2026-11-03)
 
