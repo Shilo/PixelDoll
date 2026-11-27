@@ -49,24 +49,34 @@ export const NOT_A_FILE = 'not-a-file';
  * @param next the files the export wants, path to content hash
  * @param disk the current hash of every path in `next`: null when missing, NOT_A_FILE for a folder
  * @param overwrite conflicting paths the user approved replacing, each with the bytes they saw there
+ * @param required paths that must exist even when kept (a runtime every character needs): `disk` holds them too, and
+ *   a kept one that is gone, or has a folder in its place, is a conflict to restore rather than a file left alone
  */
 export function planPublish(o: {
 	next: ReadonlyMap<string, string>;
 	record: FolderRecord;
 	disk: ReadonlyMap<string, string | null>;
 	overwrite?: ReadonlyMap<string, string>;
+	required?: (path: string) => boolean;
 }): Plan {
 	const kept = new Set(o.record.kept);
 	const actions: PlanAction[] = [];
 	const approved: PlanAction[] = [];
 	for (const [path, hash] of o.next) {
+		const current = o.disk.get(path) ?? null;
+		const approval = o.overwrite?.get(path);
 		if (kept.has(path)) {
-			actions.push({ path, kind: 'kept' });
+			if (o.required?.(path) && current === NOT_A_FILE)
+				actions.push({ path, kind: 'conflict', reason: 'folder', found: current });
+			else if (o.required?.(path) && current === null) {
+				if (approval === DELETED) {
+					actions.push({ path, kind: 'restore' });
+					approved.push({ path, kind: 'conflict', reason: 'deleted', found: DELETED });
+				} else actions.push({ path, kind: 'conflict', reason: 'deleted', found: DELETED });
+			} else actions.push({ path, kind: 'kept' });
 			continue;
 		}
-		const current = o.disk.get(path) ?? null;
 		const mine = Object.hasOwn(o.record.written, path) ? o.record.written[path] : undefined;
-		const approval = o.overwrite?.get(path);
 		if (current === NOT_A_FILE)
 			actions.push({ path, kind: 'conflict', reason: 'folder', found: current });
 		// Already right. Identical bytes PixelDoll did not write stay the user's: nothing is recorded for them.

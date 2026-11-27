@@ -47,7 +47,10 @@ vi.mock('../../src/studio/download.svelte.ts', () => ({
 }));
 vi.mock('../../src/studio/exportLayering.ts', () => ({ exportActionLayering: vi.fn() }));
 vi.mock('../../src/lib/export/build.ts', () => ({ buildExport: studio.buildExport }));
-vi.mock('../../src/lib/export/export.ts', () => ({ ACTION_LAYER_ENGINES: [] }));
+vi.mock('../../src/lib/export/export.ts', () => ({
+	ACTION_LAYER_ENGINES: [],
+	runtimeRevision: () => undefined
+}));
 
 // Build stamps Vite defines for the app; the fingerprint of a publish includes them.
 beforeEach(() => {

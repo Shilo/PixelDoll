@@ -66,6 +66,12 @@ vi.mock('../../src/lib/export/build.ts', () => ({
 			: undefined
 	})
 }));
+// The runtime revision this tab's build has, as an older or newer app would.
+vi.mock('../../src/lib/export/export.ts', () => ({
+	ACTION_LAYER_ENGINES: [],
+	runtimeRevision: (engine: string) =>
+		['godot', 'phaser', 'phaser-ae', 'unity'].includes(engine) ? studio.runtime.revision : undefined
+}));
 vi.mock('../../src/lib/project-folder/support.ts', () => ({
 	folderSupport: async () => 'supported'
 }));
@@ -363,17 +369,38 @@ it('reads the shared runtime on a quiet check: a deleted one pauses instead of r
 	});
 });
 
-it('raises no floor for a publish that writes only the character', async () => {
+it('keeps a kept runtime file for its revision, and asks again once a newer runtime arrives', async () => {
 	const a = await link('a', folderHandle('Game'));
 	const shared = `runtime|${a!.destinationId}|godot`;
-	// The user keeps their own runtime: a newer build then writes only the character, installing no runtime.
-	studio.records.get(shared)!.kept = ['paperdoll.gd'];
-	studio.runtime = { revision: 3, text: 'runtime v3' };
+	studio.folder.set(RUNTIME, 'my runtime');
 	studio.edit = ' with a hat';
 	await api.publishProjectFolder();
+	const status = api.projectFolder.status;
+	if (status.kind !== 'blocked') throw new Error('Expected the edited runtime conflict');
+	await api.keepProjectFolderFiles([RUNTIME], status.linkedAt);
+	// Kept under this revision: the character updates, the user's runtime stays, and no runtime write raised the floor.
 	expect(studio.folder.text('a/godot/Paperdoll.tscn')).toBe('scene of a with a hat');
-	expect(studio.folder.text(RUNTIME)).toBe('runtime v2');
+	expect(studio.folder.text(RUNTIME)).toBe('my runtime');
 	expect(studio.floors.get(shared)).toBe(2);
+
+	// A newer runtime is a new decision: the edited file is listed again instead of silently staying older.
+	studio.runtime = { revision: 3, text: 'runtime v3' };
+	studio.edit = ' with a cape';
+	await api.publishProjectFolder();
+	expect(api.projectFolder.status).toMatchObject({
+		kind: 'blocked',
+		conflicts: [{ path: RUNTIME, reason: 'edited-outside' }]
+	});
+	expect(studio.folder.text(RUNTIME)).toBe('my runtime');
+});
+
+it('stops a stale tab before it can keep a runtime file another tab has since updated', async () => {
+	const a = await link('a', folderHandle('Game'));
+	const shared = `runtime|${a!.destinationId}|godot`;
+	studio.floors.set(shared, 3); // a newer tab installed revision 3 meanwhile
+	await api.keepProjectFolderFiles([RUNTIME], a!.linkedAt);
+	expect(api.projectFolder.status).toEqual({ kind: 'outdated' });
+	expect(studio.records.get(shared)?.kept ?? []).toEqual([]);
 });
 
 it('refuses moving a Unity character into its own earlier folder even before that runtime was installed', async () => {
@@ -452,4 +479,27 @@ it('reserves every PixelDoll- folder name, without case', async () => {
 	expect(characterFolder('PIXELDOLL')).toBe('character-PIXELDOLL');
 	expect(characterFolder('pixeldolls')).toBe('pixeldolls');
 	expect(characterFolder('adventurer')).toBe('adventurer');
+});
+
+it('lists a deleted kept runtime file to restore, even one PixelDoll never wrote, and leaves other keeps alone', async () => {
+	studio.folder.set(RUNTIME, 'their runtime'); // already there, not PixelDoll's
+	const a = await link('a', folderHandle('Game'));
+	const status = api.projectFolder.status;
+	if (status.kind !== 'blocked') throw new Error('Expected the existing runtime conflict');
+	await api.keepProjectFolderFiles([RUNTIME], status.linkedAt);
+	const shared = `runtime|${a!.destinationId}|godot`;
+	studio.records.get(`a|${a!.linkedAt}`)!.kept = ['manifest.json']; // a keep of the character's own
+	studio.folder.files.delete(RUNTIME);
+	await api.publishProjectFolder();
+	const lost = api.projectFolder.status;
+	expect(lost).toMatchObject({
+		kind: 'blocked',
+		conflicts: [{ path: RUNTIME, reason: 'deleted' }]
+	});
+	expect(studio.folder.text(RUNTIME)).toBeNull();
+	if (lost.kind !== 'blocked') return;
+	await api.publishProjectFolder(new Map([[RUNTIME, 'deleted']]), lost.linkedAt);
+	expect(studio.folder.text(RUNTIME)).toBe('runtime v2');
+	expect(studio.records.get(shared)!.kept).toEqual([]);
+	expect(studio.records.get(`a|${a!.linkedAt}`)!.kept).toEqual(['manifest.json']);
 });

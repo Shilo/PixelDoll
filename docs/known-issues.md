@@ -244,9 +244,10 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   `pixeldoll-unity/`. Two different folders side by side in one Unity project would each install it, and Unity stops
   compiling on the duplicate assembly. PixelDoll refuses Unity folders that nest, but a browser cannot see folders side by
   side, so the Unity guide asks for one folder per game.
-- **Unity rebuilds `unity/Generated/` on every import.** The importer regenerates the sliced sheets, clips, controller
-  and prefab whenever the character data or the shared runtime changes (with a project folder, after each saved change),
-  as the ZIP importer does on re-export. Edits made to those generated assets are lost; use a prefab variant instead.
+- **Unity generated assets you edit stop updating.** With a project folder, the shared Unity importer leaves a generated
+  prefab, controller or clip you edited alone (it logs a warning) instead of rebuilding it, so that character no longer
+  picks up changes until you delete its `unity/Generated/` folder. Customize a prefab variant instead. The ZIP importer
+  still rebuilds `unity/Generated/` on every re-export.
 - **Project folder: GDevelop keeps its runtime per character.** GDevelop's controller lives in each character's
   `game.json` events, so there is nothing to share on disk; merging the same character twice into one GDevelop project
   still collides on object and resource names.

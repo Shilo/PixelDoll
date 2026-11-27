@@ -383,13 +383,13 @@ export function rpgMakerFiles(
 		name: 'README.txt',
 		data:
 			(layout === 'vx'
-				? `Copy the PNG files at the top of this zip into img/characters (RPG Maker MZ, MV) or Graphics/Characters
+				? `Copy the PNG files at the top of this export into img/characters (RPG Maker MZ, MV) or Graphics/Characters
 (VX Ace, VX), then pick one as an actor or event image. One sheet per outfit (outfits that look the same share one); the
 "$" prefix tells the engine the image holds one character.
 Rows: down, left, right, up. The middle column is the standing frame, the outer ones are walk steps.
 MZ and MV use 48 px tiles, VX Ace and VX 32 px tiles; their built-in characters are about one tile tall.
 `
-				: `Copy the PNG files at the top of this zip into Graphics/Characters (RPG Maker XP or Pokemon Essentials), then pick one
+				: `Copy the PNG files at the top of this export into Graphics/Characters (RPG Maker XP or Pokemon Essentials), then pick one
 as an actor or event image. One sheet per outfit (outfits that look the same share one).
 Rows: down, left, right, up. The first column is the standing frame, then step, passing, other step.
 XP uses 32 px tiles; its built-in characters are 32 x 48.

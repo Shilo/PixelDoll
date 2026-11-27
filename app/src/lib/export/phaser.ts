@@ -403,7 +403,7 @@ setVariants replaces all explicit color selections. Omitted keys or null restore
 The loader decodes recolorable sheets from PNG bytes for exact source RGB matches, including translucent pixels. In Canvas and WebGL, the resulting palette textures preserve alpha and go through Phaser's normal texture upload.
 paletteMap returns only active source-RGB to target-RGB swaps; unselected colors are omitted.
 This module also exports the engine-neutral paper-doll API used inside PixelDoll itself, including composeCell, drawList, paletteMap and sampleTimeline.
-The adjacent types.d.ts supplies portable data types for checked JavaScript consumers; no TypeScript compilation is required.
+types.d.ts, beside PaperdollContainer.js, supplies portable data types for checked JavaScript consumers; no TypeScript compilation is required.
 Call doll.destroy() when removing a character. Palette textures are cached until Phaser game teardown.
 PaperdollContainer.js is an ES module and fetches manifest.json: serve the game over http (a dev server), not file://.
 Atlases: phaser/<length>-<item>_<length>-<layer>_<length>-<move>.json (TexturePacker hash), frames named <move>_<direction>_<frame>.

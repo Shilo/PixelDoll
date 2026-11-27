@@ -2,7 +2,7 @@
 // into it and keeps them current after each change. Strictly additive: where the browser cannot write folders this does
 // nothing, and every failure becomes a status (and, in the background, at most one notice), never a thrown error.
 import { buildExport } from '../lib/export/build.ts';
-import { ACTION_LAYER_ENGINES } from '../lib/export/export.ts';
+import { ACTION_LAYER_ENGINES, runtimeRevision } from '../lib/export/export.ts';
 import { walkMoves } from '../lib/export/rpg-maker.ts';
 import { message, sameMessage, type Message } from '../lib/message.ts';
 import {
@@ -36,7 +36,7 @@ import {
 	type Destination,
 	type FolderLink
 } from '../lib/project-folder/links.ts';
-import { NOT_A_FILE, type PlanAction } from '../lib/project-folder/plan.ts';
+import { DELETED, type PlanAction } from '../lib/project-folder/plan.ts';
 import {
 	hashAt,
 	hashFiles,
@@ -333,7 +333,10 @@ async function buildFiles(
 	const bundle = result.bundle;
 	// The runtime is shared by every character in the folder, so a build that disagrees with the folder layout (one
 	// without the runtime its engine needs, or with one it does not) is never published.
-	if (!!bundle !== hasRuntime(link.engine) || (bundle && bundle.engine !== link.engine)) {
+	if (
+		!!bundle !== hasRuntime(link.engine) ||
+		(bundle && (bundle.engine !== link.engine || bundle.revision !== runtimeRevision(link.engine)))
+	) {
 		console.warn('Project folder export has an unexpected runtime', link.engine, bundle?.engine);
 		return null;
 	}
@@ -457,17 +460,6 @@ async function runtimeOnDisk(target: FolderTarget, files: Readonly<Record<string
 	}
 }
 
-/** A kept shared runtime file is the user's to change, never to lose: every character in the folder needs it. Once one
- *  is gone (or a folder took its place), the runtime's keeps are released, so the publish pauses and lists it to restore
- *  instead of writing characters that name a missing script. A file that cannot be read leaves them as they are. */
-async function releaseLostRuntime(target: FolderTarget, link: FolderLink) {
-	const key = runtimeKey(link.destinationId, link.engine);
-	for (const path of (await readRecord(key)).kept) {
-		const found = await hashAt(target, under(runtimeDir(link.engine), path)).catch(() => '');
-		if (found === null || found === NOT_A_FILE) return setKept(key, [], false);
-	}
-}
-
 /** The character's export manifest, relative to the picked folder. */
 const manifestOf = (link: FolderLink) => under(link.subfolder, 'manifest.json');
 
@@ -556,12 +548,30 @@ async function publish(link: FolderLink, request: Request) {
 		};
 		report({ kind: 'publishing' });
 		const scopes = scopesOf(link);
+		// Checked first, under this folder's runtime lock, before anything is decided or written: a tab with an older
+		// runtime than one another tab began installing stops, since it would put older runtime files back or decide about
+		// files it has never seen. The floor rises just before a runtime write (once nothing pauses the publish), so an
+		// update stopped part way can never be taken back by an older tab either.
+		const runtime = hasRuntime(link.engine)
+			? {
+					key: runtimeKey(link.destinationId, link.engine),
+					revision: runtimeRevision(link.engine) ?? 0
+				}
+			: null;
+		if (runtime) {
+			const floor = await readFloor(runtime.key);
+			if (floor > runtime.revision) return reportOutdated(link, request.manual);
+			// A runtime file kept against an older runtime is asked about again once a newer one arrives.
+			if (floor < runtime.revision) await setKept(runtime.key, [], false);
+		}
 		if (request.release) for (const scope of scopes) await setKept(scope.key, [], false);
 		if (request.keep?.length)
-			for (const [scope, paths] of byScope(scopes, request.keep))
+			for (const [scope, paths] of byScope(scopes, request.keep)) {
 				await setKept(scope.key, paths, true);
+				// Keeping a runtime file is a decision about this revision: record it, so the keep stands until a newer one.
+				if (runtime && scope.key === runtime.key) await raiseFloor(runtime.key, runtime.revision);
+			}
 		const target = directoryTarget(link.handle);
-		if (hasRuntime(link.engine)) await releaseLostRuntime(target, link);
 		const record = await readRecords(scopes);
 		const MANIFEST = manifestOf(link);
 		// Reusing the last timestamp first means an unchanged character matches what is there and writes nothing.
@@ -607,7 +617,7 @@ async function publish(link: FolderLink, request: Request) {
 				// files (such as ones the user has not yet chosen to keep updated), the folder decides too: bytes already
 				// there need no write.
 				(request.manual || showingProblem || !matchesRecord(record, next)
-					? await inSync(target, record, next)
+					? await inSync(target, record, next, runtime ? isSharedPath : undefined)
 					: await runtimeOnDisk(target, Object.fromEntries(next)))
 			) {
 				// A click read every file and found them current: that is an update as far as the user can tell.
@@ -653,21 +663,13 @@ async function publish(link: FolderLink, request: Request) {
 		showLink(id, recheck, readAt);
 		// Update automatically may also have been turned off meanwhile.
 		if (!request.manual && !recheck.auto) return report({ kind: 'idle' });
-		// Checked under this folder's runtime lock: a tab with an older runtime than one another tab began installing
-		// stops, since it would put older runtime files back. Otherwise the floor rises just before the first write (once
-		// nothing pauses this publish), so an update stopped part way can never be taken back by an older tab either.
-		const runtime = hasRuntime(link.engine)
-			? { key: runtimeKey(link.destinationId, link.engine), revision: built?.revision ?? 0 }
-			: null;
-		if (runtime) {
-			if ((await readFloor(runtime.key)) > runtime.revision)
-				return reportOutdated(link, request.manual);
-		}
 		const outcome = await publishFiles(target, files, {
 			record,
 			overwrite: request.overwrite,
 			manifest: MANIFEST,
 			first: hasRuntime(link.engine) ? runtimeDir(link.engine) : undefined,
+			// Kept runtime files are still read: every character here needs them, so a missing one is listed to restore.
+			required: runtime ? isSharedPath : undefined,
 			onRecord: (path, hash) => recordAt(scopes, path, hash),
 			// Planning reads every file, which takes a moment: the last chance to notice a stop before anything is written.
 			proceed: async (writes) => {
@@ -710,6 +712,16 @@ async function publish(link: FolderLink, request: Request) {
 			case 'published':
 			case 'unchanged':
 				{
+					// A kept runtime file the user had lost and approved restoring holds PixelDoll's bytes again: it is no
+					// longer kept, so later runtime updates reach it.
+					const restored = [...(request.overwrite ?? [])]
+						.filter(
+							([path, found]) =>
+								found === DELETED && isSharedPath(path) && record.kept.includes(path)
+						)
+						.map(([path]) => path);
+					if (runtime && restored.length)
+						await setKept(runtime.key, [...byScope(scopes, restored).values()].flat(), false);
 					const produced = Object.fromEntries(await hashFiles(files));
 					await remember(
 						outcome.kind === 'published'
@@ -1083,7 +1095,7 @@ async function overlapping(
 			return { kind: 'overlap', unity: false };
 		if (
 			fresh.engine === 'unity' &&
-			(inside || around) &&
+			(!!inside?.length || !!around?.length) &&
 			(destination.unity ||
 				here.some((other) => other.engine === 'unity') ||
 				(await readFloor(runtimeKey(destination.id, 'unity'))) > 0)

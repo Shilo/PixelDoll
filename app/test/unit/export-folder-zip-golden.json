@@ -59,7 +59,7 @@
 		}
 	},
 	"phaser": {
-		"archive": "65474f8573f72a55b9a3a8746e3f315b6dcf24505006eeddced83a0be09996c9",
+		"archive": "32a36cc7cdf60ed3e03ebce5b86898876be68a4009744ce648d2d3ccf44e036b",
 		"entries": {
 			"README.txt": "864bf1ecf2348127f19260d32537dafef9634df433fe8c6bfc8f3e711fb1e45a",
 			"manifest.json": "c3a8e00b00a9eade021a0175f843887400bdee7d53273c99c0276f6fb8f0ba82",
@@ -77,7 +77,7 @@
 			"phaser/3-hat_4-main_4-walk.json": "4df7a08af18a62fe35c6ea66f7ab0aea2597341f0c161a678b3033ab4c5b48bb",
 			"phaser/PaperdollContainer.js": "9f016d61c94f9699ef77a71644e30f2072eb78ff6701c5a20e4fceeecfde9695",
 			"phaser/types.d.ts": "78204605f7c5fbc375be48b777177c94a3bdabfe0c6de0e8c940ea9b517b3bf2",
-			"phaser/README.txt": "151690a9bd0232abd2b8f6b86d515863950aad6fb8ad4cb2d7912f7dea338582",
+			"phaser/README.txt": "d1ff5c8ab8825d0c45ee1947ccd2cc78260d2172e5d899d91606e02b85044dd5",
 			"AGENTS.md": "ef99603aace4bea8b32d38665c73320ed3a9073bf9d7dbcab32f5be57917fc03",
 			"CLAUDE.md": "b8bbce03a59ca0fc39966f4d1ec29e0f187a49584893f3f84b4bb057c76ac0cf",
 			"docs/phaser.md": "61af2cd7d377f586f43abe4c5d0cdc88df3377c37618956e7fc18e1ce8fd45e2",
@@ -140,7 +140,7 @@
 		}
 	},
 	"gdevelop": {
-		"archive": "8635f10072b33eb34a8588a483b03be60b8eaf50f471029ea9cf5591ee30083f",
+		"archive": "f45615348fb79ce5c06ef3c8359c405938b3110b6aa3e43b3b050b0a2b3b5e7e",
 		"entries": {
 			"README.txt": "fdcc18ccea8ec0176fad44faa72c1c9eab89c5161b49a4303894a58ec0478647",
 			"manifest.json": "0d0b9b76a327444f47811d829013a8ca4e56ef60ff7a77d9e916cf2722594883",
@@ -157,7 +157,7 @@
 			"gdevelop/images/2cc3ab347943371b_1_0_0_0_0.png": "afc7b0f71c139517459f97f247cba8b89a92a21f9bfee07dda8c7ced12297714",
 			"gdevelop/game.json": "caee6b24f369cd05827ae4e2b605b9a2a0d676e9540c83f5c02998eb393a6781",
 			"gdevelop/Paperdoll.js": "6d3653df8b689989dcac5c4685c7277419a082d9a80c8f94bf117a72e32d05f0",
-			"gdevelop/README.txt": "108619f8bb9d3b9506a12f49469a9795e0ccb145222ebfaa6bf2c70ba1715dd8",
+			"gdevelop/README.txt": "1c857e56ac5cef72c7d9200b89c606cb7a87f77401c8ab6680482b1c1f1c086f",
 			"AGENTS.md": "ef99603aace4bea8b32d38665c73320ed3a9073bf9d7dbcab32f5be57917fc03",
 			"CLAUDE.md": "b8bbce03a59ca0fc39966f4d1ec29e0f187a49584893f3f84b4bb057c76ac0cf",
 			"docs/gdevelop.md": "e64bb5aa25ddcf0934fdb495285822374e37124513dd9444d8607ee2b6d8155c",
@@ -190,14 +190,14 @@
 		}
 	},
 	"rpg-maker": {
-		"archive": "4798ce08df1a0bcc3db5c9be33e39a61e5186dbbc41ccf5b6708e8b3b862c875",
+		"archive": "8173b31c303ba3a7765cbfa5d1ba4c199744f6d17dc17dbe8490cac96fc8ddba",
 		"entries": {
 			"$Fixture.png": "e314c2da063680ff35170b61f58d21dd385e9c8b9c8d1bb065ce86d2e3f683fb",
 			"$Fixture_Default.png": "4dab7e753f61707f45630b67ac66b569c22595141288ae6b05efd0d64d27341d",
-			"README.txt": "6c4400e60707cbac43455c4341d49c74c897eacc90750e42b47b14f23d3f0798",
+			"README.txt": "ddf524bfd975e95b683eee6518e1a7b52693a334ee9f931b8d16ceffcc382e1d",
 			"AGENTS.md": "ef99603aace4bea8b32d38665c73320ed3a9073bf9d7dbcab32f5be57917fc03",
 			"CLAUDE.md": "b8bbce03a59ca0fc39966f4d1ec29e0f187a49584893f3f84b4bb057c76ac0cf",
-			"docs/rpg-maker.md": "f9784bf4acfd735cace28ca7f5140f61e25eec027b876d85f8b9b2ba0cc8a247",
+			"docs/rpg-maker.md": "4ac18bf7634a717825e7a01713b5559de7647669ebc8cc861ecd647150eb669d",
 			"project.json": "312b4189d266a3bc22f12069b4446ed3b1f0792a46e20175571cf4a24dc475c8",
 			"cells/03c373be5038aee6323bc4ef682d95bf05ecf1652a023a3b8d8801b9a63fe3a6.png": "a1c889c7f6c09469634082d9fcfe06c492f3c937ea869ad770401abe69b2568f",
 			"cells/65c31e5e7e5c666fbca25efadfdb2a6434804f33aef09f7505d3b4f08bd2d5fd.png": "afc7b0f71c139517459f97f247cba8b89a92a21f9bfee07dda8c7ced12297714",
@@ -205,14 +205,14 @@
 		}
 	},
 	"rpg-maker-xp": {
-		"archive": "f9f61ee7c1d0bbb26d79555e884710de52a975a8073058238e30f9ffe20c942d",
+		"archive": "22051cdf1f3622f71ef01d0aa58bfb7f84133fde039b9d683787b84145dc538c",
 		"entries": {
 			"Fixture.png": "e57e95ac17867796c726985e12b81d8a97ed2c72909cadf2cc263adb31f25068",
 			"Fixture_Default.png": "df9f2bb0d4a6465c4d3138ba456da9cc09675f6eb6c1121d1b5580c754076d39",
-			"README.txt": "4fbb0fb62f3b67e59af9ee6c6a8d29c4891fc3272173e566023347dc25e62075",
+			"README.txt": "f448489a2673997461dfcd2d166a6ccd19197e7fb0a1cc5b3d12fc5b4b5f5200",
 			"AGENTS.md": "ef99603aace4bea8b32d38665c73320ed3a9073bf9d7dbcab32f5be57917fc03",
 			"CLAUDE.md": "b8bbce03a59ca0fc39966f4d1ec29e0f187a49584893f3f84b4bb057c76ac0cf",
-			"docs/rpg-maker-xp.md": "efad6733253256eee98e3d75ec0f6a77853d7cb6325050a92b45ccf267d6433f",
+			"docs/rpg-maker-xp.md": "b1c7051704ef1bed95a334f535fca322a4b145539fdbb5757e4ff49da7aa50fe",
 			"project.json": "312b4189d266a3bc22f12069b4446ed3b1f0792a46e20175571cf4a24dc475c8",
 			"cells/03c373be5038aee6323bc4ef682d95bf05ecf1652a023a3b8d8801b9a63fe3a6.png": "a1c889c7f6c09469634082d9fcfe06c492f3c937ea869ad770401abe69b2568f",
 			"cells/65c31e5e7e5c666fbca25efadfdb2a6434804f33aef09f7505d3b4f08bd2d5fd.png": "afc7b0f71c139517459f97f247cba8b89a92a21f9bfee07dda8c7ced12297714",

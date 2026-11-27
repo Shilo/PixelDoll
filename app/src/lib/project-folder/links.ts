@@ -225,7 +225,8 @@ export function recordWritten(key: string, path: string, hash: string | null): P
 	);
 }
 
-/** Marks paths as kept by the user (never written again), or, with `keep` false, clears every kept mark. */
+/** Marks paths as kept by the user (never written again), or, with `keep` false, clears those paths' kept marks
+ *  (every kept mark when `paths` is empty). */
 export function setKept(key: string, paths: readonly string[], keep: boolean): Promise<void> {
 	return inFiles('readwrite', (store, done) => {
 		if (keep) {
@@ -233,6 +234,15 @@ export function setKept(key: string, paths: readonly string[], keep: boolean): P
 				const read = store.get([key, path]);
 				read.onsuccess = () =>
 					store.put({ ...(read.result as FileEntry | undefined), link: key, path, kept: true });
+			}
+		} else if (paths.length) {
+			for (const path of paths) {
+				const read = store.get([key, path]);
+				read.onsuccess = () => {
+					if (!read.result) return;
+					const { kept: _kept, ...rest } = read.result as FileEntry;
+					store.put(rest);
+				};
 			}
 		} else {
 			const cursor = store.index('link').openCursor(key);

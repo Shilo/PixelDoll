@@ -6,7 +6,7 @@ import { handHides, hidesOf, layerFrame, variantCovers } from '../compose/compos
 import { portableAssetName } from './paths.ts';
 import { exportUnit } from '../rig/rig.ts';
 
-const UNITY_RUNTIME_REVISION = 1;
+const UNITY_RUNTIME_REVISION = 2;
 const UNITY_RUNTIME_FORMAT = 1;
 
 function exportId(m: Manifest): string {
@@ -536,6 +536,9 @@ const SHARED_IMPORT_HOOKS = `        const int RuntimeFormat = ${UNITY_RUNTIME_F
         static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom, bool didDomainReload)
         {
             foreach (var path in imported.Concat(moved)) Queue(path);
+            const string generated = "/unity/Generated";
+            foreach (var path in deleted.Concat(movedFrom))
+                if (path.EndsWith(generated)) Queue(path.Substring(0, path.Length - generated.Length) + Json);
             if (!didDomainReload) return;
             foreach (var guid in AssetDatabase.FindAssets("pixeldoll_unity t:TextAsset", new[] { "Assets" }))
                 Queue(AssetDatabase.GUIDToAssetPath(guid));
@@ -638,7 +641,70 @@ const SHARED_IMPORT_HOOKS = `        const int RuntimeFormat = ${UNITY_RUNTIME_F
                     Sheets(layer.lowerSheets, false);
                     Sheets(layer.upperSheets, false);
                 }
-            return generated.ToArray();
+            return generated.Distinct().ToArray();
+        }
+
+        [System.Serializable]
+        sealed class GeneratedAsset
+        {
+            public string name;
+            public string hash;
+        }
+
+        [System.Serializable]
+        sealed class GeneratedAssets
+        {
+            public GeneratedAsset[] entries;
+        }
+
+        static string Fingerprint(string path)
+        {
+            // Hash serialized object data instead of Unity's on-disk YAML or binary representation.
+            IEnumerable<Object> assets = AssetDatabase.LoadAllAssetsAtPath(path);
+            if (AssetDatabase.LoadMainAssetAtPath(path) is GameObject prefab)
+                assets = prefab.GetComponentsInChildren<Transform>(true)
+                    .SelectMany(child => child.GetComponents<Component>().Cast<Object>().Prepend(child.gameObject));
+            var data = new StringBuilder();
+            var importer = AssetImporter.GetAtPath(path);
+            if (importer != null) data.Append(EditorJsonUtility.ToJson(importer)).Append('\\n');
+            foreach (var entry in assets.Where(asset => asset != null)
+                .Select(asset => (id: GlobalObjectId.GetGlobalObjectIdSlow(asset).ToString(), asset))
+                .OrderBy(entry => entry.id, System.StringComparer.Ordinal))
+                data.Append(entry.id).Append('\\n').Append(EditorJsonUtility.ToJson(entry.asset)).Append('\\n');
+            return Hash128.Compute(data.ToString()).ToString();
+        }
+
+        static string[] PriorOutputs(string outDir, string index, string[] outputs, HashSet<string> checkedPaths)
+        {
+            if (File.Exists(outDir)) return null;
+            if (!Directory.Exists(outDir)) return System.Array.Empty<string>();
+            if (!File.Exists(index))
+                return Directory.EnumerateFileSystemEntries(outDir).Any() ? null : System.Array.Empty<string>();
+            var saved = JsonUtility.FromJson<GeneratedAssets>(File.ReadAllText(index));
+            if (saved?.entries == null || saved.entries.Length == 0) return null;
+            var known = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            foreach (var entry in saved.entries)
+            {
+                if (entry == null || string.IsNullOrEmpty(entry.name) || entry.name.Contains("/") || !known.Add(entry.name))
+                    return null;
+                var path = outDir + "/" + entry.name;
+                CheckAssetPath(path, checkedPaths);
+                if (!File.Exists(path) || Fingerprint(path) != entry.hash) return null;
+            }
+            foreach (var path in outputs)
+                if (!known.Contains(Path.GetFileName(path)) &&
+                    (File.Exists(path) || Directory.Exists(path) || File.Exists(path + ".meta") || Directory.Exists(path + ".meta")))
+                    return null;
+            return saved.entries.Select(entry => outDir + "/" + entry.name).ToArray();
+        }
+
+        static void RecordGenerated(string index, IEnumerable<string> outputs)
+        {
+            var state = new GeneratedAssets
+            {
+                entries = outputs.Select(path => new GeneratedAsset { name = Path.GetFileName(path), hash = Fingerprint(path) }).ToArray()
+            };
+            File.WriteAllText(index, JsonUtility.ToJson(state, true));
         }
 `;
 
@@ -696,7 +762,15 @@ ${
             var outputs = ValidatePaths(root, outDir, d, checkedPaths);
             var digest = Hash128.Compute(RuntimeRevision + ":" + json).ToString();
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(outDir + "/" + d.name + ".prefab");
-            if (prefab != null && prefab.GetComponent<Paperdoll>()?.importDigest == digest && outputs.All(File.Exists)) return;`
+            if (prefab != null && prefab.GetComponent<Paperdoll>()?.importDigest == digest && outputs.All(File.Exists)) return;
+            var index = outDir + "/.pixeldoll-generated.json";
+            CheckAssetPath(index, checkedPaths);
+            var prior = PriorOutputs(outDir, index, outputs, checkedPaths);
+            if (prior == null)
+            {
+                Debug.LogWarning("PixelDoll: skipped updating " + jsonPath + " because generated assets have changed or have no recorded baseline. Delete " + outDir + "/ to rebuild them.");
+                return;
+            }`
 								: `
             var d = JsonUtility.FromJson<PaperdollData>(File.ReadAllText(jsonPath));
             if (d.exportId != ExportId) return; // other exported characters have independent assemblies/importers
@@ -779,7 +853,12 @@ ${
             doll.Sync();
             PrefabUtility.SaveAsPrefabAsset(go, outDir + "/" + d.name + ".prefab");
             Object.DestroyImmediate(go);
-            ${folder ? 'foreach (var output in outputs) AssetDatabase.SaveAssetIfDirty(AssetDatabase.GUIDFromAssetPath(output));' : 'AssetDatabase.SaveAssets();'}
+            ${
+							folder
+								? `foreach (var output in outputs) AssetDatabase.SaveAssetIfDirty(AssetDatabase.GUIDFromAssetPath(output));
+            RecordGenerated(index, outputs.Union(prior, System.StringComparer.OrdinalIgnoreCase));`
+								: 'AssetDatabase.SaveAssets();'
+						}
             Debug.Log("PixelDoll: imported " + d.name + ": " + library.Sum(l => l.sprites.Length) + " sprites in " + library.Count + " layers, " + d.animations.Length * d.directions.Length + " clips -> " + outDir);
         }
 
@@ -906,8 +985,9 @@ export function unityFiles(m: Manifest, folder = false): OutFile[] {
 The shared runtime is ../pixeldoll-unity/Runtime/Paperdoll.cs and its importer is ../pixeldoll-unity/Editor/PixelDollImporter.cs
 relative to this character folder. When copying the character, copy pixeldoll-unity too and keep them in the same parent folder.
 Use a single Unity export destination under Assets/ in each project. A second destination, even a sibling, would install
-duplicate PixelDoll assemblies. Unity imports the character automatically when its JSON is imported or scripts reload,
-and rebuilds unity/Generated/ whenever the character or the shared runtime changes: customize a prefab variant, not those files.`
+duplicate PixelDoll assemblies. Unity imports the character automatically when its JSON is imported or scripts reload.
+If generated assets were edited or created by an importer without edit tracking, Unity logs a warning and preserves them.
+Delete unity/Generated/ to rebuild from the export. Customize a prefab variant outside that folder to keep receiving updates.`
 					: `Unity 2022.3 / Unity 6. Install com.unity.2d.sprite (2D Sprite) with Package Manager, then copy the whole export folder
 under Assets/. No 2D Animation package is required. Keep this character in one folder: re-export into that same folder.
 Different characters use independent namespaces and assemblies; do not import two copies of the same character.

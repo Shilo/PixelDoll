@@ -44,6 +44,12 @@ const folderRuntimes = {
 	unity: unityRuntime
 };
 
+/** The revision of an engine's shared project folder runtime, or undefined for an engine without one. */
+export const runtimeRevision = (engine: Engine): number | undefined =>
+	Object.hasOwn(folderRuntimes, engine)
+		? folderRuntimes[engine as keyof typeof folderRuntimes].revision
+		: undefined;
+
 export interface RuntimeBundle {
 	engine: keyof typeof folderRuntimes;
 	revision: number;

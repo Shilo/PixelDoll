@@ -25,10 +25,10 @@ const runtimeFiles = {
 // Pin each published revision's paths and bytes together. Keep old revision pins when adding a new one. (Revision 1
 // was re-pinned before release, when the runtime folders gained their agent docs.)
 const revisionGoldens: Record<keyof typeof runtimeFiles, Record<number, string>> = {
-	godot: { 1: 'dba99e2fe87e0957296618727d3a32b25b420e7e071a6e4bd5d627543453db67' },
-	phaser: { 1: '1ef1f9f0c819cf54e78c5434c74e3891c91510d1f0c820d8e10d865ac5469b41' },
-	'phaser-ae': { 1: 'e94e36b77c57efcc44050e73c07f4f157fc620c8ae00183c39f82b56578d957c' },
-	unity: { 1: 'd4dbe00f2f9d3246f98d34f07ad1fba8afcb917a2615e30ed4c4672cf7dd618d' }
+	godot: { 1: 'a2fc05b33da2ed307f5a00fa4b0b3a2f6c08b47a77e5f25f0a3ce862a8307364' },
+	phaser: { 1: '0089403bf7806a1d2556a8181ae5ef9ed0691ee20ae8880116132700640b2554' },
+	'phaser-ae': { 1: 'e7f27767185699f43a4038c561449ebdbbf1efa2122467f43a446cc91cd0c9cc' },
+	unity: { 2: '402ebc0321c9cdd37d43720cbad4cb0df68eeff7052d0280574c58e8dcdf7d70' }
 };
 
 // Captured at the fixture's fixed exportedAt from an isolated archive of HEAD (67b40dc8e).

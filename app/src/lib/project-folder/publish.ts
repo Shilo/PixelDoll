@@ -121,19 +121,23 @@ export function matchesRecord(record: FolderRecord, next: ReadonlyMap<string, st
 	return [...next].every(([path, hash]) => kept.has(path) || record.written[path] === hash);
 }
 
-/** Whether the folder already holds exactly these files (kept ones aside), so a file edited or deleted in the game is
- *  noticed. Bytes already equal need no write even when the record does not show them, such as after a fresh link. */
+/** Whether the folder already holds exactly these files (kept ones aside, though a required kept one must still be a
+ *  file there), so a file edited or deleted in the game is noticed. Bytes already equal need no write even when the
+ *  record does not show them, such as after a fresh link. */
 export async function inSync(
 	target: FolderTarget,
 	record: FolderRecord,
-	next: ReadonlyMap<string, string>
+	next: ReadonlyMap<string, string>,
+	required?: (path: string) => boolean
 ): Promise<boolean> {
 	const kept = new Set(record.kept);
 	try {
 		await target.check();
-		const paths = [...next].filter(([path]) => !kept.has(path));
+		const paths = [...next].filter(([path]) => !kept.has(path) || required?.(path));
 		const found = await allAtOnce(paths, ([path]) => hashAt(target, path));
-		return paths.every(([, hash], i) => found[i] === hash);
+		return paths.every(([path, hash], i) =>
+			kept.has(path) ? found[i] !== null && found[i] !== NOT_A_FILE : found[i] === hash
+		);
 	} catch {
 		// Unreadable here means the full publish runs and reports the real problem.
 		return false;
@@ -150,6 +154,7 @@ export async function inSync(
  * @param proceed asked once the plan is ready, with the writes it will make, just before the first; false stops without writing (such as
  *   automatic updates having been turned off meanwhile).
  * @param manifest the path written after every other file (default manifest.json).
+ * @param required paths read and checked even when kept (see planPublish).
  * @param first a folder whose files are written, one at a time, before any other: a runtime shared by the export, so a
  *   failure there leaves the export's own files untouched.
  */
@@ -161,6 +166,7 @@ export async function publishFiles(
 		overwrite?: ReadonlyMap<string, string>;
 		onRecord: (path: string, hash: string | null) => Promise<void>;
 		proceed?: (writes: readonly PlanAction[]) => Promise<boolean>;
+		required?: (path: string) => boolean;
 		manifest?: string;
 		first?: string;
 	}
@@ -174,12 +180,19 @@ export async function publishFiles(
 		const bytes = new Map(files.map((f) => [f.name, f.data]));
 		const next = await hashFiles(files);
 		const disk = new Map<string, string | null>();
-		// Kept files are the user's and never written, so they are not read either (one may be locked or unreadable).
+		// Kept files are the user's and never written, so they are not read either (one may be locked or unreadable),
+		// except required ones, which must still be there.
 		const kept = new Set(o.record.kept);
-		const paths = [...next.keys()].filter((path) => !kept.has(path));
+		const paths = [...next.keys()].filter((path) => !kept.has(path) || o.required?.(path));
 		const found = await allAtOnce(paths, (path) => hashAt(target, path));
 		paths.forEach((path, i) => disk.set(path, found[i]));
-		const plan = planPublish({ next, record: o.record, disk, overwrite: o.overwrite });
+		const plan = planPublish({
+			next,
+			record: o.record,
+			disk,
+			overwrite: o.overwrite,
+			required: o.required
+		});
 		// Files already holding the export's bytes that PixelDoll did not write: still the user's, but worth offering.
 		const matching = plan.actions.filter((a) => a.kind === 'foreign');
 		if (plan.conflicts.length) return { kind: 'blocked', conflicts: plan.conflicts, matching };

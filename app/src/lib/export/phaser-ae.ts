@@ -586,7 +586,9 @@ export function phaserAeFiles(m: Manifest, folder = false): OutFile[] {
 				)
 			)
 		)
-	].map((file) => assetsDir + file);
+		// The folder layout cannot know where the picked folder sits under game/, so its list is relative to the character
+		// folder and the README says how to prefix it; editing the list would pause automatic publishing.
+	].map((file) => (folder ? file : assetsDir + file));
 	const initial = m.rig.animations.find((a) => (a.directions ?? m.rig.directions).length > 0);
 	return [
 		...(folder ? [] : phaserAeRuntime.files.map((f) => ({ ...f, name: 'phaser-ae/' + f.name }))),
@@ -602,15 +604,25 @@ under Phaser's own license.
 
 1. ${
 				folder
-					? `Keep the character under game/${dir}. Its runtime is at ../pixeldoll-phaser-ae/paperdoll.js
-   relative to this character folder. When copying the character, copy pixeldoll-phaser-ae too and keep them in the same parent folder.
-   Include the shared module under game/ so the build can import it. Rebuild and reload a running game to pick up runtime changes.`
+					? `Keep the character under game/${dir}, where <folder> is the path from game/ to the folder you picked in
+   PixelDoll. Its runtime is at ../pixeldoll-phaser-ae/paperdoll.js relative to this character folder. When copying the
+   character, copy pixeldoll-phaser-ae too and keep them in the same parent folder. Include the shared module under game/
+   so the build can import it. Rebuild and reload a running game to pick up runtime changes.
+   Phaser AE's publish uploads game/ as the game's private source, including this folder's project.json (item prompts)
+   and cells/.`
 					: `Copy into the game's folder, under game/${dir}, only what the game needs: manifest.json, the phaser-ae/ folder and
    every file listed in phaser-ae/assets.json. Leave project.json, cells/, baked/ and the docs out: the game folder is
    the source that publishing uploads.`
 			}
 2. phaser-ae/assets.json is a list of paths for the "assets" list in game/manifest.json (not for game/assets.json):
-   add them there, so the build copies the sheets next to the game. Set "pixelArt": true in its "screen".${folder ? '\n   Replace the example path prefix in the list with the actual path from game/ to the character.' : ''}
+   add them there, so the build copies the sheets next to the game. Set "pixelArt": true in its "screen".${
+			folder
+				? `
+   The paths are relative to this character folder: prefix each with the path from game/ to it (${dir}),
+   for example ${dir}manifest.json. Do not edit phaser-ae/assets.json; PixelDoll manages it. After adding moves or
+   items, add the new paths from phaser-ae/assets.json the same way.`
+				: ''
+		}
 3. Load once, before the first scene, in a module of its own (hero.ts), and import it where it is needed:
      // hero.ts
      import { game } from './engine.js'

@@ -95,7 +95,13 @@ items and colors without calling play, so the active move keeps running.
 A complete game config:
     new Phaser.Game({ type: Phaser.AUTO, width: 400, height: 300, pixelArt: true, roundPixels: true, scene: [HeroScene] })
 Use pixelArt: true and roundPixels: true and serve the folder over http: the module fetches manifest.json.
-The path you pass is relative to the document's base URL (document.baseURI), not to PaperdollContainer.js.
+The path you pass is relative to the document's base URL (document.baseURI), not to PaperdollContainer.js.${
+	runtimePath
+		? `
+<folder> is the path from your game's code to the folder picked in PixelDoll (the page and the importing module are
+assumed to sit together).`
+		: ''
+}
 This export does not bundle Phaser. Load Phaser 3.80+ or 4 yourself: a script tag that exposes the global Phaser, or your
 bundler with an explicit import (import Phaser from 'phaser'); then import ${runtimePath ?? 'phaser/PaperdollContainer.js'} as an ES module.
 Phaser does not await an async create(): nothing may use the doll until loadPaperdoll resolves, so guard update() on
@@ -123,8 +129,12 @@ Entry: ${runtimePath ?? 'phaser-ae/paperdoll.js'}, an ES module, typed by ${runt
 
 ${
 	runtimePath
-		? `Keep the runtime in the game's game/ folder. Add the sheets from phaser-ae/assets.json to the "assets" list in
-game/manifest.json with their paths relative to game/. Set "pixelArt": true in the manifest's "screen".`
+		? `<folder> is the path from game/ to the folder picked in PixelDoll; keep it and the runtime under game/.
+phaser-ae/assets.json lists paths relative to the character folder: add each to the "assets" list in
+game/manifest.json (not to game/assets.json) prefixed with <folder>/<character>/, so the build copies the sheets. Do
+not edit phaser-ae/assets.json (PixelDoll manages it); after adding moves or items, add its new paths the same way.
+Phaser AE's publish uploads game/ as private source, including each character's project.json and cells/. Set
+"pixelArt": true in the manifest's "screen".`
 		: `This is a local integration. Copy manifest.json, phaser-ae/ and the files listed in phaser-ae/assets.json into the game as
 game/pixeldoll/<character>/ (not project.json, cells/ or baked/), and add every path in phaser-ae/assets.json to the
 "assets" list in game/manifest.json (not to game/assets.json): the build copies those files next to the game. Phaser's
@@ -252,7 +262,7 @@ colors of materials[].ramp with the selected variant's ramp; preset colors are a
 
 const RPGMAKER = `# RPG Maker MZ, MV, VX Ace, VX
 
-Sheets sit at the root of this ZIP, one per outfit. Full guide: README.txt.
+Sheets sit at the root of this export, one per outfit. Full guide: README.txt.
 
 Copy the PNGs into img/characters (MZ, MV) or Graphics/Characters (VX Ace, VX) and pick one as an actor or event image.
 The "$" prefix tells the engine the image holds a single character. Rows are down, left, right, up; the middle column
@@ -264,7 +274,7 @@ views, idle and action moves have no place in this format.
 
 const RPGMAKERXP = `# RPG Maker XP / Pokemon Essentials
 
-Sheets sit at the root of this ZIP, one per outfit. Full guide: README.txt.
+Sheets sit at the root of this export, one per outfit. Full guide: README.txt.
 
 Copy the PNGs into Graphics/Characters and pick one as an actor or event image. Rows are down, left, right, up; the
 first column is standing, then step, passing, other step. XP uses 32 px tiles.
@@ -302,8 +312,8 @@ PixelDoll manages this folder. It holds the ${name} runtime (${entry}) that ever
 uses. Each character folder has its own manifest.json, AGENTS.md and ${engine}/README.txt with the runtime API.
 
 - Integrate through a character folder: start with its AGENTS.md.
-- Do not edit or delete files here. PixelDoll replaces them when it updates the runtime, and a changed or missing file
-  pauses updates for every character in this folder until it is restored or kept.
+- Do not edit or delete files here. PixelDoll replaces them when it updates the runtime. An edited file pauses updates
+  for every character in this folder until it is replaced or kept in PixelDoll; a missing file must be restored.
 - When copying a character to another project, copy this folder too and keep them in the same parent folder.
 `;
 	return [
