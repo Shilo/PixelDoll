@@ -11,6 +11,7 @@
 	import TierNotice from './TierNotice.svelte';
 	import PoseIssues from './PoseIssues.svelte';
 	import { app } from '../lib/app.svelte.ts';
+	import { message } from '../lib/message.ts';
 	import { tierDecision } from '../lib/pixellab/plans.ts';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { itemPlan } from './apiPlans.ts';
@@ -275,7 +276,7 @@ ${name}` !== typedAtStart || reference !== openedReference
 		}
 	}
 	function go() {
-		if (!canMake) return;
+		if (!canMake || !plan || !m) return;
 		busy = true;
 		formDrafts.item = {
 			projectId: doc.id,
@@ -289,10 +290,11 @@ ${name}` !== typedAtStart || reference !== openedReference
 			...(planned.method ? { method: planned.method } : {})
 		};
 		const i = $state.snapshot(plannedInput);
-		const consent = plan
-			? { projectId: doc.id, gens: plan.gens, rig: JSON.stringify(m!.rig) }
-			: undefined;
-		withKey(() => void make(i, consent), plan?.minimumTier ?? 0);
+		const consent = { projectId: doc.id, gens: plan.gens, rig: JSON.stringify(m.rig) };
+		withKey(() => void make(i, consent), plan.minimumTier, {
+			name: i.name,
+			estimate: message('generationDetails.gens', { value: formatNumber(plan.gens) })
+		});
 	}
 	function promptKeydown(event: KeyboardEvent) {
 		if (

@@ -441,7 +441,12 @@ export const ui = $state({
 	toastProblem: null as Problem | null,
 	waitingForTab: false // a spending action waits for the other tab that runs the jobs
 });
-let afterConnect: { run: () => void; minimumTier: number } | null = null;
+type ConnectionPurchase = { name: string; estimate: Message };
+let afterConnect: {
+	run: () => void;
+	minimumTier: number;
+	purchase?: ConnectionPurchase;
+} | null = null;
 let afterTakeOver: (() => void) | null = null;
 let waitingNotice: ReturnType<typeof setTimeout> | undefined;
 /** How long a click waits for an idle tab to hand over the jobs before Activity explains the wait: a handoff takes well
@@ -744,18 +749,18 @@ function allowsTier(minimumTier: number): boolean {
 	}
 	return true;
 }
-export function withKey(fn: () => void, minimumTier = 0) {
+export function withKey(fn: () => void, minimumTier = 0, purchase?: ConnectionPurchase) {
 	if (moveReviewPublishing) {
 		toast(message('directionsSheet.waitForGeneration'), { tone: 'warning', report: false });
 		return;
 	}
-	if (follower(() => withKey(fn, minimumTier))) return;
+	if (follower(() => withKey(fn, minimumTier, purchase))) return;
 	if (app.key && !app.keyRejected && !allowsTier(minimumTier)) {
 		afterConnect = null;
 		return;
 	}
 	if (app.key && !app.keyRejected) return fn();
-	afterConnect = { run: fn, minimumTier };
+	afterConnect = { run: fn, minimumTier, purchase };
 	ui.sheet = 'connect';
 }
 export function connected() {
@@ -767,6 +772,7 @@ export function connected() {
 	if (f && allowsTier(f.minimumTier)) f.run();
 }
 export const pendingConnectionMinimumTier = () => afterConnect?.minimumTier ?? null;
+export const pendingConnectionPurchase = () => afterConnect?.purchase;
 /** Closing Connect cancels its spending action, including when the balance request is still in flight. */
 export function clearPendingConnection() {
 	afterConnect = null;

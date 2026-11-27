@@ -1204,9 +1204,7 @@ dialog.sheet.center.character-sheet {
 .character-sheet .sheet-foot {
 	justify-content: flex-end;
 }
-.character-sheet .creator-cost {
-	color: var(--text-3);
-	margin-right: 0;
+.character-sheet .sheet-foot .cost {
 	white-space: nowrap;
 }
 dialog.sheet.bottom {

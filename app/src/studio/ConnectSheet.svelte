@@ -3,6 +3,7 @@
 	import { t, type WhisperKey } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
 	import { message } from '../lib/message.ts';
+	import { displayMessage } from '../lib/i18n.ts';
 	import { balanceFacts } from './report.svelte.ts';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { app, setKey, replaceKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts';
@@ -17,7 +18,8 @@
 		claimPixelLabConnectOpen,
 		connected,
 		clearPendingConnection,
-		pendingConnectionMinimumTier
+		pendingConnectionMinimumTier,
+		pendingConnectionPurchase
 	} from './state.svelte.ts';
 	import { Copy, ExternalLink, RefreshCw, TriangleAlert } from './icons.ts';
 	import RichMessage from './RichMessage.svelte';
@@ -63,7 +65,20 @@
 	let closed = false;
 	const activityScope = crypto.randomUUID();
 	const externalHint = $props.id();
+	const purchaseHint = `${externalHint}-purchase`;
+	const purchaseCost = `${externalHint}-cost`;
+	const purchase = pendingConnectionPurchase();
+	const purchaseEstimate = $derived(purchase ? displayMessage(purchase.estimate) : '');
 	let minimumTier = $state(pendingConnectionMinimumTier() ?? 0);
+	const submitLabel = $derived(
+		t(
+			checking
+				? 'connectSheet.checking'
+				: replacing
+					? 'connectSheet.replaceKey'
+					: 'connectSheet.connect'
+		)
+	);
 	onMount(() => {
 		firstOpen = claimPixelLabConnectOpen() && showForm;
 		if (firstOpen) void tick().then(() => guideIntro?.focus());
@@ -394,8 +409,13 @@
 					{t('connectSheet.sharedOriginWarning', { host: location.host })}
 				</p>{/if}
 			<p class="small bu-muted">{t('connectSheet.sentOnlyToApiPixellabAi')}</p>
-			<p class="small bu-muted">{t('connectSheet.demoNoAccount')}</p>
+			{#if !purchase}<p class="small bu-muted">{t('connectSheet.demoNoAccount')}</p>{/if}
 			<AffiliationNotice multiline />
+			{#if purchase && !replacing}
+				<p id={purchaseHint} class="small">
+					{t('connectSheet.resumePurchase', { name: purchase.name })}
+				</p>
+			{/if}
 			<div class="field-row">
 				<a
 					class="bu-action btn"
@@ -426,14 +446,16 @@
 							data-variant="primary"
 							type="submit"
 							disabled={!key.trim() || checking}
-							>{t(
-								checking
-									? 'connectSheet.checking'
-									: replacing
-										? 'connectSheet.replaceKey'
-										: 'connectSheet.connect'
-							)}</button
-						></span
+							aria-describedby={purchase && !replacing
+								? `${purchaseHint} ${purchaseCost}`
+								: undefined}
+							>{submitLabel}
+							{#if purchase && !replacing}<span class="cost" aria-hidden="true"
+									>~{purchaseEstimate}</span
+								>{/if}</button
+						>{#if purchase && !replacing}<span id={purchaseCost} hidden
+								>{t('create.sheet.estimated', { gens: purchaseEstimate })}</span
+							>{/if}</span
 					>
 				</span>
 			</div>

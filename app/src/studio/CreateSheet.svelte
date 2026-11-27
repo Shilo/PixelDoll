@@ -202,11 +202,19 @@
 			seed: d.seed ? Number(d.seed) : freshSeed(),
 			...(accepted.length ? { acceptedWarnings: [...accepted] } : {})
 		};
-		withKey(() => {
-			formDrafts.character = undefined;
-			void startCreate(spec, true);
-		});
+		withKey(
+			() => {
+				formDrafts.character = undefined;
+				void startCreate(spec, true);
+			},
+			0,
+			{
+				name: spec.name,
+				estimate: message('create.sheet.gensRange', { lo: formatNumber(lo), hi: formatNumber(hi) })
+			}
+		);
 	}
+	const costId = $props.id();
 	const gensRange = $derived(
 		t('create.sheet.gensRange', { lo: formatNumber(lo), hi: formatNumber(hi) })
 	);
@@ -448,15 +456,18 @@
 				>{t('create.sheet.estimated', { gens: gensRange })} · {t('common.keepsRunning')}</span
 			>
 		{:else}
-			<span class="foot-note creator-cost" title={t('create.sheet.costTitle')}>~{gensRange}</span>
+			<!-- The price rides on the paid action; the name stays the action and the estimate is its description. -->
 			<span class="api-action"
 				><button
 					class="bu-action btn primary lg"
 					data-variant="primary"
+					title={t('create.sheet.costTitle')}
+					aria-describedby={costId}
 					disabled={!!errors.length || enhancing || referenceLoading}
 					onclick={go}
-					>{accepted.length ? t('create.sheet.createAnyway') : t('create.sheet.create')}</button
-				></span
+					>{accepted.length ? t('create.sheet.createAnyway') : t('create.sheet.create')}
+					<span class="cost" aria-hidden="true">~{gensRange}</span></button
+				><span id={costId} hidden>{t('create.sheet.estimated', { gens: gensRange })}</span></span
 			>
 		{/if}
 	{/snippet}

@@ -3190,7 +3190,7 @@ test('studio demo: base colors, Create size and direction pricing, stripped dev 
 		.click();
 	await page.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 	const cost = async () => {
-		const value = await page.locator('dialog .foot-note').textContent();
+		const value = await page.locator('dialog .sheet-foot .cost').textContent();
 		assert.ok(value, 'Create cost is shown');
 		return value;
 	};
@@ -3303,6 +3303,7 @@ test('studio demo: Create without a key opens Connect, Escape restores focus and
 		.click();
 	await page.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 	await expect(page.locator('dialog').getByLabel('Name', { exact: true })).toBeFocused(); // first field focused, not Cancel (checked before fill() moves focus)
+	await page.locator('dialog').getByLabel('Name', { exact: true }).fill('Elf archer');
 	await page.locator('dialog textarea').fill('a cheerful elf archer');
 	await page
 		.locator('dialog')
@@ -3310,6 +3311,11 @@ test('studio demo: Create without a key opens Connect, Escape restores focus and
 		.click();
 	await page.waitForFunction(
 		() => document.querySelector('dialog[open] h2')?.textContent === 'Connect PixelLab'
+	);
+	await expect(
+		page.getByRole('button', { name: 'Connect', exact: true })
+	).toHaveAccessibleDescription(
+		/^Connecting starts generation for Elf archer\. Estimated .+ gens$/
 	);
 	step('Create without a key opens Connect (P0 sheet chaining)');
 	await page.keyboard.press('Escape');

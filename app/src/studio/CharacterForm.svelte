@@ -9,7 +9,7 @@
 	import { app } from '../lib/app.svelte.ts';
 	import { characterEnhanceInput } from './enhanceCharacter.ts';
 	import type { EnhanceSpec } from './promptEnhance.ts';
-	import { Copy, Check, ChevronRight } from './icons.ts';
+	import { ChevronRight } from './icons.ts';
 	import PromptField from './PromptField.svelte';
 	import PromptSuggestions from './PromptSuggestions.svelte';
 	import { promptSuggestions } from './promptSuggestions.svelte.ts';
@@ -119,8 +119,7 @@
 	const styleText = (keys: Record<string, WhisperKey>, value: string, fallback: string) =>
 		keys[value] ? t(keys[value]) : fallback;
 	let frameInput: HTMLInputElement;
-	let message = $state<Message | string>(''),
-		copied = $state(false);
+	let message = $state<Message | string>('');
 	let detailsField = $state<PromptField>();
 	let promptField = $state<PromptField>();
 	const frame = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
@@ -200,7 +199,6 @@
 	}
 	function edited() {
 		message = '';
-		copied = false;
 	}
 	function details(value: string) {
 		edited();
@@ -223,16 +221,6 @@
 						? 'prompt'
 						: 'appearance';
 		document.getElementById(`${d.tab}-tab`)?.focus();
-	}
-	async function copyPrompt() {
-		try {
-			await navigator.clipboard.writeText(d.prompt);
-			copied = true;
-			message = '';
-		} catch {
-			d.tab = 'prompt';
-			message = notice('create.form.selectToCopy');
-		}
 	}
 	// Connecting from Enhance reopens the form; finish the enhancement that asked for the key.
 	onMount(() => {
@@ -349,20 +337,6 @@
 						>
 					</div>
 				{/each}
-				<div class="prompt-note">
-					<button
-						class="prompt-excerpt"
-						onclick={() => (d.tab = 'prompt')}
-						aria-label={t('create.form.editPrompt')}>{d.prompt}</button
-					><button
-						class="bu-action btn icon copy"
-						data-variant="outline"
-						title={t('create.form.copyPrompt')}
-						aria-label={t('create.form.copyPrompt')}
-						onclick={copyPrompt}
-						>{#if copied}<Check size={14} />{:else}<Copy size={14} />{/if}</button
-					>
-				</div>
 			</div>
 		{:else}
 			<div id="prompt-panel" role="tabpanel" aria-labelledby="prompt-tab" class="editor-panel">
@@ -666,36 +640,6 @@
 		width: 100%;
 		min-width: 0;
 	}
-	.prompt-note {
-		display: flex;
-		align-items: flex-start;
-		gap: 4px;
-		padding-top: 2px;
-	}
-	.prompt-excerpt {
-		flex: 1;
-		min-width: 0;
-		display: -webkit-box;
-		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 3;
-		line-clamp: 3;
-		overflow: hidden;
-		text-align: left;
-		border: 0;
-		background: none;
-		padding: 0;
-		color: var(--text-3);
-		font: inherit;
-		font-size: 11px;
-		line-height: 1.5;
-		cursor: pointer;
-		height: 49.5px;
-		overflow-wrap: anywhere;
-	}
-	.copy {
-		flex: none;
-		color: var(--text-3);
-	}
 	:global(.appearance .exact-input) {
 		min-height: 302px;
 		resize: vertical;
@@ -833,10 +777,6 @@
 		}
 		:global(.appearance .exact-input) {
 			min-height: 300px;
-		}
-		.prompt-excerpt {
-			font-size: 12px;
-			height: 54px;
 		}
 	}
 	@media (pointer: coarse) {

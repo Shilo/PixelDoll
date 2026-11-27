@@ -1796,12 +1796,6 @@
 .studio-app .character-sheet .direction-presets:lang(ko) .btn:nth-child(4) {
 	grid-column: span 4;
 }
-.studio-app .character-sheet .prompt-excerpt {
-	font-size: 14px;
-	height: 84px;
-	-webkit-line-clamp: 4;
-	line-clamp: 4;
-}
 @media (max-width: 1250px) {
 	.studio-app .character-sheet .creator-grid {
 		grid-template-columns: 180px minmax(0, 1.1fr) minmax(0, 1fr);
