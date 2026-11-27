@@ -690,8 +690,11 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	const own = page.getByRole('menu', { name: /^Actions for / });
 	const locked = own.getByRole('menuitem', { name: 'Move to Trash…', exact: true });
 	await expect(locked).toHaveAccessibleDescription("Demo character can't be deleted");
+	// Escape closes only that menu and, like any row's, returns to its ⋮.
+	await expect(own.locator(':focus')).toHaveCount(1);
 	await page.keyboard.press('Escape');
-	await expect(current).toBeFocused();
+	await expect(own).toBeHidden();
+	await expect(menu.getByRole('button', { name: /^More actions for Adventurer/ })).toBeFocused();
 	await page.keyboard.press('Home');
 	await expect(copy).toBeFocused();
 	await page.keyboard.press('ArrowDown');
