@@ -431,7 +431,7 @@
 		"itsOutfitsAndChangesAreRemovedFrom": "Kıyafetleri, öğeleri ve saklanmamış taslakları da gider; diğer karakterlere kopyalanan öğeler kalır. en fazla 30 gün boyunca geri alabilirsiniz."
 	},
 	"demoCopyRow": {
-		"editACopy": "Bir kopyasını düzenleyin",
+		"editACopy": "Düzenlenebilir kopya yap",
 		"openedYourEditableCopyOfTheDemo": "Demonun düzenlenebilir kopyası açıldı. Üretim hakkı kullanılmadı."
 	},
 	"detailsSheet": {
@@ -481,7 +481,6 @@
 		"activity": "Etkinlik…",
 		"cancelGeneration": "Üretimi iptal edin…",
 		"cancelFromTheTabThatIsGenerating": "İptal işlemini bu eşyayı üreten sekmeden yapın.",
-		"wearInACopyOfTheDemo": "Demonun kopyasında giydirin",
 		"twoHanded": "Çift elli",
 		"createVariant": "Varyant oluştur…",
 		"labelDeleteItem": "Çöp kutusuna taşı…",
@@ -670,7 +669,8 @@
 		"twoHandedNote": "İki eli de kullanır; giyildiğinde {slot} eşyası çıkarılır.",
 		"makeForSlotDetail": "Bu eşyayı {slot} için yeniden çiz.",
 		"groupReady": "{count} içinden {ready} hazır",
-		"remakeFits": "Giydirdiğin karakter {name} için uyan yeni bir kopya yapar."
+		"remakeFits": "Giydirdiğin karakter {name} için uyan yeni bir kopya yapar.",
+		"demoMissing": "Demo hiçbir zaman PixelLab üretimi harcamaz. Eksik kareleri çizmek için düzenlenebilir bir kopya yap."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Yeni karakter",

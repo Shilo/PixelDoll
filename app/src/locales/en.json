@@ -431,7 +431,7 @@
 		"itsOutfitsAndChangesAreRemovedFrom": "Its outfits, items and unkept drafts go too; items copied to other characters stay. You can bring it back for up to 30 days."
 	},
 	"demoCopyRow": {
-		"editACopy": "Edit a copy",
+		"editACopy": "Make editable copy",
 		"openedYourEditableCopyOfTheDemo": "Opened your editable copy of the demo. No generations used."
 	},
 	"detailsSheet": {
@@ -481,7 +481,6 @@
 		"activity": "Activity…",
 		"cancelGeneration": "Cancel generation…",
 		"cancelFromTheTabThatIsGenerating": "Cancel from the tab that is generating this item.",
-		"wearInACopyOfTheDemo": "Wear in a copy of the demo",
 		"twoHanded": "Two-handed",
 		"createVariant": "Create a variant…",
 		"labelDeleteItem": "Move to Trash…",
@@ -670,7 +669,8 @@
 		"twoHandedNote": "Uses both hands, so wearing it takes off the {slot} item.",
 		"makeForSlotDetail": "Draw this item again for the {slot}.",
 		"groupReady": "{ready} of {count} ready",
-		"remakeFits": "Makes a new copy that fits {name}, the character you’re dressing."
+		"remakeFits": "Makes a new copy that fits {name}, the character you’re dressing.",
+		"demoMissing": "The demo never spends PixelLab generations. Make an editable copy to draw the missing frames."
 	},
 	"newCharacterButton": {
 		"newCharacter": "New character",

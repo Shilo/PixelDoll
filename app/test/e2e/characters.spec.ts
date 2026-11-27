@@ -474,7 +474,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await page
 		.getByRole('button', { name: 'More actions for Adventurer (demo)', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
 	await expect(page.locator('.selected-name-text')).toHaveText('Adventurer copy');
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts';
@@ -488,7 +488,9 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await expect(savedActions).toHaveAttribute('title', 'More actions for Saved hero');
 	await expect(savedActions.locator('svg')).toHaveCount(1);
 	await savedActions.click();
-	await expect(page.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toHaveCount(0);
+	await expect(page.getByRole('menuitem', { name: 'Make editable copy', exact: true })).toHaveCount(
+		0
+	);
 	// Cost estimate: opens from the character's View and edit window, beside its recorded cost, prices the copy and
 	// follows an input change.
 	await page.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
@@ -532,10 +534,10 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await page
 		.getByRole('button', { name: 'More actions for Adventurer (demo)', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
 	await expect(
 		page.locator('.cast-library').getByRole('menuitem', {
-			name: 'Edit a copy',
+			name: 'Make editable copy',
 			exact: true,
 			includeHidden: true
 		})
@@ -596,7 +598,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await expect(moveDetails.getByText(/^64×64 px, pivot /)).toBeVisible();
 	await expect(moveDetails.getByText(/^\d+×\d+ px$/)).toBeVisible();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
 	await expect(page.locator('.name-text')).toHaveText('Saved hero');
 	const viewport = page.viewportSize()!;
 	await page.setViewportSize({ width: 320, height: 700 });
@@ -604,7 +606,9 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await expect(page.locator('.name-text')).toHaveText('Saved hero');
 	await page.setViewportSize(viewport);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await expect(page.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toHaveCount(0);
+	await expect(page.getByRole('menuitem', { name: 'Make editable copy', exact: true })).toHaveCount(
+		0
+	);
 });
 
 test('character actions download and delete an unopened character without selecting it', async ({

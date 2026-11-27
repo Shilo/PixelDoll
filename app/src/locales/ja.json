@@ -425,7 +425,7 @@
 		"itsOutfitsAndChangesAreRemovedFrom": "衣装、アイテム、未保存の下書きも一緒に移動します。他のキャラクターにコピーしたアイテムは残ります。最大 30 日間は元に戻せます。"
 	},
 	"demoCopyRow": {
-		"editACopy": "コピーを編集",
+		"editACopy": "編集用コピーを作る",
 		"openedYourEditableCopyOfTheDemo": "デモの編集用コピーを開きました。生成回数は消費していません。"
 	},
 	"detailsSheet": {
@@ -472,7 +472,6 @@
 		"activity": "アクティビティ…",
 		"cancelGeneration": "生成をキャンセル…",
 		"cancelFromTheTabThatIsGenerating": "このアイテムを生成しているタブからキャンセルしてください。",
-		"wearInACopyOfTheDemo": "デモのコピーで装備",
 		"twoHanded": "両手持ち",
 		"createVariant": "バリエーションを作成…",
 		"labelDeleteItem": "ゴミ箱に移動…",
@@ -649,7 +648,8 @@
 		"twoHandedNote": "両手を使うため、装備すると{slot}のアイテムが外れます。",
 		"makeForSlotDetail": "このアイテムを{slot}用にもう一度描きます。",
 		"groupReady": "{count}件中{ready}件完了",
-		"remakeFits": "着せ替え中のキャラ、{name}に合う新しいコピーを作ります。"
+		"remakeFits": "着せ替え中のキャラ、{name}に合う新しいコピーを作ります。",
+		"demoMissing": "デモではPixelLabの生成を使いません。足りないフレームを描くには編集用コピーを作ってください。"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新しいキャラクター",

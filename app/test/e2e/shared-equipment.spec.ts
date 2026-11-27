@@ -714,7 +714,9 @@ test('a shared item’s ⋮ explains how it fits and makes one for this characte
 	await others.getByRole('button', { name: 'More options for Giant helmet', exact: true }).click();
 	const menu = page.locator('#item-menu');
 	await expect(menu.locator('.item-menu-marks li')).toHaveText(titles);
-	await expect(menu.getByRole('menuitem', { name: /^Wear/ })).toBeFocused();
+	// A tap on the tile wears it; the menu has no Wear row.
+	await expect(menu.getByRole('menuitem', { name: /^Wear/ })).toHaveCount(0);
+	await expect(menu.getByRole('menuitem', { name: /^Make copy for self/ })).toBeFocused();
 	await menu.getByRole('menuitem', { name: /^Make copy for self…/ }).click();
 	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
 	await expect(

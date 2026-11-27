@@ -431,7 +431,7 @@
 		"itsOutfitsAndChangesAreRemovedFrom": "Outfits, Gegenstände und nicht behaltene Entwürfe gehen mit; auf andere Charaktere kopierte Gegenstände bleiben. bis zu 30 Tage lang kannst du den Charakter zurückholen."
 	},
 	"demoCopyRow": {
-		"editACopy": "Kopie bearbeiten",
+		"editACopy": "Bearbeitbare Kopie erstellen",
 		"openedYourEditableCopyOfTheDemo": "Deine bearbeitbare Demo-Kopie ist geöffnet. Dafür wurden keine Generierungen verbraucht."
 	},
 	"detailsSheet": {
@@ -481,7 +481,6 @@
 		"activity": "Aktivität…",
 		"cancelGeneration": "Generierung abbrechen…",
 		"cancelFromTheTabThatIsGenerating": "Brich die Generierung in dem Tab ab, in dem sie läuft.",
-		"wearInACopyOfTheDemo": "In einer Demo-Kopie anlegen",
 		"twoHanded": "Zweihändig",
 		"createVariant": "Variante erstellen…",
 		"labelDeleteItem": "In den Papierkorb…",
@@ -670,7 +669,8 @@
 		"twoHandedNote": "Braucht beide Hände, daher wird beim Tragen der Gegenstand in {slot} abgelegt.",
 		"makeForSlotDetail": "Diesen Gegenstand noch einmal für {slot} zeichnen.",
 		"groupReady": "{ready} von {count} fertig",
-		"remakeFits": "Erstellt eine neue Kopie, die zu {name} passt, der Figur, die du gerade einkleidest."
+		"remakeFits": "Erstellt eine neue Kopie, die zu {name} passt, der Figur, die du gerade einkleidest.",
+		"demoMissing": "Die Demo verbraucht nie PixelLab-Generierungen. Erstelle eine bearbeitbare Kopie, um die fehlenden Frames zu zeichnen."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Neue Figur",

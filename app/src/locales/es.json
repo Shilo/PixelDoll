@@ -431,7 +431,7 @@
 		"itsOutfitsAndChangesAreRemovedFrom": "Sus conjuntos, objetos y borradores no conservados se van también; los objetos copiados a otros personajes se quedan. Puedes recuperar el personaje durante hasta 30 días."
 	},
 	"demoCopyRow": {
-		"editACopy": "Editar una copia",
+		"editACopy": "Hacer copia editable",
 		"openedYourEditableCopyOfTheDemo": "Se abrió tu copia editable de la demo. No se usaron generaciones."
 	},
 	"detailsSheet": {
@@ -481,7 +481,6 @@
 		"activity": "Actividad…",
 		"cancelGeneration": "Cancelar generación…",
 		"cancelFromTheTabThatIsGenerating": "Cancela desde la pestaña que está generando este objeto.",
-		"wearInACopyOfTheDemo": "Poner en una copia de la demo",
 		"twoHanded": "A dos manos",
 		"createVariant": "Crear una variante…",
 		"labelDeleteItem": "Mover a la papelera…",
@@ -670,7 +669,8 @@
 		"twoHandedNote": "Usa ambas manos, así que al llevarlo se quita el objeto de {slot}.",
 		"makeForSlotDetail": "Dibuja este objeto otra vez para {slot}.",
 		"groupReady": "{ready} de {count} listos",
-		"remakeFits": "Hace una copia nueva que le queda a {name}, el personaje que estás vistiendo."
+		"remakeFits": "Hace una copia nueva que le queda a {name}, el personaje que estás vistiendo.",
+		"demoMissing": "La demo nunca gasta generaciones de PixelLab. Haz una copia editable para dibujar los fotogramas que faltan."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Nuevo personaje",

@@ -3741,7 +3741,7 @@ test('Share resets to Standing when switching characters', async ({ page, contex
 	await popover.getByRole('combobox', { name: 'Size' }).selectOption('4');
 	await page.keyboard.press('Escape');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const download = page.waitForEvent('download');

@@ -3712,7 +3712,7 @@ test('a 320px bar keeps the panel toggle before More and moves actions into More
 	await expect(page.locator('.experience')).not.toHaveAttribute('data-overflow');
 	expect(await fits()).toBe(true);
 	await more.click();
-	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
 	await expect(page.locator('.name-text')).not.toContainText('(Demo)');
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitem', { name: /^Rename character/ }).click();

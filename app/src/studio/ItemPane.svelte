@@ -100,6 +100,7 @@
 		isDemo,
 		openNewItem,
 		openCopyForSelf,
+		copyDemo,
 		moveItemToSlot,
 		withKey,
 		startMove,
@@ -1089,6 +1090,20 @@
 									{/if}
 								{/snippet}
 							</fieldset>
+							{#if isDemo() && incomplete}
+								<!-- Why nothing here can be picked: the demo never spends; its copy can. -->
+								<p class="notice small demo-missing">
+									<span>{t('itemPane.demoMissing')}</span>
+									<button
+										class="bu-action btn plain callout-link"
+										data-variant="quiet"
+										onclick={() =>
+											void copyDemo().catch((error) =>
+												toast(errorMessage(error), { tone: 'danger', error })
+											)}>{t('demoCopyRow.editACopy')}</button
+									>
+								</p>
+							{/if}
 							{#if eligible.length && !copyOffer}
 								{#if missingOffer?.error}<p class="notice warn small" role="status">
 										{displayMessage(missingOffer.error)}
@@ -1776,6 +1791,15 @@
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 4px 8px;
+	}
+	.demo-missing {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px 8px;
+	}
+	.demo-missing > span {
+		flex: 1 1 16rem;
 	}
 	.item-callout > span {
 		flex: 1 1 16rem;

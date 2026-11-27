@@ -425,7 +425,7 @@
 		"itsOutfitsAndChangesAreRemovedFrom": "의상, 아이템, 저장하지 않은 초안도 함께 이동합니다. 다른 캐릭터에 복사한 아이템은 남습니다. 최대 30일 동안 되돌릴 수 있습니다."
 	},
 	"demoCopyRow": {
-		"editACopy": "사본 편집",
+		"editACopy": "편집 가능한 복사본 만들기",
 		"openedYourEditableCopyOfTheDemo": "편집 가능한 데모 사본을 열었어요. 생성은 사용하지 않았어요."
 	},
 	"detailsSheet": {
@@ -472,7 +472,6 @@
 		"activity": "활동…",
 		"cancelGeneration": "생성 취소…",
 		"cancelFromTheTabThatIsGenerating": "이 아이템을 생성 중인 탭에서 취소해 주세요.",
-		"wearInACopyOfTheDemo": "데모 사본에서 착용",
 		"twoHanded": "양손",
 		"createVariant": "변형 만들기…",
 		"labelDeleteItem": "휴지통으로 이동…",
@@ -649,7 +648,8 @@
 		"twoHandedNote": "양손을 사용하므로 착용하면 {slot} 아이템이 해제됩니다.",
 		"makeForSlotDetail": "이 아이템을 {slot}용으로 다시 그립니다.",
 		"groupReady": "{count}개 중 {ready}개 준비됨",
-		"remakeFits": "지금 꾸미는 캐릭터 {name}에 맞는 새 복사본을 만듭니다."
+		"remakeFits": "지금 꾸미는 캐릭터 {name}에 맞는 새 복사본을 만듭니다.",
+		"demoMissing": "데모는 PixelLab 생성을 쓰지 않습니다. 빠진 프레임을 그리려면 편집 가능한 복사본을 만드세요."
 	},
 	"newCharacterButton": {
 		"newCharacter": "새 캐릭터",

@@ -425,7 +425,7 @@
 		"itsOutfitsAndChangesAreRemovedFrom": "其服装、物品和未保存的草稿也会一起移动；复制到其他角色的物品会留下。最多 30 天内可以恢复。"
 	},
 	"demoCopyRow": {
-		"editACopy": "编辑副本",
+		"editACopy": "制作可编辑副本",
 		"openedYourEditableCopyOfTheDemo": "已打开演示的可编辑副本。未消耗生成次数。"
 	},
 	"detailsSheet": {
@@ -472,7 +472,6 @@
 		"activity": "活动…",
 		"cancelGeneration": "取消生成…",
 		"cancelFromTheTabThatIsGenerating": "请在生成此装备的标签页中取消。",
-		"wearInACopyOfTheDemo": "在演示副本中穿戴",
 		"twoHanded": "双手",
 		"createVariant": "创建变体…",
 		"labelDeleteItem": "移到回收站…",
@@ -649,7 +648,8 @@
 		"twoHandedNote": "需要双手，穿戴时会卸下{slot}的物品。",
 		"makeForSlotDetail": "为{slot}再画一次这件物品。",
 		"groupReady": "{count} 个中 {ready} 个就绪",
-		"remakeFits": "制作一个适合 {name}（你正在装扮的角色）的新副本。"
+		"remakeFits": "制作一个适合 {name}（你正在装扮的角色）的新副本。",
+		"demoMissing": "演示从不消耗 PixelLab 生成次数。制作可编辑副本即可绘制缺少的帧。"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新建角色",

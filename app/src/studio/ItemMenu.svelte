@@ -25,14 +25,12 @@
 		doc,
 		store,
 		view,
-		isDemo,
 		openNewItem,
 		cancelGen,
 		openGenerationReview,
-		addShared,
 		type Gen
 	} from './state.svelte.ts';
-	import { Check, Circle, Info, RefreshCw, Trash } from './icons.ts';
+	import { Check, Info, RefreshCw, Trash } from './icons.ts';
 
 	let {
 		id,
@@ -227,18 +225,7 @@
 			</div>
 			<TileMarks {marks} list />
 			<div role="menu" aria-labelledby="item-menu-name">
-				{#if !remake}
-					<!-- Free: copies it to this character and wears it; the demo saves an editable copy of itself first. -->
-					<button
-						class="row bu-action"
-						data-variant="quiet"
-						role="menuitem"
-						onclick={() => act(() => void addShared(entry))}
-						><Circle size={16} aria-hidden="true" />{isDemo()
-							? t('itemMenu.wearInACopyOfTheDemo')
-							: t('common.wear')}<small class="row-aside">{t('common.free')}</small></button
-					>
-				{/if}
+				<!-- A tap on its tile wears it (a free copy): the menu explains it and offers the paid copy for this body. -->
 				<!-- The New item sheet that opens next prices it before anything is spent. -->
 				<button
 					class="row bu-action"

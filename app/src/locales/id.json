@@ -425,7 +425,7 @@
 		"itsOutfitsAndChangesAreRemovedFrom": "Pakaian, item, dan draf yang tidak disimpan ikut pindah; item yang disalin ke karakter lain tetap ada. Anda bisa memulihkannya selama hingga 30 hari."
 	},
 	"demoCopyRow": {
-		"editACopy": "Edit salinan",
+		"editACopy": "Buat salinan yang bisa diedit",
 		"openedYourEditableCopyOfTheDemo": "Salinan demo yang dapat Anda edit sudah dibuka. Tidak ada generasi yang digunakan."
 	},
 	"detailsSheet": {
@@ -472,7 +472,6 @@
 		"activity": "Aktivitas…",
 		"cancelGeneration": "Batalkan generasi…",
 		"cancelFromTheTabThatIsGenerating": "Batalkan dari tab yang sedang membuat item ini.",
-		"wearInACopyOfTheDemo": "Kenakan pada salinan demo",
 		"twoHanded": "Dua tangan",
 		"createVariant": "Buat varian…",
 		"labelDeleteItem": "Pindahkan ke tempat sampah…",
@@ -649,7 +648,8 @@
 		"twoHandedNote": "Memakai kedua tangan, jadi memakainya melepas item {slot}.",
 		"makeForSlotDetail": "Gambar item ini lagi untuk {slot}.",
 		"groupReady": "{ready} dari {count} siap",
-		"remakeFits": "Membuat salinan baru yang pas untuk {name}, karakter yang sedang kamu dandani."
+		"remakeFits": "Membuat salinan baru yang pas untuk {name}, karakter yang sedang kamu dandani.",
+		"demoMissing": "Demo tidak pernah memakai generasi PixelLab. Buat salinan yang bisa diedit untuk menggambar frame yang hilang."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Karakter baru",
