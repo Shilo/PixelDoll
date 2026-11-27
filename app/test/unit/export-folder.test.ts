@@ -104,6 +104,9 @@ test.each(engines)('%s folder keeps character files and separates its runtime', 
 		// so. (README.txt sits in the character folder itself.)
 		if (name !== 'README.txt')
 			expect(files.get(name)!.replace(/\s+/g, ' ')).toContain('relative to this character folder');
+		// An engine that re-saves a published file (Godot rewrites scene paths) pauses updates: the agent guides say so.
+		if (['AGENTS.md', 'CLAUDE.md', `docs/${engine}.md`].includes(name))
+			expect(files.get(name)!.replace(/\s+/g, ' ')).toContain("don't edit or re-save its files");
 	}
 	if (engine === 'phaser' || engine === 'phaser-ae') {
 		expect(files.get(`${engine}/README.txt`)).toContain(

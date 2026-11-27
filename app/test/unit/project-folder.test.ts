@@ -405,12 +405,16 @@ describe('required files after planning', () => {
 		});
 
 	it('pauses when a runtime file already right is deleted or changed before the character lands', async () => {
-		for (const [found, reason] of [
-			[null, 'deleted'],
-			['edited', 'edited-outside']
+		const stock = await sha256(new TextEncoder().encode('stock'));
+		// PixelDoll's own runtime file, and the user's identical copy PixelDoll never wrote.
+		for (const [written, found, reason] of [
+			[{ 'rt/a.js': stock }, null, 'deleted'],
+			[{ 'rt/a.js': stock }, 'edited', 'edited-outside'],
+			[{}, null, 'deleted'],
+			[{}, 'edited', 'not-ours']
 		] as const) {
 			const folder = memoryFolder({ 'rt/a.js': 'stock' });
-			const outcome = await publishWith(folder, { written: {}, kept: [] }, () =>
+			const outcome = await publishWith(folder, { written: { ...written }, kept: [] }, () =>
 				found === null ? folder.files.delete('rt/a.js') : folder.set('rt/a.js', found)
 			);
 			expect(outcome).toMatchObject({ kind: 'blocked', conflicts: [{ path: 'rt/a.js', reason }] });

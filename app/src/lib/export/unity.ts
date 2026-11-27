@@ -1061,7 +1061,6 @@ relative to this character folder. When copying the character, copy pixeldoll-un
 Use a single Unity export destination under Assets/ in each project. A second destination, even a sibling, would install
 duplicate PixelDoll assemblies. Unity imports the character automatically when its JSON is imported or scripts reload.
 Unity skips updates and logs a warning if you edit the generated prefab, controller, animation clips, or sheet import settings.
-Exports imported by older versions of PixelDoll may also need a rebuild before updates can resume.
 Delete unity/Generated/ to rebuild the assets and reapply PixelDoll's sheet settings.
 Customize a prefab variant outside that folder to keep receiving updates.`
 					: `Unity 2022.3 / Unity 6. Install com.unity.2d.sprite (2D Sprite) with Package Manager, then copy the whole export folder

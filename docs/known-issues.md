@@ -248,7 +248,7 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   prefab, controller or clip, or a sheet's import settings, that you edited alone (it logs a warning) instead of rebuilding it, so that character no longer
   picks up changes until you delete its `unity/Generated/` folder. Customize a prefab variant instead. The ZIP importer
   still rebuilds `unity/Generated/` on every re-export. Use the generated prefab rather than sprites of the layer sheets: the
-  importer slices those sheets itself, so a reference to one of their sprites is not kept.
+  importer slices those sheets itself, so a reference to one of their sprites is lost without a warning.
 - **Project folder: GDevelop keeps its runtime per character.** GDevelop's controller lives in each character's
   `game.json` events, so there is nothing to share on disk; merging the same character twice into one GDevelop project
   still collides on object and resource names.

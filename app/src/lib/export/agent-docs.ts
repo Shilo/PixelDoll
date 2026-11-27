@@ -104,7 +104,8 @@ The path you pass is relative to the document's base URL (document.baseURI), not
 character's folder in it. Paths starting with ../pixeldoll-phaser/ are relative to this character folder. If you
 picked the page's own folder, leave out <folder>/: '<character>/' and './pixeldoll-phaser/PaperdollContainer.js'.
 The import assumes the importing module sits beside the page; from another module, use its own relative path to the
-same file (from src/main.js: '../<folder>/pixeldoll-phaser/...').`
+same file (from src/main.js: '../<folder>/pixeldoll-phaser/...'). In imports and URLs, percent-encode folder names
+with spaces, #, ? or % (Characters #2 becomes Characters%20%232).`
 		: ''
 }
 This export does not bundle Phaser. Load Phaser 3.80+ or 4 yourself: a script tag that exposes the global Phaser, or your
@@ -178,7 +179,7 @@ map, as in Phaser 3 and 4.
 
 const godot = (runtimePath?: string) => `# Godot 4
 
-Entry: godot/Paperdoll.tscn (instance it) and ${runtimePath ?? 'godot/paperdoll.gd'}. Resources: godot/<item>_<layer>.tres and
+Entry${runtimePath ? ', from the character folder' : ''}: godot/Paperdoll.tscn (instance it) and ${runtimePath ?? 'godot/paperdoll.gd'}. Resources: godot/<item>_<layer>.tres and
 godot/library.tres, which retains the manifest and every equipment resource.
 Full guide: godot/README.txt.
 
@@ -207,7 +208,7 @@ Manifest depths become native z_index ranks; keep the root's z_index to place th
 
 const unity = (runtimePath?: string) => `# Unity 2022.3 / Unity 6
 
-Entry: ${runtimePath ?? 'unity/Runtime/Paperdoll.cs'}. The importer ${runtimePath ? '../pixeldoll-unity/Editor/PixelDollImporter.cs' : 'unity/Editor/PixelDollImporter.cs'} reads unity/pixeldoll_unity.json and
+Entry${runtimePath ? ', from the character folder' : ''}: ${runtimePath ?? 'unity/Runtime/Paperdoll.cs'}. The importer ${runtimePath ? '../pixeldoll-unity/Editor/PixelDollImporter.cs' : 'unity/Editor/PixelDollImporter.cs'} reads unity/pixeldoll_unity.json and
 slices the layer sheets in place and builds clips, the controller and the prefab in unity/Generated/.
 Full guide: unity/README.txt.
 
@@ -345,9 +346,10 @@ Read AGENTS.md in this folder: it says what this PixelDoll runtime folder is and
 export function agentFiles(engines: readonly Engine[], runtimePath?: string): OutFile[] {
 	const runtimeNote = runtimePath
 		? `\nThe shared runtime is at ${runtimePath},
-relative to this character folder (the one holding manifest.json); ../pixeldoll-<engine>/ paths in this folder's
-guides start there too. When copying this character, copy ${runtimePath.split('/')[1]} too and keep them in the same
-parent folder.\n`
+relative to this character folder (the one holding manifest.json); ../${runtimePath.split('/')[1]}/ paths in this
+folder's guides start there too. When copying this character, copy ${runtimePath.split('/')[1]} too and keep them in the
+same parent folder. PixelDoll keeps this folder up to date: don't edit or re-save its files in your engine (an edit
+pauses its updates); build on them instead, such as an instanced or inherited scene or a prefab variant.\n`
 		: '';
 	const files: OutFile[] = [
 		{ name: 'AGENTS.md', data: AGENTS + runtimeNote },

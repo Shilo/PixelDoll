@@ -282,7 +282,13 @@ export async function publishFiles(
 				else if (found === NOT_A_FILE)
 					lost.push({ path: k.path, kind: 'conflict', reason: 'folder', found: NOT_A_FILE });
 				else if (k.kind !== 'kept' && found !== next.get(k.path))
-					lost.push({ path: k.path, kind: 'conflict', reason: 'edited-outside', found });
+					lost.push({
+						path: k.path,
+						kind: 'conflict',
+						// Named as the planner would: a file PixelDoll never wrote is the user's own, already there.
+						reason: Object.hasOwn(o.record.written, k.path) ? 'edited-outside' : 'not-ours',
+						found
+					});
 			}
 			if (lost.length) return { kind: 'blocked', conflicts: [...lost, ...approved], matching };
 		}
