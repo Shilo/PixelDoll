@@ -1180,11 +1180,14 @@
 								</div>
 							{/if}
 							{#if findings}
-								<ul class="findings">
-									{#each reasons as reason (reason)}<li>
-											<TriangleAlert size={14} aria-hidden="true" />{reason}
-										</li>{/each}
-								</ul>
+								<div class="finding-group">
+									<h4>{t('itemPane.artworkFindings')}</h4>
+									<ul class="findings">
+										{#each reasons as reason (reason)}<li>
+												<TriangleAlert size={14} aria-hidden="true" />{reason}
+											</li>{/each}
+									</ul>
+								</div>
 							{/if}
 							{#if notes.length}
 								<div class="finding-group">
@@ -1286,7 +1289,7 @@
 							</div>
 							{#if hasFixTools}<div class="fix-view">
 									<div class="fix-head">
-										<h4>{t('itemPane.fixOneView')}</h4>
+										<h4>{t('itemPane.fixOneView', { move: moveName })}</h4>
 										{#if !isDemo() && m.rig.directions.length > 1}
 											<label class="fix-facing">
 												<span>{t('itemPane.facing')}</span>

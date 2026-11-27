@@ -7742,6 +7742,7 @@ test('accepted held-item review reasons survive actual reload without claiming a
 	await expect(pane.locator('.window-status')).toHaveText('Accepted');
 	// The review reasons sit in the Quality section, one intentional step from the summary.
 	await openItemSection(pane, 'Quality');
+	await expect(pane.getByRole('heading', { name: 'Findings across this item' })).toBeVisible();
 	await expect(
 		pane.getByText('The grip side is unclear; check the intended hand (idle, west)', {
 			exact: true
