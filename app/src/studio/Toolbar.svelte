@@ -224,10 +224,8 @@
 			node.style.removeProperty('--view-shift');
 		};
 	}
-	/** Optional actions that move into More as the bar runs out of room, one at a time in their left-to-right order;
-	 *  Full screen goes only when nothing else is left to move. Phone portrait widths start with the first four already
-	 *  there (layout.css), so this order is the only priority. */
-	const OVERFLOW = ['undo', 'redo', 'random', 'share', 'export', 'fullscreen'] as const;
+	/** Keep Export reachable while there is room by moving presentation shortcuts first. */
+	const OVERFLOW = ['undo', 'redo', 'random', 'share', 'fullscreen', 'audio', 'export'] as const;
 	/** The narrowest a truncated character name may get before the next action moves into More. */
 	const MIN_NAME = 96;
 	let fitFrame = 0;
@@ -247,6 +245,8 @@
 		if (experience.screen === 'studio')
 			for (const action of OVERFLOW) {
 				if (!crowded()) break;
+				if (action === 'audio' && !header.querySelector('.header-audio')?.checkVisibility())
+					continue;
 				moved.push(action);
 				root.dataset.overflow = moved.join(' ');
 			}

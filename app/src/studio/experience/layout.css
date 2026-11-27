@@ -123,6 +123,7 @@
 		.mobile-share,
 		.mobile-export,
 		.mobile-fullscreen,
+		.mobile-audio,
 		.mobile-inspect,
 		.mobile-mount,
 		.mobile-sep
@@ -301,14 +302,14 @@
 		display: none;
 	}
 }
-/* Wherever the character name would get too narrow, the optional actions move into More one at a time from left to
-   right: Undo, Redo, Random look, Share, Export, and Full screen only as a last resort (Toolbar.svelte fitActions).
+/* To keep the character name readable, less essential actions move into More in Toolbar.svelte's priority order.
    Share's popover then points at More. */
 .experience[data-overflow~='undo'] .header-undo,
 .experience[data-overflow~='redo'] .header-redo,
 .experience[data-overflow~='random'] .header-random,
 .experience[data-overflow~='share'] .header-share,
 .experience[data-overflow~='export'] .header-export,
+.experience[data-overflow~='audio'] .header-audio,
 .experience[data-overflow~='fullscreen'] .experience-header .header-fullscreen {
 	display: none !important;
 }
@@ -317,6 +318,7 @@
 .experience[data-overflow~='random'] .mobile-random,
 .experience[data-overflow~='share'] .mobile-share,
 .experience[data-overflow~='export'] .mobile-export,
+.experience[data-overflow~='audio'] .mobile-audio,
 .experience[data-overflow~='fullscreen'] .mobile-fullscreen {
 	display: flex !important;
 }

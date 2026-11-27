@@ -16,6 +16,8 @@
 	import DemoCopyRow from './DemoCopyRow.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import FullscreenButton from './FullscreenButton.svelte';
+	import AudioSettingsButton from './AudioSettingsButton.svelte';
+	import { hasEnabledAudio } from './audio.svelte.ts';
 	import MenuDisclosure from './MenuDisclosure.svelte';
 	import WardrobeVisibility from './WardrobeVisibility.svelte';
 	import AffiliationNotice from './AffiliationNotice.svelte';
@@ -143,6 +145,7 @@
 				><SurfaceChevron /></button
 			>{/if}
 		{#if studio}<FullscreenButton row onactivate={closeOptions} />{/if}
+		{#if studio && hasEnabledAudio()}<AudioSettingsButton row onactivate={closeOptions} />{/if}
 		<!-- Narrow phones move Inspect here from the playback bar so its controls keep full-size targets. -->
 		{#if studio && experience.mode === 'preview'}<button
 				class="row bu-action mobile-inspect"

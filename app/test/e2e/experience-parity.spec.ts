@@ -415,7 +415,7 @@ test('full screen includes the whole app and survives screen changes, dialogs an
 	await expect(enter).toBeEnabled();
 });
 
-test('full screen stays reachable beside More on narrow and landscape screens', async ({
+test('full screen stays reachable from the header or More on narrow and landscape screens', async ({
 	page
 }) => {
 	await landing(page);
@@ -438,6 +438,8 @@ test('full screen stays reachable beside More on narrow and landscape screens', 
 		for (const studio of [false, true]) {
 			if (studio) await page.locator('.customize-action').click();
 			const toggle = page.getByRole('button', { name: 'Enter full screen', exact: true });
+			const more = page.getByRole('button', { name: 'More options', exact: true });
+			if (!(await toggle.isVisible())) await more.click();
 			await expect(toggle).toBeInViewport();
 			const box = (await toggle.boundingBox())!;
 			expect(box.width).toBeGreaterThanOrEqual(44);
@@ -445,7 +447,9 @@ test('full screen stays reachable beside More on narrow and landscape screens', 
 			expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
 			// A real pointer activation also detects overlapping header controls or navigation tabs.
 			await toggle.click();
-			await page.getByRole('button', { name: 'Exit full screen', exact: true }).click();
+			const exit = page.getByRole('button', { name: 'Exit full screen', exact: true });
+			if (!(await exit.isVisible())) await more.click();
+			await exit.click();
 			if (studio) await page.locator('.header-back').click();
 		}
 	}
@@ -3781,14 +3785,20 @@ test('translated State and Move tabs do not overlap on a 320px phone', async ({ 
 	}
 });
 
-test('a 320px bar keeps the panel toggle before More and moves actions into More left to right for a long name', async ({
+test('a 320px bar keeps Export and the panel toggle reachable for a long name', async ({
 	page
 }) => {
-	// Audio is a separate always-available control: mute it so this covers the panel toggle's fit alone.
+	// Keep the audio shortcut visible until the header needs its room.
 	await page.addInitScript(() =>
 		localStorage.setItem(
 			'pixeldoll.audio',
-			JSON.stringify({ muted: true, musicMuted: true, effectsMuted: true, music: 0, effects: 0 })
+			JSON.stringify({
+				muted: false,
+				musicMuted: false,
+				effectsMuted: false,
+				music: 0.2,
+				effects: 0.2
+			})
 		)
 	);
 	await page.setViewportSize({ width: 320, height: 568 });
@@ -3801,8 +3811,7 @@ test('a 320px bar keeps the panel toggle before More and moves actions into More
 	const barBox = (await bar.boundingBox())!;
 	expect(barBox.x).toBe(8);
 	expect(page.viewportSize()!.width - barBox.x - barBox.width).toBe(8);
-	// The demo's short name leaves room: nothing moves beyond what phones always keep in More.
-	await expect(page.locator('.experience')).not.toHaveAttribute('data-overflow');
+	await expect(bar.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
 	expect(await fits()).toBe(true);
 	await more.click();
 	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
@@ -3817,11 +3826,8 @@ test('a 320px bar keeps the panel toggle before More and moves actions into More
 	await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 	await expect(toggle).toHaveAttribute('aria-controls', 'customization-rail');
 	await expect(toggle.locator('svg')).toHaveClass(/lucide-panel-bottom-close/);
-	// Export moves into More first; whatever else moved is a prefix of the left-to-right order.
-	await expect(page.locator('.header-export')).toBeHidden();
-	const order = ['undo', 'redo', 'random', 'share', 'export', 'fullscreen'];
-	const moved = (await page.locator('.experience').getAttribute('data-overflow'))!.split(' ');
-	expect(moved).toEqual(order.slice(0, moved.length));
+	await expect(bar.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
+	await expect(bar.getByRole('button', { name: 'Enter full screen', exact: true })).toHaveCount(0);
 	expect(await fits()).toBe(true);
 	const placed = (await toggle.boundingBox())!;
 	const end = (await more.boundingBox())!;
@@ -3834,8 +3840,11 @@ test('a 320px bar keeps the panel toggle before More and moves actions into More
 	await expect(page.locator('#customization-rail')).toBeHidden();
 	expect(await toggle.boundingBox()).toEqual(placed);
 	await more.click();
-	await page.locator('#experience-options .mobile-export').click();
-	await expect(page.getByRole('dialog')).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Enter full screen', exact: true })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Audio settings', exact: true })).toBeVisible();
+	await page.keyboard.press('Escape');
+	await bar.getByRole('button', { name: 'Export', exact: true }).click();
+	await expect(page.getByRole('dialog', { name: 'Export', exact: true })).toBeVisible();
 });
 
 test('Moves stays in place, disabled with its reason, in the live views', async ({ page }) => {
