@@ -100,7 +100,10 @@ test.describe("What's new", () => {
 	}
 	const seen = (page: Page) => page.evaluate(() => localStorage.getItem('pixeldoll.seenRelease'));
 	const closePreview = (page: Page) =>
-		page.locator('.studio-toast').getByRole('button', { name: 'Dismiss', exact: true }).click();
+		page
+			.locator('.studio-toast')
+			.getByRole('button', { name: 'Dismiss notification', exact: true })
+			.click();
 
 	test('acknowledges the first visit and opens an unseen feature release once on return', async ({
 		page
@@ -150,7 +153,7 @@ test.describe("What's new", () => {
 		await expect(newsInHelp).toBeVisible();
 		expect(requests).toEqual(['index.json']);
 		await page.keyboard.press('Escape');
-		await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+		await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 		const settings = page.getByRole('dialog', { name: 'Settings' });
 		await settings.getByRole('button', { name: 'About', exact: true }).click();
 		await settings.getByRole('button', { name: "What's new Unread update" }).click();

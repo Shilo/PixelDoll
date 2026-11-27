@@ -663,8 +663,9 @@ test('one About button checks, retries, tracks a staged update and reloads the v
 		await search.fill('check for updates');
 		await settings.getByRole('button', { name: 'About About', exact: true }).click();
 		await expect(action).toBeFocused();
-		await expect(panel.getByRole('button')).toHaveCount(4);
-		await expect(panel.getByRole('button').nth(1)).toHaveAccessibleName(/^Open source/);
+		await expect(panel.getByRole('button')).toHaveCount(5);
+		await expect(panel.getByRole('button').nth(1)).toHaveAccessibleName(/^What's new/);
+		await expect(panel.getByRole('button').nth(2)).toHaveAccessibleName(/^Open source/);
 
 		const discovery = server.hold('release.json');
 		server.failures.add('release.json');
