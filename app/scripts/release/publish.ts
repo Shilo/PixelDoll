@@ -59,7 +59,15 @@ export async function publishRelease(
 	};
 	const name = `PixelDoll ${source.version}: ${notes.headline}`;
 	const render = (url: string) =>
-		releaseMarkdown(source.version, source.date, notes, changes, github.repository, url);
+		releaseMarkdown(
+			source.version,
+			source.date,
+			notes,
+			changes,
+			github.repository,
+			url,
+			`https://github.com/${github.repository}/compare/${source.previousSha}...${source.sha}`
+		);
 	// Detect oversize notes before creating a tag or a draft.
 	render(`https://github.com/${github.repository}/releases/download/${tag}/${assetName}`);
 	await ensureTag(true);

@@ -5,6 +5,8 @@ type DeploymentReader = {
 	deploymentStatuses(id: number): AsyncIterable<DeploymentStatus>;
 };
 
+const DAY = 24 * 60 * 60 * 1000;
+
 export async function* liveBuilds(github: DeploymentReader, cutoffs: Date[]) {
 	const dates = [...cutoffs].sort((a, b) => +b - +a);
 	if (!dates.length) return;
@@ -21,8 +23,9 @@ export async function* liveBuilds(github: DeploymentReader, cutoffs: Date[]) {
 					next = await deployments.next();
 					continue;
 				}
-				// Creation time is a lower bound for every success on this and older deployments.
-				if (best && created < best.at) break;
+				// Pages deploys run one at a time and finish within minutes, so a deployment created a day before the best
+				// success cannot have succeeded after it.
+				if (best && created < best.at - DAY) break;
 				if (created <= +date) {
 					for await (const status of github.deploymentStatuses(deployment.id)) {
 						const at = Date.parse(status.created_at);

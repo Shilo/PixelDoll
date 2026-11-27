@@ -14,7 +14,11 @@ const skipped = /^(test|e2e|dev|ci|agent)$/i;
 const conventional = /^(feat|perf|fix)(?:\(([^)]+)\))?!?:\s+(.+)$/;
 const revertSubject = /^(?:revert(?:\([^)]+\))?!?:|revert ")/i;
 
-export function userCommits(commits: GitCommit[]): ReleaseCommit[] {
+/** `mergeContent` lists the commits a merge brought in, so reverting a merged branch nets its commits too. */
+export function userCommits(
+	commits: GitCommit[],
+	mergeContent: (prefix: string) => string[] = () => []
+): ReleaseCommit[] {
 	const reverted = new Set<string>();
 	const result: ReleaseCommit[] = [];
 	for (const { sha, subject, body } of commits) {
@@ -32,6 +36,7 @@ export function userCommits(commits: GitCommit[]): ReleaseCommit[] {
 			for (const prefix of prefixes) {
 				const matches = commits.filter((commit) => commit.sha.startsWith(prefix.toLowerCase()));
 				if (matches.length === 1) reverted.add(matches[0].sha);
+				else if (!matches.length) for (const merged of mergeContent(prefix)) reverted.add(merged);
 			}
 			continue;
 		}
@@ -70,7 +75,19 @@ export function collectCommits(cwd: string, sha: string, previousSha?: string) {
 	const commits: GitCommit[] = [];
 	for (let i = 0; i + 2 < fields.length; i += 3)
 		commits.push({ sha: fields[i], subject: fields[i + 1], body: fields[i + 2].trim() });
-	return userCommits(commits);
+	return userCommits(commits, (prefix) => {
+		let target: string;
+		try {
+			target = git(cwd, 'rev-parse', '--verify', '--quiet', `${prefix}^{commit}`);
+		} catch {
+			return []; // Not in this repository: nothing to net.
+		}
+		const parents = git(cwd, 'rev-list', '--parents', '-n', '1', target).split(' ').length - 1;
+		if (parents < 2) return [];
+		return git(cwd, 'rev-list', '--no-merges', `${target}^1..${target}`)
+			.split('\n')
+			.filter(Boolean);
+	});
 }
 
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);

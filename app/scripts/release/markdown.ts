@@ -9,13 +9,17 @@ const escape = (text: string) =>
 		.replaceAll('>', '&gt;')
 		.replace(/[\\`*_{}\[\]#|~]/g, '\\$&');
 
+// GitHub caps a release body at 125,000 characters.
+const LIMIT = 125_000;
+
 export function releaseMarkdown(
 	version: string,
 	date: string,
 	notes: Notes,
 	changes: Changes,
 	repository: string,
-	bannerUrl: string
+	bannerUrl: string,
+	compareUrl: string
 ) {
 	const parts = [
 		`# ${escape(notes.headline)}`,
@@ -28,22 +32,36 @@ export function releaseMarkdown(
 		parts.push(`## ${escape(title)}\n\n${escape(text)}`);
 	if (notes.fixes.length)
 		parts.push(['## Fixed', '', ...notes.fixes.map(({ text }) => `- ${escape(text)}`)].join('\n'));
-	const groups = changes.groups.map(({ kind, items }) =>
-		[
-			`### ${kindLabels[kind]}`,
-			'',
-			...items.map(
+	const head = parts.join('\n\n');
+
+	const render = (limit: number) => {
+		let left = limit;
+		const groups = changes.groups.flatMap(({ kind, items }) => {
+			const shown = items.slice(0, Math.max(0, left));
+			left -= shown.length;
+			if (!shown.length) return [];
+			const lines = shown.map(
 				({ sha, text }) => `- [${escape(text)}](https://github.com/${repository}/commit/${sha})`
-			)
-		].join('\n')
-	);
-	parts.push(
-		[`<details><summary>All changes (${changes.total})</summary>`, ...groups, '</details>'].join(
-			'\n\n'
-		)
-	);
-	const body = parts.join('\n\n') + '\n';
-	if (body.length >= 125_000)
+			);
+			return [[`### ${kindLabels[kind]}`, '', ...lines].join('\n')];
+		});
+		if (limit < changes.total) groups.push(`[See all ${changes.total} changes](${compareUrl})`);
+		const all = [
+			`<details><summary>All changes (${changes.total})</summary>`,
+			...groups,
+			'</details>'
+		].join('\n\n');
+		return `${head}\n\n${all}\n`;
+	};
+
+	// A very long list is shortened and links to the full comparison, so a release can always publish.
+	let limit = changes.total;
+	let body = render(limit);
+	while (body.length >= LIMIT && limit > 0) {
+		limit = Math.floor(limit * 0.9);
+		body = render(limit);
+	}
+	if (body.length >= LIMIT)
 		throw new Error(`GitHub release body exceeds the size limit (${body.length} characters)`);
 	return body;
 }

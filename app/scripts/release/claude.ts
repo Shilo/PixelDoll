@@ -27,7 +27,11 @@ const prompt = (name: string) => afterSeparator(readFileSync(new URL(name, docs)
 /** The part of the SDK client the release script uses, so tests can stand in for it. */
 export type Claude = { beta: { messages: Pick<Anthropic['beta']['messages'], 'create'> } };
 
-export const claudeClient = (apiKey: string): Claude => new Anthropic({ apiKey });
+// The SDK retries rate limits, overloads and connection errors with backoff.
+export const claudeClient = (apiKey: string): Claude => new Anthropic({ apiKey, maxRetries: 4 });
+
+/** Claude answered, but not with usable notes. Only this falls back to English for a translation. */
+export class InvalidReply extends Error {}
 
 // Structured outputs accept a JSON Schema subset; the counts and uniqueness are enforced by the validators instead.
 const sendable = (schema: unknown): unknown =>
@@ -65,8 +69,11 @@ async function ask<T>(
 			messages
 		});
 		if (response.stop_reason === 'refusal')
-			throw new Error(`Claude declined (${response.stop_details?.category ?? 'no category'})`);
-		if (response.stop_reason === 'max_tokens') throw new Error('Claude reply hit max_tokens');
+			throw new InvalidReply(
+				`Claude declined (${response.stop_details?.category ?? 'no category'})`
+			);
+		if (response.stop_reason === 'max_tokens')
+			throw new InvalidReply('Claude reply hit max_tokens');
 		const text = response.content
 			.filter((block) => block.type === 'text')
 			.map((block) => block.text)
@@ -80,7 +87,8 @@ async function ask<T>(
 			errors = [`Reply is not valid JSON: ${String(error)}`];
 		}
 		if (!errors.length) return value as T;
-		if (attempt === 1) throw new Error(`Claude returned invalid notes: ${errors.join('; ')}`);
+		if (attempt === 1)
+			throw new InvalidReply(`Claude returned invalid notes: ${errors.join('; ')}`);
 		// Send the whole reply back unchanged (thinking blocks included) and ask for a corrected one.
 		messages.push(
 			{
@@ -186,6 +194,8 @@ export async function translations(claude: Claude, english: CitedNotes) {
 				fixes: result.fixes
 			};
 		} catch (error) {
+			// Network, rate-limit and server errors fail the run so the next run retries every locale.
+			if (!(error instanceof InvalidReply)) throw error;
 			// Documented fallback (docs/releasing.md): this locale shows the English notes for this release.
 			console.warn(`Translation for ${locale} fell back to English. ${String(error)}`);
 		}

@@ -25,7 +25,7 @@ Releases are fully automatic: a scheduled workflow tags the build that was live 
 
 1. In the Anthropic Console, create a workspace for releases with a monthly spend limit, keep auto-reload off, and create an API key in it.
 2. In GitHub: Settings > Environments > New environment `release`, limited to the `main` branch, with secret `ANTHROPIC_API_KEY`.
-3. Settings > Secrets and variables > Actions > Variables: set `RELEASES_ENABLED` to `true`. Until then the workflow only dry-runs.
+3. Settings > Secrets and variables > Actions > Variables: set `RELEASES_ENABLED` to `true`. Until then the workflow only dry-runs. Once it is `true`, a missing key fails the run instead of skipping publication. The first enabled run backfills every weekly cutoff since the anchor (about six releases and their translations in one run).
 
 The release workflow uses its built-in GitHub token to read deployments, publish tags and releases, push the generated commits to `main`, and dispatch Pages. The repository's rules for `main` must allow those generated commits.
 

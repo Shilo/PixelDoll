@@ -4,6 +4,7 @@ import {
 	type Claude,
 	labelsFor,
 	model,
+	translations,
 	writeNotes
 } from '../../scripts/release/claude.ts';
 import { buildChanges, type ReleaseCommit } from '../../scripts/release/changes.ts';
@@ -150,7 +151,8 @@ it('renders the same data as the app, escaping literal commit subjects and bound
 		publicNotes(notes),
 		changes,
 		'Shilo/PixelDoll',
-		'https://example.com/banner.png'
+		'https://example.com/banner.png',
+		'https://example.com/compare'
 	);
 	expect(body).toContain('![](https://example.com/banner.png)');
 	expect(body).toContain('## Save a sprite\n\nSave your work as a PNG file.');
@@ -165,7 +167,33 @@ it('renders the same data as the app, escaping literal commit subjects and bound
 			{ ...publicNotes(notes), intro: 'a'.repeat(125_000) },
 			changes,
 			'Shilo/PixelDoll',
-			'banner.png'
+			'banner.png',
+			'https://example.com/compare'
 		)
 	).toThrow(/size limit/);
+	const many = buildChanges(
+		Array.from({ length: 3000 }, (_, i) => ({
+			...feature,
+			sha: i.toString(16).padStart(40, '0'),
+			subject: `change number ${i} with a fairly long description`
+		}))
+	);
+	const shortened = releaseMarkdown(
+		'0.0.1',
+		'2026-11-27',
+		publicNotes(notes),
+		many,
+		'Shilo/PixelDoll',
+		'banner.png',
+		'https://example.com/compare'
+	);
+	expect(shortened.length).toBeLessThan(125_000);
+	expect(shortened).toContain('<summary>All changes (3000)</summary>');
+	expect(shortened).toContain('[See all 3000 changes](https://example.com/compare)');
+});
+
+it('fails the run instead of falling back to English when Claude is unreachable', async () => {
+	const create = vi.fn(() => Promise.reject(new Error('connection reset')));
+	const claude = { beta: { messages: { create } } } as unknown as Claude;
+	await expect(translations(claude, notes)).rejects.toThrow('connection reset');
 });

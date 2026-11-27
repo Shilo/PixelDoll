@@ -174,3 +174,23 @@ it('nets a revert that names its target without the word commit', () => {
 		])
 	).toEqual([]);
 });
+
+it('nets the commits of a reverted merge', () => {
+	const commit = (sha: string, subject: string, body = '') => ({
+		sha: sha.padEnd(40, '0'),
+		subject,
+		body
+	});
+	const branch = ['aaaaaaa'.padEnd(40, '0'), 'bbbbbbb'.padEnd(40, '0')];
+	expect(
+		userCommits(
+			[
+				commit('ddddddd', 'Revert "Merge branch t3/trial"', 'This reverts commit ccccccc.'),
+				commit('bbbbbbb', 'fix: trial fix'),
+				commit('aaaaaaa', 'feat: trial feature'),
+				commit('eeeeeee', 'feat: kept feature')
+			],
+			(prefix) => (prefix === 'ccccccc' ? branch : [])
+		).map(({ subject }) => subject)
+	).toEqual(['kept feature']);
+});
