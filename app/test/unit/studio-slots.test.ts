@@ -46,7 +46,7 @@ test('the icon set keeps its keys and Lucide drawing contract', () => {
 				tag === 'path'
 					? (attrs.d.match(/-?\d*\.?\d+/g) ?? []).map(Number)
 					: [attrs.cx - attrs.r, attrs.cx + attrs.r, attrs.cy - attrs.r, attrs.cy + attrs.r];
-			if (tag === 'path') expect(attrs.d, key).toMatch(/^M[MmLlHhVvCcSsQqTtAaZz0-9.,\-\s]+$/);
+			if (tag === 'path') expect(attrs.d, key).toMatch(/^[Mm][MmLlHhVvCcSsQqTtAaZz0-9.,\-\s]+$/);
 			for (const n of numbers) expect(Math.abs(n), key).toBeLessThanOrEqual(SLOT_ICON_VIEW_BOX);
 		}
 	}
