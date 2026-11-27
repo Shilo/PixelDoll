@@ -255,7 +255,7 @@ test('a Free/Trial connection resumes a permitted pending enhancement', async ({
 		.locator('#project-menu')
 		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'New character', exact: true });
 	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A patient elf');
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();

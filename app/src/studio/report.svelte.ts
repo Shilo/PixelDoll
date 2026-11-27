@@ -32,7 +32,7 @@ const AREAS: Record<NonNullable<SheetId>, string> = {
 	newitem: 'New item',
 	export: 'Export',
 	activity: 'Activity',
-	item: 'Item details',
+	item: 'Item View and edit',
 	gen: 'Item generation',
 	move: 'Add a move',
 	moveReview: 'Move review',
@@ -45,14 +45,15 @@ const AREAS: Record<NonNullable<SheetId>, string> = {
 	importZip: 'Import from file',
 	importPixelLab: 'Import from PixelLab',
 	delete: 'Delete',
-	details: 'Character details',
+	details: 'Character View and edit',
 	setup: 'Rig setup',
 	settings: 'Settings',
 	workspaceReport: 'Workspace copy',
 	slots: 'Categories',
 	frames: 'Frames',
 	adjustFrame: 'Adjust frame',
-	cost: 'Cost estimate'
+	cost: 'Cost estimate',
+	clip: 'Move View and edit'
 };
 
 export const areaOf = (sheet: SheetId) =>

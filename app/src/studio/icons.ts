@@ -111,12 +111,14 @@ export { default as EllipsisVertical } from '@lucide/svelte/icons/ellipsis-verti
 export { default as GitCommitHorizontal } from '@lucide/svelte/icons/git-commit-horizontal';
 export { default as GripVertical } from '@lucide/svelte/icons/grip-vertical';
 export { default as EyeOff } from '@lucide/svelte/icons/eye-off';
-export { default as HandGrab } from '@lucide/svelte/icons/hand-grab';
+export { default as ImageOff } from '@lucide/svelte/icons/image-off';
+export { default as HandFist } from '@lucide/svelte/icons/hand-fist';
 export { default as CopyPlus } from '@lucide/svelte/icons/copy-plus';
 export { default as UsersRound } from '@lucide/svelte/icons/users-round';
 export { default as PawPrint } from '@lucide/svelte/icons/paw-print';
 export { default as Footprints } from '@lucide/svelte/icons/footprints';
-export { default as Crown } from '@lucide/svelte/icons/crown';
+export { default as HardHat } from '@lucide/svelte/icons/hard-hat';
+export { default as Jacket } from '@lucide/svelte/icons/jacket';
 export { default as Scissors } from '@lucide/svelte/icons/scissors';
 export { default as Glasses } from '@lucide/svelte/icons/glasses';
 export { default as Hand } from '@lucide/svelte/icons/hand';

@@ -339,8 +339,16 @@
 
 <Sheet
 	title={t('costSheet.title')}
-	back={settingsNavigation.costOpen ? closeSettingsCost : undefined}
-	backTo={t('export.sheet.settings')}
+	back={settingsNavigation.costOpen
+		? closeSettingsCost
+		: ui.returnTo === 'details'
+			? () => (ui.sheet = 'details')
+			: undefined}
+	backTo={settingsNavigation.costOpen
+		? t('export.sheet.settings')
+		: ui.returnTo === 'details'
+			? store.projects.find((p) => p.id === ui.details)?.name
+			: undefined}
 	onclose={() => (ui.sheet = null)}
 >
 	<div class="cost-sheet">

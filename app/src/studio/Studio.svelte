@@ -94,7 +94,8 @@
 		item: () => import('./ItemPane.svelte'),
 		notes: () => import('./StageNote.svelte'),
 		gen: () => import('./GenCard.svelte'),
-		details: () => import('./DetailsSheet.svelte'),
+		details: () => import('./CharacterWindow.svelte'),
+		clip: () => import('./ClipWindow.svelte'),
 		slots: () => import('./SlotsSheet.svelte'),
 		frames: () => import('./FramesSheet.svelte'),
 		adjustFrame: () => import('./AdjustFrameSheet.svelte'),
@@ -196,19 +197,38 @@
 		return () => clearTimeout(t);
 	});
 
-	// Back (browser button, Android gesture) closes an open sheet first: one history entry while any sheet is open.
-	// ponytail: not reactive on purpose (plain flag); a sheet -> sheet switch keeps the same entry.
-	let sheetEntry = false;
-	$effect(() => {
-		const open = !!ui.sheet || ui.settingsOverlay;
-		if (open && !sheetEntry) {
-			history.pushState({ pixeldollSheet: 1 }, '');
-			sheetEntry = true;
-		} else if (!open && sheetEntry) {
-			sheetEntry = false;
-			history.back();
+	type ViewEntry = { studio: boolean; sheet: boolean };
+	const historySession = crypto.randomUUID();
+	const charactersEntry: ViewEntry = { studio: false, sheet: false };
+	let viewEntry = charactersEntry;
+	let returningToView = false;
+	const sheetOpen = () => !!ui.sheet || ui.settingsOverlay;
+
+	function syncViewHistory() {
+		const studio = experience.screen === 'studio';
+		const sheet = sheetOpen();
+		if (returningToView) return;
+		if (studio && !viewEntry.studio && viewEntry.sheet) {
+			// A sheet on Characters can lead to Customize after an import or creation. Its entry becomes Customize.
+			viewEntry = { studio: true, sheet: false };
+			history.replaceState({ historySession, viewEntry }, '');
 		}
-	});
+		const leavingStudio = viewEntry.studio && !studio;
+		if (leavingStudio || (viewEntry.sheet && !sheet)) {
+			returningToView = true;
+			history.go(-Number(leavingStudio) - Number(viewEntry.sheet));
+			return;
+		}
+		if (studio && !viewEntry.studio) {
+			viewEntry = { studio: true, sheet: false };
+			history.pushState({ historySession, viewEntry }, '');
+		}
+		if (sheet && !viewEntry.sheet) {
+			viewEntry = { studio, sheet: true };
+			history.pushState({ historySession, viewEntry }, '');
+		}
+	}
+	$effect(syncViewHistory);
 	// Closing Connect cancels its spending action, also when the sheet closes before its code loaded (ConnectSheet never mounted).
 	$effect(() => {
 		if (ui.sheet !== 'connect') {
@@ -224,28 +244,29 @@
 		if (sheetBefore === 'activity' && sheet !== 'activity') cancelWaitingForTab();
 		if (sheet !== 'activity') settingsNavigation.activityOpen = false;
 		if (sheet !== 'cost') settingsNavigation.costOpen = false;
+		// A tool (or Rename, Move to Trash) returns to the window it was opened from only while it, or that window, is open.
+		const returnsTo = {
+			details: ['details', 'adjustFrame', 'directions', 'cost', 'rename', 'delete'],
+			clip: ['clip', 'frames', 'move', 'stateCapture', 'itemGeneration', 'rename']
+		} as const;
+		if (ui.returnTo && !(returnsTo[ui.returnTo] as readonly string[]).includes(sheet ?? ''))
+			ui.returnTo = null;
 		if (sheet !== 'export' && !(sheet === 'settings' && settingsNavigation.fromExport))
 			settingsNavigation.exportOpen = false;
 		sheetBefore = sheet;
 	});
-	const onpop = () => {
-		if (!sheetEntry) return;
+	function backThroughSheet() {
 		// An atomic local save/publish has the same disabled-close rule for browser Back as for its X and Escape.
-		if (ui.sheetBusy && !ui.settingsOverlay && !alertOnTop()) {
-			history.pushState({ pixeldollSheet: 1 }, '');
-			return;
-		}
+		if (ui.sheetBusy && !ui.settingsOverlay && !alertOnTop()) return;
 		// An open menu or picker answers Back first, as Escape does, before the sheet behind it.
 		const popup = [...document.querySelectorAll<HTMLElement>('[popover]:popover-open')]
 			.filter((element) => element.getAttribute('popover') !== 'manual')
 			.at(-1);
 		if (popup) {
 			popup.hidePopover();
-			history.pushState({ pixeldollSheet: 1 }, '');
 			return;
 		}
 		// Otherwise Back takes the sheet's own Back (an inner pane) or its close request, which may ask first.
-		sheetEntry = false;
 		// A sheet still loading (lazy) has not claimed its exits yet: a Settings child still steps back to Settings.
 		if (ui.settingsOverlay && !document.querySelector('dialog.settings-sheet:modal'))
 			closeSettings();
@@ -259,11 +280,21 @@
 			)
 		)
 			ui.sheet = null;
-		if (ui.sheet || ui.settingsOverlay) {
-			history.pushState({ pixeldollSheet: 1 }, '');
-			sheetEntry = true;
+	}
+
+	function onpop(event: PopStateEvent) {
+		const wasSheet = viewEntry.sheet;
+		viewEntry =
+			event.state?.historySession === historySession ? event.state.viewEntry : charactersEntry;
+		if (returningToView) {
+			// App controls already chose the next view. A second change may have happened during the traversal.
+			returningToView = false;
+		} else {
+			if (wasSheet && !viewEntry.sheet && sheetOpen()) backThroughSheet();
+			if (!sheetOpen()) experience.screen = viewEntry.studio ? 'studio' : 'characters';
 		}
-	};
+		syncViewHistory();
+	}
 
 	// balance after every settled job (like TopBar)
 	const settled = $derived($queue.counts.done + $queue.counts.failed);
@@ -322,9 +353,10 @@
 			const all = [...group.querySelectorAll<HTMLElement>(menu ? '.row' : 'button')].filter(
 				(o) => !(o as HTMLButtonElement).disabled && o.getClientRects().length
 			);
-			// aria-disabled options stay focusable by Tab with their reason, but arrows (which select) skip them; from one,
-			// arrows step to its nearest enabled neighbor.
-			const opts = all.filter((o) => o.getAttribute('aria-disabled') !== 'true');
+			// aria-disabled options stay focusable by Tab with their reason. Arrows that select skip them (from one, they step
+			// to its nearest enabled neighbor); a menu's arrows only move focus, so its unavailable rows stay in the sequence
+			// and their reason is reachable, as in every menu (experience/focus.ts: navigateMenu).
+			const opts = menu ? all : all.filter((o) => o.getAttribute('aria-disabled') !== 'true');
 			const at = all.indexOf(t);
 			if (at < 0 || !opts.length) return;
 			e.preventDefault();
@@ -452,6 +484,7 @@
 			/>{/key}{/if}
 	{#if ui.sheet === 'delete'}<DeleteSheet />{/if}
 	{#if ui.sheet === 'details'}<Lazy load={parts.details} />{/if}
+	{#if ui.sheet === 'clip'}<Lazy load={parts.clip} />{/if}
 	{#if ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
 	{#if ui.sheet === 'slots'}<Lazy load={parts.slots} />{/if}
 	{#if ui.sheet === 'frames' && store.project}<Lazy load={parts.frames} />{/if}

@@ -224,7 +224,12 @@
 	title={prepared ? t('fixFrames.reviewTitle') : t('fixFrames.title')}
 	locked={busy}
 	wide
-	back={prepared ? reset : undefined}
+	back={prepared ? reset : frames.back ? () => (ui.sheet = frames.back!) : undefined}
+	backTo={!prepared && frames.back
+		? frames.back === 'clip'
+			? displayMove(ui.clip, store.project?.manifest.rig.animations ?? [])
+			: t('studio.titleItem')
+		: undefined}
 	backDiscards
 	dirty={!!prepared}
 	onclose={() => (ui.sheet = null)}

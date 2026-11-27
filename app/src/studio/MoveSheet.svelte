@@ -1639,7 +1639,6 @@
 				<span>
 					{t('moveSheet.checkpoint.initialEstimate', { minutes: formatNumber(est.minutes) })}
 				</span>
-				<span>{t('moveSheet.costNotice')}</span>
 			</span>
 		{/if}
 		<span class="api-action move-action">
@@ -1939,8 +1938,14 @@
 			? () => (reviewingSkeletonFor = null)
 			: mine && ui.moveFormOpen
 				? () => (ui.moveFormOpen = false)
-				: undefined}
-	backTo={importPage ? t('moves.add') : undefined}
+				: ui.returnTo === 'clip'
+					? () => (ui.sheet = 'clip')
+					: undefined}
+	backTo={importPage
+		? t('moves.add')
+		: ui.returnTo === 'clip'
+			? displayMove(ui.clip, store.project?.manifest.rig.animations ?? [])
+			: undefined}
 	opener={canImport && !importPage && !redrawTarget
 		? {
 				label: t('moveImport.importMoves'),
@@ -2298,7 +2303,7 @@
 									gens: formatNumber(Math.ceil(colorRepair.itemGens))
 								})
 							: '',
-						t('moveSheet.color.billing')
+						t('moveSheet.color.kept')
 					]
 						.filter(Boolean)
 						.join(' ')}

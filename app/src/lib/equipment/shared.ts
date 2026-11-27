@@ -60,6 +60,12 @@ export const forgetFits = () => {
 	fits = new Map();
 };
 
+/** Accepted items that suppress the matching offers from other characters. */
+export const ownedItemKeys = (targetId: string, target: Manifest | null) =>
+	new Set(
+		target?.items.filter((it) => it.status === 'accepted').map((it) => itemKey(it, targetId))
+	);
+
 /** Items of the other characters, saved and `bundled` (the demo, an imported ZIP), without ones this character already has;
  *  one entry per item: the one that fits this character best (exact copy, then re-fit, then worn as drawn, then made new), the
  *  most recent first within each tier. An entry whose images cannot be read is skipped and counted, so the others still list.
@@ -72,9 +78,7 @@ export async function listShared(
 	bundled: readonly BundledSource[] = [],
 	{ saved = true }: { saved?: boolean } = {}
 ): Promise<{ items: SharedItem[]; skipped: number }> {
-	const own = new Set(
-			target?.items.filter((it) => it.status === 'accepted').map((it) => itemKey(it, targetId))
-		),
+	const own = ownedItemKeys(targetId, target),
 		groups = new Map<string, Omit<SharedItem, 'fit' | 'cells'>[]>();
 	const sources = [
 		...(saved ? await listProjects() : [])

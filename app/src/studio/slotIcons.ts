@@ -1,8 +1,8 @@
 // Wardrobe slot icons in Lucide's own style, so categories read like the rest of the app's icons: Lucide core wherever it
-// has the item, three Lucide Lab icons, and six drawings for gear Lucide lacks, made to its design guide (24 grid, 2 px
-// round stroke, simple geometric parts). Hair and Back use core Scissors and Backpack: drawn hair and capes read as an arch
-// or a skirt at 16 px. Each drawing keeps one outline that names the slot, so pairs that sit near each other (shirt and
-// coat, trousers and underwear, necklace and ring) stay apart at the smallest size.
+// has the item, Lucide Lab next, and drawings only for gear neither has (belt, necklace, pauldrons), made to Lucide's
+// design guide (24 grid, 2 px round stroke, simple geometric parts). Hair and Back use core Scissors and Backpack: drawn
+// hair and capes read as an arch or a skirt at 16 px. Each drawing keeps one outline that names the slot, so pairs that
+// sit near each other (belt and underwear, necklace and ring) stay apart at the smallest size.
 import type { SlotIcon } from '../lib/store/manifest.ts';
 
 /** The grid every drawing is authored on: Lucide's. GroupIcon draws it at whatever size a surface asks for. */
@@ -36,10 +36,11 @@ export type SlotIconElement =
 /** Lucide core icons the set uses, by their Lucide name; GroupIcon maps each to its component. */
 export type LucideSlotIcon =
 	| 'person-standing'
-	| 'crown'
+	| 'hard-hat'
 	| 'scissors'
 	| 'glasses'
 	| 'shirt'
+	| 'jacket'
 	| 'hand'
 	| 'backpack'
 	| 'sword'
@@ -55,12 +56,11 @@ const path = (...ds: string[]): SlotIconElement[] => ds.map((d) => ['path', { d 
 
 export const SLOT_ICONS: Record<SlotIcon, SlotIconArt> = {
 	body: 'person-standing',
-	head: 'crown',
+	head: 'hard-hat',
 	hair: 'scissors',
 	face_acc: 'glasses',
 	torso_inner: 'shirt',
-	// A long coat with a V collar and a center opening: clearly longer than the shirt and open at the front.
-	torso_outer: path('M9 3 5 6v15h14V6l-4-3', 'M9 3l3 6 3-6', 'M12 9v12'),
+	torso_outer: 'jacket',
 	// Lucide Lab shorts-boxer (ISC, notice at the end of this file).
 	underwear: path(
 		'M10.7 15.8 9 20H4a2 2 0 0 1-2-2V5c0-.6.4-1 1-1h18c.6 0 1 .4 1 1v13a2 2 0 0 1-2 2h-5l-1.7-4.2',
@@ -69,10 +69,24 @@ export const SLOT_ICONS: Record<SlotIcon, SlotIconArt> = {
 	),
 	// A strap with a square buckle and prong.
 	waist: path('M3 8h18v8H3z', 'M9 8h6v8H9z', 'M12 10v4'),
-	// A waistband over two long legs split by one crotch notch: far taller than the underwear.
-	legs: path('M6 4h12', 'M6 4v16h4l2-8 2 8h4V4'),
-	// A side-view boot: shaft, toe and a sole line.
-	feet: path('M6 4h8v9l4 3v4H6z', 'M6 16h12'),
+	// Lucide Lab trousers (ISC, notice at the end of this file).
+	legs: path(
+		'M4 6h16',
+		'M6 22a2 2 0 0 1-2-2V3c0-.6.4-1 1-1h14c.6 0 1 .4 1 1v17a2 2 0 0 1-2 2h-3l-3-10-3 10Z',
+		'm6 11-2 1',
+		'M9 8.5V6',
+		'M15 6v2.5',
+		'm20 12-2-1',
+		'M4 18h6',
+		'M14 18h6'
+	),
+	// Lucide Lab sneaker (ISC, notice at the end of this file).
+	feet: path(
+		'M14.1 7.9 12.5 10',
+		'M17.4 10.1 16 12',
+		'M2 16a2 2 0 0 0 2 2h13c2.8 0 5-2.2 5-5a2 2 0 0 0-2-2c-.8 0-1.6-.2-2.2-.7l-6.2-4.2c-.4-.3-.9-.2-1.3.1 0 0-.6.8-1.2 1.1a3.5 3.5 0 0 1-4.2.1C4.4 7 3.7 6.3 3.7 6.3A.92.92 0 0 0 2 7Z',
+		'M2 11c0 1.7 1.3 3 3 3h7'
+	),
 	arms: 'hand',
 	// Two sloping pads joined by a neck curve: shoulder armor with no torso below it.
 	shoulders: path(
@@ -99,7 +113,7 @@ export const SLOT_ICONS: Record<SlotIcon, SlotIconArt> = {
 	gem: 'gem'
 };
 
-/* The license the three Lucide Lab drawings above are copied under
+/* The license the Lucide Lab drawings above are copied under
    (https://github.com/lucide-icons/lucide-lab).
 
    ISC License

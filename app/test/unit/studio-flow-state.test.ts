@@ -1559,6 +1559,91 @@ test('putting on an item the shown move has no frames for shows it standing inst
 	expect([s.doc.items.head, s.ui.anim]).toEqual(['hat', 'walk']);
 });
 
+test('a layer step skips layers it does not visibly cross', async () => {
+	// The fixture's hat and body share no pixel, so moving the hat past the body would change nothing anyone sees.
+	const project = await equipmentFixture();
+	const s = await import('../../src/studio/state.svelte.ts');
+	s.store.project = project;
+	s.doc.id = 'layer-order-apart';
+	s.doc.items = { body: 'base', head: 'hat' };
+	s.ui.anim = 'rest';
+	s.ui.dir = 'south';
+	expect(s.itemLayerNeighbors('hat')).toEqual({ behind: undefined, ahead: undefined });
+	// Its place counts only layers it overlaps, so the body it never touches is not part of its order.
+	expect(s.itemLayerPosition('hat')).toEqual({ position: 1, count: 1 });
+	expect(s.moveLayer('hat', -1, false)).toBeUndefined();
+	expect(project.manifest.slots.find((slot) => slot.id === 'head')!.zOverrides).toBeUndefined();
+});
+
+test('an unworn item can be ordered among the worn layers, and a hidden one cannot', async () => {
+	const project = await equipmentFixture();
+	// The body reaches under the hat, so crossing it changes the picture.
+	const base = project.manifest.items.find((item) => item.id === 'base')!;
+	project.images
+		.get(base.layers[0].cells!.rest!.south![0]!)!
+		.data.set([180, 120, 90, 255], (18 * 64 + 20) * 4);
+	const s = await import('../../src/studio/state.svelte.ts');
+	s.store.project = project;
+	s.doc.id = 'layer-order';
+	s.doc.items = { body: 'base' };
+	s.ui.anim = 'rest';
+	s.ui.dir = 'south';
+	s.ui.frame = 0;
+	const head = project.manifest.slots.find((slot) => slot.id === 'head')!;
+	// Not worn: the hat is placed as if worn, so it can be ordered before wearing it.
+	expect(s.itemLayerNeighbors('hat').behind).toBeDefined();
+	expect(s.itemLayerNeighbors('hat').ahead).toBeUndefined();
+	// Each step moves its place among the layers it overlaps by exactly one.
+	expect(s.itemLayerPosition('hat')).toEqual({ position: 2, count: 2 });
+	s.moveLayer('hat', -1, false);
+	expect(head.zOverrides).toEqual([{ layer: 'fg', z: 9 }]);
+	expect(s.itemLayerPosition('hat')).toEqual({ position: 1, count: 2 });
+	expect(s.itemLayerNeighbors('hat').ahead).toBeDefined();
+	// Forward again draws exactly what the default order draws (the hat only shows facing south here), so the step saves
+	// the default order instead of a rule that changes nothing.
+	s.moveLayer('hat', 1, true);
+	expect(head.zOverrides).toEqual([]);
+	// A step for this facing only adds a rule for it alone.
+	s.moveLayer('hat', -1, true);
+	expect(head.zOverrides).toEqual([{ layer: 'fg', z: expect.any(Number), dir: 'south' }]);
+	expect(s.itemLayerNeighbors('hat').behind).toBeUndefined();
+	expect(s.itemLayerNeighbors('hat').ahead).toBeDefined();
+	// A worn item that hides the body's slot leaves it out of the draw order: its arrows do nothing.
+	const hat = project.manifest.items.find((item) => item.id === 'hat')!;
+	hat.hides = ['body'];
+	s.doc.items = { body: 'base', head: 'hat' };
+	expect(s.itemLayerNeighbors('base').behind).toBeUndefined();
+	s.moveLayer('base', -1, false);
+	expect(project.manifest.slots.find((slot) => slot.id === 'body')!.zOverrides).toBeUndefined();
+});
+
+test('a step back to the default look saves the default order', async () => {
+	const project = await equipmentFixture();
+	// The body reaches under the hat, so the hat has a place behind it and one in front.
+	const base = project.manifest.items.find((item) => item.id === 'base')!;
+	project.images
+		.get(base.layers[0].cells!.rest!.south![0]!)!
+		.data.set([180, 120, 90, 255], (18 * 64 + 20) * 4);
+	const s = await import('../../src/studio/state.svelte.ts');
+	const { defaultFrontOrder } = await import('../../src/studio/slots.ts');
+	s.store.project = project;
+	s.doc.id = 'layer-order-default';
+	s.doc.items = { body: 'base', head: 'hat' };
+	s.ui.anim = 'rest';
+	s.ui.dir = 'south';
+	const hat = project.manifest.items.find((item) => item.id === 'hat')!;
+	const head = project.manifest.slots.find((slot) => slot.id === 'head')!;
+	const ladder = defaultFrontOrder(project.manifest, hat);
+	const front = () => (head.zOverrides ?? []).filter((rule) => rule.layer === 'fg');
+	s.moveLayer('hat', -1, false, 'rest', 'south', ladder);
+	expect(front()).not.toEqual(ladder);
+	// Back, then Forward again: the same picture as the default, so the order reads as unchanged.
+	s.moveLayer('hat', 1, false, 'rest', 'south', ladder);
+	expect(front()).toEqual(ladder);
+	// Leave no save pending for the tests that follow.
+	await s.flushSave();
+});
+
 const draftsSaved = () => mocks.put.mock.calls.filter(([, key]) => key === 'studio-drafts');
 
 describe('undo history', () => {

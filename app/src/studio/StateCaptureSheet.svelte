@@ -472,8 +472,16 @@
 	wide={editing && !importing}
 	locked={!!busy || (importing && importer.busy && !!importer.review)}
 	onclose={() => (ui.sheet = null)}
-	back={importing ? () => page(false) : undefined}
-	backTo={t('moves.addState')}
+	dirty={!importing && (named || !!description.trim() || !!reference)}
+	backDiscards
+	back={importing
+		? () => page(false)
+		: ui.returnTo === 'clip'
+			? () => (ui.sheet = 'clip')
+			: undefined}
+	backTo={importing
+		? t('moves.addState')
+		: displayMove(ui.clip, store.project?.manifest.rig.animations ?? [])}
 	opener={importing || isDemo()
 		? undefined
 		: {

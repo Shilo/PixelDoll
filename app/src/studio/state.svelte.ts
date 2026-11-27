@@ -24,6 +24,7 @@ import {
 	openFixture,
 	reconcileItemSlots,
 	saveDress,
+	mergePresetEdits,
 	saveSplit,
 	type DressState,
 	type Outfit
@@ -42,11 +43,18 @@ import {
 	storeVariants
 } from '../lib/dress/dress.ts';
 import {
+	composeCell,
+	cellImg,
 	drawList,
+	equipped,
+	handHides,
 	handSide,
+	hiddenSlots,
+	hidesOf,
 	oppositeHands,
 	settleHands,
-	twoHanded
+	twoHanded,
+	type Draw
 } from '../lib/compose/compose.ts';
 import {
 	deleteItem,
@@ -70,6 +78,7 @@ import {
 	readEntry,
 	restoreCharacter,
 	restoreMoveEntry,
+	restoreOutfitEntry,
 	restoreParts,
 	draftCallIds,
 	quotaError,
@@ -114,7 +123,9 @@ import type {
 } from './create.ts';
 import {
 	characterFacts,
+	cropAll,
 	displayMoveJob,
+	itemReferenceFrame,
 	missingMoves,
 	wearClip,
 	pixelSize,
@@ -317,7 +328,8 @@ export type SheetId =
 	| 'slots'
 	| 'frames'
 	| 'adjustFrame'
-	| 'cost';
+	| 'cost'
+	| 'clip';
 const sizeNow = (): Size => {
 	const w = innerWidth,
 		h = innerHeight;
@@ -397,7 +409,9 @@ export const ui = $state({
 	directionProject: '',
 	frameProject: '', // the character the Adjust frame sheet is for
 	costProject: '', // the character the Cost estimate sheet opens on
-	details: '', // the character the Details sheet is for
+	details: '', // the character the View and edit window is for
+	clip: '', // the move or State the View and edit window is for
+	returnTo: null as 'details' | 'clip' | null, // the window a tool's Back returns to
 	settingsOverlay: false, // Settings opened over the current sheet without replacing it
 	newItem: { group: 'head', slot: '', prompt: '', name: '' } as {
 		reuseMethod?: boolean;
@@ -406,6 +420,8 @@ export const ui = $state({
 		prompt: string;
 		name: string;
 		method?: Method;
+		/** An image the sheet attaches as its reference when it opens (Make copy for self: the item's first frame). */
+		referenceFrom?: Img;
 	},
 	anim: '',
 	dir: 'south' as DirectionName,
@@ -1018,7 +1034,8 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		if (id === doc.id && (edits !== seen || doc.rev !== revision)) return openProject(id, keep);
 		const m = r.project.manifest;
 		const pr = r.current ?? m.presets[0] ?? { items: {}, variants: {} };
-		const savedSlots = structuredClone(m.slots);
+		const savedSlots = structuredClone(m.slots),
+			savedPresets = structuredClone(m.presets);
 		const unsaved = takeUnsaved(id, m),
 			current = unsaved ?? pr; // replace, never merge: a reset or removal deletes keys
 		if (!quiet) {
@@ -1064,7 +1081,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		if (r.dressUnread && dressUnread !== id)
 			toast(message('state.demoOutfitsUnread'), { tone: 'danger' });
 		dressUnread = r.dressUnread ? id : '';
-		slotBase = { id, slots: savedSlots };
+		slotBase = { id, slots: savedSlots, presets: savedPresets };
 		if (!m.rig.directions.some((d) => d.id === ui.dir)) ui.dir = m.rig.directions[0].id;
 		if (!quiet) ui.frame = 0;
 		store.project = r.project;
@@ -1178,6 +1195,13 @@ function restore(e: UndoStep) {
 		removed = from.filter((s) => !d.slots.some((x) => x.id === s.id));
 	d.slots = retainSlotDirections(mergeSlotEdits(from, d.slots, m.slots, keep), m.rig.directions);
 	const kept = removed.filter((s) => keep.has(s.id) && d.slots.some((x) => x.id === s.id));
+	// An outfit in the Trash (moved there by another tab too) comes back only from the Trash.
+	const trashed = new Set(
+		deleted.entries.flatMap((entry) =>
+			entry.kind === 'outfit' && entry.projectId === doc.id ? [entry.scope.presetId] : []
+		)
+	);
+	d.presets = d.presets.filter((preset) => !trashed.has(preset.id));
 	applyDress(m, d);
 	doc.items = { ...d.current!.items };
 	// An item deleted for good since the snapshot (its Trash entry gone, or another tab) is not worn as a dangling id.
@@ -1357,6 +1381,18 @@ function pushStep(projectId: string, step: UndoStep) {
 	history.undo = [...history.undo.slice(-99), step];
 }
 /** Add a delete to the history: one step whose Undo restores exactly the entry the delete wrote. */
+/** An outfit's Trash and restore are not dress steps: every step of that character's history is made to agree, so Undo
+ *  or Redo never brings back an outfit in the Trash or drops one restored from it. */
+export function syncOutfitSteps(projectId: string, presetId: string, restored?: Preset) {
+	const history = projectId === doc.id ? doc : histories.get(projectId);
+	for (const step of history ? [...history.undo, ...history.redo] : []) {
+		if (!step.snap) continue;
+		const d = JSON.parse(step.snap) as DressState,
+			others = d.presets.filter((preset) => preset.id !== presetId);
+		d.presets = restored ? [...others, structuredClone(restored)] : others;
+		step.snap = JSON.stringify(d);
+	}
+}
 export function pushRecovery(label: Message, trash: string) {
 	if (!store.project) return;
 	pushStep(doc.id, { label, trash, from: slotsNow() });
@@ -1558,14 +1594,16 @@ export async function refreshRestoredLibrary() {
 }
 /** The slot definitions the open character's view continues from (its open or last save): a save writes only the slot
  *  changes made since, so a stale tab's routine save never undoes another tab's category changes. */
-let slotBase: { id: string; slots: Slot[] } | null = null;
+let slotBase: { id: string; slots: Slot[]; presets: Preset[] } | null = null;
 /** Save the dress state with the view's slot changes since slotBase, then continue from what was saved: other tabs' slot
  *  changes come into the view, and its own changes made meanwhile stay to be saved next. */
 async function saveSlotsAndDress(id: string, m: Manifest, cur: Outfit) {
 	// The view's slots now: a save that finished after this one was scheduled may have brought in others' changes.
 	const here = doc.id === id && store.project ? store.project.manifest : m,
 		mine = structuredClone(here.slots),
-		base = slotBase?.id === id ? slotBase.slots : mine;
+		base = slotBase?.id === id ? slotBase.slots : mine,
+		minePresets = structuredClone(here.presets),
+		presetBase = slotBase?.id === id ? slotBase.presets : undefined;
 	const keep = new Set(gens.filter((g) => g.draft.rigId === id).map((g) => g.input.slot));
 	if (base.some((s) => !mine.some((x) => x.id === s.id))) {
 		// A removal (an undone or deleted empty category) also spares slots that attempts saved by other tabs use. Unreadable:
@@ -1577,13 +1615,22 @@ async function saveSlotsAndDress(id: string, m: Manifest, cur: Outfit) {
 			for (const s of base) keep.add(s.id);
 		}
 	}
-	const saved = await saveDress(id, { ...m, slots: mine }, cur, { base, keep });
+	const saved = await saveDress(id, { ...m, slots: mine, presets: minePresets }, cur, {
+		base,
+		keep,
+		presets: presetBase
+	});
 	if (doc.id !== id || !store.project) return;
 	const live = store.project.manifest,
-		next = mergeSlotEdits(mine, live.slots, saved, busySlots(live));
-	slotBase = { id, slots: saved };
-	if (stableStringify(next) !== stableStringify(live.slots)) {
+		next = mergeSlotEdits(mine, live.slots, saved.slots, busySlots(live)),
+		presets = mergePresetEdits(minePresets, live.presets, saved.presets);
+	slotBase = { id, slots: saved.slots, presets: saved.presets };
+	if (
+		stableStringify(next) !== stableStringify(live.slots) ||
+		stableStringify(presets) !== stableStringify(live.presets)
+	) {
 		live.slots = next;
+		live.presets = presets;
 		bump();
 	}
 }
@@ -1627,8 +1674,11 @@ function keepUnsaved() {
 	// While another character loads, doc and store.project still describe this one, so its snapshot stays consistent.
 	if (edits === savedEdits || !doc.id || !store.project) return;
 	try {
-		const base = slotBase?.id === doc.id ? slotBase.slots : undefined;
-		lsSet(unsavedKey(doc.id), JSON.stringify({ ...JSON.parse(snap()), slotBase: base }));
+		const base = slotBase?.id === doc.id ? slotBase : undefined;
+		lsSet(
+			unsavedKey(doc.id),
+			JSON.stringify({ ...JSON.parse(snap()), slotBase: base?.slots, presetBase: base?.presets })
+		);
 	} catch (e) {
 		console.error('unsaved snapshot', e);
 	}
@@ -1636,7 +1686,7 @@ function keepUnsaved() {
 function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'> | null {
 	try {
 		const d = JSON.parse(lsGet(unsavedKey(id)) ?? 'null') as
-			(DressState & { slotBase?: Slot[] }) | null;
+			(DressState & { slotBase?: Slot[]; presetBase?: Preset[] }) | null;
 		// Validate the whole shape first: applyDress changes the manifest in place, so a bad snapshot must not half-apply.
 		const obj = (v: unknown) => typeof v === 'object' && v !== null && !Array.isArray(v);
 		const current = d?.current;
@@ -1651,6 +1701,7 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 			!Array.isArray(d.presets) ||
 			!Array.isArray(d.slots) ||
 			(d.slotBase != null && !Array.isArray(d.slotBase)) ||
+			(d.presetBase != null && !Array.isArray(d.presetBase)) ||
 			(d.hides != null && !obj(d.hides))
 		)
 			return null;
@@ -1660,7 +1711,9 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 			...gens.filter((g) => g.draft.rigId === id).map((g) => g.input.slot)
 		]);
 		const slots = d.slotBase ? mergeSlotEdits(d.slotBase, d.slots, m.slots, keep) : m.slots;
-		applyDress(m, { ...d, slots }); // keeps items added since and never revives removed ones
+		// Likewise only its outfit changes: an outfit moved to the Trash or restored since stays that way.
+		const presets = d.presetBase ? mergePresetEdits(d.presetBase, d.presets, m.presets) : m.presets;
+		applyDress(m, { ...d, slots, presets }); // keeps items added since and never revives removed ones
 		// An item deleted since (another tab) is dropped rather than worn as a dangling id.
 		return {
 			items: Object.fromEntries(
@@ -1691,7 +1744,7 @@ const WORK_BLOCKS = new Set([
 export const blockedByWork = (reason: LocalizedError | '') =>
 	!!reason && WORK_BLOCKS.has(reason.translation.key);
 const DELETE_GENERATION_BLOCK = new LocalizedError(
-	'Finish or dismiss pending generation work before deleting a character.',
+	'Finish or dismiss pending generation work before moving a character to the Trash.',
 	'state.finishBeforeCharacterRemoval'
 );
 
@@ -1753,7 +1806,7 @@ function characterEditBlocked(
 			? DELETE_GENERATION_BLOCK
 			: action === 'delete move'
 				? new LocalizedError(
-						'Finish or dismiss pending generation work before deleting a move.',
+						'Finish or dismiss pending generation work before moving a move to the Trash.',
 						'state.finishBeforeMoveRemoval'
 					)
 				: action === 'fix frames of'
@@ -1783,7 +1836,7 @@ export function deletionBlocked(
 	kind: 'character' | 'move' = 'character'
 ): LocalizedError | '' {
 	return id.startsWith('fixture:')
-		? new LocalizedError('The bundled demo cannot be deleted.', 'deleteSheet.demo')
+		? new LocalizedError('The bundled demo can’t be moved to the Trash.', 'deleteSheet.demo')
 		: characterEditBlocked(kind === 'character' ? 'delete' : 'delete move', id);
 }
 
@@ -2197,7 +2250,7 @@ export async function deleteLocalWorkAndReload(): Promise<void> {
 
 /** Other tabs hear about a deletion or restore here: a broadcast is only a hint to re-read, the write itself decides.
  *  `projectId` names a character whose record changed, so a tab showing it refreshes instead of saving a stale copy. */
-function notifyLibraryChanged(projectId?: string) {
+export function notifyLibraryChanged(projectId?: string) {
 	identityChannel?.postMessage({ libraryChanged: true, projectId });
 }
 
@@ -2263,6 +2316,15 @@ async function restoreDeletedEntry(id: string): Promise<boolean> {
 						)
 					: new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
 			}
+		}
+		if (entry.kind === 'outfit') {
+			const out = await restoreOutfitEntry(id);
+			syncOutfitSteps(out.projectId, out.preset.id, out.preset);
+			await refreshRecentlyDeleted();
+			notifyLibraryChanged(out.projectId);
+			if (doc.id === out.projectId) await openProject(out.projectId, { quiet: true });
+			toast(message('recentlyDeleted.restored', { name: out.name }), { tone: 'success' });
+			return true;
 		}
 		if (entry.kind === 'move') {
 			// The same work that blocks deleting a move can overwrite it while a restore lands.
@@ -2628,12 +2690,6 @@ export function savePreset(name: string) {
 		m.presets = [...m.presets, pr];
 	});
 }
-export function deletePreset(id: string) {
-	const m = store.project!.manifest;
-	commit(message('history.deleteOutfit'), () => {
-		m.presets = m.presets.filter((p) => p.id !== id);
-	});
-}
 export const sameOutfit = (p: Preset) => {
 	// an outfit saved before one of its hand items became two-handed is worn with the Main hand kept
 	const items = store.project ? settleHands(store.project.manifest, p.items).items : p.items;
@@ -2649,14 +2705,47 @@ export const sameOutfit = (p: Preset) => {
 export function toggleHide(itemId: string, slot: string) {
 	const m = store.project!.manifest,
 		it = itemById(itemId)!;
-	const cur = it.hides ?? m.slots.find((s) => s.id === it.slot)?.hides ?? [];
+	const cur = hideTargets(m, it),
+		shows = hidesOf(m, it).includes(slot);
 	commit(
-		message(cur.includes(slot) ? 'history.show' : 'history.hide', { name: slot }),
+		message(shows ? 'history.show' : 'history.hide', { name: slotLabel(m, slot) }),
 		() => {
-			it.hides = cur.includes(slot) ? cur.filter((s) => s !== slot) : [...cur, slot];
+			it.hides = shows ? withoutHide(m, it, slot) : [...cur, slot];
 		},
 		{ keepHand: it.slot }
 	);
+}
+
+const hideTargets = (m: Manifest, it: Item) =>
+	it.hides ?? m.slots.find((s) => s.id === it.slot)?.hides ?? [];
+
+const withoutHide = (m: Manifest, it: Item, slot: string) =>
+	hideTargets(m, it).filter((target) => !handHides(m, it.slot, [target]).includes(slot));
+
+export function itemHiders(slot: string) {
+	const m = store.project!.manifest;
+	const worn = equipped(m, doc.items);
+	if (!hiddenSlots(m, worn).has(slot)) return [];
+	const candidates = worn.filter((it) => it.slot !== slot && hidesOf(m, it).includes(slot));
+	if (candidates.length < 2) return candidates;
+	// Test each rule in the same outfit with the other rules for this slot set aside.
+	return candidates.filter((hider) =>
+		hiddenSlots(
+			m,
+			worn.map((it) =>
+				it !== hider && candidates.includes(it) ? { ...it, hides: withoutHide(m, it, slot) } : it
+			)
+		).has(slot)
+	);
+}
+
+export function showHiddenItem(slot: string) {
+	const m = store.project!.manifest;
+	const hiders = itemHiders(slot);
+	if (!hiders.length) return;
+	commit(message('history.show', { name: slotLabel(m, slot) }), () => {
+		for (const it of hiders) it.hides = withoutHide(m, it, slot);
+	});
 }
 /** The other hand a held slot conflicts with, as the canonical target its hides name: custom held slots on that side follow
  *  it (runtime handHides). */
@@ -2685,34 +2774,276 @@ export function toggleTwoHanded(itemId: string) {
 	);
 }
 
-/** Move the item's front layer one step in the draw order of the current frame (all directions, or only the current one). */
-export function moveLayer(itemId: string, step: 1 | -1, onlyDir: boolean) {
-	const m = store.project!.manifest,
-		it = itemById(itemId)!;
-	const a = m.rig.animations.find((x) => x.id === ui.anim)!,
-		cell = a.frames[ui.frame % a.frames.length].cell;
-	const order = drawList(m, $state.snapshot(doc.items), ui.anim, ui.dir, cell);
-	const i = order.findIndex((d) => d.item.id === itemId && d.layer.role === 'fg');
-	const j = i + step;
-	if (i < 0 || j < 0 || j >= order.length) return;
-	const nz = order[j].z + step; // just past the neighbor
-	const slot = m.slots.find((s) => s.id === it.slot)!;
-	const o: ZOverride = { layer: 'fg', z: nz, ...(onlyDir ? { dir: ui.dir } : {}) };
-	commit(message(step > 0 ? 'history.bringForward' : 'history.sendBackward'), () => {
-		slot.zOverrides = [
-			...(slot.zOverrides ?? []).filter(
-				(x) => !(x.layer === 'fg' && x.dir === o.dir && !x.anim && x.cell == null)
-			),
-			o
-		];
-	});
+/** The project with the item worn. An unworn item is placed as if it were worn, even when a worn item hides its category,
+ *  so its order can be set and seen before it is worn. The manifest is lent only for this draw: saved hides stay as they are. */
+function placedOutfit(p: Project, itemId: string) {
+	const m = p.manifest,
+		it = m.items.find((entry) => entry.id === itemId);
+	if (!it) return null;
+	const manifest =
+		doc.items[it.slot] === itemId
+			? m
+			: {
+					...m,
+					items: m.items.map((entry) => {
+						const hidden = hidesOf(m, entry);
+						return hidden.includes(it.slot)
+							? { ...entry, hides: hidden.filter((slot) => slot !== it.slot) }
+							: entry;
+					})
+				};
+	return { it, project: { ...p, manifest }, items: { ...doc.items, [it.slot]: itemId } };
 }
-/** `ladder`: the slot's default order from lib/items SLOTS (T3), passed in so the item pipeline stays out of startup. */
+/** The outfit with the item placed as if worn (what layer order and hiding change) in every playback frame of a move and
+ *  every facing, cropped to one shared box so the outfit holds still while frames and facings change:
+ *  [frame][facing, in rig order]. */
+export function placedOutfitFrames(itemId: string, animId = ui.anim): Img[][] {
+	const p = view.project,
+		anim = p?.manifest.rig.animations.find((x) => x.id === animId);
+	const placed = p && anim?.frames.length ? placedOutfit(p, itemId) : null;
+	if (!p || !placed || !anim) return [];
+	const dirs = p.manifest.rig.directions;
+	const byCell = new Map<number, Img[]>();
+	for (const { cell } of anim.frames)
+		if (!byCell.has(cell))
+			byCell.set(
+				cell,
+				dirs.map((dir) => composeCell(placed.project, placed.items, animId, dir.id, cell))
+			);
+	const cropped = cropAll(anim.frames.flatMap(({ cell }) => byCell.get(cell)!));
+	return anim.frames.map((_, index) =>
+		cropped.slice(index * dirs.length, (index + 1) * dirs.length)
+	);
+}
+type Crossing = { draw: Draw; back: boolean; frame: number };
+/** The item's front layer among the other layers of the shown move, judged in every facing a step would change (all of
+ *  them, or only `dir`) and every cell: the real composite (per-cell depths, body cuts and tucking count) with the item
+ *  placed in each gap between the other layers. A layer counts when the gaps on its two sides draw differently, so steps
+ *  and the item's place skip layers it never visibly overlaps, and Back then Forward returns. Cached per project
+ *  revision, since the place and the neighbors read the same work. */
+type LayerStack = {
+	order: Draw[];
+	i: number;
+	behind?: Crossing;
+	ahead?: Crossing;
+	position: number;
+	count: number;
+};
+let stackCache: { key: string; project: Project; value: LayerStack | null } | null = null;
+function layerStack(
+	itemId: string,
+	animId: string,
+	dir: DirectionName,
+	onlyDir = false
+): LayerStack | null {
+	void doc.rev;
+	const p = store.project;
+	const key = `${doc.rev}|${itemId}|${animId}|${dir}|${onlyDir}`;
+	if (p && stackCache?.key === key && stackCache.project === p) return stackCache.value;
+	const value = buildLayerStack(itemId, animId, dir, onlyDir);
+	if (p) stackCache = { key, project: p, value };
+	return value;
+}
+function buildLayerStack(
+	itemId: string,
+	animId: string,
+	dir: DirectionName,
+	onlyDir: boolean
+): LayerStack | null {
+	const p = store.project,
+		anim = p?.manifest.rig.animations.find((x) => x.id === animId);
+	const placed = p && anim?.frames.length ? placedOutfit(p, itemId) : null;
+	if (!placed || !anim) return null;
+	const { project, items } = placed,
+		m = project.manifest,
+		cells = [...new Set(anim.frames.map((frame) => frame.cell))];
+	const order = drawList(m, items, animId, dir, cells[0]);
+	const i = order.findIndex((d) => d.item.id === itemId && d.layer.role === 'fg');
+	if (i < 0) return null;
+	const { slot, layer, z } = order[i];
+	// A view where the item has no pixel cannot change with its place, so it is not drawn.
+	const views = (onlyDir ? [dir] : m.rig.directions.map((d) => d.id))
+		.flatMap((facing) => cells.map((cell) => ({ facing, cell })))
+		.filter(({ facing, cell }) =>
+			cellImg(project, layer, animId, facing, cell)?.data.some(
+				(value, index) => index % 4 === 3 && value > 0
+			)
+		);
+	// Every other layer, back to front; the item sits in gap `at` (after the others behind it).
+	const others = order
+		.map((draw, index) => ({ draw, index }))
+		.filter(({ draw }) => draw.item.id !== itemId);
+	const at = others.filter(({ index }) => index < i).length;
+	const drawnAt = (targetZ: number) => {
+		const zOverrides = steppedOverrides(
+			slot.zOverrides ?? [],
+			layer.z,
+			targetZ - z,
+			onlyDir ? dir : undefined
+		);
+		const trial = {
+			...project,
+			manifest: {
+				...m,
+				slots: m.slots.map((entry) => (entry === slot ? { ...entry, zOverrides } : entry))
+			}
+		};
+		return views.map((view) => composeCell(trial, items, animId, view.facing, view.cell).data);
+	};
+	// Gap k sits just behind others[k] (the last gap just in front of the front-most layer).
+	const gaps = others.map(({ draw }) => drawnAt(draw.z - 1));
+	gaps.push(drawnAt((others.at(-1)?.draw.z ?? z) + 1));
+	const firstChange = (k: number) =>
+		views.findIndex((_, v) => gaps[k][v].some((value, index) => value !== gaps[k + 1][v][index]));
+	const crossing = (k: number): Crossing | undefined => {
+		const v = firstChange(k);
+		if (v < 0) return;
+		const { draw } = others[k];
+		return {
+			draw,
+			back: draw.layer.role === 'bg',
+			frame: anim.frames.findIndex((frame) => frame.cell === views[v].cell)
+		};
+	};
+	const overlapping = others.map((_, k) => firstChange(k) >= 0);
+	let behind: Crossing | undefined, ahead: Crossing | undefined;
+	for (let k = at - 1; k >= 0 && !behind; k--) if (overlapping[k]) behind = crossing(k);
+	for (let k = at; k < others.length && !ahead; k++) if (overlapping[k]) ahead = crossing(k);
+	const below = overlapping.slice(0, at).filter(Boolean).length;
+	return {
+		order,
+		i,
+		behind,
+		ahead,
+		position: below + 1,
+		count: overlapping.filter(Boolean).length + 1
+	};
+}
+/** A slot's overrides with its item's front moved by `offset` as a unit, including finer overrides that take precedence
+ *  over the base depth: for every facing, or only `dir` (which keeps the all-facing rules and adds its own). */
+function steppedOverrides(
+	overrides: ZOverride[],
+	layerZ: number,
+	offset: number,
+	dir?: DirectionName
+) {
+	const isBase = (o: ZOverride) => o.layer === 'fg' && o.dir === dir && !o.anim && o.cell == null;
+	const base =
+		overrides.findLast(isBase)?.z ??
+		overrides.findLast((o) => o.layer === 'fg' && !o.dir && !o.anim && o.cell == null)?.z ??
+		layerZ;
+	return [
+		...overrides.flatMap((o, index) => {
+			if (isBase(o)) return [];
+			if (o.layer !== 'fg' || (dir && o.dir && o.dir !== dir)) return [o];
+			const shifted = { ...o, z: o.z + offset };
+			if (!dir || o.dir) return [shifted];
+			const replaced = overrides.some(
+				(next, i) =>
+					i > index &&
+					next.layer === o.layer &&
+					next.dir === dir &&
+					next.anim === o.anim &&
+					next.cell === o.cell
+			);
+			return (!o.anim && o.cell == null) || replaced ? [o] : [o, { ...shifted, dir }];
+		}),
+		{ layer: 'fg' as const, z: base + offset, ...(dir ? { dir } : {}) }
+	];
+}
+/** The layers the item's front would cross with Send backward and Bring forward in the shown move and facing. */
+export function itemLayerNeighbors(
+	itemId: string,
+	animId = ui.anim,
+	dir: DirectionName = ui.dir,
+	onlyDir = false
+) {
+	const place = layerStack(itemId, animId, dir, onlyDir);
+	const named = (crossing?: Crossing) =>
+		crossing && {
+			itemId: crossing.draw.item.id,
+			name: crossing.draw.item.name,
+			slot: crossing.draw.item.slot,
+			back: crossing.back,
+			frame: crossing.frame
+		};
+	return { behind: named(place?.behind), ahead: named(place?.ahead) };
+}
+/** Where the item's front layer sits among the layers it visibly overlaps in the shown move (in every facing a step
+ *  changes), counted from the back: `position` of `count`, the item included. Each step moves it by exactly one. */
+export function itemLayerPosition(
+	itemId: string,
+	animId = ui.anim,
+	dir: DirectionName = ui.dir,
+	onlyDir = false
+) {
+	const stack = layerStack(itemId, animId, dir, onlyDir);
+	return stack && { position: stack.position, count: stack.count };
+}
+/** Move the item's front layer past the next layer it visibly crosses (all directions, or only the current one). Returns
+ *  the playback frame where the change shows. */
+export function moveLayer(
+	itemId: string,
+	step: 1 | -1,
+	onlyDir: boolean,
+	animId = ui.anim,
+	facing: DirectionName = ui.dir,
+	ladder: ZOverride[] = []
+): number | undefined {
+	const place = layerStack(itemId, animId, facing, onlyDir),
+		target = step > 0 ? place?.ahead : place?.behind;
+	if (!place || !target) return;
+	const { slot, layer, z } = place.order[place.i];
+	const stepped = steppedOverrides(
+		slot.zOverrides ?? [],
+		layer.z,
+		target.draw.z + step - z,
+		onlyDir ? facing : undefined
+	);
+	// A step back to a look the default order already draws (Back, then Forward) saves the default itself, so the order
+	// reads as unchanged (no Reset) and exports clean.
+	const defaults = [...stepped.filter((rule) => rule.layer !== 'fg'), ...structuredClone(ladder)];
+	const next = drawsAlike(itemId, slot, stepped, defaults) ? defaults : stepped;
+	commit(message(step > 0 ? 'history.bringForward' : 'history.sendBackward'), () => {
+		slot.zOverrides = next;
+	});
+	return target.frame;
+}
+/** Whether two override sets for the item's slot draw the outfit with the item placed identically in every move,
+ *  facing and frame. */
+function drawsAlike(itemId: string, slot: Slot, a: ZOverride[], b: ZOverride[]) {
+	const p = store.project;
+	const placed = p ? placedOutfit(p, itemId) : null;
+	if (!placed) return false;
+	const { project, items } = placed,
+		m = project.manifest;
+	const withRules = (zOverrides: ZOverride[]) => ({
+		...project,
+		manifest: {
+			...m,
+			slots: m.slots.map((entry) => (entry.id === slot.id ? { ...entry, zOverrides } : entry))
+		}
+	});
+	const first = withRules(a),
+		second = withRules(b);
+	for (const anim of m.rig.animations)
+		for (const dir of m.rig.directions)
+			for (const cell of new Set(anim.frames.map((frame) => frame.cell))) {
+				const left = composeCell(first, items, anim.id, dir.id, cell).data,
+					right = composeCell(second, items, anim.id, dir.id, cell).data;
+				if (left.some((value, index) => value !== right[index])) return false;
+			}
+	return true;
+}
+/** Restore the foreground ladder. Back layers have their own authored positions. */
 export function resetLayer(itemId: string, ladder: ZOverride[]) {
 	const m = store.project!.manifest,
 		slot = m.slots.find((s) => s.id === itemById(itemId)!.slot)!;
 	commit(message('history.resetLayerOrder'), () => {
-		slot.zOverrides = structuredClone(ladder);
+		slot.zOverrides = [
+			...(slot.zOverrides ?? []).filter((rule) => rule.layer !== 'fg'),
+			...structuredClone(ladder)
+		];
 	});
 }
 
@@ -2728,7 +3059,11 @@ async function refreshSaved(projectId: string, request: number) {
 		if (doc.rev !== revision) continue;
 		store.project = fresh.project;
 		store.exportRecord = fresh.rec;
-		slotBase = { id: projectId, slots: structuredClone(fresh.project.manifest.slots) };
+		slotBase = {
+			id: projectId,
+			slots: structuredClone(fresh.project.manifest.slots),
+			presets: structuredClone(fresh.project.manifest.presets)
+		};
 		doc.rev++;
 		return;
 	}
@@ -2840,12 +3175,17 @@ export async function matchItemPalette(
 }
 
 // ---------- Fix frames ----------
-export const frames = $state({ item: '', anim: '' });
+export const frames = $state<{ item: string; anim: string; back?: 'item' | 'clip' }>({
+	item: '',
+	anim: ''
+});
 const framesModule = () => lazy(() => import('../lib/frames/save.ts'));
-/** Open Fix frames for an item (the body when empty) and a move (the one playing when empty). */
-export function openFrames(itemId = '', anim = '') {
+/** Open Fix frames for an item (the body when empty) and a move (the one playing when empty). `back` is the sheet it was
+ *  opened from, which its Back returns to. */
+export function openFrames(itemId = '', anim = '', back?: 'item' | 'clip') {
 	const m = store.project?.manifest;
 	if (!m) return;
+	frames.back = back;
 	frames.item = itemId || m.rig.baseItem;
 	frames.anim =
 		anim || (m.rig.animations.some((a) => a.id === ui.anim) ? ui.anim : m.rig.animations[0].id);
@@ -3623,7 +3963,14 @@ export async function copyDemo(): Promise<string> {
 }
 
 /** What a Rename sheet names: the character itself, or one of its items, outfits or moves. */
-export type RenameOf = { itemId?: string; outfitId?: string; moveId?: string };
+/** `back`: the sheet Rename was opened from, which Back and a saved rename return to. */
+export type RenameOf = {
+	itemId?: string;
+	outfitId?: string;
+	moveId?: string;
+	/** The window Rename returns to (Back and after saving): an item's or a character's. */
+	back?: 'item' | 'details' | 'clip';
+};
 
 /** Saved characters only, except outfits: a demo's outfits are part of its saved dress-up state. */
 export function openRename(projectId: string, of: RenameOf = {}) {
@@ -4629,7 +4976,13 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 
 export function openNewItem(
 	group: string,
-	prefill?: { slot?: string; prompt?: string; name?: string; route?: Item['route'] }
+	prefill?: {
+		slot?: string;
+		prompt?: string;
+		name?: string;
+		route?: Item['route'];
+		referenceFrom?: Img;
+	}
 ) {
 	ui.newItem = {
 		group,
@@ -4637,6 +4990,7 @@ export function openNewItem(
 		prompt: prefill?.prompt ?? '',
 		name: prefill?.name ?? '',
 		reuseMethod: prefill?.route !== undefined,
+		...(prefill?.referenceFrom ? { referenceFrom: prefill.referenceFrom } : {}),
 		// Trying an item again keeps the animation method it was made with.
 		...(prefill?.route === 'ea2-anchor'
 			? { method: 'anchor' as const }
@@ -4645,6 +4999,17 @@ export function openNewItem(
 				: {})
 	};
 	ui.sheet = 'newitem';
+}
+/** Make copy for self: the same description drawn again to fit this character's body, with the item's first frame as the
+ *  reference so the copy keeps its look. The New item sheet prices it before anything is spent. */
+export function openCopyForSelf(it: Item) {
+	const p = store.project;
+	openNewItem(it.slot, {
+		slot: it.slot,
+		prompt: it.prompt,
+		route: it.route,
+		...(p ? { referenceFrom: itemReferenceFrame(p, it) } : {})
+	});
 }
 
 // ---------- Wardrobe categories (organization and custom slots: free, never generation) ----------
@@ -4783,7 +5148,7 @@ export async function saveSlotSettings(key: string, o: SlotSettings): Promise<st
 /** Delete a custom category. An empty one is an undoable organization step. One with saved items (exactly `items`, the count
  *  the person confirmed) goes with them in one atomic write, rechecked against the saved record: the category, its items, their
  *  colors and outfit entries are all deleted or nothing is. That cannot be undone. Attempts being made or stopped and new moves
- *  for its items must finish or be dismissed first. Returns why it cannot be deleted, or ''. */
+ *  for its items must finish or be dismissed first. Returns why it cannot go to the Trash, or ''. */
 export async function deleteSlot(key: string, items = 0): Promise<Message | string> {
 	const projectId = doc.id,
 		request = openRequest,
@@ -4818,13 +5183,13 @@ export async function deleteSlot(key: string, items = 0): Promise<Message | stri
 			(rec) => {
 				if (JSON.stringify(rec.manifest.slots.find((s) => s.id === key)) !== definition)
 					throw new LocalizedError(
-						`${label} changed meanwhile. Review it again before deleting.`,
+						`${label} changed meanwhile. Review it again before moving it to the Trash.`,
 						'state.labelChangedMeanwhileReviewItAgainBefore',
 						{ label }
 					);
 				if (rec.manifest.items.some((it) => it.slot === key))
 					throw new LocalizedError(
-						`${label} has new items. Review it again before deleting.`,
+						`${label} has new items. Review it again before moving it to the Trash.`,
 						'state.labelHasNewItemsReviewItAgain',
 						{ label }
 					);

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import {
+	currentCharacterAction,
 	equipmentGroup,
 	equipmentMode,
 	openPlaybackPicker,
@@ -164,6 +165,27 @@ async function landing(page: Page, url = '/') {
 	await expect(page.locator('.customize-action')).toBeEnabled();
 }
 
+test('browser Back returns from Customize to Characters before leaving PixelDoll', async ({
+	page
+}) => {
+	await page.route('**/before-pixeldoll', (route) =>
+		route.fulfill({ contentType: 'text/html', body: '<title>Previous page</title>' })
+	);
+	await page.goto('/before-pixeldoll');
+	await landing(page);
+	await page.locator('.customize-action').click();
+	await expect(modes(page)).toBeVisible();
+
+	await page.goBack();
+	await expect(selection(page)).toBeVisible();
+	await page.goForward();
+	await expect(modes(page)).toBeVisible();
+	await page.goBack();
+	await expect(selection(page)).toBeVisible();
+	await page.goBack();
+	await expect(page).toHaveTitle('Previous page');
+});
+
 /** The character search shows once the list overflows or holds six or more characters; short fixtures make it scroll. */
 async function revealCharacterSearch(page: Page) {
 	const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
@@ -186,7 +208,7 @@ test('rapid clicks operate controls without selecting their labels', async ({ pa
 	expect(await selected()).toBe('');
 
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
+	await page.getByRole('button', { name: 'Connect PixelLab…', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	const remember = dialog.getByRole('checkbox', { name: 'Remember on this device' });
 	const label = dialog.getByText('Remember on this device', { exact: true });
@@ -379,7 +401,7 @@ test('full screen includes the whole app and survives screen changes, dialogs an
 	await expect(modes(page)).toBeVisible();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.locator('#experience-options')).toBeVisible();
-	await page.getByRole('button', { name: 'Activity...', exact: true }).click();
+	await page.getByRole('button', { name: 'Activity…', exact: true }).click();
 	await expect(page.getByRole('dialog')).toBeVisible();
 	expect(await rootIsFullscreen()).toBe(true);
 	await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
@@ -677,20 +699,27 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	const copy = menu.getByRole('menuitem', { name: 'Copy prompt', exact: true });
 	await expect(copy).toBeVisible();
 	const current = menu.locator('[role=menuitemradio][aria-checked="true"]');
-	const locked = menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true });
 	const connect = menu.getByRole('menuitem', { name: /^Connect PixelLab/ });
 	const last = menu.getByRole('menuitem', { name: 'Character selection', exact: true });
 	await expect(current).toBeFocused();
-	// Unavailable rows stay in the sequence so their reason is reachable.
-	await page.keyboard.press('ArrowDown');
-	await expect(locked).toBeFocused();
-	await expect(locked).toHaveAccessibleDescription("Demo character can't be deleted");
+	// The open character's Rename, copy and Trash are in its own ⋮ (where the demo's locked Trash keeps its reason), so
+	// the next command is Connect.
 	await page.keyboard.press('ArrowDown');
 	await expect(connect).toBeFocused();
 	await page.keyboard.press('ArrowUp');
-	await expect(locked).toBeFocused();
-	await page.keyboard.press('ArrowUp');
 	await expect(current).toBeFocused();
+	// That menu is a key away, like any row's: the demo's locked Trash keeps its reason there.
+	await page.keyboard.press('Shift+F10');
+	const own = page.getByRole('menu', { name: /^Actions for / });
+	const locked = own.getByRole('menuitem', { name: 'Move to Trash…', exact: true });
+	await expect(locked).toHaveAccessibleDescription(
+		'The demo character can’t be moved to the Trash'
+	);
+	// Escape closes only that menu and, like any row's, returns to its ⋮.
+	await expect(own.locator(':focus')).toHaveCount(1);
+	await page.keyboard.press('Escape');
+	await expect(own).toBeHidden();
+	await expect(menu.getByRole('button', { name: /^More actions for Adventurer/ })).toBeFocused();
 	await page.keyboard.press('Home');
 	await expect(copy).toBeFocused();
 	await page.keyboard.press('ArrowDown');
@@ -709,12 +738,13 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	});
 	await more.click();
 	const actions = page.getByRole('menu', { name: `Actions for ${currentName}`, exact: true });
-	const details = actions.getByRole('menuitem', { name: 'Details...', exact: true });
+	const details = actions.getByRole('menuitem', { name: 'View and edit…', exact: true });
 	await expect(details).toBeFocused();
 	await page.keyboard.press('ArrowUp');
-	// The shared handler still steps over the locked Delete row to the last enabled one.
-	await expect(actions.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toBeFocused();
-	await actions.getByRole('menuitem').last().focus();
+	// Like every menu, its locked Move to Trash row stays in the sequence, so its reason is reachable.
+	await expect(
+		actions.getByRole('menuitem', { name: 'Move to Trash…', exact: true })
+	).toBeFocused();
 	await page.keyboard.press('ArrowDown');
 	await expect(details).toBeFocused();
 	await more.click();
@@ -730,7 +760,7 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	const create = page.getByRole('button', { name: 'Add character', exact: true }).first();
 	await create.focus();
 	await page.keyboard.press('Enter');
-	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'New character', exact: true });
 	const name = dialog.getByRole('textbox', { name: 'Name', exact: true });
 	await name.fill('Keyboard draft');
@@ -858,6 +888,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 		// A one-cell State drawn from Walk's first column stands in for a saved riding stance.
 		fixture.rig.animations.push({
 			id: 'riding',
+			name: 'Sidesaddle',
 			kind: 'state',
 			cells: 1,
 			loop: false,
@@ -1126,7 +1157,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await page.setViewportSize({ width: 1920, height: 900 });
 	await toggle.click();
 	const riderPose = mountMenu.getByRole('button', { name: /^Riding pose:/ });
-	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic');
+	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic: Sidesaddle');
 	await riderPose.click();
 	const poseMenu = page.getByRole('menu', { name: 'Riding pose', exact: true });
 	await expect(poseMenu).toBeVisible();
@@ -1235,7 +1266,8 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await page.getByRole('alertdialog').getByRole('button', { name: 'Reset this page' }).click();
 	await expect(shown).not.toBeChecked();
 	await expect(legMode('Far leg')).toBeChecked();
-	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic');
+	// After reload the bundled demo can fall back to its Walk artwork without the injected State.
+	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic: Walk');
 	expect(await savedMount()).toEqual({ show: false, legs: 'far', poses: {} });
 	// The bundled demo keeps its own seat edit even though its source artwork is read-only.
 	const facing = mountMenu.getByRole('combobox', { name: 'Seat direction', exact: true });
@@ -1282,6 +1314,12 @@ touchTest(
 				frames: [{ cell: 0, ms: 100 }]
 			});
 			const body = m.items.find(({ id }) => id === m.rig.baseItem)!.layers[0];
+			m.rig.animations.push({
+				...m.rig.animations.find(({ id }) => id === 'walk')!,
+				id: 'ride',
+				name: 'Saddle trot'
+			});
+			body.cells!.ride = { north: body.cells!.walk.north };
 			body.cells!.riding = Object.fromEntries(
 				Object.entries(body.cells!.walk).map(([dir, row]) => [dir, row!.slice(0, 1)])
 			);
@@ -1334,8 +1372,10 @@ touchTest(
 		await expect(marker).toBeVisible();
 		await expect(facing.locator('option')).toHaveText(['South', 'East', 'North', 'West']);
 		await facing.selectOption('north');
+		await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic: Saddle trot');
 		const wide = (await facing.boundingBox())!.width;
 		await facing.selectOption('east');
+		await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic: Riding');
 		await expect.poll(async () => (await facing.boundingBox())!.width).toBe(wide);
 		await expect(canvas).toHaveAttribute('data-facing', 'east');
 		await expect(play).toBeEnabled();
@@ -1513,7 +1553,7 @@ test('imported move names remain readable, distinct and contained in Preview and
 		.getByRole('button', { name: 'Add character', exact: true })
 		.first()
 		.click();
-	await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'From file…', exact: true }).click();
 	const importing = page.getByRole('dialog', { name: 'Import from file', exact: true });
 	await importing.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'move-labels.zip',
@@ -1560,9 +1600,9 @@ test('imported move names remain readable, distinct and contained in Preview and
 	await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toHaveCount(0);
 	const inspectAction = page
 		.getByRole('toolbar', { name: 'Preview controls', exact: true })
-		.getByRole('button', { name: 'Inspect', exact: true });
+		.getByRole('button', { name: 'View frames', exact: true });
 	await expect(inspectAction).toHaveText('');
-	await expect(inspectAction).toHaveAttribute('title', 'Inspect');
+	await expect(inspectAction).toHaveAttribute('title', 'View frames');
 	await expect(inspectAction.locator('svg')).toHaveCount(1);
 	await selectPlaybackClip(page, 'right_punch');
 	await expect(move).toHaveAttribute('value', 'right_punch');
@@ -1584,13 +1624,16 @@ test('imported move names remain readable, distinct and contained in Preview and
 		await expect(move).toBeInViewport();
 		// Narrow phones move Inspect into More rather than shrinking the bar's targets below 44 px.
 		if (size.width <= 430) {
-			await expect(bar.getByRole('button', { name: 'Inspect', exact: true })).toBeHidden();
+			await expect(bar.getByRole('button', { name: 'View frames', exact: true })).toBeHidden();
 			await page.getByRole('button', { name: 'More options', exact: true }).click();
 			await expect(
-				page.locator('#experience-options').getByRole('button', { name: 'Inspect', exact: true })
+				page
+					.locator('#experience-options')
+					.getByRole('button', { name: 'View frames', exact: true })
 			).toBeVisible();
 			await page.keyboard.press('Escape');
-		} else await expect(bar.getByRole('button', { name: 'Inspect', exact: true })).toBeInViewport();
+		} else
+			await expect(bar.getByRole('button', { name: 'View frames', exact: true })).toBeInViewport();
 		const targets = await bar.evaluate((node) =>
 			[...node.querySelectorAll('button, select')]
 				.map((element) => element.getBoundingClientRect())
@@ -1643,8 +1686,8 @@ test('imported move names remain readable, distinct and contained in Preview and
 		await bar.getByRole('button', { name: 'Face north', exact: true }).click();
 		await expect(world(page)).toHaveAttribute('data-facing', 'north');
 	}
-	await page.getByRole('button', { name: 'Inspect', exact: true }).click();
-	const inspect = page.getByRole('dialog', { name: 'Inspect character', exact: true });
+	await page.getByRole('button', { name: 'View frames', exact: true }).click();
+	const inspect = page.getByRole('dialog', { name: 'View frames', exact: true });
 	const inspectMove = inspect.getByRole('combobox', { name: 'Move', exact: true });
 	await expect(inspectMove).toHaveValue(longId);
 	await expect(inspectMove.locator('option')).toHaveText([
@@ -2689,7 +2732,7 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 			.getByRole('button', { name: 'Add character', exact: true })
 			.first()
 			.click();
-		await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'From file…', exact: true }).click();
 		const dialog = page.getByRole('dialog', { name: 'Import from file', exact: true });
 		await dialog
 			.getByLabel('Character ZIP', { exact: true })
@@ -3762,10 +3805,10 @@ test('a 320px bar keeps the panel toggle before More and moves actions into More
 	await expect(page.locator('.experience')).not.toHaveAttribute('data-overflow');
 	expect(await fits()).toBe(true);
 	await more.click();
-	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
 	await expect(page.locator('.name-text')).not.toContainText('(Demo)');
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: /^Rename character/ }).click();
+	await currentCharacterAction(page, 'Rename…');
 	const rename = page.getByRole('dialog', { name: 'Rename character', exact: true });
 	const longName = 'A very long character name that cannot fit';
 	await rename.getByRole('textbox', { name: 'Display name', exact: true }).fill(longName);
@@ -4144,9 +4187,9 @@ test.describe('customization panel on compact touch screens', () => {
 		await toggle.tap();
 		await page.keyboard.press('Control+,');
 		const search = page.getByRole('searchbox', { name: 'Search settings' });
-		await search.fill('Hide panel when entering Live Views');
-		await page.getByRole('button', { name: /Hide panel when entering Live Views/ }).click();
-		const autoHide = page.getByRole('switch', { name: 'Hide panel when entering Live Views' });
+		await search.fill('Hide panel in Top-down and Side-scroller');
+		await page.getByRole('button', { name: /Hide panel in Top-down and Side-scroller/ }).click();
+		const autoHide = page.getByRole('switch', { name: 'Hide panel in Top-down and Side-scroller' });
 		await expect(autoHide).toBeChecked();
 		await autoHide.uncheck();
 		await page.keyboard.press('Escape');
@@ -4434,9 +4477,9 @@ test('short tab labels, the character name and sheet Done buttons keep 44 px tar
 	expect(Math.max(...row.widths) - Math.min(...row.widths)).toBeLessThanOrEqual(1);
 	expect(row.widths.reduce((a, b) => a + b, 0)).toBeCloseTo(row.bar.width, 0);
 	if (row.rail) expect(row.rail.right).toBeCloseTo(row.bar.right, 0);
-	await page.getByRole('button', { name: 'Inspect', exact: true }).click();
+	await page.getByRole('button', { name: 'View frames', exact: true }).click();
 	const done = page
-		.getByRole('dialog', { name: 'Inspect character', exact: true })
+		.getByRole('dialog', { name: 'View frames', exact: true })
 		.getByRole('button', { name: 'Close', exact: true });
 	// The label stays compact; an invisible box answers presses 22 px around its center.
 	expect(
@@ -5681,7 +5724,7 @@ test.describe('live views actions', () => {
 		}
 		await page.keyboard.press('Control+,');
 		const settings = page.getByRole('dialog', { name: 'Settings' });
-		await settings.getByRole('button', { name: 'Live views', exact: true }).click();
+		await settings.getByRole('button', { name: 'Play mode', exact: true }).click();
 		expect(
 			await settings
 				.locator('[data-setting^="live-"]')
@@ -5747,12 +5790,15 @@ test.describe('live views actions', () => {
 		await attackFrame('false', 'disabled');
 	});
 
-	test('Live views settings save the clip each action plays per character', async ({ page }) => {
+	test('Play mode settings save the clip each action plays per character', async ({ page }) => {
 		await customize(page);
 		await page.keyboard.press('Control+,');
 		const settings = page.getByRole('dialog', { name: 'Settings' });
-		const open = () => settings.getByRole('button', { name: 'Live views', exact: true }).click();
+		const open = () => settings.getByRole('button', { name: 'Play mode', exact: true }).click();
 		await open();
+		await expect(
+			settings.getByText('Animations your character uses in Top-down and Side-scroller.')
+		).toBeVisible();
 		const attack = settings.getByRole('button', { name: /^Attack: / });
 		await expect(attack).toHaveAccessibleName('Attack: Automatic: Cross punch');
 		await attack.click();
@@ -5846,6 +5892,30 @@ test.describe('live views actions', () => {
 			) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
 			const x = async () => Number((await host.getAttribute('data-position'))!.split(',')[0]);
 			try {
+				for (const name of ['Sprint', 'Mount']) {
+					const toggle = actions.getByRole('button', { name, exact: true });
+					const { x, y } = boxes[name];
+					const fill = () => toggle.evaluate((button) => getComputedStyle(button).backgroundColor);
+					await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+					const offFill = await fill();
+					const beforeToggle = await cueCount();
+					await touch('touchStart', [{ x: Math.round(x), y: Math.round(y), id: 3 }]);
+					await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+					await expect(toggle).toHaveCSS('scale', '0.92');
+					const heldFill = await fill();
+					expect(heldFill).not.toBe(offFill);
+					expect(await cueCount(), `${name} plays its cue on touchdown`).toBe(beforeToggle + 1);
+					await touch('touchEnd', []);
+					await expect(toggle).not.toHaveAttribute('data-pressed', '');
+					const onFill = await fill();
+					expect(onFill).not.toBe(heldFill);
+					expect(onFill).not.toBe(offFill);
+					expect(await cueCount()).toBe(beforeToggle + 1);
+					await toggle.tap();
+					await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+					await expect(toggle).toHaveCSS('background-color', offFill);
+				}
+
 				const beforeAttack = await cueCount();
 				await touch('touchStart', [move]);
 				await touch('touchMove', [{ ...move, x: move.x + 42 }]);

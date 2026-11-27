@@ -389,7 +389,7 @@ test('the Project folder card deep-links Settings, repeats safely, returns to Ex
 	// Settings search still opens the row and focuses its first control.
 	await closeSheet(page);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	const search = settings.getByRole('searchbox', { name: 'Search settings' });
 	await expect(search).toBeFocused();

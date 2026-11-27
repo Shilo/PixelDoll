@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { message } from '../lib/message.ts';
 	import { t } from 'svelte-whisper';
-	import { copyDemo, doc, openProject, toast } from './state.svelte.ts';
+	import { copyDemo, doc, openProject, toast, ui } from './state.svelte.ts';
 	import { Copy } from './icons.ts';
 	let { id, close }: { id: string; close: () => void } = $props();
 	let busy = $state(false);
@@ -13,7 +13,10 @@
 			if (doc.id !== id) await openProject(id);
 			if (doc.id !== id || doc.loading || doc.error) return;
 			const copyId = await copyDemo();
-			if (doc.id === copyId) toast(message('demoCopyRow.openedYourEditableCopyOfTheDemo'));
+			if (doc.id !== copyId) return;
+			// The demo's View and edit window would hide the copy it just opened.
+			if (ui.sheet === 'details') ui.sheet = null;
+			toast(message('demoCopyRow.openedYourEditableCopyOfTheDemo'));
 		} catch (error) {
 			toast(message('state.couldNotCopyTheDemoReason', { reason: (error as Error).message }), {
 				tone: 'danger'

@@ -168,7 +168,7 @@ for (const tier of [3, 1] as const)
 				.locator('#project-menu')
 				.getByRole('button', { name: 'Add character', exact: true })
 				.click();
-			await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
+			await page.getByRole('menuitem', { name: 'From file…', exact: true }).click();
 			await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 				name: 'concurrent-setup.zip',
 				mimeType: 'application/zip',

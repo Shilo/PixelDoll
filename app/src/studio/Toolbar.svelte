@@ -26,8 +26,6 @@
 		doc,
 		store,
 		openProject,
-		openRename,
-		openAppearance,
 		undo,
 		redo,
 		randomize,
@@ -45,8 +43,6 @@
 		Undo2,
 		House,
 		Activity,
-		Pencil,
-		Sparkles,
 		PersonStanding,
 		Copy,
 		Dices,
@@ -486,29 +482,7 @@
 			{#each store.projects.filter((p) => !p.dev) as p (p.id)}{@render proj(p)}{/each}
 		</div>
 		<NewCharacterButton row />
-		{#if !isDemo()}<button
-				class="row"
-				role="menuitem"
-				aria-label={t('toolbar.renameCharacter')}
-				onclick={() => {
-					close();
-					openRename(doc.id);
-				}}
-				><Pencil size={16} /><span class="row-name">{openerLabel(t('toolbar.rename'))}</span
-				><SurfaceChevron /></button
-			>{/if}
-		{#if doc.id.startsWith('rig-')}<button
-				class="row"
-				role="menuitem"
-				aria-haspopup="dialog"
-				onclick={() => {
-					close();
-					openAppearance(doc.id);
-				}}
-				><Sparkles size={16} aria-hidden="true" /><span class="row-name"
-					>{t('appearance.action')}</span
-				><SurfaceChevron /></button
-			>{/if}
+		<!-- Each character's own ⋮ above has Rename, Make copy with new look and Move to Trash; Set up is the open one's. -->
 		{#if !isDemo()}<button
 				class="row"
 				role="menuitem"
@@ -518,15 +492,6 @@
 					>{openerLabel(t('toolbar.setUpCharacter'))}</span
 				><SurfaceChevron /></button
 			>{/if}
-		<DeleteRow
-			opens
-			label={t('characterActions.labelDeleteCharacter')}
-			locked={isDemo() ? t('characterActions.demoDeleteLocked') : ''}
-			onclick={() => {
-				ui.deleting = doc.id;
-				sheet('delete');
-			}}
-		/>
 		<hr />
 		<button
 			class="row"

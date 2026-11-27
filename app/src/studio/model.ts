@@ -144,6 +144,13 @@ export function itemCell(
 	);
 }
 
+/** The item's first frame, the one its thumbnail shows (south first): the reference for a copy of it drawn to fit another
+ *  body. Undefined when it has no art yet. */
+export function itemReferenceFrame(p: Project, it: Item): Img | undefined {
+	for (const { anim, dir, cell } of thumbCells(p.manifest, it))
+		return itemCell(p, it, anim, dir, cell);
+}
+
 /** Cells with stored item art in thumbnail order (south first), with the images each needs. */
 export function* thumbCells(
 	m: Manifest,

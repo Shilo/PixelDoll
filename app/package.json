@@ -34,8 +34,8 @@
 	},
 	"dependencies": {
 		"@floating-ui/dom": "1.8.0",
-		"@lucide/svelte": "1.70.0",
-		"@shilo/bronze-ui": "https://github.com/Shilo/bronze-ui/releases/download/v0.3.13/shilo-bronze-ui-0.3.13.tgz",
+		"@lucide/svelte": "1.81.0",
+		"@shilo/bronze-ui": "https://github.com/Shilo/bronze-ui/releases/download/v0.3.15/shilo-bronze-ui-0.3.15.tgz",
 		"gifenc": "1.0.3",
 		"svelte-whisper": "github:Shilo/svelte-whisper#v2.3.0"
 	},

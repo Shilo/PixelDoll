@@ -358,7 +358,7 @@
 </script>
 
 <Sheet
-	title={t('appearance.title')}
+	title={source ? t('appearance.titleOf', { name: source.name }) : t('appearance.title')}
 	locked={saving}
 	{dirty}
 	backDiscards
