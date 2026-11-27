@@ -43,6 +43,16 @@ const AREAS: Record<NonNullable<SheetId>, AreaName> = {
 	clip: 'Move View and edit'
 };
 
+/** Sheets about the library or the app rather than the open character. */
+const LIBRARY_AREAS: ReadonlySet<string> = new Set<AreaName>([
+	'Characters',
+	'Connect PixelLab',
+	'Settings',
+	'Activity',
+	'New character',
+	'Workspace copy'
+]);
+
 export const areaOf = (sheet: SheetId): AreaName =>
 	sheet ? AREAS[sheet] : experience.screen === 'characters' ? 'Characters' : 'Studio';
 
@@ -95,10 +105,16 @@ export function captureProblem(problem: Problem, failedAt: number | undefined): 
 	if (problem.captured) return problem;
 	const area = problem.area ?? areaOf(ui.sheet);
 	// A download can name a character other than the open one, and its failure says nothing about an in-flight move; a stored
-	// record can belong to any character. Only character facts supplied with them are kept.
+	// record can belong to any character; outside Studio, or on a sheet about the whole library, the last opened character
+	// is not part of the problem. Only character facts supplied with them are kept.
 	const character =
 		problem.facts?.character ??
-		(problem.facts?.download === undefined && !problem.record ? characterFacts(area) : undefined);
+		(problem.facts?.download === undefined &&
+		!problem.record &&
+		experience.screen === 'studio' &&
+		!LIBRARY_AREAS.has(area)
+			? characterFacts(area)
+			: undefined);
 	// A stored record that did not settle in this page has no actions of this page to show.
 	const trail = problem.record && failedAt === undefined ? undefined : trailSnapshot(failedAt);
 	return {

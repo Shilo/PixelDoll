@@ -86,7 +86,7 @@ export interface Problem {
 	trail?: readonly TrailEntry[];
 	/** performance.now() when the problem happened, when known; trail times are counted back from it. */
 	failedAt?: number;
-	/** Seconds the app had been open when the problem was captured. */
+	/** Wall-clock seconds the app had been open when the problem was captured, including time the device slept. */
 	uptime?: number;
 	/** A stored failure (an Activity row): it may come from an earlier visit, another tab or another character. */
 	record?: boolean;
@@ -114,10 +114,9 @@ export interface ReportContext {
 	env: ReportEnvironment;
 	/** The English template of a message, from the English catalog. */
 	english?: (message: Message) => string | undefined;
-	/** Wall-clock seconds since the app loaded, including time the device slept. */
-	uptime?: number;
-	/** This page's origin: only stack frames of PixelDoll's own built files there are reported. */
-	origin?: string;
+	/** The URL the page's own files load from (origin and folder, no trailing slash): only stack frames of PixelDoll's own
+	 *  built files there are reported. */
+	base?: string;
 	/** performance.now() when Report was pressed: the trail is counted back from it when the failure time is unknown. */
 	now?: number;
 }
@@ -138,17 +137,20 @@ const LIMITS = { title: 120, problem: 700, environment: 300, details: 3000 } as 
 
 // ---------- sanitizer ----------
 
-const WORD_SEGMENT =
-	/^(?:[a-z]{1,24}|[a-z]+(?:[A-Z][a-z]+){1,8}|(?:[A-Z][a-z]+){1,8}|v\d{1,2}|\d{1,3})$/;
-/** Long runs of key-like characters: kept only when they read as words joined by - / _ (endpoint paths) or as one
- *  camelCase name (message keys). */
-const tokenRun = (run: string) =>
-	run
-		.split(/[-/_]+/)
-		.filter(Boolean)
-		.every((segment) => WORD_SEGMENT.test(segment))
+const WORD_SEGMENT = /^(?:[a-z]{1,24}|[a-z]+(?:[A-Z][a-z]+){1,8}|v\d{1,2}|\d{1,3})$/;
+/** A capitalized word, accepted only as one part of a joined run (a chunk such as experience-WorldStage): alone, a long one
+ *  could be a name written without spaces. */
+const PASCAL_SEGMENT = /^(?:[A-Z][a-z]+){1,8}$/;
+/** Long runs of key-like characters: kept only when they read as words joined by - / _ (endpoint paths, chunk names) or as
+ *  one camelCase name (message keys). */
+const tokenRun = (run: string) => {
+	const segments = run.split(/[-/_]+/).filter(Boolean);
+	return segments.every(
+		(segment) => WORD_SEGMENT.test(segment) || (segments.length > 1 && PASCAL_SEGMENT.test(segment))
+	)
 		? run
 		: '[redacted]';
+};
 
 const RULES: [RegExp, string | ((match: string) => string)][] = [
 	// Control and invisible formatting characters, which could hide text from the preview.
@@ -360,24 +362,30 @@ interface ErrorFacts {
 }
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-/** PixelDoll's own built files at this origin, without their content hash: assets/Studio-AbCd_123.js:1:2 becomes Studio.js:1:2.
- *  The commit in the report pins the build, so a frame maps back to source through that build's source map. */
-const ownFiles = (origin: string) =>
+/** PixelDoll's own built files under the page's base URL. assets/Studio-AbCd_123.js:1:2 is written Studio.AbCd_123.js:1:2: chunk names
+ *  repeat, so the hash stays, and dots keep each part short enough for the sanitizer. The commit in the report pins the
+ *  build, so a frame maps back to source through that build's source map. */
+const ownFiles = (base: string) =>
 	new RegExp(
-		`${escapeRegExp(origin)}/assets/([A-Za-z][A-Za-z0-9_-]{0,59})-[A-Za-z0-9_-]{8}\\.js(?::(\\d{1,7}):(\\d{1,7}))?`,
+		`${escapeRegExp(base)}/assets/([A-Za-z][A-Za-z0-9_.-]{0,59})-([A-Za-z0-9_-]{8})\\.js(?::(\\d{1,7}):(\\d{1,7}))?`,
 		'g'
 	);
 const MAX_FRAMES = 4;
+/** Shorter text cannot imitate an own-file URL, so it stays in the stack: removing a common word would remove frames too. */
+const FORGEABLE = 24;
 
 /** Up to MAX_FRAMES own-code positions from a stack. The message is removed first: provider or user text inside it could
  *  imitate a frame. Frames of other origins (extensions, embeds) are never read. */
-function ownFrames(stack: unknown, message: unknown, origin: string | undefined): string[] {
-	if (!origin || typeof stack !== 'string') return [];
-	const text = typeof message === 'string' && message ? stack.split(message).join(' ') : stack;
+function ownFrames(stack: unknown, message: unknown, base: string | undefined): string[] {
+	if (!base || typeof stack !== 'string') return [];
+	const text =
+		typeof message === 'string' && message.length >= FORGEABLE
+			? stack.split(message).join(' ')
+			: stack;
 	const frames: string[] = [];
-	for (const [, file, line, column] of text.matchAll(ownFiles(origin))) {
+	for (const [, file, hash, line, column] of text.matchAll(ownFiles(base))) {
 		if (!line) continue;
-		const frame = `${file}.js:${line}:${column}`;
+		const frame = `${file}.${hash}.js:${line}:${column}`;
 		if (!frames.includes(frame)) frames.push(frame);
 		if (frames.length === MAX_FRAMES) break;
 	}
@@ -386,16 +394,16 @@ function ownFrames(stack: unknown, message: unknown, origin: string | undefined)
 
 /** The built file a failed dynamic import named ("Failed to fetch dynamically imported module: <url>"), when it is one of
  *  PixelDoll's own. */
-function failedModule(message: unknown, origin: string | undefined): string | undefined {
-	if (!origin || typeof message !== 'string') return undefined;
-	const [match] = message.matchAll(ownFiles(origin));
-	return match && !match[2] ? `${match[1]}.js` : undefined;
+function failedModule(message: unknown, base: string | undefined): string | undefined {
+	if (!base || typeof message !== 'string') return undefined;
+	const [match] = message.matchAll(ownFiles(base));
+	return match && !match[3] ? `${match[1]}.${match[2]}.js` : undefined;
 }
 
 /** What an error may contribute: its name, a localized message, and for a PixelLab error its status, kind and endpoint
  *  path, read from the "METHOD /path -> status" prefix the client writes; the names of its causes; and where in
  *  PixelDoll's own code it was thrown. Never its message text. */
-function readErrorFacts(error: unknown, origin?: string): ErrorFacts {
+function readErrorFacts(error: unknown, base?: string): ErrorFacts {
 	// Text is never reported: it may be anything, including what the user typed.
 	if (error === undefined || error === null || typeof error === 'string') return {};
 	if (typeof error !== 'object') return { name: NON_ERROR };
@@ -429,7 +437,7 @@ function readErrorFacts(error: unknown, origin?: string): ErrorFacts {
 			out.endpoint = endpointPath(request[2]);
 		}
 	}
-	const frames = ownFrames((error as { stack?: unknown }).stack, e.message, origin);
+	const frames = ownFrames((error as { stack?: unknown }).stack, e.message, base);
 	if (frames.length) out.frames = frames;
 	// A cycle or a long chain stops after three causes.
 	const causes: string[] = [];
@@ -437,9 +445,9 @@ function readErrorFacts(error: unknown, origin?: string): ErrorFacts {
 	for (let depth = 0; depth < 3 && cause !== undefined && cause !== null; depth++) {
 		const c = cause as { name?: unknown; message?: unknown; stack?: unknown; cause?: unknown };
 		causes.push(typeof cause === 'object' ? errorName(c.name) : NON_ERROR);
-		out.module ??= failedModule(c.message, origin);
+		out.module ??= failedModule(c.message, base);
 		if (!out.frames) {
-			const own = ownFrames(c.stack, c.message, origin);
+			const own = ownFrames(c.stack, c.message, base);
 			if (own.length) out.frames = own;
 		}
 		cause = typeof cause === 'object' ? c.cause : undefined;
@@ -450,9 +458,9 @@ function readErrorFacts(error: unknown, origin?: string): ErrorFacts {
 
 /** Any value can be thrown, including a null-prototype object or one whose getters throw: reading it must never throw
  *  in turn, or the report would describe this code instead of the failure. */
-export function errorFacts(error: unknown, origin?: string): ErrorFacts {
+export function errorFacts(error: unknown, base?: string): ErrorFacts {
 	try {
-		return readErrorFacts(error, origin);
+		return readErrorFacts(error, base);
 	} catch {
 		return { name: NON_ERROR };
 	}
@@ -625,7 +633,11 @@ function trailEvent(event: TrailEvent, context: ReportContext): string | undefin
 }
 
 /** The trail, newest first, each line timed back from the problem. Unknown or malformed entries are left out. */
-function trailText(problem: Problem, context: ReportContext): string | undefined {
+function trailText(
+	problem: Problem,
+	context: ReportContext,
+	shownKey: string | undefined
+): string | undefined {
 	const trail = Array.isArray(problem.trail) ? problem.trail : [];
 	const end =
 		typeof problem.failedAt === 'number' && Number.isFinite(problem.failedAt)
@@ -635,6 +647,9 @@ function trailText(problem: Problem, context: ReportContext): string | undefined
 	const lines: string[] = [];
 	for (const entry of trail.slice(0, TRAIL_SIZE)) {
 		if (!entry || typeof entry.at !== 'number' || entry.at > end) continue;
+		// The notice of this very problem is already the report's message.
+		if (entry.event?.kind === 'notice' && entry.event.key === shownKey && end - entry.at < 1000)
+			continue;
 		let line: string | undefined;
 		try {
 			line = trailEvent(entry.event, context);
@@ -655,7 +670,7 @@ function trailText(problem: Problem, context: ReportContext): string | undefined
 
 export function buildReport(problem: Problem, context: ReportContext): ProblemReport {
 	const facts = problem.facts ?? {},
-		fromError = errorFacts(problem.error, context.origin);
+		fromError = errorFacts(problem.error, context.base);
 	const errorChain = [fromError.name, ...(fromError.causes ?? [])].filter(
 		(name): name is string => !!name
 	);
@@ -669,8 +684,7 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 	const endpoint = endpointPath(facts.endpoint ?? '') ?? fromError.endpoint;
 	const method = METHODS.has(facts.method ?? '') ? facts.method : fromError.method;
 	const seconds = count(facts.seconds);
-	const opened = problem.uptime ?? context.uptime;
-	const uptime = count(typeof opened === 'number' ? Math.round(opened) : undefined);
+	const uptime = count(typeof problem.uptime === 'number' ? Math.round(problem.uptime) : undefined);
 	const lines: [string, string | number | undefined][] = [
 		['Area', area],
 		['Kind', kind],
@@ -715,7 +729,7 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 		['Connection', facts.offline === true ? 'offline' : undefined],
 		['Update', facts.updateWaiting === true ? 'a newer version was waiting to load' : undefined]
 	];
-	const trail = trailText(problem, context);
+	const trail = trailText(problem, context, english && shown?.key);
 	// The trail comes last: if the URL must shrink, its oldest entries go first.
 	const details = [
 		lines
@@ -757,10 +771,19 @@ export function reportUrl(report: ProblemReport): string {
 	return `${repository}/issues/new?${query}`;
 }
 
-/** Halves the longest field until the prefilled URL fits, so the preview always shows exactly what the URL carries. */
+/** Shrinks the report until the prefilled URL fits, so the preview always shows exactly what the URL carries: first whole
+ *  trail entries, oldest first, then the longest field by halves. */
 function fit(report: ProblemReport): ProblemReport {
 	let current = report;
 	while (reportUrl(current).length > MAX_URL_LENGTH) {
+		const lines = current.details.split('\n');
+		if (lines.length > 2 && lines.at(-1)!.startsWith('- ')) {
+			lines.pop();
+			// The heading and its blank line go with the last entry.
+			if (!lines.at(-1)!.startsWith('- ')) lines.splice(-2);
+			current = { ...current, details: lines.join('\n') };
+			continue;
+		}
 		const longest = FIELDS.reduce((a, b) => (current[a].length >= current[b].length ? a : b));
 		current = {
 			...current,

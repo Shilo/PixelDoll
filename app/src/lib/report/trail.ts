@@ -17,8 +17,10 @@ export type TrailEvent =
 	| { kind: 'error'; name: string };
 
 export interface TrailEntry {
-	/** performance.now() when it happened. */
+	/** performance.now() when it last happened. */
 	at: number;
+	/** performance.now() when it first happened, for repeated events. */
+	first: number;
 	event: TrailEvent;
 	/** How many times in a row the same event happened (a double click, repeated zoom). */
 	times: number;
@@ -30,6 +32,8 @@ const ring: TrailEntry[] = [];
 let newest = -1;
 
 const same = (a: TrailEvent, b: TrailEvent) => {
+	// Unnamed presses may be on different controls, so they are never counted as one repeated action.
+	if (a.kind === 'press' && !a.control) return false;
 	const x = a as Record<string, unknown>,
 		y = b as Record<string, unknown>;
 	const keys = Object.keys(x);
@@ -46,19 +50,25 @@ export function track(event: TrailEvent, at = performance.now()) {
 			return;
 		}
 		newest = (newest + 1) % TRAIL_SIZE;
-		ring[newest] = { at, event: { ...event }, times: 1 };
+		ring[newest] = { at, first: at, event: { ...event }, times: 1 };
 	} catch (error) {
 		// A report aid must never break the action it records.
 		console.warn('Problem report trail', error);
 	}
 }
 
-/** A copy of the trail, newest first, optionally only what happened up to `until`. */
+/** A copy of the trail, newest first, optionally only what happened up to `until`. A repeated event that went on after
+ *  `until` is kept from its first time, as happening once: how many of its repeats came before is not known. */
 export function trailSnapshot(until = Infinity): TrailEntry[] {
 	const out: TrailEntry[] = [];
 	for (let i = 0; i < ring.length; i++) {
 		const entry = ring[(newest - i + TRAIL_SIZE) % TRAIL_SIZE];
-		if (entry && entry.at <= until) out.push({ ...entry, event: { ...entry.event } });
+		if (!entry || entry.first > until) continue;
+		out.push(
+			entry.at <= until
+				? { ...entry, event: { ...entry.event } }
+				: { at: entry.first, first: entry.first, event: { ...entry.event }, times: 1 }
+		);
 	}
 	return out;
 }

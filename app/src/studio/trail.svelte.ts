@@ -7,6 +7,12 @@ import { experience } from './experience/state.svelte.ts';
 import { areaOf } from './problemCapture.svelte.ts';
 import { ui } from './state.svelte.ts';
 
+const SETTLED = new Set(['done', 'failed', 'canceled', 'lost']);
+const settledHere = new Map<string, number>();
+/** performance.now() when this tab saw the request settle, or undefined when it settled before this page or elsewhere: a
+ *  report of it then has no trail, since this page's actions did not lead to it. */
+export const settledAt = (id: string) => settledHere.get(id);
+
 /** Controls a press can land on. A press elsewhere (text, the canvas, a dialog backdrop) is not an action. */
 const CONTROL =
 	'[data-trail],button,a[href],summary,[role="button"],[role="menuitem"],[role="menuitemradio"],[role="tab"],[role="option"],[role="switch"],[role="checkbox"],[role="radio"]';
@@ -30,17 +36,22 @@ export function installTrail(): () => void {
 	addEventListener('offline', offline);
 	document.addEventListener('visibilitychange', visibility);
 
-	// Request transitions only: the queue notifies on every poll, and most notifications change nothing.
+	// A request's start and end only: its steps in between would push the person's own actions out of the trail. Only the
+	// tab that runs the requests records them; another tab's requests are not this tab's actions.
 	const states = new Map<string, string>();
 	const unsubscribe = queue.subscribe((snapshot) => {
 		const seen = new Set<string>();
+		const runsHere = snapshot.role !== 'follower';
 		for (const record of snapshot.jobs) {
 			seen.add(record.id);
-			if (states.get(record.id) === record.state) continue;
-			// A record from an earlier visit is history until it changes here.
-			const known = states.has(record.id) || record.createdAt >= performance.timeOrigin;
+			const before = states.get(record.id);
+			if (before === record.state) continue;
 			states.set(record.id, record.state);
-			if (known)
+			const settled = SETTLED.has(record.state);
+			if (settled && runsHere) settledHere.set(record.id, performance.now());
+			// A record from an earlier visit is history until it settles here.
+			const started = before === undefined && record.createdAt >= performance.timeOrigin;
+			if (runsHere && (started || (settled && before !== undefined)))
 				track({
 					kind: 'job',
 					method: record.method,
@@ -48,13 +59,22 @@ export function installTrail(): () => void {
 					state: record.state
 				});
 		}
-		for (const id of states.keys()) if (!seen.has(id)) states.delete(id);
+		for (const id of states.keys())
+			if (!seen.has(id)) {
+				states.delete(id);
+				settledHere.delete(id);
+			}
 	});
 
 	let sheet: typeof ui.sheet = null;
+	let screen = experience.screen;
 	const stopScreen = $effect.root(() => {
+		// Changes only: the screen the app opens on is not an action.
 		$effect(() => {
-			track({ kind: 'screen', area: experience.screen === 'studio' ? 'Studio' : 'Characters' });
+			const next = experience.screen;
+			if (next === screen) return;
+			screen = next;
+			track({ kind: 'screen', area: next === 'studio' ? 'Studio' : 'Characters' });
 		});
 		// Effects batch changes, so a sheet opened and closed again within one tick is not recorded.
 		$effect(() => {

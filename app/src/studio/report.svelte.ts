@@ -15,6 +15,7 @@ import { app } from '../lib/app.svelte.ts';
 import type { Message } from '../lib/message.ts';
 import { PRE_RELEASE } from './previewNotice.ts';
 import { captureProblem } from './problemCapture.svelte.ts';
+import { settledAt } from './trail.svelte.ts';
 
 export type { Problem } from '../lib/report/report.ts';
 
@@ -25,7 +26,8 @@ export function reportProblem(problem: Problem) {
 	reportDialog.report = buildReport(captureProblem(problem, problem.failedAt), {
 		env: browserEnvironment(getLocale() || 'en', PRE_RELEASE),
 		english: englishMessage,
-		origin: location.origin,
+		// The folder of the page, so a copy served from a subpath still finds its own files.
+		base: new URL('.', location.href).href.replace(/\/$/, ''),
 		now: performance.now()
 	});
 }
@@ -62,9 +64,11 @@ export function jobProblem(
 				? Math.round((record.finishedAt - record.submittedAt) / 1000)
 				: undefined
 	};
-	// Settled in this page: its trail ends where it failed. From an earlier visit or another tab: no trail at all.
-	const finished = record.finishedAt ?? 0;
-	const failedAt =
-		finished >= performance.timeOrigin ? finished - performance.timeOrigin : undefined;
-	return { message: queueErrorParts(record).find(isMessage), facts, record: true, failedAt };
+	// Settled in this tab: its trail ends there. From an earlier visit or another tab: no trail at all.
+	return {
+		message: queueErrorParts(record).find(isMessage),
+		facts,
+		record: true,
+		failedAt: settledAt(record.id)
+	};
 }

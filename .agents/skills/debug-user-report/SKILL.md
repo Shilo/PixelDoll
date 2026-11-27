@@ -32,9 +32,9 @@ or write the fix. Background and file map: `docs/handoff/debug-user-report-skill
    report (`app/src/lib/report/report.ts` makes it). Compare with `main`:
    `git log --oneline <commit>..origin/main -- app/` (fetch first). If the commit is unknown, say so and compare by version.
    A problem report's "Recent actions" list is newest first, timed back from the failure; a press appears by its
-   `data-trail` name (grep `app/src` for it). "Thrown at" gives positions in that commit's built chunks (hash dropped):
-   build that commit with source maps (`npx vite build --sourcemap` in a temporary worktree) and map each `chunk.js:line:col`
-   through the matching `dist/assets/<chunk>-<hash>.js.map`.
+   `data-trail` name (grep `app/src` for it). "Thrown at" gives positions in that commit's built chunks:
+   build that commit with source maps (`npx vite build --sourcemap` in a temporary worktree) and map each frame
+   through the matching `dist/assets/<chunk>-<hash>.js.map` (a frame is written `<chunk>.<hash>.js:line:col`).
 4. If the user ran an older build, search that log for a fix of this symptom (`git log --grep`, the files the audit points
    at) and check it before going further. "Already fixed in <commit>; tell the user to reload" is a valid outcome, but
    still reproduce it against the old behavior only if that is cheap.

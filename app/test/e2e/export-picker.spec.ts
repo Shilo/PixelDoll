@@ -2406,7 +2406,7 @@ test('quick download reports a missing module, then recovers working images afte
 	expect(fields.get('details')).toContain('Download: Character ZIP');
 	expect(fields.get('details')).toContain('Message key: common.loadFailed');
 	expect(fields.get('details')).toContain('Service worker: not controlling page');
-	// The step, the import's own failure, and the presses that led there (issue #9 had none of these).
+	// The step, the import's own failure, and the presses that led there.
 	expect(fields.get('details')).toContain('Download step: builder');
 	expect(fields.get('details')).toContain('Error type: LoadError, caused by TypeError');
 	expect(fields.get('details')).toMatch(

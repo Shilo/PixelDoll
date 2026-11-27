@@ -31,11 +31,12 @@ const env: ReportEnvironment = {
 	viewportHeight: 900
 };
 const ORIGIN = 'https://pixeldoll.app';
-const context = { env, english: englishMessage, origin: ORIGIN, now: 100_000 };
+const context = { env, english: englishMessage, base: ORIGIN, now: 100_000 };
 const NAME = 'Alice Smith';
 
 const entry = (at: number, event: TrailEntry['event'], times = 1): TrailEntry => ({
 	at,
+	first: at,
 	event,
 	times
 });
@@ -64,6 +65,20 @@ describe('trail ring', () => {
 			{ at: 2, times: 2 }
 		]);
 		expect(trailSnapshot(2)).toHaveLength(1);
+	});
+
+	test('a repeat that went on after the cut is kept once, from its first time', () => {
+		track({ kind: 'press', area: 'Studio', control: 'playback.play' }, 95);
+		track({ kind: 'press', area: 'Studio', control: 'playback.play' }, 96);
+		track({ kind: 'press', area: 'Studio', control: 'playback.play' }, 101);
+		expect(trailSnapshot(100)).toMatchObject([{ at: 95, times: 1 }]);
+		expect(trailSnapshot()).toMatchObject([{ at: 101, first: 95, times: 3 }]);
+	});
+
+	test('unnamed presses are never merged: they may be different controls', () => {
+		track({ kind: 'press', area: 'Studio' }, 1);
+		track({ kind: 'press', area: 'Studio' }, 2);
+		expect(trailSnapshot()).toHaveLength(2);
 	});
 
 	test('a snapshot is a copy', () => {
@@ -97,7 +112,6 @@ describe('trail in a report', () => {
 		expect(text).toContain(
 			[
 				'Recent actions (newest first, time before the problem):',
-				'- 0 s: error download.failedRetry',
 				'- 2 s: press characterMenu.download in Studio',
 				'- 3 s: press a control in Studio (3 times)',
 				'- 4 s: request POST /characters/{id}/animations failed',
@@ -105,7 +119,8 @@ describe('trail in a report', () => {
 				'- 40 s: page visible'
 			].join('\n')
 		);
-		// Later than the problem: not part of it.
+		// The problem's own notice is already its message; later than the problem is not part of it.
+		expect(text).not.toContain('error download.failedRetry');
 		expect(text).not.toContain('open Settings');
 		expect(text).not.toContain(NAME);
 	});
@@ -135,6 +150,27 @@ describe('trail in a report', () => {
 		expect(text).not.toContain('Alice');
 		expect(text).toContain('press a control in Studio');
 		expect(text).toContain('uncaught Error');
+	});
+
+	test('an overlong report drops whole trail entries, oldest first, before any fact', () => {
+		const trail = Array.from({ length: TRAIL_SIZE }, (_, i) =>
+			entry(99_000 - i, { kind: 'open', area: 'Export' })
+		);
+		const report = buildReport(
+			{
+				message: message('download.failedRetry', { label: 'x' }),
+				trail,
+				facts: { download: 'character', step: 'build' }
+			},
+			// A long problem text, as if an English template carried it, leaves little room in the URL.
+			{ ...context, english: () => '字'.repeat(560) }
+		);
+		expect(reportUrl(report).length).toBeLessThanOrEqual(MAX_URL_LENGTH);
+		expect(report.details).toContain('Download step: build');
+		expect(report.details).not.toMatch(/\.\.\.$/);
+		const shown = report.details.match(/^- /gm)?.length ?? 0;
+		expect(shown).toBeLessThan(TRAIL_SIZE);
+		expect(report.details).toContain('- 1 s: open Export');
 	});
 
 	test('a full trail keeps the URL in bounds and the facts intact', () => {
@@ -169,8 +205,7 @@ describe('error facts', () => {
 		const details = buildReport({ error: new LoadError(cause) }, context).details;
 		expect(details).toContain('Message key: common.loadFailed');
 		expect(details).toContain('Error type: LoadError, caused by TypeError');
-		expect(details).toContain('Failed file: build.js');
-		expect(details).not.toContain('AbC_12-x');
+		expect(details).toContain('Failed file: build.AbC_12-x.js');
 		expect(details).not.toContain(ORIGIN);
 	});
 
@@ -187,10 +222,20 @@ describe('error facts', () => {
 			{ message: message('download.failedRetry', { label: 'x' }), error },
 			context
 		).details;
-		expect(details).toContain('Thrown at: download.js:1:1234567 < Studio.js:2:345');
+		expect(details).toContain(
+			'Thrown at: download.BcD3_xYz.js:1:1234567 < Studio.Qw-er_ty.js:2:345'
+		);
 		expect(details).not.toContain('Forged');
 		expect(details).not.toContain('inject');
 		expect(details).not.toContain('Alice');
+	});
+
+	test('a short message never removes frames, and dotted chunk names are kept', () => {
+		const error = new Error('at');
+		error.stack = `Error: at\n    at x (${ORIGIN}/assets/projectFolder.svelte-CcVVJXHP.js:4:5)`;
+		expect(buildReport({ error }, context).details).toContain(
+			'Thrown at: projectFolder.svelte.CcVVJXHP.js:4:5'
+		);
 	});
 
 	test('a made-up error name or cause name is reported as Error', () => {

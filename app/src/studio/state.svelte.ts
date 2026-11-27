@@ -526,7 +526,9 @@ export function initUi() {
 	};
 	// Actions started without awaiting them (Make item, Keep it, Reset, a review check) would otherwise drop a load failure.
 	const unhandled = (e: PromiseRejectionEvent) => {
-		track({ kind: 'error', name: knownErrorName(e.reason) });
+		// An abort is a cancellation, not a failure (onceShown skips it too).
+		if (knownErrorName(e.reason) !== 'AbortError')
+			track({ kind: 'error', name: knownErrorName(e.reason) });
 		if (e.reason instanceof LoadError) {
 			e.preventDefault();
 			toast(errorMessage(e.reason), { tone: 'danger', error: e.reason });
@@ -676,11 +678,12 @@ export function toast(
 			toastText(s),
 			...(o.error === undefined ? [] : [o.error])
 		]);
-		// Only the message key: the text can hold names or provider replies.
-		const key = (firstMessage(s) ?? firstMessage(o.title))?.key;
-		if (key) track({ kind: 'notice', key, tone: o.tone === 'danger' ? 'error' : 'warning' });
 	}
 	if (ui.toast && ui.toastTone === 'danger' && o.tone !== 'danger') return false;
+	// Only shown notices, by message key: the text can hold names or provider replies.
+	const noticeKey = (firstMessage(s) ?? firstMessage(o.title))?.key;
+	if (noticeKey && (o.tone === 'danger' || o.tone === 'warning'))
+		track({ kind: 'notice', key: noticeKey, tone: o.tone === 'danger' ? 'error' : 'warning' });
 	stopToastTimer();
 	toastRevision++;
 	ui.toast = s;

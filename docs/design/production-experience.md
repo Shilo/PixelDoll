@@ -167,7 +167,7 @@ reporting to that view. Report opens a centered preview of the exact public issu
 parameters; the user posts it with their own account and writes the steps to reproduce if they know them. A report is built
 from an allow-list in `app/src/lib/report/report.ts` (version, build channel and commit, browser and OS families, device and
 screen class, language, the area, the key and English template of an app message with its variables hidden, the error and
-cause names from a fixed list, where PixelDoll's own built files threw it (chunk:line:column, mapped through that commit's
+cause names from a fixed list, where PixelDoll's own built files threw it (chunk.hash.js:line:column, mapped through that commit's
 build), the failed code file, the download step, PixelLab status and normalized endpoint path, queue states and timings,
 offline and waiting-update state), then every string passes a sanitizer. It also lists up to 20 recent actions, newest first
 and timed back from the failure: sheets and screens opened, presses named only by static `data-trail` attributes, problem
