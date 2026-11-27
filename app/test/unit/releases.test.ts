@@ -12,7 +12,6 @@ const version = '1.4.12';
 const notes = {
 	headline: 'A fresh look',
 	intro: 'Dress up your character.',
-	joke: '',
 	highlights: [{ title: 'Color ramps', text: 'Recolor your gear.' }],
 	fixes: []
 };

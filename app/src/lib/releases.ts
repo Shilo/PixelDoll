@@ -8,7 +8,6 @@ export interface ReleaseEntry {
 export interface ReleaseNotes {
 	headline: string;
 	intro: string;
-	joke: string;
 	highlights: { title: string; text: string }[];
 	fixes: { text: string }[];
 }
@@ -93,7 +92,6 @@ async function notes(version: string, locale: string): Promise<ReleaseNotes> {
 		!record(value) ||
 		!string(value.headline) ||
 		!string(value.intro) ||
-		!string(value.joke) ||
 		!Array.isArray(value.highlights) ||
 		!value.highlights.every((item) => record(item) && string(item.title) && string(item.text)) ||
 		!Array.isArray(value.fixes) ||
@@ -103,7 +101,6 @@ async function notes(version: string, locale: string): Promise<ReleaseNotes> {
 	return {
 		headline: value.headline,
 		intro: value.intro,
-		joke: value.joke,
 		highlights: value.highlights,
 		fixes: value.fixes
 	};

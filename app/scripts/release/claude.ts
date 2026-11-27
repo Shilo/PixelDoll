@@ -159,12 +159,12 @@ export function labelsFor(text: string, english: Map<string, string>, target: Ma
 }
 
 export async function translations(claude: Claude, english: CitedNotes) {
-	const { joke, ...notes } = publicNotes(english);
+	const notes = publicNotes(english);
 	const system =
 		prompt('release-notes-translate.md') +
 		'\n' +
 		readFileSync(new URL('TRANSLATING.md', locales), 'utf8');
-	const translated: Record<string, Notes> = { en: { ...notes, joke } };
+	const translated: Record<string, Notes> = { en: notes };
 	const schema = translationSchema(notes);
 	const englishLabels = flatten(readCatalog('en'));
 	const text = [
@@ -179,17 +179,12 @@ export async function translations(claude: Claude, english: CitedNotes) {
 		const locale = file.slice(0, -5);
 		const labels = labelsFor(text, englishLabels, flatten(readCatalog(locale)));
 		try {
-			const result = await ask<Omit<Notes, 'joke'>>(
-				claude,
-				system,
-				schema,
-				{ locale, labels, notes },
-				(reply) => validateTranslation(reply, notes)
+			const result = await ask<Notes>(claude, system, schema, { locale, labels, notes }, (reply) =>
+				validateTranslation(reply, notes)
 			);
 			translated[locale] = {
 				headline: result.headline,
 				intro: result.intro,
-				joke: '',
 				highlights: result.highlights,
 				fixes: result.fixes
 			};

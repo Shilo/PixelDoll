@@ -27,7 +27,6 @@ export function releaseMarkdown(
 		timeZone: 'UTC'
 	});
 	const parts = [`${day} · v${version}`, `![](${bannerUrl})`, escape(notes.intro)];
-	if (notes.joke) parts.push(escape(notes.joke));
 	for (const { title, text } of notes.highlights)
 		parts.push(`## ${escape(title)}\n\n${escape(text)}`);
 	if (notes.fixes.length)

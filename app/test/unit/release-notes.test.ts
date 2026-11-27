@@ -30,7 +30,6 @@ const commits = [feature, fix];
 const notes = {
 	headline: 'Give your sprites a home',
 	intro: 'You can save sprites and keep your outfit.',
-	joke: '',
 	highlights: [
 		{ title: 'Save a sprite', text: 'Save your work as a PNG file.', commits: [feature.id] }
 	],
@@ -46,7 +45,7 @@ it('checks release prose, shape, word limits and unique citations to eligible co
 			{
 				...notes,
 				headline: 'Now unlock an enhanced UI!',
-				intro: 'one '.repeat(26).trim(),
+				intro: 'one '.repeat(41).trim(),
 				highlights: [
 					{ title: '**CAPS**', text: 'Go to https://example.com ⚔️', commits: ['bad', feature.id] }
 				],
@@ -60,7 +59,7 @@ it('checks release prose, shape, word limits and unique citations to eligible co
 			'notes has an unexpected field ignored',
 			'headline contains an exclamation mark, emoji, link or markup',
 			'headline uses banned wording "unlock"',
-			'intro must have at most 25 words',
+			'intro must have at most 40 words',
 			'highlights[0].title contains an all-caps word',
 			'highlights[0].text contains an exclamation mark, emoji, link or markup',
 			'highlights[0].commits cites an unknown commit id',
@@ -75,8 +74,7 @@ it('checks release prose, shape, word limits and unique citations to eligible co
 });
 
 it('requires matching translation item counts and plain, non-empty prose', () => {
-	const { joke, ...english } = publicNotes(notes);
-	expect(joke).toBe('');
+	const english = publicNotes(notes);
 	expect(validateTranslation(english, english)).toEqual([]);
 	expect(
 		validateTranslation(

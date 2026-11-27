@@ -12,17 +12,16 @@ Reply only with the JSON object the response schema defines.
 
 ## What to write
 
-1. `headline`: the theme of the release as a player benefit, at most 8 words. Sentence case, no period, no version number, no emoji, no exclamation mark. It must not share a distinctive word or phrase with any highlight title (such as Phaser AE, Trash or frames). Example: with highlights about Phaser AE export and Trash, "More ways to ship and undo your work".
-2. `intro`: one sentence, at most 25 words, speaking to the reader as "you", that sums up the release. Plain and warm. It names the overall benefit; it does not list the highlights or reuse their titles or the headline's wording. No jokes here.
-3. `joke`: optional. At most one short, light, kind line (at most 12 words) that fits this release, or an empty string. Never sarcastic, never about bugs, users, competitors or AI. When unsure, leave it empty.
-4. `highlights`: 1 to 3 of the biggest changes a player would notice, most valuable first. Each has:
+1. `headline`: a catchy theme for the release as a player benefit, at most 8 words, that makes a player want to read on. Sentence case, no period, no version number, no emoji, no exclamation mark, no pun that only works in English. It must not share a distinctive word or phrase with any highlight title (such as Phaser AE, Trash or frames). Example: with highlights about Phaser AE export and Trash, "More ways to ship and undo your work".
+2. `intro`: the summary, one short paragraph of 1 or 2 sentences and at most 40 words, speaking to the reader as "you". Plain and warm; a light, kind touch is welcome when it fits, never sarcastic and never about bugs, users, competitors or AI. It names the overall benefit; it does not list the highlights or reuse their titles or the headline's wording.
+3. `highlights`: 1 to 3 of the biggest changes a player would notice, most valuable first. Each has:
    - `title`: at most 6 words, sentence case, names what the player can now do or what got better.
    - `text`: 1 or 2 sentences, at most 35 words in total, explaining the benefit in plain words: what changed and why it helps.
    - `commits`: the ids of every input commit this highlight describes (at least one).
 
    Prefer `feat` commits. Group several commits about the same feature into one highlight. Never pad: if only one change is worth highlighting, return one.
 
-5. `fixes`: 0 to 3 bug fixes a player could actually have noticed, most noticeable first. Each has `text` (one sentence, at most 15 words, starting with "Fixed" and describing the symptom the player saw, never its cause or an internal name; skip a fix whose visible symptom the commit does not state) and `commits` (ids, at least one). Use only `fix` commits. Do not repeat anything already in highlights.
+4. `fixes`: 0 to 3 bug fixes a player could actually have noticed, most noticeable first. Each has `text` (one sentence, at most 15 words, starting with "Fixed" and describing the symptom the player saw, never its cause or an internal name; skip a fix whose visible symptom the commit does not state) and `commits` (ids, at least one). Use only `fix` commits. Do not repeat anything already in highlights.
 
 ## Rules
 

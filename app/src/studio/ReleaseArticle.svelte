@@ -98,7 +98,6 @@
 		</div>
 		<div class="release-copy" lang={loaded.locale}>
 			<p>{loaded.notes.intro}</p>
-			{#if locale === 'en' && loaded.notes.joke}<p>{loaded.notes.joke}</p>{/if}
 			{#each loaded.notes.highlights as highlight, i (`${i}-${highlight.title}`)}
 				<section class="highlight">
 					<h4>{highlight.title}</h4>

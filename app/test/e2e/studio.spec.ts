@@ -83,7 +83,6 @@ test.describe("What's new", () => {
 					json: {
 						headline: de ? entry.headline.de : entry.headline.en,
 						intro: de ? 'Färbe deine Ausrüstung um.' : 'Recolor your gear.',
-						joke: de ? '' : 'Patch notes for a patchwork outfit.',
 						highlights: [
 							{
 								title: de ? 'Farbrampen' : 'Color ramps',

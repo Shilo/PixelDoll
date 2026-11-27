@@ -3,7 +3,7 @@ import type { ReleaseCommit } from './changes.ts';
 type Note = { text: string };
 type Highlight = Note & { title: string };
 type Translation = { headline: string; intro: string; highlights: Highlight[]; fixes: Note[] };
-export type Notes = Translation & { joke: string };
+export type Notes = Translation;
 export type CitedNotes = Omit<Notes, 'highlights' | 'fixes'> & {
 	highlights: (Highlight & { commits: string[] })[];
 	fixes: (Note & { commits: string[] })[];
@@ -27,7 +27,6 @@ const commits = { type: 'array', items: string, minItems: 1, uniqueItems: true }
 export const releaseNotesSchema = article({
 	headline: string,
 	intro: string,
-	joke: string,
 	highlights: list(article({ title: string, text: string, commits }), 1, 3),
 	fixes: list(article({ text: string, commits }), 0, 3)
 });
@@ -115,17 +114,10 @@ function validate(
 			}
 		}
 	};
-	const notes = object(value, 'notes', [
-		'headline',
-		'intro',
-		'highlights',
-		'fixes',
-		...(english ? ['joke'] : [])
-	]);
+	const notes = object(value, 'notes', ['headline', 'intro', 'highlights', 'fixes']);
 	const headline = title(notes.headline, 'headline', 8);
-	const intro = prose(notes.intro, 'intro', 25);
+	const intro = prose(notes.intro, 'intro', 40);
 	if (english) {
-		prose(notes.joke, 'joke', 12, true);
 		if (headline && intro.toLowerCase().includes(headline.toLowerCase()))
 			errors.push('intro repeats the headline');
 	}
@@ -166,11 +158,10 @@ export const validateNotes = (value: unknown, input: ReleaseCommit[]) =>
 export const validateTranslation = (value: unknown, original: Translation) =>
 	validate(value, false, [], original);
 
-export function publicNotes({ headline, intro, joke, highlights, fixes }: CitedNotes): Notes {
+export function publicNotes({ headline, intro, highlights, fixes }: CitedNotes): Notes {
 	return {
 		headline,
 		intro,
-		joke,
 		highlights: highlights.map(({ title, text }) => ({ title, text })),
 		fixes: fixes.map(({ text }) => ({ text }))
 	};
@@ -179,7 +170,6 @@ export function publicNotes({ headline, intro, joke, highlights, fixes }: CitedN
 export const emptyNotes: CitedNotes = {
 	headline: 'A PixelDoll maintenance release',
 	intro: 'This build includes maintenance updates for PixelDoll.',
-	joke: '',
 	highlights: [],
 	fixes: []
 };
