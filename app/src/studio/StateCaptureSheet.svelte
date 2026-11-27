@@ -472,6 +472,8 @@
 	wide={editing && !importing}
 	locked={!!busy || (importing && importer.busy && !!importer.review)}
 	onclose={() => (ui.sheet = null)}
+	dirty={!importing && (named || !!description.trim() || !!reference)}
+	backDiscards
 	back={importing
 		? () => page(false)
 		: ui.returnTo === 'clip'

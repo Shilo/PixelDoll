@@ -3740,6 +3740,8 @@
 		"length": "Durée",
 		"ms": "{ms} ms",
 		"exportId": "ID d’export",
-		"gone": "Ce mouvement n’est plus enregistré."
+		"gone": "Ce mouvement n’est plus enregistré.",
+		"itemDrawn": "Dessiné",
+		"itemMissing": "Manquant"
 	}
 }

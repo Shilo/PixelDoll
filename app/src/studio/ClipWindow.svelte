@@ -2,6 +2,7 @@
 	type Tool = 'frames' | 'redraw' | 'capture' | 'items';
 	/** Where the window was when one of its tools (or Rename) opened, so coming back returns to the same place. */
 	let resume: {
+		projectId: string;
 		id: string;
 		open: Record<'frames' | 'items' | 'about', boolean>;
 		from: Tool | 'menu';
@@ -33,7 +34,7 @@
 	} from './state.svelte.ts';
 	import { composeCell } from '../lib/compose/compose.ts';
 	import { clipKind } from '../lib/runtime/timeline.js';
-	import { clipItemCoverage } from './itemGeneration.ts';
+	import { clipItemCoverage, clipMissingItems } from './itemGeneration.ts';
 	import { moveDeletionBlocked, removeMove, stateCaptureSource } from './moveActions.svelte.ts';
 	import { setupRedoMoves, unposedView } from '../lib/rig/setup.ts';
 	import { moveExportId } from '../lib/store/identity.ts';
@@ -44,16 +45,32 @@
 	import { displayError } from '../lib/i18n.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import type { RigDirection } from '../lib/store/manifest.ts';
-	import { Footprints, Grid2x2, Image, Plus, RefreshCw, Sparkles } from './icons.ts';
+	import {
+		Check,
+		TriangleAlert,
+		Footprints,
+		Grid2x2,
+		Image,
+		Plus,
+		RefreshCw,
+		Sparkles
+	} from './icons.ts';
 
 	const id = untrack(() => ui.clip);
+	// The window is for one character's move: switching characters closes it rather than showing another one's.
+	const projectId = untrack(() => doc.id);
+	$effect(() => {
+		if (doc.id !== projectId) ui.sheet = null;
+	});
 	const m = $derived(store.project?.manifest);
 	const clip = $derived(m?.rig.animations.find((entry) => entry.id === id));
 	const kind = $derived(clip ? clipKind(clip) : 'move');
 	const name = $derived(displayMove(id, m?.rig.animations ?? []));
 	const base = $derived(m?.items.find((item) => item.id === m.rig.baseItem));
 
-	const resumed = untrack(() => (ui.returnTo === 'clip' && resume?.id === id ? resume : null));
+	const resumed = untrack(() =>
+		ui.returnTo === 'clip' && resume?.id === id && resume.projectId === projectId ? resume : null
+	);
 	resume = null;
 	const open = $state(resumed?.open ?? { frames: false, items: false, about: false });
 	let body = $state<HTMLElement>();
@@ -66,7 +83,7 @@
 	});
 	/** Remembers this window's place before something opens over it whose Back returns here. */
 	function remember(from: Tool | 'menu') {
-		resume = { id, open: { ...open }, from };
+		resume = { projectId, id, open: { ...open }, from };
 		ui.returnTo = 'clip';
 	}
 	function tool(from: Tool, go: () => void) {
@@ -130,6 +147,14 @@
 			)
 	);
 	const items = $derived(m && clip ? clipItemCoverage(m, id) : null);
+	const itemRows = $derived.by(() => {
+		if (!m || !clip) return [];
+		const missing = new Set(clipMissingItems(m, id).map((item) => item.id));
+		return m.items
+			.filter((item) => item.id !== m.rig.baseItem)
+			.map((item) => ({ item, drawn: !missing.has(item.id) }))
+			.sort((a, b) => Number(b.drawn) - Number(a.drawn));
+	});
 	const canDrawItems = $derived(
 		!isDemo() && id !== DEFAULT_MOVE && !redo.includes(id) && !!items && items.drawn < items.total
 	);
@@ -141,29 +166,31 @@
 	const lock = $derived(moveDeletionBlocked(id));
 </script>
 
+{#snippet clipMenu(close: () => void)}
+	<div role="menu" aria-label={t('clipWindow.actions')}>
+		<ClipMenu
+			{id}
+			{kind}
+			{close}
+			inWindow
+			leave={() => remember('menu')}
+			ontrash={() => (trashing = true)}
+		/>
+	</div>
+{/snippet}
+
 <ObjectWindow
 	title={name}
 	className="clip-window"
 	kind={kind === 'state' ? t('clipWindow.state') : t('clipWindow.move')}
 	status={needsRedo ? { tone: 'warn', label: t('moves.needsRedo') } : undefined}
 	menuLabel={t('clipWindow.actions')}
+	menu={clip ? clipMenu : undefined}
 	onclose={() => (ui.sheet = null)}
 >
 	{#snippet icon()}{#if kind === 'state'}<Image size={18} />{:else}<Footprints
 				size={18}
 			/>{/if}{/snippet}
-	{#snippet menu(close)}
-		<div role="menu" aria-label={t('clipWindow.actions')}>
-			<ClipMenu
-				{id}
-				{kind}
-				{close}
-				inWindow
-				leave={() => remember('menu')}
-				ontrash={() => (trashing = true)}
-			/>
-		</div>
-	{/snippet}
 	{#snippet footer()}
 		{#if clip}<button
 				class="bu-action btn on-stage"
@@ -171,6 +198,10 @@
 				onclick={() => {
 					ui.anim = id;
 					ui.frame = 0;
+					// The stage faces a direction the move has frames for: the current one when it has them, else its first.
+					const facing = m?.rig.directions.find((direction) => direction.id === ui.dir);
+					if (!facing || !clip?.frames.some((frame) => bodyAt(facing, frame.cell)))
+						ui.dir = directions[0]?.id ?? ui.dir;
 					if (kind === 'move') ui.playing = true;
 					ui.sheet = null;
 				}}>{kind === 'state' ? t('clipWindow.showOnStage') : t('clipWindow.playOnStage')}</button
@@ -263,6 +294,20 @@
 						bind:open={open.items}
 					>
 						<div class="window-body">
+							<!-- Which items have frames for it: drawn ones, then the ones still missing, in Wardrobe order. -->
+							<ul class="clip-items" aria-label={t('clipWindow.itemsSection')}>
+								{#each itemRows as row (row.item.id)}<li data-missing={!row.drawn || undefined}>
+										{#if row.drawn}<Check
+												size={16}
+												strokeWidth={2.5}
+												aria-hidden="true"
+											/>{:else}<TriangleAlert size={16} aria-hidden="true" />{/if}<span
+											>{row.item.name}</span
+										><span class="sr"
+											>{row.drawn ? t('clipWindow.itemDrawn') : t('clipWindow.itemMissing')}</span
+										>
+									</li>{/each}
+							</ul>
 							{#if canDrawItems}<div class="tool-list">
 									<div class="tool-slot" data-tool="items">
 										<ToolRow
@@ -350,6 +395,26 @@
 	.tool-list {
 		display: grid;
 		gap: 8px;
+	}
+	.clip-items {
+		display: grid;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.clip-items li {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-height: 36px;
+		border-block-end: 1px solid var(--bu-line);
+	}
+	.clip-items li :global(svg) {
+		flex: none;
+		color: var(--ok);
+	}
+	.clip-items li[data-missing] :global(svg) {
+		color: var(--warn);
 	}
 	.tool-slot {
 		display: contents;

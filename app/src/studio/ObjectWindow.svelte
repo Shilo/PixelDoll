@@ -47,6 +47,15 @@
 	const menuId = $props.id();
 	let popover = $state<HTMLElement>();
 	const close = () => popover?.hidePopover();
+	/** Tab or Shift+Tab leaves the menu, which closes; focus goes on from its trigger. (The menu role is inside, on the
+	 *  object's own action list.) */
+	function closeOnTab(node: HTMLElement) {
+		const onkey = (event: KeyboardEvent) => {
+			if (event.key === 'Tab') close();
+		};
+		node.addEventListener('keydown', onkey);
+		return () => node.removeEventListener('keydown', onkey);
+	}
 </script>
 
 <Sheet {title} className="object-window {className}" {onclose} {footer} {developer}>
@@ -79,6 +88,7 @@
 			data-placement="bottom-end"
 			popover
 			bind:this={popover}
+			{@attach closeOnTab}
 			onfocusout={(event) => {
 				// Like any menu, Tab or Shift+Tab out of it closes it, so it never covers where the keyboard went.
 				const to = event.relatedTarget;

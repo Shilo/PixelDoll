@@ -3639,6 +3639,8 @@
 		"length": "길이",
 		"ms": "{ms}ms",
 		"exportId": "내보내기 ID",
-		"gone": "이 동작은 더 이상 저장되어 있지 않습니다."
+		"gone": "이 동작은 더 이상 저장되어 있지 않습니다.",
+		"itemDrawn": "그려짐",
+		"itemMissing": "없음"
 	}
 }

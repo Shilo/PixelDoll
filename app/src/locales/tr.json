@@ -3740,6 +3740,8 @@
 		"length": "Süre",
 		"ms": "{ms} ms",
 		"exportId": "Dışa aktarma kimliği",
-		"gone": "Bu hareket artık kayıtlı değil."
+		"gone": "Bu hareket artık kayıtlı değil.",
+		"itemDrawn": "Çizildi",
+		"itemMissing": "Eksik"
 	}
 }

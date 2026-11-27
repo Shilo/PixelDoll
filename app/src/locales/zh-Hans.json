@@ -3639,6 +3639,8 @@
 		"length": "时长",
 		"ms": "{ms} 毫秒",
 		"exportId": "导出 ID",
-		"gone": "此动作已不再保存。"
+		"gone": "此动作已不再保存。",
+		"itemDrawn": "已绘制",
+		"itemMissing": "缺少"
 	}
 }

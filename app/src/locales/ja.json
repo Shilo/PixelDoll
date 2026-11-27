@@ -3639,6 +3639,8 @@
 		"length": "長さ",
 		"ms": "{ms} ms",
 		"exportId": "エクスポートID",
-		"gone": "この動きはもう保存されていません。"
+		"gone": "この動きはもう保存されていません。",
+		"itemDrawn": "描画済み",
+		"itemMissing": "未描画"
 	}
 }

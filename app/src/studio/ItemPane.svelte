@@ -1097,10 +1097,17 @@
 									<button
 										class="bu-action btn plain callout-link"
 										data-variant="quiet"
-										onclick={() =>
-											void copyDemo().catch((error) =>
-												toast(errorMessage(error), { tone: 'danger', error })
-											)}>{t('demoCopyRow.editACopy')}</button
+										onclick={() => {
+											const itemId = id;
+											void copyDemo().then(
+												() => {
+													// The copy is now open: carry on in its copy of this item, where its frames can be drawn.
+													ui.selected = itemId;
+													ui.sheet = 'item';
+												},
+												(error) => toast(errorMessage(error), { tone: 'danger', error })
+											);
+										}}>{t('demoCopyRow.editACopy')}</button
 									>
 								</p>
 							{/if}

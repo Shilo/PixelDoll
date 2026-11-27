@@ -11363,8 +11363,13 @@ for (const kind of ['outfit', 'move'] as const) {
 		await expect(menu).toBeVisible();
 		await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 		await expect(menu.locator('hr')).toHaveCount(1);
-		// The first action takes focus: Rename, as in character and item menus.
-		await expect(menu.getByRole('menuitem', { name: 'Rename…', exact: true })).toBeFocused();
+		// The first action takes focus: View and edit for a move (as for characters and items), Rename for an outfit.
+		await expect(
+			menu.getByRole('menuitem', {
+				name: kind === 'outfit' ? 'Rename…' : 'View and edit…',
+				exact: true
+			})
+		).toBeFocused();
 		await page.keyboard.press('Escape');
 		await expect(trigger).toBeFocused();
 		await choice.click({ button: 'right' });

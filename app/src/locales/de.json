@@ -3740,6 +3740,8 @@
 		"length": "Länge",
 		"ms": "{ms} ms",
 		"exportId": "Export-ID",
-		"gone": "Diese Bewegung ist nicht mehr gespeichert."
+		"gone": "Diese Bewegung ist nicht mehr gespeichert.",
+		"itemDrawn": "Gezeichnet",
+		"itemMissing": "Fehlt"
 	}
 }

@@ -3749,6 +3749,8 @@
 		"length": "Duração",
 		"ms": "{ms} ms",
 		"exportId": "ID de exportação",
-		"gone": "Este movimento não está mais salvo."
+		"gone": "Este movimento não está mais salvo.",
+		"itemDrawn": "Desenhado",
+		"itemMissing": "Faltando"
 	}
 }

@@ -3639,6 +3639,8 @@
 		"length": "Durasi",
 		"ms": "{ms} md",
 		"exportId": "ID ekspor",
-		"gone": "Gerakan ini tidak lagi tersimpan."
+		"gone": "Gerakan ini tidak lagi tersimpan.",
+		"itemDrawn": "Digambar",
+		"itemMissing": "Hilang"
 	}
 }

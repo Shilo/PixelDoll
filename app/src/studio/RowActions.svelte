@@ -42,6 +42,11 @@
 	popover
 	bind:this={menu}
 	role="menu"
+	tabindex="-1"
+	onkeydown={(event) => {
+		// Tab or Shift+Tab leaves the menu, which closes; focus goes on from its trigger.
+		if (event.key === 'Tab') close();
+	}}
 	onfocusout={(event) => {
 		// Like any menu, Tab or Shift+Tab out of it closes it, so it never covers where the keyboard went.
 		const to = event.relatedTarget;

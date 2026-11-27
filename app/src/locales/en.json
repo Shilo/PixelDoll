@@ -3740,6 +3740,8 @@
 		"length": "Length",
 		"ms": "{ms} ms",
 		"exportId": "Export ID",
-		"gone": "This move is no longer saved."
+		"gone": "This move is no longer saved.",
+		"itemDrawn": "Drawn",
+		"itemMissing": "Missing"
 	}
 }
