@@ -1061,6 +1061,7 @@
 				{#each filteredSections as s (s.key)}
 					{@const lower = getLocale() === 'en' ? s.label.toLowerCase() : s.label}
 					{@const count = s.fromOthers ? s.others.length : s.items.length + s.pending.length}
+					{@const hasGear = count > 0 || s.others.length > 0 || s.worn}
 					<section
 						class="slot-section"
 						data-group={s.key}
@@ -1119,7 +1120,7 @@
 										>{t('wardrobe.itemCount', { count, n: formatNumber(count) })}</span
 									></span
 								>{/if}
-							{#if !s.fromOthers}
+							{#if !s.fromOthers && hasGear}
 								<button
 									class="bu-action section-action"
 									data-variant="quiet"
@@ -1149,7 +1150,7 @@
 								role="group"
 								aria-label={t('wardrobe.labelItems', { label: s.label })}
 							>
-								{#if !s.fromOthers}
+								{#if !s.fromOthers && hasGear}
 									<button
 										class="bu-tile item-tile"
 										data-variant="empty"
@@ -1414,7 +1415,7 @@
 										>
 									</div>
 								{/each}
-								{#if !count && !s.fromOthers}
+								{#if !hasGear && !s.fromOthers}
 									<button
 										class="bu-tile item-tile"
 										data-variant="add"
