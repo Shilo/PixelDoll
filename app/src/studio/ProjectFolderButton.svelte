@@ -46,13 +46,19 @@
 			class="bu-action btn folder-button"
 			data-variant="field"
 			aria-label={t('projectFolder.title')}
-			aria-describedby="project-folder-summary"
+			aria-describedby={projectFolder.link
+				? 'project-folder-summary project-folder-path'
+				: 'project-folder-summary'}
 			onclick={onopen}
 		>
 			<FolderSync size={18} aria-hidden="true" />
 			<span class="folder-text">
 				<span class="folder-title">{t('projectFolder.title')}</span>
 				<span class="folder-state" id="project-folder-summary" class:attention>{summary}</span>
+				<!-- Where the files land: browsers give only the picked folder's name, never its full path. -->
+				{#if projectFolder.link}<span class="folder-path" id="project-folder-path"
+						>{projectFolder.link.handle.name}/{projectFolder.link.subfolder}/</span
+					>{/if}
 			</span>
 			<ChevronRight size={16} aria-hidden="true" />
 		</button>
@@ -72,6 +78,8 @@
 		align-items: center;
 		gap: 10px;
 		width: 100%;
+		/* Three lines (title, state, location): the button grows with them instead of the theme's fixed height. */
+		height: auto;
 		min-height: 44px;
 		padding-block: 8px;
 		text-align: start;
@@ -89,6 +97,15 @@
 		font-weight: 400;
 		opacity: 0.75;
 		overflow-wrap: anywhere;
+	}
+	.folder-path {
+		font-family: var(--mono, ui-monospace, monospace);
+		font-size: 0.75rem;
+		font-weight: 400;
+		opacity: 0.6;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.folder-state.attention {
 		color: var(--warn);
