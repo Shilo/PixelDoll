@@ -106,7 +106,7 @@ Characters linked to one folder share their engine's runtime instead of each car
 
 ```
 <picked folder>/
-  PixelDoll/<engine>/      runtime code only: godot, phaser, phaser-ae, unity
+  pixeldoll-<engine>/      runtime code plus AGENTS.md and CLAUDE.md saying what the folder is (godot, phaser, phaser-ae, unity)
   <character subfolder>/    everything else, as before (data, sheets, engine data, README, AGENTS.md, docs)
 ```
 
@@ -117,7 +117,7 @@ Characters linked to one folder share their engine's runtime instead of each car
 - **What stays per engine.** GDevelop embeds its controller in each character's `game.json` events, so it has nothing
   to share; PNG + JSON, Aseprite and RPG Maker have no runtime. Their folder output equals the ZIP's files.
 - **One publish, two records.** A publish works on the picked folder: character files under the subfolder, runtime
-  files under `PixelDoll/<engine>/`. One plan covers both before anything is written, so an edited runtime pauses the
+  files under `pixeldoll-<engine>/`. One plan covers both before anything is written, so an edited runtime pauses the
   character too. The runtime is written first, then the character's images, resources and manifest. Each path is
   recorded in its own trusted record: the character's (per link) or the runtime's (per picked folder and engine, kept
   after unlink). Picked folders are remembered in their own store and matched with `isSameEntry`, so every link to
@@ -141,7 +141,7 @@ Characters linked to one folder share their engine's runtime instead of each car
 
 The publisher reads and writes up to eight files at once (`AT_ONCE` in [publish.ts](../../../app/src/lib/project-folder/publish.ts)). The order is:
 
-1. The shared runtime in `PixelDoll/<engine>/`, one at a time; if any fails, nothing of the character is written.
+1. The shared runtime in `pixeldoll-<engine>/`, one at a time; if any fails, nothing of the character is written.
 2. PNGs, eight at a time.
 3. Godot's per-layer `.tres` resources, eight at a time.
 4. Every other file, one at a time in export order.

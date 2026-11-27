@@ -255,7 +255,7 @@ native controller output; matching source text alone is not evidence of matching
 
 ## Project folder runtime compatibility
 
-Folder publishing places one runtime per engine in `PixelDoll/<engine>/`, alongside the character
+Folder publishing places one runtime per engine in `pixeldoll-<engine>/`, alongside the character
 folders that use it. Godot, Phaser, Phaser AE and Unity publish a shared bundle. Each character keeps
 its own data, sheets and integration guides. ZIP exports still embed their runtime in the archive.
 

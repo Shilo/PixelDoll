@@ -9,23 +9,26 @@ import zipGolden from './export-folder-zip-golden.json';
 const sha256 = (data: Uint8Array | string) => createHash('sha256').update(data).digest('hex');
 const decoder = new TextDecoder();
 const runtimeFiles = {
-	godot: ['paperdoll.gd'],
-	phaser: ['PaperdollContainer.js', 'types.d.ts'],
-	'phaser-ae': ['paperdoll.js', 'paperdoll.d.ts', 'types.d.ts'],
+	godot: ['paperdoll.gd', 'AGENTS.md', 'CLAUDE.md'],
+	phaser: ['PaperdollContainer.js', 'types.d.ts', 'AGENTS.md', 'CLAUDE.md'],
+	'phaser-ae': ['paperdoll.js', 'paperdoll.d.ts', 'types.d.ts', 'AGENTS.md', 'CLAUDE.md'],
 	unity: [
 		'Runtime/Paperdoll.cs',
 		'Runtime/PixelDoll.Runtime.asmdef',
 		'Editor/PixelDollImporter.cs',
-		'Editor/PixelDoll.Editor.asmdef'
+		'Editor/PixelDoll.Editor.asmdef',
+		'AGENTS.md',
+		'CLAUDE.md'
 	]
 } as const;
 
-// Pin each published revision's paths and bytes together. Keep old revision pins when adding a new one.
+// Pin each published revision's paths and bytes together. Keep old revision pins when adding a new one. (Revision 1
+// was re-pinned before release, when the runtime folders gained their agent docs.)
 const revisionGoldens: Record<keyof typeof runtimeFiles, Record<number, string>> = {
-	godot: { 1: '4ad5f4e7ecdc782d0214a515819a7cedbd79b02ecfd9be9eb98b9fcc277b3a3e' },
-	phaser: { 1: '7a1ad1d62ccb46384c3eccf619898eafd752cdea834e89afbd299ac2fbe2e8eb' },
-	'phaser-ae': { 1: '73ed9a5fb74da7966473b4e0cc3a38066926de29565d065de3f5b93a19c5bf84' },
-	unity: { 1: 'a0ed5809d897df8f296ee00acdfe9b8643315b378dd3de6c8ad3ba544b559f63' }
+	godot: { 1: 'dba99e2fe87e0957296618727d3a32b25b420e7e071a6e4bd5d627543453db67' },
+	phaser: { 1: '1ef1f9f0c819cf54e78c5434c74e3891c91510d1f0c820d8e10d865ac5469b41' },
+	'phaser-ae': { 1: 'e94e36b77c57efcc44050e73c07f4f157fc620c8ae00183c39f82b56578d957c' },
+	unity: { 1: 'd4dbe00f2f9d3246f98d34f07ad1fba8afcb917a2615e30ed4c4672cf7dd618d' }
 };
 
 // Captured at the fixture's fixed exportedAt from an isolated archive of HEAD (67b40dc8e).
@@ -85,7 +88,7 @@ test.each(engines)('%s folder keeps character files and separates its runtime', 
 	if (another.kind === 'requested') expect(another.bundle).toEqual(bundle);
 
 	const files = new Map(folder.entries.map(({ name, data }) => [name, decoder.decode(data)]));
-	const path = `../PixelDoll/${engine}/${runtimeFiles[sharedEngine][0]}`;
+	const path = `../pixeldoll-${engine}/${runtimeFiles[sharedEngine][0]}`;
 	for (const name of [
 		'README.txt',
 		'AGENTS.md',
@@ -94,17 +97,17 @@ test.each(engines)('%s folder keeps character files and separates its runtime', 
 		`${engine}/README.txt`
 	]) {
 		expect(files.get(name)).toContain(path);
-		expect(files.get(name)).toContain('copy the PixelDoll folder too');
+		expect(files.get(name)).toContain(`copy pixeldoll-${engine} too`);
 	}
 	if (engine === 'phaser' || engine === 'phaser-ae') {
 		expect(files.get(`${engine}/README.txt`)).toContain(
-			`from './<folder>/PixelDoll/${engine}/${runtimeFiles[engine][0]}'`
+			`from './<folder>/pixeldoll-${engine}/${runtimeFiles[engine][0]}'`
 		);
 		expect(files.get(`${engine}/README.txt`)).toContain('reload a running game');
 	}
 	if (engine === 'godot')
 		expect(files.get('godot/Paperdoll.tscn')).toContain(
-			'[ext_resource type="Script" path="../../PixelDoll/godot/paperdoll.gd" id="script"]'
+			'[ext_resource type="Script" path="../../pixeldoll-godot/paperdoll.gd" id="script"]'
 		);
 	if (engine === 'unity') {
 		const data = JSON.parse(files.get('unity/pixeldoll_unity.json')!);

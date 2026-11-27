@@ -10,7 +10,7 @@ import {
 	MAX_BODY_CUT_VARIANTS,
 	withTuckVariants
 } from '../compose/compose.ts';
-import { agentFiles } from './agent-docs.ts';
+import { agentFiles, runtimeAgentFiles } from './agent-docs.ts';
 import { asepriteFiles } from './aseprite.ts';
 import { coreFiles, exportManifest, genericFiles, validate, type OutFile } from './generic.ts';
 import { godotFiles, godotRuntime } from './godot.ts';
@@ -47,7 +47,7 @@ const folderRuntimes = {
 export interface RuntimeBundle {
 	engine: keyof typeof folderRuntimes;
 	revision: number;
-	/** Paths relative to PixelDoll/<engine>/. */
+	/** Paths relative to pixeldoll-<engine>/. */
 	files: ZipEntry[];
 }
 
@@ -91,7 +91,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 		? (engine as keyof typeof folderRuntimes)
 		: undefined;
 	const runtime = folder && runtimeEngine ? folderRuntimes[runtimeEngine] : undefined;
-	const runtimePath = runtime && `../PixelDoll/${runtimeEngine}/${runtime.files[0]!.name}`;
+	const runtimePath = runtime && `../pixeldoll-${runtimeEngine}/${runtime.files[0]!.name}`;
 	const invalid = validate(src);
 	const invalidMessages: (Message | undefined)[] = invalid.map(() => undefined);
 	if (!invalid.length) {
@@ -357,7 +357,10 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 					bundle: {
 						engine: runtimeEngine,
 						revision: runtime.revision,
-						files: runtime.files.map(({ name, data }) => ({ name, data: enc.encode(data) }))
+						files: [
+							...runtime.files,
+							...runtimeAgentFiles(runtimeEngine, runtime.files[0]!.name)
+						].map(({ name, data }) => ({ name, data: enc.encode(data) }))
 					}
 				}
 			: {}),

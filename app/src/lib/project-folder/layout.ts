@@ -1,19 +1,26 @@
 // Where a link's files go inside the picked folder: the character's own files in its subfolder, and the engine runtime
-// they all use once, in `PixelDoll/<engine>/`. A publish works on the picked folder with both, so one plan covers every
+// they all use once, in `pixeldoll-<engine>/`. A publish works on the picked folder with both, so one plan covers every
 // file before any is written; each path's trusted record is the character's or the shared runtime's.
 import type { Engine } from '../store/manifest.ts';
 import type { FolderRecord, PlanAction } from './plan.ts';
 
-/** PixelDoll's own folder inside the picked one. Its name is reserved: a character is never given it (see
- *  characterFolder), and it is matched without case, as Windows and macOS folders are. */
-export const SHARED_DIR = 'PixelDoll';
+/** The name of PixelDoll's own folders inside the picked one, one per engine (pixeldoll-godot). The name and every
+ *  name starting with it are reserved: a character is never given one (see characterFolder), and they are matched
+ *  without case, as Windows and macOS folders are. */
+const SHARED_NAME = 'pixeldoll';
 
-/** Whether a folder name is PixelDoll's own folder. */
-export const isSharedDir = (name: string) => name.toLowerCase() === SHARED_DIR.toLowerCase();
+/** Whether a folder name is one of PixelDoll's own. */
+export const isSharedDir = (name: string) => {
+	const lower = name.toLowerCase();
+	return lower === SHARED_NAME || lower.startsWith(`${SHARED_NAME}-`);
+};
 
-/** A character's subfolder for its export ID: the ID itself, unless it is PixelDoll's reserved folder name. */
+/** Whether a picked-folder-relative path is in one of PixelDoll's own folders. */
+export const isSharedPath = (path: string) => isSharedDir(path.split('/')[0]);
+
+/** A character's subfolder for its export ID: the ID itself, unless it is one of PixelDoll's reserved folder names. */
 export const characterFolder = (exportId: string) =>
-	isSharedDir(exportId) ? `${exportId}-character` : exportId;
+	isSharedDir(exportId) ? `character-${exportId}` : exportId;
 
 /** The engines whose folder exports have a runtime shared by every character in the folder. */
 export const RUNTIME_ENGINES: readonly Engine[] = ['godot', 'phaser', 'phaser-ae', 'unity'];
@@ -21,7 +28,7 @@ export const RUNTIME_ENGINES: readonly Engine[] = ['godot', 'phaser', 'phaser-ae
 export const hasRuntime = (engine: Engine) => RUNTIME_ENGINES.includes(engine);
 
 /** The picked-folder-relative directory of an engine's shared runtime. */
-export const runtimeDir = (engine: Engine) => `${SHARED_DIR}/${engine}`;
+export const runtimeDir = (engine: Engine) => `pixeldoll-${engine}`;
 
 /** The trusted record of a shared runtime: one per picked folder and engine, kept when a character is unlinked. */
 export const runtimeKey = (destinationId: string, engine: Engine) =>
@@ -73,7 +80,4 @@ export function byScope(scopes: readonly Scope[], paths: readonly string[]) {
 /** Whether the user may keep a conflicting file as it is. A shared runtime file that is gone (or has a folder in its
  *  place) cannot be kept: every character in the folder needs it, so it can only be restored. An edited one can. */
 export const keepable = (conflict: Pick<PlanAction, 'path' | 'reason'>) =>
-	!(
-		conflict.path.startsWith(`${SHARED_DIR}/`) &&
-		(conflict.reason === 'deleted' || conflict.reason === 'folder')
-	);
+	!(isSharedPath(conflict.path) && (conflict.reason === 'deleted' || conflict.reason === 'folder'));

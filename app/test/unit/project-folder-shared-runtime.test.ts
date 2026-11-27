@@ -1,4 +1,4 @@
-// Project folder: characters linked to one folder share their engine's runtime in PixelDoll/<engine>/. One plan covers
+// Project folder: characters linked to one folder share their engine's runtime in pixeldoll-<engine>/. One plan covers
 // the runtime and the character before anything is written, an older tab never puts back an older runtime, and folders
 // that overlap a managed one (or a second Unity runtime in one game) are refused.
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -130,7 +130,7 @@ function nest(outer: FileSystemDirectoryHandle, inner: FileSystemDirectoryHandle
 }
 
 let api: typeof import('../../src/studio/projectFolder.svelte.ts');
-const RUNTIME = 'PixelDoll/godot/paperdoll.gd';
+const RUNTIME = 'pixeldoll-godot/paperdoll.gd';
 
 beforeEach(async () => {
 	vi.resetModules();
@@ -192,7 +192,7 @@ it('writes the runtime once for two characters in one folder, under one shared r
 		'manifest.json'
 	]);
 	expect(studio.floors.get(shared)).toBe(2);
-	expect(api.runtimePath(a!)).toBe('Game/PixelDoll/godot/');
+	expect(api.runtimePath(a!)).toBe('Game/pixeldoll-godot/');
 });
 
 it('pauses every write when the shared runtime was edited, and replaces only the approved bytes', async () => {
@@ -323,7 +323,7 @@ it('writes nothing of the character when the runtime write fails, and raises no 
 it('refuses moving a Unity character to a folder nested in its own earlier one, whose runtime stays', async () => {
 	const assets = folderHandle('Assets');
 	await link('a', assets, 'unity');
-	expect(studio.folder.text('PixelDoll/unity/paperdoll.gd')).toBe('runtime v2');
+	expect(studio.folder.text('pixeldoll-unity/paperdoll.gd')).toBe('runtime v2');
 	const characters = folderHandle('Characters');
 	nest(assets, characters, ['Characters']);
 	vi.stubGlobal('showDirectoryPicker', async () => characters);
@@ -427,7 +427,7 @@ it('pauses to restore a kept shared runtime file once it is deleted', async () =
 });
 
 it('remembers a Unity folder after its last character goes, even with a runtime PixelDoll did not write', async () => {
-	studio.folder.set('PixelDoll/unity/paperdoll.gd', 'runtime v2'); // left by another browser profile
+	studio.folder.set('pixeldoll-unity/paperdoll.gd', 'runtime v2'); // left by another browser profile
 	const assets = folderHandle('Assets');
 	await link('a', assets, 'unity');
 	expect(studio.floors.size).toBe(0);
@@ -439,9 +439,17 @@ it('remembers a Unity folder after its last character goes, even with a runtime 
 	expect(api.projectFolder.status).toEqual({ kind: 'overlap', unity: true });
 });
 
-it('never gives a character the reserved PixelDoll folder name', async () => {
+it('never gives a character a reserved PixelDoll folder name', async () => {
 	const a = await link('PixelDoll', folderHandle('Game'));
-	expect(a?.subfolder).toBe('PixelDoll-character');
-	expect(studio.folder.text('PixelDoll-character/godot/Paperdoll.tscn')).toBe('scene of PixelDoll');
+	expect(a?.subfolder).toBe('character-PixelDoll');
+	expect(studio.folder.text('character-PixelDoll/godot/Paperdoll.tscn')).toBe('scene of PixelDoll');
 	expect(studio.folder.text(RUNTIME)).toBe('runtime v2');
+});
+
+it('reserves every PixelDoll- folder name, without case', async () => {
+	const { characterFolder } = await import('../../src/lib/project-folder/layout.ts');
+	expect(characterFolder('pixeldoll-godot')).toBe('character-pixeldoll-godot');
+	expect(characterFolder('PIXELDOLL')).toBe('character-PIXELDOLL');
+	expect(characterFolder('pixeldolls')).toBe('pixeldolls');
+	expect(characterFolder('adventurer')).toBe('adventurer');
 });

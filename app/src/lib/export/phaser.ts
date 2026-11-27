@@ -370,14 +370,14 @@ export function phaserFiles(m: Manifest, folder = false): OutFile[] {
 	const dir = folder
 		? '<folder>/<character>/'
 		: `assets/${m.exportId ?? m.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`;
-	const runtime = folder ? '<folder>/PixelDoll/phaser/' : `${dir}phaser/`;
+	const runtime = folder ? '<folder>/pixeldoll-phaser/' : `${dir}phaser/`;
 	const initial = m.rig.animations.find((a) => (a.directions ?? m.rig.directions).length > 0);
 	files.push({
 		name: 'phaser/README.txt',
 		data: `1. ${
 			folder
-				? `Keep the character at ${dir}. Its runtime is at ../PixelDoll/phaser/PaperdollContainer.js
-   relative to this character folder. When copying the character, copy the PixelDoll folder too and keep them in the same parent folder.
+				? `Keep the character at ${dir}. Its runtime is at ../pixeldoll-phaser/PaperdollContainer.js
+   relative to this character folder. When copying the character, copy pixeldoll-phaser too and keep them in the same parent folder.
    Rebuild if you bundle the module, then reload a running game to pick up runtime changes.`
 				: `Copy the whole export folder into your game's assets, e.g. ${dir}`
 		}

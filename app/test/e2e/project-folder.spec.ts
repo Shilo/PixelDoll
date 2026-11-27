@@ -508,20 +508,20 @@ test('a Godot link publishes its runtime once into PixelDoll and pauses on an ed
 	const errors = watchErrors(page);
 	await savedExport(page, dev);
 	const { row, sub } = await linkFolder(page, 'Godot');
-	const runtime = 'game/PixelDoll/godot/paperdoll.gd';
-	await expect(row).toContainText('Shared runtime: game/PixelDoll/godot/');
+	const runtime = 'game/pixeldoll-godot/paperdoll.gd';
+	await expect(row).toContainText('Shared runtime: game/pixeldoll-godot/');
 	const published = await folderText(page, runtime);
 	expect(published).toContain('extends');
 	// The character keeps only its own files, and its scene names the shared script.
 	expect(await folderText(page, `game/${sub}/godot/paperdoll.gd`)).toBeNull();
 	expect(await folderText(page, `game/${sub}/godot/Paperdoll.tscn`)).toContain(
-		'path="../../PixelDoll/godot/paperdoll.gd"'
+		'path="../../pixeldoll-godot/paperdoll.gd"'
 	);
 	// An edit to the shared runtime pauses the update and is listed with its real path; Replace restores it.
 	await changeFolder(page, runtime, { text: '# my edit' });
 	await row.getByRole('button', { name: 'Update now' }).click();
 	const alert = row.getByRole('alert');
-	await expect(alert).toContainText('PixelDoll/godot/paperdoll.gd');
+	await expect(alert).toContainText('pixeldoll-godot/paperdoll.gd');
 	await expect(alert).toContainText('Edited outside PixelDoll');
 	await row.getByRole('button', { name: 'Replace listed files' }).click();
 	await expect(row.getByRole('status')).toHaveText('Up to date');

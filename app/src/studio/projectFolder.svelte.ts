@@ -14,7 +14,7 @@ import {
 	runtimeDir,
 	runtimeKey,
 	scopeOf,
-	SHARED_DIR,
+	isSharedPath,
 	under,
 	type Scope
 } from '../lib/project-folder/layout.ts';
@@ -450,7 +450,7 @@ async function superseded(id: string, readAt: number, stale?: string) {
 async function runtimeOnDisk(target: FolderTarget, files: Readonly<Record<string, string>>) {
 	try {
 		for (const [path, hash] of Object.entries(files))
-			if (path.startsWith(`${SHARED_DIR}/`) && (await hashAt(target, path)) !== hash) return false;
+			if (isSharedPath(path) && (await hashAt(target, path)) !== hash) return false;
 		return true;
 	} catch {
 		return false; // the full publish below reads the folder and reports what is wrong
@@ -687,7 +687,7 @@ async function publish(link: FolderLink, request: Request) {
 		const offered =
 			outcome.kind === 'stopped' || outcome.kind === 'failed'
 				? []
-				: (outcome.matching ?? []).filter((m) => !m.path.startsWith(`${SHARED_DIR}/`));
+				: (outcome.matching ?? []).filter((m) => !isSharedPath(m.path));
 		if (first && offered.length) {
 			await remember({ offered });
 			if (loadedFor === id) projectFolder.offer = { linkedAt: link.linkedAt, files: offered };

@@ -204,7 +204,7 @@ describe('publishFiles', () => {
 
 	it('writes a shared runtime first, then keeps that order for a character in a subfolder', async () => {
 		const entries = {
-			'PixelDoll/godot/paperdoll.gd': 'runtime',
+			'pixeldoll-godot/paperdoll.gd': 'runtime',
 			'hero/godot/Paperdoll.tscn': 'scene',
 			'hero/manifest.json': 'm',
 			'hero/godot/library.tres': 'lib',
@@ -215,12 +215,12 @@ describe('publishFiles', () => {
 			record: { written: {}, kept: [] },
 			onRecord: async () => {},
 			manifest: 'hero/manifest.json',
-			first: 'PixelDoll/godot'
+			first: 'pixeldoll-godot'
 		};
 		const folder = memoryFolder();
 		await publishFiles(folder.target, files(entries), options);
 		expect(folder.log).toEqual([
-			'write PixelDoll/godot/paperdoll.gd',
+			'write pixeldoll-godot/paperdoll.gd',
 			'write hero/layers/hair.png',
 			'write hero/godot/hair.tres',
 			'write hero/godot/Paperdoll.tscn',
@@ -231,7 +231,7 @@ describe('publishFiles', () => {
 		// A runtime that cannot be written leaves every character file as it was.
 		const failing = memoryFolder();
 		failing.failWrite = (path) =>
-			path.startsWith('PixelDoll/') ? domError('NoModificationAllowedError') : undefined;
+			path.startsWith('pixeldoll-godot/') ? domError('NoModificationAllowedError') : undefined;
 		expect(await publishFiles(failing.target, files(entries), options)).toMatchObject({
 			kind: 'failed',
 			reason: 'locked'
