@@ -82,6 +82,11 @@ export function updatedLabel(iso: string, now: number) {
 	return time ? t('projectFolder.updated', { time }) : t('projectFolder.justUpdated');
 }
 
+/** Where a link's files land, as shown everywhere: the picked folder's name and the character's subfolder (browsers
+ *  give only the folder's name, never its full path). */
+export const folderPath = (link: Pick<FolderLink, 'handle' | 'subfolder'>) =>
+	`${link.handle.name}/${link.subfolder}/`;
+
 /** Whether the open character's folder needs the user. */
 export const folderNeedsAttention = (status: FolderStatus) =>
 	!['idle', 'publishing', 'done'].includes(status.kind);
@@ -484,7 +489,12 @@ async function publish(link: FolderLink, request: Request) {
 					? await inSync(target, record, next)
 					: true)
 			) {
-				await remember({ inputs, files: Object.fromEntries(next) });
+				// A click read every file and found them current: that is an update as far as the user can tell.
+				await remember({
+					inputs,
+					files: Object.fromEntries(next),
+					...(request.manual ? { publishedAt: new Date().toISOString() } : {})
+				});
 				return finished({ kind: 'done', kept: record.kept.length, already: request.manual });
 			}
 		}
@@ -565,7 +575,9 @@ async function publish(link: FolderLink, request: Request) {
 					await remember(
 						outcome.kind === 'published'
 							? { exportedAt, publishedAt: now, inputs, files: produced }
-							: { exportedAt, inputs, files: produced }
+							: request.manual
+								? { exportedAt, publishedAt: now, inputs, files: produced }
+								: { exportedAt, inputs, files: produced }
 					);
 				}
 				return finished({

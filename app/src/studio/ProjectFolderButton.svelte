@@ -1,13 +1,16 @@
 <script lang="ts">
 	// Export's Project folder control: one clear button below the formats, under its own heading, that shows the folder's state and opens
-	// Settings > Export at the Project folder section. Absent where the browser cannot write folders.
+	// Settings > Export at the Project folder section, with an Update now beside it once a folder is linked. Absent where the
+	// browser cannot write folders.
 	import { t } from 'svelte-whisper';
-	import { ChevronRight, FolderSync } from './icons.ts';
+	import { ChevronRight, FolderSync, RefreshCw } from './icons.ts';
 	import {
 		checkFolderSupport,
 		folderNeedsAttention,
+		folderPath,
 		loadFolderLink,
 		projectFolder,
+		publishProjectFolder,
 		updatedLabel
 	} from './projectFolder.svelte.ts';
 	import { doc } from './state.svelte.ts';
@@ -40,32 +43,47 @@
 {#if projectFolder.support === 'supported' || projectFolder.support === 'brave-disabled'}
 	<section class="folder-section" aria-labelledby="project-folder-section">
 		<h3 class="label" id="project-folder-section">{t('projectFolder.section')}</h3>
-		<!-- A stable name with the changing state as its description, so a ticking timestamp is not re-announced as a new name. -->
-		<button
-			type="button"
-			class="bu-action btn folder-button"
-			data-variant="field"
-			aria-label={t('projectFolder.title')}
-			aria-describedby={projectFolder.link
-				? 'project-folder-path project-folder-summary'
-				: 'project-folder-summary'}
-			onclick={onopen}
-		>
-			<FolderSync size={18} aria-hidden="true" />
-			<span class="folder-text">
-				<span class="folder-title">{t('projectFolder.title')}</span>
-				<!-- Where the files land, before their state: browsers give only the picked folder's name, never its full
+		<div class="folder-row">
+			<!-- A stable name with the changing state as its description, so a ticking timestamp is not re-announced as a new name. -->
+			<button
+				type="button"
+				class="bu-action btn folder-button"
+				data-variant="field"
+				aria-label={t('projectFolder.title')}
+				aria-describedby={projectFolder.link
+					? 'project-folder-path project-folder-summary'
+					: 'project-folder-summary'}
+				onclick={onopen}
+			>
+				<FolderSync size={18} aria-hidden="true" />
+				<span class="folder-text">
+					<span class="folder-title">{t('projectFolder.title')}</span>
+					<!-- Where the files land, before their state: browsers give only the picked folder's name, never its full
 				     path. One line; a long path ends in the browser's ellipsis character. -->
-				{#if projectFolder.link}<span
-						class="folder-path"
-						id="project-folder-path"
-						title="{projectFolder.link.handle.name}/{projectFolder.link.subfolder}/"
-						>{projectFolder.link.handle.name}/{projectFolder.link.subfolder}/</span
-					>{/if}
-				<span class="folder-state" id="project-folder-summary" class:attention>{summary}</span>
-			</span>
-			<ChevronRight size={16} aria-hidden="true" />
-		</button>
+					{#if projectFolder.link}<span
+							class="folder-path"
+							id="project-folder-path"
+							title={folderPath(projectFolder.link)}>{folderPath(projectFolder.link)}</span
+						>{/if}
+					<span class="folder-state" id="project-folder-summary" class:attention>{summary}</span>
+				</span>
+				<ChevronRight size={16} aria-hidden="true" />
+			</button>
+			<!-- Checks every file now, even with automatic updates on, and writes only what differs: a click to be sure. -->
+			{#if projectFolder.link && projectFolder.support === 'supported'}<button
+					type="button"
+					class="bu-action btn icon folder-update"
+					data-variant="field"
+					aria-label={t('projectFolder.publishNow')}
+					title={t('projectFolder.publishNow')}
+					onclick={() => void publishProjectFolder()}
+					><RefreshCw
+						size={18}
+						aria-hidden="true"
+						class={projectFolder.status.kind === 'publishing' ? 'spinning' : undefined}
+					/></button
+				>{/if}
+		</div>
 	</section>
 {/if}
 
@@ -77,11 +95,35 @@
 	.folder-section h3 {
 		margin: 0;
 	}
+	.folder-row {
+		display: flex;
+		gap: 8px;
+		align-items: stretch;
+	}
+	.folder-update {
+		flex: none;
+		width: 48px;
+		height: auto;
+	}
+	.folder-update :global(.spinning) {
+		animation: folder-spin 1s linear infinite;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.folder-update :global(.spinning) {
+			animation: none;
+		}
+	}
+	@keyframes folder-spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
 	.folder-button {
 		display: flex;
 		align-items: center;
 		gap: 10px;
-		width: 100%;
+		flex: 1;
+		min-width: 0;
 		/* Three lines (title, location, state): the button grows with them instead of the theme's fixed height. */
 		height: auto;
 		min-height: 44px;

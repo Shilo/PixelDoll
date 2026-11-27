@@ -22,6 +22,7 @@
 	import {
 		adoptMatchingFiles,
 		checkFolderSupport,
+		folderPath,
 		keepProjectFolderFiles,
 		leaveMatchingFiles,
 		linkProjectFolder,
@@ -206,8 +207,8 @@
 			<div class="destination">
 				<FolderOpen size={16} aria-hidden="true" />
 				<div class="destination-text">
-					<span class="destination-name">{link.handle.name} · {formatName}</span>
-					<span class="destination-path">{link.subfolder}/</span>
+					<span class="destination-path">{folderPath(link)}</span>
+					<span class="destination-format">{formatName}</span>
 				</div>
 			</div>
 			<label class="check">
@@ -396,15 +397,14 @@
 		display: grid;
 		min-width: 0;
 	}
-	.destination-name {
+	.destination-path {
+		font-family: var(--mono, ui-monospace, monospace);
 		font-weight: 600;
 		overflow-wrap: anywhere;
 	}
-	.destination-path {
-		font-family: var(--mono, ui-monospace, monospace);
+	.destination-format {
 		font-size: 0.8125rem;
 		opacity: 0.8;
-		overflow-wrap: anywhere;
 	}
 	.summary:has(> [role='status']:empty:only-child) {
 		display: none;

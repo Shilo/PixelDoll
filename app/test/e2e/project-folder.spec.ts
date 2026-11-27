@@ -345,13 +345,26 @@ test('the Project folder card deep-links Settings, repeats safely, returns to Ex
 	const errors = watchErrors(page);
 	await savedExport(page, dev);
 	await addReviewVariant(page);
-	await linkFolder(page);
+	const { sub } = await linkFolder(page);
 
 	// Back returns to Export, not to the Settings index.
 	const dialog = page.getByRole('dialog');
 	await dialog.getByRole('button', { name: 'Back to Export', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveAccessibleName('Export');
 	await expect(await projectFolderCard(page)).toHaveAccessibleDescription(/Automatic updates on/);
+
+	// The card's own Update now checks the folder even when nothing changed: it writes nothing, yet the update time moves.
+	const publishedAt = () =>
+		page.evaluate(async () => {
+			const path = '/src/studio/projectFolder.svelte.ts',
+				{ projectFolder } = await import(path);
+			return projectFolder.link?.publishedAt as string | undefined;
+		});
+	const before = await publishedAt();
+	const manifest = await folderText(page, `game/${sub}/manifest.json`);
+	await dialog.getByRole('button', { name: 'Update now', exact: true }).click();
+	await expect.poll(publishedAt).not.toBe(before);
+	expect(await folderText(page, `game/${sub}/manifest.json`)).toBe(manifest);
 
 	// Reopening repeatedly reveals one row and focuses its heading every time.
 	for (let i = 0; i < 3; i++) {

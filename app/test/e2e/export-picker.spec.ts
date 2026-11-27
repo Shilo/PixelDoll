@@ -4044,8 +4044,9 @@ test('a linked project folder publishes, updates after changes, pauses on game e
 		const path = '/src/studio/projectFolder.svelte.ts';
 		return (await import(path)).projectFolder.link.subfolder as string;
 	});
-	await expect(row).toContainText('game · PNG + JSON');
-	await expect(row).toContainText(`${sub}/`);
+	// Where the files land, as the Export card shows it, and the format on its own line.
+	await expect(row).toContainText(`game/${sub}/`);
+	await expect(row).toContainText('PNG + JSON');
 	const manifestPath = `game/${sub}/manifest.json`;
 	const first = await folderText(page, manifestPath);
 	expect(JSON.parse(first!).name).toBe('Export settings test');
