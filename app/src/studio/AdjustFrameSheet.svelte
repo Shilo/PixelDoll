@@ -175,6 +175,7 @@
 	wide
 	locked={busy}
 	dirty={!!facts && (size !== current || dy !== 0)}
+	backDiscards
 	back={ui.returnTo === 'details' ? () => (ui.sheet = 'details') : undefined}
 	backTo={ui.returnTo === 'details'
 		? store.projects.find((p) => p.id === ui.details)?.name

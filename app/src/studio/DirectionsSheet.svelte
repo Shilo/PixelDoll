@@ -157,6 +157,7 @@
 	title={t('common.directions')}
 	locked={busy}
 	dirty={changed}
+	backDiscards
 	back={ui.returnTo === 'details' ? () => (ui.sheet = 'details') : undefined}
 	backTo={ui.returnTo === 'details'
 		? store.projects.find((p) => p.id === ui.details)?.name

@@ -1,3 +1,14 @@
+<script lang="ts" module>
+	type Tool = 'adjustFrame' | 'directions' | 'cost';
+	/** Where the window was when one of its tools opened, so the tool's Back returns to the same place. */
+	let resume: {
+		id: string;
+		anim: string;
+		open: Record<'frame' | 'cost' | 'about', boolean>;
+		tool: Tool;
+	} | null = null;
+</script>
+
 <script lang="ts">
 	// A character's View and edit window, laid out like an item's: its facings in the chosen move or state (the body alone,
 	// any facing opens full size), then Frame & Directions, Cost and About, each tool beside what it changes. Works for the
@@ -23,37 +34,72 @@
 	import { displayMove } from './displayMove.ts';
 	import { displayDirection } from './displayDirection.ts';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
-	import type { Message } from '../lib/message.ts';
-	import type { Project } from '../lib/store/manifest.ts';
+	import { LocalizedError, type Message } from '../lib/message.ts';
+	import type { Manifest, Project } from '../lib/store/manifest.ts';
+	import type { StoredProject } from '../lib/store/project.ts';
+	import * as db from '../lib/store/db.ts';
 	import { Calculator, Compass, Frame, PersonStanding } from './icons.ts';
+	import type { Img } from '../lib/image/png.ts';
 
 	const id = untrack(() => ui.details || doc.id);
 	const name = $derived(store.projects.find((p) => p.id === id)?.name ?? t('common.character'));
-	let project = $state.raw<Project | null>(null),
-		error = $state<Message | string>('');
-	// The open character is already loaded; another one loads by id without touching the stage.
-	if (id === doc.id && store.project && !doc.loading) project = store.project;
-	else
-		openSource(id).then(
-			(source) => (project = source.project),
+	// The open character is the live one (it updates as work lands); another loads by id without touching the stage: its
+	// saved manifest first, so the sections never wait on (or fail with) its artwork, then the artwork for the preview.
+	const live = $derived(id === doc.id && !doc.loading ? store.project : null);
+	let saved = $state.raw<Manifest | null>(null),
+		loaded = $state.raw<Project | null>(null),
+		error = $state<Message | string>(''),
+		previewError = $state<Message | string>('');
+	$effect(() => {
+		if (id === doc.id) return;
+		const controller = new AbortController();
+		manifestOf(id).then(
+			(manifest) => (saved = manifest),
 			(failure: unknown) => (error = errorMessage(failure))
 		);
-	const m = $derived(project?.manifest);
+		openSource(id, controller.signal).then(
+			(source) => (loaded = source.project),
+			(failure: unknown) => {
+				if (!controller.signal.aborted) previewError = errorMessage(failure);
+			}
+		);
+		return () => controller.abort();
+	});
+	async function manifestOf(target: string): Promise<Manifest> {
+		if (target.startsWith('fixture:')) return (await openSource(target)).project.manifest;
+		const rec = await db.get<StoredProject>('projects', target);
+		if (!rec)
+			throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
+		return rec.manifest;
+	}
+	const project = $derived(live ?? loaded);
+	const m = $derived(live?.manifest ?? saved ?? loaded?.manifest);
 	const base = $derived(m?.items.find((item) => item.id === m.rig.baseItem));
 	const moveRefs = $derived(m?.rig.animations ?? []);
 	const clips = $derived(m ? playbackClips(m.rig.animations) : []);
-	let scopeAnim = $state(untrack(() => ui.anim));
+	const resumed = untrack(() => (ui.returnTo === 'details' && resume?.id === id ? resume : null));
+	resume = null;
+	let scopeAnim = $state(resumed?.anim ?? untrack(() => ui.anim));
 	const animId = $derived(
 		clips.some((clip) => clip.key === scopeAnim) ? scopeAnim : (clips[0]?.key ?? '')
 	);
 	const editable = id.startsWith('rig-');
-	const open = $state({ frame: false, cost: false, about: false });
+	const open = $state(resumed?.open ?? { frame: false, cost: false, about: false });
+	let body = $state<HTMLElement>();
+	// Back from a tool puts the keyboard on the row that opened it.
+	$effect(() => {
+		if (!resumed || !body) return;
+		body.querySelector<HTMLElement>(`[data-tool="${resumed.tool}"] button`)?.focus();
+	});
 
 	// ---------- preview: the body alone, every facing of the chosen move or state ----------
 	const previews = $derived(
 		project && base && animId ? itemPreviewFrames(project, base, animId) : []
 	);
 	const strip = $derived(previews[0] ?? []);
+	/** A facing counts as drawn only when its first frame has a visible pixel: a blank cell says it is missing. */
+	const visible = (img: Img | undefined) =>
+		!!img?.data.some((value, index) => index % 4 === 3 && value > 0);
 	const made = $derived(m && animId ? moveDirs(m, animId) : []);
 	const directions = $derived(m?.rig.directions.filter((d) => made.includes(d.id)) ?? []);
 	const k = $derived(
@@ -94,7 +140,8 @@
 			: []
 	);
 	/** Opens one of the character's tools; its Back returns here. */
-	function tool(sheet: 'adjustFrame' | 'directions' | 'cost') {
+	function tool(sheet: Tool) {
+		resume = { id, anim: animId, open: { ...open }, tool: sheet };
 		if (sheet === 'adjustFrame') ui.frameProject = id;
 		else if (sheet === 'directions') ui.directionProject = id;
 		else ui.costProject = id;
@@ -148,18 +195,23 @@
 			{displayMessage(error)}<ReportButton {error} />
 		</p>
 	{:else if m}
-		<div class="character-body">
-			<FacingStrip
-				label={t('itemPane.availableDirectionsFor', { name })}
-				{directions}
-				image={(direction) => strip[m.rig.directions.indexOf(direction)]}
-				drawn={(direction) => !!strip[m.rig.directions.indexOf(direction)]}
-				{name}
-				{tile}
-				{k}
-				empty={t('itemPane.previewUnavailable')}
-				onopen={(view) => (viewer = { anim: animId, view })}
-			/>
+		<div class="character-body" bind:this={body}>
+			{#if previewError}<p class="notice bad small" role="alert">
+					{displayMessage(previewError)}<ReportButton error={previewError} />
+				</p>{/if}
+			{#if project}<FacingStrip
+					label={t('itemPane.availableDirectionsFor', { name })}
+					{directions}
+					image={(direction) => strip[m.rig.directions.indexOf(direction)]}
+					drawn={(direction) => visible(strip[m.rig.directions.indexOf(direction)])}
+					{name}
+					{tile}
+					{k}
+					empty={t('itemPane.previewUnavailable')}
+					onopen={(view) => (viewer = { anim: animId, view })}
+				/>{:else if !previewError}<p class="faint small" role="status">
+					{t('common.loading')}
+				</p>{/if}
 			<div class="window-sections">
 				<WindowSection
 					label={t('characterWindow.frameSection')}
@@ -171,26 +223,30 @@
 				>
 					<div class="window-body">
 						{#if editable}<div class="tool-list">
-								<ToolRow
-									{...{
-										icon: Frame,
-										label: t('characterActions.adjustFrame'),
-										detail: t('characterWindow.adjustFrameDetail'),
-										aside: '',
-										opens: true,
-										onclick: () => tool('adjustFrame')
-									}}
-								/>
-								<ToolRow
-									{...{
-										icon: Compass,
-										label: t('characterActions.directions'),
-										detail: t('characterWindow.directionsDetail'),
-										aside: '',
-										opens: true,
-										onclick: () => tool('directions')
-									}}
-								/>
+								<div class="tool-slot" data-tool="adjustFrame">
+									<ToolRow
+										{...{
+											icon: Frame,
+											label: t('characterActions.adjustFrame'),
+											detail: t('characterWindow.adjustFrameDetail'),
+											aside: '',
+											opens: true,
+											onclick: () => tool('adjustFrame')
+										}}
+									/>
+								</div>
+								<div class="tool-slot" data-tool="directions">
+									<ToolRow
+										{...{
+											icon: Compass,
+											label: t('characterActions.directions'),
+											detail: t('characterWindow.directionsDetail'),
+											aside: '',
+											opens: true,
+											onclick: () => tool('directions')
+										}}
+									/>
+								</div>
 							</div>{:else}<p class="muted small">{t('characterWindow.frameLocked')}</p>{/if}
 					</div>
 				</WindowSection>
@@ -202,16 +258,18 @@
 					<div class="window-body">
 						{#if base}<GenerationDetails {m} it={base} {extra} part="cost" />{/if}
 						<div class="tool-list">
-							<ToolRow
-								{...{
-									icon: Calculator,
-									label: t('characterActions.costEstimate'),
-									detail: t('characterWindow.costEstimateDetail'),
-									aside: '',
-									opens: true,
-									onclick: () => tool('cost')
-								}}
-							/>
+							<div class="tool-slot" data-tool="cost">
+								<ToolRow
+									{...{
+										icon: Calculator,
+										label: t('characterActions.costEstimate'),
+										detail: t('characterWindow.costEstimateDetail'),
+										aside: '',
+										opens: true,
+										onclick: () => tool('cost')
+									}}
+								/>
+							</div>
 						</div>
 					</div>
 				</WindowSection>
@@ -255,6 +313,10 @@
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		border-block-start: 1px solid var(--bu-line);
+	}
+	/* Marks a tool's row for focus on return, without a box of its own. */
+	.tool-slot {
+		display: contents;
 	}
 	.tool-list {
 		display: grid;
