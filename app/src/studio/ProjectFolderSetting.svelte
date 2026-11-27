@@ -125,6 +125,10 @@
 	// Conflict paths are relative to the picked folder: a character's file or the shared runtime's.
 	const fullPath = (path: string) => (link ? `${link.handle.name}/${path}` : path);
 	const shared = $derived(link ? runtimePath(link) : null);
+	// These engines read their own copy (RPG Maker's img/characters, a merged GDevelop project), not this folder.
+	const manualStep = $derived(
+		!!link && (['gdevelop', 'rpg-maker', 'rpg-maker-xp'] as Engine[]).includes(link.engine)
+	);
 	const problem = $derived.by(() => {
 		switch (status.kind) {
 			case 'reconnect':
@@ -242,6 +246,9 @@
 						>{/if}
 				</div>
 			</div>
+			{#if manualStep}<p class="bu-muted small">
+					{t('projectFolder.manualStep', { format: formatName })}
+				</p>{/if}
 			<label class="check">
 				<input
 					type="checkbox"

@@ -3725,7 +3725,8 @@
 		"leave": "Dejar como están",
 		"section": "Proyecto de juego",
 		"reload": "Recargar",
-		"shared": "Runtime compartido: {path}"
+		"shared": "Runtime compartido: {path}",
+		"manualStep": "{format} no carga juegos directamente desde esta carpeta. Tras una actualización, sigue el README.txt del personaje para llevarla a tu juego."
 	},
 	"tips": {
 		"customizeTitle": "Viste la demo",

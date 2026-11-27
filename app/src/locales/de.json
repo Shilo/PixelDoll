@@ -3725,7 +3725,8 @@
 		"leave": "So lassen",
 		"section": "Spielprojekt",
 		"reload": "Neu laden",
-		"shared": "Gemeinsame Laufzeit: {path}"
+		"shared": "Gemeinsame Laufzeit: {path}",
+		"manualStep": "{format} lädt Spiele nicht direkt aus diesem Ordner. Folge nach einer Aktualisierung der README.txt der Figur, um sie in dein Spiel zu übernehmen."
 	},
 	"tips": {
 		"customizeTitle": "Demo einkleiden",

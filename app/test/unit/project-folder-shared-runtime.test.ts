@@ -16,6 +16,8 @@ const studio = vi.hoisted(() => ({
 	/** The runtime revision and bytes the next build has, as an older or newer app would. */
 	runtime: { revision: 2, text: 'runtime v2' },
 	bundle: true,
+	/** Builds so far, so a test can tell a quiet check that rebuilt from one that did not. */
+	builds: 0,
 	/** Thrown by the next record write, as a newer PixelDoll's database upgrade would. */
 	storageError: undefined as Error | undefined,
 	/** Changes every character's scene, as an edit would. */
@@ -52,6 +54,7 @@ vi.mock('../../src/lib/export/build.ts', () => ({
 		project: { manifest: { name: string } },
 		o: { engine: string; exportedAt: string }
 	) => ({
+		built: studio.builds++,
 		kind: 'requested',
 		entries: files({
 			'godot/Paperdoll.tscn': `scene of ${project.manifest.name}${studio.edit}`,
@@ -154,6 +157,7 @@ beforeEach(async () => {
 	studio.runtime = { revision: 2, text: 'runtime v2' };
 	studio.bundle = true;
 	studio.edit = '';
+	studio.builds = 0;
 	studio.storageError = undefined;
 	studio.folder = memoryFolder();
 	api = await import('../../src/studio/projectFolder.svelte.ts');
@@ -502,4 +506,45 @@ it('lists a deleted kept runtime file to restore, even one PixelDoll never wrote
 	expect(studio.folder.text(RUNTIME)).toBe('runtime v2');
 	expect(studio.records.get(shared)!.kept).toEqual([]);
 	expect(studio.records.get(`a|${a!.linkedAt}`)!.kept).toEqual(['manifest.json']);
+});
+
+it('records a kept runtime file against its revision, and a quiet check of a folder with one does not rebuild', async () => {
+	studio.folder.set(RUNTIME, 'their runtime'); // already there: nothing written, so no floor yet
+	const a = await link('a', folderHandle('Game'));
+	const shared = `runtime|${a!.destinationId}|godot`;
+	expect(studio.floors.get(shared)).toBeUndefined();
+	const status = api.projectFolder.status;
+	if (status.kind !== 'blocked') throw new Error('Expected the existing runtime conflict');
+	await api.keepProjectFolderFiles([RUNTIME], status.linkedAt);
+	expect(studio.floors.get(shared)).toBe(2);
+	expect(api.projectFolder.status.kind).toBe('done');
+
+	const before = studio.builds;
+	vi.useFakeTimers();
+	try {
+		let pending: Promise<unknown> | undefined;
+		vi.stubGlobal('navigator', {
+			locks: { request: (_name: string, work: () => Promise<unknown>) => (pending = work()) }
+		});
+		api.scheduleFolderPublish();
+		await vi.advanceTimersByTimeAsync(1500);
+		await pending;
+	} finally {
+		vi.useRealTimers();
+	}
+	expect(api.projectFolder.status.kind).toBe('done');
+	expect(studio.builds).toBe(before);
+});
+
+it('reports an unreadable kept runtime file instead of publishing past it', async () => {
+	const a = await link('a', folderHandle('Game'));
+	studio.records.get(`runtime|${a!.destinationId}|godot`)!.kept = ['paperdoll.gd'];
+	studio.floors.set(`runtime|${a!.destinationId}|godot`, 2);
+	studio.folder.failRead = (path) =>
+		path === RUNTIME ? new DOMException('x', 'NotReadableError') : undefined;
+	studio.edit = ' with a hat';
+	const before = studio.folder.log.length;
+	await api.publishProjectFolder();
+	expect(api.projectFolder.status).toEqual({ kind: 'failed', reason: 'locked' });
+	expect(studio.folder.log.slice(before)).toEqual([]);
 });

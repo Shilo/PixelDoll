@@ -99,7 +99,7 @@ The path you pass is relative to the document's base URL (document.baseURI), not
 	runtimePath
 		? `
 <folder> is the path from your game's code to the folder picked in PixelDoll (the page and the importing module are
-assumed to sit together).`
+assumed to sit together), and <character> is this character's folder in it.`
 		: ''
 }
 This export does not bundle Phaser. Load Phaser 3.80+ or 4 yourself: a script tag that exposes the global Phaser, or your
@@ -129,7 +129,8 @@ Entry: ${runtimePath ?? 'phaser-ae/paperdoll.js'}, an ES module, typed by ${runt
 
 ${
 	runtimePath
-		? `<folder> is the path from game/ to the folder picked in PixelDoll; keep it and the runtime under game/.
+		? `<folder> is the path from game/ to the folder picked in PixelDoll, and <character> is this character's folder in it;
+keep both and the runtime under game/.
 phaser-ae/assets.json lists paths relative to the character folder: add each to the "assets" list in
 game/manifest.json (not to game/assets.json) prefixed with <folder>/<character>/, so the build copies the sheets. Do
 not edit phaser-ae/assets.json (PixelDoll manages it); after adding moves or items, add its new paths the same way.
@@ -308,8 +309,8 @@ export function runtimeAgentFiles(engine: string, entry: string): { name: string
 	const name = RUNTIME_NAMES[engine] ?? engine;
 	const agents = `# PixelDoll ${name} runtime
 
-PixelDoll manages this folder. It holds the ${name} runtime (${entry}) that every PixelDoll character folder beside it
-uses. Each character folder has its own manifest.json, AGENTS.md and ${engine}/README.txt with the runtime API.
+PixelDoll manages this folder. It holds the ${name} runtime (${entry}) that the PixelDoll ${name} character folders beside it
+use. Each of them has its own manifest.json, AGENTS.md and ${engine}/README.txt with the runtime API.
 
 - Integrate through a character folder: start with its AGENTS.md.
 - Do not edit or delete files here. PixelDoll replaces them when it updates the runtime. An edited file pauses updates

@@ -266,7 +266,8 @@ as newly published characters. Keep existing entry paths and integration APIs us
 supported version, with no `exportId`. ZIP manifests keep their assembly-specific `exportId`.
 
 Bump the engine's runtime revision whenever its bundle changes, including file names, declarations and
-assembly definitions. Add the new revision's digest in `export-folder.test.ts` and keep the earlier pins.
+assembly definitions. Add the new revision's digest in `export-folder.test.ts` and keep the earlier pins of every revision that
+shipped (a revision that never left this branch may be re-pinned).
 The digest is SHA-256 over the JSON array of sorted path and file SHA-256 pairs. Bundle bytes are independent
 of characters and export timestamps. When updating a bundle, verify that it still runs a character exported
 before the update in the native engine without republishing that character.

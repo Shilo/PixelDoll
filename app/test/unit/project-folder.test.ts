@@ -239,6 +239,28 @@ describe('publishFiles', () => {
 		expect(failing.log).toEqual([]);
 	});
 
+	it('still checks a required kept file: gone or replaced by a folder asks to restore, present stays kept', () => {
+		const next = new Map([['rt/a.js', 'h1']]);
+		const record = { written: {}, kept: ['rt/a.js'] };
+		const required = (path: string) => path.startsWith('rt/');
+		const plan = (found: string | null, overwrite?: ReadonlyMap<string, string>) =>
+			planPublish({ next, record, disk: new Map([['rt/a.js', found]]), overwrite, required });
+		expect(plan('mine').actions).toEqual([{ path: 'rt/a.js', kind: 'kept' }]);
+		expect(plan(null).conflicts).toEqual([
+			{ path: 'rt/a.js', kind: 'conflict', reason: 'deleted', found: DELETED }
+		]);
+		expect(plan(NOT_A_FILE).conflicts).toEqual([
+			{ path: 'rt/a.js', kind: 'conflict', reason: 'folder', found: NOT_A_FILE }
+		]);
+		expect(plan(null, new Map([['rt/a.js', DELETED]])).writes).toEqual([
+			{ path: 'rt/a.js', kind: 'restore' }
+		]);
+		// A kept file nobody requires is left alone even when it is gone.
+		expect(planPublish({ next, record, disk: new Map([['rt/a.js', null]]) }).actions).toEqual([
+			{ path: 'rt/a.js', kind: 'kept' }
+		]);
+	});
+
 	it('pauses on a deleted published file and restores it only when approved', async () => {
 		const folder = memoryFolder();
 		await folder.publish({ 'a.png': '1', 'b.png': '1' });

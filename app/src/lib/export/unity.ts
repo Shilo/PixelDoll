@@ -538,7 +538,13 @@ const SHARED_IMPORT_HOOKS = `        const int RuntimeFormat = ${UNITY_RUNTIME_F
             foreach (var path in imported.Concat(moved)) Queue(path);
             const string generated = "/unity/Generated";
             foreach (var path in deleted.Concat(movedFrom))
-                if (path.EndsWith(generated)) Queue(path.Substring(0, path.Length - generated.Length) + Json);
+            {
+                // Unity can report only the children when a folder is deleted outside the editor.
+                int start = path.EndsWith(generated, System.StringComparison.Ordinal)
+                    ? path.Length - generated.Length
+                    : path.LastIndexOf(generated + "/", System.StringComparison.Ordinal);
+                if (start >= 0) Queue(path.Substring(0, start) + Json);
+            }
             if (!didDomainReload) return;
             foreach (var guid in AssetDatabase.FindAssets("pixeldoll_unity t:TextAsset", new[] { "Assets" }))
                 Queue(AssetDatabase.GUIDToAssetPath(guid));
@@ -601,9 +607,10 @@ const SHARED_IMPORT_HOOKS = `        const int RuntimeFormat = ${UNITY_RUNTIME_F
                 throw new InvalidDataException("Linked asset path: " + path);
         }
 
-        static string[] ValidatePaths(string root, string outDir, PaperdollData data, HashSet<string> checkedPaths)
+        static (string[] outputs, HashSet<string> sheets) ValidatePaths(string root, string outDir, PaperdollData data, HashSet<string> checkedPaths)
         {
             var generated = new List<string>();
+            var sheets = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
             void Output(string stem, string ext)
             {
                 if (string.IsNullOrEmpty(stem) || stem.Contains("/"))
@@ -634,6 +641,7 @@ const SHARED_IMPORT_HOOKS = `        const int RuntimeFormat = ${UNITY_RUNTIME_F
                             CheckAssetPath(path, checkedPaths);
                             if (!(AssetImporter.GetAtPath(path) is TextureImporter))
                                 throw new InvalidDataException("Missing texture: " + path);
+                            sheets.Add(sheet);
                         }
                     }
                     Sheets(layer.sheets, true);
@@ -641,7 +649,7 @@ const SHARED_IMPORT_HOOKS = `        const int RuntimeFormat = ${UNITY_RUNTIME_F
                     Sheets(layer.lowerSheets, false);
                     Sheets(layer.upperSheets, false);
                 }
-            return generated.Distinct().ToArray();
+            return (generated.Distinct().ToArray(), sheets);
         }
 
         [System.Serializable]
@@ -655,6 +663,7 @@ const SHARED_IMPORT_HOOKS = `        const int RuntimeFormat = ${UNITY_RUNTIME_F
         sealed class GeneratedAssets
         {
             public GeneratedAsset[] entries;
+            public GeneratedAsset[] sheets;
         }
 
         static string Fingerprint(string path)
@@ -674,14 +683,21 @@ const SHARED_IMPORT_HOOKS = `        const int RuntimeFormat = ${UNITY_RUNTIME_F
             return Hash128.Compute(data.ToString()).ToString();
         }
 
-        static string[] PriorOutputs(string outDir, string index, string[] outputs, HashSet<string> checkedPaths)
+        // Unity stores all texture import settings, including the importer platform overrides and sprite slicing, in the sidecar.
+        static string SheetFingerprint(string path) => Hash128.Compute(File.ReadAllText(path + ".meta")).ToString();
+
+        static string[] PriorOutputs(string outDir, string index, string[] outputs, HashSet<string> checkedPaths, string root, HashSet<string> sheets)
         {
             if (File.Exists(outDir)) return null;
             if (!Directory.Exists(outDir)) return System.Array.Empty<string>();
             if (!File.Exists(index))
                 return Directory.EnumerateFileSystemEntries(outDir).Any() ? null : System.Array.Empty<string>();
             var saved = JsonUtility.FromJson<GeneratedAssets>(File.ReadAllText(index));
-            if (saved?.entries == null || saved.entries.Length == 0) return null;
+            if (saved?.entries == null || saved.entries.Length == 0 || saved.sheets == null || saved.sheets.Length == 0) return null;
+            foreach (var entry in saved.sheets)
+                if (entry == null || string.IsNullOrEmpty(entry.name) ||
+                    (sheets.TryGetValue(entry.name, out var sheet) && SheetFingerprint(root + "/" + sheet) != entry.hash))
+                    return null;
             var known = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
             foreach (var entry in saved.entries)
             {
@@ -698,11 +714,12 @@ const SHARED_IMPORT_HOOKS = `        const int RuntimeFormat = ${UNITY_RUNTIME_F
             return saved.entries.Select(entry => outDir + "/" + entry.name).ToArray();
         }
 
-        static void RecordGenerated(string index, IEnumerable<string> outputs)
+        static void RecordGenerated(string index, IEnumerable<string> outputs, string root, HashSet<string> sheets)
         {
             var state = new GeneratedAssets
             {
-                entries = outputs.Select(path => new GeneratedAsset { name = Path.GetFileName(path), hash = Fingerprint(path) }).ToArray()
+                entries = outputs.Select(path => new GeneratedAsset { name = Path.GetFileName(path), hash = Fingerprint(path) }).ToArray(),
+                sheets = sheets.Select(sheet => new GeneratedAsset { name = sheet, hash = SheetFingerprint(root + "/" + sheet) }).ToArray()
             };
             File.WriteAllText(index, JsonUtility.ToJson(state, true));
         }
@@ -759,16 +776,16 @@ ${
             if (!Supports(json)) return;
             var d = JsonUtility.FromJson<PaperdollData>(json);
             var outDir = unityDir + "/Generated";
-            var outputs = ValidatePaths(root, outDir, d, checkedPaths);
+            var (outputs, sheets) = ValidatePaths(root, outDir, d, checkedPaths);
             var digest = Hash128.Compute(RuntimeRevision + ":" + json).ToString();
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(outDir + "/" + d.name + ".prefab");
             if (prefab != null && prefab.GetComponent<Paperdoll>()?.importDigest == digest && outputs.All(File.Exists)) return;
             var index = outDir + "/.pixeldoll-generated.json";
             CheckAssetPath(index, checkedPaths);
-            var prior = PriorOutputs(outDir, index, outputs, checkedPaths);
+            var prior = PriorOutputs(outDir, index, outputs, checkedPaths, root, sheets);
             if (prior == null)
             {
-                Debug.LogWarning("PixelDoll: skipped updating " + jsonPath + " because generated assets have changed or have no recorded baseline. Delete " + outDir + "/ to rebuild them.");
+                Debug.LogWarning("PixelDoll: skipped updating " + jsonPath + " because generated assets or sheet import settings have changed or have no recorded baseline. Delete " + outDir + "/ to rebuild the assets and reapply PixelDoll's sheet settings.");
                 return;
             }`
 								: `
@@ -856,7 +873,7 @@ ${
             ${
 							folder
 								? `foreach (var output in outputs) AssetDatabase.SaveAssetIfDirty(AssetDatabase.GUIDFromAssetPath(output));
-            RecordGenerated(index, outputs.Union(prior, System.StringComparer.OrdinalIgnoreCase));`
+            RecordGenerated(index, outputs.Union(prior, System.StringComparer.OrdinalIgnoreCase), root, sheets);`
 								: 'AssetDatabase.SaveAssets();'
 						}
             Debug.Log("PixelDoll: imported " + d.name + ": " + library.Sum(l => l.sprites.Length) + " sprites in " + library.Count + " layers, " + d.animations.Length * d.directions.Length + " clips -> " + outDir);
@@ -986,8 +1003,10 @@ The shared runtime is ../pixeldoll-unity/Runtime/Paperdoll.cs and its importer i
 relative to this character folder. When copying the character, copy pixeldoll-unity too and keep them in the same parent folder.
 Use a single Unity export destination under Assets/ in each project. A second destination, even a sibling, would install
 duplicate PixelDoll assemblies. Unity imports the character automatically when its JSON is imported or scripts reload.
-If generated assets were edited or created by an importer without edit tracking, Unity logs a warning and preserves them.
-Delete unity/Generated/ to rebuild from the export. Customize a prefab variant outside that folder to keep receiving updates.`
+Unity skips updates and logs a warning if you edit the generated prefab, controller, animation clips, or sheet import settings.
+Exports imported by older versions of PixelDoll may also need a rebuild before updates can resume.
+Delete unity/Generated/ to rebuild the assets and reapply PixelDoll's sheet settings.
+Customize a prefab variant outside that folder to keep receiving updates.`
 					: `Unity 2022.3 / Unity 6. Install com.unity.2d.sprite (2D Sprite) with Package Manager, then copy the whole export folder
 under Assets/. No 2D Animation package is required. Keep this character in one folder: re-export into that same folder.
 Different characters use independent namespaces and assemblies; do not import two copies of the same character.

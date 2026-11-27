@@ -3621,7 +3621,8 @@
 		"leave": "Biarkan",
 		"section": "Proyek game",
 		"reload": "Muat ulang",
-		"shared": "Runtime bersama: {path}"
+		"shared": "Runtime bersama: {path}",
+		"manualStep": "{format} tidak memuat game langsung dari folder ini. Setelah pembaruan, ikuti README.txt karakter untuk memasukkannya ke game kamu."
 	},
 	"tips": {
 		"customizeTitle": "Dandani demo",

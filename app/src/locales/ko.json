@@ -3621,7 +3621,8 @@
 		"leave": "그대로 두기",
 		"section": "게임 프로젝트",
 		"reload": "새로고침",
-		"shared": "공유 런타임: {path}"
+		"shared": "공유 런타임: {path}",
+		"manualStep": "{format}은(는) 이 폴더에서 게임을 직접 불러오지 않습니다. 업데이트 후 캐릭터의 README.txt를 따라 게임에 반영하세요."
 	},
 	"tips": {
 		"customizeTitle": "데모 꾸미기",

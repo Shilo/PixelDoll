@@ -36,7 +36,7 @@ import {
 	type Destination,
 	type FolderLink
 } from '../lib/project-folder/links.ts';
-import { DELETED, type PlanAction } from '../lib/project-folder/plan.ts';
+import { DELETED, NOT_A_FILE, type PlanAction } from '../lib/project-folder/plan.ts';
 import {
 	hashAt,
 	hashFiles,
@@ -450,10 +450,19 @@ async function superseded(id: string, readAt: number, stale?: string) {
 /** Whether the shared runtime files among `files` (path to hash) are on disk exactly so. A quiet check otherwise
  *  trusts PixelDoll's record, but the runtime is every character's in the folder: one deleted or edited there breaks
  *  this character too, so it is always read (it is a few small files). Unreadable counts as not. */
-async function runtimeOnDisk(target: FolderTarget, files: Readonly<Record<string, string>>) {
+async function runtimeOnDisk(
+	target: FolderTarget,
+	files: Readonly<Record<string, string>>,
+	kept: readonly string[]
+) {
 	try {
-		for (const [path, hash] of Object.entries(files))
-			if (isSharedPath(path) && (await hashAt(target, path)) !== hash) return false;
+		for (const [path, hash] of Object.entries(files)) {
+			if (!isSharedPath(path)) continue;
+			const found = await hashAt(target, path);
+			// A kept runtime file is the user's own version: it only has to still be a file there.
+			if (kept.includes(path) ? found === null || found === NOT_A_FILE : found !== hash)
+				return false;
+		}
 		return true;
 	} catch {
 		return false; // the full publish below reads the folder and reports what is wrong
@@ -602,7 +611,7 @@ async function publish(link: FolderLink, request: Request) {
 			link.files &&
 			link.inputs === inputs &&
 			matchesRecord(record, new Map(Object.entries(link.files))) &&
-			(await runtimeOnDisk(target, link.files))
+			(await runtimeOnDisk(target, link.files, record.kept))
 		)
 			return finished({ kind: 'done', kept: record.kept.length, already: false });
 		// It first tries the last time, so an export whose files did not change matches what is there and writes nothing.
@@ -618,7 +627,7 @@ async function publish(link: FolderLink, request: Request) {
 				// there need no write.
 				(request.manual || showingProblem || !matchesRecord(record, next)
 					? await inSync(target, record, next, runtime ? isSharedPath : undefined)
-					: await runtimeOnDisk(target, Object.fromEntries(next)))
+					: await runtimeOnDisk(target, Object.fromEntries(next), record.kept))
 			) {
 				// A click read every file and found them current: that is an update as far as the user can tell.
 				await remember({
@@ -684,6 +693,21 @@ async function publish(link: FolderLink, request: Request) {
 				return go;
 			}
 		});
+		// A kept runtime file the user had lost and approved restoring is no longer kept once it really holds PixelDoll's
+		// bytes again (whatever happened to the rest of the publish), so later runtime updates reach it.
+		if (runtime && outcome.kind !== 'stopped') {
+			const wanted = new Map(files.map((f) => [f.name, f]));
+			const restored: string[] = [];
+			for (const [path, found] of request.overwrite ?? []) {
+				const file = wanted.get(path);
+				if (found !== DELETED || !file || !isSharedPath(path) || !record.kept.includes(path))
+					continue;
+				const onDisk = await hashAt(target, path).catch(() => null);
+				if (onDisk === (await sha256(file.data))) restored.push(path);
+			}
+			if (restored.length)
+				await setKept(runtime.key, [...byScope(scopes, restored).values()].flat(), false);
+		}
 		// Matching shared runtime files are left out of the offer: they are used as they are, and trusting them would
 		// let a tab with an older runtime replace them without the revision floor that a runtime PixelDoll wrote has.
 		const offered =
@@ -712,16 +736,6 @@ async function publish(link: FolderLink, request: Request) {
 			case 'published':
 			case 'unchanged':
 				{
-					// A kept runtime file the user had lost and approved restoring holds PixelDoll's bytes again: it is no
-					// longer kept, so later runtime updates reach it.
-					const restored = [...(request.overwrite ?? [])]
-						.filter(
-							([path, found]) =>
-								found === DELETED && isSharedPath(path) && record.kept.includes(path)
-						)
-						.map(([path]) => path);
-					if (runtime && restored.length)
-						await setKept(runtime.key, [...byScope(scopes, restored).values()].flat(), false);
 					const produced = Object.fromEntries(await hashFiles(files));
 					await remember(
 						outcome.kind === 'published'

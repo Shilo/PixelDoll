@@ -3621,7 +3621,8 @@
 		"leave": "保持不变",
 		"section": "游戏项目",
 		"reload": "重新加载",
-		"shared": "共享运行时：{path}"
+		"shared": "共享运行时：{path}",
+		"manualStep": "{format} 不会直接从此文件夹加载游戏。更新后，请按照角色的 README.txt 将其带入你的游戏。"
 	},
 	"tips": {
 		"customizeTitle": "给演示角色换装",

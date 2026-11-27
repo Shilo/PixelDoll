@@ -3725,7 +3725,8 @@
 		"leave": "Olduğu gibi bırak",
 		"section": "Oyun projesi",
 		"reload": "Yeniden yükle",
-		"shared": "Paylaşılan çalışma zamanı: {path}"
+		"shared": "Paylaşılan çalışma zamanı: {path}",
+		"manualStep": "{format} oyunları doğrudan bu klasörden yüklemez. Bir güncellemeden sonra oyununa aktarmak için karakterin README.txt dosyasını izle."
 	},
 	"tips": {
 		"customizeTitle": "Demoyu giydir",

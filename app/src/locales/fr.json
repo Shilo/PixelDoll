@@ -3725,7 +3725,8 @@
 		"leave": "Laisser tel quel",
 		"section": "Projet de jeu",
 		"reload": "Recharger",
-		"shared": "Runtime partagé : {path}"
+		"shared": "Runtime partagé : {path}",
+		"manualStep": "{format} ne charge pas les jeux directement depuis ce dossier. Après une mise à jour, suivez le README.txt du personnage pour l’intégrer à votre jeu."
 	},
 	"tips": {
 		"customizeTitle": "Habillez la démo",

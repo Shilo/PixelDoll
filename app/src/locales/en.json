@@ -3727,7 +3727,8 @@
 		"leave": "Leave as is",
 		"section": "Game project",
 		"reload": "Reload",
-		"shared": "Shared runtime: {path}"
+		"shared": "Shared runtime: {path}",
+		"manualStep": "{format} doesn’t load games from this folder directly. After an update, follow the character’s README.txt to bring it into your game."
 	},
 	"tips": {
 		"customizeTitle": "Dress up the demo",

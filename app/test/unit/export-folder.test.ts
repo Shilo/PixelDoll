@@ -25,13 +25,14 @@ const runtimeFiles = {
 // Pin each published revision's paths and bytes together. Keep old revision pins when adding a new one. (Revision 1
 // was re-pinned before release, when the runtime folders gained their agent docs.)
 const revisionGoldens: Record<keyof typeof runtimeFiles, Record<number, string>> = {
-	godot: { 1: 'a2fc05b33da2ed307f5a00fa4b0b3a2f6c08b47a77e5f25f0a3ce862a8307364' },
-	phaser: { 1: '0089403bf7806a1d2556a8181ae5ef9ed0691ee20ae8880116132700640b2554' },
-	'phaser-ae': { 1: 'e7f27767185699f43a4038c561449ebdbbf1efa2122467f43a446cc91cd0c9cc' },
-	unity: { 2: '402ebc0321c9cdd37d43720cbad4cb0df68eeff7052d0280574c58e8dcdf7d70' }
+	godot: { 1: '721efb338e2e0623080a00dbb0e45f715bceee0ada8fd80834cfe9c2e132d041' },
+	phaser: { 1: 'c75683d0f5dadb441b579c4fb51ebe1ff67497294f04064543af73175c5fa540' },
+	'phaser-ae': { 1: '545479b480abac837c9db2f1312ce2b6ba173287bbbdb51bcc1dc10cc9e4914e' },
+	unity: { 2: '8ee599f22891042eba74f8305366b4c296b6bcd8be502ae4011374d0dc08a2d9' }
 };
 
-// Captured at the fixture's fixed exportedAt from an isolated archive of HEAD (67b40dc8e).
+// Captured at the fixture's fixed exportedAt from an isolated archive of 67b40dc8e, then updated only for deliberate
+// README wording fixes (Phaser AE scene imports, and layout-neutral wording in Phaser, GDevelop and RPG Maker guides).
 test.each(engines)('%s default ZIP preserves the archive and every entry', async (engine) => {
 	const built = await buildExport(await folderExportFixture(), exportOptions(engine));
 	expect(built.kind).toBe('requested');

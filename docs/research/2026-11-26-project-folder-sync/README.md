@@ -113,7 +113,7 @@ Characters linked to one folder share their engine's runtime instead of each car
 - **Why.** Copies of runtime source per character are hard to keep consistent, and the same character in two
   subfolders (left behind by a relink) broke Unity with duplicate assemblies. Unity's shared runtime now has one stable
   namespace and assembly (`PixelDoll.Runtime`, `PixelDoll.Editor`) and imports every folder character by path. ZIP
-  exports are byte-identical to before (golden-tested) and keep their own per-character runtime.
+  exports are unchanged apart from a few README wording fixes (golden-tested) and keep their own per-character runtime.
 - **What stays per engine.** GDevelop embeds its controller in each character's `game.json` events, so it has nothing
   to share; PNG + JSON, Aseprite and RPG Maker have no runtime. Their folder output equals the ZIP's files.
 - **One publish, two records.** A publish works on the picked folder: character files under the subfolder, runtime

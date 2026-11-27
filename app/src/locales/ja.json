@@ -3621,7 +3621,8 @@
 		"leave": "そのままにする",
 		"section": "ゲームプロジェクト",
 		"reload": "再読み込み",
-		"shared": "共有ランタイム：{path}"
+		"shared": "共有ランタイム：{path}",
+		"manualStep": "{format} はこのフォルダーから直接ゲームを読み込みません。更新後は、キャラクターの README.txt に従ってゲームに取り込んでください。"
 	},
 	"tips": {
 		"customizeTitle": "デモを着せ替える",
