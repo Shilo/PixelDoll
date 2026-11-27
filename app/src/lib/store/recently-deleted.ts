@@ -18,13 +18,14 @@ export const KEEP_MS = 30 * 24 * 60 * 60 * 1000;
 export const MAX_ENTRIES = 50;
 
 /** What was deleted. `character` removes a whole saved character; the rest are parts of one. */
-export type DeletedKind = 'character' | 'items' | 'category' | 'move';
+export type DeletedKind = 'character' | 'items' | 'category' | 'move' | 'outfit';
 
 /** Exactly what was removed inside the character record. */
 export interface DeletedScope {
 	itemIds?: string[];
 	slot?: string;
 	moveId?: string;
+	presetId?: string;
 }
 
 /** One removed draft entry, with the shared list it came from. */
@@ -53,7 +54,7 @@ export interface RecentlyDeleted {
 	drafts?: DeletedDraft[];
 }
 
-const KIND_NAMES: readonly DeletedKind[] = ['character', 'items', 'category', 'move'];
+const KIND_NAMES: readonly DeletedKind[] = ['character', 'items', 'category', 'move', 'outfit'];
 
 /** A character's lineage: the original it was restored from, or itself. */
 export const lineageOf = (record: StoredProject) => record.restoredFrom?.id ?? record.id;
@@ -113,6 +114,12 @@ function trimBefore(record: StoredProject, kind: DeletedKind, scope: DeletedScop
 	const trimmed = structuredClone(record),
 		m = trimmed.manifest,
 		ids = new Set(scope.itemIds ?? []);
+	if (kind === 'outfit') {
+		// An outfit is only its saved choices: its items and their artwork stay live on the character.
+		m.items = [];
+		m.presets = m.presets.filter((preset) => preset.id === scope.presetId);
+		return trimmed;
+	}
 	if (kind === 'move') {
 		m.items = m.items.map((item) => {
 			const copy = structuredClone(item);
@@ -467,6 +474,45 @@ export async function restoreMoveEntry(id: string): Promise<{ name: string; proj
 			rec.manifest = next.manifest;
 			rec.skeletons = next.skeletons;
 			rec.rigQa = next.rigQa;
+			rec.savedAt = new Date().toISOString();
+			return rec;
+		},
+		[id],
+		undefined,
+		[id]
+	);
+	return { name: entry.name, projectId: entry.projectId };
+}
+
+/** Put a deleted outfit back on its character, without the items deleted since (it keeps the rest). */
+export async function restoreOutfitEntry(id: string): Promise<{ name: string; projectId: string }> {
+	const entry = readEntry(await db.get<unknown>('projects', id));
+	if (!entry) throw gone(id);
+	if (expired(entry)) throw expiredError();
+	const preset = entry.before.manifest.presets.find((p) => p.id === entry.scope.presetId);
+	if (!preset) throw gone(id);
+	await db.update<StoredProject>(
+		'projects',
+		entry.projectId,
+		(rec, related) => {
+			if (!rec?.manifest)
+				throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
+			if (!readEntry(related(id))) throw gone(id);
+			if (rec.manifest.presets.some((p) => p.id === preset.id))
+				throw new LocalizedError(
+					'This outfit is already on the character.',
+					'recentlyDeleted.errors.outfitPresent'
+				);
+			const kept = new Set(rec.manifest.items.map((item) => item.id));
+			rec.manifest.presets = [
+				...rec.manifest.presets,
+				{
+					...structuredClone(preset),
+					items: Object.fromEntries(
+						Object.entries(preset.items).filter(([, item]) => item === null || kept.has(item))
+					)
+				}
+			];
 			rec.savedAt = new Date().toISOString();
 			return rec;
 		},

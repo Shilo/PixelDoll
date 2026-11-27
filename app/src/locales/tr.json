@@ -22,7 +22,8 @@
 			"items": "Öğe",
 			"category": "Kategori",
 			"move": "Hareket",
-			"state": "Durum"
+			"state": "Durum",
+			"outfit": "Kıyafet"
 		},
 		"errors": {
 			"gone": "Bu artık çöp kutusunda değil.",
@@ -33,7 +34,8 @@
 			"movePresent": "Bu hareket zaten karakterde.",
 			"moveGeometry": "Bu hareket silindikten sonra karakterin kare boyutu veya yönleri değişti, bu yüzden artık hizalanamıyor.",
 			"partsGeometry": "Bu silindikten sonra karakterin kare boyutu veya yönleri değişti, bu yüzden artık hizalanamıyor.",
-			"moveItemsMissing": "Bu hareketin öğelerinden biri silinmiş. Önce o öğeyi, sonra bu hareketi geri yükleyin."
+			"moveItemsMissing": "Bu hareketin öğelerinden biri silinmiş. Önce o öğeyi, sonra bu hareketi geri yükleyin.",
+			"outfitPresent": "Bu kıyafet zaten karakterde."
 		},
 		"restoring": "Geri yükleniyor…",
 		"confirmBodyCharacter": "Ondan silinen her şey de gider. Tamamen gider, geri alınamaz.",
@@ -738,9 +740,11 @@
 		"labelDeleteState": "Çöp kutusuna taşı…",
 		"removeState": "Gövde ve her öğe ayarlanmış karelerini kaybeder; bitmiş hareketler kendi karelerini korur. en fazla 30 gün boyunca geri alabilirsiniz.",
 		"labelDeleteMove": "Çöp kutusuna taşı…",
-		"labelDeleteOutfit": "Kıyafeti silin",
+		"labelDeleteOutfit": "Çöp kutusuna taşı…",
 		"thisRemovesTheMoveFromTheBody": "Gövde ve her öğe karelerini kaybeder. en fazla 30 gün boyunca geri alabilirsiniz.",
-		"demoRenameLocked": "Demonun hareketleri ve durumları yeniden adlandırılamaz"
+		"demoRenameLocked": "Demonun hareketleri ve durumları yeniden adlandırılamaz",
+		"removeOutfit": "Eşyaları gardıropta kalır. 30 güne kadar Çöp Kutusundan geri getirebilirsin.",
+		"demoOutfitLocked": "Demo kıyafetleri silinemez"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Ücretsiz: Daha önce yapılmış eşyalar yeniden üretilmez.",

@@ -10,6 +10,7 @@ import {
 	pruneKeys,
 	readEntry,
 	restoreCharacter,
+	restoreOutfitEntry,
 	restoreParts
 } from '../../src/lib/store/recently-deleted.ts';
 import { restoreRemoved, type DressedRecord } from '../../src/lib/store/project.ts';
@@ -521,4 +522,31 @@ test('a deleted character missing artwork it shows is still refused', async () =
 	});
 	expect(saved.projects.has(record.id)).toBe(false);
 	expect(saved.projects.has(entry.id)).toBe(true);
+});
+
+test('a deleted outfit keeps only its choices and comes back without items deleted since', async () => {
+	const record = await stored();
+	const items = { head: 'hat', body: record.manifest.rig.baseItem };
+	record.manifest.presets.push({ id: 'look', name: 'Look', items, variants: {} });
+	const entry = deletedEntry({
+		kind: 'outfit',
+		record,
+		name: 'Look',
+		context: record.manifest.name,
+		scope: { presetId: 'look' }
+	});
+	// The entry holds the outfit alone, not the character's items and artwork.
+	expect(entry.before.manifest.items).toEqual([]);
+	expect(entry.before.manifest.presets.map((preset) => preset.id)).toEqual(['look']);
+	const live = structuredClone(record);
+	live.manifest.presets = live.manifest.presets.filter((preset) => preset.id !== 'look');
+	live.manifest.items = live.manifest.items.filter((item) => item.id !== 'hat');
+	saved.projects.set(live.id, live);
+	saved.projects.set(entry.id, entry);
+	expect(await restoreOutfitEntry(entry.id)).toEqual({ name: 'Look', projectId: live.id });
+	const back = saved.projects.get(live.id) as StoredProject;
+	expect(back.manifest.presets.find((preset) => preset.id === 'look')?.items).toEqual({
+		body: record.manifest.rig.baseItem
+	});
+	expect(saved.projects.has(entry.id)).toBe(false);
 });

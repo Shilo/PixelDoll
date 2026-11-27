@@ -20,7 +20,8 @@
 			"items": "Item",
 			"category": "Kategori",
 			"move": "Gerakan",
-			"state": "Status"
+			"state": "Status",
+			"outfit": "Pakaian"
 		},
 		"errors": {
 			"gone": "Ini tidak lagi ada di tempat sampah.",
@@ -31,7 +32,8 @@
 			"movePresent": "Gerakan ini sudah ada pada karakter.",
 			"moveGeometry": "Ukuran bingkai atau arah karakter ini berubah sejak gerakan ini dihapus, jadi tidak bisa lagi sejajar.",
 			"partsGeometry": "Ukuran bingkai atau arah karakter ini berubah sejak ini dihapus, jadi tidak bisa lagi sejajar.",
-			"moveItemsMissing": "Salah satu item gerakan ini dihapus. Pulihkan item itu dulu, lalu gerakan ini."
+			"moveItemsMissing": "Salah satu item gerakan ini dihapus. Pulihkan item itu dulu, lalu gerakan ini.",
+			"outfitPresent": "Pakaian ini sudah ada pada karakter."
 		},
 		"restoring": "Memulihkan…",
 		"confirmBodyCharacter": "Yang lain yang dihapus darinya ikut hilang. Hilang selamanya, tidak dapat dibatalkan.",
@@ -717,9 +719,11 @@
 		"labelDeleteState": "Pindahkan ke tempat sampah…",
 		"removeState": "Tubuh dan setiap item kehilangan bingkai yang dipaskan; gerakan selesai tetap menyimpan bingkainya. Anda bisa memulihkan status selama hingga 30 hari.",
 		"labelDeleteMove": "Pindahkan ke tempat sampah…",
-		"labelDeleteOutfit": "Hapus setelan",
+		"labelDeleteOutfit": "Pindahkan ke tempat sampah…",
 		"thisRemovesTheMoveFromTheBody": "Tubuh dan setiap item kehilangan bingkainya. Anda bisa memulihkan gerakan selama hingga 30 hari.",
-		"demoRenameLocked": "Gerakan dan status demo tidak bisa diganti namanya"
+		"demoRenameLocked": "Gerakan dan status demo tidak bisa diganti namanya",
+		"removeOutfit": "Itemnya tetap di lemari. Kamu bisa mengembalikannya dari Sampah hingga 30 hari.",
+		"demoOutfitLocked": "Pakaian demo tidak bisa dihapus"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratis: item yang sudah dibuat tidak akan dibuat ulang.",

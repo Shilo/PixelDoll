@@ -11446,27 +11446,30 @@ for (const kind of ['outfit', 'move'] as const) {
 				'default',
 				'walk'
 			]);
+		// Moves and outfits both go to the Trash, asking first.
 		await trigger.click();
-		if (kind === 'move') {
-			await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
-			const confirm = page.getByRole('alertdialog', {
-				name: `Move ${name} to Trash?`,
-				exact: true
-			});
-			await expect(confirm.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
-			await page.keyboard.press('Escape');
+		await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+		const confirm = page.getByRole('alertdialog', {
+			name: `Move ${name} to Trash?`,
+			exact: true
+		});
+		await expect(confirm.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
+		await page.keyboard.press('Escape');
+		await expect(row).toBeVisible();
+		await trigger.click();
+		await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+		await confirm.getByRole('button', { name: 'Move to Trash', exact: true }).click();
+		if (kind === 'outfit') {
+			// Its notice brings it back from the Trash.
+			await expect(row).toHaveCount(0);
+			await page
+				.locator('.bu-toast-region')
+				.getByRole('button', { name: 'Undo', exact: true })
+				.click();
 			await expect(row).toBeVisible();
 			await trigger.click();
 			await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 			await confirm.getByRole('button', { name: 'Move to Trash', exact: true }).click();
-		} else {
-			await menu.getByRole('menuitem', { name: 'Delete outfit', exact: true }).click();
-			await expect(page.getByRole('alertdialog')).toHaveCount(0);
-			await expect(row).toHaveCount(0);
-			await page.getByRole('button', { name: 'Undo Delete outfit', exact: true }).click();
-			await expect(row).toBeVisible();
-			await trigger.click();
-			await menu.getByRole('menuitem', { name: 'Delete outfit', exact: true }).click();
 		}
 		await expect(row).toHaveCount(0);
 		await reloadStudio(page);

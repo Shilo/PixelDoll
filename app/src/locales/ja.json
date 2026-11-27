@@ -20,7 +20,8 @@
 			"items": "アイテム",
 			"category": "カテゴリ",
 			"move": "モーション",
-			"state": "ステート"
+			"state": "ステート",
+			"outfit": "衣装"
 		},
 		"errors": {
 			"gone": "これはゴミ箱にありません。",
@@ -31,7 +32,8 @@
 			"movePresent": "このモーションはすでにキャラクターにあります。",
 			"moveGeometry": "このモーションを削除した後にキャラクターのフレームサイズまたは向きが変わったため、位置合わせできません。",
 			"partsGeometry": "削除した後にキャラクターのフレームサイズまたは向きが変わったため、位置合わせできません。",
-			"moveItemsMissing": "このモーションのアイテムの 1 つが削除されています。先にそのアイテムを復元してから、このモーションを復元してください。"
+			"moveItemsMissing": "このモーションのアイテムの 1 つが削除されています。先にそのアイテムを復元してから、このモーションを復元してください。",
+			"outfitPresent": "この衣装はすでにキャラクターにあります。"
 		},
 		"restoring": "復元中…",
 		"confirmBodyCharacter": "そこから削除したものも一緒に消えます。完全に削除され、元に戻せません。",
@@ -717,9 +719,11 @@
 		"labelDeleteState": "ゴミ箱に移動…",
 		"removeState": "体とすべてのアイテムから調整済みフレームが外れます。完了したモーションのフレームは残ります。最大 30 日間は元に戻せます。",
 		"labelDeleteMove": "ゴミ箱に移動…",
-		"labelDeleteOutfit": "コーディネートを削除",
+		"labelDeleteOutfit": "ゴミ箱に移動…",
 		"thisRemovesTheMoveFromTheBody": "体とすべてのアイテムからフレームが外れます。最大 30 日間は元に戻せます。",
-		"demoRenameLocked": "デモの動きと状態は名前を変えられません"
+		"demoRenameLocked": "デモの動きと状態は名前を変えられません",
+		"removeOutfit": "アイテムはワードローブに残ります。30日間はゴミ箱から戻せます。",
+		"demoOutfitLocked": "デモの衣装は削除できません"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "無料：作成済みのアイテムを再生成することはありません。",

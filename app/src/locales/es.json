@@ -22,7 +22,8 @@
 			"items": "Objeto",
 			"category": "Categoría",
 			"move": "Movimiento",
-			"state": "Estado"
+			"state": "Estado",
+			"outfit": "Atuendo"
 		},
 		"errors": {
 			"gone": "Esto ya no está en la papelera.",
@@ -33,7 +34,8 @@
 			"movePresent": "Este movimiento ya está en el personaje.",
 			"moveGeometry": "El tamaño de fotograma o las direcciones de este personaje han cambiado desde que se eliminó este movimiento, así que ya no encaja.",
 			"partsGeometry": "El tamaño de fotograma o las direcciones de este personaje han cambiado desde que se eliminó, así que ya no encaja.",
-			"moveItemsMissing": "Uno de los objetos de este movimiento está eliminado. Restaura primero el objeto y luego el movimiento."
+			"moveItemsMissing": "Uno de los objetos de este movimiento está eliminado. Restaura primero el objeto y luego el movimiento.",
+			"outfitPresent": "Este atuendo ya está en el personaje."
 		},
 		"restoring": "Restaurando…",
 		"confirmBodyCharacter": "Lo demás eliminado de él se va también. Desaparece para siempre; no se puede deshacer.",
@@ -738,9 +740,11 @@
 		"labelDeleteState": "Mover a la papelera…",
 		"removeState": "El cuerpo y cada objeto pierden sus fotogramas ajustados; los movimientos terminados conservan los suyos. Puedes recuperar el estado durante hasta 30 días.",
 		"labelDeleteMove": "Mover a la papelera…",
-		"labelDeleteOutfit": "Eliminar atuendo",
+		"labelDeleteOutfit": "Mover a la papelera…",
 		"thisRemovesTheMoveFromTheBody": "El cuerpo y cada objeto pierden sus fotogramas. Puedes recuperar el movimiento durante hasta 30 días.",
-		"demoRenameLocked": "Los movimientos y estados de la demo no se pueden renombrar"
+		"demoRenameLocked": "Los movimientos y estados de la demo no se pueden renombrar",
+		"removeOutfit": "Sus objetos se quedan en el guardarropa. Puedes recuperarlo de la papelera durante 30 días.",
+		"demoOutfitLocked": "Los atuendos de la demo no se pueden eliminar"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratis: nunca vuelve a generar objetos ya creados.",

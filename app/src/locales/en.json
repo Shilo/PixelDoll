@@ -22,7 +22,8 @@
 			"items": "Item",
 			"category": "Category",
 			"move": "Move",
-			"state": "State"
+			"state": "State",
+			"outfit": "Outfit"
 		},
 		"errors": {
 			"gone": "This is no longer in Trash.",
@@ -33,7 +34,8 @@
 			"movePresent": "This move is already on the character.",
 			"moveGeometry": "This character's frame size or directions changed since this move was deleted, so it can no longer line up.",
 			"partsGeometry": "This character's frame size or directions changed since this was deleted, so it can no longer line up.",
-			"moveItemsMissing": "One of this move items is in Trash. Restore that item first, then this move."
+			"moveItemsMissing": "One of this move items is in Trash. Restore that item first, then this move.",
+			"outfitPresent": "This outfit is already on the character."
 		},
 		"restoring": "Restoring…",
 		"confirmBodyCharacter": "Anything else deleted from it goes too. It is gone for good. This cannot be undone.",
@@ -738,9 +740,11 @@
 		"labelDeleteState": "Move to Trash…",
 		"removeState": "The body and every item lose its fitted frames; finished moves keep theirs. You can bring it back for up to 30 days.",
 		"labelDeleteMove": "Move to Trash…",
-		"labelDeleteOutfit": "Delete outfit",
+		"labelDeleteOutfit": "Move to Trash…",
 		"thisRemovesTheMoveFromTheBody": "The body and every item lose the frames for this move. You can bring it back for up to 30 days.",
-		"demoRenameLocked": "The demo’s moves and states can’t be renamed"
+		"demoRenameLocked": "The demo’s moves and states can’t be renamed",
+		"removeOutfit": "Its items stay in the Wardrobe. You can bring it back from the Trash for up to 30 days.",
+		"demoOutfitLocked": "Demo outfits can’t be deleted"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Free: never regenerates items already made.",

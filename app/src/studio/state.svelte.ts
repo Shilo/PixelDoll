@@ -77,6 +77,7 @@ import {
 	readEntry,
 	restoreCharacter,
 	restoreMoveEntry,
+	restoreOutfitEntry,
 	restoreParts,
 	draftCallIds,
 	quotaError,
@@ -2275,6 +2276,14 @@ async function restoreDeletedEntry(id: string): Promise<boolean> {
 					: new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
 			}
 		}
+		if (entry.kind === 'outfit') {
+			const out = await restoreOutfitEntry(id);
+			await refreshRecentlyDeleted();
+			notifyLibraryChanged(out.projectId);
+			if (doc.id === out.projectId) await openProject(out.projectId, { quiet: true });
+			toast(message('recentlyDeleted.restored', { name: out.name }), { tone: 'success' });
+			return true;
+		}
 		if (entry.kind === 'move') {
 			// The same work that blocks deleting a move can overwrite it while a restore lands.
 			const blocked = deletionBlocked(entry.projectId, 'move');
@@ -2637,12 +2646,6 @@ export function savePreset(name: string) {
 			variants: $state.snapshot(doc.variants)
 		};
 		m.presets = [...m.presets, pr];
-	});
-}
-export function deletePreset(id: string) {
-	const m = store.project!.manifest;
-	commit(message('history.deleteOutfit'), () => {
-		m.presets = m.presets.filter((p) => p.id !== id);
 	});
 }
 export const sameOutfit = (p: Preset) => {

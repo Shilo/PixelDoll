@@ -22,7 +22,8 @@
 			"items": "Item",
 			"category": "Categoria",
 			"move": "Movimento",
-			"state": "Estado"
+			"state": "Estado",
+			"outfit": "Roupa"
 		},
 		"errors": {
 			"gone": "Isso não está mais na lixeira.",
@@ -33,7 +34,8 @@
 			"movePresent": "Este movimento já está no personagem.",
 			"moveGeometry": "O tamanho do quadro ou as direções deste personagem mudaram desde que este movimento foi excluído, então ele não se alinha mais.",
 			"partsGeometry": "O tamanho do quadro ou as direções deste personagem mudaram desde que isso foi excluído, então não se alinha mais.",
-			"moveItemsMissing": "Um dos itens deste movimento está excluído. Restaure o item primeiro e depois o movimento."
+			"moveItemsMissing": "Um dos itens deste movimento está excluído. Restaure o item primeiro e depois o movimento.",
+			"outfitPresent": "Esta roupa já está no personagem."
 		},
 		"restoring": "Restaurando…",
 		"confirmBodyCharacter": "Tudo o mais excluído dele vai junto. Some para sempre; não pode ser desfeito.",
@@ -738,9 +740,11 @@
 		"labelDeleteState": "Mover para a lixeira…",
 		"removeState": "O corpo e cada item perdem os quadros ajustados; movimentos concluídos mantêm os seus. Você pode recuperar o estado por até 30 dias.",
 		"labelDeleteMove": "Mover para a lixeira…",
-		"labelDeleteOutfit": "Excluir traje",
+		"labelDeleteOutfit": "Mover para a lixeira…",
 		"thisRemovesTheMoveFromTheBody": "O corpo e cada item perdem seus quadros. Você pode recuperar o movimento por até 30 dias.",
-		"demoRenameLocked": "Movimentos e estados da demo não podem ser renomeados"
+		"demoRenameLocked": "Movimentos e estados da demo não podem ser renomeados",
+		"removeOutfit": "Os itens continuam no guarda-roupa. Você pode recuperá-lo da Lixeira por até 30 dias.",
+		"demoOutfitLocked": "Roupas da demo não podem ser excluídas"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Grátis: nunca gera de novo os itens já criados.",

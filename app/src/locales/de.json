@@ -22,7 +22,8 @@
 			"items": "Gegenstand",
 			"category": "Kategorie",
 			"move": "Bewegung",
-			"state": "Zustand"
+			"state": "Zustand",
+			"outfit": "Outfit"
 		},
 		"errors": {
 			"gone": "Das ist nicht mehr im Papierkorb.",
@@ -33,7 +34,8 @@
 			"movePresent": "Diese Bewegung ist bereits auf dem Charakter.",
 			"moveGeometry": "Framegröße oder Richtungen dieses Charakters haben sich seit dem Löschen dieser Bewegung geändert, daher passt sie nicht mehr.",
 			"partsGeometry": "Framegröße oder Richtungen dieses Charakters haben sich seit dem Löschen geändert, daher passt es nicht mehr.",
-			"moveItemsMissing": "Einer der Gegenstände dieser Bewegung ist gelöscht. Stellen Sie zuerst den Gegenstand wieder her, dann die Bewegung."
+			"moveItemsMissing": "Einer der Gegenstände dieser Bewegung ist gelöscht. Stellen Sie zuerst den Gegenstand wieder her, dann die Bewegung.",
+			"outfitPresent": "Dieses Outfit ist schon bei der Figur."
 		},
 		"restoring": "Wird wiederhergestellt…",
 		"confirmBodyCharacter": "Alles andere davon Gelöschte geht mit. Endgültig weg, nicht rückgängig zu machen.",
@@ -738,9 +740,11 @@
 		"labelDeleteState": "In den Papierkorb…",
 		"removeState": "Körper und jeder Gegenstand verlieren die angepassten Frames; fertige Bewegungen behalten ihre. bis zu 30 Tage lang kannst du den Zustand zurückholen.",
 		"labelDeleteMove": "In den Papierkorb…",
-		"labelDeleteOutfit": "Outfit löschen",
+		"labelDeleteOutfit": "In den Papierkorb…",
 		"thisRemovesTheMoveFromTheBody": "Körper und jeder Gegenstand verlieren die Frames dieser Bewegung. bis zu 30 Tage lang kannst du sie zurückholen.",
-		"demoRenameLocked": "Bewegungen und Zustände der Demo lassen sich nicht umbenennen"
+		"demoRenameLocked": "Bewegungen und Zustände der Demo lassen sich nicht umbenennen",
+		"removeOutfit": "Seine Gegenstände bleiben in der Garderobe. Du kannst es bis zu 30 Tage aus dem Papierkorb zurückholen.",
+		"demoOutfitLocked": "Demo-Outfits lassen sich nicht löschen"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Kostenlos: Bereits erstellte Gegenstände werden nie neu generiert.",

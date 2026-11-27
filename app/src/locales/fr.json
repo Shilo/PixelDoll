@@ -22,7 +22,8 @@
 			"items": "Objet",
 			"category": "Catégorie",
 			"move": "Mouvement",
-			"state": "État"
+			"state": "État",
+			"outfit": "Tenue"
 		},
 		"errors": {
 			"gone": "Ce n’est plus dans la corbeille.",
@@ -33,7 +34,8 @@
 			"movePresent": "Ce mouvement est déjà sur le personnage.",
 			"moveGeometry": "La taille de cadre ou les directions de ce personnage ont changé depuis la suppression de ce mouvement, il ne s'aligne donc plus.",
 			"partsGeometry": "La taille de cadre ou les directions de ce personnage ont changé depuis la suppression, cela ne s’aligne donc plus.",
-			"moveItemsMissing": "L’un des objets de ce mouvement est supprimé. Restaurez d’abord l’objet, puis le mouvement."
+			"moveItemsMissing": "L’un des objets de ce mouvement est supprimé. Restaurez d’abord l’objet, puis le mouvement.",
+			"outfitPresent": "Cette tenue est déjà sur le personnage."
 		},
 		"restoring": "Restauration…",
 		"confirmBodyCharacter": "Tout ce qui en a été supprimé part aussi. Disparition définitive, irréversible.",
@@ -738,9 +740,11 @@
 		"labelDeleteState": "Vers la corbeille…",
 		"removeState": "Le corps et chaque objet perdent leurs images ajustées ; les mouvements terminés gardent les leurs. Vous pouvez récupérer l’état pendant jusqu’à 30 jours.",
 		"labelDeleteMove": "Vers la corbeille…",
-		"labelDeleteOutfit": "Supprimer la tenue",
+		"labelDeleteOutfit": "Vers la corbeille…",
 		"thisRemovesTheMoveFromTheBody": "Le corps et chaque objet perdent leurs images. Vous pouvez récupérer le mouvement pendant jusqu’à 30 jours.",
-		"demoRenameLocked": "Les mouvements et états de la démo ne peuvent pas être renommés"
+		"demoRenameLocked": "Les mouvements et états de la démo ne peuvent pas être renommés",
+		"removeOutfit": "Ses objets restent dans la garde-robe. Vous pouvez le récupérer dans la corbeille pendant 30 jours.",
+		"demoOutfitLocked": "Les tenues de la démo ne peuvent pas être supprimées"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratuit : ne régénère jamais les objets déjà créés.",

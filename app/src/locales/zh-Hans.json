@@ -20,7 +20,8 @@
 			"items": "物品",
 			"category": "分类",
 			"move": "动作",
-			"state": "状态"
+			"state": "状态",
+			"outfit": "服装"
 		},
 		"errors": {
 			"gone": "这已不在回收站中。",
@@ -31,7 +32,8 @@
 			"movePresent": "该角色已经有这个动作。",
 			"moveGeometry": "删除此动作后，角色的帧尺寸或方向已更改，因此无法再对齐。",
 			"partsGeometry": "删除后，角色的帧尺寸或方向已更改，因此无法再对齐。",
-			"moveItemsMissing": "此动作的一个物品已被删除。请先恢复该物品，再恢复此动作。"
+			"moveItemsMissing": "此动作的一个物品已被删除。请先恢复该物品，再恢复此动作。",
+			"outfitPresent": "此服装已在角色上。"
 		},
 		"restoring": "正在恢复…",
 		"confirmBodyCharacter": "从它那里删除的其他内容也会一起消失。彻底消失，无法撤销。",
@@ -717,9 +719,11 @@
 		"labelDeleteState": "移到回收站…",
 		"removeState": "身体和每个物品都会失去适配的帧；已完成的动作会保留自己的帧。最多 30 天内可以恢复。",
 		"labelDeleteMove": "移到回收站…",
-		"labelDeleteOutfit": "删除套装",
+		"labelDeleteOutfit": "移到回收站…",
 		"thisRemovesTheMoveFromTheBody": "身体和每个物品都会失去它的帧。最多 30 天内可以恢复。",
-		"demoRenameLocked": "演示的动作和状态无法重命名"
+		"demoRenameLocked": "演示的动作和状态无法重命名",
+		"removeOutfit": "其中的物品留在衣橱中。30 天内可从废纸篓中恢复。",
+		"demoOutfitLocked": "演示服装无法删除"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "免费：不会重新生成已制作的装备。",

@@ -20,7 +20,8 @@
 			"items": "아이템",
 			"category": "카테고리",
 			"move": "모션",
-			"state": "상태"
+			"state": "상태",
+			"outfit": "의상"
 		},
 		"errors": {
 			"gone": "이 항목은 더 이상 휴지통에 없습니다.",
@@ -31,7 +32,8 @@
 			"movePresent": "이 모션은 이미 캐릭터에 있습니다.",
 			"moveGeometry": "이 모션을 삭제한 뒤 캐릭터의 프레임 크기나 방향이 바뀌어 더 이상 맞출 수 없습니다.",
 			"partsGeometry": "삭제한 뒤 캐릭터의 프레임 크기나 방향이 바뀌어 더 이상 맞출 수 없습니다.",
-			"moveItemsMissing": "이 모션의 아이템 중 하나가 삭제되었습니다. 먼저 그 아이템을 복원한 뒤 이 모션을 복원하세요."
+			"moveItemsMissing": "이 모션의 아이템 중 하나가 삭제되었습니다. 먼저 그 아이템을 복원한 뒤 이 모션을 복원하세요.",
+			"outfitPresent": "이 의상은 이미 캐릭터에 있습니다."
 		},
 		"restoring": "복원 중…",
 		"confirmBodyCharacter": "그 안에서 삭제한 것도 함께 사라집니다. 완전히 사라지며 되돌릴 수 없습니다.",
@@ -717,9 +719,11 @@
 		"labelDeleteState": "휴지통으로 이동…",
 		"removeState": "몸과 모든 아이템에서 맞춘 프레임이 빠집니다. 완료된 모션의 프레임은 남습니다. 최대 30일 동안 되돌릴 수 있습니다.",
 		"labelDeleteMove": "휴지통으로 이동…",
-		"labelDeleteOutfit": "코디 삭제",
+		"labelDeleteOutfit": "휴지통으로 이동…",
 		"thisRemovesTheMoveFromTheBody": "몸과 모든 아이템에서 프레임이 빠집니다. 최대 30일 동안 되돌릴 수 있습니다.",
-		"demoRenameLocked": "데모의 동작과 상태는 이름을 바꿀 수 없습니다"
+		"demoRenameLocked": "데모의 동작과 상태는 이름을 바꿀 수 없습니다",
+		"removeOutfit": "아이템은 옷장에 남습니다. 30일 동안 휴지통에서 되돌릴 수 있습니다.",
+		"demoOutfitLocked": "데모 의상은 삭제할 수 없습니다"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "무료: 이미 만든 아이템은 다시 생성하지 않아요.",

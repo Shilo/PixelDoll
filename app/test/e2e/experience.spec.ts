@@ -390,7 +390,11 @@ test('real wardrobe, None, Undo, exact colors, outfits and item details remain c
 	await page
 		.getByRole('button', { name: 'More actions for Offline bronze look', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Delete outfit', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Move Offline bronze look to Trash?', exact: true })
+		.getByRole('button', { name: 'Move to Trash', exact: true })
+		.click();
 	await expect(outfit).toHaveCount(0);
 });
 
