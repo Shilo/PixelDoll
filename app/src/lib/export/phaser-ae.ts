@@ -617,9 +617,9 @@ under Phaser's own license.
      import { loadPaperdoll } from './${runtime}paperdoll.js'
      import heroData from './${dir}manifest.json'
      export const hero = await loadPaperdoll(game, '${dir}', { manifest: heroData })
-     // main.ts imports './hero.js' before await game.start(); a scene file:
-     import { Paperdoll } from './${runtime}paperdoll.js'
-     import { hero } from './hero.js'
+     // main.ts imports './hero.js' before await game.start(); a scene file in game/scenes/:
+     import { Paperdoll } from '../${runtime}paperdoll.js'
+     import { hero } from '../hero.js'
      // in the scene's enter(), synchronously:
      const doll = new Paperdoll(game, 360, 640, hero)
      doll.play(${JSON.stringify(initial?.id ?? 'walk')}, ${JSON.stringify(initial?.directions?.[0] ?? m.rig.directions[0]?.id ?? 'south')})

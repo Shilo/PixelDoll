@@ -87,7 +87,7 @@
 		}
 	},
 	"phaser-ae": {
-		"archive": "ce49550c09d9e4078870be4e49c3e08abfddb7481b0f0716ffa6b1991ea5a6bb",
+		"archive": "8ba62876057cf731d7731f99e93e6cfa1aa75621646d7569e230b912268d9286",
 		"entries": {
 			"README.txt": "46decd38cc1127e89f6612d4d83e360313a2b9a9cce6c8182a535b0330a0b456",
 			"manifest.json": "a05e5eacb47756d117cce8ce0795685005c8850a5e5a5447b295ced87d32c62f",
@@ -103,7 +103,7 @@
 			"phaser-ae/paperdoll.d.ts": "0a4ce98975a3d010b485dbec0870e0f05048dcc32bfd4a76fae74efd03fb6909",
 			"phaser-ae/types.d.ts": "78204605f7c5fbc375be48b777177c94a3bdabfe0c6de0e8c940ea9b517b3bf2",
 			"phaser-ae/assets.json": "ad57c3f4a8a49963aaaff61f47d705ec7019db733ac615b5db971adf9cee3d55",
-			"phaser-ae/README.txt": "b5b76b33efa40dc9e09e593f1641b1b60ea96c078ae830aac52801965c694035",
+			"phaser-ae/README.txt": "d3628d2518bcd975946c92cf870e068ddf97dd5ba7a6f8f074a6cd3d63f9777a",
 			"AGENTS.md": "ef99603aace4bea8b32d38665c73320ed3a9073bf9d7dbcab32f5be57917fc03",
 			"CLAUDE.md": "b8bbce03a59ca0fc39966f4d1ec29e0f187a49584893f3f84b4bb057c76ac0cf",
 			"docs/phaser-ae.md": "5a6749d2aa62fa39d0d312995dbba6d726b2fa48444443711bcf49fc8965476e",
