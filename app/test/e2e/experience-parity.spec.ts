@@ -165,6 +165,27 @@ async function landing(page: Page, url = '/') {
 	await expect(page.locator('.customize-action')).toBeEnabled();
 }
 
+test('browser Back returns from Customize to Characters before leaving PixelDoll', async ({
+	page
+}) => {
+	await page.route('**/before-pixeldoll', (route) =>
+		route.fulfill({ contentType: 'text/html', body: '<title>Previous page</title>' })
+	);
+	await page.goto('/before-pixeldoll');
+	await landing(page);
+	await page.locator('.customize-action').click();
+	await expect(modes(page)).toBeVisible();
+
+	await page.goBack();
+	await expect(selection(page)).toBeVisible();
+	await page.goForward();
+	await expect(modes(page)).toBeVisible();
+	await page.goBack();
+	await expect(selection(page)).toBeVisible();
+	await page.goBack();
+	await expect(page).toHaveTitle('Previous page');
+});
+
 /** The character search shows once the list overflows or holds six or more characters; short fixtures make it scroll. */
 async function revealCharacterSearch(page: Page) {
 	const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
