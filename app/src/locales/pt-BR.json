@@ -1253,11 +1253,11 @@
 				"sub": "Projeto editável",
 				"detail": "Projeto editável do GDevelop com camadas de Sprite, reprodução sincronizada e controles de equipamento. Abra uma prévia ou copie os objetos e o evento para seu jogo."
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "Folhas de caminhada",
 				"detail": "Uma folha de caminhada por traje, no tamanho original do personagem. Copie os PNGs para img/characters (MZ, MV) ou Graphics/Characters (VX Ace, VX). Precisa de vistas de frente, de lado e de costas."
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "Uma folha de caminhada de 4 quadros por traje, no tamanho original do personagem, para RPG Maker XP e Pokémon Essentials. Copie os PNGs para Graphics/Characters. Precisa de vistas de frente, de lado e de costas."
 			},
 			"aseprite": {
@@ -1268,7 +1268,7 @@
 				"sub": "Integração personalizada",
 				"detail": "Folhas e tiras de camadas com tempos dos quadros, pivôs e dados de equipamentos e paletas. Sua engine precisa de código para ler essas regras."
 			},
-			"phaserae": {
+			"phaserAe": {
 				"detail": "Folhas de sprites por camada e um runtime para jogos do Phaser AE, com equipamentos, cores e reprodução sincronizada. Inclua as folhas na lista assets do manifesto do seu jogo, e o build do jogo as copia para dentro dele."
 			}
 		},
@@ -1359,7 +1359,7 @@
 			"noVisibleFrames": "O corpo não tem quadros visíveis.",
 			"godot": "O Godot não conseguiu usar estas folhas de sprites.",
 			"gdevelop": "O GDevelop não conseguiu usar estas folhas de sprites.",
-			"rpgmaker": "O RPG Maker precisa de vistas de frente, de lado e de costas.",
+			"rpgMaker": "O RPG Maker precisa de vistas de frente, de lado e de costas.",
 			"aseprite": "A animação não cabe no formato Aseprite.",
 			"unsafeNames": "Alguns nomes de arquivo não podem ser empacotados com segurança.",
 			"tooLarge": "Esta exportação é grande demais.",

@@ -3,7 +3,6 @@
 // another's data. Each engine's own README.txt keeps the full guide; these files only map the folder and start the work.
 import type { Engine } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
-import { engineFileName } from './paths.ts';
 
 const AGENTS = `# PixelDoll paper-doll export
 
@@ -263,14 +262,14 @@ no place in this format.
 
 const API: Record<Engine, string> = {
 	phaser: PHASER,
-	phaserae: PHASER_AE,
+	'phaser-ae': PHASER_AE,
 	godot: GODOT,
 	unity: UNITY,
 	gdevelop: GDEVELOP,
 	aseprite: ASEPRITE,
 	generic: GENERIC,
-	rpgmaker: RPGMAKER,
-	rpgmakerxp: RPGMAKERXP
+	'rpg-maker': RPGMAKER,
+	'rpg-maker-xp': RPGMAKERXP
 };
 
 /** The root agent files plus one engine reference per requested engine, in one fixed order. */
@@ -280,6 +279,6 @@ export function agentFiles(engines: readonly Engine[]): OutFile[] {
 		{ name: 'CLAUDE.md', data: CLAUDE }
 	];
 	for (const engine of new Set(engines))
-		files.push({ name: `docs/${engineFileName(engine)}.md`, data: API[engine] });
+		files.push({ name: `docs/${engine}.md`, data: API[engine] });
 	return files;
 }

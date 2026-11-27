@@ -1250,11 +1250,11 @@
 				"sub": "Düzenlenebilir proje",
 				"detail": "Sprite katmanları, eşzamanlı oynatma ve ekipman kontrolleriyle düzenlenebilir GDevelop projesi. Önizleyin veya nesneleri ve etkinliği oyununuza kopyalayın."
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "Yürüme sayfaları",
 				"detail": "Her kıyafet için karakterinizin kendi boyutunda bir yürüme sayfası. PNG dosyalarını img/characters (MZ, MV) veya Graphics/Characters (VX Ace, VX) klasörüne kopyalayın. Ön, yan ve arka görünümler gerekir."
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "RPG Maker XP ve Pokémon Essentials için her kıyafete, karakterinizin kendi boyutunda 4 kareli bir yürüme sayfası. PNG dosyalarını Graphics/Characters klasörüne kopyalayın. Ön, yan ve arka görünümler gerekir."
 			},
 			"aseprite": {
@@ -1265,7 +1265,7 @@
 				"sub": "Özel entegrasyon",
 				"detail": "Zamanlama, pivot noktaları, ekipman ve palet verileriyle katman sayfaları ve şeritleri. Oyun motorunuzun bu kuralları okuyacak koda ihtiyacı var."
 			},
-			"phaserae": {
+			"phaserAe": {
 				"detail": "Phaser AE oyunları için katman başına sprite sayfaları ve ekipman, renkler ve eşzamanlı oynatma sunan bir çalışma zamanı. Sayfaları oyununuzun manifest dosyasındaki assets listesine ekleyin; oyunun derleme işlemi bunları oyuna kopyalar."
 			}
 		},
@@ -1354,7 +1354,7 @@
 			"noVisibleFrames": "Gövdede görünür kare yok.",
 			"godot": "Godot bu sprite sayfalarını kullanamadı.",
 			"gdevelop": "GDevelop bu sprite sayfalarını kullanamadı.",
-			"rpgmaker": "RPG Maker için ön, yan ve arka görünümler gerekli.",
+			"rpgMaker": "RPG Maker için ön, yan ve arka görünümler gerekli.",
 			"aseprite": "Animasyon Aseprite biçimine uymuyor.",
 			"unsafeNames": "Bazı dosya adları güvenle paketlenemiyor.",
 			"tooLarge": "Bu dışa aktarım çok büyük.",

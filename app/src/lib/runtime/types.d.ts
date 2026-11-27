@@ -286,11 +286,11 @@ export type Engine = (readonly [
 	'godot',
 	'unity',
 	'phaser',
-	'phaserae',
+	'phaser-ae',
 	'gdevelop',
 	'aseprite',
-	'rpgmaker',
-	'rpgmakerxp'
+	'rpg-maker',
+	'rpg-maker-xp'
 ])[number];
 
 export interface ExportInfo {

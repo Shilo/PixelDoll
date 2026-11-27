@@ -35,7 +35,7 @@ assert(
 	existsSync(join(folder, 'phaser', 'bin', 'bake.mjs')),
 	`${folder} has no Phaser AE engine (phaser/bin/bake.mjs).`
 );
-const cache = join(app, 'node_modules/.cache/phaserae-native-verification');
+const cache = join(app, 'node_modules/.cache/phaser-ae-native-verification');
 const output = resolve(values.output ?? join(cache, 'results.json'));
 mkdirSync(cache, { recursive: true });
 const engineRelease = JSON.parse(
@@ -84,19 +84,19 @@ async function translucentArchive(source) {
 	manifest.materials[0].variants = { blue: ['#0000ff', '#00ff00'], red: ['#ff0000', '#ffff00'] };
 	const copy = structuredClone(manifest);
 	applyExportSettings(copy, {
-		engine: 'phaserae',
+		engine: 'phaser-ae',
 		dressedCharacterSheets: true,
 		playOnce: ['jump']
 	});
 	const result = await exportZip(
 		{ manifest: copy, images },
-		{ engines: ['phaserae'], baked: true, exportedAt: '2026-11-26T00:00:00.000Z' }
+		{ engines: ['phaser-ae'], baked: true, exportedAt: '2026-11-26T00:00:00.000Z' }
 	);
 	assert.deepEqual(result.errors, []);
 	return { label: 'translucent-palette', zip: result.zip };
 }
 
-const archives = await reviewArchives('phaserae', cache);
+const archives = await reviewArchives('phaser-ae', cache);
 archives.push(await translucentArchive(archives[0].project));
 for (const file of values.zip ?? [])
 	archives.push({ label: basename(file), zip: new Uint8Array(readFileSync(file)) });

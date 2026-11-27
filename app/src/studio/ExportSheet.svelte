@@ -21,7 +21,6 @@
 	import { buildExport } from '../lib/export/build.ts';
 	import { characterZipId, editableData, saveZip } from './download.svelte.ts';
 	import { ROWS as RPG_ROWS, walkMoves } from '../lib/export/rpg-maker.ts';
-	import { engineFileName } from '../lib/export/paths.ts';
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { stableStringify } from '../lib/image/hash.ts';
 	import { coverageGaps, missingFrames, moveDirs } from '../lib/dress/dress.ts';
@@ -77,32 +76,32 @@
 			}
 		>
 	> = {
-		rpgmaker: {
+		'rpg-maker': {
 			menuId: 'rpg-version-menu',
 			menuLabel: 'export.settings.versionMenu',
 			buttonLabel: 'export.settings.versionLabel',
 			versions: [
 				{
-					id: 'rpgmaker',
+					id: 'rpg-maker',
 					value: 'export.version.standard',
 					title: 'export.version.standardTitle',
 					sub: 'export.version.standardSub'
 				},
 				{
-					id: 'rpgmakerxp',
+					id: 'rpg-maker-xp',
 					value: 'export.version.xp',
 					title: 'export.version.xpTitle',
 					sub: 'export.version.xpSub'
 				}
 			]
 		},
-		phaserae: {
+		'phaser-ae': {
 			menuId: 'phaser-version-menu',
 			menuLabel: 'export.settings.phaserVersionMenu',
 			buttonLabel: 'export.settings.phaserVersionLabel',
 			versions: [
 				{
-					id: 'phaserae',
+					id: 'phaser-ae',
 					value: 'export.version.phaserAe',
 					title: 'export.version.phaserAeTitle',
 					sub: 'export.version.phaserAeSub'
@@ -119,10 +118,10 @@
 	// Versions other than a card's first, for the description under the cards.
 	const ALTERNATE_TARGETS: Target[] = [
 		{
-			id: 'rpgmakerxp',
-			name: exportFormatNames.rpgmakerxp,
-			sub: 'export.target.rpgmaker.sub',
-			detail: 'export.target.rpgmakerxp.detail'
+			id: 'rpg-maker-xp',
+			name: exportFormatNames['rpg-maker-xp'],
+			sub: 'export.target.rpgMaker.sub',
+			detail: 'export.target.rpgMakerXp.detail'
 		},
 		{
 			id: 'phaser',
@@ -142,10 +141,10 @@
 			name: 'export.group.engines',
 			targets: [
 				{
-					id: 'phaserae',
-					name: exportFormatNames.phaserae,
+					id: 'phaser-ae',
+					name: exportFormatNames['phaser-ae'],
 					sub: 'export.target.phaser.sub',
-					detail: 'export.target.phaserae.detail'
+					detail: 'export.target.phaserAe.detail'
 				},
 				{
 					id: 'godot',
@@ -166,10 +165,10 @@
 					detail: 'export.target.gdevelop.detail'
 				},
 				{
-					id: 'rpgmaker',
-					name: exportFormatNames.rpgmaker,
-					sub: 'export.target.rpgmaker.sub',
-					detail: 'export.target.rpgmaker.detail'
+					id: 'rpg-maker',
+					name: exportFormatNames['rpg-maker'],
+					sub: 'export.target.rpgMaker.sub',
+					detail: 'export.target.rpgMaker.detail'
 				}
 			]
 		},
@@ -300,7 +299,7 @@
 	);
 	const outfits = $derived(m?.presets.filter((p) => p.id !== CURRENT_OUTFIT_ID) ?? []);
 	// RPG Maker sheets are always dressed composites, whatever the setting says
-	const rpg = $derived(engine === 'rpgmaker' || engine === 'rpgmakerxp');
+	const rpg = $derived(engine === 'rpg-maker' || engine === 'rpg-maker-xp');
 	// The walk an RPG Maker sheet steps through, chosen for this export only; the first eligible walk until one is picked
 	let walkChoice = $state<string>();
 	const walks = $derived(rpg && m ? walkMoves(m) : []);
@@ -674,7 +673,7 @@
 		const filename =
 			result.kind === 'recovery'
 				? `${name}-recovered-artwork.zip`
-				: `${name}-${engineFileName(engine)}.pixeldoll.zip`;
+				: `${name}-${engine}.pixeldoll.zip`;
 		saveZip(result.zip, filename);
 		toast(
 			result.kind === 'recovery'
@@ -896,7 +895,7 @@
 												<span
 													class="target-icon"
 													aria-hidden="true"
-													style:mask-image={`url("${assetUrl(`icons/exports/${e.id === 'phaserae' ? 'phaser' : engineFileName(e.id)}.svg`)}")`}
+													style:mask-image={`url("${assetUrl(`icons/exports/${e.id === 'phaser-ae' ? 'phaser' : e.id}.svg`)}")`}
 												></span>
 												<span class="target-label"
 													><span class="engine-name">{e.name}</span><span class="engine-sub"

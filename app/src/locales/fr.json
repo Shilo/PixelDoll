@@ -1250,11 +1250,11 @@
 				"sub": "Projet modifiable",
 				"detail": "Projet GDevelop modifiable avec des calques Sprite, une lecture synchronisée et des commandes d’équipement. Testez le projet ou copiez les objets et l’événement dans votre jeu."
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "Sprites de marche",
 				"detail": "Une feuille de sprites de marche par tenue, à la taille d’origine de votre personnage. Copiez les fichiers PNG dans img/characters (MZ, MV) ou Graphics/Characters (VX Ace, VX). Les vues de face, de profil et de dos sont nécessaires."
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "Une feuille de sprites de marche à 4 images par tenue, à la taille d’origine du personnage, pour RPG Maker XP et Pokémon Essentials. Copiez les fichiers PNG dans Graphics/Characters. Les vues de face, de profil et de dos sont nécessaires."
 			},
 			"aseprite": {
@@ -1265,7 +1265,7 @@
 				"sub": "Intégration personnalisée",
 				"detail": "Feuilles de sprites et bandes d’animation par calque, avec durées, pivots, données d’équipement et palettes. Votre moteur a besoin de code pour interpréter ces données."
 			},
-			"phaserae": {
+			"phaserAe": {
 				"detail": "Feuilles de sprites par calque et runtime pour les jeux Phaser AE, avec l’équipement, les couleurs et la lecture synchronisée. Ajoutez les feuilles à la liste assets du manifeste de votre jeu, et la compilation du jeu les y copiera."
 			}
 		},
@@ -1354,7 +1354,7 @@
 			"noVisibleFrames": "Le corps n’a aucune image visible.",
 			"godot": "Godot n’a pas pu utiliser ces feuilles de sprites.",
 			"gdevelop": "GDevelop n’a pas pu utiliser ces feuilles de sprites.",
-			"rpgmaker": "RPG Maker nécessite les vues de face, de profil et de dos.",
+			"rpgMaker": "RPG Maker nécessite les vues de face, de profil et de dos.",
 			"aseprite": "L’animation ne correspond pas au format Aseprite.",
 			"unsafeNames": "Certains noms de fichiers ne peuvent pas être empaquetés en toute sécurité.",
 			"tooLarge": "Cet export est trop volumineux.",

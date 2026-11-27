@@ -1734,22 +1734,22 @@ test('actual UI ZIPs materialize global playback in every engine and asset forma
 	for (const [engine, label] of [
 		['godot', 'Godot'],
 		['unity', 'Unity'],
-		['phaserae', 'Phaser'],
+		['phaser-ae', 'Phaser'],
 		['phaser', 'Phaser 3 and 4'],
 		['gdevelop', 'GDevelop'],
-		['rpgmaker', 'RPG Maker'],
-		['rpgmakerxp', 'XP and Pokémon Essentials'],
+		['rpg-maker', 'RPG Maker'],
+		['rpg-maker-xp', 'XP and Pokémon Essentials'],
 		['aseprite', 'Aseprite'],
 		['generic', 'PNG + JSON']
 	] as const) {
-		if (engine === 'rpgmakerxp' || engine === 'phaser') {
+		if (engine === 'rpg-maker-xp' || engine === 'phaser') {
 			// a versioned card's menu: the Phaser card body picks Phaser AE, its menu Phaser 3 and 4
 			const card = engine === 'phaser' ? 'Phaser' : 'RPG Maker';
 			await dialog.getByRole('button', { name: new RegExp(`^${card} version`) }).click();
 			await page.getByRole('menuitemradio', { name: label }).click();
 		} else await dialog.getByRole('radio', { name: label, exact: true }).check();
 		const button = dialog.getByRole('button', { name: /^Download ZIP/ });
-		if (engine === 'rpgmaker' || engine === 'rpgmakerxp') {
+		if (engine === 'rpg-maker' || engine === 'rpg-maker-xp') {
 			await expect(dialog.getByText(/RPG Maker needs front, side and back views/)).toBeVisible();
 			const recovery = dialog.getByRole('button', { name: 'Download artwork ZIP' });
 			await expect(recovery).toBeEnabled();
@@ -1800,7 +1800,7 @@ test('actual UI ZIPs materialize global playback in every engine and asset forma
 			}
 		} else if (engine === 'unity') {
 			expect(playback(JSON.parse(text('unity/pixeldoll_unity.json')).animations)).toEqual(expected);
-		} else if (engine === 'phaserae') {
+		} else if (engine === 'phaser-ae') {
 			// every file the game manifest must list is in the ZIP, under the folder the README suggests
 			const assets: string[] = JSON.parse(text('phaser-ae/assets.json'));
 			const folder = assets[0].slice(0, -'manifest.json'.length);
@@ -3901,11 +3901,11 @@ test('export picker has accessible categories, local icons and a native GDevelop
 	const versionButton = dialog.getByRole('button', { name: /^RPG Maker version/ });
 	const versionMenu = page.getByRole('menu', { name: 'RPG Maker version' });
 	for (const [engine, item, cols, name] of [
-		['rpgmaker', 'Standard: MZ, MV, VX Ace, VX', 3, /^\$[^/]+\.png$/],
-		['rpgmakerxp', 'XP and Pokémon Essentials', 4, /^[^$/][^/]*\.png$/]
+		['rpg-maker', 'Standard: MZ, MV, VX Ace, VX', 3, /^\$[^/]+\.png$/],
+		['rpg-maker-xp', 'XP and Pokémon Essentials', 4, /^[^$/][^/]*\.png$/]
 	] as const) {
 		await page.getByRole('button', { name: 'Export', exact: true }).first().click();
-		if (engine === 'rpgmaker') {
+		if (engine === 'rpg-maker') {
 			// Phaser was the last format: the card body selects Standard and opens nothing
 			await dialog.getByRole('radio', { name: 'RPG Maker', exact: true }).check();
 			await expect(versionMenu).toBeHidden();
@@ -3953,7 +3953,7 @@ test('export picker has accessible categories, local icons and a native GDevelop
 		await expect(dialog.getByText('Includes a walking sheet for your current look')).toBeVisible();
 		await expect(downloadButton).toBeEnabled({ timeout: 30_000 });
 		const [rpg] = await Promise.all([page.waitForEvent('download'), downloadButton.click()]);
-		const fileName = engine === 'rpgmaker' ? 'rpg-maker' : 'rpg-maker-xp';
+		const fileName = engine;
 		expect(rpg.suggestedFilename()).toContain(`-${fileName}.pixeldoll.zip`);
 		const rpgEntries = await unzip(new Uint8Array(await readFile((await rpg.path())!)));
 		const top = [...rpgEntries.keys()].filter((entry) => !entry.startsWith('cells/'));
@@ -3977,7 +3977,7 @@ test('export picker has accessible categories, local icons and a native GDevelop
 		expect([image.w % cols, image.h % 4]).toEqual([0, 0]);
 		rpgSheets[engine] = { w: image.w / cols, h: image.h / 4 };
 	}
-	expect(rpgSheets.rpgmaker).toEqual(rpgSheets.rpgmakerxp); // same native cell in both layouts
+	expect(rpgSheets['rpg-maker']).toEqual(rpgSheets['rpg-maker-xp']); // same native cell in both layouts
 	// XP persists; the button keeps one width for both values; clicking outside the open menu closes it and keeps the choice
 	await page.getByRole('button', { name: 'Export', exact: true }).first().click();
 	await expect(dialog.getByRole('radio', { name: 'RPG Maker', exact: true })).toBeChecked();

@@ -1250,11 +1250,11 @@
 				"sub": "Editable project",
 				"detail": "Editable GDevelop project with Sprite layers, synchronized playback and equipment controls. Preview it or copy the objects and event into your game."
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "Walking sheets",
 				"detail": "A walking sheet per outfit at your character’s own size. Copy the PNG files into img/characters (MZ, MV) or Graphics/Characters (VX Ace, VX). Needs front, side and back views."
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "A 4-frame walking sheet per outfit at your character’s own size, for RPG Maker XP and Pokémon Essentials. Copy the PNG files into Graphics/Characters. Needs front, side and back views."
 			},
 			"aseprite": {
@@ -1265,7 +1265,7 @@
 				"sub": "Custom integration",
 				"detail": "Layer sheets and strips with timing, pivots, equipment and palette data. Your engine needs code to read these rules."
 			},
-			"phaserae": {
+			"phaserAe": {
 				"detail": "Layer sheets and a runtime for Phaser AE games, with equipment, colors and synchronized playback. Add the sheets to the assets list in your game’s manifest, and its build copies them in."
 			}
 		},
@@ -1354,7 +1354,7 @@
 			"noVisibleFrames": "The body has no visible frames.",
 			"godot": "Godot could not use these sprite sheets.",
 			"gdevelop": "GDevelop could not use these sprite sheets.",
-			"rpgmaker": "RPG Maker needs front, side and back views.",
+			"rpgMaker": "RPG Maker needs front, side and back views.",
 			"aseprite": "The animation does not fit the Aseprite format.",
 			"unsafeNames": "Some file names cannot be packaged safely.",
 			"tooLarge": "This export is too large.",

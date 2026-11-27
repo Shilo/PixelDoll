@@ -1250,11 +1250,11 @@
 				"sub": "Bearbeitbares Projekt",
 				"detail": "Bearbeitbares GDevelop-Projekt mit Sprite-Ebenen, synchronisierter Wiedergabe und Ausrüstungssteuerung. Sieh es dir in der Vorschau an oder kopiere die Objekte und das Ereignis in dein Spiel."
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "Geh-Spritesheets",
 				"detail": "Ein Geh-Spritesheet pro Outfit in der Originalgröße deiner Figur. Kopiere die PNG-Dateien nach img/characters (MZ, MV) oder Graphics/Characters (VX Ace, VX). Benötigt Vorder-, Seiten- und Rückansichten."
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "Ein Geh-Spritesheet mit 4 Frames pro Outfit in der Originalgröße deiner Figur, für RPG Maker XP und Pokémon Essentials. Kopiere die PNG-Dateien nach Graphics/Characters. Benötigt Vorder-, Seiten- und Rückansichten."
 			},
 			"aseprite": {
@@ -1265,7 +1265,7 @@
 				"sub": "Eigene Integration",
 				"detail": "Spritesheets und Streifen pro Ebene mit Frame-Dauer, Drehpunkten, Ausrüstungs- und Palettendaten. Deine Engine braucht Code, der diese Regeln liest."
 			},
-			"phaserae": {
+			"phaserAe": {
 				"detail": "Spritesheets pro Ebene und Laufzeitcode für Phaser-AE-Spiele, mit Ausrüstung, Farben und synchronisierter Wiedergabe. Trage die Spritesheets in die assets-Liste im Manifest deines Spiels ein, dann kopiert der Build deines Spiels sie hinein."
 			}
 		},
@@ -1354,7 +1354,7 @@
 			"noVisibleFrames": "Der Grundkörper hat keine sichtbaren Frames.",
 			"godot": "Godot konnte diese Spritesheets nicht verwenden.",
 			"gdevelop": "GDevelop konnte diese Spritesheets nicht verwenden.",
-			"rpgmaker": "RPG Maker benötigt Vorder-, Seiten- und Rückansichten.",
+			"rpgMaker": "RPG Maker benötigt Vorder-, Seiten- und Rückansichten.",
 			"aseprite": "Die Animation passt nicht ins Aseprite-Format.",
 			"unsafeNames": "Einige Dateinamen lassen sich nicht sicher ins Archiv aufnehmen.",
 			"tooLarge": "Dieser Export ist zu groß.",

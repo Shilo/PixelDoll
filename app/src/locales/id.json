@@ -1215,11 +1215,11 @@
 				"sub": "Proyek yang bisa diedit",
 				"detail": "Proyek GDevelop yang bisa diedit, dengan lapisan Sprite, pemutaran tersinkron, dan kontrol perlengkapan. Lihat pratinjaunya atau salin objek dan event ke game Anda."
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "Sprite sheet berjalan",
 				"detail": "Satu sprite sheet berjalan per setelan dengan ukuran asli karakter. Salin file PNG ke img/characters (MZ, MV) atau Graphics/Characters (VX Ace, VX). Memerlukan tampilan depan, samping, dan belakang."
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "Satu sprite sheet berjalan berisi 4 frame per setelan dengan ukuran asli karakter, untuk RPG Maker XP dan Pokémon Essentials. Salin file PNG ke Graphics/Characters. Memerlukan tampilan depan, samping, dan belakang."
 			},
 			"aseprite": {
@@ -1230,7 +1230,7 @@
 				"sub": "Integrasi khusus",
 				"detail": "Sprite sheet dan strip lapisan beserta data pengaturan waktu, titik pivot, perlengkapan, dan palet. Engine Anda memerlukan kode untuk membaca aturan ini."
 			},
-			"phaserae": {
+			"phaserAe": {
 				"detail": "Sprite sheet per lapisan dan runtime untuk game Phaser AE, dengan perlengkapan, warna, dan pemutaran yang tersinkron. Cantumkan sheet tersebut di daftar assets pada manifes game Anda, lalu proses build game akan menyalinnya ke dalam game."
 			}
 		},
@@ -1312,7 +1312,7 @@
 			"noVisibleFrames": "Tubuh tidak memiliki frame yang terlihat.",
 			"godot": "Godot tidak dapat menggunakan sprite sheet ini.",
 			"gdevelop": "GDevelop tidak dapat menggunakan sprite sheet ini.",
-			"rpgmaker": "RPG Maker memerlukan tampilan depan, samping, dan belakang.",
+			"rpgMaker": "RPG Maker memerlukan tampilan depan, samping, dan belakang.",
 			"aseprite": "Animasi ini tidak sesuai dengan format Aseprite.",
 			"unsafeNames": "Sebagian nama file tidak dapat dikemas dengan aman.",
 			"tooLarge": "Hasil ekspor ini terlalu besar.",

@@ -1215,11 +1215,11 @@
 				"sub": "可编辑项目",
 				"detail": "带 Sprite 图层、同步播放和装备控制的可编辑 GDevelop 项目。可预览，或将对象和事件复制到你的游戏中。"
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "行走图集",
 				"detail": "按角色原始尺寸、每个套装一张行走图。将 PNG 文件复制到 img/characters（MZ、MV）或 Graphics/Characters（VX Ace、VX）。需要前、侧、后视图。"
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "按角色原始尺寸、每个套装一张 4 帧行走图，用于 RPG Maker XP 和 Pokémon Essentials。将 PNG 文件复制到 Graphics/Characters。需要前、侧、后视图。"
 			},
 			"aseprite": {
@@ -1230,7 +1230,7 @@
 				"sub": "自定义集成",
 				"detail": "带时间、枢轴点、装备和调色板数据的图层图集和条带。你的引擎需要代码来读取这些规则。"
 			},
-			"phaserae": {
+			"phaserAe": {
 				"detail": "用于 Phaser AE 游戏的分图层精灵图集和运行时，支持装备、颜色和同步播放。将这些精灵图集列入游戏清单的 assets 列表，游戏构建时会将其复制到游戏中。"
 			}
 		},
@@ -1312,7 +1312,7 @@
 			"noVisibleFrames": "身体没有可见的帧。",
 			"godot": "Godot 无法使用这些精灵图集。",
 			"gdevelop": "GDevelop 无法使用这些精灵图集。",
-			"rpgmaker": "RPG Maker 需要前、侧、后视图。",
+			"rpgMaker": "RPG Maker 需要前、侧、后视图。",
 			"aseprite": "动画不符合 Aseprite 格式。",
 			"unsafeNames": "部分文件名无法安全打包。",
 			"tooLarge": "此导出过大。",

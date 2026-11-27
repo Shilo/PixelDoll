@@ -165,8 +165,8 @@ test("eight-facing artwork exports as four rows in each RPG Maker format", async
     ),
   };
   for (const [engine, columns] of [
-    ["rpgmaker", 3],
-    ["rpgmakerxp", 4],
+    ["rpg-maker", 3],
+    ["rpg-maker-xp", 4],
   ] as const) {
     const { entries, errors } = await exportFiles(project, {
       engines: [engine],

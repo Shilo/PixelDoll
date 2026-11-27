@@ -1093,8 +1093,8 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
 - One split **RPG Maker** card, so a zip only holds what its engine reads. The card body (its radio) only selects; the
   version button beside it (a full-width 44 px strip under it on cards narrower than 220 px) selects and opens the version
   menu, the app's popover menu with the current version checked. Selecting never opens the menu, so arrow keys across the
-  cards stay plain radio behavior; clicking outside closes the menu and keeps the choice. **Standard** (engine id `rpgmaker`,
-  the default; MZ, MV, VX Ace and VX share one file) writes `$<name>.png`, 3 × 4 cells; **XP** (`rpgmakerxp`, also Pokémon
+  cards stay plain radio behavior; clicking outside closes the menu and keeps the choice. **Standard** (engine id `rpg-maker`,
+  the default; MZ, MV, VX Ace and VX share one file) writes `$<name>.png`, 3 × 4 cells; **XP** (`rpg-maker-xp`, also Pokémon
   Essentials) writes `<name>.png`, 4 × 4 cells. The button keeps the longest value's width so it never shifts, and the stored
   engine id remembers the version while RPG Maker stays selected (choosing another format and coming back selects Standard). RPG Maker exports cannot be combined with other engines in one call. Rows: south, west, east, north (west is the
   rig's mirrored or generated view; diagonals are dropped). The engines derive the cell from the image size, so the cell is

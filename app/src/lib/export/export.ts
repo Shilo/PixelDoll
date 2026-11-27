@@ -31,7 +31,7 @@ import { actionSheets, type ActionSheetOptions } from './sheets.ts';
 /** Engines whose runtime consumes the pre-cut moving-attack fragments. */
 export const ACTION_LAYER_ENGINES: readonly Engine[] = [
 	'phaser',
-	'phaserae',
+	'phaser-ae',
 	'gdevelop',
 	'godot',
 	'unity'
@@ -160,9 +160,9 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 	}
 	const { manifest: m, warnings, warningMessages } = exportManifest(p, o);
 	// RPG Maker uses no layers, manifest or generic README: its zip holds only its sheets, README and the editable copy
-	const rpg = o.engines.includes('rpgmaker')
+	const rpg = o.engines.includes('rpg-maker')
 		? 'vx'
-		: o.engines.includes('rpgmakerxp')
+		: o.engines.includes('rpg-maker-xp')
 			? 'xp'
 			: null;
 	if (rpg && o.engines.length > 1)
@@ -213,7 +213,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 		}
 	}
 	if (o.engines.includes('phaser')) files.push(...phaserFiles(m));
-	if (o.engines.includes('phaserae')) files.push(...phaserAeFiles(m));
+	if (o.engines.includes('phaser-ae')) files.push(...phaserAeFiles(m));
 	if (o.engines.includes('unity')) files.push(...unityFiles(m));
 	if (o.engines.includes('gdevelop')) {
 		try {
@@ -250,7 +250,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 				errors: [error.message],
 				errorMessages: [errorTranslation(error)],
 				problem: 'RPG Maker needs front, side and back views.',
-				problemMessage: message('export.problem.rpgmaker')
+				problemMessage: message('export.problem.rpgMaker')
 			};
 		}
 	}

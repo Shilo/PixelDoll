@@ -1215,11 +1215,11 @@
 				"sub": "편집 가능한 프로젝트",
 				"detail": "Sprite 레이어, 동기화 재생, 장비 컨트롤이 있는 편집 가능한 GDevelop 프로젝트예요. 미리 보거나 오브젝트와 이벤트를 복사해 게임에 넣으세요."
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "걷기 시트",
 				"detail": "캐릭터 자체 크기로 코디마다 걷기 시트를 만들어요. PNG 파일을 img/characters(MZ, MV) 또는 Graphics/Characters(VX Ace, VX)에 복사하세요. 앞, 옆, 뒤 뷰가 필요해요."
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "캐릭터 자체 크기로 코디마다 4프레임 걷기 시트를 만들어요. RPG Maker XP와 Pokémon Essentials용이에요. PNG 파일을 Graphics/Characters에 복사하세요. 앞, 옆, 뒤 뷰가 필요해요."
 			},
 			"aseprite": {
@@ -1230,7 +1230,7 @@
 				"sub": "직접 연동",
 				"detail": "타이밍, 피벗, 장비, 팔레트 데이터가 담긴 레이어 시트와 스트립이에요. 이 규칙을 읽으려면 엔진에 코드가 필요해요."
 			},
-			"phaserae": {
+			"phaserAe": {
 				"detail": "장비, 색상, 동기화 재생을 지원하는 Phaser AE 게임용 레이어별 스프라이트 시트와 런타임이에요. 게임 매니페스트의 assets 목록에 시트를 추가하면 게임을 빌드할 때 시트가 게임에 복사돼요."
 			}
 		},
@@ -1312,7 +1312,7 @@
 			"noVisibleFrames": "몸체에 표시되는 프레임이 없어요.",
 			"godot": "Godot에서 이 스프라이트 시트를 사용할 수 없어요.",
 			"gdevelop": "GDevelop에서 이 스프라이트 시트를 사용할 수 없어요.",
-			"rpgmaker": "RPG Maker에는 앞, 옆, 뒤 뷰가 필요해요.",
+			"rpgMaker": "RPG Maker에는 앞, 옆, 뒤 뷰가 필요해요.",
 			"aseprite": "애니메이션이 Aseprite 형식에 맞지 않아요.",
 			"unsafeNames": "일부 파일 이름을 안전하게 패키징할 수 없어요.",
 			"tooLarge": "이 내보내기는 너무 커요.",
