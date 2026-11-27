@@ -3575,7 +3575,7 @@
 		"copied": "已复制",
 		"copyPath": "复制路径",
 		"pathCopied": "路径已复制",
-		"brave": "要在 Brave 中使用，请开启 {flag}，然后重启 Brave。",
+		"brave": "要在 Brave 中使用，请将此地址粘贴到地址栏，开启该设置，然后重启 Brave：",
 		"kept": {
 			"other": "已保留 {count} 个文件"
 		},

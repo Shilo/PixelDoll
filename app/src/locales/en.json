@@ -3677,7 +3677,7 @@
 		"copied": "Copied",
 		"copyPath": "Copy path",
 		"pathCopied": "Path copied",
-		"brave": "To use this in Brave, turn on {flag}, then restart Brave.",
+		"brave": "To use this in Brave, paste this address into the address bar, turn the setting on, then restart Brave:",
 		"kept": {
 			"one": "{count} file kept",
 			"other": "{count} files kept"

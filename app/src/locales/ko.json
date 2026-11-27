@@ -3575,7 +3575,7 @@
 		"copied": "복사됨",
 		"copyPath": "경로 복사",
 		"pathCopied": "경로 복사됨",
-		"brave": "Brave에서 사용하려면 {flag} 설정을 켜고 Brave를 다시 시작하세요.",
+		"brave": "Brave에서 사용하려면 이 주소를 주소 표시줄에 붙여 넣고 설정을 켠 다음 Brave를 다시 시작하세요:",
 		"kept": {
 			"other": "파일 {count}개 유지 중"
 		},

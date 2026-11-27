@@ -178,18 +178,25 @@
 		</h3>
 		{#if projectFolder.support === 'brave-disabled'}
 			<p class="bu-muted settings-description">{t('projectFolder.hint')}</p>
-			<p class="small">
-				{t('projectFolder.brave', { flag: BRAVE_FLAG })}
-			</p>
-			<button
-				type="button"
-				class="bu-action btn sm"
-				data-variant="outline"
-				onclick={() => copy(BRAVE_FLAG, 'flag')}
-				><Copy size={14} aria-hidden="true" />{copied === 'flag'
-					? t('projectFolder.copied')
-					: t('projectFolder.copy')}</button
-			>
+			<!-- Browsers never let a page open their internal pages, so the address is copied rather than linked. -->
+			<div class="notice small brave-note">
+				<p>{t('projectFolder.brave')}</p>
+				<div class="bu-code brave-flag">
+					<code>{BRAVE_FLAG}</code>
+					<button
+						type="button"
+						class="bu-action btn sm plain icon"
+						aria-label={copied === 'flag' ? t('projectFolder.copied') : t('projectFolder.copy')}
+						title={t('projectFolder.copy')}
+						onclick={(e) =>
+							copy(BRAVE_FLAG, 'flag', e.currentTarget.parentElement?.querySelector('code'))}
+						>{#if copied === 'flag'}<Check size={14} aria-hidden="true" />{:else}<Copy
+								size={14}
+								aria-hidden="true"
+							/>{/if}</button
+					>
+				</div>
+			</div>
 		{:else if !link}
 			<p class="bu-muted settings-description">{t('projectFolder.hint')}</p>
 			<button
@@ -413,6 +420,29 @@
 		display: grid;
 		gap: 6px;
 		min-width: 0;
+	}
+	.brave-note {
+		display: grid;
+		gap: 8px;
+		justify-self: stretch;
+		min-width: 0;
+	}
+	/* The theme's code block, holding the address and its copy icon side by side. */
+	.brave-flag {
+		display: flex;
+		gap: 4px;
+		align-items: center;
+		padding-block: 4px;
+		padding-inline-end: 4px;
+	}
+	.brave-flag code {
+		flex: 1;
+		min-width: 0;
+		font: inherit;
+		overflow-wrap: anywhere;
+	}
+	.brave-flag button {
+		flex: none;
 	}
 	.offer {
 		display: grid;

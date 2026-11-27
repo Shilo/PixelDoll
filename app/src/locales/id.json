@@ -3575,7 +3575,7 @@
 		"copied": "Disalin",
 		"copyPath": "Salin jalur",
 		"pathCopied": "Jalur disalin",
-		"brave": "Untuk memakai ini di Brave, aktifkan {flag}, lalu mulai ulang Brave.",
+		"brave": "Untuk memakai ini di Brave, tempel alamat ini di bilah alamat, aktifkan pengaturannya, lalu mulai ulang Brave:",
 		"kept": {
 			"other": "{count} file dipertahankan"
 		},

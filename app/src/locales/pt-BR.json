@@ -3686,7 +3686,7 @@
 		"copied": "Copiado",
 		"copyPath": "Copiar caminho",
 		"pathCopied": "Caminho copiado",
-		"brave": "Para usar no Brave, ative {flag} e reinicie o Brave.",
+		"brave": "Para usar no Brave, cole este endereço na barra de endereços, ative a configuração e reinicie o Brave:",
 		"kept": {
 			"one": "{count} arquivo mantido",
 			"other": "{count} arquivos mantidos"

@@ -3677,7 +3677,7 @@
 		"copied": "Kopyalandı",
 		"copyPath": "Yolu kopyala",
 		"pathCopied": "Yol kopyalandı",
-		"brave": "Bunu Brave'de kullanmak için {flag} ayarını açın ve Brave'i yeniden başlatın.",
+		"brave": "Bunu Brave'de kullanmak için bu adresi adres çubuğuna yapıştırın, ayarı açın ve Brave'i yeniden başlatın:",
 		"kept": {
 			"one": "{count} dosya korundu",
 			"other": "{count} dosya korundu"
