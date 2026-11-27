@@ -132,7 +132,7 @@ test('move deletion protects the final move, demo, dependent standing designs, a
 		id: 'walk'
 	});
 	doc.id = 'fixture:s2';
-	expect(errorText(moveDeletionBlocked('walk'))).toMatch('Demo moves');
+	expect(errorText(moveDeletionBlocked('walk'))).toMatch('The demo’s moves');
 	doc.id = 'project';
 	store.project!.manifest.items[1].standing = 'walk';
 	expect(errorText(moveDeletionBlocked('walk'))).toMatch('standing move');

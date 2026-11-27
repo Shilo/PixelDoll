@@ -366,7 +366,7 @@
 		"directions": "Direções…",
 		"demoDeleteLocked": "O personagem da demo não pode ir para a lixeira",
 		"labelDeleteCharacter": "Mover para a lixeira…",
-		"demoRenameLocked": "Edite uma cópia para renomear a demo"
+		"demoRenameLocked": "Faça uma cópia editável para renomear a demo"
 	},
 	"characterName": {
 		"demo": "(Demo)"
@@ -497,7 +497,7 @@
 		"canceling": "Cancelando…",
 		"keep": "Manter",
 		"runningDetail": "{status} · {prompt}",
-		"demoRenameLocked": "Itens da demo não podem ser renomeados"
+		"demoRenameLocked": "Os itens da demo não podem ser renomeados"
 	},
 	"itemPane": {
 		"movesSection": "Movimentos e estados",
@@ -3151,7 +3151,7 @@
 		"unavailable": "Esta animação não está mais disponível.",
 		"keepStanding": "Mantenha as vistas da pose em pé usadas para criar itens e estendê-los a outras animações.",
 		"keepOne": "Mantenha pelo menos uma animação neste personagem.",
-		"demo": "Os movimentos da demo não podem ir para a lixeira.",
+		"demo": "Os movimentos da demo não podem ir para a lixeira",
 		"resolveDrafts": "Conclua ou descarte os rascunhos de itens deste personagem antes de mover um movimento para a lixeira.",
 		"required": "Esta animação da pose em pé é necessária para reaproveitar os itens existentes em novas animações.",
 		"selectedCharacterChanged": "O personagem selecionado mudou.",

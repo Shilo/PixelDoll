@@ -360,7 +360,7 @@
 		"directions": "向き…",
 		"demoDeleteLocked": "デモのキャラクターはゴミ箱に移動できません",
 		"labelDeleteCharacter": "ゴミ箱に移動…",
-		"demoRenameLocked": "コピーを編集するとデモの名前を変えられます"
+		"demoRenameLocked": "デモの名前を変えるには編集できるコピーを作成してください"
 	},
 	"characterName": {
 		"demo": "（デモ）"
@@ -488,7 +488,7 @@
 		"canceling": "キャンセル中…",
 		"keep": "続ける",
 		"runningDetail": "{status}・{prompt}",
-		"demoRenameLocked": "デモのアイテムは名前を変えられません"
+		"demoRenameLocked": "デモのアイテムは名前を変更できません"
 	},
 	"itemPane": {
 		"movesSection": "動きと状態",
@@ -3062,7 +3062,7 @@
 		"unavailable": "このモーションは利用できなくなりました。",
 		"keepStanding": "アイテムの作成や、既存のアイテムを別のモーションに対応させるときに使う立ちポーズの画像は残してください。",
 		"keepOne": "このキャラクターには少なくとも1つのモーションを残してください。",
-		"demo": "デモのモーションはゴミ箱に移動できません。",
+		"demo": "デモのモーションはゴミ箱に移動できません",
 		"resolveDrafts": "モーションをゴミ箱に移動する前に、このキャラクターのアイテム下書きを完了するか破棄してください。",
 		"required": "既存のアイテムを新しいモーションでも使えるようにするには、この立ちポーズのモーションが必要です。",
 		"selectedCharacterChanged": "選択したキャラクターが変更されました。",

@@ -360,7 +360,7 @@
 		"directions": "방향…",
 		"demoDeleteLocked": "데모 캐릭터는 휴지통으로 옮길 수 없습니다",
 		"labelDeleteCharacter": "휴지통으로 이동…",
-		"demoRenameLocked": "사본을 편집하면 데모 이름을 바꿀 수 있습니다"
+		"demoRenameLocked": "데모 이름을 바꾸려면 편집 가능한 사본을 만드세요"
 	},
 	"characterName": {
 		"demo": "(데모)"
@@ -483,12 +483,12 @@
 		"preparing": "아이템 준비 중",
 		"remake": "이 캐릭터용 복사본 만들기…",
 		"makeForSlot": "{slot} 아이템 만들기…",
-		"demoDeleteLocked": "데모 아이템은 휴지통으로 옮길 수 없습니다",
+		"demoDeleteLocked": "데모의 아이템은 휴지통으로 옮길 수 없습니다",
 		"cancelItem": "아이템 취소",
 		"canceling": "취소 중…",
 		"keep": "유지",
 		"runningDetail": "{status} · {prompt}",
-		"demoRenameLocked": "데모 아이템은 이름을 바꿀 수 없습니다"
+		"demoRenameLocked": "데모의 아이템은 이름을 바꿀 수 없습니다"
 	},
 	"itemPane": {
 		"movesSection": "동작 및 상태",
@@ -3062,7 +3062,7 @@
 		"unavailable": "이 동작은 더 이상 사용할 수 없어요.",
 		"keepStanding": "아이템을 만들고 확장하는 데 쓰는 서 있는 뷰를 유지하세요.",
 		"keepOne": "이 캐릭터에 동작을 하나 이상 유지하세요.",
-		"demo": "데모 모션은 휴지통으로 옮길 수 없습니다.",
+		"demo": "데모의 모션은 휴지통으로 옮길 수 없습니다",
 		"resolveDrafts": "모션을 휴지통으로 옮기기 전에 이 캐릭터의 아이템 초안을 끝내거나 버리세요.",
 		"required": "기존 아이템을 새 동작으로 확장하려면 이 서 있는 동작이 필요해요.",
 		"selectedCharacterChanged": "선택한 캐릭터가 바뀌었어요.",

@@ -360,7 +360,7 @@
 		"directions": "朝向…",
 		"demoDeleteLocked": "演示角色无法移到回收站",
 		"labelDeleteCharacter": "移到回收站…",
-		"demoRenameLocked": "编辑副本即可重命名演示"
+		"demoRenameLocked": "要重命名演示，请先制作可编辑副本"
 	},
 	"characterName": {
 		"demo": "（演示）"
@@ -483,12 +483,12 @@
 		"preparing": "正在准备你的装备",
 		"remake": "为此角色制作副本…",
 		"makeForSlot": "为{slot}制作一件…",
-		"demoDeleteLocked": "演示物品无法移到回收站",
+		"demoDeleteLocked": "演示的物品无法移到回收站",
 		"cancelItem": "取消生成",
 		"canceling": "正在取消…",
 		"keep": "保留",
 		"runningDetail": "{status} · {prompt}",
-		"demoRenameLocked": "演示物品无法重命名"
+		"demoRenameLocked": "演示的物品无法重命名"
 	},
 	"itemPane": {
 		"movesSection": "动作与状态",
@@ -3062,7 +3062,7 @@
 		"unavailable": "此动作已不可用。",
 		"keepStanding": "请保留用于创建和扩展装备的站立视图。",
 		"keepOne": "请在此角色上保留至少一个动作。",
-		"demo": "演示动作无法移到回收站。",
+		"demo": "演示的动作无法移到回收站",
 		"resolveDrafts": "将动作移到回收站前，请完成或丢弃此角色的物品草稿。",
 		"required": "需要此站立动作才能将现有装备扩展到新动作。",
 		"selectedCharacterChanged": "所选角色已更改。",

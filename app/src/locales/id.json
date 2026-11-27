@@ -360,7 +360,7 @@
 		"directions": "Arah…",
 		"demoDeleteLocked": "Karakter demo tidak bisa dipindahkan ke tempat sampah",
 		"labelDeleteCharacter": "Pindahkan ke tempat sampah…",
-		"demoRenameLocked": "Edit salinan untuk mengganti nama demo"
+		"demoRenameLocked": "Buat salinan yang bisa diedit untuk mengganti nama demo"
 	},
 	"characterName": {
 		"demo": "(Demo)"
@@ -3062,7 +3062,7 @@
 		"unavailable": "Animasi ini tidak lagi tersedia.",
 		"keepStanding": "Pertahankan tampilan berdiri yang digunakan untuk membuat item dan menambahkannya ke animasi lain.",
 		"keepOne": "Pertahankan setidaknya satu animasi pada karakter ini.",
-		"demo": "Gerakan demo tidak bisa dipindahkan ke tempat sampah.",
+		"demo": "Gerakan demo tidak bisa dipindahkan ke tempat sampah",
 		"resolveDrafts": "Selesaikan atau buang draf item karakter ini sebelum memindahkan gerakan ke tempat sampah.",
 		"required": "Animasi berdiri ini diperlukan untuk menambahkan item yang sudah ada ke animasi baru.",
 		"selectedCharacterChanged": "Karakter pilihan berubah.",

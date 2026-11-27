@@ -263,7 +263,7 @@ export function moveDeletionBlocked(id: string): LocalizedError | '' {
 	if (manifest.rig.animations.length <= 1)
 		return new LocalizedError('Keep at least one move on this character.', 'moveRemoval.keepOne');
 	if (doc.id.startsWith('fixture:'))
-		return new LocalizedError('Demo moves can’t be moved to the Trash.', 'moveRemoval.demo');
+		return new LocalizedError('The demo’s moves can’t be moved to the Trash', 'moveRemoval.demo');
 	if (gens.some((generation) => generation.draft.rigId === doc.id && !generation.draft.acceptedAt))
 		return new LocalizedError(
 			"Finish or discard this character's item drafts before moving a move to the Trash.",

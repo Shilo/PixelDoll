@@ -366,7 +366,7 @@
 		"directions": "Blickrichtungen…",
 		"demoDeleteLocked": "Die Demo-Figur kann nicht in den Papierkorb",
 		"labelDeleteCharacter": "In den Papierkorb…",
-		"demoRenameLocked": "Bearbeite eine Kopie, um die Demo umzubenennen"
+		"demoRenameLocked": "Erstelle eine bearbeitbare Kopie, um die Demo umzubenennen"
 	},
 	"characterName": {
 		"demo": "(Demo)"
@@ -492,12 +492,12 @@
 		"preparing": "Dein Gegenstand wird vorbereitet",
 		"remake": "Kopie für diese Figur…",
 		"makeForSlot": "Für {slot} erstellen…",
-		"demoDeleteLocked": "Demo-Gegenstände können nicht in den Papierkorb",
+		"demoDeleteLocked": "Die Gegenstände der Demo können nicht in den Papierkorb",
 		"cancelItem": "Gegenstand abbrechen",
 		"canceling": "Wird abgebrochen…",
 		"keep": "Behalten",
 		"runningDetail": "{status} · {prompt}",
-		"demoRenameLocked": "Demo-Gegenstände lassen sich nicht umbenennen"
+		"demoRenameLocked": "Die Gegenstände der Demo können nicht umbenannt werden"
 	},
 	"itemPane": {
 		"movesSection": "Bewegungen und Zustände",
@@ -3142,7 +3142,7 @@
 		"unavailable": "Diese Animation ist nicht mehr verfügbar.",
 		"keepStanding": "Behalte die Standansichten, die zum Erstellen und Erweitern von Gegenständen dienen.",
 		"keepOne": "Behalte mindestens eine Animation für diese Figur.",
-		"demo": "Demo-Animationen können nicht in den Papierkorb.",
+		"demo": "Die Animationen der Demo können nicht in den Papierkorb",
 		"resolveDrafts": "Schließe die Gegenstandsentwürfe dieser Figur ab oder verwirf sie, bevor du eine Animation in den Papierkorb verschiebst.",
 		"required": "Diese Standanimation wird benötigt, um vorhandene Gegenstände um neue Animationen zu erweitern.",
 		"selectedCharacterChanged": "Die ausgewählte Figur hat sich geändert.",

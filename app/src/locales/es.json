@@ -366,7 +366,7 @@
 		"directions": "Direcciones…",
 		"demoDeleteLocked": "El personaje de la demo no se puede mover a la papelera",
 		"labelDeleteCharacter": "Mover a la papelera…",
-		"demoRenameLocked": "Edita una copia para renombrar la demo"
+		"demoRenameLocked": "Haz una copia editable para renombrar la demo"
 	},
 	"characterName": {
 		"demo": "(Demo)"
@@ -3142,7 +3142,7 @@
 		"unavailable": "Esta animación ya no está disponible.",
 		"keepStanding": "Conserva las vistas de la pose de pie que se usan para crear objetos y añadirles fotogramas.",
 		"keepOne": "Conserva al menos una animación en este personaje.",
-		"demo": "Los movimientos de la demo no se pueden mover a la papelera.",
+		"demo": "Los movimientos de la demo no se pueden mover a la papelera",
 		"resolveDrafts": "Termina o descarta los borradores de objetos de este personaje antes de mover un movimiento a la papelera.",
 		"required": "La animación de la pose de pie es necesaria para añadir fotogramas de los objetos existentes a nuevas animaciones.",
 		"selectedCharacterChanged": "El personaje seleccionado cambió.",

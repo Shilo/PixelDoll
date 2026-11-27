@@ -366,7 +366,7 @@
 		"directions": "Yönler…",
 		"demoDeleteLocked": "Demo karakteri çöp kutusuna taşınamaz",
 		"labelDeleteCharacter": "Çöp kutusuna taşı…",
-		"demoRenameLocked": "Demoyu yeniden adlandırmak için bir kopyayı düzenle"
+		"demoRenameLocked": "Demoyu yeniden adlandırmak için düzenlenebilir bir kopya oluşturun"
 	},
 	"characterName": {
 		"demo": "(Demo)"
@@ -492,12 +492,12 @@
 		"preparing": "Eşya hazırlanıyor",
 		"remake": "Bu karakter için kopya yap…",
 		"makeForSlot": "{slot} yuvası için bir tane üretin…",
-		"demoDeleteLocked": "Demo eşyaları çöp kutusuna taşınamaz",
+		"demoDeleteLocked": "Demonun eşyaları çöp kutusuna taşınamaz",
 		"cancelItem": "Eşyayı iptal edin",
 		"canceling": "İptal ediliyor…",
 		"keep": "Üretime devam edin",
 		"runningDetail": "{status} · {prompt}",
-		"demoRenameLocked": "Demo eşyaları yeniden adlandırılamaz"
+		"demoRenameLocked": "Demonun eşyaları yeniden adlandırılamaz"
 	},
 	"itemPane": {
 		"movesSection": "Hareketler ve durumlar",
@@ -3142,7 +3142,7 @@
 		"unavailable": "Bu animasyon artık kullanılamıyor.",
 		"keepStanding": "Eşya üretmek ve eşyaları yeni animasyonlara uyarlamak için kullanılan ayakta duruş görünümlerini koruyun.",
 		"keepOne": "Bu karakterde en az bir animasyon tutun.",
-		"demo": "Demo hareketleri çöp kutusuna taşınamaz.",
+		"demo": "Demonun hareketleri çöp kutusuna taşınamaz",
 		"resolveDrafts": "Bir hareketi çöp kutusuna taşımadan önce bu karakterin eşya taslaklarını bitirin veya atın.",
 		"required": "Mevcut eşyaları yeni animasyonlara uyarlamak için bu ayakta duruş animasyonu gerekir.",
 		"selectedCharacterChanged": "Seçili karakter değişti.",

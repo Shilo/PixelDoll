@@ -366,7 +366,7 @@
 		"directions": "Directions…",
 		"demoDeleteLocked": "Le personnage de démo ne peut pas aller dans la corbeille",
 		"labelDeleteCharacter": "Vers la corbeille…",
-		"demoRenameLocked": "Modifiez une copie pour renommer la démo"
+		"demoRenameLocked": "Faites une copie modifiable pour renommer la démo"
 	},
 	"characterName": {
 		"demo": "(Démo)"
@@ -3142,7 +3142,7 @@
 		"unavailable": "Cette animation n’est plus disponible.",
 		"keepStanding": "Conservez les vues debout qui servent à créer des objets ou à les adapter à d’autres animations.",
 		"keepOne": "Conservez au moins une animation pour ce personnage.",
-		"demo": "Les mouvements de la démo ne peuvent pas aller dans la corbeille.",
+		"demo": "Les mouvements de la démo ne peuvent pas aller dans la corbeille",
 		"resolveDrafts": "Terminez ou abandonnez les brouillons d’objets de ce personnage avant de placer un mouvement dans la corbeille.",
 		"required": "Ces vues debout sont nécessaires pour adapter les objets existants à de nouvelles animations.",
 		"selectedCharacterChanged": "Le personnage sélectionné a changé.",

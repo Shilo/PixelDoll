@@ -366,7 +366,7 @@
 		"directions": "Directions…",
 		"demoDeleteLocked": "The demo character can’t be moved to the Trash",
 		"labelDeleteCharacter": "Move to Trash…",
-		"demoRenameLocked": "Edit a copy to rename the demo"
+		"demoRenameLocked": "Make an editable copy to rename the demo"
 	},
 	"characterName": {
 		"demo": "(Demo)"
@@ -492,12 +492,12 @@
 		"preparing": "Preparing your item",
 		"remake": "Make copy for self…",
 		"makeForSlot": "Make one for the {slot}…",
-		"demoDeleteLocked": "Demo items can’t be moved to the Trash",
+		"demoDeleteLocked": "The demo’s items can’t be moved to the Trash",
 		"cancelItem": "Cancel item",
 		"canceling": "Canceling…",
 		"keep": "Keep",
 		"runningDetail": "{status} · {prompt}",
-		"demoRenameLocked": "Demo items can't be renamed"
+		"demoRenameLocked": "The demo’s items can’t be renamed"
 	},
 	"itemPane": {
 		"movesSection": "Moves & States",
@@ -3142,7 +3142,7 @@
 		"unavailable": "This move is no longer available.",
 		"keepStanding": "Keep the standing views used to create and extend items.",
 		"keepOne": "Keep at least one move on this character.",
-		"demo": "Demo moves can’t be moved to the Trash.",
+		"demo": "The demo’s moves can’t be moved to the Trash",
 		"resolveDrafts": "Finish or discard this character's item drafts before moving a move to the Trash.",
 		"required": "This standing move is needed to extend existing items to new moves.",
 		"selectedCharacterChanged": "The selected character changed.",
