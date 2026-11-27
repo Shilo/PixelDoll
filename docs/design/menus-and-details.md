@@ -28,7 +28,8 @@ object's window (which leaves out the row that opens that window).
 
 In Characters and Customize, right-clicking a sprite or character name opens actions for that character. This gives the
 character on the stage the same shortcuts as its library row. The New character review offers those actions on the saved
-result's sprites. In playable views, right-clicking the floor still attacks.
+result's sprites. On the Customize stage this works only in Preview; in Top-down and Side-scroller, right-click always
+attacks.
 
 **Name: View and edit…** (owner decision, 2026-11-26), with an eye icon; the window is titled with the object's name.
 "Details" read as text only, so players could skip the window that fixes their item, and "Inspect" promised a closer look

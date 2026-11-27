@@ -726,8 +726,11 @@ test('character actions download and delete an unopened character without select
 			throw new Error('No character pixels on the stage');
 		});
 		await page.mouse.click(hit.x, hit.y, { button: 'right' });
-		await expect(demoMenu.getByRole('menuitem')).toHaveText(demoActions);
-		await page.keyboard.press('Escape');
+		// Only Preview offers the menu; the live views keep right-click for attacking.
+		if (view === 'Preview') {
+			await expect(demoMenu.getByRole('menuitem')).toHaveText(demoActions);
+			await page.keyboard.press('Escape');
+		} else await expect(demoMenu).toBeHidden();
 	}
 });
 

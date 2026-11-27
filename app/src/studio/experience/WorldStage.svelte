@@ -521,7 +521,6 @@
 	type HitBox = { l: number; r: number; t: number; b: number };
 	// Preview facings also use these bounds for left-click selection.
 	let picks: (HitBox & { direction: DirectionName })[] = [];
-	let liveActor: HitBox | undefined;
 	let pendingTap: {
 		pointerId: number;
 		x: number;
@@ -535,18 +534,10 @@
 		experience.mode === 'preview' && !ui.sheet
 			? picks.find((p) => p.direction !== ui.dir && hits(e, p))?.direction
 			: undefined;
-	// Only the drawn character counts: its frame is much wider than the art, and a right press beside it attacks.
-	function onLiveActor(e: PointerLocation) {
-		if (!liveActor || !hits(e, liveActor)) return false;
-		const bounds = canvas.getBoundingClientRect();
-		const x = Math.floor(((e.clientX - bounds.left) * canvas.width) / bounds.width);
-		const y = Math.floor(((e.clientY - bounds.top) * canvas.height) / bounds.height);
-		return canvas.getContext('2d')!.getImageData(x, y, 1, 1).data[3] > 0;
-	}
+	// Only Preview offers the character menu; in the live views a right press always attacks.
 	function openActorMenu(e: MouseEvent) {
 		if (e.defaultPrevented || e.button !== 2 || ui.sheet || doc.loading) return;
-		const onActor = experience.mode === 'preview' ? picks.some((p) => hits(e, p)) : onLiveActor(e);
-		if (!onActor) return;
+		if (experience.mode !== 'preview' || !picks.some((p) => hits(e, p))) return;
 		e.preventDefault();
 		oncharacteractions(host, new DOMRect(e.clientX, e.clientY, 1, 1));
 	}
@@ -554,8 +545,6 @@
 		const live = experience.mode !== 'preview';
 		if (ui.sheet || (e.button !== 0 && !(live && e.pointerType === 'mouse' && e.button === 2)))
 			return;
-		// The actor opens its menu. Right presses on the playfield still drive the held attack.
-		if (e.button === 2 && onLiveActor(e)) return;
 		host.focus({ preventScroll: true });
 		touchInput = e.pointerType !== 'mouse';
 		const direction = picked(e);
@@ -1014,7 +1003,6 @@
 			const dt = Math.min(50, now - last);
 			last = now;
 			picks = [];
-			liveActor = undefined;
 			const a = availability,
 				dpr = devicePixelRatio || 1;
 			const width = innerWidth,
@@ -1618,13 +1606,6 @@
 					actorAt = live
 						? { x: point.x, y: point.y - lift - standing / 2, r: Math.max(12, standing / 5) }
 						: null;
-					if (live && actor) {
-						const facing = p.direction || ui.dir;
-						const box = mountedReach.get(facing) ?? facingReach.get(facing) ?? reach ?? fit;
-						const left = x + (frame.x + (selectedOrigin?.x ?? 0) - box.x) * scale;
-						const top = y - lift + (frame.y + (selectedOrigin?.y ?? 0) - box.y) * scale;
-						liveActor = { l: left, r: left + box.w * scale, t: top, b: top + box.h * scale };
-					}
 					picks = live
 						? []
 						: facings.map((direction) => {
