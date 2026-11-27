@@ -1450,8 +1450,8 @@
 						{#if otherHand}
 							<!-- First: how the item is held (functional), before how the outfit is layered and drawn. Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
 							<section class="hide-rules hand-rules">
-								{#if !isDemo() && it.prompt && !twoHanded(m, it)}
-									<!-- The same description drawn for the other hand; the New item sheet prices it first. -->
+								{#if !isDemo() && it.prompt}
+									<!-- The same description drawn for the other hand, two-handed or not (a hand switch); the New item sheet prices it first. -->
 									<div class="tool-list">
 										<ToolRow
 											{...{

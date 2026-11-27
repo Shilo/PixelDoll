@@ -12340,7 +12340,7 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await expect(
 		page.getByText('Took off Round shield: Steel longsword is two-handed')
 	).toBeVisible();
-	await expect(otherHandCopy('Off hand')).toHaveCount(0);
+	await expect(otherHandCopy('Off hand')).toBeVisible();
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(shield).toHaveAttribute('aria-pressed', 'false');
 	await expect(sword).toHaveAttribute('aria-pressed', 'true');
