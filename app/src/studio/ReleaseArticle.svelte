@@ -204,6 +204,21 @@
 	.change-group + .change-group {
 		margin-block-start: 12px;
 	}
+	/* A long list reads as text: quiet links that underline on hover, with the new-tab icon kept on the line. */
+	.change-group a {
+		color: inherit;
+		text-decoration: none;
+	}
+	.change-group a:hover,
+	.change-group a:focus-visible {
+		color: var(--bu-accent);
+		text-decoration: underline;
+	}
+	.change-group a :global(svg) {
+		display: inline;
+		vertical-align: -1px;
+		opacity: 0.6;
+	}
 	details button,
 	.banner button {
 		margin-block-start: 8px;
