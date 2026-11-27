@@ -33,6 +33,7 @@
 		splitBeforeEdit,
 		frameEditsBlocked,
 		openPendingWork,
+		store,
 		ui
 	} from './state.svelte.ts';
 	let { id }: { id: string } = $props();
@@ -174,6 +175,10 @@
 	wide
 	locked={busy}
 	dirty={!!facts && (size !== current || dy !== 0)}
+	back={ui.returnTo === 'details' ? () => (ui.sheet = 'details') : undefined}
+	backTo={ui.returnTo === 'details'
+		? store.projects.find((p) => p.id === ui.details)?.name
+		: undefined}
 	onclose={() => (ui.sheet = null)}
 >
 	{#if loaded && m && facts}

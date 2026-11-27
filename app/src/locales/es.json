@@ -434,7 +434,6 @@
 		"openedYourEditableCopyOfTheDemo": "Se abrió tu copia editable de la demo. No se usaron generaciones."
 	},
 	"detailsSheet": {
-		"title": "Detalles de {name}",
 		"notSaved": "Este personaje ya no está guardado.",
 		"withItems": "Con objetos",
 		"itemCost": {
@@ -1775,23 +1774,90 @@
 			"gem": "Gema"
 		},
 		"ideas": {
-			"head": ["sombrero de mago", "yelmo de hierro de caballero", "corona dorada", "capucha"],
-			"hair": ["pelo largo trenzado", "pelo corto en punta", "coleta"],
-			"face_acc": ["gafas redondas", "parche en el ojo", "máscara de bandido"],
-			"torso_inner": ["chaleco de cuero", "camisa de cota de malla", "túnica azul"],
-			"arms": ["guantes de cuero", "guanteletes de hierro", "vendas de tela"],
-			"legs": ["pantalones marrones", "grebas de placas", "falda plisada"],
-			"feet": ["botas de cuero", "sandalias", "escarpes de hierro"],
-			"back": ["capa roja", "mochila de viaje", "carcaj con flechas"],
-			"main_hand": ["espada de acero", "bastón de madera", "hacha de batalla"],
-			"off_hand": ["escudo redondo", "farol de hierro", "arco largo de madera"],
-			"facial_hair": ["barba completa", "bigote de manubrio", "perilla"],
-			"torso_outer": ["armadura de placas de acero", "túnica con capucha", "abrigo largo"],
-			"underwear": ["conjunto de ropa interior blanca lisa", "traje de baño a rayas"],
-			"waist": ["cinturón de cuero", "faja roja", "bolsa de cinturón"],
-			"neck": ["amuleto de oro", "bufanda de lana", "collar de cuentas"],
-			"shoulders": ["hombreras de acero", "manto de piel"],
-			"accessory": ["broche de latón", "lazo de cinta", "bolsita de amuletos"]
+			"head": [
+				"sombrero de mago",
+				"yelmo de hierro de caballero",
+				"corona dorada",
+				"capucha"
+			],
+			"hair": [
+				"pelo largo trenzado",
+				"pelo corto en punta",
+				"coleta"
+			],
+			"face_acc": [
+				"gafas redondas",
+				"parche en el ojo",
+				"máscara de bandido"
+			],
+			"torso_inner": [
+				"chaleco de cuero",
+				"camisa de cota de malla",
+				"túnica azul"
+			],
+			"arms": [
+				"guantes de cuero",
+				"guanteletes de hierro",
+				"vendas de tela"
+			],
+			"legs": [
+				"pantalones marrones",
+				"grebas de placas",
+				"falda plisada"
+			],
+			"feet": [
+				"botas de cuero",
+				"sandalias",
+				"escarpes de hierro"
+			],
+			"back": [
+				"capa roja",
+				"mochila de viaje",
+				"carcaj con flechas"
+			],
+			"main_hand": [
+				"espada de acero",
+				"bastón de madera",
+				"hacha de batalla"
+			],
+			"off_hand": [
+				"escudo redondo",
+				"farol de hierro",
+				"arco largo de madera"
+			],
+			"facial_hair": [
+				"barba completa",
+				"bigote de manubrio",
+				"perilla"
+			],
+			"torso_outer": [
+				"armadura de placas de acero",
+				"túnica con capucha",
+				"abrigo largo"
+			],
+			"underwear": [
+				"conjunto de ropa interior blanca lisa",
+				"traje de baño a rayas"
+			],
+			"waist": [
+				"cinturón de cuero",
+				"faja roja",
+				"bolsa de cinturón"
+			],
+			"neck": [
+				"amuleto de oro",
+				"bufanda de lana",
+				"collar de cuentas"
+			],
+			"shoulders": [
+				"hombreras de acero",
+				"manto de piel"
+			],
+			"accessory": [
+				"broche de latón",
+				"lazo de cinta",
+				"bolsita de amuletos"
+			]
 		},
 		"enterName": "Escribe un nombre.",
 		"nameExists": "{name} ya existe.",
@@ -3709,5 +3775,15 @@
 		"percent": "{percent} % del tamaño real",
 		"zoomed": "Zoom {percent} %",
 		"missing": "No hay imagen"
+	},
+	"characterWindow": {
+		"actions": "Acciones del personaje",
+		"open": "Abrir personaje",
+		"frameSection": "Marco y direcciones",
+		"costSection": "Coste",
+		"adjustFrameDetail": "Cambia el tamaño del marco o dónde se sitúa el personaje.",
+		"directionsDetail": "Elige qué orientaciones se dibujan y cuáles reflejan otra.",
+		"costEstimateDetail": "Calcula cuánto costarían más movimientos, estados y objetos.",
+		"frameLocked": "El marco y las direcciones de este personaje no se pueden cambiar."
 	}
 }

@@ -434,7 +434,6 @@
 		"openedYourEditableCopyOfTheDemo": "Opened your editable copy of the demo. No generations used."
 	},
 	"detailsSheet": {
-		"title": "{name} details",
 		"notSaved": "This character is no longer saved.",
 		"withItems": "With items",
 		"itemCost": {
@@ -1775,23 +1774,90 @@
 			"gem": "Gem"
 		},
 		"ideas": {
-			"head": ["wizard hat", "iron knight helmet", "golden crown", "hood"],
-			"hair": ["long braided hair", "short spiky hair", "ponytail"],
-			"face_acc": ["round glasses", "eye patch", "bandit mask"],
-			"torso_inner": ["leather vest", "chainmail shirt", "blue tunic"],
-			"arms": ["leather gloves", "iron gauntlets", "cloth wraps"],
-			"legs": ["brown trousers", "plate greaves", "pleated skirt"],
-			"feet": ["leather boots", "sandals", "iron sabatons"],
-			"back": ["red cape", "travel backpack", "quiver of arrows"],
-			"main_hand": ["steel sword", "wooden staff", "battle axe"],
-			"off_hand": ["round shield", "iron lantern", "wooden longbow"],
-			"facial_hair": ["full beard", "handlebar mustache", "goatee"],
-			"torso_outer": ["steel plate armor", "hooded robe", "long coat"],
-			"underwear": ["plain white underwear set", "striped swimsuit"],
-			"waist": ["leather belt", "red sash", "belt pouch"],
-			"neck": ["gold amulet", "wool scarf", "bead necklace"],
-			"shoulders": ["steel pauldrons", "fur mantle"],
-			"accessory": ["brass brooch", "ribbon bow", "charm pouch"]
+			"head": [
+				"wizard hat",
+				"iron knight helmet",
+				"golden crown",
+				"hood"
+			],
+			"hair": [
+				"long braided hair",
+				"short spiky hair",
+				"ponytail"
+			],
+			"face_acc": [
+				"round glasses",
+				"eye patch",
+				"bandit mask"
+			],
+			"torso_inner": [
+				"leather vest",
+				"chainmail shirt",
+				"blue tunic"
+			],
+			"arms": [
+				"leather gloves",
+				"iron gauntlets",
+				"cloth wraps"
+			],
+			"legs": [
+				"brown trousers",
+				"plate greaves",
+				"pleated skirt"
+			],
+			"feet": [
+				"leather boots",
+				"sandals",
+				"iron sabatons"
+			],
+			"back": [
+				"red cape",
+				"travel backpack",
+				"quiver of arrows"
+			],
+			"main_hand": [
+				"steel sword",
+				"wooden staff",
+				"battle axe"
+			],
+			"off_hand": [
+				"round shield",
+				"iron lantern",
+				"wooden longbow"
+			],
+			"facial_hair": [
+				"full beard",
+				"handlebar mustache",
+				"goatee"
+			],
+			"torso_outer": [
+				"steel plate armor",
+				"hooded robe",
+				"long coat"
+			],
+			"underwear": [
+				"plain white underwear set",
+				"striped swimsuit"
+			],
+			"waist": [
+				"leather belt",
+				"red sash",
+				"belt pouch"
+			],
+			"neck": [
+				"gold amulet",
+				"wool scarf",
+				"bead necklace"
+			],
+			"shoulders": [
+				"steel pauldrons",
+				"fur mantle"
+			],
+			"accessory": [
+				"brass brooch",
+				"ribbon bow",
+				"charm pouch"
+			]
 		},
 		"enterName": "Enter a name.",
 		"nameExists": "{name} already exists.",
@@ -3709,5 +3775,15 @@
 		"percent": "{percent}% of actual size",
 		"zoomed": "Zoom {percent}%",
 		"missing": "No image to show"
+	},
+	"characterWindow": {
+		"actions": "Character actions",
+		"open": "Open character",
+		"frameSection": "Frame & Directions",
+		"costSection": "Cost",
+		"adjustFrameDetail": "Change the frame size or where the character sits in it.",
+		"directionsDetail": "Choose which facings are drawn and which mirror another.",
+		"costEstimateDetail": "Estimate what more moves, states and items would cost.",
+		"frameLocked": "This character’s frame and directions can’t be changed."
 	}
 }

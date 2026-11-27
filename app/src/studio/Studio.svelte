@@ -92,7 +92,7 @@
 		item: () => import('./ItemPane.svelte'),
 		notes: () => import('./StageNote.svelte'),
 		gen: () => import('./GenCard.svelte'),
-		details: () => import('./DetailsSheet.svelte'),
+		details: () => import('./CharacterWindow.svelte'),
 		slots: () => import('./SlotsSheet.svelte'),
 		frames: () => import('./FramesSheet.svelte'),
 		adjustFrame: () => import('./AdjustFrameSheet.svelte'),
@@ -211,6 +211,14 @@
 		if (sheetBefore === 'activity' && sheet !== 'activity') cancelWaitingForTab();
 		if (sheet !== 'activity') settingsNavigation.activityOpen = false;
 		if (sheet !== 'cost') settingsNavigation.costOpen = false;
+		// A character tool returns to the character's window only while one of them, or the window, is open.
+		if (
+			sheet !== 'details' &&
+			sheet !== 'adjustFrame' &&
+			sheet !== 'directions' &&
+			sheet !== 'cost'
+		)
+			ui.returnTo = null;
 		if (sheet !== 'export' && !(sheet === 'settings' && settingsNavigation.fromExport))
 			settingsNavigation.exportOpen = false;
 		sheetBefore = sheet;

@@ -399,7 +399,8 @@ export const ui = $state({
 	directionProject: '',
 	frameProject: '', // the character the Adjust frame sheet is for
 	costProject: '', // the character the Cost estimate sheet opens on
-	details: '', // the character the Details sheet is for
+	details: '', // the character the View and edit window is for
+	returnTo: null as 'details' | null, // the window a character tool's Back returns to
 	settingsOverlay: false, // Settings opened over the current sheet without replacing it
 	newItem: { group: 'head', slot: '', prompt: '', name: '' } as {
 		reuseMethod?: boolean;

@@ -434,7 +434,6 @@
 		"openedYourEditableCopyOfTheDemo": "Sua cópia editável da demo foi aberta. Nenhuma geração foi usada."
 	},
 	"detailsSheet": {
-		"title": "Detalhes de {name}",
 		"notSaved": "Este personagem não está mais salvo.",
 		"withItems": "Com itens",
 		"itemCost": {
@@ -1781,23 +1780,90 @@
 			"gem": "Gema"
 		},
 		"ideas": {
-			"head": ["chapéu de mago", "elmo de cavaleiro de ferro", "coroa dourada", "capuz"],
-			"hair": ["cabelo longo trançado", "cabelo curto espetado", "rabo de cavalo"],
-			"face_acc": ["óculos redondos", "tapa-olho", "máscara de bandido"],
-			"torso_inner": ["colete de couro", "camisa de cota de malha", "túnica azul"],
-			"arms": ["luvas de couro", "manoplas de ferro", "tiras de tecido"],
-			"legs": ["calça marrom", "caneleiras de placa", "saia plissada"],
-			"feet": ["botas de couro", "sandálias", "sapatos de armadura de ferro"],
-			"back": ["capa vermelha", "mochila de viagem", "aljava de flechas"],
-			"main_hand": ["espada de aço", "cajado de madeira", "machado de batalha"],
-			"off_hand": ["escudo redondo", "lanterna de ferro", "arco longo de madeira"],
-			"facial_hair": ["barba cheia", "bigode com pontas enroladas", "cavanhaque"],
-			"torso_outer": ["armadura de placas de aço", "túnica com capuz", "casaco longo"],
-			"underwear": ["conjunto de roupa íntima branca lisa", "traje de banho listrado"],
-			"waist": ["cinto de couro", "faixa vermelha", "bolsinha de cinto"],
-			"neck": ["amuleto de ouro", "cachecol de lã", "colar de contas"],
-			"shoulders": ["ombreiras de aço", "manto de pele"],
-			"accessory": ["broche de latão", "laço de fita", "bolsinha de talismãs"]
+			"head": [
+				"chapéu de mago",
+				"elmo de cavaleiro de ferro",
+				"coroa dourada",
+				"capuz"
+			],
+			"hair": [
+				"cabelo longo trançado",
+				"cabelo curto espetado",
+				"rabo de cavalo"
+			],
+			"face_acc": [
+				"óculos redondos",
+				"tapa-olho",
+				"máscara de bandido"
+			],
+			"torso_inner": [
+				"colete de couro",
+				"camisa de cota de malha",
+				"túnica azul"
+			],
+			"arms": [
+				"luvas de couro",
+				"manoplas de ferro",
+				"tiras de tecido"
+			],
+			"legs": [
+				"calça marrom",
+				"caneleiras de placa",
+				"saia plissada"
+			],
+			"feet": [
+				"botas de couro",
+				"sandálias",
+				"sapatos de armadura de ferro"
+			],
+			"back": [
+				"capa vermelha",
+				"mochila de viagem",
+				"aljava de flechas"
+			],
+			"main_hand": [
+				"espada de aço",
+				"cajado de madeira",
+				"machado de batalha"
+			],
+			"off_hand": [
+				"escudo redondo",
+				"lanterna de ferro",
+				"arco longo de madeira"
+			],
+			"facial_hair": [
+				"barba cheia",
+				"bigode com pontas enroladas",
+				"cavanhaque"
+			],
+			"torso_outer": [
+				"armadura de placas de aço",
+				"túnica com capuz",
+				"casaco longo"
+			],
+			"underwear": [
+				"conjunto de roupa íntima branca lisa",
+				"traje de banho listrado"
+			],
+			"waist": [
+				"cinto de couro",
+				"faixa vermelha",
+				"bolsinha de cinto"
+			],
+			"neck": [
+				"amuleto de ouro",
+				"cachecol de lã",
+				"colar de contas"
+			],
+			"shoulders": [
+				"ombreiras de aço",
+				"manto de pele"
+			],
+			"accessory": [
+				"broche de latão",
+				"laço de fita",
+				"bolsinha de talismãs"
+			]
 		},
 		"enterName": "Digite um nome.",
 		"nameExists": "{name} já existe.",
@@ -3718,5 +3784,15 @@
 		"percent": "{percent}% do tamanho real",
 		"zoomed": "Zoom {percent}%",
 		"missing": "Nenhuma imagem"
+	},
+	"characterWindow": {
+		"actions": "Ações do personagem",
+		"open": "Abrir personagem",
+		"frameSection": "Quadro e direções",
+		"costSection": "Custo",
+		"adjustFrameDetail": "Mude o tamanho do quadro ou onde o personagem fica nele.",
+		"directionsDetail": "Escolha quais direções são desenhadas e quais espelham outra.",
+		"costEstimateDetail": "Estime quanto custariam mais movimentos, estados e itens.",
+		"frameLocked": "O quadro e as direções deste personagem não podem ser mudados."
 	}
 }

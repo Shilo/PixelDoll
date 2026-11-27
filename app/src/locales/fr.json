@@ -434,7 +434,6 @@
 		"openedYourEditableCopyOfTheDemo": "Votre copie modifiable de la démo est ouverte. Aucune génération utilisée."
 	},
 	"detailsSheet": {
-		"title": "Détails de {name}",
 		"notSaved": "Ce personnage n’est plus enregistré.",
 		"withItems": "Avec les objets",
 		"itemCost": {
@@ -1775,23 +1774,90 @@
 			"gem": "Gemme"
 		},
 		"ideas": {
-			"head": ["chapeau de sorcier", "casque de chevalier en fer", "couronne dorée", "capuche"],
-			"hair": ["longs cheveux tressés", "cheveux courts en pointes", "queue de cheval"],
-			"face_acc": ["lunettes rondes", "cache-œil", "masque de bandit"],
-			"torso_inner": ["gilet en cuir", "cotte de mailles", "tunique bleue"],
-			"arms": ["gants en cuir", "gantelets en fer", "bandages en tissu"],
-			"legs": ["pantalon marron", "jambières en plaques", "jupe plissée"],
-			"feet": ["bottes en cuir", "sandales", "solerets en fer"],
-			"back": ["cape rouge", "sac à dos de voyage", "carquois de flèches"],
-			"main_hand": ["épée en acier", "bâton en bois", "hache de guerre"],
-			"off_hand": ["bouclier rond", "lanterne en fer", "arc long en bois"],
-			"facial_hair": ["barbe fournie", "moustache en guidon", "bouc"],
-			"torso_outer": ["armure de plates en acier", "robe à capuche", "manteau long"],
-			"underwear": ["ensemble de sous-vêtements blancs unis", "maillot de bain rayé"],
-			"waist": ["ceinture en cuir", "ceinture-écharpe rouge", "bourse de ceinture"],
-			"neck": ["amulette en or", "écharpe en laine", "collier de perles"],
-			"shoulders": ["spalières en acier", "mantelet en fourrure"],
-			"accessory": ["broche en laiton", "nœud de ruban", "bourse à porte-bonheur"]
+			"head": [
+				"chapeau de sorcier",
+				"casque de chevalier en fer",
+				"couronne dorée",
+				"capuche"
+			],
+			"hair": [
+				"longs cheveux tressés",
+				"cheveux courts en pointes",
+				"queue de cheval"
+			],
+			"face_acc": [
+				"lunettes rondes",
+				"cache-œil",
+				"masque de bandit"
+			],
+			"torso_inner": [
+				"gilet en cuir",
+				"cotte de mailles",
+				"tunique bleue"
+			],
+			"arms": [
+				"gants en cuir",
+				"gantelets en fer",
+				"bandages en tissu"
+			],
+			"legs": [
+				"pantalon marron",
+				"jambières en plaques",
+				"jupe plissée"
+			],
+			"feet": [
+				"bottes en cuir",
+				"sandales",
+				"solerets en fer"
+			],
+			"back": [
+				"cape rouge",
+				"sac à dos de voyage",
+				"carquois de flèches"
+			],
+			"main_hand": [
+				"épée en acier",
+				"bâton en bois",
+				"hache de guerre"
+			],
+			"off_hand": [
+				"bouclier rond",
+				"lanterne en fer",
+				"arc long en bois"
+			],
+			"facial_hair": [
+				"barbe fournie",
+				"moustache en guidon",
+				"bouc"
+			],
+			"torso_outer": [
+				"armure de plates en acier",
+				"robe à capuche",
+				"manteau long"
+			],
+			"underwear": [
+				"ensemble de sous-vêtements blancs unis",
+				"maillot de bain rayé"
+			],
+			"waist": [
+				"ceinture en cuir",
+				"ceinture-écharpe rouge",
+				"bourse de ceinture"
+			],
+			"neck": [
+				"amulette en or",
+				"écharpe en laine",
+				"collier de perles"
+			],
+			"shoulders": [
+				"spalières en acier",
+				"mantelet en fourrure"
+			],
+			"accessory": [
+				"broche en laiton",
+				"nœud de ruban",
+				"bourse à porte-bonheur"
+			]
 		},
 		"enterName": "Saisissez un nom.",
 		"nameExists": "{name} existe déjà.",
@@ -3709,5 +3775,15 @@
 		"percent": "{percent} % de la taille réelle",
 		"zoomed": "Zoom {percent} %",
 		"missing": "Aucune image"
+	},
+	"characterWindow": {
+		"actions": "Actions du personnage",
+		"open": "Ouvrir le personnage",
+		"frameSection": "Cadre et directions",
+		"costSection": "Coût",
+		"adjustFrameDetail": "Modifier la taille du cadre ou la place du personnage.",
+		"directionsDetail": "Choisir les orientations dessinées et celles qui en reflètent une autre.",
+		"costEstimateDetail": "Estimer le coût de mouvements, d’états et d’objets en plus.",
+		"frameLocked": "Le cadre et les directions de ce personnage ne peuvent pas être modifiés."
 	}
 }

@@ -711,7 +711,7 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	await expect(details).toBeFocused();
 	await page.keyboard.press('ArrowUp');
 	// The shared handler still steps over the locked Delete row to the last enabled one.
-	await expect(actions.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toBeFocused();
+	await expect(actions.getByRole('menuitem', { name: 'Download ZIP', exact: true })).toBeFocused();
 	await actions.getByRole('menuitem').last().focus();
 	await page.keyboard.press('ArrowDown');
 	await expect(details).toBeFocused();

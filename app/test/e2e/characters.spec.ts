@@ -489,9 +489,17 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await expect(savedActions.locator('svg')).toHaveCount(1);
 	await savedActions.click();
 	await expect(page.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toHaveCount(0);
-	// Cost estimate: opens from the character menu, prices the copy and follows an input change.
-	await page.getByRole('menuitem', { name: 'Cost estimate…', exact: true }).click();
+	// Cost estimate: opens from the character's View and edit window, beside its recorded cost, prices the copy and
+	// follows an input change.
+	await page.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
+	const savedWindow = page.locator('dialog.character-window[open]');
+	await openItemSection(savedWindow, 'Cost');
+	await savedWindow.getByRole('button', { name: /^Cost estimate/ }).click();
 	const estimate = page.getByRole('dialog', { name: 'Cost estimate', exact: true });
+	// Opened from the window, its Back returns there.
+	await expect(
+		estimate.getByRole('button', { name: 'Back to Saved hero', exact: true })
+	).toBeVisible();
 	const amount = estimate.locator('.amount');
 	await expect(amount).toHaveText(/^\$\d+\.\d\d$/);
 	const before = await amount.textContent();
@@ -1409,17 +1417,19 @@ test('character directions can be mirrored and unlinked on import and after savi
 			.getByRole('button', { name: 'More actions for Direction test hero', exact: true })
 			.click();
 		const menu = page.getByRole('menu', { name: 'Actions for Direction test hero', exact: true });
+		// Whole-character commands only, ending with Rename, Download ZIP and Move to Trash; frame and directions are in
+		// its window.
 		await expect(menu.getByRole('menuitem')).toHaveText([
 			'View and edit…',
-			'Cost estimate…',
-			'Rename…',
 			'Make copy with new look…',
-			'Directions…',
-			'Adjust frame…',
+			'Rename…',
 			'Download ZIP',
 			'Move to Trash…'
 		]);
-		await menu.getByRole('menuitem', { name: 'Directions…', exact: true }).click();
+		await menu.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
+		const window = page.locator('dialog.character-window[open]');
+		await openItemSection(window, 'Frame & Directions');
+		await window.getByRole('button', { name: /^Directions/ }).click();
 	};
 	await openDirections();
 	const settings = page.getByRole('dialog', { name: 'Directions', exact: true });
@@ -1511,8 +1521,11 @@ test('character directions can be mirrored and unlinked on import and after savi
 			.click();
 		await page
 			.getByRole('menu', { name: 'Actions for Direction test hero', exact: true })
-			.getByRole('menuitem', { name: 'Adjust frame…', exact: true })
+			.getByRole('menuitem', { name: 'View and edit…', exact: true })
 			.click();
+		const window = page.locator('dialog.character-window[open]');
+		await openItemSection(window, 'Frame & Directions');
+		await window.getByRole('button', { name: /^Adjust frame/ }).click();
 		return page.getByRole('dialog', { name: 'Adjust frame', exact: true });
 	};
 	// Saves made before export ids existed have none; loading fills a default, and saving must not read that as a change.
