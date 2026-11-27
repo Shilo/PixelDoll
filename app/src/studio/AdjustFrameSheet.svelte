@@ -69,8 +69,11 @@
 	const outfit = $derived(
 		doc.id === id ? $state.snapshot(doc.items) : (m?.presets[0]?.items ?? {})
 	);
-	// Use whole device pixels when enlarging, and fit larger frames inside the same preview area.
-	const previewLimit = $derived(ui.size === 'landscape' ? 160 : 208);
+	// Use whole device pixels when enlarging, within the space available to the preview.
+	let previewBox = $state<DOMRectReadOnly>();
+	const previewLimit = $derived(
+		Math.min(ui.size === 'landscape' ? 160 : 208, previewBox?.width ?? Infinity)
+	);
 	const k = $derived(Math.max(1, Math.floor((ui.dpr * previewLimit) / Math.max(1, size))));
 	// The view as Save will store it: re-centered on the new frame and moved; anything outside the frame is cut off.
 	const view = $derived.by((): Img | null => {
@@ -188,6 +191,7 @@
 				aria-valuemax={size}
 				aria-valuenow={-dy}
 				aria-valuetext={moved}
+				bind:contentRect={previewBox}
 				onkeydown={keys}
 			>
 				<span class="frame-outline"

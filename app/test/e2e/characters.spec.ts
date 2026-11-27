@@ -1526,13 +1526,26 @@ test('character directions can be mirrored and unlinked on import and after savi
 	await view.selectOption({ label: 'North-east' });
 	await expect(frame.getByLabel('North-east view in a 64 px frame')).toBeVisible();
 	const viewport = page.viewportSize()!;
-	for (const size of [viewport, { width: 320, height: 568 }, { width: 844, height: 390 }]) {
+	for (const size of [
+		viewport,
+		{ width: 240, height: 320 },
+		{ width: 320, height: 568 },
+		{ width: 844, height: 390 }
+	]) {
 		await page.setViewportSize(size);
 		await expect
 			.poll(() =>
 				frame.locator('.sheet-body').evaluate((body) => body.scrollWidth - body.clientWidth)
 			)
 			.toBe(0);
+		await expect
+			.poll(() =>
+				frame.locator('.frame-outline').evaluate((outline) => {
+					const canvas = outline.querySelector('canvas')!;
+					return canvas.getBoundingClientRect().width <= outline.getBoundingClientRect().width;
+				})
+			)
+			.toBe(true);
 	}
 	await page.setViewportSize(viewport);
 	await page.keyboard.press('Escape');
