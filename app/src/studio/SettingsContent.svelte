@@ -665,7 +665,9 @@
 					>
 						<Download size={18} aria-hidden="true" />
 						<span class="export-character-label" aria-hidden="true"
-							>{beforeName}<bdi>{name}</bdi>{afterName}</span
+							><span class="export-character-words">{beforeName}</span><bdi>{name}</bdi><span
+								class="export-character-words">{afterName}</span
+							></span
 						>
 						<SurfaceChevron />
 					</SettingsItemButton>
@@ -752,18 +754,6 @@
 		display: grid;
 		gap: 8px;
 	}
-	:global(dialog.sheet.settings-sheet.center) {
-		width: min(640px, calc(100vw - 32px));
-		height: min(720px, calc(100dvh - 32px));
-	}
-	:global(dialog.settings-sheet.bottom) {
-		height: 100dvh;
-		max-height: 100dvh;
-	}
-	:global(dialog.settings-sheet.side) {
-		width: min(100%, 560px);
-		height: 100dvh;
-	}
 	.settings-content,
 	.settings-index,
 	.settings-panel {
@@ -798,6 +788,11 @@
 		flex: 1;
 		min-inline-size: 0;
 		white-space: pre-wrap;
+	}
+	/* Only the character's name gives way (to an ellipsis); the words around it never break apart. */
+	.export-character-words {
+		flex: none;
+		white-space: pre;
 	}
 	.export-character-label bdi {
 		min-inline-size: 0;
@@ -840,12 +835,8 @@
 		}
 	}
 	@media (min-width: 660px) and (min-height: 520px) {
-		/* Two columns scroll on their own, so a long page never carries the index away. The page adds no height of its
-		   own, so the centered dialog grows to fit the whole index and stops at the window's sheet margin; a modal dialog is
-		   inset on every side, so auto would stretch it. */
-		:global(dialog.sheet.settings-sheet.center) {
-			height: fit-content;
-		}
+		/* Two columns scroll on their own, so a long page never carries the index away (the shared height is in
+		   studio.css, settings-size). */
 		:global(.sheet-body:has(> .settings-content)) {
 			padding: 0;
 			overflow: hidden;

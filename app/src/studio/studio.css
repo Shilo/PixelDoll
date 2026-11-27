@@ -1206,6 +1206,32 @@ dialog.sheet.center {
 dialog.sheet.center.wide {
 	width: min(720px, calc(100vw - 32px));
 }
+/* Settings and Export share one size, so moving between them never resizes or squeezes either: the same width, and in
+   two-column Settings a fixed height that fits Settings' whole index (about 874px) or stops at the window's sheet
+   margin. Below the two-column breakpoint both fill the screen the same way, except that a tall tablet stops at 960px so
+   Export's short page is not stretched. Written with .sheet so they outrank the general sheet rules below. */
+dialog.sheet.settings-size.center {
+	width: min(640px, calc(100vw - 32px));
+	height: min(720px, calc(100dvh - 32px));
+}
+dialog.sheet.settings-size.bottom {
+	height: 100dvh;
+	max-height: 100dvh;
+}
+dialog.sheet.settings-size.side {
+	width: min(100%, 560px);
+	height: 100dvh;
+}
+@media (min-width: 660px) {
+	dialog.sheet.settings-size.bottom {
+		height: min(960px, calc(100dvh - 32px));
+	}
+}
+@media (min-width: 660px) and (min-height: 520px) {
+	dialog.sheet.settings-size.center {
+		height: min(880px, calc(100dvh - 48px));
+	}
+}
 dialog.sheet.center.character-sheet {
 	width: min(1000px, calc(100vw - 32px));
 }

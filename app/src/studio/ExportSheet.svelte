@@ -814,7 +814,7 @@
 {:else}
 	<Sheet
 		title={t(settings ? 'export.sheet.settings' : 'export.sheet.title')}
-		className="export-sheet"
+		className="export-sheet settings-size"
 		onclose={() => (ui.sheet = null)}
 		locked={settingsBusy}
 		back={returningToExport
@@ -1122,9 +1122,6 @@
 {/if}
 
 <style>
-	:global(dialog.export-sheet) {
-		height: min(680px, calc(100dvh - 32px));
-	}
 	.export-page {
 		display: flex;
 		flex-direction: column;
