@@ -920,6 +920,7 @@ at most 16 × 64 = 1024 px wide and 8 × 64 = 512 px tall at the v1 limits. Fram
 | Godot 4            | `centered = false`, `offset = Vector2(-x, -y)`                                                              |
 | Unity              | normalized from **bottom-left**: `pivot = (x / w, 1 − y / h)`; sprite rect `y_unity = texH − (row + 1) · h` |
 | Phaser 3/4         | atlas frame `"pivot": {"x": x / w, "y": y / h}` (auto `setOrigin` [R3])                                     |
+| Phaser AE          | sprite center = pivot point + `(w / 2 − x, h / 2 − y)` (AE positions sprites by their center)               |
 | Aseprite           | slice `"pivot"` (pixels, relative to the slice bounds = the cell)                                           |
 | Mirrored direction | already baked into pixels; the pivot is unchanged because the cell is centered (inv. 10)                    |
 | Oversize layer     | same formulas with the layer's `w, h, x, y`; Unity PPU stays the base's                                     |
@@ -994,6 +995,27 @@ Historical verification [M5] covered Phaser 3.80, 3.90 and 4.2.1. The current
 
 2026-10-23 smoke: Phaser 3.90.0 and 4.1.0, Canvas and WebGL, passed exact 80/180/100 ms timing, palette switching,
 layer synchronization and oversized pivots with zero page errors. Phaser 3.80 compatibility was source-reviewed only.
+
+### 6.4.1 Phaser AE — layer grids and a pooled runtime
+
+Phaser AE is a separate engine (the Phaser Game Agent's kernel), not a Phaser 3/4 version, and has its own API: no loader
+atlases, scenes or animation manager. Its export reuses the layer sheets and adds `phaserae/`:
+
+- `paperdoll.js`: the canonical runtime modules plus the AE adapter. `loadPaperdoll(game, folder)` loads `manifest.json`
+  as JSON and every sheet as bytes through `game.assets.load` (retries, the loading screen, the game's base URL), decodes
+  them and registers each as a `cols × rows` grid (`game.assets.addGrid`, cell = the layer's cell, rows = rig directions).
+  Palette swaps redraw a sheet once into another grid. `Paperdoll` owns one clock per doll, stepped by `game.step`
+  (scene-scoped, rounded to a microsecond so fixed steps land on frame boundaries), and samples the shared timeline.
+  The doll spawns a pool of sprites in draw order; the k-th sprite shows the k-th `drawList` entry, centered so its
+  layer pivot sits on the doll's `x, y`. Side-on worlds draw by `z`, then spawn order, so a doll stays one unit; a
+  top-down world sorts by each sprite's bottom edge, so `z` moves every layer's sort point to the doll's feet, 1/1024
+  apart in draw order. `paperdoll.d.ts` types the doll API and `types.d.ts` the manifest data.
+- `assets.json`: the manifest and every sheet path under `pixeldoll/<export id>/`, for the game manifest's `assets`
+  list. AE builds copy those files next to the bundle, so a free phaser.io account needs no Pro upload.
+
+2026-11-26 native run: AE engine v3-82bf126 (kernel 3.0.0-2), side-on and top-down worlds, WebGL2, every outfit, move,
+direction and playlist entry of three synthetic archives and the demo export pixel-equal to `baked/`; overlap, clock,
+turning, rejection and recolor checks with negative controls. See [Phaser AE export](testing/phaserae-export-2026-11-26.md).
 
 ### 6.5 Aseprite — layered `.aseprite` as the zero-code alternative (B11)
 
@@ -1090,7 +1112,7 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
 
 ### 6.9 Optional moving-action fragments
 
-The Export checkbox **Moving attack layers** is off by default and independent of the Live switch. Enabled Phaser, GDevelop, Godot and Unity exports use the character's Live Walk, Attack and Waist settings. Optional `actionSheets.lower` and `actionSheets.upper` map moves to the new `action/` body PNGs or to existing source-color equipment sheets. Rows, columns and pivots match the original layer. `actionLayers.planes` stores integer hip registration coordinates by direction and cell.
+The Export checkbox **Moving attack layers** is off by default and independent of the Live switch. Enabled Phaser, Phaser AE, GDevelop, Godot and Unity exports use the character's Live Walk, Attack and Waist settings. Optional `actionSheets.lower` and `actionSheets.upper` map moves to the new `action/` body PNGs or to existing source-color equipment sheets. Rows, columns and pivots match the original layer. `actionLayers.planes` stores integer hip registration coordinates by direction and cell.
 
 Each `actionLayers.pairs` entry is a set that passed the geometry and seam gate for all reachable cells of the Walk, Attack and shared direction. Its `blocked` IDs are items without drawable art on their required clip. The `cells` array is row-major by Walk cell then Attack cell. Unused combinations are null; the rest contain the integer correction to add to the hip difference. This optional data is rebuilt with the same archive, not separately versioned or updated in place. Re-export when the source art, timing, or Waist setting changes. See the [controller contract](architecture/javascript-runtime.md#one-shot-actions-over-a-loop).
 

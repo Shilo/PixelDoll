@@ -15,6 +15,7 @@ import { asepriteFiles } from './aseprite.ts';
 import { coreFiles, exportManifest, genericFiles, validate, type OutFile } from './generic.ts';
 import { godotFiles } from './godot.ts';
 import { phaserFiles } from './phaser.ts';
+import { phaserAeFiles } from './phaserae.ts';
 import { unityFiles } from './unity.ts';
 import { gdevelopFiles } from './gdevelop.ts';
 import { rpgMakerFiles, walkMove } from './rpgmaker.ts';
@@ -28,7 +29,13 @@ import { projectExportIdentity } from './identity.ts';
 import { actionSheets, type ActionSheetOptions } from './sheets.ts';
 
 /** Engines whose runtime consumes the pre-cut moving-attack fragments. */
-export const ACTION_LAYER_ENGINES: readonly Engine[] = ['phaser', 'gdevelop', 'godot', 'unity'];
+export const ACTION_LAYER_ENGINES: readonly Engine[] = [
+	'phaser',
+	'phaserae',
+	'gdevelop',
+	'godot',
+	'unity'
+];
 
 export interface ExportOptions {
 	actionLayering?: ActionSheetOptions;
@@ -206,6 +213,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 		}
 	}
 	if (o.engines.includes('phaser')) files.push(...phaserFiles(m));
+	if (o.engines.includes('phaserae')) files.push(...phaserAeFiles(m));
 	if (o.engines.includes('unity')) files.push(...unityFiles(m));
 	if (o.engines.includes('gdevelop')) {
 		try {

@@ -1190,7 +1190,9 @@
 			"versionMenu": "RPG Maker 버전",
 			"version": "버전",
 			"versionLabel": "RPG Maker 버전: {version}",
-			"walkMove": "걷기 동작"
+			"walkMove": "걷기 동작",
+			"phaserVersionMenu": "Phaser 버전",
+			"phaserVersionLabel": "Phaser 버전: {version}"
 		},
 		"group": {
 			"engines": "엔진 및 프레임워크",
@@ -1227,6 +1229,9 @@
 			"generic": {
 				"sub": "직접 연동",
 				"detail": "타이밍, 피벗, 장비, 팔레트 데이터가 담긴 레이어 시트와 스트립이에요. 이 규칙을 읽으려면 엔진에 코드가 필요해요."
+			},
+			"phaserae": {
+				"detail": "장비, 색상, 동기화 재생을 지원하는 Phaser AE 게임용 레이어별 스프라이트 시트와 런타임이에요. 게임 매니페스트의 assets 목록에 시트를 추가하세요. 업로드나 Pro 플랜은 필요 없어요."
 			}
 		},
 		"version": {
@@ -1235,7 +1240,13 @@
 			"standardSub": "3 × 4 레이아웃 · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP 및 Pokémon Essentials",
-			"xpSub": "4 × 4 레이아웃 · Name.png"
+			"xpSub": "4 × 4 레이아웃 · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Phaser Game Agent의 엔진",
+			"phaser": "3 & 4",
+			"phaserTitle": "Phaser 3 및 4",
+			"phaserSub": "오픈 소스 라이브러리, 3.80 이상"
 		},
 		"playback": {
 			"all": "전체"

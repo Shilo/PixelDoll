@@ -40,9 +40,8 @@
 	import type { DirectionName, Engine } from '../lib/store/manifest.ts';
 	import { ui, doc, store, toast } from './state.svelte.ts';
 	import { displayMove } from './displayMove.ts';
-	import { Check, ChevronDown, ChevronRight, Download, Settings2, TriangleAlert } from './icons.ts';
-	import PopoverArrow from './PopoverArrow.svelte';
-	import { navigateMenu, popoverFocus } from './experience/focus.ts';
+	import { ChevronRight, Download, Settings2, TriangleAlert } from './icons.ts';
+	import ExportVersionCard from './ExportVersionCard.svelte';
 	import { getLocale, t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
 	import type { WhisperKey } from 'svelte-whisper';
@@ -63,37 +62,77 @@
 	} = $props();
 
 	type Target = { id: Engine; name: string; sub: WhisperKey; detail: WhisperKey };
-	// One RPG Maker card split in two: its body only selects (Standard, or the version already chosen), and its version button
-	// selects and opens the version menu. The version is the stored engine id (rpgmaker or rpgmakerxp), so it persists like any
-	// format. Selecting never opens the menu by itself, so arrow keys across the cards stay plain radio behavior.
-	const RPG_XP = {
-		id: 'rpgmakerxp',
-		name: exportFormatNames.rpgmakerxp,
-		sub: 'export.target.rpgmaker.sub',
-		detail: 'export.target.rpgmakerxp.detail'
-	} satisfies Target;
-	const RPG_VERSIONS = [
-		{
-			id: 'rpgmaker',
-			value: 'export.version.standard',
-			title: 'export.version.standardTitle',
-			sub: 'export.version.standardSub'
+	type Version = { id: Engine; value: WhisperKey; title: WhisperKey; sub: WhisperKey };
+	// RPG Maker and Phaser cards carry a version picker (ExportVersionCard). A card's id is its first version, and each
+	// version is a stored engine id, so it persists like any format.
+	const VERSIONED: Partial<
+		Record<
+			Engine,
+			{
+				menuId: string;
+				menuLabel: WhisperKey;
+				buttonLabel: WhisperKey;
+				versions: readonly Version[];
+			}
+		>
+	> = {
+		rpgmaker: {
+			menuId: 'rpg-version-menu',
+			menuLabel: 'export.settings.versionMenu',
+			buttonLabel: 'export.settings.versionLabel',
+			versions: [
+				{
+					id: 'rpgmaker',
+					value: 'export.version.standard',
+					title: 'export.version.standardTitle',
+					sub: 'export.version.standardSub'
+				},
+				{
+					id: 'rpgmakerxp',
+					value: 'export.version.xp',
+					title: 'export.version.xpTitle',
+					sub: 'export.version.xpSub'
+				}
+			]
 		},
+		phaserae: {
+			menuId: 'phaser-version-menu',
+			menuLabel: 'export.settings.phaserVersionMenu',
+			buttonLabel: 'export.settings.phaserVersionLabel',
+			versions: [
+				{
+					id: 'phaserae',
+					value: 'export.version.phaserAe',
+					title: 'export.version.phaserAeTitle',
+					sub: 'export.version.phaserAeSub'
+				},
+				{
+					id: 'phaser',
+					value: 'export.version.phaser',
+					title: 'export.version.phaserTitle',
+					sub: 'export.version.phaserSub'
+				}
+			]
+		}
+	};
+	// Versions other than a card's first, for the description under the cards.
+	const ALTERNATE_TARGETS: Target[] = [
 		{
 			id: 'rpgmakerxp',
-			value: 'export.version.xp',
-			title: 'export.version.xpTitle',
-			sub: 'export.version.xpSub'
+			name: exportFormatNames.rpgmakerxp,
+			sub: 'export.target.rpgmaker.sub',
+			detail: 'export.target.rpgmakerxp.detail'
+		},
+		{
+			id: 'phaser',
+			name: exportFormatNames.phaser,
+			sub: 'export.target.phaser.sub',
+			detail: 'export.target.phaser.detail'
 		}
-	] as const satisfies readonly {
-		id: Engine;
-		value: WhisperKey;
-		title: WhisperKey;
-		sub: WhisperKey;
-	}[];
-	const cardOf = (id: Engine): Engine => (id === 'rpgmakerxp' ? 'rpgmaker' : id);
-	const rpgVersion = $derived(RPG_VERSIONS.find((v) => v.id === engine) ?? RPG_VERSIONS[0]);
-	let versionMenu = $state<HTMLElement>();
+	];
+	const cardOf = (id: Engine): Engine =>
+		(Object.entries(VERSIONED).find(([, card]) => card.versions.some((v) => v.id === id))?.[0] as
+			Engine | undefined) ?? id;
 	// Product order for this layered 2D workflow; asset formats are useful across engines.
 	const GROUPS: { id: string; name: WhisperKey; targets: Target[] }[] = [
 		{
@@ -113,10 +152,10 @@
 					detail: 'export.target.unity.detail'
 				},
 				{
-					id: 'phaser',
-					name: exportFormatNames.phaser,
+					id: 'phaserae',
+					name: exportFormatNames.phaserae,
 					sub: 'export.target.phaser.sub',
-					detail: 'export.target.phaser.detail'
+					detail: 'export.target.phaserae.detail'
 				},
 				{
 					id: 'gdevelop',
@@ -160,7 +199,7 @@
 	const supportsActionLayers = $derived(ACTION_LAYER_ENGINES.includes(engine));
 	const actionLayers = $derived(preferences?.actionLayers ?? false);
 	const selected = $derived(
-		engine === 'rpgmakerxp' ? RPG_XP : ENGINES.find((target) => target.id === engine)
+		[...ENGINES, ...ALTERNATE_TARGETS].find((target) => target.id === engine)
 	);
 	const settings = $derived(ui.sheet === 'settings');
 	const returningToExport = $derived(settings && settingsNavigation.fromExport);
@@ -795,8 +834,8 @@
 			>
 				<option value={DEFAULT_EXPORT_ENGINE}>{exportFormatNames[DEFAULT_EXPORT_ENGINE]}</option>
 				{#each OTHER_ENGINES as target (target.id)}
-					{#if target.id === 'rpgmaker'}
-						{#each RPG_VERSIONS as version (version.id)}
+					{#if VERSIONED[target.id]}
+						{#each VERSIONED[target.id]!.versions as version (version.id)}
 							<option value={version.id}>{target.name} {t(version.value)}</option>
 						{/each}
 					{:else}
@@ -855,7 +894,7 @@
 												<span
 													class="target-icon"
 													aria-hidden="true"
-													style:mask-image={`url("${assetUrl(`icons/exports/${e.id}.svg`)}")`}
+													style:mask-image={`url("${assetUrl(`icons/exports/${e.id === 'phaserae' ? 'phaser' : e.id}.svg`)}")`}
 												></span>
 												<span class="target-label"
 													><span class="engine-name">{e.name}</span><span class="engine-sub"
@@ -876,34 +915,20 @@
 												/>
 											</label>
 										{/snippet}
-										{#if e.id === 'rpgmaker'}
-											<div class="export-split">
-												<div class="split-card" class:on={rpg}>
-													{@render target()}
-													<button
-														type="button"
-														class="version-btn"
-														popovertarget="rpg-version-menu"
-														aria-haspopup="menu"
-														disabled={!ready}
-														aria-label={t('export.settings.versionLabel', {
-															version: t(rpgVersion.title)
-														})}
-														onclick={() => {
-															if (!rpg) chooseEngine(rpgVersion.id);
-														}}
-													>
-														<span class="version-value"
-															>{#each RPG_VERSIONS as v (v.id)}<span
-																	aria-hidden="true"
-																	class:hidden={v.id !== rpgVersion.id}>{t(v.value)}</span
-																>{/each}</span
-														>
-
-														<ChevronDown size={16} aria-hidden="true" />
-													</button>
-												</div>
-											</div>
+										{@const card = VERSIONED[e.id]}
+										{#if card}
+											<ExportVersionCard
+												menuId={card.menuId}
+												versions={card.versions}
+												current={engine}
+												on={cardOf(engine) === e.id}
+												disabled={!ready}
+												menuLabel={card.menuLabel}
+												buttonLabel={card.buttonLabel}
+												onchoose={chooseEngine}
+											>
+												{@render target()}
+											</ExportVersionCard>
 										{:else}
 											{@render target()}
 										{/if}
@@ -912,44 +937,6 @@
 							</section>
 						{/each}
 					</fieldset>
-					<div
-						id="rpg-version-menu"
-						class="menu version-menu bu-popover-anchor"
-						data-placement="bottom-end"
-						popover
-						role="menu"
-						aria-label={t('export.settings.versionMenu')}
-						tabindex={-1}
-						bind:this={versionMenu}
-						ontoggle={popoverFocus}
-						onkeydown={(event) => navigateMenu(event.currentTarget, event)}
-					>
-						<PopoverArrow />
-						<div class="menu-surface bu-popover-surface bu-floating">
-							<p class="menu-sec">{t('export.settings.version')}</p>
-							{#each RPG_VERSIONS as v (v.id)}
-								<button
-									type="button"
-									class="row version-row"
-									role="menuitemradio"
-									aria-checked={engine === v.id}
-									onclick={() => {
-										chooseEngine(v.id);
-										versionMenu?.hidePopover();
-									}}
-								>
-									<span class="version-check" aria-hidden="true"
-										>{#if engine === v.id}<Check size={16} />{/if}</span
-									>
-									<span class="version-text"
-										><span class="version-title">{t(v.title)}</span><span class="version-sub"
-											>{t(v.sub)}</span
-										></span
-									>
-								</button>
-							{/each}
-						</div>
-					</div>
 					{#if selected}<p
 							class="export-description muted small"
 							id="export-description"
@@ -1225,130 +1212,6 @@
 	}
 	.export-picker h3 {
 		margin: 0 0 8px;
-	}
-	/* RPG Maker: the card body selects; the version button beside it (below it on narrow cards) selects and opens the menu. */
-	.export-split {
-		container-type: inline-size;
-		min-width: 0;
-	}
-	.split-card {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		height: 100%;
-		box-sizing: border-box;
-		border: 1px solid var(--line-strong);
-		border-radius: var(--r-card);
-		background: var(--bg);
-	}
-	.split-card.on {
-		border-color: var(--accent);
-		box-shadow: inset 0 0 0 1px var(--accent);
-		background: var(--accent-soft);
-	}
-	.split-card .export-target,
-	.split-card .export-target:has(input:checked) {
-		position: relative;
-		grid-template-columns: 28px minmax(0, 1fr);
-		border: 0;
-		box-shadow: none;
-		background: transparent;
-	}
-	/* the radio stays the real control: invisible, covering the card body, so any tap on the body checks it */
-	.split-card .export-target input {
-		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-		margin: 0;
-		opacity: 0;
-		cursor: pointer;
-	}
-	.version-btn {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 4px;
-		min-width: 44px;
-		padding: 0 10px 0 12px;
-		border: 0;
-		border-left: 1px solid var(--line-strong);
-		border-radius: 0 var(--r-card) var(--r-card) 0;
-		background: transparent;
-		color: var(--text);
-		font: inherit;
-		font-size: var(--fs-sm);
-		font-weight: 600;
-		cursor: pointer;
-	}
-	.split-card.on .version-btn {
-		border-color: color-mix(in srgb, var(--accent), transparent 45%);
-	}
-	.version-btn:hover:not(:disabled) {
-		background: color-mix(in srgb, var(--text), transparent 94%);
-	}
-	/* one focus ring around the whole card, as on the other cards, whichever half has focus; keyboard focus on the version
-     half also tints it, so Tab shows whether Space selects the card or opens the menu */
-	.split-card:focus-within {
-		outline: 2px solid var(--accent);
-		outline-offset: 2px;
-	}
-	.split-card .export-target:focus-within {
-		outline: none;
-	}
-	.version-btn:focus-visible {
-		outline: none;
-		background: color-mix(in srgb, var(--accent), transparent 80%);
-	}
-	.version-btn:disabled {
-		cursor: default;
-		opacity: 0.6;
-	}
-	/* every value shares one cell, so the button keeps the longest value's width and never shifts */
-	.version-value {
-		display: grid;
-	}
-	.version-value > span {
-		grid-area: 1 / 1;
-	}
-	.version-value > .hidden {
-		visibility: hidden;
-	}
-	@container (max-width: 220px) {
-		.split-card {
-			grid-template-columns: minmax(0, 1fr);
-		}
-		.version-btn {
-			min-height: 44px;
-			border-left: 0;
-			border-top: 1px solid var(--line-strong);
-			border-radius: 0 0 var(--r-card) var(--r-card);
-		}
-	}
-	.version-menu {
-		width: min(300px, calc(100vw - 16px));
-	}
-	.version-row {
-		display: grid;
-		grid-template-columns: 16px minmax(0, 1fr);
-		align-items: center;
-		width: 100%;
-		text-align: left;
-	}
-	.version-check {
-		display: inline-flex;
-		color: var(--accent);
-	}
-	.version-text {
-		display: flex;
-		flex-direction: column;
-		min-width: 0;
-	}
-	.version-title {
-		font-weight: 600;
-	}
-	.version-sub {
-		color: var(--text-2);
-		font-size: var(--fs-sm);
 	}
 	.export-targets {
 		display: grid;

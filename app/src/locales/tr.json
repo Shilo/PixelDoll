@@ -1225,7 +1225,9 @@
 			"versionMenu": "RPG Maker sürümü",
 			"version": "Sürüm",
 			"versionLabel": "RPG Maker sürümü: {version}",
-			"walkMove": "Yürüme animasyonu"
+			"walkMove": "Yürüme animasyonu",
+			"phaserVersionMenu": "Phaser sürümü",
+			"phaserVersionLabel": "Phaser sürümü: {version}"
 		},
 		"group": {
 			"engines": "Motorlar ve çerçeveler",
@@ -1262,6 +1264,9 @@
 			"generic": {
 				"sub": "Özel entegrasyon",
 				"detail": "Zamanlama, pivot noktaları, ekipman ve palet verileriyle katman sayfaları ve şeritleri. Oyun motorunuzun bu kuralları okuyacak koda ihtiyacı var."
+			},
+			"phaserae": {
+				"detail": "Phaser AE oyunları için katman başına sprite sayfaları ve ekipman, renkler ve eşzamanlı oynatma sunan bir çalışma zamanı. Sayfaları oyununuzun manifest dosyasındaki assets listesine ekleyin; yükleme veya Pro plan gerekmez."
 			}
 		},
 		"version": {
@@ -1270,7 +1275,13 @@
 			"standardSub": "3 × 4 düzen · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP ve Pokémon Essentials",
-			"xpSub": "4 × 4 düzen · Name.png"
+			"xpSub": "4 × 4 düzen · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Phaser Game Agent motoru",
+			"phaser": "3 ve 4",
+			"phaserTitle": "Phaser 3 ve 4",
+			"phaserSub": "Açık kaynaklı kitaplık, 3.80 veya üzeri"
 		},
 		"playback": {
 			"all": "Tümü"

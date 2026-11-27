@@ -1190,7 +1190,9 @@
 			"versionMenu": "RPG Makerのバージョン",
 			"version": "バージョン",
 			"versionLabel": "RPG Makerのバージョン：{version}",
-			"walkMove": "歩きのモーション"
+			"walkMove": "歩きのモーション",
+			"phaserVersionMenu": "Phaserのバージョン",
+			"phaserVersionLabel": "Phaserのバージョン：{version}"
 		},
 		"group": {
 			"engines": "エンジンとフレームワーク",
@@ -1227,6 +1229,9 @@
 			"generic": {
 				"sub": "カスタム連携",
 				"detail": "レイヤーごとのシートと横並びのフレーム画像に加え、タイミング、ピボット、装備、パレットのデータを出力します。ゲームエンジン側には、これらのルールを読み込むコードが必要です。"
+			},
+			"phaserae": {
+				"detail": "Phaser AEゲーム向けのレイヤー別スプライトシートとランタイムで、装備、色、同期再生に対応しています。ゲームのマニフェストのassetsにシートを追加してください。アップロードやProプランは不要です。"
 			}
 		},
 		"version": {
@@ -1235,7 +1240,13 @@
 			"standardSub": "3 × 4レイアウト・$Name.png",
 			"xp": "XP",
 			"xpTitle": "XPとPokémon Essentials",
-			"xpSub": "4 × 4レイアウト・Name.png"
+			"xpSub": "4 × 4レイアウト・Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Phaser Game Agentのエンジン",
+			"phaser": "3・4",
+			"phaserTitle": "Phaser 3と4",
+			"phaserSub": "オープンソースのライブラリ、3.80以降"
 		},
 		"playback": {
 			"all": "すべて"

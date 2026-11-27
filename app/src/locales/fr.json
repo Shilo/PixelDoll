@@ -1225,7 +1225,9 @@
 			"versionMenu": "Version de RPG Maker",
 			"version": "Version",
 			"versionLabel": "Version de RPG Maker : {version}",
-			"walkMove": "Animation de marche"
+			"walkMove": "Animation de marche",
+			"phaserVersionMenu": "Version de Phaser",
+			"phaserVersionLabel": "Version de Phaser : {version}"
 		},
 		"group": {
 			"engines": "Moteurs et frameworks",
@@ -1262,6 +1264,9 @@
 			"generic": {
 				"sub": "Intégration personnalisée",
 				"detail": "Feuilles de sprites et bandes d’animation par calque, avec durées, pivots, données d’équipement et palettes. Votre moteur a besoin de code pour interpréter ces données."
+			},
+			"phaserae": {
+				"detail": "Feuilles de sprites par calque et runtime pour les jeux Phaser AE, avec l’équipement, les couleurs et la lecture synchronisée. Ajoutez les feuilles à la liste assets du manifeste de votre jeu ; aucun envoi ni forfait Pro requis."
 			}
 		},
 		"version": {
@@ -1270,7 +1275,13 @@
 			"standardSub": "Disposition 3 × 4 · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP et Pokémon Essentials",
-			"xpSub": "Disposition 4 × 4 · Name.png"
+			"xpSub": "Disposition 4 × 4 · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Le moteur du Phaser Game Agent",
+			"phaser": "3 et 4",
+			"phaserTitle": "Phaser 3 et 4",
+			"phaserSub": "Bibliothèque open source, 3.80 ou ultérieure"
 		},
 		"playback": {
 			"all": "Toutes"

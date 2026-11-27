@@ -1225,7 +1225,9 @@
 			"versionMenu": "RPG Maker version",
 			"version": "Version",
 			"versionLabel": "RPG Maker version: {version}",
-			"walkMove": "Walk move"
+			"walkMove": "Walk move",
+			"phaserVersionMenu": "Phaser version",
+			"phaserVersionLabel": "Phaser version: {version}"
 		},
 		"group": {
 			"engines": "Engines and frameworks",
@@ -1262,6 +1264,9 @@
 			"generic": {
 				"sub": "Custom integration",
 				"detail": "Layer sheets and strips with timing, pivots, equipment and palette data. Your engine needs code to read these rules."
+			},
+			"phaserae": {
+				"detail": "Layer sheets and a runtime for Phaser AE games, with equipment, colors and synchronized playback. List the sheets in your game’s manifest assets; no upload or Pro plan needed."
 			}
 		},
 		"version": {
@@ -1270,7 +1275,13 @@
 			"standardSub": "3 × 4 layout · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP and Pokémon Essentials",
-			"xpSub": "4 × 4 layout · Name.png"
+			"xpSub": "4 × 4 layout · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "The Phaser Game Agent engine",
+			"phaser": "3 & 4",
+			"phaserTitle": "Phaser 3 and 4",
+			"phaserSub": "Open-source library, 3.80 or later"
 		},
 		"playback": {
 			"all": "All"
@@ -3465,7 +3476,9 @@
 			"other": "{n} unpriced calls"
 		}
 	},
-	"shortcut": { "control": "Ctrl" },
+	"shortcut": {
+		"control": "Ctrl"
+	},
 	"report": {
 		"action": "Report",
 		"actionLabel": "Report this problem",

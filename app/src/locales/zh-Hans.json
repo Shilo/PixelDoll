@@ -1190,7 +1190,9 @@
 			"versionMenu": "RPG Maker 版本",
 			"version": "版本",
 			"versionLabel": "RPG Maker 版本：{version}",
-			"walkMove": "行走动作"
+			"walkMove": "行走动作",
+			"phaserVersionMenu": "Phaser 版本",
+			"phaserVersionLabel": "Phaser 版本：{version}"
 		},
 		"group": {
 			"engines": "引擎与框架",
@@ -1227,6 +1229,9 @@
 			"generic": {
 				"sub": "自定义集成",
 				"detail": "带时间、枢轴点、装备和调色板数据的图层图集和条带。你的引擎需要代码来读取这些规则。"
+			},
+			"phaserae": {
+				"detail": "用于 Phaser AE 游戏的分图层精灵图集和运行时，支持装备、颜色和同步播放。将这些精灵图集列入游戏清单的 assets 中即可，无需上传，也无需 Pro 套餐。"
 			}
 		},
 		"version": {
@@ -1235,7 +1240,13 @@
 			"standardSub": "3 × 4 布局 · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP 和 Pokémon Essentials",
-			"xpSub": "4 × 4 布局 · Name.png"
+			"xpSub": "4 × 4 布局 · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Phaser Game Agent 使用的引擎",
+			"phaser": "3 和 4",
+			"phaserTitle": "Phaser 3 和 4",
+			"phaserSub": "开源库，3.80 或更高版本"
 		},
 		"playback": {
 			"all": "全部"

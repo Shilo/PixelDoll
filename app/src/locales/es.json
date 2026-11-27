@@ -1225,7 +1225,9 @@
 			"versionMenu": "Versión de RPG Maker",
 			"version": "Versión",
 			"versionLabel": "Versión de RPG Maker: {version}",
-			"walkMove": "Animación de caminar"
+			"walkMove": "Animación de caminar",
+			"phaserVersionMenu": "Versión de Phaser",
+			"phaserVersionLabel": "Versión de Phaser: {version}"
 		},
 		"group": {
 			"engines": "Motores y frameworks",
@@ -1262,6 +1264,9 @@
 			"generic": {
 				"sub": "Integración personalizada",
 				"detail": "Hojas y tiras por capa con datos de tiempos, pivotes, equipamiento y paleta. Tu motor necesita código para leer estas reglas."
+			},
+			"phaserae": {
+				"detail": "Hojas de sprites por capa y un runtime para juegos de Phaser AE, con equipamiento, colores y reproducción sincronizada. Añade las hojas a la lista assets del manifiesto de tu juego; no necesitas subir nada ni tener el plan Pro."
 			}
 		},
 		"version": {
@@ -1270,7 +1275,13 @@
 			"standardSub": "Diseño 3 × 4 · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP y Pokémon Essentials",
-			"xpSub": "Diseño 4 × 4 · Name.png"
+			"xpSub": "Diseño 4 × 4 · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "El motor del Phaser Game Agent",
+			"phaser": "3 y 4",
+			"phaserTitle": "Phaser 3 y 4",
+			"phaserSub": "Biblioteca de código abierto, 3.80 o posterior"
 		},
 		"playback": {
 			"all": "Todas"

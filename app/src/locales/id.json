@@ -1190,7 +1190,9 @@
 			"versionMenu": "Versi RPG Maker",
 			"version": "Versi",
 			"versionLabel": "Versi RPG Maker: {version}",
-			"walkMove": "Animasi berjalan"
+			"walkMove": "Animasi berjalan",
+			"phaserVersionMenu": "Versi Phaser",
+			"phaserVersionLabel": "Versi Phaser: {version}"
 		},
 		"group": {
 			"engines": "Engine dan framework",
@@ -1227,6 +1229,9 @@
 			"generic": {
 				"sub": "Integrasi khusus",
 				"detail": "Sprite sheet dan strip lapisan beserta data pengaturan waktu, titik pivot, perlengkapan, dan palet. Engine Anda memerlukan kode untuk membaca aturan ini."
+			},
+			"phaserae": {
+				"detail": "Sprite sheet per lapisan dan runtime untuk game Phaser AE, dengan perlengkapan, warna, dan pemutaran yang tersinkron. Cantumkan sheet tersebut di daftar assets pada manifes game Anda; tanpa perlu mengunggah file atau berlangganan paket Pro."
 			}
 		},
 		"version": {
@@ -1235,7 +1240,13 @@
 			"standardSub": "Tata letak 3 × 4 · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP dan Pokémon Essentials",
-			"xpSub": "Tata letak 4 × 4 · Name.png"
+			"xpSub": "Tata letak 4 × 4 · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Engine Phaser Game Agent",
+			"phaser": "3 & 4",
+			"phaserTitle": "Phaser 3 dan 4",
+			"phaserSub": "Pustaka sumber terbuka, 3.80 atau yang lebih baru"
 		},
 		"playback": {
 			"all": "Semua"

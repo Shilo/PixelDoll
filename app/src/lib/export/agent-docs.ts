@@ -12,8 +12,8 @@ this file first, then the doc for your engine in docs/, then that engine's READM
 ## Which kind of export this is
 
 - manifest.json and layers/ present: the layered export. One PNG sheet per item layer, move and direction, plus one
-  manifest that names every path, frame, pivot and draw order. Engines: generic, Godot, Unity, Phaser, GDevelop,
-  Aseprite.
+  manifest that names every path, frame, pivot and draw order. Engines: generic, Godot, Unity, Phaser, Phaser AE,
+  GDevelop, Aseprite.
 - PNG sheets at the root and no manifest.json: an RPG Maker sheet export. Rows are down, left, right, up and the
   columns are that maker version's steps. See docs/rpgmaker.md or docs/rpgmakerxp.md.
 
@@ -111,6 +111,29 @@ with frames named <move>_<direction>_<frame>: each atlas JSON lists the frames i
 naming pattern.
 baked/<outfit>/<move>.png holds the same grid flattened for engines that draw one sprite: rows are directions, columns
 are frames, on export.bakedCell and export.bakedPivot from manifest.json. Nothing else in this folder depends on it.
+`;
+
+const PHASER_AE = `# Phaser AE
+
+Phaser AE is the Phaser Game Agent's engine, built with the phaser-ae CLI; it is not Phaser 3 or 4.
+Entry: phaserae/paperdoll.js, an ES module, typed by phaserae/paperdoll.d.ts. Full guide: phaserae/README.txt.
+
+Copy the folder into the game as game/pixeldoll/<character>/ and add every path in phaserae/assets.json to the "assets"
+list in game/manifest.json: the build copies those files into the game. Do not upload them or add them to
+game/assets.json; no Pro account is needed. Set "pixelArt": true in the manifest's "screen".
+
+    import { loadPaperdoll, Paperdoll } from './pixeldoll/<character>/phaserae/paperdoll.js'
+    const model = await loadPaperdoll(game, 'pixeldoll/<character>/')   // in main.ts, before await game.start()
+    // in a scene's enter():
+    const doll = new Paperdoll(game, 360, 640, model)                  // 360,640 is the pivot: the feet
+    doll.play('walk', 'south')
+    doll.applyPreset(model.presets[0].id)                               // items and colors together
+    doll.equip('torso_inner', 'vest_leather')                           // after a preset; null empties a slot
+    doll.setVariants({ '<material-id>': '<variant-id>' })                // only ids listed in manifest.json
+
+Move it with doll.x and doll.y; every layer is its own sprite, positioned on the pivot by the doll. Its clock is a step
+of the scene that created it, so create the doll in the scene that shows it. setVariants replaces the whole selection
+map, as in Phaser 3 and 4.
 `;
 
 const GODOT = `# Godot 4
@@ -229,6 +252,7 @@ no place in this format.
 
 const API: Record<Engine, string> = {
 	phaser: PHASER,
+	phaserae: PHASER_AE,
 	godot: GODOT,
 	unity: UNITY,
 	gdevelop: GDEVELOP,

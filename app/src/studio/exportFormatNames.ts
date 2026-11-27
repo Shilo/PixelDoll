@@ -4,6 +4,7 @@ export const exportFormatNames = {
 	godot: 'Godot',
 	unity: 'Unity',
 	phaser: 'Phaser',
+	phaserae: 'Phaser',
 	gdevelop: 'GDevelop',
 	rpgmaker: 'RPG Maker',
 	rpgmakerxp: 'RPG Maker',

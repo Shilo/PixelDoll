@@ -305,6 +305,7 @@ export const EXPORT_ENGINES = [
 	'godot',
 	'unity',
 	'phaser',
+	'phaserae',
 	'gdevelop',
 	'aseprite',
 	'rpgmaker',

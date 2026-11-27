@@ -1225,7 +1225,9 @@
 			"versionMenu": "RPG Maker-Version",
 			"version": "Version",
 			"versionLabel": "RPG Maker-Version: {version}",
-			"walkMove": "Gehanimation"
+			"walkMove": "Gehanimation",
+			"phaserVersionMenu": "Phaser-Version",
+			"phaserVersionLabel": "Phaser-Version: {version}"
 		},
 		"group": {
 			"engines": "Engines und Frameworks",
@@ -1262,6 +1264,9 @@
 			"generic": {
 				"sub": "Eigene Integration",
 				"detail": "Spritesheets und Streifen pro Ebene mit Frame-Dauer, Drehpunkten, Ausrüstungs- und Palettendaten. Deine Engine braucht Code, der diese Regeln liest."
+			},
+			"phaserae": {
+				"detail": "Spritesheets pro Ebene und Laufzeitcode für Phaser-AE-Spiele, mit Ausrüstung, Farben und synchronisierter Wiedergabe. Trage die Spritesheets unter assets im Manifest deines Spiels ein; kein Upload und kein Pro-Tarif nötig."
 			}
 		},
 		"version": {
@@ -1270,7 +1275,13 @@
 			"standardSub": "3 × 4 Raster · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP und Pokémon Essentials",
-			"xpSub": "4 × 4 Raster · Name.png"
+			"xpSub": "4 × 4 Raster · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Die Engine hinter dem Phaser Game Agent",
+			"phaser": "3 & 4",
+			"phaserTitle": "Phaser 3 und 4",
+			"phaserSub": "Open-Source-Bibliothek, ab 3.80"
 		},
 		"playback": {
 			"all": "Alle"

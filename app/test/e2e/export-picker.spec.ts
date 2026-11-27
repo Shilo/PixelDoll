@@ -1650,6 +1650,8 @@ test('the UI exports the canonical JavaScript runtime with full dressed demo she
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const dialog = page.getByRole('dialog');
 	await dialog.getByRole('radio', { name: 'Phaser', exact: true }).check();
+	await dialog.getByRole('button', { name: /^Phaser version/ }).click();
+	await page.getByRole('menuitemradio', { name: 'Phaser 3 and 4' }).click();
 	await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
 	await dialog
 		.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })
@@ -1732,16 +1734,18 @@ test('actual UI ZIPs materialize global playback in every engine and asset forma
 	for (const [engine, label] of [
 		['godot', 'Godot'],
 		['unity', 'Unity'],
-		['phaser', 'Phaser'],
+		['phaserae', 'Phaser'],
+		['phaser', 'Phaser 3 and 4'],
 		['gdevelop', 'GDevelop'],
 		['rpgmaker', 'RPG Maker'],
 		['rpgmakerxp', 'XP and Pokémon Essentials'],
 		['aseprite', 'Aseprite'],
 		['generic', 'PNG + JSON']
 	] as const) {
-		if (engine === 'rpgmakerxp') {
-			// the RPG Maker card's version menu
-			await dialog.getByRole('button', { name: /^RPG Maker version/ }).click();
+		if (engine === 'rpgmakerxp' || engine === 'phaser') {
+			// a versioned card's menu: the Phaser card body picks Phaser AE, its menu Phaser 3 and 4
+			const card = engine === 'phaser' ? 'Phaser' : 'RPG Maker';
+			await dialog.getByRole('button', { name: new RegExp(`^${card} version`) }).click();
 			await page.getByRole('menuitemradio', { name: label }).click();
 		} else await dialog.getByRole('radio', { name: label, exact: true }).check();
 		const button = dialog.getByRole('button', { name: /^Download ZIP/ });
@@ -1796,6 +1800,14 @@ test('actual UI ZIPs materialize global playback in every engine and asset forma
 			}
 		} else if (engine === 'unity') {
 			expect(playback(JSON.parse(text('unity/pixeldoll_unity.json')).animations)).toEqual(expected);
+		} else if (engine === 'phaserae') {
+			// every file the game manifest must list is in the ZIP, under the folder the README suggests
+			const assets: string[] = JSON.parse(text('phaserae/assets.json'));
+			const folder = assets[0].slice(0, -'manifest.json'.length);
+			expect(assets[0]).toBe(folder + 'manifest.json');
+			for (const path of assets) file(path.slice(folder.length));
+			expect(text('phaserae/README.txt')).toContain(`game/${folder}`);
+			expect(text('phaserae/paperdoll.js')).toContain('export class Paperdoll');
 		} else if (engine === 'gdevelop') {
 			const project = JSON.parse(text('gdevelop/game.json'));
 			const code = project.layouts[0].events[0].inlineCode.join('\n') as string;
@@ -3871,6 +3883,19 @@ test('export picker has accessible categories, local icons and a native GDevelop
 	) as { layouts: unknown[]; resources: { resources: unknown[] } };
 	expect(nativeProject.layouts.length).toBeGreaterThan(0);
 	expect(nativeProject.resources.resources.length).toBeGreaterThan(0);
+	// Phaser: the same split card. Its body picks Phaser AE; its menu switches to Phaser 3 and 4 under the same card.
+	await page.getByRole('button', { name: 'Export', exact: true }).first().click();
+	const phaserButton = dialog.getByRole('button', { name: /^Phaser version/ });
+	await dialog.getByRole('radio', { name: 'Phaser', exact: true }).check();
+	await expect(page.getByRole('menu', { name: 'Phaser version' })).toBeHidden();
+	await expect(phaserButton).toHaveAccessibleName('Phaser version: Phaser AE');
+	await expect(dialog.locator('#export-description')).toContainText('Phaser AE games');
+	await phaserButton.click();
+	await page.getByRole('menuitemradio', { name: 'Phaser 3 and 4' }).click();
+	await expect(dialog.getByRole('radio', { name: 'Phaser', exact: true })).toBeChecked();
+	await expect(phaserButton).toHaveAccessibleName('Phaser version: Phaser 3 and 4');
+	await expect(dialog.locator('#export-description')).toContainText('Container runtime');
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
 	// RPG Maker: one split card. Its body only selects; its version button selects and opens the version menu (the app's
 	// popover menu). The zip holds only that layout's sheets at the root, at the demo's own cell size, with no layer files.
 	const rpgSheets: Record<string, { w: number; h: number }> = {};
@@ -3882,16 +3907,16 @@ test('export picker has accessible categories, local icons and a native GDevelop
 	] as const) {
 		await page.getByRole('button', { name: 'Export', exact: true }).first().click();
 		if (engine === 'rpgmaker') {
-			// GDevelop was the last format: the card body selects Standard and opens nothing
+			// Phaser was the last format: the card body selects Standard and opens nothing
 			await dialog.getByRole('radio', { name: 'RPG Maker', exact: true }).check();
 			await expect(versionMenu).toBeHidden();
 			// like every card, the focus ring surrounds the whole card, never only the half that has focus
-			const ring = (selector: string) =>
-				dialog
-					.locator(selector)
-					.first()
-					.evaluate((element) => getComputedStyle(element).outlineStyle);
-			expect([await ring('.split-card'), await ring('.split-card .export-target')]).toEqual([
+			const card = dialog.locator('.split-card', {
+				has: page.getByRole('radio', { name: 'RPG Maker', exact: true })
+			});
+			const ring = (target: typeof card) =>
+				target.evaluate((element) => getComputedStyle(element).outlineStyle);
+			expect([await ring(card), await ring(card.locator('.export-target'))]).toEqual([
 				'solid',
 				'none'
 			]);
@@ -3960,7 +3985,9 @@ test('export picker has accessible categories, local icons and a native GDevelop
 	// layout width of the value area: on-screen boxes are scaled while the sheet animates open, and a description change can
 	// toggle the sheet's scrollbar and resize every card
 	const valueWidth = () =>
-		dialog.locator('.version-value').evaluate((element) => (element as HTMLElement).offsetWidth);
+		versionButton
+			.locator('.version-value')
+			.evaluate((element) => (element as HTMLElement).offsetWidth);
 	const xpWidth = await valueWidth();
 	await versionButton.click();
 	await expect(versionMenu).toBeVisible();
@@ -3974,7 +4001,9 @@ test('export picker has accessible categories, local icons and a native GDevelop
 	expect(await valueWidth()).toBe(xpWidth);
 	// phone: the version button becomes a full-width strip under the card body, at least 44 px tall
 	await page.setViewportSize({ width: 390, height: 844 });
-	const body = dialog.locator('.split-card .export-target');
+	const body = dialog
+		.locator('.split-card', { has: page.getByRole('radio', { name: 'RPG Maker', exact: true }) })
+		.locator('.export-target');
 	await expect(versionButton).toBeInViewport({ ratio: 1 });
 	const [bodyBox, buttonBox] = [(await body.boundingBox())!, (await versionButton.boundingBox())!];
 	expect(buttonBox.height).toBeGreaterThanOrEqual(44);

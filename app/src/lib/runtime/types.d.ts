@@ -286,6 +286,7 @@ export type Engine = (readonly [
 	'godot',
 	'unity',
 	'phaser',
+	'phaserae',
 	'gdevelop',
 	'aseprite',
 	'rpgmaker',
