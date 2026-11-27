@@ -100,3 +100,9 @@ it('orders release versions numerically', () => {
 	expect(compareVersions('0.7.38', '1.3.80')).toBeLessThan(0);
 	expect(compareVersions('1.3.80', '1.3.80')).toBe(0);
 });
+
+it('ignores a damaged read-release value so the unread dot can still show', () => {
+	vi.stubGlobal('localStorage', { getItem: () => 'not-a-version', setItem: () => undefined });
+	expect(createSeenRelease().sync()).toBeNull();
+	vi.unstubAllGlobals();
+});

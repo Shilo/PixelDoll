@@ -33,6 +33,7 @@
 		wide = false,
 		screen = false,
 		overlay = false,
+		topLayer = false,
 		className = ''
 	}: {
 		title: string;
@@ -67,6 +68,8 @@
 		screen?: boolean;
 		/** Overlays an existing sheet, which still owns the screen's busy state. */
 		overlay?: boolean;
+		/** The topmost layer (What's new over Settings or a sheet): it alone shows the notice region. */
+		topLayer?: boolean;
 		className?: string;
 	} = $props();
 	let dlg: HTMLDialogElement;
@@ -182,7 +185,7 @@
 	{#if footer}<footer class="sheet-foot" bind:offsetHeight={footHeight}>
 			{@render footer()}
 		</footer>{/if}
-	{#if !ui.settingsOverlay || overlay}<Toast />{/if}
+	{#if topLayer || (!ui.releaseOverlay && (!ui.settingsOverlay || overlay))}<Toast />{/if}
 	{#if screen}<MoreMenu context="creator" />{/if}
 </dialog>
 

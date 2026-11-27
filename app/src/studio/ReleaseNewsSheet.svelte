@@ -19,6 +19,7 @@
 	title={t('releaseNews.title')}
 	className="release-news-sheet"
 	overlay
+	topLayer
 	onclose={releaseNews.close}
 >
 	<div class="release-news">

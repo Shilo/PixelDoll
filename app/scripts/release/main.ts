@@ -167,6 +167,7 @@ async function main() {
 	if (!dryRun && previous && !plans.length) await deployIndex(github);
 	let indexInRun = 0;
 	let listed = 0;
+	let failure: unknown;
 	try {
 		for (const dueDate of due.slice(0, considered)) {
 			const message = skipped.get(+dueDate);
@@ -250,9 +251,20 @@ async function main() {
 			commitReleaseFiles(cwd, `chore(release): list v${version}`, 'releases/index.json');
 			listed++;
 		}
+	} catch (error) {
+		failure = error;
+		throw error;
 	} finally {
-		// One Pages deploy carries every release this run listed, even if a later one failed.
-		if (!dryRun && listed) await deployIndex(github);
+		// One Pages deploy carries every release this run listed, even if a later one failed. A failed deploy request
+		// is reported without hiding the publish error that came first.
+		if (!dryRun && listed) {
+			try {
+				await deployIndex(github);
+			} catch (error) {
+				if (failure === undefined) throw error;
+				console.error(`Pages deploy request also failed: ${String(error)}`);
+			}
+		}
 	}
 }
 

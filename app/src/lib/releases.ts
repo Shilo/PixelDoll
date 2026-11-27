@@ -29,7 +29,9 @@ export function createSeenRelease() {
 	let seen: string | null = null;
 	function sync() {
 		try {
-			seen = localStorage.getItem(SEEN_RELEASE_KEY);
+			const stored = localStorage.getItem(SEEN_RELEASE_KEY);
+			// Ignore anything that is not a version, so a damaged value cannot hide the unread dot for good.
+			seen = stored && /^\d+\.\d+\.\d+$/.test(stored) ? stored : null;
 		} catch {
 			// When storage is blocked, keep the acknowledgement for this visit.
 		}

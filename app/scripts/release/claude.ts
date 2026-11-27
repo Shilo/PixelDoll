@@ -25,7 +25,7 @@ export function afterSeparator(markdown: string) {
 const prompt = (name: string) => afterSeparator(readFileSync(new URL(name, docs), 'utf8'));
 
 /** The part of the SDK client the release script uses, so tests can stand in for it. */
-export type Claude = { beta: { messages: Pick<Anthropic['beta']['messages'], 'create'> } };
+export type Claude = { beta: { messages: Pick<Anthropic['beta']['messages'], 'stream'> } };
 
 // The SDK retries rate limits, overloads and connection errors with backoff.
 export const claudeClient = (apiKey: string): Claude => new Anthropic({ apiKey, maxRetries: 4 });
@@ -56,18 +56,21 @@ async function ask<T>(
 ): Promise<T> {
 	const messages: Message[] = [{ role: 'user', content: JSON.stringify(input) }];
 	for (let attempt = 0; attempt < 2; attempt++) {
-		const response = await claude.beta.messages.create({
-			model,
-			max_tokens: 16000,
-			betas: ['server-side-fallback-2026-07-01'],
-			fallbacks: 'default',
-			output_config: {
-				effort: 'medium',
-				format: { type: 'json_schema', schema: sendable(schema) as Record<string, unknown> }
-			},
-			system,
-			messages
-		});
+		// Streamed so a large reply budget never hits the request timeout; thinking counts toward max_tokens.
+		const response = await claude.beta.messages
+			.stream({
+				model,
+				max_tokens: 64000,
+				betas: ['server-side-fallback-2026-07-01'],
+				fallbacks: 'default',
+				output_config: {
+					effort: 'medium',
+					format: { type: 'json_schema', schema: sendable(schema) as Record<string, unknown> }
+				},
+				system,
+				messages
+			})
+			.finalMessage();
 		if (response.stop_reason === 'refusal')
 			throw new InvalidReply(
 				`Claude declined (${response.stop_details?.category ?? 'no category'})`
@@ -159,6 +162,8 @@ export function labelsFor(text: string, english: Map<string, string>, target: Ma
 }
 
 export async function translations(claude: Claude, english: CitedNotes) {
+	// The fixed maintenance message has no Claude-written content to translate.
+	if (english === emptyNotes) return { en: publicNotes(english) };
 	const notes = publicNotes(english);
 	const system =
 		prompt('release-notes-translate.md') +

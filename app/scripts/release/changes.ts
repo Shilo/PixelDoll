@@ -12,7 +12,9 @@ export type Changes = {
 	groups: { kind: Kind; items: { sha: string; text: string }[] }[];
 };
 
-const skipped = /^(test|e2e|dev|ci|agent)$/i;
+// Scopes for work players never see: tests, tooling, research, benchmarks, the board and this release pipeline.
+const skipped =
+	/^(test|tests|e2e|dev|ci|agent|agents|motion-lab|research|prototype|board|bench|release|docs|scripts|tooling|deps)$/i;
 const conventional = /^(feat|perf|fix)(?:\(([^)]+)\))?!?:\s+(.+)$/;
 const revertSubject = /^(?:revert(?:\([^)]+\))?!?:|revert ")/i;
 

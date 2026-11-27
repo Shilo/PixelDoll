@@ -44,7 +44,7 @@ export const translationSchema = (notes: Translation) =>
 	});
 
 const banned =
-	/(?<![\p{L}\p{N}])(?:api|endpoint|refactor|module|state|ui|ux|ai|commits?|developers?|various|several improvements|minor improvements|bug fixes and improvements|enhanced|seamless(?:ly)?|robust|leverage|streamline|elevate|unlock|supercharge|game-changer|we['’]re excited|we are excited|thrilled|delighted|under the hood)(?![\p{L}\p{N}])/iu;
+	/(?<![\p{L}\p{N}])(?:api|endpoint|refactor|module|ui|ux|ai|commits?|developers?|various|several improvements|minor improvements|bug fixes and improvements|enhanced|seamless(?:ly)?|robust|leverage|streamline|elevate|unlock|supercharge|game-changer|we['’]re excited|we are excited|thrilled|delighted|under the hood)(?![\p{L}\p{N}])/iu;
 const emoji =
 	/[\p{Extended_Pictographic}\p{Regional_Indicator}\p{Emoji_Modifier}\u20e3\ufe0f]|:[a-z0-9_+-]+:/u;
 const links =

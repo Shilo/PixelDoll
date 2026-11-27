@@ -98,7 +98,9 @@ it('passes the prompt verbatim and asks Claude for corrected JSON once', async (
 	});
 	const create = vi.fn((_request: Record<string, unknown>) => Promise.resolve(reply(notes)));
 	create.mockResolvedValueOnce(reply({ ...notes, headline: 'Try again!' }));
-	const claude = { beta: { messages: { create } } } as unknown as Claude;
+	const claude = {
+		beta: { messages: { stream: (request: never) => ({ finalMessage: () => create(request) }) } }
+	} as unknown as Claude;
 	await expect(writeNotes(claude, '0.0.1', '2026-11-27', commits)).resolves.toEqual(notes);
 	expect(create).toHaveBeenCalledTimes(2);
 	const request = create.mock.calls[1][0];
@@ -194,7 +196,21 @@ it('renders the same data as the app, escaping literal commit subjects and bound
 });
 
 it('fails the run instead of falling back to English when Claude is unreachable', async () => {
-	const create = vi.fn(() => Promise.reject(new Error('connection reset')));
-	const claude = { beta: { messages: { create } } } as unknown as Claude;
+	const create = vi.fn((_request: unknown) => Promise.reject(new Error('connection reset')));
+	const claude = {
+		beta: { messages: { stream: (request: never) => ({ finalMessage: () => create(request) }) } }
+	} as unknown as Claude;
 	await expect(translations(claude, notes)).rejects.toThrow('connection reset');
+});
+
+it('accepts the app feature name State in release prose', () => {
+	expect(
+		validateNotes(
+			{
+				...notes,
+				highlights: [{ ...notes.highlights[0], title: 'Make a new State', commits: [feature.id] }]
+			},
+			commits
+		)
+	).toEqual([]);
 });

@@ -436,7 +436,7 @@
 	{#if !workspaceCopy && offline}<div class="offline-banner" role="status">
 			<WifiOff size={14} aria-hidden="true" />{t('studio.youReOfflineEditAndExportLocally')}
 		</div>{/if}
-	{#if !ui.sheet && !ui.settingsOverlay}<Toast />{/if}
+	{#if !ui.sheet && !ui.settingsOverlay && !ui.releaseOverlay}<Toast />{/if}
 
 	{#if ui.sheet === 'inspect'}<Lazy load={parts.notes} />{/if}
 	{#if ui.sheet === 'connect'}<Lazy load={parts.connect} />{/if}

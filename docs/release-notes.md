@@ -33,7 +33,7 @@ Reply only with the JSON object the response schema defines.
 - Skip work players cannot see: tests, refactors, tooling, developer pages, documentation, agent or AI-agent tooling, internal checks, logging, performance numbers nobody would notice, and changes that only rename or move code.
 - Call screens, buttons, settings and features exactly what the commits call them (for example Trash, Fix frames, Undo, Restore originals); never rename them or invent a name.
 - Use the app's own words: character, item, slot, move, direction, frame, layer, outfit, palette, recolor, export, spritesheet, Studio, Library, Wardrobe. Name engines and formats exactly as the commits do (Godot, Phaser, Phaser AE, Unity, Aseprite, GDevelop, RPG Maker).
-- Do not use code terms or internal names: no file names, function names, component names, flags, hashes, "API", "endpoint", "refactor", "module", "state", "UI", "UX".
+- Do not use code terms or internal names: no file names, function names, component names, flags, hashes, "API", "endpoint", "refactor", "module", "UI", "UX" (app feature names such as State or States are fine).
 - Banned words and phrases: "various", "several improvements", "minor improvements", "bug fixes and improvements", "enhanced", "seamless", "seamlessly", "robust", "leverage", "streamline", "elevate", "unlock", "supercharge", "game-changer", "we're excited", "we are excited", "thrilled", "delighted", "under the hood".
 - American English, present tense ("now", "can"), active voice, short words. Address the reader as "you".
 - No emoji, no exclamation marks, no ALL CAPS words, no Markdown, no links, no quotation marks around feature names.

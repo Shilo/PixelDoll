@@ -2,7 +2,6 @@
 # Pushes to main deploy app/dist to GitHub Pages. Manual runs deploy only from main with deploy=true.
 # Enable Pages once: Settings > Pages > Source = "GitHub Actions". No secrets or env: the PixelLab key never touches CI.
 name: CI and Pages
-run-name: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy && 'Deploy release notes' || '' }}
 
 # The site is built from app/ alone. Keep these paths equal to SHIPPED in app/version.ts so every deploy bumps the version.
 # GitHub checks only a push's first 300 changed files against them, so push large docs-only sweeps apart from app/ changes.
