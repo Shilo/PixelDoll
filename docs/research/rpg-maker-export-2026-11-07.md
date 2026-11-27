@@ -2,7 +2,7 @@
 
 Research date: 2026-11-07. Research only: no repo edits, no PixelLab calls.
 
-> **Implemented differently (2026-11-07, revised 2026-11-08):** the exporter (`app/src/lib/export/rpgmaker.ts`, manifest-spec
+> **Implemented differently (2026-11-07, revised 2026-11-08):** the exporter (`app/src/lib/export/rpg-maker.ts`, manifest-spec
 > §6.8) has one split "RPG Maker" card whose version button opens a menu: "Standard" (MZ, MV, VX Ace, VX:
 > `$<character>.png` for the current look, `$<character>_<outfit>.png` for each other outfit) or "XP" (XP, Pokémon
 > Essentials: the same names without `$`), each writing only its sheets at the zip root, instead of a version choice and the §5 paths. Feet are
@@ -12,7 +12,7 @@ Research date: 2026-11-07. Research only: no repo edits, no PixelLab calls.
 > phase (all 12 south, east and north bench views; the widest-spread rule of §5 got 7 of 12), instead of the foot anchors. Unite and the
 > side-view battler sheet are not implemented. 2026-11-08 follow-up: WITH cannot import images; U2U is unreleased and only
 > mentions MV/MZ map assets, so it is rechecked at release.
-Confidence tags: **[V]** verified in engine source or an official page, **[C]** corroborated by several community sources, **[U]** unverified or single weak source.
+> Confidence tags: **[V]** verified in engine source or an official page, **[C]** corroborated by several community sources, **[U]** unverified or single weak source.
 
 ## TL;DR
 
@@ -31,31 +31,31 @@ Confidence tags: **[V]** verified in engine source or an official page, **[C]** 
 
 Columns: whether users can import custom character sprites, the format, and how confident I am.
 
-| Version (year, platform) | Custom char import? | Format | Confidence |
-|---|---|---|---|
-| RPG Tsukuru Dante 98 (1992, PC-98) | Only through built-in editors on a dead platform with no modern file pipeline | n/a | [U] |
-| Super Dante (1995, SFC/Satellaview) | No (cartridge, in-app editing only) | n/a | [C] |
-| Dante 98 II (1996, PC-98) | Same as Dante 98 | n/a | [U] |
-| RPG Tsukuru 2 (1996, SFC) | No | n/a | [C] |
-| RPG Maker 95 (1997, Win95, JP; English only as a fan translation) | Yes. One source says BMP, 256-color shared palette, 32x32 sprites, 640x480. Wikipedia says 2 frames per direction. | Not researched further; nobody ships games in it | [U] |
-| "RPG Maker 97" | **Not a real product.** Wikipedia's release list has no such title. It is probably a confusion with RPG Tsukuru 95, released in 1997. | n/a | [C] |
-| RPG Tsukuru 3 / "RPG Maker" (1997, PS1) | No file import. Sprites came from the separate Anime Maker, with limits; large Anime Maker sprites did not work. | n/a | [C] (Wikipedia) |
-| RPG Tsukuru 4 (2000, PS1) | No | n/a | [C] |
-| RPG Maker 2000 (2000, Win) | Yes | See §2.4 | [V] |
-| RPG Tsukuru 5 / RPG Maker 2 (2002, PS2) | No (3D, console) | n/a | [C] |
-| RPG Maker 2003 (2002 JP / 2015 Steam EN) | Yes | Same as 2000, §2.4 | [V] |
-| RPG Maker 3 (2004/2005, PS2) | No (3D, console) | n/a | [C] |
-| RPG Maker XP (2004, Win) | Yes | §2.2 | [V] |
-| RPG Maker VX (2007, Win) | Yes | §2.1 (same PNG as MV/MZ) | [V] |
-| RPG Tsukuru DS (2010) and DS+ (2011) | No file import found. Official sprite packs were later sold for MZ and WITH. | n/a | [U] |
-| RPG Maker VX Ace (2011, Win) | Yes | §2.1 | [V] |
-| RPG Maker MV (2015, Win/Mac) | Yes | §2.1 | [V] |
-| RPG Maker Fes (2016, 3DS) | **No.** A review says it lacks custom assets and scripting. | n/a | [C] |
-| RPG Maker MV Trinity / MV console (2018-2020, PS4/Switch) | **No.** Nintendo Life says there is "no way to freely integrate your own custom music, sprites or other graphical elements". | n/a | [C] |
-| RPG Maker MZ (2020, Win/Mac) | Yes | §2.1 | [V] |
-| RPG Maker Unite (2023, Unity Asset Store; Epic 2024) | Yes | §2.3 | [C] |
-| RPG Maker WITH (Switch 2024, PS4/PS5 2025) | **No external import.** Reviews say you cannot import art made elsewhere. Assets are shared only through the in-app Maker Plaza or bought as DLC. | n/a | [C] |
-| RPG Maker U2U (announced May 2026, PC, Unity) | Unknown. No release date as of the Aug 2026 Steam page. Uses HD-2D style depth maps. Reportedly "supports 2D assets from previous RPG Maker entries". | Revisit at release | [U] |
+| Version (year, platform)                                          | Custom char import?                                                                                                                                   | Format                                           | Confidence      |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | --------------- |
+| RPG Tsukuru Dante 98 (1992, PC-98)                                | Only through built-in editors on a dead platform with no modern file pipeline                                                                         | n/a                                              | [U]             |
+| Super Dante (1995, SFC/Satellaview)                               | No (cartridge, in-app editing only)                                                                                                                   | n/a                                              | [C]             |
+| Dante 98 II (1996, PC-98)                                         | Same as Dante 98                                                                                                                                      | n/a                                              | [U]             |
+| RPG Tsukuru 2 (1996, SFC)                                         | No                                                                                                                                                    | n/a                                              | [C]             |
+| RPG Maker 95 (1997, Win95, JP; English only as a fan translation) | Yes. One source says BMP, 256-color shared palette, 32x32 sprites, 640x480. Wikipedia says 2 frames per direction.                                    | Not researched further; nobody ships games in it | [U]             |
+| "RPG Maker 97"                                                    | **Not a real product.** Wikipedia's release list has no such title. It is probably a confusion with RPG Tsukuru 95, released in 1997.                 | n/a                                              | [C]             |
+| RPG Tsukuru 3 / "RPG Maker" (1997, PS1)                           | No file import. Sprites came from the separate Anime Maker, with limits; large Anime Maker sprites did not work.                                      | n/a                                              | [C] (Wikipedia) |
+| RPG Tsukuru 4 (2000, PS1)                                         | No                                                                                                                                                    | n/a                                              | [C]             |
+| RPG Maker 2000 (2000, Win)                                        | Yes                                                                                                                                                   | See §2.4                                         | [V]             |
+| RPG Tsukuru 5 / RPG Maker 2 (2002, PS2)                           | No (3D, console)                                                                                                                                      | n/a                                              | [C]             |
+| RPG Maker 2003 (2002 JP / 2015 Steam EN)                          | Yes                                                                                                                                                   | Same as 2000, §2.4                               | [V]             |
+| RPG Maker 3 (2004/2005, PS2)                                      | No (3D, console)                                                                                                                                      | n/a                                              | [C]             |
+| RPG Maker XP (2004, Win)                                          | Yes                                                                                                                                                   | §2.2                                             | [V]             |
+| RPG Maker VX (2007, Win)                                          | Yes                                                                                                                                                   | §2.1 (same PNG as MV/MZ)                         | [V]             |
+| RPG Tsukuru DS (2010) and DS+ (2011)                              | No file import found. Official sprite packs were later sold for MZ and WITH.                                                                          | n/a                                              | [U]             |
+| RPG Maker VX Ace (2011, Win)                                      | Yes                                                                                                                                                   | §2.1                                             | [V]             |
+| RPG Maker MV (2015, Win/Mac)                                      | Yes                                                                                                                                                   | §2.1                                             | [V]             |
+| RPG Maker Fes (2016, 3DS)                                         | **No.** A review says it lacks custom assets and scripting.                                                                                           | n/a                                              | [C]             |
+| RPG Maker MV Trinity / MV console (2018-2020, PS4/Switch)         | **No.** Nintendo Life says there is "no way to freely integrate your own custom music, sprites or other graphical elements".                          | n/a                                              | [C]             |
+| RPG Maker MZ (2020, Win/Mac)                                      | Yes                                                                                                                                                   | §2.1                                             | [V]             |
+| RPG Maker Unite (2023, Unity Asset Store; Epic 2024)              | Yes                                                                                                                                                   | §2.3                                             | [C]             |
+| RPG Maker WITH (Switch 2024, PS4/PS5 2025)                        | **No external import.** Reviews say you cannot import art made elsewhere. Assets are shared only through the in-app Maker Plaza or bought as DLC.     | n/a                                              | [C]             |
+| RPG Maker U2U (announced May 2026, PC, Unity)                     | Unknown. No release date as of the Aug 2026 Steam page. Uses HD-2D style depth maps. Reportedly "supports 2D assets from previous RPG Maker entries". | Revisit at release                               | [U]             |
 
 Also out of scope: RPG Tsukuru GB, Advance and α (handheld or mobile, no import), and RPG Developer Bakin (a separate 3D product).
 
@@ -144,17 +144,17 @@ From the RGSS1 default scripts (`Sprite_Character`, `Game_Character 1/2`):
 
 Measured 2026-11-07. Steam concurrent players count only Steam editor sessions. They miss Japanese and other non-Steam licenses and the 2000/2003 freeware scene, so treat them as relative figures.
 
-| Version | Steam concurrent users (now, a Saturday night snapshot) | SteamCharts average, last 30 days | Other evidence |
-|---|---|---|---|
-| **MZ** (1096900) | 1,225 | **1,086** | itch.io "RPG Maker MZ" tag: 1,092 games; large active plugin ecosystem (VisuStella, Galv and others) |
-| **MV** (363890) | 641 | **611** | itch.io "RPG Maker MV" tag: 1,185 games; console MV cannot import |
-| **XP** (235900) | 153 | **215** | Pokémon Essentials, the dominant Pokémon fan-game kit, runs on XP's format **[C]** |
-| **VX Ace** (220700) | 136 | **163** | Still common in older tutorials and asset packs |
-| 2003 (362870) | 27 | 34.5 | Active non-Steam scene (EasyRPG, Maniacs Patch, Yume Nikki fan games) **[C]**; itch tag `rpgmaker2003`: 57 |
-| 2000 (383730) | 4 | 9.3 | |
-| VX (521880) | 10 | 8.1 | Effectively replaced by VX Ace |
-| Unite | not on Steam ("no longer available") | n/a | Epic rating 3.4; developer put performance first in 2023; U2U announced as its successor **[C]** |
-| itch.io "made with RPG Maker" (all versions) | | | 11,292 games. Tags for older versions are fragmented, so per-version counts are unreliable. |
+| Version                                      | Steam concurrent users (now, a Saturday night snapshot) | SteamCharts average, last 30 days | Other evidence                                                                                             |
+| -------------------------------------------- | ------------------------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **MZ** (1096900)                             | 1,225                                                   | **1,086**                         | itch.io "RPG Maker MZ" tag: 1,092 games; large active plugin ecosystem (VisuStella, Galv and others)       |
+| **MV** (363890)                              | 641                                                     | **611**                           | itch.io "RPG Maker MV" tag: 1,185 games; console MV cannot import                                          |
+| **XP** (235900)                              | 153                                                     | **215**                           | Pokémon Essentials, the dominant Pokémon fan-game kit, runs on XP's format **[C]**                         |
+| **VX Ace** (220700)                          | 136                                                     | **163**                           | Still common in older tutorials and asset packs                                                            |
+| 2003 (362870)                                | 27                                                      | 34.5                              | Active non-Steam scene (EasyRPG, Maniacs Patch, Yume Nikki fan games) **[C]**; itch tag `rpgmaker2003`: 57 |
+| 2000 (383730)                                | 4                                                       | 9.3                               |                                                                                                            |
+| VX (521880)                                  | 10                                                      | 8.1                               | Effectively replaced by VX Ace                                                                             |
+| Unite                                        | not on Steam ("no longer available")                    | n/a                               | Epic rating 3.4; developer put performance first in 2023; U2U announced as its successor **[C]**           |
+| itch.io "made with RPG Maker" (all versions) |                                                         |                                   | 11,292 games. Tags for older versions are fragmented, so per-version counts are unreliable.                |
 
 **Ranking of where people make games now:** MZ > MV >> XP ≈ VX Ace >> 2003 > 2000 ≈ VX > Unite. Console editors are used, but their games cannot take imported sprites.
 

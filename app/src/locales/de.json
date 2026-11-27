@@ -510,13 +510,6 @@
 			"other": "Aus den gespeicherten Vorlagen des Gegenstands für {directions} wiederhergestellt. Es wird nichts generiert."
 		},
 		"hiddenByAnotherItem": "Von einem anderen Gegenstand verdeckt",
-		"hiddenByItem": "Verdeckt von {name}",
-		"showName": "{name} anzeigen",
-		"notWorn": "Nicht getragen",
-		"qualityChecks": "Qualitätsprüfungen",
-		"customize": "Anpassen",
-		"itemActions": "Gegenstandsaktionen",
-		"layerHiddenHint": "Ein anderer getragener Gegenstand verdeckt diesen, daher lässt sich die Ebenenreihenfolge hier nicht ändern. Zeige ihn zuerst an.",
 		"nameInEveryDirection": "{name} in allen Blickrichtungen",
 		"labelNameFacingId": "{name}, Blickrichtung: {id}",
 		"acceptedAppearanceWarnings": "Akzeptierte Hinweise zur Darstellung",
@@ -651,10 +644,11 @@
 		"billingNote": "Die Schätzungen vergleichen Generierungen, nicht Dollarpreise. PixelLab kann US-Dollar berechnen, und die Wartezeit kann variieren."
 	},
 	"newCharacterButton": {
+		"addCharacter": "Figur hinzufügen",
 		"newCharacter": "Neue Figur",
-		"createFromScratch": "Neu erstellen…",
-		"importFromDevice": "Vom Gerät importieren…",
-		"importFromPixelLab": "Aus PixelLab importieren…",
+		"createFromScratch": "Erstellen…",
+		"fromFile": "Aus Datei…",
+		"fromPixelLab": "Aus PixelLab…",
 		"createNeedsKey": "Braucht einen PixelLab-Schlüssel und kostenpflichtige Generierungen"
 	},
 	"noticeLink": {
@@ -1214,7 +1208,9 @@
 			"versionMenu": "RPG Maker-Version",
 			"version": "Version",
 			"versionLabel": "RPG Maker-Version: {version}",
-			"walkMove": "Gehanimation"
+			"walkMove": "Gehanimation",
+			"phaserVersionMenu": "Phaser-Version",
+			"phaserVersionLabel": "Phaser-Version: {version}"
 		},
 		"group": {
 			"engines": "Engines und Frameworks",
@@ -1237,11 +1233,11 @@
 				"sub": "Bearbeitbares Projekt",
 				"detail": "Bearbeitbares GDevelop-Projekt mit Sprite-Ebenen, synchronisierter Wiedergabe und Ausrüstungssteuerung. Sieh es dir in der Vorschau an oder kopiere die Objekte und das Ereignis in dein Spiel."
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "Geh-Spritesheets",
 				"detail": "Ein Geh-Spritesheet pro Outfit in der Originalgröße deiner Figur. Kopiere die PNG-Dateien nach img/characters (MZ, MV) oder Graphics/Characters (VX Ace, VX). Benötigt Vorder-, Seiten- und Rückansichten."
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "Ein Geh-Spritesheet mit 4 Frames pro Outfit in der Originalgröße deiner Figur, für RPG Maker XP und Pokémon Essentials. Kopiere die PNG-Dateien nach Graphics/Characters. Benötigt Vorder-, Seiten- und Rückansichten."
 			},
 			"aseprite": {
@@ -1251,6 +1247,9 @@
 			"generic": {
 				"sub": "Eigene Integration",
 				"detail": "Spritesheets und Streifen pro Ebene mit Frame-Dauer, Drehpunkten, Ausrüstungs- und Palettendaten. Deine Engine braucht Code, der diese Regeln liest."
+			},
+			"phaserAe": {
+				"detail": "Spritesheets pro Ebene und Laufzeitcode für Phaser-AE-Spiele, mit Ausrüstung, Farben und synchronisierter Wiedergabe. Trage die Spritesheets in die assets-Liste im Manifest deines Spiels ein, dann kopiert der Build deines Spiels sie hinein."
 			}
 		},
 		"version": {
@@ -1259,7 +1258,13 @@
 			"standardSub": "3 × 4 Raster · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP und Pokémon Essentials",
-			"xpSub": "4 × 4 Raster · Name.png"
+			"xpSub": "4 × 4 Raster · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Die Engine hinter dem Phaser Game Agent",
+			"phaser": "3 & 4",
+			"phaserTitle": "Phaser 3 und 4",
+			"phaserSub": "Open-Source-Bibliothek, ab 3.80"
 		},
 		"playback": {
 			"all": "Alle"
@@ -1332,7 +1337,7 @@
 			"noVisibleFrames": "Der Grundkörper hat keine sichtbaren Frames.",
 			"godot": "Godot konnte diese Spritesheets nicht verwenden.",
 			"gdevelop": "GDevelop konnte diese Spritesheets nicht verwenden.",
-			"rpgmaker": "RPG Maker benötigt Vorder-, Seiten- und Rückansichten.",
+			"rpgMaker": "RPG Maker benötigt Vorder-, Seiten- und Rückansichten.",
 			"aseprite": "Die Animation passt nicht ins Aseprite-Format.",
 			"unsafeNames": "Einige Dateinamen lassen sich nicht sicher ins Archiv aufnehmen.",
 			"tooLarge": "Dieser Export ist zu groß.",
@@ -1393,7 +1398,7 @@
 		"posesTitle": "Auch als Zustände importieren",
 		"posesHint": "Wähle Posen desselben Körpers ohne fest eingezeichnete Ausrüstung. Importiere ein anderes Aussehen als separaten Charakter. Die Animationen wählst du weiter unten aus.",
 		"poseMismatch": "Dieser Zustand hat andere Bildabmessungen, Blickrichtungen oder Kameraeinstellungen. Importiere ihn als separaten Charakter.",
-		"titleDevice": "Vom Gerät importieren",
+		"titleFile": "Aus Datei importieren",
 		"titlePixelLab": "Aus PixelLab importieren",
 		"browseLibrary": "PixelLab-Figuren durchsuchen",
 		"standingState": "Zustand für die Standpose",
@@ -1480,6 +1485,7 @@
 			"skippedStanding": "„{move}“ in Blickrichtung {direction} wurde weggelassen: Die Figur hat keine Standansicht in diese Richtung.",
 			"semiAlpha": "Teiltransparente Kanten wurden in harte Pixelgrafik-Transparenz umgewandelt.",
 			"upscaledBase": "Die Standbilder sehen wie eine {scale}x-Vergrößerung aus. Sie bleiben unverändert: Gegenstände daraus brauchen mehr Pixel, mischen Pixelgrößen und lassen sich weniger sauber umfärben. Importiere nach Möglichkeit die Originalgrafik in 1x.",
+			"compressedBase": "Die Standbilder sehen komprimiert oder neu skaliert aus: Viele Farben kommen nur einmal vor. Sie bleiben unverändert: Gegenstände daraus lassen sich schlechter freistellen, umfärben und ausrichten. Importiere nach Möglichkeit das Original.",
 			"detailsDropped": "Einige gespeicherte Angaben zur Figur waren beschädigt und wurden ausgelassen. Richte bei Bedarf ihr Posen-Rig erneut ein."
 		},
 		"error": {

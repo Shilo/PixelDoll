@@ -55,7 +55,7 @@
 			}
 		}}
 	>
-		<GroupIcon group={value} size={18} />
+		<GroupIcon group={value} surface="inline" />
 		<span class="slot-value">{name(value)}</span>
 		<ChevronDown size={16} aria-hidden="true" />
 	</button>
@@ -106,7 +106,7 @@
 			menu.hidePopover();
 		}}
 	>
-		<GroupIcon group={key} size={18} />
+		<GroupIcon group={key} surface="inline" />
 		<span class="slot-name">{name(key)}</span>
 		{#if value === key}<Check size={16} aria-hidden="true" />{/if}
 	</button>

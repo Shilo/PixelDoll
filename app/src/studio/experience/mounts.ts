@@ -15,7 +15,11 @@ type Point = { x: number; y: number };
 
 /** One sampled mount pose: images share one size and ground point, so ground contact never bobs. */
 export interface MountFrame {
+	/** Optional mount art behind the rider, such as the far side of an open saddle. */
+	under?: Img;
+	/** Mount body that overlaps selected rider leg pixels. */
 	back: Img;
+	/** Mount art that overlaps the whole rider, such as a pommel or a cockpit wall. */
 	front: Img;
 	/** Ground contact in the images' pixel-edge coordinates. */
 	ground: Point;
@@ -155,6 +159,7 @@ function mirrorFrame(frame: Omit<MountFrame, 'ms'>): Omit<MountFrame, 'ms'> {
 		return result;
 	};
 	return {
+		...(frame.under && { under: mirror(frame.under) }),
 		back: mirror(frame.back),
 		front: mirror(frame.front),
 		ground: { x: frame.back.w - frame.ground.x, y: frame.ground.y },
@@ -398,6 +403,26 @@ export function placeRider(ground: Point, contact: Point, frame: MountFrame): Mo
 			y: Math.round(mount.y + frame.seat.y - contact.y)
 		}
 	};
+}
+
+/** Draw selected rider pixels behind the mount so its current silhouette supplies the occlusion. */
+export function mountedLayers<T>(
+	pose: MountFrame,
+	{ mount, rider }: MountPlacement,
+	image: T | null,
+	behind?: Img
+): { image: Img | T; x: number; y: number }[] {
+	const layers: { image: Img | T; x: number; y: number }[] = [];
+	if (pose.under) {
+		if (pose.under.w !== pose.back.w || pose.under.h !== pose.back.h)
+			throw new Error('Mount underlay must share the body frame size.');
+		layers.push({ image: pose.under, ...mount });
+	}
+	if (behind) layers.push({ image: behind, ...rider });
+	layers.push({ image: pose.back, ...mount });
+	if (image !== null) layers.push({ image, ...rider });
+	layers.push({ image: pose.front, ...mount });
+	return layers;
 }
 
 /**

@@ -5,6 +5,32 @@
 // choose one of these instead of borrowing their behavior's drawing.
 import type { SlotIcon } from '../lib/store/manifest.ts';
 
+/**
+ * The grid every drawing is authored on. GroupIcon draws this viewBox at whatever size a surface asks for, so a
+ * replacement set changes this number together with the paths and nothing else.
+ */
+export const SLOT_ICON_VIEW_BOX = 24;
+
+/**
+ * The surfaces an icon appears on, named instead of measured: the rail and the section header are the two that matter,
+ * and the rest keep the same drawing at a compact size. Sizes live here so a new set (or a new grid) is one edit, and so
+ * no call site can drift to a size of its own.
+ */
+export const SLOT_ICON_SIZES = {
+	/** A sticky section title in Wardrobe or Colors. */
+	header: 16,
+	/** A vertical category tab in the Wardrobe or Colors rail. */
+	rail: 24,
+	/** An item, outfit or slot tile, and the empty tile while it generates. */
+	thumbnail: 24,
+	/** A control or list row: slot picker, slot settings, not-shown rows. */
+	inline: 18,
+	/** One drawing in the custom-slot icon picker. */
+	choice: 20
+} as const;
+
+export type SlotIconSurface = keyof typeof SLOT_ICON_SIZES;
+
 /** One `d` per icon: disjoint parts and even-odd holes share a path, so overlapping parts are avoided. */
 export const SLOT_ICON_PATHS: Record<SlotIcon, string> = {
 	// Base: a standing figure, never a clothing shape.

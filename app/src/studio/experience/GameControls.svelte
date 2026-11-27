@@ -32,7 +32,7 @@
 		onattack: () => void;
 		onattackrelease: () => void;
 		/** The touch Attack stick's every press, drag and release. */
-		onstick: (snapshot: JoystickSnapshot) => void;
+		onstick: (snapshot: JoystickSnapshot, starting: boolean) => void;
 		onjump: () => void;
 		onjumprelease: () => void;
 		onsprint: () => void;

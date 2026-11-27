@@ -510,13 +510,6 @@
 			"other": "Rebuilt from this item’s saved {directions} designs. Nothing is generated."
 		},
 		"hiddenByAnotherItem": "Hidden by another item",
-		"hiddenByItem": "Hidden by {name}",
-		"showName": "Show {name}",
-		"notWorn": "Not worn",
-		"qualityChecks": "Quality checks",
-		"customize": "Customize",
-		"itemActions": "Item actions",
-		"layerHiddenHint": "Another worn item hides this one, so its layer order cannot change here. Show it first.",
 		"nameInEveryDirection": "{name} in every direction",
 		"labelNameFacingId": "{name} facing {id}",
 		"acceptedAppearanceWarnings": "Accepted appearance warnings",
@@ -651,10 +644,11 @@
 		"billingNote": "Estimates compare generations, not dollar prices. PixelLab may bill dollars, and queue time may vary."
 	},
 	"newCharacterButton": {
+		"addCharacter": "Add character",
 		"newCharacter": "New character",
-		"createFromScratch": "Create from scratch…",
-		"importFromDevice": "Import from device…",
-		"importFromPixelLab": "Import from PixelLab…",
+		"createFromScratch": "Create…",
+		"fromFile": "From file…",
+		"fromPixelLab": "From PixelLab…",
 		"createNeedsKey": "Needs a PixelLab key and uses paid generations"
 	},
 	"noticeLink": {
@@ -1214,7 +1208,9 @@
 			"versionMenu": "RPG Maker version",
 			"version": "Version",
 			"versionLabel": "RPG Maker version: {version}",
-			"walkMove": "Walk move"
+			"walkMove": "Walk move",
+			"phaserVersionMenu": "Phaser version",
+			"phaserVersionLabel": "Phaser version: {version}"
 		},
 		"group": {
 			"engines": "Engines and frameworks",
@@ -1237,11 +1233,11 @@
 				"sub": "Editable project",
 				"detail": "Editable GDevelop project with Sprite layers, synchronized playback and equipment controls. Preview it or copy the objects and event into your game."
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "Walking sheets",
 				"detail": "A walking sheet per outfit at your character’s own size. Copy the PNG files into img/characters (MZ, MV) or Graphics/Characters (VX Ace, VX). Needs front, side and back views."
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "A 4-frame walking sheet per outfit at your character’s own size, for RPG Maker XP and Pokémon Essentials. Copy the PNG files into Graphics/Characters. Needs front, side and back views."
 			},
 			"aseprite": {
@@ -1251,6 +1247,9 @@
 			"generic": {
 				"sub": "Custom integration",
 				"detail": "Layer sheets and strips with timing, pivots, equipment and palette data. Your engine needs code to read these rules."
+			},
+			"phaserAe": {
+				"detail": "Layer sheets and a runtime for Phaser AE games, with equipment, colors and synchronized playback. Add the sheets to the assets list in your game’s manifest, and its build copies them in."
 			}
 		},
 		"version": {
@@ -1259,7 +1258,13 @@
 			"standardSub": "3 × 4 layout · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP and Pokémon Essentials",
-			"xpSub": "4 × 4 layout · Name.png"
+			"xpSub": "4 × 4 layout · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "The Phaser Game Agent engine",
+			"phaser": "3 & 4",
+			"phaserTitle": "Phaser 3 and 4",
+			"phaserSub": "Open-source library, 3.80 or later"
 		},
 		"playback": {
 			"all": "All"
@@ -1332,7 +1337,7 @@
 			"noVisibleFrames": "The body has no visible frames.",
 			"godot": "Godot could not use these sprite sheets.",
 			"gdevelop": "GDevelop could not use these sprite sheets.",
-			"rpgmaker": "RPG Maker needs front, side and back views.",
+			"rpgMaker": "RPG Maker needs front, side and back views.",
 			"aseprite": "The animation does not fit the Aseprite format.",
 			"unsafeNames": "Some file names cannot be packaged safely.",
 			"tooLarge": "This export is too large.",
@@ -1393,7 +1398,7 @@
 		"posesTitle": "Also import as States",
 		"posesHint": "Choose poses of the same body with no baked-in gear. Import a different look as a separate character. Moves are selected below.",
 		"poseMismatch": "This state has different artwork dimensions, facings, or camera settings. Import it as a separate character.",
-		"titleDevice": "Import from device",
+		"titleFile": "Import from file",
 		"titlePixelLab": "Import from PixelLab",
 		"browseLibrary": "Browse PixelLab characters",
 		"standingState": "Standing pose state",
@@ -1480,6 +1485,7 @@
 			"skippedStanding": "“{move}” facing {direction} was left out: the character has no standing view facing that way.",
 			"semiAlpha": "Partially transparent edges were converted to pixel-art transparency.",
 			"upscaledBase": "The standing artwork looks like a {scale}x upscale. It is kept as it is: items made from it cost more pixels, mix pixel sizes and recolor less cleanly. Import the original 1x art if you can.",
+			"compressedBase": "The standing artwork looks compressed or resampled: many of its colors appear only once. It is kept as it is: items made from it are harder to cut out, recolor and line up. Import the original art if you can.",
 			"detailsDropped": "Some saved character details were damaged and were left out. Set up its pose rig again if needed."
 		},
 		"error": {
@@ -3453,7 +3459,9 @@
 			"other": "{n} unpriced calls"
 		}
 	},
-	"shortcut": { "control": "Ctrl" },
+	"shortcut": {
+		"control": "Ctrl"
+	},
 	"report": {
 		"action": "Report",
 		"actionLabel": "Report this problem",

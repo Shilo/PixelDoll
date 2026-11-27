@@ -36,5 +36,5 @@
 
 {#if project}<Thumb {project} item={entry.item} />{:else}<GroupIcon
 		group={entry.item.slot}
-		size={24}
+		surface="thumbnail"
 	/>{/if}

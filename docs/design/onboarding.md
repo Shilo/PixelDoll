@@ -6,12 +6,12 @@ Welcome page and the unmerged hint-card attempt on `t3/quickstart-onboarding` (c
 ## What ships
 
 1. **Characters, first visit.** The app opens on Characters with the bundled Adventurer selected; the first tip points
-   at its Customize button. Characters stays the first screen: it shows both paths (the demo and New character) and is
+   at its Customize button. Characters stays the first screen: it shows both paths (the demo and Add character) and is
    where saved characters live.
 2. **No pre-release warning on a first visit.** The startup "Saved characters may stop working" toast waits for a later
    visit (its own `pixeldoll.visited` flag, independent of tips). Any saved character or an unreadable library shows it
    at once.
-3. **Create from scratch says it is paid before the form.** The New character menu row reads "Needs a PixelLab key and
+3. **Create says it is paid before the form.** The Add character menu's Create row reads "Needs a PixelLab key and
    uses paid generations" under its label (its accessible description).
 4. **Nine tips, one at a time,** each an arrow callout on the control it is about, with the Bronze UI accent rim. Each
    is stored once by id, whatever control it points at on a given screen size. When several apply, the lower number
@@ -20,7 +20,7 @@ Welcome page and the unmerged hint-card attempt on `t3/quickstart-onboarding` (c
    | #   | Tip                    | Points at                                                                                | Shows when                                                                                                  | Done when                                                         |
    | --- | ---------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
    | 1   | Dress up the demo      | Customize on Characters                                                                  | Demo selected; only the demo saved and nothing being created (or tips asked for again)                      | Any character's Customize opens, by any control                   |
-   | 2   | Make your own          | New character on Characters                                                              | Same library rule, on a later arrival on Characters after #1 is done (not in the same breath as closing #1) | The New character menu opens, or a character of your own is saved |
+   | 2   | Make your own          | Add character on Characters                                                              | Same library rule, on a later arrival on Characters after #1 is done (not in the same breath as closing #1) | The Add character menu opens, or a character of your own is saved |
    | 3   | What is PixelLab?      | Start free trial in Connect's first-open guide (Get Secret API Key on later opens)       | Connect's key form                                                                                          | A PixelLab link followed, a key typed or pasted, or a connection  |
    | 4   | Try on gear            | A whole Wardrobe tile: unworn first (ready for the move on screen first), then worn      | Any character's Customize, in Preview, Wardrobe open                                                        | The outfit changes from what was worn on arrival                  |
    | 5   | Take it into your game | Export, or More options when the bar has moved Export into it                            | Same place, after #4                                                                                        | Export opens                                                      |

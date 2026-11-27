@@ -510,13 +510,6 @@
 			"other": "Reconstruidas a partir de los diseños guardados del objeto para {directions}. No se genera nada."
 		},
 		"hiddenByAnotherItem": "Oculto por otro objeto",
-		"hiddenByItem": "Oculto por {name}",
-		"showName": "Mostrar {name}",
-		"notWorn": "No puesto",
-		"qualityChecks": "Comprobaciones de calidad",
-		"customize": "Personalizar",
-		"itemActions": "Acciones del objeto",
-		"layerHiddenHint": "Otro objeto puesto oculta este, así que su orden de capas no se puede cambiar aquí. Muéstralo primero.",
 		"nameInEveryDirection": "{name} en todas las direcciones",
 		"labelNameFacingId": "{name} · Dirección: {id}",
 		"acceptedAppearanceWarnings": "Advertencias de apariencia aceptadas",
@@ -651,10 +644,11 @@
 		"billingNote": "Las estimaciones comparan generaciones, no precios en dólares. PixelLab puede cobrar en dólares y el tiempo en cola puede variar."
 	},
 	"newCharacterButton": {
+		"addCharacter": "Añadir personaje",
 		"newCharacter": "Nuevo personaje",
-		"createFromScratch": "Crear desde cero…",
-		"importFromDevice": "Importar desde el dispositivo…",
-		"importFromPixelLab": "Importar desde PixelLab…",
+		"createFromScratch": "Crear…",
+		"fromFile": "Desde archivo…",
+		"fromPixelLab": "Desde PixelLab…",
 		"createNeedsKey": "Necesita una clave de PixelLab y usa generaciones de pago"
 	},
 	"noticeLink": {
@@ -1214,7 +1208,9 @@
 			"versionMenu": "Versión de RPG Maker",
 			"version": "Versión",
 			"versionLabel": "Versión de RPG Maker: {version}",
-			"walkMove": "Animación de caminar"
+			"walkMove": "Animación de caminar",
+			"phaserVersionMenu": "Versión de Phaser",
+			"phaserVersionLabel": "Versión de Phaser: {version}"
 		},
 		"group": {
 			"engines": "Motores y frameworks",
@@ -1237,11 +1233,11 @@
 				"sub": "Proyecto editable",
 				"detail": "Proyecto editable de GDevelop con capas Sprite, reproducción sincronizada y controles de equipamiento. Pruébalo o copia los objetos y el evento a tu juego."
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "Hojas de caminata",
 				"detail": "Una hoja de caminata por atuendo, al tamaño original de tu personaje. Copia los archivos PNG en img/characters (MZ, MV) o Graphics/Characters (VX Ace, VX). Se necesitan vistas de frente, de lado y de espaldas."
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "Una hoja de caminata de 4 fotogramas por atuendo, al tamaño original de tu personaje, para RPG Maker XP y Pokémon Essentials. Copia los archivos PNG en Graphics/Characters. Se necesitan vistas de frente, de lado y de espaldas."
 			},
 			"aseprite": {
@@ -1251,6 +1247,9 @@
 			"generic": {
 				"sub": "Integración personalizada",
 				"detail": "Hojas y tiras por capa con datos de tiempos, pivotes, equipamiento y paleta. Tu motor necesita código para leer estas reglas."
+			},
+			"phaserAe": {
+				"detail": "Hojas de sprites por capa y un runtime para juegos de Phaser AE, con equipamiento, colores y reproducción sincronizada. Añade las hojas a la lista assets del manifiesto de tu juego y la compilación del juego las copiará en él."
 			}
 		},
 		"version": {
@@ -1259,7 +1258,13 @@
 			"standardSub": "Diseño 3 × 4 · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP y Pokémon Essentials",
-			"xpSub": "Diseño 4 × 4 · Name.png"
+			"xpSub": "Diseño 4 × 4 · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "El motor del Phaser Game Agent",
+			"phaser": "3 y 4",
+			"phaserTitle": "Phaser 3 y 4",
+			"phaserSub": "Biblioteca de código abierto, 3.80 o posterior"
 		},
 		"playback": {
 			"all": "Todas"
@@ -1332,7 +1337,7 @@
 			"noVisibleFrames": "El cuerpo no tiene fotogramas visibles.",
 			"godot": "Godot no pudo usar estas hojas de sprites.",
 			"gdevelop": "GDevelop no pudo usar estas hojas de sprites.",
-			"rpgmaker": "RPG Maker necesita vistas de frente, de lado y de espaldas.",
+			"rpgMaker": "RPG Maker necesita vistas de frente, de lado y de espaldas.",
 			"aseprite": "La animación no encaja en el formato de Aseprite.",
 			"unsafeNames": "Algunos nombres de archivo no se pueden empaquetar de forma segura.",
 			"tooLarge": "Esta exportación es demasiado grande.",
@@ -1393,7 +1398,7 @@
 		"posesTitle": "Importar también como estados",
 		"posesHint": "Elige poses del mismo cuerpo que no tengan equipamiento dibujado. Si el aspecto es distinto, impórtalo como un personaje aparte. Elige las animaciones más abajo.",
 		"poseMismatch": "Este estado tiene otras dimensiones de imagen, direcciones o ajustes de cámara. Impórtalo como un personaje aparte.",
-		"titleDevice": "Importar desde el dispositivo",
+		"titleFile": "Importar desde archivo",
 		"titlePixelLab": "Importar desde PixelLab",
 		"browseLibrary": "Explorar personajes de PixelLab",
 		"standingState": "Estado para la pose de pie",
@@ -1480,6 +1485,7 @@
 			"skippedStanding": "Se omitió «{move}» en la dirección {direction}: el personaje no tiene una vista de pie en esa dirección.",
 			"semiAlpha": "Los bordes semitransparentes se convirtieron a transparencia de pixel art.",
 			"upscaledBase": "El arte de pie parece una ampliación de {scale}x. Se mantiene tal cual: los objetos hechos a partir de él usan más píxeles, mezclan tamaños de píxel y se recolorean con menos limpieza. Importa el arte original de 1x si lo tienes.",
+			"compressedBase": "El arte de pie parece comprimido o reescalado: muchos de sus colores aparecen una sola vez. Se mantiene tal cual: los objetos hechos a partir de él son más difíciles de recortar, recolorear y alinear. Importa el arte original si puedes.",
 			"detailsDropped": "Algunos datos guardados del personaje estaban dañados y se omitieron. Vuelve a configurar su rig de pose si hace falta."
 		},
 		"error": {

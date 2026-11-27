@@ -172,8 +172,8 @@ test.each([
 	'phaser',
 	'gdevelop',
 	'aseprite',
-	'rpgmaker',
-	'rpgmakerxp'
+	'rpg-maker',
+	'rpg-maker-xp'
 ] as const)('%s recovers surviving artwork when the body no longer matches', async (engine) => {
 	const source = await project();
 	const missing = `sha256:${'a'.repeat(64)}` as const;
@@ -228,7 +228,7 @@ test('a visible foreground exports and imports even when the first body layer is
 	expect(imported.project.manifest.items[0].layers).toEqual(body.layers);
 });
 
-test.each(['rpgmaker', 'rpgmakerxp'] as const)(
+test.each(['rpg-maker', 'rpg-maker-xp'] as const)(
 	'%s offers source artwork instead of pretending to make a walking sheet',
 	async (engine) => {
 		const source = await project();

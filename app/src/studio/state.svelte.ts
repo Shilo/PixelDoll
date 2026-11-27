@@ -2685,40 +2685,19 @@ export function toggleTwoHanded(itemId: string) {
 	);
 }
 
-/** The draw order of the current frame and the item's front layer in it. An item that is not worn is placed as if it
- *  were, so its order can be set before it is worn. An item hidden by another worn item is not drawn anywhere. */
-function layerPlacement(itemId: string) {
-	const m = store.project!.manifest,
-		it = itemById(itemId);
-	if (!it) return null;
-	const anim = m.rig.animations.find((x) => x.id === ui.anim);
-	if (!anim) return null;
-	const cell = anim.frames[ui.frame % anim.frames.length].cell,
-		items = $state.snapshot(doc.items);
-	let order = drawList(m, items, ui.anim, ui.dir, cell);
-	if (!order.some((d) => d.item.id === itemId))
-		order = drawList(m, { ...items, [it.slot]: itemId }, ui.anim, ui.dir, cell);
-	const i = order.findIndex((d) => d.item.id === itemId && d.layer.role === 'fg');
-	return i < 0 ? null : { order, i };
-}
-/** Whether Forward (1) or Backward (-1) can move the item's front layer in the current draw order. */
-export function canMoveLayer(itemId: string, step: 1 | -1) {
-	const place = layerPlacement(itemId),
-		j = place ? place.i + step : -1;
-	return !!place && j >= 0 && j < place.order.length;
-}
 /** Move the item's front layer one step in the draw order of the current frame (all directions, or only the current one). */
 export function moveLayer(itemId: string, step: 1 | -1, onlyDir: boolean) {
-	const place = layerPlacement(itemId);
-	if (!place) return;
-	const { order, i } = place,
-		j = i + step;
-	if (j < 0 || j >= order.length) return;
 	const m = store.project!.manifest,
-		it = itemById(itemId)!,
-		nz = order[j].z + step, // just past the neighbor
-		slot = m.slots.find((s) => s.id === it.slot)!,
-		o: ZOverride = { layer: 'fg', z: nz, ...(onlyDir ? { dir: ui.dir } : {}) };
+		it = itemById(itemId)!;
+	const a = m.rig.animations.find((x) => x.id === ui.anim)!,
+		cell = a.frames[ui.frame % a.frames.length].cell;
+	const order = drawList(m, $state.snapshot(doc.items), ui.anim, ui.dir, cell);
+	const i = order.findIndex((d) => d.item.id === itemId && d.layer.role === 'fg');
+	const j = i + step;
+	if (i < 0 || j < 0 || j >= order.length) return;
+	const nz = order[j].z + step; // just past the neighbor
+	const slot = m.slots.find((s) => s.id === it.slot)!;
+	const o: ZOverride = { layer: 'fg', z: nz, ...(onlyDir ? { dir: ui.dir } : {}) };
 	commit(message(step > 0 ? 'history.bringForward' : 'history.sendBackward'), () => {
 		slot.zOverrides = [
 			...(slot.zOverrides ?? []).filter(

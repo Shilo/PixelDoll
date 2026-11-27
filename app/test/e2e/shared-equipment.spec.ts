@@ -4,7 +4,6 @@ import {
 	equipmentGroup,
 	newItem,
 	selectedItemDetails,
-	openItemSection,
 	section,
 	playbackPicker,
 	selectPlaybackClip
@@ -295,9 +294,9 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 	await page.getByRole('button', { name: 'Characters', exact: true }).click();
 	await page
 		.locator('.experience-header')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	// The creator reaches Wardrobe visibility through its own More menu.
 	const creatorMore = creator.getByRole('button', { name: 'More options', exact: true });
@@ -787,7 +786,6 @@ test('an item drawn for another body on the same canvas is worn as drawn for fre
 		'Drawn for Stout’s body, so it may float, clip or leave gaps. Make one for Adventurer copy to fit it.'
 	);
 	await expect(details).toContainText('Not fitted');
-	await openItemSection(details, 'Item actions');
 	await expect(
 		details.getByRole('button', { name: 'Make one for Adventurer copy...', exact: true })
 	).toBeVisible();
@@ -1148,12 +1146,10 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 	await expect(details).toContainText('Fitted for free from Lefty’s item. Check these frames:');
 	// A re-fit's issues are its fit: nothing to accept as is; a new item for this body is offered instead.
 	await expect(details.getByRole('button', { name: 'Accept as is', exact: true })).toHaveCount(0);
-	await openItemSection(details, 'Item actions');
 	await expect(
 		details.getByRole('button', { name: 'Make one for Adventurer copy...', exact: true })
 	).toBeVisible();
 	// Each note shows its frame on the stage, paused.
-	await openItemSection(details, 'Quality checks');
 	const note = details.getByRole('button', { name: /^Walk facing south, frame 2: / });
 	await expect(note).toHaveText(/the forearm points another way than on Lefty/);
 	await note.click();

@@ -16,6 +16,7 @@ export { default as Upload } from '@lucide/svelte/icons/upload';
 export { default as Import } from '@lucide/svelte/icons/import';
 export { default as ClipboardPaste } from '@lucide/svelte/icons/clipboard-paste';
 export { default as MonitorDown } from '@lucide/svelte/icons/monitor-down';
+export { default as CloudDownload } from '@lucide/svelte/icons/cloud-download';
 export { default as BookOpen } from '@lucide/svelte/icons/book-open';
 export { default as Bug } from '@lucide/svelte/icons/bug';
 export { default as CircleHelp } from '@lucide/svelte/icons/circle-question-mark';

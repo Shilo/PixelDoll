@@ -44,14 +44,16 @@
 		MOUNT_HEIGHT_REASON,
 		mountSupportsFacing,
 		mountedFrame,
+		mountedLayers,
 		placeRider,
 		sampleMountFrame,
 		type MountViewResult
 	} from './mounts.ts';
 	import type { Img } from '../../lib/image/png.ts';
-	import { hideMountedLegs, mountLegGeometry } from './mountLegs.ts';
+	import { splitMountedRider } from './mountLegs.ts';
 	import { activeRiderPose, legsKept } from './riderPose.ts';
 	import { currentLiveClips, currentLiveLayering } from './liveViews.ts';
+	import { playAudioCue } from '../audio.svelte.ts';
 	import { showMount } from '../mountPreview.ts';
 	import { resolveAttack, type AttackFailure } from './attack.ts';
 	import { LiveActions } from './liveActions.ts';
@@ -448,27 +450,34 @@
 	const keyAim = () => travel;
 	const playing = () => experience.mode !== 'preview' && !ui.sheet;
 	/** Jumps now and on every landing while the source (Space, the Jump button) is held. */
-	function jump(source: string) {
-		if (playing()) actions.holdJump(source);
+	function jump(source: 'key' | 'button') {
+		if (!playing()) return;
+		actions.holdJump(source);
+		if (source === 'button') playAudioCue('press');
 	}
-	/** An attack along the travel or facing, repeating while the source (the Attack button) is held. */
-	function attack(source: string) {
-		if (playing()) actions.hold(source, keyAim);
+	/** An attack along the travel or facing, repeating while the Attack button is held. */
+	function attackButton() {
+		if (!playing()) return;
+		actions.hold('button', keyAim);
+		playAudioCue('press');
 	}
 	/** The touch Attack stick: attacks at once along the facing, then wherever the stick points while it is held. */
-	function attackStick(snapshot: JoystickSnapshot) {
+	function attackStick(snapshot: JoystickSnapshot, starting: boolean) {
 		if (snapshot.pointerId === null) {
 			actions.release('stick');
 			return;
 		}
 		touchInput = true;
 		stickAim = { x: snapshot.value.x, y: -snapshot.value.y };
-		if (playing() && !actions.holds('stick')) actions.hold('stick', () => stickAim);
+		if (!playing()) return;
+		if (!actions.holds('stick')) actions.hold('stick', () => stickAim);
+		if (starting) playAudioCue('press');
 	}
 	/** F and the Mount action, in every view; the live views mount only on the floor. */
 	function toggleMount() {
-		if (ui.sheet || (experience.mode !== 'preview' && !actions.grounded)) return;
+		if (ui.sheet || (experience.mode !== 'preview' && !actions.grounded)) return false;
 		showMount(!experience.testMount);
+		return true;
 	}
 	function key(e: KeyboardEvent) {
 		if (e.target !== host || ui.sheet || e.ctrlKey || e.metaKey || e.altKey || e.isComposing)
@@ -899,7 +908,7 @@
 				key: string;
 				image: Img;
 				availability: NonNullable<typeof availability>;
-				result: ReturnType<typeof hideMountedLegs>;
+				result: ReturnType<typeof splitMountedRider>;
 			}
 		>();
 		const mountCanvases = new WeakMap<Img, HTMLCanvasElement>();
@@ -909,19 +918,13 @@
 			presentation: Presentation,
 			mounted: ReturnType<typeof mountedPresentation>,
 			result: ReturnType<typeof renderPresentation>,
-			source: HTMLCanvasElement,
-			requestedCell: number
+			source: HTMLCanvasElement
 		) => {
-			let legs: ReturnType<typeof hideMountedLegs> | null = null;
+			let legs: ReturnType<typeof splitMountedRider> | null = null;
 			if (mounted?.view && result.image && presentation.clip && presentation.direction) {
 				const { clip, direction } = presentation;
-				const cells =
-					presentation.kind === 'animation'
-						? presentation.sequence!.frames.map((frame) => frame.cell)
-						: [presentation.cell];
-				const cell = cells.includes(requestedCell) ? requestedCell : cells[0];
 				const mode = legMode(clip);
-				const key = JSON.stringify([clip, cell, mode, result.frame]);
+				const key = JSON.stringify([clip, result.composition?.cell, mode, result.frame]);
 				const cached = legResults.get(direction);
 				if (
 					cached?.key === key &&
@@ -930,16 +933,14 @@
 				) {
 					legs = cached.result;
 				} else {
-					const rig = available.project.manifest.rig;
-					legs = hideMountedLegs(
+					legs = splitMountedRider(
+						available.project,
 						result.image,
 						result.frame,
-						rig,
 						clip,
 						direction,
-						cell,
-						mode,
-						mountLegGeometry(available.project, clip, direction, cell)
+						result.composition,
+						mode
 					);
 					legResults.set(direction, {
 						key,
@@ -971,23 +972,16 @@
 			const index = sampleMountFrame(mounted.view, mountElapsed);
 			const pose = mounted.view.frames[index];
 			const placement = placeRider(mounted.ground, mounted.contact, pose);
-			const layer = (image: Img) =>
+			for (const layer of mountedLayers(pose, placement, actor.source, actor.legs?.behind)) {
+				const image = 'data' in layer.image ? mountCanvas(layer.image) : layer.image;
 				g.drawImage(
-					mountCanvas(image),
-					left + placement.mount.x * scale,
-					top + placement.mount.y * scale,
-					image.w * scale,
-					image.h * scale
+					image,
+					left + layer.x * scale,
+					top + layer.y * scale,
+					image.width * scale,
+					image.height * scale
 				);
-			layer(pose.back);
-			g.drawImage(
-				actor.source,
-				left + placement.rider.x * scale,
-				top + placement.rider.y * scale,
-				actor.source.width * scale,
-				actor.source.height * scale
-			);
-			layer(pose.front);
+			}
 			return index;
 		};
 		let raf = 0,
@@ -1542,7 +1536,7 @@
 							: 0;
 				delete host.dataset.mountLegs;
 				delete host.dataset.mountLegSource;
-				const actor = result ? prepareActor(a, p, mounted, result, source, cell) : null;
+				const actor = result ? prepareActor(a, p, mounted, result, source) : null;
 				const legResult = actor?.legs;
 				if (legResult) {
 					const axial =
@@ -1653,8 +1647,7 @@
 										entry.presentation,
 										mountedPresentation(direction, entry.presentation),
 										entry.result,
-										entry.canvas,
-										view.cell
+										entry.canvas
 									)
 								: null;
 							if (actor?.mounted && !actor.mounted.view)
@@ -1956,13 +1949,18 @@
 			touch={touchInput}
 			mounted={experience.testMount}
 			sprinting={sprintOn}
-			onattack={() => attack('button')}
+			onattack={attackButton}
 			onattackrelease={() => actions.release('button')}
 			onstick={attackStick}
 			onjump={() => jump('button')}
 			onjumprelease={() => actions.releaseJump('button')}
-			onsprint={() => (sprintOn = !sprintOn)}
-			onmount={toggleMount}
+			onsprint={() => {
+				sprintOn = !sprintOn;
+				playAudioCue('press');
+			}}
+			onmount={() => {
+				if (toggleMount()) playAudioCue('press');
+			}}
 		/>{/key}
 {/if}
 

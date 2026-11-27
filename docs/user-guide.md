@@ -7,7 +7,7 @@ them at runtime. The pictures are drawn by [PixelLab](https://pixellab.ai) using
 
 The app opens to **Characters**, including the bundled demo and characters saved on this device. Choose **Customize** to dress the selected character. Clicking an already-selected character also opens customization. The demo needs no account: you can dress it, recolor it, save outfits and export it. Creating characters and items requires a PixelLab key.
 
-On a first visit, short tips point at **Customize**, a piece of gear to try on and **Export**, then at **New character**, and the
+On a first visit, short tips point at **Customize**, a piece of gear to try on and **Export**, then at **Add character**, and the
 first time you open **Connect PixelLab**, at what PixelLab is. On your own characters, tips point out adding gear, moves and
 states, and generating gear for a new move. Each tip goes away for good once you do what it suggests, or close it with its
 **X**. **Show tips again** in **More options > Help** or **Settings > Appearance** brings them all back.

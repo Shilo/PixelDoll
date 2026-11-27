@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { exportFiles } from "../../../app/src/lib/export/export.ts";
-import { walkMove } from "../../../app/src/lib/export/rpgmaker.ts";
+import { walkMove } from "../../../app/src/lib/export/rpg-maker.ts";
 import { makeImg } from "../../../app/src/lib/image/png.ts";
 import { decodePngBytes } from "../../../app/src/lib/image/pngraw.ts";
 import { retainMoves } from "../../../app/src/lib/rig/moves.ts";
@@ -165,8 +165,8 @@ test("eight-facing artwork exports as four rows in each RPG Maker format", async
     ),
   };
   for (const [engine, columns] of [
-    ["rpgmaker", 3],
-    ["rpgmakerxp", 4],
+    ["rpg-maker", 3],
+    ["rpg-maker-xp", 4],
   ] as const) {
     const { entries, errors } = await exportFiles(project, {
       engines: [engine],

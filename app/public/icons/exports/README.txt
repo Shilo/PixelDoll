@@ -25,7 +25,7 @@ phaser.svg: locally drawn angular P monogram, referencing the geometric letterin
   https://phaser.io/download/trademark
 generic.svg: lucide:image (ISC), retained for PNG + JSON.
   https://lucide.dev/
-rpgmaker.svg: lucide:castle (ISC), a generic RPG identifier. Not an RPG Maker logo.
+rpg-maker.svg: lucide:castle (ISC), a generic RPG identifier. Not an RPG Maker logo.
   https://lucide.dev/icons/castle
 
 Custom identifiers are MIT, like PixelDoll. Brand rights remain with their owners;

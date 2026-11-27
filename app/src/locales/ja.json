@@ -499,13 +499,6 @@
 			"other": "このアイテムに保存された{directions}向きのデザインから復元します。生成は行いません。"
 		},
 		"hiddenByAnotherItem": "他のアイテムで隠れています",
-		"hiddenByItem": "{name} によって隠れています",
-		"showName": "{name} を表示",
-		"notWorn": "未装着",
-		"qualityChecks": "品質チェック",
-		"customize": "カスタマイズ",
-		"itemActions": "アイテムの操作",
-		"layerHiddenHint": "別の装着中アイテムがこれを隠しているため、ここではレイヤー順を変更できません。先に表示してください。",
 		"nameInEveryDirection": "全方向の{name}",
 		"labelNameFacingId": "{id}向きの{name}",
 		"acceptedAppearanceWarnings": "承認済みの外観に関する警告",
@@ -629,10 +622,11 @@
 		"billingNote": "推定値は生成数を比較したもので、ドル価格ではありません。PixelLabから米ドルで請求される場合があり、待ち時間は状況によって異なります。"
 	},
 	"newCharacterButton": {
+		"addCharacter": "キャラクターを追加",
 		"newCharacter": "新しいキャラクター",
-		"createFromScratch": "一から作成…",
-		"importFromDevice": "デバイスからインポート…",
-		"importFromPixelLab": "PixelLabからインポート…",
+		"createFromScratch": "作成…",
+		"fromFile": "ファイルから…",
+		"fromPixelLab": "PixelLabから…",
 		"createNeedsKey": "PixelLabのキーが必要で、有料の生成を使います"
 	},
 	"noticeLink": {
@@ -1179,7 +1173,9 @@
 			"versionMenu": "RPG Makerのバージョン",
 			"version": "バージョン",
 			"versionLabel": "RPG Makerのバージョン：{version}",
-			"walkMove": "歩きのモーション"
+			"walkMove": "歩きのモーション",
+			"phaserVersionMenu": "Phaserのバージョン",
+			"phaserVersionLabel": "Phaserのバージョン：{version}"
 		},
 		"group": {
 			"engines": "エンジンとフレームワーク",
@@ -1202,11 +1198,11 @@
 				"sub": "編集可能なプロジェクト",
 				"detail": "Spriteレイヤー、同期再生、装備の操作を備えた編集可能なGDevelopプロジェクトです。プレビューするか、オブジェクトとイベントを自分のゲームにコピーしてください。"
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "歩行シート",
 				"detail": "キャラクター本来のサイズで、コーディネートごとに歩行シートを1枚作成します。PNGファイルをimg/characters（MZ、MV）またはGraphics/Characters（VX Ace、VX）にコピーしてください。正面、側面、背面のビューが必要です。"
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "RPG Maker XPとPokémon Essentials向けに、キャラクター本来のサイズで、コーディネートごとに4フレームの歩行シートを1枚作成します。PNGファイルをGraphics/Charactersにコピーしてください。正面、側面、背面のビューが必要です。"
 			},
 			"aseprite": {
@@ -1216,6 +1212,9 @@
 			"generic": {
 				"sub": "カスタム連携",
 				"detail": "レイヤーごとのシートと横並びのフレーム画像に加え、タイミング、ピボット、装備、パレットのデータを出力します。ゲームエンジン側には、これらのルールを読み込むコードが必要です。"
+			},
+			"phaserAe": {
+				"detail": "Phaser AEゲーム向けのレイヤー別スプライトシートとランタイムで、装備、色、同期再生に対応しています。ゲームのマニフェストのassetsリストにシートを追加すると、ゲームのビルド時にシートがゲームへコピーされます。"
 			}
 		},
 		"version": {
@@ -1224,7 +1223,13 @@
 			"standardSub": "3 × 4レイアウト・$Name.png",
 			"xp": "XP",
 			"xpTitle": "XPとPokémon Essentials",
-			"xpSub": "4 × 4レイアウト・Name.png"
+			"xpSub": "4 × 4レイアウト・Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Phaser Game Agentのエンジン",
+			"phaser": "3・4",
+			"phaserTitle": "Phaser 3と4",
+			"phaserSub": "オープンソースのライブラリ、3.80以降"
 		},
 		"playback": {
 			"all": "すべて"
@@ -1290,7 +1295,7 @@
 			"noVisibleFrames": "体に表示できるフレームがありません。",
 			"godot": "Godotでこれらのスプライトシートを使用できませんでした。",
 			"gdevelop": "GDevelopでこれらのスプライトシートを使用できませんでした。",
-			"rpgmaker": "RPG Makerには正面、側面、背面のビューが必要です。",
+			"rpgMaker": "RPG Makerには正面、側面、背面のビューが必要です。",
 			"aseprite": "このアニメーションはAsepriteの形式に合いません。",
 			"unsafeNames": "安全にパッケージ化できないファイル名があります。",
 			"tooLarge": "このエクスポートは大きすぎます。",
@@ -1347,7 +1352,7 @@
 		"posesTitle": "ステートとしてもインポート",
 		"posesHint": "装備が描き込まれていない、同じ素体のポーズを選んでください。外見が異なるものは別のキャラクターとしてインポートしてください。モーションは下で選びます。",
 		"poseMismatch": "このステートは画像サイズ、向き、またはカメラ設定が異なります。別のキャラクターとしてインポートしてください。",
-		"titleDevice": "デバイスからインポート",
+		"titleFile": "ファイルからインポート",
 		"titlePixelLab": "PixelLabからインポート",
 		"browseLibrary": "PixelLabのキャラクターを見る",
 		"standingState": "立ちポーズのステート",
@@ -1431,6 +1436,7 @@
 			"skippedStanding": "「{move}」の{direction}向きは除外されました。キャラクターにその向きの立ち姿がありません。",
 			"semiAlpha": "半透明の縁をピクセルアート向けの透明度に変換しました。",
 			"upscaledBase": "立ち絵は {scale}x に拡大されたもののようです。そのまま保持されます。ここから作る装備はピクセル数が増え、ピクセルサイズが混在し、色の置き換えもきれいに行えません。可能なら元の 1x の画像をインポートしてください。",
+			"compressedBase": "立ち絵が圧縮または再スケールされた可能性があります。多くの色が一度しか使われていません。そのまま取り込みますが、そこから作るアイテムは切り抜き・再配色・位置合わせが難しくなります。可能なら元の画像を取り込んでください。",
 			"detailsDropped": "保存されたキャラクター情報の一部が破損していたため、取り込みませんでした。必要に応じてポーズ用のリグをもう一度セットアップしてください。"
 		},
 		"error": {

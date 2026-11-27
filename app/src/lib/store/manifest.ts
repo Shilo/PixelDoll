@@ -305,10 +305,11 @@ export const EXPORT_ENGINES = [
 	'godot',
 	'unity',
 	'phaser',
+	'phaser-ae',
 	'gdevelop',
 	'aseprite',
-	'rpgmaker',
-	'rpgmakerxp'
+	'rpg-maker',
+	'rpg-maker-xp'
 ] as const;
 export type Engine = (typeof EXPORT_ENGINES)[number];
 export interface ExportInfo {

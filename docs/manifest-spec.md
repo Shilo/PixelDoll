@@ -321,7 +321,13 @@ export interface ExportInfo {
   exportedAt: string;
   layout: "pixeldoll-sheets/1";
   engines: (
-    "generic" | "godot" | "unity" | "phaser" | "gdevelop" | "aseprite"
+    | "generic"
+    | "godot"
+    | "unity"
+    | "phaser"
+    | "phaser-ae"
+    | "gdevelop"
+    | "aseprite"
   )[]; // RPG Maker zips ship no manifest.json
   pixelsPerUnit: number; // Unity; default = rig.pixelsPerUnit ?? rig.cell.w
   baked?: string[]; // preset ids with baked composites
@@ -920,6 +926,7 @@ at most 16 × 64 = 1024 px wide and 8 × 64 = 512 px tall at the v1 limits. Fram
 | Godot 4            | `centered = false`, `offset = Vector2(-x, -y)`                                                              |
 | Unity              | normalized from **bottom-left**: `pivot = (x / w, 1 − y / h)`; sprite rect `y_unity = texH − (row + 1) · h` |
 | Phaser 3/4         | atlas frame `"pivot": {"x": x / w, "y": y / h}` (auto `setOrigin` [R3])                                     |
+| Phaser AE          | sprite center = pivot point + `(w / 2 − x, h / 2 − y)` (AE positions sprites by their center)               |
 | Aseprite           | slice `"pivot"` (pixels, relative to the slice bounds = the cell)                                           |
 | Mirrored direction | already baked into pixels; the pivot is unchanged because the cell is centered (inv. 10)                    |
 | Oversize layer     | same formulas with the layer's `w, h, x, y`; Unity PPU stays the base's                                     |
@@ -989,11 +996,48 @@ Historical verification [M5] covered Phaser 3.80, 3.90 and 4.2.1. The current
   changed moves/directions and completed once-only clips start at the beginning. A third `true` argument explicitly restarts.
   `setDirection(dir)` turns the active move in place (same playlist entry, clock, repeat count and completion) without
   animation start or complete events.
+  Palette lookup uses straight RGBA decoded from recolorable PNG sheets to match translucent source colors exactly.
+  Phaser uploads the resulting palette textures through its normal Canvas or WebGL path.
   `destroy()` removes the container; palette textures remain
   cached until game teardown. Use `pixelArt: true`, `roundPixels: true`.
 
 2026-10-23 smoke: Phaser 3.90.0 and 4.1.0, Canvas and WebGL, passed exact 80/180/100 ms timing, palette switching,
 layer synchronization and oversized pivots with zero page errors. Phaser 3.80 compatibility was source-reviewed only.
+
+### 6.4.1 Phaser AE — layer grids and one aggregate per doll
+
+Phaser AE is a separate engine (the Phaser Game Agent's kernel), not a Phaser 3/4 version, and has its own API: no loader
+atlases, scenes or animation manager. Its export reuses the layer sheets and adds `phaser-ae/`:
+
+- `paperdoll.js`: the canonical runtime modules plus the AE adapter. `loadPaperdoll(game, folder, { manifest,
+prepare })` takes the folder's `manifest.json` (a static JSON import, so a headless replay that fetches nothing builds
+  the same frames) or fetches it, loads every sheet as bytes through `game.assets.load` (retries, the loading screen,
+  the game's base URL), checks each sheet's size and registers it as a `cols × rows` grid (`game.assets.addGrid`, cell =
+  the layer's cell, rows = rig directions) in a fixed order. Sheets of items with materials are also decoded exactly
+  (`png.js`, straight RGBA): palette lookups never read a canvas, which premultiplies alpha and changes the RGB of
+  translucent pixels. The whole preparation is tracked; it throws naming the file, and calling it again refetches the
+  files that failed with a cache-busting query. The first outfit's palette grids (and any in `prepare`) are built under
+  the loading screen; others on first use.
+  `Paperdoll` owns one clock per doll, a step named after its actor; a clip started by `play` counts from the next
+  step, so the step that started it never advances it, whatever the step order. Sampling adds a 1 µs tolerance so
+  frame boundaries land on the step that reaches them at any fixed step rate, and looping clocks wrap.
+  The doll is one roster object, `doll.actor` (typed as the game's own `Sprite`), which owns its position, scale,
+  rotation, alpha, tint and visibility; `doll.x/y` are the pivot, derived from and written to the actor, so collision
+  pushes, tweens and wrapping act on the doll. Its box (`options.box`, default the rig cell and pivot) is what picking
+  and collision see, and it carries the doll's tags. `game.roster.aggregate` makes it emit every `drawList` (or
+  `exportedActionDraws`) layer itself, in order, around its interpolated transform, so the layers neither drift between
+  steps nor interleave with other objects. Side-on worlds sort the actor by `z`, then spawn order; in a top-down world
+  `z` (refreshed every frame from the live scale) puts its sort point at the pivot. Draw records are rebuilt only when
+  the pose, equipment or colors change. `paperdoll.d.ts` types the doll API and `types.d.ts` the manifest data.
+- `assets.json`: the manifest and every sheet path under `pixeldoll/<export id>/`, a fragment for the game manifest's
+  `assets` list (not `game/assets.json`). The local build copies those files next to the bundle. Phaser's hosted route
+  for a person's files, the Pro `upload` command, is not used.
+
+2026-11-26 native run: AE engine v3-82bf126 (kernel 3.0.0-2), side-on and top-down worlds, WebGL2, every outfit, move,
+direction and playlist entry of three synthetic archives and the demo export pixel-equal to `baked/`; overlap (including
+dolls level at their feet and a prop at the feet), collision, clock order, lifecycle, retry, translucent recolor,
+turning, rejection and recolor checks with negative controls.
+See [Phaser AE export](testing/phaser-ae-export-2026-11-26.md).
 
 ### 6.5 Aseprite — layered `.aseprite` as the zero-code alternative (B11)
 
@@ -1057,8 +1101,8 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
 - One split **RPG Maker** card, so a zip only holds what its engine reads. The card body (its radio) only selects; the
   version button beside it (a full-width 44 px strip under it on cards narrower than 220 px) selects and opens the version
   menu, the app's popover menu with the current version checked. Selecting never opens the menu, so arrow keys across the
-  cards stay plain radio behavior; clicking outside closes the menu and keeps the choice. **Standard** (engine id `rpgmaker`,
-  the default; MZ, MV, VX Ace and VX share one file) writes `$<name>.png`, 3 × 4 cells; **XP** (`rpgmakerxp`, also Pokémon
+  cards stay plain radio behavior; clicking outside closes the menu and keeps the choice. **Standard** (engine id `rpg-maker`,
+  the default; MZ, MV, VX Ace and VX share one file) writes `$<name>.png`, 3 × 4 cells; **XP** (`rpg-maker-xp`, also Pokémon
   Essentials) writes `<name>.png`, 4 × 4 cells. The button keeps the longest value's width so it never shifts, and the stored
   engine id remembers the version while RPG Maker stays selected (choosing another format and coming back selects Standard). RPG Maker exports cannot be combined with other engines in one call. Rows: south, west, east, north (west is the
   rig's mirrored or generated view; diagonals are dropped). The engines derive the cell from the image size, so the cell is
@@ -1090,9 +1134,11 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
 
 ### 6.9 Optional moving-action fragments
 
-The Export checkbox **Moving attack layers** is off by default and independent of the Live switch. Enabled Phaser, GDevelop, Godot and Unity exports use the character's Live Walk, Attack and Waist settings. Optional `actionSheets.lower` and `actionSheets.upper` map moves to the new `action/` body PNGs or to existing source-color equipment sheets. Rows, columns and pivots match the original layer. `actionLayers.planes` stores integer hip registration coordinates by direction and cell.
+The Export checkbox **Moving attack layers** is off by default and independent of the Live switch. Enabled Phaser, Phaser AE, GDevelop, Godot and Unity exports use the character's Live Walk, Attack and Waist settings. Optional `actionSheets.lower` and `actionSheets.upper` map moves to the new `action/` body PNGs or to existing source-color equipment sheets. Rows, columns and pivots match the original layer. `actionLayers.planes` stores integer hip registration coordinates by direction and cell.
 
 Each `actionLayers.pairs` entry is a set that passed the geometry and seam gate for all reachable cells of the Walk, Attack and shared direction. Its `blocked` IDs are items without drawable art on their required clip. The `cells` array is row-major by Walk cell then Attack cell. Unused combinations are null; the rest contain the integer correction to add to the hip difference. This optional data is rebuilt with the same archive, not separately versioned or updated in place. Re-export when the source art, timing, or Waist setting changes. See the [controller contract](architecture/javascript-runtime.md#one-shot-actions-over-a-loop).
+
+During a layered action, use the last Walk cell sampled in the Attack's direction to index the pair. Hold that cell while the gait faces away and resume sampling it when the gait returns to the Attack's direction. Both clocks keep advancing. An unsupported outfit can switch the action to full for the rest of that action.
 
 ## 7. Editable import copy
 

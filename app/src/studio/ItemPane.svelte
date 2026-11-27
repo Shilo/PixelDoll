@@ -14,7 +14,7 @@
 	import { displayMove } from './displayMove.ts';
 	import { displayKey } from './displayKey.ts';
 	import { coverageGaps, moveDirs } from '../lib/dress/dress.ts';
-	import { hiddenSlots, equipped, hidesOf } from '../lib/compose/compose.ts';
+	import { hiddenSlots, equipped } from '../lib/compose/compose.ts';
 	import { SLOTS, slotLadder } from '../lib/items/items.ts';
 	import {
 		gapMoves,
@@ -63,7 +63,6 @@
 		wear,
 		toggleHide,
 		moveLayer,
-		canMoveLayer,
 		resetLayer,
 		removeItem,
 		isDemo,
@@ -117,7 +116,6 @@
 	const it = $derived(m?.items.find((i) => i.id === id));
 	// The order Reset restores: a built-in's ladder, or a custom category's chosen drawing position (slots.ts setDrawsAbove).
 	const ladder = $derived.by(() => {
-		void doc.rev;
 		const def = m && it ? m.slots.find((s) => s.id === it.slot) : undefined;
 		if (!m || !it) return [];
 		if (isBuiltin(it.slot))
@@ -128,16 +126,6 @@
 	});
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	const hiddenNow = $derived(m && it ? hiddenSlots(m, equipped(m, doc.items)).has(it.slot) : false);
-	// The worn item that hides this one, so the summary can show what is hiding it and offer to show it again.
-	const hider = $derived(
-		m && it
-			? equipped(m, doc.items).find(
-					(o) => o.id !== it.id && o.slot !== it.slot && hidesOf(m, o).includes(it.slot)
-				)
-			: undefined
-	);
-	const canForward = $derived(!!it && canMoveLayer(it.id, 1));
-	const canBackward = $derived(!!it && canMoveLayer(it.id, -1));
 	const health = $derived(m && it ? healthOf(m, it) : 'demo');
 	const anim = $derived(m?.rig.animations.find((a) => a.id === ui.anim));
 	const made = $derived(m ? moveDirs(m, ui.anim) : []);
@@ -156,20 +144,16 @@
 				)
 			: []
 	);
-	// The project manifest is raw state: an edit to an item's or slot's fields is announced by `bump()` through doc.rev,
-	// so these derived values read it to refresh the chips and Reset after toggleHide or moveLayer.
-	const hides = $derived.by(() => {
-		void doc.rev;
-		return it ? (it.hides ?? m?.slots.find((s) => s.id === it.slot)?.hides ?? []) : [];
-	});
-	const tucks = $derived.by(() => {
-		void doc.rev;
-		return it
+	const hides = $derived(
+		it ? (it.hides ?? m?.slots.find((s) => s.id === it.slot)?.hides ?? []) : []
+	);
+	const tucks = $derived(
+		it
 			? (m?.slots.find((s) => s.id === it.slot)?.clips ?? []).filter(
 					(s) => others.some((o) => o.id === s) && !hides.includes(s)
 				)
-			: [];
-	});
+			: []
+	);
 	const gaps = $derived(m && it ? coverageGaps(m, it) : []);
 	// B10: views of the shown move this item has no frames for (it would vanish there)
 	const moveGaps = $derived(
@@ -447,9 +431,6 @@
 				<h2 class="insp-title">{it.name}</h2>
 				<p class="insp-sub">
 					<span>{slotName(it.slot)}</span>
-					<span class="badge" data-worn={on || undefined}
-						>{on ? t('wardrobe.wearing') : t('itemPane.notWorn')}</span
-					>
 					{#if health !== 'demo' || isDemo()}<span class="badge {health}"
 							>{#if health === 'clean'}<CircleCheck
 									size={12}
@@ -461,17 +442,6 @@
 						>{/if}
 					{#if hiddenNow}<span class="badge">{t('itemPane.hiddenByAnotherItem')}</span>{/if}
 				</p>
-				{#if hiddenNow && hider}
-					<p class="badge-line small">
-						<span>{t('itemPane.hiddenByItem', { name: hider.name })}</span>
-						<button
-							class="bu-action btn sm plain"
-							data-variant="quiet"
-							onclick={() => toggleHide(hider.id, it.slot)}
-							>{t('itemPane.showName', { name: it.name })}</button
-						>
-					</p>
-				{/if}
 			</header>
 
 			{#if anim}
@@ -498,82 +468,75 @@
 				</div>
 			{/if}
 
-			{#if coverage.length || designReasons.length || reasons.length || notes.length}
-				<details class="disclosure">
-					<summary><ChevronRight size={14} />{t('itemPane.qualityChecks')}</summary>
-					<div class="stack">
-						{#if coverage.length}
-							<div class="field">
-								<span class="sec-title">{t('itemPane.coverageTitle')}</span>
-								<ul class="coverage-list" aria-label={t('itemPane.coverageTitle')}>
-									{#each coverage as clip (clip.id)}
-										<li
-											class="coverage-clip"
-											class:missing={!clip.drawn}
-											aria-label={t(
-												clip.drawn ? 'itemPane.coverageClipDrawn' : 'itemPane.coverageClipMissing',
-												{ move: clip.name }
-											)}
-										>
-											{#if clip.drawn}<Check size={12} strokeWidth={2.5} />{:else}<TriangleAlert
-													size={12}
-												/>{/if}<span>{clip.name}</span>
-										</li>
-									{/each}
-								</ul>
-								<p class="faint small">
-									{coverageMissing
-										? t('itemPane.coverageMissing', {
-												count: coverageMissing,
-												n: number(coverageMissing)
-											})
-										: t('itemPane.coverageAllDrawn')}
-								</p>
-							</div>
-						{/if}
+			{#if coverage.length}
+				<div class="field">
+					<span class="sec-title">{t('itemPane.coverageTitle')}</span>
+					<ul class="coverage-list" aria-label={t('itemPane.coverageTitle')}>
+						{#each coverage as clip (clip.id)}
+							<li
+								class="coverage-clip"
+								class:missing={!clip.drawn}
+								aria-label={t(
+									clip.drawn ? 'itemPane.coverageClipDrawn' : 'itemPane.coverageClipMissing',
+									{ move: clip.name }
+								)}
+							>
+								{#if clip.drawn}<Check size={12} strokeWidth={2.5} />{:else}<TriangleAlert
+										size={12}
+									/>{/if}<span>{clip.name}</span>
+							</li>
+						{/each}
+					</ul>
+					<p class="faint small">
+						{coverageMissing
+							? t('itemPane.coverageMissing', {
+									count: coverageMissing,
+									n: number(coverageMissing)
+								})
+							: t('itemPane.coverageAllDrawn')}
+					</p>
+				</div>
+			{/if}
 
-						<!-- A re-fit names its source's design findings among its fit notes, on this body's frames. -->
-						<!-- An unfitted copy keeps its source's pixels, so the source's accepted design findings still describe them. -->
-						{#if designReasons.length && !it.refit}
-							<div class="field">
-								<span class="sec-title">{t('itemPane.acceptedAppearanceWarnings')}</span>
-								<ul class="reasons small">
-									{#each designReasons as reason (reason)}<li>
-											<TriangleAlert size={12} />{reason}
-										</li>{/each}
-								</ul>
-							</div>
-						{/if}
-						{#if (health === 'look' || health === 'unfitted' || health === 'accepted') && reasons.length}
-							<ul class="reasons small">
-								{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}
-							</ul>
-						{/if}
-						{#if notes.length}
-							<div class="field">
-								<p class="small" id="refit-{it.id}">
-									{t('itemPane.refitIntro', {
-										from: it.copiedFrom?.name ?? t('studioModel.anotherCharacter')
-									})}
-								</p>
-								<ul class="refit-notes" aria-labelledby="refit-{it.id}">
-									{#each notes as note (note.text)}<li>
-											<button
-												class="bu-action btn sm plain"
-												data-variant="quiet"
-												title={t('itemPane.titleShowThisFrame')}
-												onclick={() => {
-													showFrame(note.anim, note.dir, note.frame);
-													// The details sheet covers the stage: close it to show the frame.
-													if (ui.sheet === 'item') ui.sheet = null;
-												}}><TriangleAlert size={12} />{note.text}</button
-											>
-										</li>{/each}
-								</ul>
-							</div>
-						{/if}
-					</div>
-				</details>
+			<!-- A re-fit names its source's design findings among its fit notes, on this body's frames. -->
+			<!-- An unfitted copy keeps its source's pixels, so the source's accepted design findings still describe them. -->
+			{#if designReasons.length && !it.refit}
+				<div class="field">
+					<span class="sec-title">{t('itemPane.acceptedAppearanceWarnings')}</span>
+					<ul class="reasons small">
+						{#each designReasons as reason (reason)}<li>
+								<TriangleAlert size={12} />{reason}
+							</li>{/each}
+					</ul>
+				</div>
+			{/if}
+			{#if (health === 'look' || health === 'unfitted' || health === 'accepted') && reasons.length}
+				<ul class="reasons small">
+					{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}
+				</ul>
+			{/if}
+			{#if notes.length}
+				<div class="field">
+					<p class="small" id="refit-{it.id}">
+						{t('itemPane.refitIntro', {
+							from: it.copiedFrom?.name ?? t('studioModel.anotherCharacter')
+						})}
+					</p>
+					<ul class="refit-notes" aria-labelledby="refit-{it.id}">
+						{#each notes as note (note.text)}<li>
+								<button
+									class="bu-action btn sm plain"
+									data-variant="quiet"
+									title={t('itemPane.titleShowThisFrame')}
+									onclick={() => {
+										showFrame(note.anim, note.dir, note.frame);
+										// The details sheet covers the stage: close it to show the frame.
+										if (ui.sheet === 'item') ui.sheet = null;
+									}}><TriangleAlert size={12} />{note.text}</button
+								>
+							</li>{/each}
+					</ul>
+				</div>
 			{/if}
 			{#if !isDemo() && pendingBlocks}
 				<p class="notice small" role="status">
@@ -866,136 +829,110 @@
 					})}
 				</p>{/if}
 
-			<details class="disclosure">
-				<summary><ChevronRight size={14} />{t('itemPane.customize')}</summary>
-				<div class="actions">
-					{#if recolorable}
-						<!-- Colors live in the Colors tab; this opens it on the item's own section. -->
-						<button class="bu-action btn plain recolor-link" data-variant="quiet" onclick={recolor}
-							><Palette size={14} />{t('itemPane.recolor')}</button
-						>
-					{/if}
-					<button class="bu-action btn plain" data-variant="quiet" onclick={() => openFrames(it.id)}
-						><Grid2x2 size={14} />{openerLabel(t('fixFrames.open'))}<SurfaceChevron /></button
+			<div class="actions">
+				<button
+					class="bu-action btn {on ? '' : 'primary'}"
+					data-variant="outline"
+					onclick={() => wear(it.id)}>{on ? t('common.takeOff') : t('common.wear')}</button
+				>
+				{#if !isDemo() && canEditItemAppearance(m, it)}
+					<button
+						class="bu-action btn"
+						data-variant="outline"
+						aria-haspopup="dialog"
+						onclick={() => openAppearance(doc.id, it.id, 'item')}
+						>{t('appearance.action')}<SurfaceChevron /></button
 					>
-					{#if !isDemo() && canEditItemAppearance(m, it)}
-						<button
-							class="bu-action btn plain"
-							data-variant="quiet"
-							aria-haspopup="dialog"
-							onclick={() => openAppearance(doc.id, it.id, 'item')}
-							>{t('appearance.action')}<SurfaceChevron /></button
-						>
-					{/if}
-				</div>
-			</details>
+				{/if}
+				{#if !isDemo() && it.prompt}
+					<!-- A fitted copy is remade for this body like any shared item that does not fit it, named from its description. -->
+					<button
+						class="bu-action btn"
+						data-variant="outline"
+						onclick={() =>
+							openNewItem(it.slot, {
+								slot: it.slot,
+								prompt: it.prompt,
+								route: it.route
+							})}
+						><RefreshCw size={14} />{openerLabel(
+							remakeOnly
+								? t('itemMenu.makeOneForName', { name: m.name })
+								: t('itemMenu.createVariant')
+						)}<SurfaceChevron /></button
+					>
+				{/if}
+				{#if !isDemo()}
+					<button
+						class="bu-action btn plain danger"
+						data-variant="quiet"
+						onclick={() => (confirmRemove = true)}
+						><Trash size={14} />{openerLabel(t('itemMenu.labelDeleteItem'))}<SurfaceChevron
+						/></button
+					>
+				{/if}
+			</div>
 
-			<details class="disclosure">
-				<summary><ChevronRight size={14} />{t('itemPane.layerOrder')}</summary>
-				<div class="stack">
-					<div class="actions">
-						<button
-							class="bu-action btn sm"
-							data-variant="outline"
-							disabled={!canForward}
-							onclick={() => moveLayer(it.id, 1, onlyDir)}
-							title={t('itemPane.titleDrawInFrontOfTheNext')}
-							><ArrowUp size={14} />{t('itemPane.forward')}</button
-						>
-						<button
-							class="bu-action btn sm"
-							data-variant="outline"
-							disabled={!canBackward}
-							onclick={() => moveLayer(it.id, -1, onlyDir)}
-							title={t('itemPane.titleDrawBehindThePreviousLayer')}
-							><ArrowDown size={14} />{t('itemPane.backward')}</button
-						>
-						{#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(ladder)}<button
-								class="bu-action btn sm plain"
-								data-variant="quiet"
-								onclick={() => resetLayer(it.id, ladder)}>{t('itemPane.reset')}</button
-							>{/if}
-					</div>
-					{#if hiddenNow}
-						<p class="faint small">{t('itemPane.layerHiddenHint')}</p>
-					{/if}
-					<label class="check small"
-						><input type="checkbox" bind:checked={onlyDir} />{t('itemPane.onlyFacing', {
-							direction: getLocale() === 'en' ? ui.dir.replaceAll('-', ' ') : directionName(ui.dir)
-						})}</label
+			<div class="item-links">
+				{#if recolorable}
+					<!-- Colors live in the Colors tab; this opens it on the item's own section. -->
+					<button class="bu-action btn plain recolor-link" data-variant="quiet" onclick={recolor}
+						><Palette size={14} />{t('itemPane.recolor')}</button
 					>
+				{/if}
+				<button class="bu-action btn plain" data-variant="quiet" onclick={() => openFrames(it.id)}
+					><Grid2x2 size={14} />{openerLabel(t('fixFrames.open'))}<SurfaceChevron /></button
+				>
+			</div>
+
+			<div class="field">
+				<span class="sec-title">{t('itemPane.layerOrder')}</span>
+				<div class="actions">
+					<button
+						class="bu-action btn sm"
+						data-variant="outline"
+						onclick={() => moveLayer(it.id, 1, onlyDir)}
+						title={t('itemPane.titleDrawInFrontOfTheNext')}
+						><ArrowUp size={14} />{t('itemPane.forward')}</button
+					>
+					<button
+						class="bu-action btn sm"
+						data-variant="outline"
+						onclick={() => moveLayer(it.id, -1, onlyDir)}
+						title={t('itemPane.titleDrawBehindThePreviousLayer')}
+						><ArrowDown size={14} />{t('itemPane.backward')}</button
+					>
+					{#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(ladder)}<button
+							class="bu-action btn sm plain"
+							data-variant="quiet"
+							onclick={() => resetLayer(it.id, ladder)}>{t('itemPane.reset')}</button
+						>{/if}
 				</div>
-			</details>
+				<label class="check small"
+					><input type="checkbox" bind:checked={onlyDir} />{t('itemPane.onlyFacing', {
+						direction: getLocale() === 'en' ? ui.dir.replaceAll('-', ' ') : directionName(ui.dir)
+					})}</label
+				>
+			</div>
 
 			{#if others.length}
-				<details class="disclosure">
-					<summary><ChevronRight size={14} />{t('itemPane.whenWornHide')}</summary>
-					<div class="stack">
-						<div class="chips" role="group" aria-label={t('itemPane.whenWornHide')}>
-							{#each others as s (s.id)}
-								{@const hiddenHere = hides.includes(s.id)}
-								<button
-									class="chip"
-									aria-pressed={hiddenHere}
-									onclick={() => toggleHide(it.id, s.id)}
-									>{#if hiddenHere}<Check size={12} strokeWidth={2.5} />{/if}{slotName(
-										s.id
-									)}</button
-								>
-							{/each}
-						</div>
-						<p class="faint small">
-							{t('itemPane.hideWhenWorn', { name: it.name })}
-							{#if tucks.length}{' '}{t('itemPane.tuckNote', {
-									slots: formatList(tucks.map(slotName))
-								})}{/if}
-						</p>
+				<div class="field">
+					<span class="sec-title" id="hide-{it.id}">{t('itemPane.whenWornHide')}</span>
+					<div class="chips" role="group" aria-labelledby="hide-{it.id}">
+						{#each others as s (s.id)}
+							{@const on = hides.includes(s.id)}
+							<button class="chip" aria-pressed={on} onclick={() => toggleHide(it.id, s.id)}
+								>{#if on}<Check size={12} strokeWidth={2.5} />{/if}{slotName(s.id)}</button
+							>
+						{/each}
 					</div>
-				</details>
-			{/if}
-
-			{#if !isDemo() && it.prompt}
-				<details class="disclosure">
-					<summary><ChevronRight size={14} />{t('itemPane.itemActions')}</summary>
-					<div class="actions">
-						<!-- A fitted copy is remade for this body like any shared item that does not fit it, named from its description. -->
-						<button
-							class="bu-action btn"
-							data-variant="outline"
-							onclick={() =>
-								openNewItem(it.slot, {
-									slot: it.slot,
-									prompt: it.prompt,
-									route: it.route
-								})}
-							><RefreshCw size={14} />{openerLabel(
-								remakeOnly
-									? t('itemMenu.makeOneForName', { name: m.name })
-									: t('itemMenu.createVariant')
-							)}<SurfaceChevron /></button
-						>
-						<button
-							class="bu-action btn plain danger"
-							data-variant="quiet"
-							onclick={() => (confirmRemove = true)}
-							><Trash size={14} />{openerLabel(t('itemMenu.labelDeleteItem'))}<SurfaceChevron
-							/></button
-						>
-					</div>
-				</details>
-			{:else if !isDemo()}
-				<details class="disclosure">
-					<summary><ChevronRight size={14} />{t('itemPane.itemActions')}</summary>
-					<div class="actions">
-						<button
-							class="bu-action btn plain danger"
-							data-variant="quiet"
-							onclick={() => (confirmRemove = true)}
-							><Trash size={14} />{openerLabel(t('itemMenu.labelDeleteItem'))}<SurfaceChevron
-							/></button
-						>
-					</div>
-				</details>
+					<p class="faint small">
+						{t('itemPane.hideWhenWorn', { name: it.name })}
+						{#if tucks.length}{' '}{t('itemPane.tuckNote', {
+								slots: formatList(tucks.map(slotName))
+							})}{/if}
+					</p>
+				</div>
 			{/if}
 
 			<details class="disclosure">
@@ -1094,29 +1031,9 @@
 			}}><p>{t('common.deleteRecoverable')}</p></ConfirmDialog
 		>
 	{/if}
-	{#snippet footer()}
-		{#if it}
-			<button
-				class="bu-action btn primary"
-				data-variant="primary"
-				data-item-wear-toggle
-				onclick={() => wear(it.id)}>{on ? t('common.takeOff') : t('common.wear')}</button
-			>
-		{/if}
-	{/snippet}
 </Sheet>
 
 <style>
-	.stack {
-		display: grid;
-		gap: 12px;
-	}
-	.badge-line {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 4px 10px;
-	}
 	.coverage-list {
 		display: flex;
 		flex-wrap: wrap;

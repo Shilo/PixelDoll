@@ -727,10 +727,10 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	await expect(world(page)).toBeFocused();
 	await page.keyboard.press('Escape');
 	await expect(selection(page)).toBeFocused();
-	const create = page.getByRole('button', { name: 'New character', exact: true }).first();
+	const create = page.getByRole('button', { name: 'Add character', exact: true }).first();
 	await create.focus();
 	await page.keyboard.press('Enter');
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'New character', exact: true });
 	const name = dialog.getByRole('textbox', { name: 'Name', exact: true });
 	await name.fill('Keyboard draft');
@@ -1149,6 +1149,35 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(riderPose).toHaveAttribute('value', 'walk');
 	await expect(world(page)).toHaveAttribute('data-clip', 'walk');
 	await expect(legMode('Far leg')).toBeEnabled();
+	// A paused draft seat lets us compare the same pose and gait with and without hiding.
+	const seatEditor = mountMenu.getByRole('button', { name: 'Seat position', exact: true });
+	const seatDirection = mountMenu.getByRole('combobox', { name: 'Seat direction', exact: true });
+	const mountCanvas = mountMenu.locator('.mount-preview canvas');
+	const mountPixels = () =>
+		mountCanvas.evaluate(async (canvas: HTMLCanvasElement) => {
+			await new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+			);
+			const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
+			return new Uint8Array(await crypto.subtle.digest('SHA-256', data.buffer)).join(',');
+		});
+	await seatEditor.click();
+	await seatDirection.selectOption('east');
+	await expect(mountCanvas).toHaveAttribute('data-facing', 'east');
+	await expect(mountCanvas).toHaveAttribute('data-rider', /.+/);
+	await legMode('None').check();
+	const uncutSeated = await mountPixels();
+	await legMode('Both legs').check();
+	expect(await mountPixels()).not.toBe(uncutSeated);
+	await mountMenu.getByRole('button', { name: 'Move seat up', exact: true }).focus();
+	for (let step = 0; step < 32; step++) await page.keyboard.press('ArrowUp');
+	// The raised outfit's sword still reaches the neck. Move it clear horizontally too.
+	for (let step = 0; step < 8; step++) await page.keyboard.press('ArrowLeft');
+	await expect(mountMenu.locator('[data-setting="rider-seat"] output')).toHaveText('x -8, y -32');
+	const raisedWithHiding = await mountPixels();
+	await legMode('None').check();
+	expect(await mountPixels()).toBe(raisedWithHiding);
+	await seatEditor.click();
 	await legMode('Far leg').check();
 	// The live views follow the Move pose too, not just Preview's selection.
 	await closeMount();
@@ -1481,11 +1510,11 @@ test('imported move names remain readable, distinct and contained in Preview and
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.first()
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
-	const importing = page.getByRole('dialog', { name: 'Import from device', exact: true });
+	await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
+	const importing = page.getByRole('dialog', { name: 'Import from file', exact: true });
 	await importing.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'move-labels.zip',
 		mimeType: 'application/zip',
@@ -2657,11 +2686,11 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 		await page.locator('.project-btn').click();
 		await page
 			.locator('#project-menu')
-			.getByRole('button', { name: 'New character', exact: true })
+			.getByRole('button', { name: 'Add character', exact: true })
 			.first()
 			.click();
-		await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
-		const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true });
+		await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
+		const dialog = page.getByRole('dialog', { name: 'Import from file', exact: true });
 		await dialog
 			.getByLabel('Character ZIP', { exact: true })
 			.setInputFiles({ name: 'wheel-character.zip', mimeType: 'application/zip', buffer: bytes });
@@ -5745,13 +5774,44 @@ test.describe('live views actions', () => {
 			page,
 			context
 		}) => {
+			await page.addInitScript(() => {
+				const start = AudioBufferSourceNode.prototype.start;
+				const createGain = AudioContext.prototype.createGain;
+				const cues = { count: 0, context: null as AudioContext | null };
+				Object.defineProperty(window, 'liveCueStarts', { value: cues });
+				AudioContext.prototype.createGain = function () {
+					const gain = createGain.call(this);
+					cues.context = this;
+					return gain;
+				};
+				AudioBufferSourceNode.prototype.start = function (...args) {
+					start.apply(this, args);
+					if (!this.loop) cues.count++;
+				};
+			});
+			const cueCount = () =>
+				page.evaluate(async () => {
+					// Include any generic click cue scheduled after pointer release.
+					await new Promise<void>((resolve) =>
+						requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+					);
+					return Reflect.get(window, 'liveCueStarts').count as number;
+				});
 			await customize(page);
 			await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
 			const host = world(page);
 			const actions = page.getByRole('group', { name: 'Game actions', exact: true });
 			const jump = actions.getByRole('button', { name: 'Jump', exact: true });
 			const stick = actions.getByRole('button', { name: 'Attack', exact: true });
+			// The lazy player creates the gains when it loads. Earlier clicks can be silent.
+			await page.waitForFunction(
+				() => Reflect.get(window, 'liveCueStarts').context?.state === 'running'
+			);
+			const beforeJump = await cueCount();
 			await jumped(page, () => jump.tap());
+			expect(await cueCount(), 'a single tap cues once, even if it also produces a click').toBe(
+				beforeJump + 1
+			);
 			// The cluster: the Attack stick at the lower right, Jump above it, Sprint and Mount to its upper left.
 			const boxes = await page.evaluate(() =>
 				Object.fromEntries(
@@ -5786,14 +5846,19 @@ test.describe('live views actions', () => {
 			) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
 			const x = async () => Number((await host.getAttribute('data-position'))!.split(',')[0]);
 			try {
+				const beforeAttack = await cueCount();
 				await touch('touchStart', [move]);
 				await touch('touchMove', [{ ...move, x: move.x + 42 }]);
 				await expect.poll(x).toBeGreaterThan(2);
+				expect(await cueCount(), 'movement alone stays quiet').toBe(beforeAttack);
 				// A second finger on the Attack stick attacks at once along the facing, while the walk goes on.
 				const walked = await x();
 				await expect(stick).not.toHaveClass(/held/);
 				await touch('touchStart', [{ ...move, x: move.x + 42 }, thumb]);
 				await expect(stick).toHaveClass(/held/);
+				expect(await cueCount(), 'attack cues while both thumbs are still down').toBe(
+					beforeAttack + 1
+				);
 				await expect(page.locator('.stick-control-held')).toBeVisible();
 				await expect(host).toHaveAttribute('data-attack', /^(cross-punch|missing) /);
 				// Dragged down, it aims south: the demo's south punch.
@@ -5809,6 +5874,30 @@ test.describe('live views actions', () => {
 				await expect(stick).not.toHaveClass(/held/);
 				await expect(page.locator('.stick-control-held')).toHaveCount(0);
 				await touch('touchEnd', [{ ...move, x: move.x + 42 }]);
+				expect(await cueCount(), 'aiming and releasing add no cues').toBe(beforeAttack + 1);
+
+				const side = modes(page).getByRole('button', { name: 'Side-scroller', exact: true });
+				await side.tap();
+				await expect(side).toHaveAttribute('aria-pressed', 'true');
+				const beforeSideJump = await cueCount();
+				const moving = { ...move, x: move.x + 42 };
+				await touch('touchStart', [move]);
+				await touch('touchMove', [moving]);
+				await expect(page.locator('.world-stick')).toBeVisible();
+				const box = (await jump.boundingBox())!;
+				const jumpThumb = {
+					id: 2,
+					x: Math.round(box.x + box.width / 2),
+					y: Math.round(box.y + box.height / 2)
+				};
+				await touch('touchStart', [moving, jumpThumb]);
+				await expect(jump).toHaveAttribute('data-pressed', '');
+				expect(await cueCount(), 'side-scroller jump cues with the movement thumb down').toBe(
+					beforeSideJump + 1
+				);
+				await touch('touchEnd', [jumpThumb]);
+				await touch('touchEnd', [moving]);
+				expect(await cueCount()).toBe(beforeSideJump + 1);
 			} finally {
 				await cdp.detach();
 			}

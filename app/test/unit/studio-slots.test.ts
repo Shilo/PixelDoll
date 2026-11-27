@@ -28,7 +28,41 @@ import {
 	slotLabelMessage,
 	slotUse
 } from '../../src/studio/slots.ts';
-import { SLOT_ICON_PATHS } from '../../src/studio/slotIcons.ts';
+import {
+	SLOT_ICON_PATHS,
+	SLOT_ICON_SIZES,
+	SLOT_ICON_VIEW_BOX
+} from '../../src/studio/slotIcons.ts';
+
+// The drawing contract a replacement icon set must keep: one path per SlotIcon key, on the set's grid, filled with
+// currentColor by GroupIcon (fill-rule even-odd), so nothing else in the app has to change when the art is swapped.
+test('the icon set keeps its keys and path contract', () => {
+	const keys = Object.keys(SLOT_ICON_PATHS).sort();
+	// ICON_CHOICES lists the pickable icons (Base is not a category); the drawing set adds Base.
+	expect(keys).toEqual([...ICON_CHOICES, 'body'].sort());
+	expect(Number.isInteger(SLOT_ICON_VIEW_BOX)).toBe(true);
+	for (const [key, d] of Object.entries(SLOT_ICON_PATHS)) {
+		expect(d.length, key).toBeGreaterThan(10);
+		expect(d, key).toMatch(/^[Mm]/);
+		expect(d, key).toMatch(/^[MmLlHhVvCcSsQqTtAaZz0-9.,\-\s]+$/);
+	}
+});
+
+// Every surface takes its size from one table, so a set swap changes that table instead of each call site.
+test('every icon surface draws at a whole CSS pixel size', () => {
+	for (const [role, size] of Object.entries(SLOT_ICON_SIZES)) {
+		expect(Number.isInteger(size), role).toBe(true);
+		expect(size, role).toBeGreaterThanOrEqual(16);
+	}
+});
+
+test('Base draws its standing figure even when its slot carries no profile', () => {
+	const m = character();
+	// Base is not a wearable category, so profileOf treats an empty slot as an accessory; the icon must not.
+	const base = m.slots.find((s) => s.id === 'body')!;
+	delete base.profile;
+	expect(iconOf(m, 'body')).toBe('body');
+});
 
 const item = (id: string, slot: string) =>
 	({ id, name: id, slot, layers: [], materials: [] }) as unknown as Item;

@@ -42,9 +42,9 @@ async function open(page: Page, navigate = true) {
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	return page.getByRole('dialog', { name: 'New character', exact: true });
 }
 async function connect(page: Page) {
@@ -343,9 +343,9 @@ test.describe('creation safety', () => {
 		await page.locator('.project-btn').click();
 		await page
 			.locator('#project-menu')
-			.getByRole('button', { name: 'New character', exact: true })
+			.getByRole('button', { name: 'Add character', exact: true })
 			.click();
-		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		await configure('Separate character');
 		await sheet.getByRole('button', { name: 'Create character', exact: true }).click();
 		await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toBeVisible(
@@ -1122,9 +1122,9 @@ test('canceling the connection discards the pending enhancement instead of charg
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'A friendly elf'
 	);
@@ -1647,9 +1647,9 @@ function offlineCreation(config: CreationCase) {
 		await page.locator('.project-btn').click();
 		await page
 			.locator('#project-menu')
-			.getByRole('button', { name: 'New character', exact: true })
+			.getByRole('button', { name: 'Add character', exact: true })
 			.click();
-		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		await expect(page.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible();
 		await page
 			.getByRole('dialog', { name: 'New character', exact: true })
@@ -1763,9 +1763,9 @@ function offlineCreation(config: CreationCase) {
 		await page.locator('.project-btn').click();
 		await page
 			.locator('#project-menu')
-			.getByRole('button', { name: 'New character', exact: true })
+			.getByRole('button', { name: 'Add character', exact: true })
 			.click();
-		await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
 		await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 			name: 'custom-character.zip',
 			mimeType: 'application/zip',

@@ -510,13 +510,6 @@
 			"other": "Eşyanın {directions} için kayıtlı çizimlerinden yeniden oluşturulur. Üretim yapılmaz."
 		},
 		"hiddenByAnotherItem": "Başka bir eşya tarafından gizleniyor",
-		"hiddenByItem": "{name} tarafından gizleniyor",
-		"showName": "{name} öğesini göster",
-		"notWorn": "Giyili değil",
-		"qualityChecks": "Kalite kontrolleri",
-		"customize": "Özelleştir",
-		"itemActions": "Eşya işlemleri",
-		"layerHiddenHint": "Giyilen başka bir eşya bunu gizliyor, bu yüzden katman sırası burada değiştirilemez. Önce gösterin.",
 		"nameInEveryDirection": "{name}, tüm yönler",
 		"labelNameFacingId": "{name}, yön: {id}",
 		"acceptedAppearanceWarnings": "Kabul edilen görünüm uyarıları",
@@ -651,10 +644,11 @@
 		"billingNote": "Tahminler üretim sayısını karşılaştırır, dolar fiyatlarını değil. PixelLab dolar cinsinden ücret alabilir ve bekleme süresi değişebilir."
 	},
 	"newCharacterButton": {
+		"addCharacter": "Karakter ekle",
 		"newCharacter": "Yeni karakter",
-		"createFromScratch": "Sıfırdan oluşturun…",
-		"importFromDevice": "Cihazdan içe aktarın…",
-		"importFromPixelLab": "PixelLab üzerinden içe aktarın…",
+		"createFromScratch": "Oluştur…",
+		"fromFile": "Dosyadan…",
+		"fromPixelLab": "PixelLab'den…",
 		"createNeedsKey": "PixelLab anahtarı gerekir ve ücretli üretimler kullanır"
 	},
 	"noticeLink": {
@@ -1214,7 +1208,9 @@
 			"versionMenu": "RPG Maker sürümü",
 			"version": "Sürüm",
 			"versionLabel": "RPG Maker sürümü: {version}",
-			"walkMove": "Yürüme animasyonu"
+			"walkMove": "Yürüme animasyonu",
+			"phaserVersionMenu": "Phaser sürümü",
+			"phaserVersionLabel": "Phaser sürümü: {version}"
 		},
 		"group": {
 			"engines": "Motorlar ve çerçeveler",
@@ -1237,11 +1233,11 @@
 				"sub": "Düzenlenebilir proje",
 				"detail": "Sprite katmanları, eşzamanlı oynatma ve ekipman kontrolleriyle düzenlenebilir GDevelop projesi. Önizleyin veya nesneleri ve etkinliği oyununuza kopyalayın."
 			},
-			"rpgmaker": {
+			"rpgMaker": {
 				"sub": "Yürüme sayfaları",
 				"detail": "Her kıyafet için karakterinizin kendi boyutunda bir yürüme sayfası. PNG dosyalarını img/characters (MZ, MV) veya Graphics/Characters (VX Ace, VX) klasörüne kopyalayın. Ön, yan ve arka görünümler gerekir."
 			},
-			"rpgmakerxp": {
+			"rpgMakerXp": {
 				"detail": "RPG Maker XP ve Pokémon Essentials için her kıyafete, karakterinizin kendi boyutunda 4 kareli bir yürüme sayfası. PNG dosyalarını Graphics/Characters klasörüne kopyalayın. Ön, yan ve arka görünümler gerekir."
 			},
 			"aseprite": {
@@ -1251,6 +1247,9 @@
 			"generic": {
 				"sub": "Özel entegrasyon",
 				"detail": "Zamanlama, pivot noktaları, ekipman ve palet verileriyle katman sayfaları ve şeritleri. Oyun motorunuzun bu kuralları okuyacak koda ihtiyacı var."
+			},
+			"phaserAe": {
+				"detail": "Phaser AE oyunları için katman başına sprite sayfaları ve ekipman, renkler ve eşzamanlı oynatma sunan bir çalışma zamanı. Sayfaları oyununuzun manifest dosyasındaki assets listesine ekleyin; oyunun derleme işlemi bunları oyuna kopyalar."
 			}
 		},
 		"version": {
@@ -1259,7 +1258,13 @@
 			"standardSub": "3 × 4 düzen · $Name.png",
 			"xp": "XP",
 			"xpTitle": "XP ve Pokémon Essentials",
-			"xpSub": "4 × 4 düzen · Name.png"
+			"xpSub": "4 × 4 düzen · Name.png",
+			"phaserAe": "AE",
+			"phaserAeTitle": "Phaser AE",
+			"phaserAeSub": "Phaser Game Agent motoru",
+			"phaser": "3 ve 4",
+			"phaserTitle": "Phaser 3 ve 4",
+			"phaserSub": "Açık kaynaklı kitaplık, 3.80 veya üzeri"
 		},
 		"playback": {
 			"all": "Tümü"
@@ -1332,7 +1337,7 @@
 			"noVisibleFrames": "Gövdede görünür kare yok.",
 			"godot": "Godot bu sprite sayfalarını kullanamadı.",
 			"gdevelop": "GDevelop bu sprite sayfalarını kullanamadı.",
-			"rpgmaker": "RPG Maker için ön, yan ve arka görünümler gerekli.",
+			"rpgMaker": "RPG Maker için ön, yan ve arka görünümler gerekli.",
 			"aseprite": "Animasyon Aseprite biçimine uymuyor.",
 			"unsafeNames": "Bazı dosya adları güvenle paketlenemiyor.",
 			"tooLarge": "Bu dışa aktarım çok büyük.",
@@ -1393,7 +1398,7 @@
 		"posesTitle": "Durum olarak da içe aktar",
 		"posesHint": "Aynı gövdenin, görsele işlenmiş ekipman içermeyen pozlarını seçin. Farklı bir görünümü ayrı bir karakter olarak içe aktarın. Animasyonları aşağıdan seçin.",
 		"poseMismatch": "Bu durumun görsel boyutları, bakış yönleri veya kamera ayarları farklı. Ayrı bir karakter olarak içe aktarın.",
-		"titleDevice": "Cihazdan içe aktarın",
+		"titleFile": "Dosyadan içe aktar",
 		"titlePixelLab": "PixelLab üzerinden içe aktarın",
 		"browseLibrary": "PixelLab karakterlerine göz atın",
 		"standingState": "Ayakta duruş durumu",
@@ -1480,6 +1485,7 @@
 			"skippedStanding": "“{move}” animasyonunun {direction} yönü dışarıda bırakıldı: karakterin o yöne bakan duruş görünümü yok.",
 			"semiAlpha": "Kısmen şeffaf kenarlar piksel sanatına uygun şeffaflığa dönüştürüldü.",
 			"upscaledBase": "Ayakta duran görsel {scale}x büyütülmüş gibi görünüyor. Olduğu gibi tutulur: ondan yapılan eşyalar daha fazla piksel kullanır, piksel boyutlarını karıştırır ve renk değişimi daha az temiz olur. Mümkünse özgün 1x görseli içe aktarın.",
+			"compressedBase": "Ayakta duran görsel sıkıştırılmış veya yeniden ölçeklenmiş görünüyor: birçok rengi yalnızca bir kez geçiyor. Olduğu gibi tutulur: ondan yapılan eşyaları kesmek, renklendirmek ve hizalamak zorlaşır. Mümkünse özgün görseli içe aktarın.",
 			"detailsDropped": "Kayıtlı bazı karakter bilgileri bozuktu ve dahil edilmedi. Gerekirse poz rig’ini yeniden kurun."
 		},
 		"error": {

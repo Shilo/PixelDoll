@@ -6,7 +6,6 @@ import {
 	equipmentGroup,
 	newItem,
 	selectedItemDetails,
-	openItemSection,
 	inspectStage,
 	openAccount,
 	pickItem,
@@ -14,14 +13,7 @@ import {
 	playbackPicker,
 	selectPlaybackClip
 } from './immersive-helpers.ts';
-import {
-	expect,
-	test,
-	type BrowserContext,
-	type Locator,
-	type Page,
-	type TestInfo
-} from '@playwright/test';
+import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { unzip, zip } from '../../src/lib/store/zip.ts';
@@ -157,7 +149,7 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await expect(customize).toBeVisible();
 	await customize.dispatchEvent('pointerdown', { pointerType: 'mouse' });
 	await expect(shortcut).toBeVisible();
-	const newCharacter = topBar.getByRole('button', { name: 'New character', exact: true });
+	const newCharacter = topBar.getByRole('button', { name: 'Add character', exact: true });
 	await expect(newCharacter).toBeVisible();
 	expect((await shortcut.boundingBox())!.x).toBeLessThan((await newCharacter.boundingBox())!.x);
 	expect(await calls()).toMatchObject({ opened: 0, loops: 0 });
@@ -304,8 +296,8 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await master.check();
 	await expect(shortcut).toBeVisible();
 	await settings.getByRole('button', { name: 'Close', exact: true }).click();
-	await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('button', { name: 'Add character', exact: true }).first().click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	const draftName = creator.getByRole('textbox', { name: 'Name', exact: true });
 	const creatorScreen = page.locator('dialog.character-sheet:modal');
@@ -779,13 +771,13 @@ test('tips point at each control in order, end on their action, and come back in
 	// Back on Characters, the other path.
 	await page.getByRole('button', { name: 'Characters', exact: true }).click();
 	await expect(heading('Make your own')).toBeVisible();
-	const newCharacter = page.getByRole('button', { name: 'New character', exact: true });
+	const newCharacter = page.getByRole('button', { name: 'Add character', exact: true });
 	await pointsAt(newCharacter);
 	// Opening the menu is the action: the tip ends, and the paid route says so before its form.
 	await newCharacter.click();
 	await expect(tip).toHaveCount(0);
 	await expect(
-		page.getByRole('menuitem', { name: 'Create from scratch...', exact: true })
+		page.getByRole('menuitem', { name: 'Create...', exact: true })
 	).toHaveAccessibleDescription('Needs a PixelLab key and uses paid generations');
 	await page.keyboard.press('Escape');
 	// Connect explains PixelLab on its sign-up button the first time, inside the dialog; typing a key means they have met it.
@@ -2482,9 +2474,9 @@ test('studio demo: a custom slot chooses its own Wardrobe icon', async ({ contex
 	await addSheet.getByRole('button', { name: 'Create slot', exact: true }).click();
 	const header = page.locator('[data-slot-button="wings"]');
 	await expect(header).toHaveAccessibleName('Wings');
-	const iconPath = () => header.locator('svg.group-icon path').getAttribute('d');
+	const iconKey = () => header.locator('.group-icon').getAttribute('data-icon');
 	// A new custom category owns the generic tag, not the cape its behavior copies.
-	const tag = await iconPath();
+	expect(await iconKey()).toBe('tag');
 	await header.click();
 	await page
 		.locator('#slot-menu')
@@ -2498,15 +2490,15 @@ test('studio demo: a custom slot chooses its own Wardrobe icon', async ({ contex
 	await page.keyboard.press('Space');
 	await expect(star).toBeChecked();
 	await editor.getByRole('button', { name: 'Save', exact: true }).click();
-	const chosen = (await iconPath())!;
-	expect(chosen).not.toBe(tag);
+	const chosen = await iconKey();
+	expect(chosen).toBe('star');
 	// The category keeps its choice across a reload, and Back still draws its own cape.
 	await reloadStudio(page, { waitUntil: 'networkidle' });
 	await equipmentGroup(page, 'Wings');
-	await expect.poll(iconPath).toBe(chosen);
-	await expect(page.locator('[data-slot-button="back"] svg.group-icon path')).not.toHaveAttribute(
-		'd',
-		chosen
+	await expect.poll(iconKey).toBe('star');
+	await expect(page.locator('[data-slot-button="back"] .group-icon')).toHaveAttribute(
+		'data-icon',
+		'back'
 	);
 	finish();
 });
@@ -3144,9 +3136,9 @@ test('studio demo: base colors, Create size and direction pricing, stripped dev 
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const cost = async () => {
 		const value = await page.locator('dialog .foot-note').textContent();
 		assert.ok(value, 'Create cost is shown');
@@ -3198,9 +3190,9 @@ test('studio demo: New character fits an HD window and smaller screens scroll to
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	const body = creator.locator('.sheet-body');
 	const foot = creator.locator('.sheet-foot');
@@ -3257,9 +3249,9 @@ test('studio demo: Create without a key opens Connect, Escape restores focus and
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	await expect(page.locator('dialog').getByLabel('Name', { exact: true })).toBeFocused(); // first field focused, not Cancel (checked before fill() moves focus)
 	await page.locator('dialog textarea').fill('a cheerful elf archer');
 	await page
@@ -3666,7 +3658,6 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	}
 	await checkFrames();
 	// Delete asks in an alert over the details; Cancel keeps the item and the details open.
-	await openItemSection(inspector, 'Item actions');
 	await inspector.getByRole('button', { name: 'Move to Trash...', exact: true }).click();
 	const deleteAlert = page.getByRole('alertdialog', { name: /^Move .+ to Trash\?$/ });
 	await expect(deleteAlert.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
@@ -3716,9 +3707,9 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'eight-directions.zip',
 		mimeType: 'application/zip',
@@ -4403,9 +4394,9 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const character = page.getByRole('dialog', { name: 'New character', exact: true });
 	await character
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -4513,9 +4504,9 @@ test('closing Connect before its code loads still discards the pending action', 
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const character = page.getByRole('dialog', { name: 'New character', exact: true });
 	await character
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -4660,7 +4651,6 @@ test('free item color matching is offline, scoped, persistent and preserves save
 	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
 	await expect(pane.getByRole('button', { name: /^Match item colors.*Free$/ })).toHaveCount(0);
 	// The saved recolor survives: the item's colors live in the Colors tab, which Recolor opens.
-	await openItemSection(pane, 'Customize');
 	await pane.getByRole('button', { name: 'Recolor', exact: true }).click();
 	await expect(
 		page
@@ -4839,9 +4829,9 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'draft-fixture.zip',
 		mimeType: 'application/zip',
@@ -5117,9 +5107,9 @@ test('radio groups and tabs use one Tab stop and arrow selection', async ({ page
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const editor = page.getByRole('tablist', { name: 'Prompt editor', exact: true });
 	await expect(editor.locator('[tabindex="0"]')).toHaveCount(1);
 	await editor.getByRole('tab', { name: 'Appearance', exact: true }).focus();
@@ -5511,9 +5501,9 @@ async function busyFirstTab(
 	await second.locator('.project-btn').click();
 	await second
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await second.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await second.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const create = second.getByRole('dialog', { name: 'New character', exact: true });
 	await create
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -5647,9 +5637,9 @@ test('Create in a second tab takes the jobs from the idle first tab at once and 
 		await follower.locator('.project-btn').click();
 		await follower
 			.locator('#project-menu')
-			.getByRole('button', { name: 'New character', exact: true })
+			.getByRole('button', { name: 'Add character', exact: true })
 			.click();
-		await follower.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+		await follower.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 		return follower.getByRole('dialog', { name: 'New character', exact: true });
 	}
 	let create = await openCreate();
@@ -6107,9 +6097,9 @@ test('a stopped character creation whose paid review cannot be read offers a fre
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'New character', exact: true });
 	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A plain human');
 	await sheet.getByRole('button', { name: 'Side-scroller 2', exact: true }).click();
@@ -7643,8 +7633,6 @@ test('accepted held-item review reasons survive actual reload without claiming a
 	await pickItem(page, name);
 	const pane = await selectedItemDetails(page);
 	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
-	// The review reasons sit in the quality checks disclosure, one intentional step from the summary.
-	await openItemSection(pane, 'Quality checks');
 	await expect(
 		pane.getByText('The grip side is unclear; check the intended hand (idle, west)', {
 			exact: true
@@ -10762,7 +10750,6 @@ test('standing-first items quote only standing and offer actual custom moves one
 		'~12 gens'
 	);
 	// Coverage marks each move this item is drawn for, and one action fills every missing move together.
-	await openItemSection(pane, 'Quality checks');
 	const coverageList = pane.getByRole('list', { name: 'Move coverage', exact: true });
 	await expect(coverageList.getByRole('listitem', { name: 'Standing: missing' })).toBeVisible();
 	await expect(coverageList.getByRole('listitem', { name: 'Custom walk: missing' })).toBeVisible();
@@ -11569,7 +11556,7 @@ for (const changed of ['item', 'rig'] as const)
 
 // ---- Per-tile item menu (docs/design/2026-11-11-ui-refinement/ui-lab-7.html) and Wardrobe placement ----
 
-async function editableCopy(page: Page, url = '/#/') {
+async function editableCopy(page: Page) {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem(
@@ -11578,7 +11565,7 @@ async function editableCopy(page: Page, url = '/#/') {
 		);
 		localStorage.setItem('pixeldoll.visited', '1');
 	});
-	await openStudio(page, url);
+	await openStudio(page, '/#/');
 	await newItem(page, 'Head');
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	await page.getByRole('textbox', { name: 'What is it?', exact: true }).waitFor();
@@ -11588,18 +11575,6 @@ async function editableCopy(page: Page, url = '/#/') {
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 }
-/** Open an item's details from its tile menu without changing what is worn. */
-async function openItemDetails(page: Page, name: string) {
-	await equipmentMode(page, 'Wardrobe');
-	const more = page.getByRole('button', { name: `More options for ${name}`, exact: true }).first();
-	await more.scrollIntoViewIfNeeded();
-	await more.click();
-	await page.getByRole('menuitem', { name: 'Details...', exact: true }).click();
-	const dialog = page.getByRole('dialog', { name: 'Item', exact: true });
-	await expect(dialog.locator('.insp-body')).toBeVisible();
-	return dialog;
-}
-
 const itemMenu = (page: Page) => page.locator('#item-menu');
 
 for (const kind of ['outfit', 'move'] as const) {
@@ -12103,14 +12078,10 @@ test('tile status shows on the tile and in its name, and Recolor opens the itemâ
 	// The worn helmet hides the worn hair.
 	await pickItem(page, 'Steel helmet');
 	let details = await selectedItemDetails(page);
-	await openItemSection(details, 'When worn, hide');
-	const hairChip = details
+	await details
 		.getByRole('group', { name: 'When worn, hide', exact: true })
-		.getByRole('button', { name: 'Hair', exact: true });
-	await expect(hairChip).toHaveAttribute('aria-pressed', 'false');
-	await hairChip.click();
-	// The chip itself shows the saved hide (the manifest is raw state, refreshed through doc.rev).
-	await expect(hairChip).toHaveAttribute('aria-pressed', 'true');
+		.getByRole('button', { name: 'Hair', exact: true })
+		.click();
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentGroup(page, 'Hair');
 	const hair = section(page, 'Hair').getByRole('button', {
@@ -12136,7 +12107,6 @@ test('tile status shows on the tile and in its name, and Recolor opens the itemâ
 	details = await selectedItemDetails(page);
 	// The trimmed sheet links to the Colors tab instead of repeating it.
 	await expect(details.locator('.colors')).toHaveCount(0);
-	await openItemSection(details, 'Customize');
 	await details.getByRole('button', { name: 'Recolor', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await expect(
@@ -12148,115 +12118,6 @@ test('tile status shows on the tile and in its name, and Recolor opens the itemâ
 	await expect(heading).toBeInViewport();
 	const list = (await page.locator('.color-sections').boundingBox())!;
 	expect(Math.abs((await heading.boundingBox())!.y - list.y)).toBeLessThan(24);
-});
-
-/** Page-data tests load the dev server, whose /src modules the preview server does not serve. */
-const devBaseURL = (info: TestInfo) =>
-	info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!;
-
-const wornItem = (page: Page, slot: string) =>
-	page.evaluate(
-		async ({ path, slot }) => {
-			const state = await import(path);
-			return state.doc.items[slot] ?? null;
-		},
-		{ path: '/src/studio/state.svelte.ts', slot }
-	);
-
-const headLayerOverrides = (page: Page) =>
-	page.evaluate(async (path) => {
-		const state = await import(path);
-		return (
-			state.store.project?.manifest.slots.find((slot: { id: string }) => slot.id === 'head')
-				?.zOverrides ?? []
-		);
-	}, '/src/studio/state.svelte.ts');
-
-/** The worn helmet hides the worn hair through its When worn, hide chip. */
-async function hideHairWithHelmet(page: Page) {
-	await pickItem(page, 'Steel helmet');
-	const details = await selectedItemDetails(page);
-	await openItemSection(details, 'When worn, hide');
-	await details
-		.getByRole('group', { name: 'When worn, hide', exact: true })
-		.getByRole('button', { name: 'Hair', exact: true })
-		.click();
-	await details.getByRole('button', { name: 'Close', exact: true }).click();
-}
-
-test('item details wears and takes off from its primary action', async ({ page }, info) => {
-	await editableCopy(page, devBaseURL(info));
-	const details = await openItemDetails(page, 'Wizard hat');
-	await expect(details.locator('.insp-sub')).toContainText('Not worn');
-	const wear = details.getByRole('button', { name: 'Wear', exact: true });
-	// The primary action sits in the sheet footer, in view without scrolling the long details.
-	await expect(wear).toBeInViewport();
-	await wear.click();
-	await expect.poll(() => wornItem(page, 'head')).toBe('hat_wizard');
-	await expect(details.getByRole('button', { name: 'Take off', exact: true })).toBeVisible();
-	await expect(details.locator('.insp-sub')).toContainText('Wearing');
-	await details.getByRole('button', { name: 'Take off', exact: true }).click();
-	await expect.poll(() => wornItem(page, 'head')).toBe(null);
-	await expect(details.getByRole('button', { name: 'Wear', exact: true })).toBeVisible();
-});
-
-test('item details names what hides an item and shows it again', async ({ page }, info) => {
-	await editableCopy(page, devBaseURL(info));
-	await hideHairWithHelmet(page);
-	const details = await openItemDetails(page, 'Messy brown hair');
-	await expect(details.locator('.insp-sub')).toContainText('Hidden by another item');
-	await expect(details.getByText('Hidden by Steel helmet', { exact: true })).toBeVisible();
-	await details.getByRole('button', { name: 'Show Messy brown hair', exact: true }).click();
-	await expect(details.locator('.insp-sub')).not.toContainText('Hidden by another item');
-	await details.getByRole('button', { name: 'Close', exact: true }).click();
-	await equipmentGroup(page, 'Hair');
-	await expect(
-		section(page, 'Hair')
-			.getByRole('button', { name: /^Messy brown hair/ })
-			.first()
-	).not.toHaveAttribute('data-dim');
-});
-
-test('item details reorders layers for an unworn item, gates the ends and resets them', async ({
-	page
-}, info) => {
-	await editableCopy(page, devBaseURL(info));
-	const details = await openItemDetails(page, 'Wizard hat');
-	const layerSection = await openItemSection(details, 'Layer order');
-	const forward = details.getByRole('button', { name: 'Forward', exact: true });
-	const backward = details.getByRole('button', { name: 'Backward', exact: true });
-	// The hat is not worn; it is placed as if worn, so Backward works among the worn layers.
-	await expect(backward).toBeEnabled();
-	const before = await headLayerOverrides(page);
-	await backward.click();
-	await expect.poll(() => headLayerOverrides(page)).not.toEqual(before);
-	await expect(details.getByRole('button', { name: 'Reset', exact: true })).toBeVisible();
-	await expect(forward).toBeEnabled();
-	// At the very back there is nothing left to move behind: the arrow disables instead of silently doing nothing.
-	for (let step = 0; step < 8 && (await backward.isEnabled()); step++) await backward.click();
-	await expect(backward).toBeDisabled();
-	await expect(forward).toBeEnabled();
-	// A disclosure toggles from the keyboard, and its controls stay reachable.
-	const summary = details.locator('summary').filter({ hasText: 'Layer order' });
-	await summary.focus();
-	await page.keyboard.press('Enter');
-	await expect(layerSection).not.toHaveAttribute('open', '');
-	await page.keyboard.press('Space');
-	await expect(layerSection).toHaveAttribute('open', '');
-	await details.getByRole('button', { name: 'Reset', exact: true }).click();
-	await expect.poll(() => headLayerOverrides(page)).toEqual(before);
-});
-
-test('layer order explains why a hidden item cannot be reordered', async ({ page }, info) => {
-	await editableCopy(page, devBaseURL(info));
-	await hideHairWithHelmet(page);
-	const details = await openItemDetails(page, 'Messy brown hair');
-	await openItemSection(details, 'Layer order');
-	await expect(details.getByRole('button', { name: 'Forward', exact: true })).toBeDisabled();
-	await expect(details.getByRole('button', { name: 'Backward', exact: true })).toBeDisabled();
-	await expect(
-		details.getByText(/Another worn item hides this one, so its layer order cannot change here/)
-	).toBeVisible();
 });
 
 for (const width of [1280, 390])
@@ -12782,9 +12643,10 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	await page.getByRole('button', { name: 'Customize Adventurer copy' }).first().click();
 	await page.getByRole('button', { name: 'More options for Steel helmet' }).click();
 	await page.getByRole('menuitem', { name: /^Details/ }).click();
-	const itemPane = page.getByRole('dialog', { name: 'Item' });
-	await openItemSection(itemPane, 'Customize');
-	await itemPane.getByRole('button', { name: /^Fix frames/ }).click();
+	await page
+		.getByRole('dialog', { name: 'Item' })
+		.getByRole('button', { name: /^Fix frames/ })
+		.click();
 	await sheet.getByRole('combobox', { name: 'Move' }).selectOption('walk');
 	await sheet.getByRole('button', { name: 'Restore original Â· 1' }).click();
 	await page.getByRole('alertdialog').getByRole('button', { name: 'Restore', exact: true }).click();
@@ -12842,7 +12704,6 @@ test('a deleted item comes back from the notice, the history and the Trash after
 
 	async function deleteItem() {
 		const inspector = await selectedItemDetails(page);
-		await openItemSection(inspector, 'Item actions');
 		await inspector.getByRole('button', { name: 'Move to Trash...', exact: true }).click();
 		const alert = page.getByRole('alertdialog', { name: /^Move .+ to Trash\?$/ });
 		await alert.getByRole('button', { name: 'Move to Trash', exact: true }).click();
