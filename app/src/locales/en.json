@@ -3682,7 +3682,7 @@
 		"updated": "Updated {time}",
 		"tryAgain": "Try again",
 		"state": {
-			"off": "Not linked · Keeps files in your game updated automatically",
+			"off": "Not linked · Keeps this character’s files in your game folder updated automatically",
 			"on": "Automatic updates on",
 			"manual": "Automatic updates off",
 			"updating": "Updating…",
@@ -3728,7 +3728,11 @@
 		"section": "Game project",
 		"reload": "Reload",
 		"shared": "Shared runtime: {path}",
-		"manualStep": "{format} doesn’t load games from this folder directly. After an update, follow the character’s README.txt to bring it into your game."
+		"manualStep": {
+			"rpg": "{format} loads characters from its own folder (img/characters, or Graphics/Characters for XP). After an update, copy the sheets there as the character’s README.txt says.",
+			"gdevelop": "If you merged this character into another GDevelop project, bring updates into it as the character’s README.txt says.",
+			"phaserAe": "After adding moves or items, add the new paths from phaser-ae/assets.json to game/manifest.json, as the character’s README.txt says."
+		}
 	},
 	"tips": {
 		"customizeTitle": "Dress up the demo",

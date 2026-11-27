@@ -3577,7 +3577,7 @@
 		"updated": "{time}에 업데이트됨",
 		"tryAgain": "다시 시도",
 		"state": {
-			"off": "연결 안 됨 · 게임의 파일을 자동으로 최신 상태로 유지해요",
+			"off": "연결 안 됨 · 게임 폴더에 있는 이 캐릭터의 파일을 자동으로 최신 상태로 유지해요",
 			"on": "자동 업데이트 켜짐",
 			"manual": "자동 업데이트 꺼짐",
 			"updating": "업데이트 중…",
@@ -3622,7 +3622,11 @@
 		"section": "게임 프로젝트",
 		"reload": "새로고침",
 		"shared": "공유 런타임: {path}",
-		"manualStep": "{format}은(는) 이 폴더에서 게임을 직접 불러오지 않습니다. 업데이트 후 캐릭터의 README.txt를 따라 게임에 반영하세요."
+		"manualStep": {
+			"rpg": "{format}은(는) 자체 폴더(img/characters, XP는 Graphics/Characters)에서 캐릭터를 불러와요. 업데이트 후 캐릭터의 README.txt에 따라 시트를 그곳에 복사하세요.",
+			"gdevelop": "이 캐릭터를 다른 GDevelop 프로젝트에 합쳤다면 캐릭터의 README.txt에 따라 업데이트를 반영하세요.",
+			"phaserAe": "동작이나 아이템을 추가한 뒤에는 캐릭터의 README.txt에 따라 phaser-ae/assets.json의 새 경로를 game/manifest.json에 추가하세요."
+		}
 	},
 	"tips": {
 		"customizeTitle": "데모 꾸미기",

@@ -21,9 +21,10 @@ this file first, then the doc for your engine in docs/, then that engine's READM
 
 1. README.txt: what is in this folder and a quick start.
 2. docs/<engine>.md: the entry file, the smallest working code, and where the long guide lives.
-3. <engine>/README.txt: the complete integration guide and runtime API for that engine.
-4. manifest.json: the source of truth for layer paths, frame counts, pivots and draw order. Each engine's README defines
-   the file names that engine's exporter generates next to it.
+3. The full guide that docs/<engine>.md names: <engine>/README.txt, with the runtime API, in a layered export; README.txt
+   in an RPG Maker sheet export.
+4. manifest.json, in a layered export: the source of truth for layer paths, frame counts, pivots and draw order. Each
+   engine's README defines the file names that engine's exporter generates next to it.
 5. project.json and cells/ are PixelDoll's editable copy for importing back into the app. A game never needs them.
 
 ## Rules that keep the art aligned
@@ -61,17 +62,18 @@ this file first, then the doc for your engine in docs/, then that engine's READM
 
 - Guess a frame count, path or pivot: read manifest.json.
 - Rename exported files or edit the paths in manifest.json; they are already portable for Windows and macOS.
-- Reimplement an engine folder's runtime from scratch; its controller and README are the intended integration.
+- Reimplement the engine runtime from scratch; the runtime and guide that docs/<engine>.md names are the intended
+  integration.
 `;
 
 const CLAUDE = `# Agent entry point
 
-Read AGENTS.md in this folder before writing integration code, then docs/<engine>.md for your engine and
-<engine>/README.txt for the complete runtime API.
+Read AGENTS.md in this folder before writing integration code, then docs/<engine>.md for your engine and the full
+guide it names.
 
 This is a paper-doll character exported by PixelDoll: one PNG layer per item, frame-aligned on every direction and move.
-manifest.json is the source of truth for layer paths, frame counts, pivots and draw order; never guess them. Each
-engine folder has its own README for the file names and runtime API it provides.
+In a layered export, manifest.json is the source of truth for layer paths, frame counts, pivots and draw order; never
+guess them. An RPG Maker sheet export has no manifest.json: see AGENTS.md.
 `;
 
 const phaser = (runtimePath?: string) => `# Phaser 3.80+ / 4
@@ -98,12 +100,14 @@ Use pixelArt: true and roundPixels: true and serve the folder over http: the mod
 The path you pass is relative to the document's base URL (document.baseURI), not to PaperdollContainer.js.${
 	runtimePath
 		? `
-<folder> is the path from your game's code to the folder picked in PixelDoll (the page and the importing module are
-assumed to sit together), and <character> is this character's folder in it.`
+<folder> is the path from the page (document.baseURI) to the folder picked in PixelDoll, and <character> is this
+character's folder in it. If you picked the page's own folder, leave out <folder>/: '<character>/' and
+'./pixeldoll-phaser/PaperdollContainer.js'. The import assumes the importing module sits beside the page; from another
+module, use its own relative path to the same file (from src/main.js: '../<folder>/pixeldoll-phaser/...').`
 		: ''
 }
 This export does not bundle Phaser. Load Phaser 3.80+ or 4 yourself: a script tag that exposes the global Phaser, or your
-bundler with an explicit import (import Phaser from 'phaser'); then import ${runtimePath ?? 'phaser/PaperdollContainer.js'} as an ES module.
+bundler with an explicit import (import Phaser from 'phaser'); then import${runtimePath ? '\n./<folder>/pixeldoll-phaser/PaperdollContainer.js' : ' phaser/PaperdollContainer.js'} as an ES module.
 Phaser does not await an async create(): nothing may use the doll until loadPaperdoll resolves, so guard update() on
 this.doll or create it in a scene that starts after loading. loadPaperdoll caches per game, so one scene may load it and
 another may create the doll.
@@ -130,7 +134,8 @@ Entry: ${runtimePath ?? 'phaser-ae/paperdoll.js'}, an ES module, typed by ${runt
 ${
 	runtimePath
 		? `<folder> is the path from game/ to the folder picked in PixelDoll, and <character> is this character's folder in it;
-keep both and the runtime under game/.
+keep both and the runtime under game/. If you picked game/ itself, leave out <folder>/ everywhere below: for example
+<character>/manifest.json and './pixeldoll-phaser-ae/paperdoll.js'.
 phaser-ae/assets.json lists paths relative to the character folder: add each to the "assets" list in
 game/manifest.json (not to game/assets.json) prefixed with <folder>/<character>/, so the build copies the sheets. Do
 not edit phaser-ae/assets.json (PixelDoll manages it); after adding moves or items, add its new paths the same way.

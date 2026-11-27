@@ -695,6 +695,7 @@ async function publish(link: FolderLink, request: Request) {
 		});
 		// A kept runtime file the user had lost and approved restoring is no longer kept once it really holds PixelDoll's
 		// bytes again (whatever happened to the rest of the publish), so later runtime updates reach it.
+		let unkept = 0;
 		if (runtime && outcome.kind !== 'stopped') {
 			const wanted = new Map(files.map((f) => [f.name, f]));
 			const restored: string[] = [];
@@ -705,8 +706,10 @@ async function publish(link: FolderLink, request: Request) {
 				const onDisk = await hashAt(target, path).catch(() => null);
 				if (onDisk === (await sha256(file.data))) restored.push(path);
 			}
-			if (restored.length)
+			if (restored.length) {
 				await setKept(runtime.key, [...byScope(scopes, restored).values()].flat(), false);
+				unkept = restored.length;
+			}
 		}
 		// Matching shared runtime files are left out of the offer: they are used as they are, and trusting them would
 		// let a tab with an older runtime replace them without the revision floor that a runtime PixelDoll wrote has.
@@ -747,7 +750,7 @@ async function publish(link: FolderLink, request: Request) {
 				}
 				return finished({
 					kind: 'done',
-					kept: outcome.kept,
+					kept: outcome.kept - unkept,
 					already: request.manual && outcome.kind === 'unchanged'
 				});
 			case 'blocked':
@@ -1082,6 +1085,17 @@ async function within(outer: FileSystemDirectoryHandle, inner: FileSystemDirecto
 	}
 }
 
+/** Whether an earlier Unity folder no character is linked to still holds its runtime. Only a folder known to be gone
+ *  frees the spot: anything else (no access, a file in the way) counts as still there. */
+async function unityRuntimeThere(handle: FileSystemDirectoryHandle) {
+	try {
+		await handle.getDirectoryHandle(runtimeDir('unity'));
+		return true;
+	} catch (error) {
+		return !(error instanceof DOMException && error.name === 'NotFoundError');
+	}
+}
+
 /** Whether a new link's folder overlaps a folder PixelDoll knows: picked inside a folder it manages (a character's
  *  subfolder or the shared runtime folder), or holding one inside its own. Unity compiles every script in a game, so a
  *  Unity link whose folder nests with one that has a Unity runtime (even one no character is linked to any more: its
@@ -1110,9 +1124,9 @@ async function overlapping(
 		if (
 			fresh.engine === 'unity' &&
 			(!!inside?.length || !!around?.length) &&
-			(destination.unity ||
-				here.some((other) => other.engine === 'unity') ||
-				(await readFloor(runtimeKey(destination.id, 'unity'))) > 0)
+			(here.some((other) => other.engine === 'unity') ||
+				((destination.unity || (await readFloor(runtimeKey(destination.id, 'unity'))) > 0) &&
+					(await unityRuntimeThere(destination.handle))))
 		)
 			return { kind: 'overlap', unity: true };
 	}

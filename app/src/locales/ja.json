@@ -3577,7 +3577,7 @@
 		"updated": "{time}に更新",
 		"tryAgain": "もう一度試す",
 		"state": {
-			"off": "未リンク · ゲーム内のファイルを自動で最新に保ちます",
+			"off": "未リンク · ゲームフォルダー内のこのキャラクターのファイルを自動で最新に保ちます",
 			"on": "自動更新オン",
 			"manual": "自動更新オフ",
 			"updating": "更新中…",
@@ -3622,7 +3622,11 @@
 		"section": "ゲームプロジェクト",
 		"reload": "再読み込み",
 		"shared": "共有ランタイム：{path}",
-		"manualStep": "{format} はこのフォルダーから直接ゲームを読み込みません。更新後は、キャラクターの README.txt に従ってゲームに取り込んでください。"
+		"manualStep": {
+			"rpg": "{format} は専用のフォルダー（img/characters、XP では Graphics/Characters）からキャラクターを読み込みます。更新後は、キャラクターの README.txt に従ってシートをそこへコピーしてください。",
+			"gdevelop": "このキャラクターを別の GDevelop プロジェクトに統合した場合は、キャラクターの README.txt に従って更新を反映してください。",
+			"phaserAe": "モーションやアイテムを追加したら、キャラクターの README.txt に従って phaser-ae/assets.json の新しいパスを game/manifest.json に追加してください。"
+		}
 	},
 	"tips": {
 		"customizeTitle": "デモを着せ替える",

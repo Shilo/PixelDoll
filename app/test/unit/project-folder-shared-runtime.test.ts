@@ -506,6 +506,8 @@ it('lists a deleted kept runtime file to restore, even one PixelDoll never wrote
 	expect(studio.folder.text(RUNTIME)).toBe('runtime v2');
 	expect(studio.records.get(shared)!.kept).toEqual([]);
 	expect(studio.records.get(`a|${a!.linkedAt}`)!.kept).toEqual(['manifest.json']);
+	// The status counts only what is still kept: the character's manifest.
+	expect(api.projectFolder.status).toMatchObject({ kind: 'done', kept: 1 });
 });
 
 it('records a kept runtime file against its revision, and a quiet check of a folder with one does not rebuild', async () => {
@@ -547,4 +549,38 @@ it('reports an unreadable kept runtime file instead of publishing past it', asyn
 	await api.publishProjectFolder();
 	expect(api.projectFolder.status).toEqual({ kind: 'failed', reason: 'locked' });
 	expect(studio.folder.log.slice(before)).toEqual([]);
+});
+
+it('stops keeping a restored runtime file once it is back, even when a character file then fails', async () => {
+	studio.folder.set(RUNTIME, 'their runtime');
+	const a = await link('a', folderHandle('Game'));
+	const first = api.projectFolder.status;
+	if (first.kind !== 'blocked') throw new Error('Expected the existing runtime conflict');
+	await api.keepProjectFolderFiles([RUNTIME], first.linkedAt);
+	studio.folder.files.delete(RUNTIME);
+	studio.edit = ' with a hat';
+	await api.publishProjectFolder();
+	const lost = api.projectFolder.status;
+	if (lost.kind !== 'blocked') throw new Error('Expected the deleted runtime conflict');
+	studio.folder.failWrite = (path) =>
+		path.startsWith('a/') ? new DOMException('x', 'NoModificationAllowedError') : undefined;
+	await api.publishProjectFolder(new Map([[RUNTIME, 'deleted']]), lost.linkedAt);
+	expect(api.projectFolder.status).toEqual({ kind: 'failed', reason: 'locked' });
+	expect(studio.folder.text(RUNTIME)).toBe('runtime v2');
+	expect(studio.records.get(`runtime|${a!.destinationId}|godot`)!.kept).toEqual([]);
+});
+
+it('lets a Unity folder nest with an earlier Unity folder whose runtime is gone', async () => {
+	const assets = folderHandle('Assets');
+	await link('a', assets, 'unity');
+	await api.unlinkProjectFolder();
+	// The user deleted pixeldoll-unity/ from the earlier folder: nothing there can collide any more.
+	(assets as unknown as { getDirectoryHandle: () => Promise<never> }).getDirectoryHandle =
+		async () => {
+			throw new DOMException('gone', 'NotFoundError');
+		};
+	const characters = folderHandle('Characters');
+	nest(assets, characters, ['Characters']);
+	await link('b', characters, 'unity');
+	expect(studio.links.get('b')?.handle).toBe(characters);
 });

@@ -3577,7 +3577,7 @@
 		"updated": "{time}更新",
 		"tryAgain": "重试",
 		"state": {
-			"off": "未关联 · 自动保持游戏中的文件为最新",
+			"off": "未关联 · 自动保持游戏文件夹中此角色的文件为最新",
 			"on": "自动更新已开启",
 			"manual": "自动更新已关闭",
 			"updating": "正在更新…",
@@ -3622,7 +3622,11 @@
 		"section": "游戏项目",
 		"reload": "重新加载",
 		"shared": "共享运行时：{path}",
-		"manualStep": "{format} 不会直接从此文件夹加载游戏。更新后，请按照角色的 README.txt 将其带入你的游戏。"
+		"manualStep": {
+			"rpg": "{format} 从自己的文件夹（img/characters，XP 为 Graphics/Characters）加载角色。更新后，请按照角色的 README.txt 将图表复制到那里。",
+			"gdevelop": "如果你已将此角色合并到另一个 GDevelop 项目中，请按照角色的 README.txt 将更新带入该项目。",
+			"phaserAe": "添加动作或物品后，请按照角色的 README.txt 将 phaser-ae/assets.json 中的新路径添加到 game/manifest.json。"
+		}
 	},
 	"tips": {
 		"customizeTitle": "给演示角色换装",

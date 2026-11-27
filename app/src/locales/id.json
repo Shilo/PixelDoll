@@ -3577,7 +3577,7 @@
 		"updated": "Diperbarui {time}",
 		"tryAgain": "Coba lagi",
 		"state": {
-			"off": "Belum ditautkan · Menjaga file di game Anda tetap terbaru secara otomatis",
+			"off": "Belum ditautkan · Menjaga file karakter ini di folder game Anda tetap terbaru secara otomatis",
 			"on": "Pembaruan otomatis aktif",
 			"manual": "Pembaruan otomatis mati",
 			"updating": "Memperbarui…",
@@ -3622,7 +3622,11 @@
 		"section": "Proyek game",
 		"reload": "Muat ulang",
 		"shared": "Runtime bersama: {path}",
-		"manualStep": "{format} tidak memuat game langsung dari folder ini. Setelah pembaruan, ikuti README.txt karakter untuk memasukkannya ke game kamu."
+		"manualStep": {
+			"rpg": "{format} memuat karakter dari foldernya sendiri (img/characters, atau Graphics/Characters untuk XP). Setelah pembaruan, salin sheet ke sana seperti yang dijelaskan README.txt karakter.",
+			"gdevelop": "Jika Anda menggabungkan karakter ini ke proyek GDevelop lain, bawa pembaruan ke sana seperti yang dijelaskan README.txt karakter.",
+			"phaserAe": "Setelah menambah gerakan atau item, tambahkan path baru dari phaser-ae/assets.json ke game/manifest.json, seperti yang dijelaskan README.txt karakter."
+		}
 	},
 	"tips": {
 		"customizeTitle": "Dandani demo",

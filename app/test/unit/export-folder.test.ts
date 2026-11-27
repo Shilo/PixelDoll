@@ -28,11 +28,12 @@ const revisionGoldens: Record<keyof typeof runtimeFiles, Record<number, string>>
 	godot: { 1: '721efb338e2e0623080a00dbb0e45f715bceee0ada8fd80834cfe9c2e132d041' },
 	phaser: { 1: 'c75683d0f5dadb441b579c4fb51ebe1ff67497294f04064543af73175c5fa540' },
 	'phaser-ae': { 1: '545479b480abac837c9db2f1312ce2b6ba173287bbbdb51bcc1dc10cc9e4914e' },
-	unity: { 2: '8ee599f22891042eba74f8305366b4c296b6bcd8be502ae4011374d0dc08a2d9' }
+	unity: { 2: '6cdbf84f7ef26d0f02c4a4b0da3dbf0d5f069205db660071fde9e80bda905e23' }
 };
 
 // Captured at the fixture's fixed exportedAt from an isolated archive of 67b40dc8e, then updated only for deliberate
-// README wording fixes (Phaser AE scene imports, and layout-neutral wording in Phaser, GDevelop and RPG Maker guides).
+// guide wording fixes (Phaser AE scene imports; layout-neutral wording in Phaser, GDevelop and RPG Maker guides; the
+// reading order in AGENTS.md and CLAUDE.md, which was wrong for RPG Maker exports).
 test.each(engines)('%s default ZIP preserves the archive and every entry', async (engine) => {
 	const built = await buildExport(await folderExportFixture(), exportOptions(engine));
 	expect(built.kind).toBe('requested');

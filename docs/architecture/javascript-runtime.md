@@ -265,6 +265,8 @@ as newly published characters. Keep existing entry paths and integration APIs us
 `runtimeFormat` is the character data contract. The shared importer accepts positive formats up to its
 supported version, with no `exportId`. ZIP manifests keep their assembly-specific `exportId`.
 
+Keep runtime changes additive: PixelDoll never deletes a file from a user's folder, so a file a
+revision no longer needs stays there and must stay harmless to the engine (Unity compiles every .cs under Assets).
 Bump the engine's runtime revision whenever its bundle changes, including file names, declarations and
 assembly definitions. Add the new revision's digest in `export-folder.test.ts` and keep the earlier pins of every revision that
 shipped (a revision that never left this branch may be re-pinned).

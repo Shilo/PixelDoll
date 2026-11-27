@@ -3680,7 +3680,7 @@
 		"updated": "Mis à jour {time}",
 		"tryAgain": "Réessayer",
 		"state": {
-			"off": "Non lié · Garde automatiquement à jour les fichiers de votre jeu",
+			"off": "Non lié · Garde automatiquement à jour les fichiers de ce personnage dans le dossier de votre jeu",
 			"on": "Mises à jour automatiques activées",
 			"manual": "Mises à jour automatiques désactivées",
 			"updating": "Mise à jour…",
@@ -3726,7 +3726,11 @@
 		"section": "Projet de jeu",
 		"reload": "Recharger",
 		"shared": "Runtime partagé : {path}",
-		"manualStep": "{format} ne charge pas les jeux directement depuis ce dossier. Après une mise à jour, suivez le README.txt du personnage pour l’intégrer à votre jeu."
+		"manualStep": {
+			"rpg": "{format} charge les personnages depuis son propre dossier (img/characters, ou Graphics/Characters pour XP). Après une mise à jour, copiez-y les planches comme l’indique le README.txt du personnage.",
+			"gdevelop": "Si vous avez fusionné ce personnage dans un autre projet GDevelop, reportez-y les mises à jour comme l’indique le README.txt du personnage.",
+			"phaserAe": "Après avoir ajouté des mouvements ou des objets, ajoutez les nouveaux chemins de phaser-ae/assets.json à game/manifest.json, comme l’indique le README.txt du personnage."
+		}
 	},
 	"tips": {
 		"customizeTitle": "Habillez la démo",

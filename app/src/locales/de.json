@@ -3680,7 +3680,7 @@
 		"updated": "Aktualisiert {time}",
 		"tryAgain": "Erneut versuchen",
 		"state": {
-			"off": "Nicht verbunden · Hält Dateien in deinem Spiel automatisch aktuell",
+			"off": "Nicht verbunden · Hält die Dateien dieser Figur in deinem Spielordner automatisch aktuell",
 			"on": "Automatische Updates an",
 			"manual": "Automatische Updates aus",
 			"updating": "Wird aktualisiert…",
@@ -3726,7 +3726,11 @@
 		"section": "Spielprojekt",
 		"reload": "Neu laden",
 		"shared": "Gemeinsame Laufzeit: {path}",
-		"manualStep": "{format} lädt Spiele nicht direkt aus diesem Ordner. Folge nach einer Aktualisierung der README.txt der Figur, um sie in dein Spiel zu übernehmen."
+		"manualStep": {
+			"rpg": "{format} lädt Figuren aus einem eigenen Ordner (img/characters, bei XP Graphics/Characters). Kopiere die Sheets nach einer Aktualisierung dorthin, wie es die README.txt der Figur beschreibt.",
+			"gdevelop": "Wenn du diese Figur in ein anderes GDevelop-Projekt übernommen hast, übertrage Aktualisierungen so, wie es die README.txt der Figur beschreibt.",
+			"phaserAe": "Füge nach neuen Animationen oder Items die neuen Pfade aus phaser-ae/assets.json zu game/manifest.json hinzu, wie es die README.txt der Figur beschreibt."
+		}
 	},
 	"tips": {
 		"customizeTitle": "Demo einkleiden",

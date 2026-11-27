@@ -125,10 +125,22 @@
 	// Conflict paths are relative to the picked folder: a character's file or the shared runtime's.
 	const fullPath = (path: string) => (link ? `${link.handle.name}/${path}` : path);
 	const shared = $derived(link ? runtimePath(link) : null);
-	// These engines read their own copy (RPG Maker's img/characters, a merged GDevelop project), not this folder.
-	const manualStep = $derived(
-		!!link && (['gdevelop', 'rpg-maker', 'rpg-maker-xp'] as Engine[]).includes(link.engine)
-	);
+	// The step a game needs after an update where the engine does not pick it up from this folder by itself: RPG Maker
+	// loads characters from its own folder, a merged GDevelop project keeps its own copy, and Phaser AE builds only the
+	// assets listed in game/manifest.json.
+	const manualStep = $derived.by(() => {
+		switch (link?.engine) {
+			case 'rpg-maker':
+			case 'rpg-maker-xp':
+				return t('projectFolder.manualStep.rpg', { format: formatName });
+			case 'gdevelop':
+				return t('projectFolder.manualStep.gdevelop');
+			case 'phaser-ae':
+				return t('projectFolder.manualStep.phaserAe');
+			default:
+				return '';
+		}
+	});
 	const problem = $derived.by(() => {
 		switch (status.kind) {
 			case 'reconnect':
@@ -247,7 +259,7 @@
 				</div>
 			</div>
 			{#if manualStep}<p class="bu-muted small">
-					{t('projectFolder.manualStep', { format: formatName })}
+					{manualStep}
 				</p>{/if}
 			<label class="check">
 				<input

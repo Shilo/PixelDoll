@@ -605,7 +605,9 @@ under Phaser's own license.
 1. ${
 				folder
 					? `Keep the character under game/${dir}, where <folder> is the path from game/ to the folder you picked in
-   PixelDoll. Its runtime is at ../pixeldoll-phaser-ae/paperdoll.js relative to this character folder. When copying the
+   PixelDoll and <character> is this character's folder in it. If you picked game/ itself, leave out "<folder>/"
+   everywhere below: <character>/manifest.json and './pixeldoll-phaser-ae/paperdoll.js'.
+   Its runtime is at ../pixeldoll-phaser-ae/paperdoll.js relative to this character folder. When copying the
    character, copy pixeldoll-phaser-ae too and keep them in the same parent folder. Include the shared module under game/
    so the build can import it. Rebuild and reload a running game to pick up runtime changes.
    Phaser AE's publish uploads game/ as the game's private source, including this folder's project.json (item prompts)
@@ -618,9 +620,9 @@ under Phaser's own license.
    add them there, so the build copies the sheets next to the game. Set "pixelArt": true in its "screen".${
 			folder
 				? `
-   The paths are relative to this character folder: prefix each with the path from game/ to it (${dir}),
-   for example ${dir}manifest.json. Do not edit phaser-ae/assets.json; PixelDoll manages it. After adding moves or
-   items, add the new paths from phaser-ae/assets.json the same way.`
+   The paths are relative to this character folder: prefix each with the path from game/ to it
+   (${dir}), for example ${dir}manifest.json. Do not edit phaser-ae/assets.json; PixelDoll
+   manages it. After adding moves or items, add the new paths from phaser-ae/assets.json the same way.`
 				: ''
 		}
 3. Load once, before the first scene, in a module of its own (hero.ts), and import it where it is needed:

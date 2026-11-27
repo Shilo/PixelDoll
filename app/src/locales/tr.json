@@ -3680,7 +3680,7 @@
 		"updated": "Güncellendi: {time}",
 		"tryAgain": "Yeniden dene",
 		"state": {
-			"off": "Bağlı değil · Oyununuzdaki dosyaları otomatik olarak güncel tutar",
+			"off": "Bağlı değil · Bu karakterin oyun klasöründeki dosyalarını otomatik olarak güncel tutar",
 			"on": "Otomatik güncelleme açık",
 			"manual": "Otomatik güncelleme kapalı",
 			"updating": "Güncelleniyor…",
@@ -3726,7 +3726,11 @@
 		"section": "Oyun projesi",
 		"reload": "Yeniden yükle",
 		"shared": "Paylaşılan çalışma zamanı: {path}",
-		"manualStep": "{format} oyunları doğrudan bu klasörden yüklemez. Bir güncellemeden sonra oyununa aktarmak için karakterin README.txt dosyasını izle."
+		"manualStep": {
+			"rpg": "{format} karakterleri kendi klasöründen yükler (img/characters veya XP için Graphics/Characters). Bir güncellemeden sonra sayfaları karakterin README.txt dosyasında anlatıldığı gibi oraya kopyala.",
+			"gdevelop": "Bu karakteri başka bir GDevelop projesine birleştirdiysen, güncellemeleri karakterin README.txt dosyasında anlatıldığı gibi oraya aktar.",
+			"phaserAe": "Hareket veya eşya ekledikten sonra phaser-ae/assets.json içindeki yeni yolları, karakterin README.txt dosyasında anlatıldığı gibi game/manifest.json dosyasına ekle."
+		}
 	},
 	"tips": {
 		"customizeTitle": "Demoyu giydir",

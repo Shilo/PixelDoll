@@ -3689,7 +3689,7 @@
 		"updated": "Atualizado {time}",
 		"tryAgain": "Tentar de novo",
 		"state": {
-			"off": "Não vinculada · Mantém os arquivos do seu jogo atualizados automaticamente",
+			"off": "Não vinculada · Mantém atualizados automaticamente os arquivos deste personagem na pasta do seu jogo",
 			"on": "Atualizações automáticas ativadas",
 			"manual": "Atualizações automáticas desativadas",
 			"updating": "Atualizando…",
@@ -3735,7 +3735,11 @@
 		"section": "Projeto de jogo",
 		"reload": "Recarregar",
 		"shared": "Runtime compartilhado: {path}",
-		"manualStep": "O {format} não carrega jogos diretamente desta pasta. Depois de uma atualização, siga o README.txt do personagem para levá-la ao seu jogo."
+		"manualStep": {
+			"rpg": "O {format} carrega personagens da própria pasta (img/characters, ou Graphics/Characters no XP). Depois de uma atualização, copie as folhas para lá como explica o README.txt do personagem.",
+			"gdevelop": "Se você mesclou este personagem em outro projeto do GDevelop, leve as atualizações para ele como explica o README.txt do personagem.",
+			"phaserAe": "Depois de adicionar movimentos ou itens, adicione os novos caminhos de phaser-ae/assets.json a game/manifest.json, como explica o README.txt do personagem."
+		}
 	},
 	"tips": {
 		"customizeTitle": "Vista a demo",

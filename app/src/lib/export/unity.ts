@@ -686,18 +686,48 @@ const SHARED_IMPORT_HOOKS = `        const int RuntimeFormat = ${UNITY_RUNTIME_F
         // Unity stores all texture import settings, including the importer platform overrides and sprite slicing, in the sidecar.
         static string SheetFingerprint(string path) => Hash128.Compute(File.ReadAllText(path + ".meta")).ToString();
 
-        static string[] PriorOutputs(string outDir, string index, string[] outputs, HashSet<string> checkedPaths, string root, HashSet<string> sheets)
+        // A PNG nobody has configured still has the settings of a fresh import in a 3D-mode or 2D-mode project.
+        static bool StockSheet(string path)
         {
+            var ti = (TextureImporter)AssetImporter.GetAtPath(path);
+            var settings = new TextureImporterSettings();
+            ti.ReadTextureSettings(settings);
+            if (ti.filterMode != FilterMode.Bilinear || ti.textureCompression != TextureImporterCompression.Compressed || ti.crunchedCompression ||
+                ti.maxTextureSize != 2048 || ti.isReadable || ti.spritePixelsPerUnit != 100 || settings.spriteMeshType != SpriteMeshType.Tight)
+                return false;
+            if (ti.textureType == TextureImporterType.Default)
+                return ti.npotScale == TextureImporterNPOTScale.ToNearest && ti.wrapMode == TextureWrapMode.Repeat && ti.mipmapEnabled &&
+                    !ti.alphaIsTransparency;
+            var factories = new SpriteDataProviderFactories();
+            factories.Init();
+            var dp = factories.GetSpriteEditorDataProviderFromObject(ti);
+            dp.InitSpriteEditorDataProvider();
+            var rects = dp.GetSpriteRects();
+            ti.GetSourceTextureWidthAndHeight(out var width, out var height);
+            return ti.textureType == TextureImporterType.Sprite && ti.spriteImportMode == SpriteImportMode.Multiple &&
+                ti.npotScale == TextureImporterNPOTScale.None && ti.wrapMode == TextureWrapMode.Clamp && !ti.mipmapEnabled && ti.alphaIsTransparency &&
+                rects.Length == 1 && rects[0].rect == new Rect(0, 0, width, height) && rects[0].alignment == SpriteAlignment.Center;
+        }
+
+        // Sheets that leave the manifest keep their records, so their settings are still checked if they return.
+        static string[] PriorOutputs(string outDir, string index, string[] outputs, HashSet<string> checkedPaths, string root, HashSet<string> sheets, out GeneratedAsset[] keptSheets)
+        {
+            keptSheets = System.Array.Empty<GeneratedAsset>();
             if (File.Exists(outDir)) return null;
             if (!Directory.Exists(outDir)) return System.Array.Empty<string>();
             if (!File.Exists(index))
                 return Directory.EnumerateFileSystemEntries(outDir).Any() ? null : System.Array.Empty<string>();
             var saved = JsonUtility.FromJson<GeneratedAssets>(File.ReadAllText(index));
             if (saved?.entries == null || saved.entries.Length == 0 || saved.sheets == null || saved.sheets.Length == 0) return null;
+            var recorded = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
             foreach (var entry in saved.sheets)
-                if (entry == null || string.IsNullOrEmpty(entry.name) ||
+                if (entry == null || string.IsNullOrEmpty(entry.name) || !recorded.Add(entry.name) ||
                     (sheets.TryGetValue(entry.name, out var sheet) && SheetFingerprint(root + "/" + sheet) != entry.hash))
                     return null;
+            // Without a baseline, only a sheet still at Unity's import defaults is safe to configure.
+            foreach (var sheet in sheets)
+                if (!recorded.Contains(sheet) && !StockSheet(root + "/" + sheet)) return null;
+            keptSheets = saved.sheets.Where(entry => !sheets.Contains(entry.name) && File.Exists(root + "/" + entry.name + ".meta")).ToArray();
             var known = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
             foreach (var entry in saved.entries)
             {
@@ -714,12 +744,12 @@ const SHARED_IMPORT_HOOKS = `        const int RuntimeFormat = ${UNITY_RUNTIME_F
             return saved.entries.Select(entry => outDir + "/" + entry.name).ToArray();
         }
 
-        static void RecordGenerated(string index, IEnumerable<string> outputs, string root, HashSet<string> sheets)
+        static void RecordGenerated(string index, IEnumerable<string> outputs, string root, HashSet<string> sheets, GeneratedAsset[] keptSheets)
         {
             var state = new GeneratedAssets
             {
                 entries = outputs.Select(path => new GeneratedAsset { name = Path.GetFileName(path), hash = Fingerprint(path) }).ToArray(),
-                sheets = sheets.Select(sheet => new GeneratedAsset { name = sheet, hash = SheetFingerprint(root + "/" + sheet) }).ToArray()
+                sheets = sheets.Select(sheet => new GeneratedAsset { name = sheet, hash = SheetFingerprint(root + "/" + sheet) }).Concat(keptSheets).ToArray()
             };
             File.WriteAllText(index, JsonUtility.ToJson(state, true));
         }
@@ -782,10 +812,10 @@ ${
             if (prefab != null && prefab.GetComponent<Paperdoll>()?.importDigest == digest && outputs.All(File.Exists)) return;
             var index = outDir + "/.pixeldoll-generated.json";
             CheckAssetPath(index, checkedPaths);
-            var prior = PriorOutputs(outDir, index, outputs, checkedPaths, root, sheets);
+            var prior = PriorOutputs(outDir, index, outputs, checkedPaths, root, sheets, out var keptSheets);
             if (prior == null)
             {
-                Debug.LogWarning("PixelDoll: skipped updating " + jsonPath + " because generated assets or sheet import settings have changed or have no recorded baseline. Delete " + outDir + "/ to rebuild the assets and reapply PixelDoll's sheet settings.");
+                Debug.LogWarning("PixelDoll: skipped updating " + jsonPath + " because generated assets or sheet import settings have changed, have no recorded baseline, or were customized before PixelDoll used the sheet. Delete " + outDir + "/ to rebuild the assets and reapply PixelDoll's sheet settings.");
                 return;
             }`
 								: `
@@ -873,7 +903,7 @@ ${
             ${
 							folder
 								? `foreach (var output in outputs) AssetDatabase.SaveAssetIfDirty(AssetDatabase.GUIDFromAssetPath(output));
-            RecordGenerated(index, outputs.Union(prior, System.StringComparer.OrdinalIgnoreCase), root, sheets);`
+            RecordGenerated(index, outputs.Union(prior, System.StringComparer.OrdinalIgnoreCase), root, sheets, keptSheets);`
 								: 'AssetDatabase.SaveAssets();'
 						}
             Debug.Log("PixelDoll: imported " + d.name + ": " + library.Sum(l => l.sprites.Length) + " sprites in " + library.Count + " layers, " + d.animations.Length * d.directions.Length + " clips -> " + outDir);
@@ -1014,8 +1044,14 @@ If replacing an older PixelDoll exporter, remove its unity/Runtime and unity/Edi
 The importer runs on unity/pixeldoll_unity.json import. After scripts finish compiling, use
 Tools > PixelDoll > ${identity} > Import if no prefab appeared.`
 			}
-Output in unity/Generated/: sliced sheets (Point, no compression, PPU ${m.export?.pixelsPerUnit ?? exportUnit(m.rig)}, pivot at the feet),
-<anim>_<dir>.anim clips for supported views, ${data.name}.controller and ${data.name}.prefab
+${
+	folder
+		? `The importer slices the layer sheets in place: their import settings become Point, no compression,
+PPU ${m.export?.pixelsPerUnit ?? exportUnit(m.rig)} and pivot at the feet. Output in unity/Generated/: <anim>_<dir>.anim clips for supported views,
+${data.name}.controller and ${data.name}.prefab`
+		: `Output in unity/Generated/: sliced sheets (Point, no compression, PPU ${m.export?.pixelsPerUnit ?? exportUnit(m.rig)}, pivot at the feet),
+<anim>_<dir>.anim clips for supported views, ${data.name}.controller and ${data.name}.prefab`
+}
 (Sorting Group + Paperdoll + one SpriteRenderer per slot/role and a hidden animation clock).
 Runtime namespace: ${ns}. Paperdoll.Play(anim, dir, restart = false), SetDirection(dir), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).
 Call SetActionLayering(true) to enable moving attacks when the ${folder ? 'character export' : 'ZIP'} contains precut fragments. CanLayerAction(move, direction) checks the whole action set and equipped gear. Invalid PlayAction calls warn and return an empty string without changing playback. PlayAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read IsActionPlaying for completion. Calling Play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
