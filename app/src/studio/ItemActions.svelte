@@ -9,6 +9,7 @@
 	import { displayMessage } from '../lib/i18n.ts';
 	import { canEditItemAppearance } from './appearanceSource.ts';
 	import DeleteRow from './DeleteRow.svelte';
+	import RenameRow from './RenameRow.svelte';
 	import { downloadItemZip } from './download.svelte.ts';
 	import { HEALTH_LABEL, healthOf, missingFramesNote } from './model.ts';
 	import { extendable } from './movePricing.ts';
@@ -32,7 +33,6 @@
 		Download,
 		Eye,
 		Palette,
-		Pencil,
 		RefreshCw,
 		Sparkles
 	} from './icons.ts';
@@ -188,17 +188,11 @@
 					)}<SurfaceChevron />
 				</button>
 			{/if}
-			{#if !isDemo() && !it.variantOf}
-				<button
-					class="row bu-action"
-					data-variant="quiet"
-					role="menuitem"
+			{#if !it.variantOf}<RenameRow
+					class="bu-action"
+					locked={isDemo() ? t('itemMenu.demoRenameLocked') : ''}
 					onclick={() => act(() => leave(() => openRename(doc.id, { itemId: it.id, back })))}
-				>
-					<Pencil size={16} aria-hidden="true" />{openerLabel(t('toolbar.rename'))}<SurfaceChevron
-					/>
-				</button>
-			{/if}
+				/>{/if}
 			<button
 				class="row bu-action"
 				data-variant="quiet"

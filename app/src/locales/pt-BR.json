@@ -363,7 +363,8 @@
 		"adjustFrame": "Ajustar quadro…",
 		"directions": "Direções…",
 		"demoDeleteLocked": "Não é possível excluir o personagem da demo",
-		"labelDeleteCharacter": "Mover para a lixeira…"
+		"labelDeleteCharacter": "Mover para a lixeira…",
+		"demoRenameLocked": "Edite uma cópia para renomear a demo"
 	},
 	"characterName": {
 		"demo": "(Demo)"
@@ -494,7 +495,8 @@
 		"cancelItem": "Cancelar item",
 		"canceling": "Cancelando…",
 		"keep": "Manter",
-		"runningDetail": "{status} · {prompt}"
+		"runningDetail": "{status} · {prompt}",
+		"demoRenameLocked": "Itens da demo não podem ser renomeados"
 	},
 	"itemPane": {
 		"movesSection": "Movimentos e estados",
@@ -1780,90 +1782,23 @@
 			"gem": "Gema"
 		},
 		"ideas": {
-			"head": [
-				"chapéu de mago",
-				"elmo de cavaleiro de ferro",
-				"coroa dourada",
-				"capuz"
-			],
-			"hair": [
-				"cabelo longo trançado",
-				"cabelo curto espetado",
-				"rabo de cavalo"
-			],
-			"face_acc": [
-				"óculos redondos",
-				"tapa-olho",
-				"máscara de bandido"
-			],
-			"torso_inner": [
-				"colete de couro",
-				"camisa de cota de malha",
-				"túnica azul"
-			],
-			"arms": [
-				"luvas de couro",
-				"manoplas de ferro",
-				"tiras de tecido"
-			],
-			"legs": [
-				"calça marrom",
-				"caneleiras de placa",
-				"saia plissada"
-			],
-			"feet": [
-				"botas de couro",
-				"sandálias",
-				"sapatos de armadura de ferro"
-			],
-			"back": [
-				"capa vermelha",
-				"mochila de viagem",
-				"aljava de flechas"
-			],
-			"main_hand": [
-				"espada de aço",
-				"cajado de madeira",
-				"machado de batalha"
-			],
-			"off_hand": [
-				"escudo redondo",
-				"lanterna de ferro",
-				"arco longo de madeira"
-			],
-			"facial_hair": [
-				"barba cheia",
-				"bigode com pontas enroladas",
-				"cavanhaque"
-			],
-			"torso_outer": [
-				"armadura de placas de aço",
-				"túnica com capuz",
-				"casaco longo"
-			],
-			"underwear": [
-				"conjunto de roupa íntima branca lisa",
-				"traje de banho listrado"
-			],
-			"waist": [
-				"cinto de couro",
-				"faixa vermelha",
-				"bolsinha de cinto"
-			],
-			"neck": [
-				"amuleto de ouro",
-				"cachecol de lã",
-				"colar de contas"
-			],
-			"shoulders": [
-				"ombreiras de aço",
-				"manto de pele"
-			],
-			"accessory": [
-				"broche de latão",
-				"laço de fita",
-				"bolsinha de talismãs"
-			]
+			"head": ["chapéu de mago", "elmo de cavaleiro de ferro", "coroa dourada", "capuz"],
+			"hair": ["cabelo longo trançado", "cabelo curto espetado", "rabo de cavalo"],
+			"face_acc": ["óculos redondos", "tapa-olho", "máscara de bandido"],
+			"torso_inner": ["colete de couro", "camisa de cota de malha", "túnica azul"],
+			"arms": ["luvas de couro", "manoplas de ferro", "tiras de tecido"],
+			"legs": ["calça marrom", "caneleiras de placa", "saia plissada"],
+			"feet": ["botas de couro", "sandálias", "sapatos de armadura de ferro"],
+			"back": ["capa vermelha", "mochila de viagem", "aljava de flechas"],
+			"main_hand": ["espada de aço", "cajado de madeira", "machado de batalha"],
+			"off_hand": ["escudo redondo", "lanterna de ferro", "arco longo de madeira"],
+			"facial_hair": ["barba cheia", "bigode com pontas enroladas", "cavanhaque"],
+			"torso_outer": ["armadura de placas de aço", "túnica com capuz", "casaco longo"],
+			"underwear": ["conjunto de roupa íntima branca lisa", "traje de banho listrado"],
+			"waist": ["cinto de couro", "faixa vermelha", "bolsinha de cinto"],
+			"neck": ["amuleto de ouro", "cachecol de lã", "colar de contas"],
+			"shoulders": ["ombreiras de aço", "manto de pele"],
+			"accessory": ["broche de latão", "laço de fita", "bolsinha de talismãs"]
 		},
 		"enterName": "Digite um nome.",
 		"nameExists": "{name} já existe.",

@@ -363,7 +363,8 @@
 		"adjustFrame": "Kareyi ayarla…",
 		"directions": "Yönler…",
 		"demoDeleteLocked": "Demo karakteri silinemez",
-		"labelDeleteCharacter": "Çöp kutusuna taşı…"
+		"labelDeleteCharacter": "Çöp kutusuna taşı…",
+		"demoRenameLocked": "Demoyu yeniden adlandırmak için bir kopyayı düzenle"
 	},
 	"characterName": {
 		"demo": "(Demo)"
@@ -494,7 +495,8 @@
 		"cancelItem": "Eşyayı iptal edin",
 		"canceling": "İptal ediliyor…",
 		"keep": "Üretime devam edin",
-		"runningDetail": "{status} · {prompt}"
+		"runningDetail": "{status} · {prompt}",
+		"demoRenameLocked": "Demo eşyaları yeniden adlandırılamaz"
 	},
 	"itemPane": {
 		"movesSection": "Hareketler ve durumlar",
@@ -1774,90 +1776,23 @@
 			"gem": "Mücevher"
 		},
 		"ideas": {
-			"head": [
-				"büyücü şapkası",
-				"demir şövalye miğferi",
-				"altın taç",
-				"kapüşon"
-			],
-			"hair": [
-				"uzun örgülü saç",
-				"kısa dik saç",
-				"at kuyruğu"
-			],
-			"face_acc": [
-				"yuvarlak gözlük",
-				"göz bandı",
-				"haydut maskesi"
-			],
-			"torso_inner": [
-				"deri yelek",
-				"zincir zırh gömleği",
-				"mavi tunik"
-			],
-			"arms": [
-				"deri eldiven",
-				"demir zırh eldiveni",
-				"bez sargılar"
-			],
-			"legs": [
-				"kahverengi pantolon",
-				"plaka baldır zırhı",
-				"pileli etek"
-			],
-			"feet": [
-				"deri çizmeler",
-				"sandaletler",
-				"demir zırh ayakkabıları"
-			],
-			"back": [
-				"kırmızı pelerin",
-				"seyahat sırt çantası",
-				"ok dolu sadak"
-			],
-			"main_hand": [
-				"çelik kılıç",
-				"tahta asa",
-				"savaş baltası"
-			],
-			"off_hand": [
-				"yuvarlak kalkan",
-				"demir fener",
-				"ahşap uzun yay"
-			],
-			"facial_hair": [
-				"gür sakal",
-				"burma bıyık",
-				"keçi sakalı"
-			],
-			"torso_outer": [
-				"çelik plaka zırh",
-				"kapüşonlu cüppe",
-				"uzun palto"
-			],
-			"underwear": [
-				"düz beyaz iç çamaşırı takımı",
-				"çizgili mayo"
-			],
-			"waist": [
-				"deri kemer",
-				"kırmızı kuşak",
-				"kemer kesesi"
-			],
-			"neck": [
-				"altın muska",
-				"yün atkı",
-				"boncuklu kolye"
-			],
-			"shoulders": [
-				"çelik omuz zırhı",
-				"kürk omuz pelerini"
-			],
-			"accessory": [
-				"pirinç broş",
-				"kurdele fiyonk",
-				"muska kesesi"
-			]
+			"head": ["büyücü şapkası", "demir şövalye miğferi", "altın taç", "kapüşon"],
+			"hair": ["uzun örgülü saç", "kısa dik saç", "at kuyruğu"],
+			"face_acc": ["yuvarlak gözlük", "göz bandı", "haydut maskesi"],
+			"torso_inner": ["deri yelek", "zincir zırh gömleği", "mavi tunik"],
+			"arms": ["deri eldiven", "demir zırh eldiveni", "bez sargılar"],
+			"legs": ["kahverengi pantolon", "plaka baldır zırhı", "pileli etek"],
+			"feet": ["deri çizmeler", "sandaletler", "demir zırh ayakkabıları"],
+			"back": ["kırmızı pelerin", "seyahat sırt çantası", "ok dolu sadak"],
+			"main_hand": ["çelik kılıç", "tahta asa", "savaş baltası"],
+			"off_hand": ["yuvarlak kalkan", "demir fener", "ahşap uzun yay"],
+			"facial_hair": ["gür sakal", "burma bıyık", "keçi sakalı"],
+			"torso_outer": ["çelik plaka zırh", "kapüşonlu cüppe", "uzun palto"],
+			"underwear": ["düz beyaz iç çamaşırı takımı", "çizgili mayo"],
+			"waist": ["deri kemer", "kırmızı kuşak", "kemer kesesi"],
+			"neck": ["altın muska", "yün atkı", "boncuklu kolye"],
+			"shoulders": ["çelik omuz zırhı", "kürk omuz pelerini"],
+			"accessory": ["pirinç broş", "kurdele fiyonk", "muska kesesi"]
 		},
 		"enterName": "Bir ad girin.",
 		"nameExists": "{name} zaten var.",

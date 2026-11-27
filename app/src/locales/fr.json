@@ -363,7 +363,8 @@
 		"adjustFrame": "Ajuster le cadre…",
 		"directions": "Directions…",
 		"demoDeleteLocked": "Le personnage de la démo ne peut pas être supprimé",
-		"labelDeleteCharacter": "Vers la corbeille…"
+		"labelDeleteCharacter": "Vers la corbeille…",
+		"demoRenameLocked": "Modifiez une copie pour renommer la démo"
 	},
 	"characterName": {
 		"demo": "(Démo)"
@@ -494,7 +495,8 @@
 		"cancelItem": "Annuler la génération",
 		"canceling": "Annulation…",
 		"keep": "Garder",
-		"runningDetail": "{status} · {prompt}"
+		"runningDetail": "{status} · {prompt}",
+		"demoRenameLocked": "Les objets de la démo ne peuvent pas être renommés"
 	},
 	"itemPane": {
 		"movesSection": "Mouvements et états",
@@ -1774,90 +1776,23 @@
 			"gem": "Gemme"
 		},
 		"ideas": {
-			"head": [
-				"chapeau de sorcier",
-				"casque de chevalier en fer",
-				"couronne dorée",
-				"capuche"
-			],
-			"hair": [
-				"longs cheveux tressés",
-				"cheveux courts en pointes",
-				"queue de cheval"
-			],
-			"face_acc": [
-				"lunettes rondes",
-				"cache-œil",
-				"masque de bandit"
-			],
-			"torso_inner": [
-				"gilet en cuir",
-				"cotte de mailles",
-				"tunique bleue"
-			],
-			"arms": [
-				"gants en cuir",
-				"gantelets en fer",
-				"bandages en tissu"
-			],
-			"legs": [
-				"pantalon marron",
-				"jambières en plaques",
-				"jupe plissée"
-			],
-			"feet": [
-				"bottes en cuir",
-				"sandales",
-				"solerets en fer"
-			],
-			"back": [
-				"cape rouge",
-				"sac à dos de voyage",
-				"carquois de flèches"
-			],
-			"main_hand": [
-				"épée en acier",
-				"bâton en bois",
-				"hache de guerre"
-			],
-			"off_hand": [
-				"bouclier rond",
-				"lanterne en fer",
-				"arc long en bois"
-			],
-			"facial_hair": [
-				"barbe fournie",
-				"moustache en guidon",
-				"bouc"
-			],
-			"torso_outer": [
-				"armure de plates en acier",
-				"robe à capuche",
-				"manteau long"
-			],
-			"underwear": [
-				"ensemble de sous-vêtements blancs unis",
-				"maillot de bain rayé"
-			],
-			"waist": [
-				"ceinture en cuir",
-				"ceinture-écharpe rouge",
-				"bourse de ceinture"
-			],
-			"neck": [
-				"amulette en or",
-				"écharpe en laine",
-				"collier de perles"
-			],
-			"shoulders": [
-				"spalières en acier",
-				"mantelet en fourrure"
-			],
-			"accessory": [
-				"broche en laiton",
-				"nœud de ruban",
-				"bourse à porte-bonheur"
-			]
+			"head": ["chapeau de sorcier", "casque de chevalier en fer", "couronne dorée", "capuche"],
+			"hair": ["longs cheveux tressés", "cheveux courts en pointes", "queue de cheval"],
+			"face_acc": ["lunettes rondes", "cache-œil", "masque de bandit"],
+			"torso_inner": ["gilet en cuir", "cotte de mailles", "tunique bleue"],
+			"arms": ["gants en cuir", "gantelets en fer", "bandages en tissu"],
+			"legs": ["pantalon marron", "jambières en plaques", "jupe plissée"],
+			"feet": ["bottes en cuir", "sandales", "solerets en fer"],
+			"back": ["cape rouge", "sac à dos de voyage", "carquois de flèches"],
+			"main_hand": ["épée en acier", "bâton en bois", "hache de guerre"],
+			"off_hand": ["bouclier rond", "lanterne en fer", "arc long en bois"],
+			"facial_hair": ["barbe fournie", "moustache en guidon", "bouc"],
+			"torso_outer": ["armure de plates en acier", "robe à capuche", "manteau long"],
+			"underwear": ["ensemble de sous-vêtements blancs unis", "maillot de bain rayé"],
+			"waist": ["ceinture en cuir", "ceinture-écharpe rouge", "bourse de ceinture"],
+			"neck": ["amulette en or", "écharpe en laine", "collier de perles"],
+			"shoulders": ["spalières en acier", "mantelet en fourrure"],
+			"accessory": ["broche en laiton", "nœud de ruban", "bourse à porte-bonheur"]
 		},
 		"enterName": "Saisissez un nom.",
 		"nameExists": "{name} existe déjà.",

@@ -25,7 +25,7 @@
 	import ApiPeek from './ApiPeek.svelte';
 	import ReportButton from './ReportButton.svelte';
 	import { ui, doc, store, openProject } from './state.svelte.ts';
-	import { openSource } from '../lib/dress/project.ts';
+	import { fixtureManifest, openSource } from '../lib/dress/project.ts';
 	import { ownItems, ownProvenance, recordedCost } from '../lib/store/generation.ts';
 	import { moveDirs } from '../lib/dress/dress.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
@@ -66,7 +66,7 @@
 		return () => controller.abort();
 	});
 	async function manifestOf(target: string): Promise<Manifest> {
-		if (target.startsWith('fixture:')) return (await openSource(target)).project.manifest;
+		if (target.startsWith('fixture:')) return fixtureManifest(target);
 		const rec = await db.get<StoredProject>('projects', target);
 		if (!rec)
 			throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');

@@ -95,6 +95,13 @@ function fixtureProject(name: string): Promise<Project> {
 	return built;
 }
 
+/** A demo's saved manifest alone (its details, cost and moves), read without decoding any of its artwork, so a missing
+ *  image cannot hide them. */
+export async function fixtureManifest(id: string): Promise<Manifest> {
+	const bytes = await fixtureFile(assetUrl(`fixtures/${id.slice(8)}/fixture.json`));
+	return JSON.parse(new TextDecoder().decode(bytes)) as Manifest;
+}
+
 /** Sources: "fixture:<name>" and every IndexedDB project record holding a current manifest. */
 export async function listSources(): Promise<{ id: string; label: string }[]> {
 	const recs = (await db.all<ProjectRecord>('projects')).filter(

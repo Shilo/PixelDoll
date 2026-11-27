@@ -357,7 +357,8 @@
 		"adjustFrame": "Sesuaikan frame…",
 		"directions": "Arah…",
 		"demoDeleteLocked": "Karakter demo tidak dapat dihapus",
-		"labelDeleteCharacter": "Pindahkan ke tempat sampah…"
+		"labelDeleteCharacter": "Pindahkan ke tempat sampah…",
+		"demoRenameLocked": "Edit salinan untuk mengganti nama demo"
 	},
 	"characterName": {
 		"demo": "(Demo)"
@@ -485,7 +486,8 @@
 		"cancelItem": "Batalkan item",
 		"canceling": "Membatalkan…",
 		"keep": "Pertahankan",
-		"runningDetail": "{status} · {prompt}"
+		"runningDetail": "{status} · {prompt}",
+		"demoRenameLocked": "Item demo tidak bisa diganti namanya"
 	},
 	"itemPane": {
 		"movesSection": "Gerakan dan keadaan",
@@ -1720,90 +1722,23 @@
 			"gem": "Permata"
 		},
 		"ideas": {
-			"head": [
-				"topi penyihir",
-				"helm kesatria dari besi",
-				"mahkota emas",
-				"tudung"
-			],
-			"hair": [
-				"rambut panjang dikepang",
-				"rambut pendek runcing",
-				"rambut ekor kuda"
-			],
-			"face_acc": [
-				"kacamata bulat",
-				"penutup mata",
-				"topeng bandit"
-			],
-			"torso_inner": [
-				"rompi kulit",
-				"baju zirah rantai",
-				"tunik biru"
-			],
-			"arms": [
-				"sarung tangan kulit",
-				"sarung tangan zirah besi",
-				"balutan kain"
-			],
-			"legs": [
-				"celana panjang cokelat",
-				"pelindung tulang kering dari pelat",
-				"rok lipit"
-			],
-			"feet": [
-				"bot kulit",
-				"sandal",
-				"pelindung kaki dari besi"
-			],
-			"back": [
-				"jubah merah",
-				"ransel perjalanan",
-				"wadah anak panah"
-			],
-			"main_hand": [
-				"pedang baja",
-				"tongkat kayu",
-				"kapak perang"
-			],
-			"off_hand": [
-				"perisai bulat",
-				"lentera besi",
-				"busur panjang kayu"
-			],
-			"facial_hair": [
-				"janggut lebat",
-				"kumis melengkung ke atas",
-				"janggut kambing"
-			],
-			"torso_outer": [
-				"zirah pelat baja",
-				"jubah bertudung",
-				"mantel panjang"
-			],
-			"underwear": [
-				"setelan pakaian dalam putih polos",
-				"baju renang bergaris"
-			],
-			"waist": [
-				"ikat pinggang kulit",
-				"selempang merah",
-				"kantong ikat pinggang"
-			],
-			"neck": [
-				"jimat emas",
-				"syal wol",
-				"kalung manik-manik"
-			],
-			"shoulders": [
-				"pelindung bahu dari baja",
-				"mantel bahu berbulu"
-			],
-			"accessory": [
-				"bros kuningan",
-				"pita berbentuk kupu-kupu",
-				"kantong jimat"
-			]
+			"head": ["topi penyihir", "helm kesatria dari besi", "mahkota emas", "tudung"],
+			"hair": ["rambut panjang dikepang", "rambut pendek runcing", "rambut ekor kuda"],
+			"face_acc": ["kacamata bulat", "penutup mata", "topeng bandit"],
+			"torso_inner": ["rompi kulit", "baju zirah rantai", "tunik biru"],
+			"arms": ["sarung tangan kulit", "sarung tangan zirah besi", "balutan kain"],
+			"legs": ["celana panjang cokelat", "pelindung tulang kering dari pelat", "rok lipit"],
+			"feet": ["bot kulit", "sandal", "pelindung kaki dari besi"],
+			"back": ["jubah merah", "ransel perjalanan", "wadah anak panah"],
+			"main_hand": ["pedang baja", "tongkat kayu", "kapak perang"],
+			"off_hand": ["perisai bulat", "lentera besi", "busur panjang kayu"],
+			"facial_hair": ["janggut lebat", "kumis melengkung ke atas", "janggut kambing"],
+			"torso_outer": ["zirah pelat baja", "jubah bertudung", "mantel panjang"],
+			"underwear": ["setelan pakaian dalam putih polos", "baju renang bergaris"],
+			"waist": ["ikat pinggang kulit", "selempang merah", "kantong ikat pinggang"],
+			"neck": ["jimat emas", "syal wol", "kalung manik-manik"],
+			"shoulders": ["pelindung bahu dari baja", "mantel bahu berbulu"],
+			"accessory": ["bros kuningan", "pita berbentuk kupu-kupu", "kantong jimat"]
 		},
 		"enterName": "Masukkan nama.",
 		"nameExists": "{name} sudah ada.",

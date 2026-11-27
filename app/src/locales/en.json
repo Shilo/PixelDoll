@@ -363,7 +363,8 @@
 		"adjustFrame": "Adjust frame…",
 		"directions": "Directions…",
 		"demoDeleteLocked": "Demo character can't be deleted",
-		"labelDeleteCharacter": "Move to Trash…"
+		"labelDeleteCharacter": "Move to Trash…",
+		"demoRenameLocked": "Edit a copy to rename the demo"
 	},
 	"characterName": {
 		"demo": "(Demo)"
@@ -494,7 +495,8 @@
 		"cancelItem": "Cancel item",
 		"canceling": "Canceling…",
 		"keep": "Keep",
-		"runningDetail": "{status} · {prompt}"
+		"runningDetail": "{status} · {prompt}",
+		"demoRenameLocked": "Demo items can't be renamed"
 	},
 	"itemPane": {
 		"movesSection": "Moves & States",
@@ -1774,90 +1776,23 @@
 			"gem": "Gem"
 		},
 		"ideas": {
-			"head": [
-				"wizard hat",
-				"iron knight helmet",
-				"golden crown",
-				"hood"
-			],
-			"hair": [
-				"long braided hair",
-				"short spiky hair",
-				"ponytail"
-			],
-			"face_acc": [
-				"round glasses",
-				"eye patch",
-				"bandit mask"
-			],
-			"torso_inner": [
-				"leather vest",
-				"chainmail shirt",
-				"blue tunic"
-			],
-			"arms": [
-				"leather gloves",
-				"iron gauntlets",
-				"cloth wraps"
-			],
-			"legs": [
-				"brown trousers",
-				"plate greaves",
-				"pleated skirt"
-			],
-			"feet": [
-				"leather boots",
-				"sandals",
-				"iron sabatons"
-			],
-			"back": [
-				"red cape",
-				"travel backpack",
-				"quiver of arrows"
-			],
-			"main_hand": [
-				"steel sword",
-				"wooden staff",
-				"battle axe"
-			],
-			"off_hand": [
-				"round shield",
-				"iron lantern",
-				"wooden longbow"
-			],
-			"facial_hair": [
-				"full beard",
-				"handlebar mustache",
-				"goatee"
-			],
-			"torso_outer": [
-				"steel plate armor",
-				"hooded robe",
-				"long coat"
-			],
-			"underwear": [
-				"plain white underwear set",
-				"striped swimsuit"
-			],
-			"waist": [
-				"leather belt",
-				"red sash",
-				"belt pouch"
-			],
-			"neck": [
-				"gold amulet",
-				"wool scarf",
-				"bead necklace"
-			],
-			"shoulders": [
-				"steel pauldrons",
-				"fur mantle"
-			],
-			"accessory": [
-				"brass brooch",
-				"ribbon bow",
-				"charm pouch"
-			]
+			"head": ["wizard hat", "iron knight helmet", "golden crown", "hood"],
+			"hair": ["long braided hair", "short spiky hair", "ponytail"],
+			"face_acc": ["round glasses", "eye patch", "bandit mask"],
+			"torso_inner": ["leather vest", "chainmail shirt", "blue tunic"],
+			"arms": ["leather gloves", "iron gauntlets", "cloth wraps"],
+			"legs": ["brown trousers", "plate greaves", "pleated skirt"],
+			"feet": ["leather boots", "sandals", "iron sabatons"],
+			"back": ["red cape", "travel backpack", "quiver of arrows"],
+			"main_hand": ["steel sword", "wooden staff", "battle axe"],
+			"off_hand": ["round shield", "iron lantern", "wooden longbow"],
+			"facial_hair": ["full beard", "handlebar mustache", "goatee"],
+			"torso_outer": ["steel plate armor", "hooded robe", "long coat"],
+			"underwear": ["plain white underwear set", "striped swimsuit"],
+			"waist": ["leather belt", "red sash", "belt pouch"],
+			"neck": ["gold amulet", "wool scarf", "bead necklace"],
+			"shoulders": ["steel pauldrons", "fur mantle"],
+			"accessory": ["brass brooch", "ribbon bow", "charm pouch"]
 		},
 		"enterName": "Enter a name.",
 		"nameExists": "{name} already exists.",

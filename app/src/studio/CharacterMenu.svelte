@@ -7,9 +7,10 @@
 	import { openerLabel } from './openerLabel.ts';
 	import { openAppearance, openRename, ui } from './state.svelte.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
-	import { Download, Eye, Pencil, Sparkles } from './icons.ts';
+	import { Download, Eye, Sparkles } from './icons.ts';
 	import DeleteRow from './DeleteRow.svelte';
 	import DemoCopyRow from './DemoCopyRow.svelte';
+	import RenameRow from './RenameRow.svelte';
 
 	let {
 		id,
@@ -49,13 +50,10 @@
 		><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron /></button
 	>{/if}
 <DemoCopyRow {id} {close} />
-{#if !id.startsWith('fixture:')}<button
-		class="row"
-		role="menuitem"
-		onclick={() => go(() => openRename(id))}
-		><Pencil size={16} aria-hidden="true" />{openerLabel(t('toolbar.rename'))}<SurfaceChevron
-		/></button
-	>{/if}
+<RenameRow
+	locked={id.startsWith('fixture:') ? t('characterActions.demoRenameLocked') : ''}
+	onclick={() => go(() => openRename(id))}
+/>
 <button
 	class="row"
 	role="menuitem"

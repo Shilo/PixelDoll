@@ -363,7 +363,8 @@
 		"adjustFrame": "Frame anpassen…",
 		"directions": "Blickrichtungen…",
 		"demoDeleteLocked": "Die Demo-Figur kann nicht gelöscht werden",
-		"labelDeleteCharacter": "In den Papierkorb…"
+		"labelDeleteCharacter": "In den Papierkorb…",
+		"demoRenameLocked": "Bearbeite eine Kopie, um die Demo umzubenennen"
 	},
 	"characterName": {
 		"demo": "(Demo)"
@@ -494,7 +495,8 @@
 		"cancelItem": "Gegenstand abbrechen",
 		"canceling": "Wird abgebrochen…",
 		"keep": "Behalten",
-		"runningDetail": "{status} · {prompt}"
+		"runningDetail": "{status} · {prompt}",
+		"demoRenameLocked": "Demo-Gegenstände lassen sich nicht umbenennen"
 	},
 	"itemPane": {
 		"movesSection": "Bewegungen und Zustände",
@@ -1774,90 +1776,23 @@
 			"gem": "Edelstein"
 		},
 		"ideas": {
-			"head": [
-				"Zauberhut",
-				"Ritterhelm aus Eisen",
-				"Goldkrone",
-				"Kapuze"
-			],
-			"hair": [
-				"Lange geflochtene Haare",
-				"Kurze stachelige Haare",
-				"Pferdeschwanz"
-			],
-			"face_acc": [
-				"Runde Brille",
-				"Augenklappe",
-				"Banditenmaske"
-			],
-			"torso_inner": [
-				"Lederweste",
-				"Kettenhemd",
-				"Blaue Tunika"
-			],
-			"arms": [
-				"Lederhandschuhe",
-				"Eisenhandschuhe",
-				"Stoffwickel"
-			],
-			"legs": [
-				"Braune Hose",
-				"Plattenschienen",
-				"Faltenrock"
-			],
-			"feet": [
-				"Lederstiefel",
-				"Sandalen",
-				"Eiserne Panzerschuhe"
-			],
-			"back": [
-				"Roter Umhang",
-				"Reiserucksack",
-				"Pfeilköcher"
-			],
-			"main_hand": [
-				"Stahlschwert",
-				"Holzstab",
-				"Streitaxt"
-			],
-			"off_hand": [
-				"Rundschild",
-				"Eisenlaterne",
-				"Langbogen aus Holz"
-			],
-			"facial_hair": [
-				"Vollbart",
-				"Gezwirbelter Schnurrbart",
-				"Ziegenbart"
-			],
-			"torso_outer": [
-				"Plattenrüstung aus Stahl",
-				"Kapuzenrobe",
-				"Langer Mantel"
-			],
-			"underwear": [
-				"Schlichte weiße Unterwäsche",
-				"Gestreifter Badeanzug"
-			],
-			"waist": [
-				"Ledergürtel",
-				"Rote Schärpe",
-				"Gürteltasche"
-			],
-			"neck": [
-				"Goldamulett",
-				"Wollschal",
-				"Perlenkette"
-			],
-			"shoulders": [
-				"Stählerne Schulterplatten",
-				"Pelzkragen"
-			],
-			"accessory": [
-				"Messingbrosche",
-				"Schleife",
-				"Talismanbeutel"
-			]
+			"head": ["Zauberhut", "Ritterhelm aus Eisen", "Goldkrone", "Kapuze"],
+			"hair": ["Lange geflochtene Haare", "Kurze stachelige Haare", "Pferdeschwanz"],
+			"face_acc": ["Runde Brille", "Augenklappe", "Banditenmaske"],
+			"torso_inner": ["Lederweste", "Kettenhemd", "Blaue Tunika"],
+			"arms": ["Lederhandschuhe", "Eisenhandschuhe", "Stoffwickel"],
+			"legs": ["Braune Hose", "Plattenschienen", "Faltenrock"],
+			"feet": ["Lederstiefel", "Sandalen", "Eiserne Panzerschuhe"],
+			"back": ["Roter Umhang", "Reiserucksack", "Pfeilköcher"],
+			"main_hand": ["Stahlschwert", "Holzstab", "Streitaxt"],
+			"off_hand": ["Rundschild", "Eisenlaterne", "Langbogen aus Holz"],
+			"facial_hair": ["Vollbart", "Gezwirbelter Schnurrbart", "Ziegenbart"],
+			"torso_outer": ["Plattenrüstung aus Stahl", "Kapuzenrobe", "Langer Mantel"],
+			"underwear": ["Schlichte weiße Unterwäsche", "Gestreifter Badeanzug"],
+			"waist": ["Ledergürtel", "Rote Schärpe", "Gürteltasche"],
+			"neck": ["Goldamulett", "Wollschal", "Perlenkette"],
+			"shoulders": ["Stählerne Schulterplatten", "Pelzkragen"],
+			"accessory": ["Messingbrosche", "Schleife", "Talismanbeutel"]
 		},
 		"enterName": "Gib einen Namen ein.",
 		"nameExists": "{name} gibt es bereits.",
