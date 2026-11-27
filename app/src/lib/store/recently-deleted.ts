@@ -10,6 +10,8 @@ import { supportedFormat } from './manifest.ts';
 import { artworkRefs, pruneHistory } from './workspace.ts';
 import { restoreMove } from '../rig/moves.ts';
 import { stableStringify } from '../image/hash.ts';
+import { reconcileItemSlots } from '../dress/project.ts';
+import type { Preset } from './manifest.ts';
 
 export const RECENTLY_DELETED_PREFIX = 'recently-deleted:';
 /** How long an entry stays restorable. */
@@ -484,43 +486,49 @@ export async function restoreMoveEntry(id: string): Promise<{ name: string; proj
 	return { name: entry.name, projectId: entry.projectId };
 }
 
-/** Put a deleted outfit back on its character, without the items deleted since (it keeps the rest). */
-export async function restoreOutfitEntry(id: string): Promise<{ name: string; projectId: string }> {
+/** Put a deleted outfit back on its character as it is now: an item deleted since is left out, one moved to another
+ *  category is worn there, and colors of palettes gone since are dropped. */
+export async function restoreOutfitEntry(
+	id: string
+): Promise<{ name: string; projectId: string; preset: Preset }> {
 	const entry = readEntry(await db.get<unknown>('projects', id));
 	if (!entry) throw gone(id);
 	if (expired(entry)) throw expiredError();
 	const preset = entry.before.manifest.presets.find((p) => p.id === entry.scope.presetId);
 	if (!preset) throw gone(id);
+	let restored: Preset | undefined;
 	await db.update<StoredProject>(
 		'projects',
 		entry.projectId,
 		(rec, related) => {
-			if (!rec?.manifest)
+			const fresh = readEntry(related(id));
+			if (!fresh) throw gone(id);
+			// The key may now hold another character (this one restored as a copy elsewhere): only its own lineage takes it.
+			if (!rec?.manifest || fresh.projectId !== rec.id || fresh.lineageId !== lineageOf(rec))
 				throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
-			if (!readEntry(related(id))) throw gone(id);
 			if (rec.manifest.presets.some((p) => p.id === preset.id))
 				throw new LocalizedError(
 					'This outfit is already on the character.',
 					'recentlyDeleted.errors.outfitPresent'
 				);
-			const kept = new Set(rec.manifest.items.map((item) => item.id));
-			rec.manifest.presets = [
-				...rec.manifest.presets,
-				{
-					...structuredClone(preset),
-					items: Object.fromEntries(
-						Object.entries(preset.items).filter(([, item]) => item === null || kept.has(item))
-					)
-				}
-			];
+			const back = structuredClone(preset);
+			reconcileItemSlots(
+				back.items,
+				new Map(rec.manifest.items.map((item) => [item.id, item.slot]))
+			);
+			const materials = new Set(rec.manifest.materials.map((material) => material.id));
+			for (const material of Object.keys(back.variants))
+				if (!materials.has(material)) delete back.variants[material];
+			rec.manifest.presets = [...rec.manifest.presets, back];
 			rec.savedAt = new Date().toISOString();
+			restored = back;
 			return rec;
 		},
 		[id],
 		undefined,
 		[id]
 	);
-	return { name: entry.name, projectId: entry.projectId };
+	return { name: entry.name, projectId: entry.projectId, preset: restored! };
 }
 
 export interface RestoredCharacter {

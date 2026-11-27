@@ -744,7 +744,9 @@
 		"thisRemovesTheMoveFromTheBody": "Gövde ve her öğe karelerini kaybeder. en fazla 30 gün boyunca geri alabilirsiniz.",
 		"demoRenameLocked": "Demonun hareketleri ve durumları yeniden adlandırılamaz",
 		"removeOutfit": "Eşyaları gardıropta kalır. 30 güne kadar Çöp Kutusundan geri getirebilirsin.",
-		"demoOutfitLocked": "Demo kıyafetleri silinemez"
+		"demoOutfitLocked": "Demonun kendi kıyafetleri Çöp Kutusu’na taşınamaz",
+		"labelRemoveOutfit": "Kaldır",
+		"outfitGone": "Bu kıyafet zaten kaldırıldı."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Ücretsiz: Daha önce yapılmış eşyalar yeniden üretilmez.",
@@ -1195,7 +1197,8 @@
 		"resetColors": "Renkleri sıfırlama",
 		"randomItem": "{name} için rastgele eşya",
 		"saveOutfit": "Kıyafet kaydetme",
-		"deleteOutfit": "Kıyafet silme",
+		"deleteOutfit": "Kıyafeti Çöp Kutusu’na taşıma",
+		"removeOutfit": "Kıyafet kaldırma",
 		"renameOutfit": "Kıyafeti yeniden adlandırma",
 		"show": "Gösterme: {name}",
 		"hide": "Gizleme: {name}",
@@ -1780,90 +1783,23 @@
 			"gem": "Mücevher"
 		},
 		"ideas": {
-			"head": [
-				"büyücü şapkası",
-				"demir şövalye miğferi",
-				"altın taç",
-				"kapüşon"
-			],
-			"hair": [
-				"uzun örgülü saç",
-				"kısa dik saç",
-				"at kuyruğu"
-			],
-			"face_acc": [
-				"yuvarlak gözlük",
-				"göz bandı",
-				"haydut maskesi"
-			],
-			"torso_inner": [
-				"deri yelek",
-				"zincir zırh gömleği",
-				"mavi tunik"
-			],
-			"arms": [
-				"deri eldiven",
-				"demir zırh eldiveni",
-				"bez sargılar"
-			],
-			"legs": [
-				"kahverengi pantolon",
-				"plaka baldır zırhı",
-				"pileli etek"
-			],
-			"feet": [
-				"deri çizmeler",
-				"sandaletler",
-				"demir zırh ayakkabıları"
-			],
-			"back": [
-				"kırmızı pelerin",
-				"seyahat sırt çantası",
-				"ok dolu sadak"
-			],
-			"main_hand": [
-				"çelik kılıç",
-				"tahta asa",
-				"savaş baltası"
-			],
-			"off_hand": [
-				"yuvarlak kalkan",
-				"demir fener",
-				"ahşap uzun yay"
-			],
-			"facial_hair": [
-				"gür sakal",
-				"burma bıyık",
-				"keçi sakalı"
-			],
-			"torso_outer": [
-				"çelik plaka zırh",
-				"kapüşonlu cüppe",
-				"uzun palto"
-			],
-			"underwear": [
-				"düz beyaz iç çamaşırı takımı",
-				"çizgili mayo"
-			],
-			"waist": [
-				"deri kemer",
-				"kırmızı kuşak",
-				"kemer kesesi"
-			],
-			"neck": [
-				"altın muska",
-				"yün atkı",
-				"boncuklu kolye"
-			],
-			"shoulders": [
-				"çelik omuz zırhı",
-				"kürk omuz pelerini"
-			],
-			"accessory": [
-				"pirinç broş",
-				"kurdele fiyonk",
-				"muska kesesi"
-			]
+			"head": ["büyücü şapkası", "demir şövalye miğferi", "altın taç", "kapüşon"],
+			"hair": ["uzun örgülü saç", "kısa dik saç", "at kuyruğu"],
+			"face_acc": ["yuvarlak gözlük", "göz bandı", "haydut maskesi"],
+			"torso_inner": ["deri yelek", "zincir zırh gömleği", "mavi tunik"],
+			"arms": ["deri eldiven", "demir zırh eldiveni", "bez sargılar"],
+			"legs": ["kahverengi pantolon", "plaka baldır zırhı", "pileli etek"],
+			"feet": ["deri çizmeler", "sandaletler", "demir zırh ayakkabıları"],
+			"back": ["kırmızı pelerin", "seyahat sırt çantası", "ok dolu sadak"],
+			"main_hand": ["çelik kılıç", "tahta asa", "savaş baltası"],
+			"off_hand": ["yuvarlak kalkan", "demir fener", "ahşap uzun yay"],
+			"facial_hair": ["gür sakal", "burma bıyık", "keçi sakalı"],
+			"torso_outer": ["çelik plaka zırh", "kapüşonlu cüppe", "uzun palto"],
+			"underwear": ["düz beyaz iç çamaşırı takımı", "çizgili mayo"],
+			"waist": ["deri kemer", "kırmızı kuşak", "kemer kesesi"],
+			"neck": ["altın muska", "yün atkı", "boncuklu kolye"],
+			"shoulders": ["çelik omuz zırhı", "kürk omuz pelerini"],
+			"accessory": ["pirinç broş", "kurdele fiyonk", "muska kesesi"]
 		},
 		"enterName": "Bir ad girin.",
 		"nameExists": "{name} zaten var.",

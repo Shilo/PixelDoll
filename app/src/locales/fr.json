@@ -744,7 +744,9 @@
 		"thisRemovesTheMoveFromTheBody": "Le corps et chaque objet perdent leurs images. Vous pouvez récupérer le mouvement pendant jusqu’à 30 jours.",
 		"demoRenameLocked": "Les mouvements et états de la démo ne peuvent pas être renommés",
 		"removeOutfit": "Ses objets restent dans la garde-robe. Vous pouvez le récupérer dans la corbeille pendant 30 jours.",
-		"demoOutfitLocked": "Les tenues de la démo ne peuvent pas être supprimées"
+		"demoOutfitLocked": "Les tenues propres à la démo ne peuvent pas être placées dans la Corbeille",
+		"labelRemoveOutfit": "Retirer",
+		"outfitGone": "Cette tenue a déjà été retirée."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratuit : ne régénère jamais les objets déjà créés.",
@@ -1195,7 +1197,8 @@
 		"resetColors": "Réinitialisation des couleurs",
 		"randomItem": "Objet aléatoire : {name}",
 		"saveOutfit": "Enregistrement de la tenue",
-		"deleteOutfit": "Suppression de la tenue",
+		"deleteOutfit": "Placement de la tenue dans la Corbeille",
+		"removeOutfit": "Retrait de la tenue",
 		"renameOutfit": "Renommage de la tenue",
 		"show": "Afficher {name}",
 		"hide": "Masquer {name}",
@@ -1780,90 +1783,23 @@
 			"gem": "Gemme"
 		},
 		"ideas": {
-			"head": [
-				"chapeau de sorcier",
-				"casque de chevalier en fer",
-				"couronne dorée",
-				"capuche"
-			],
-			"hair": [
-				"longs cheveux tressés",
-				"cheveux courts en pointes",
-				"queue de cheval"
-			],
-			"face_acc": [
-				"lunettes rondes",
-				"cache-œil",
-				"masque de bandit"
-			],
-			"torso_inner": [
-				"gilet en cuir",
-				"cotte de mailles",
-				"tunique bleue"
-			],
-			"arms": [
-				"gants en cuir",
-				"gantelets en fer",
-				"bandages en tissu"
-			],
-			"legs": [
-				"pantalon marron",
-				"jambières en plaques",
-				"jupe plissée"
-			],
-			"feet": [
-				"bottes en cuir",
-				"sandales",
-				"solerets en fer"
-			],
-			"back": [
-				"cape rouge",
-				"sac à dos de voyage",
-				"carquois de flèches"
-			],
-			"main_hand": [
-				"épée en acier",
-				"bâton en bois",
-				"hache de guerre"
-			],
-			"off_hand": [
-				"bouclier rond",
-				"lanterne en fer",
-				"arc long en bois"
-			],
-			"facial_hair": [
-				"barbe fournie",
-				"moustache en guidon",
-				"bouc"
-			],
-			"torso_outer": [
-				"armure de plates en acier",
-				"robe à capuche",
-				"manteau long"
-			],
-			"underwear": [
-				"ensemble de sous-vêtements blancs unis",
-				"maillot de bain rayé"
-			],
-			"waist": [
-				"ceinture en cuir",
-				"ceinture-écharpe rouge",
-				"bourse de ceinture"
-			],
-			"neck": [
-				"amulette en or",
-				"écharpe en laine",
-				"collier de perles"
-			],
-			"shoulders": [
-				"spalières en acier",
-				"mantelet en fourrure"
-			],
-			"accessory": [
-				"broche en laiton",
-				"nœud de ruban",
-				"bourse à porte-bonheur"
-			]
+			"head": ["chapeau de sorcier", "casque de chevalier en fer", "couronne dorée", "capuche"],
+			"hair": ["longs cheveux tressés", "cheveux courts en pointes", "queue de cheval"],
+			"face_acc": ["lunettes rondes", "cache-œil", "masque de bandit"],
+			"torso_inner": ["gilet en cuir", "cotte de mailles", "tunique bleue"],
+			"arms": ["gants en cuir", "gantelets en fer", "bandages en tissu"],
+			"legs": ["pantalon marron", "jambières en plaques", "jupe plissée"],
+			"feet": ["bottes en cuir", "sandales", "solerets en fer"],
+			"back": ["cape rouge", "sac à dos de voyage", "carquois de flèches"],
+			"main_hand": ["épée en acier", "bâton en bois", "hache de guerre"],
+			"off_hand": ["bouclier rond", "lanterne en fer", "arc long en bois"],
+			"facial_hair": ["barbe fournie", "moustache en guidon", "bouc"],
+			"torso_outer": ["armure de plates en acier", "robe à capuche", "manteau long"],
+			"underwear": ["ensemble de sous-vêtements blancs unis", "maillot de bain rayé"],
+			"waist": ["ceinture en cuir", "ceinture-écharpe rouge", "bourse de ceinture"],
+			"neck": ["amulette en or", "écharpe en laine", "collier de perles"],
+			"shoulders": ["spalières en acier", "mantelet en fourrure"],
+			"accessory": ["broche en laiton", "nœud de ruban", "bourse à porte-bonheur"]
 		},
 		"enterName": "Saisissez un nom.",
 		"nameExists": "{name} existe déjà.",

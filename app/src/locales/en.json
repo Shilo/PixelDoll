@@ -34,7 +34,7 @@
 			"movePresent": "This move is already on the character.",
 			"moveGeometry": "This character's frame size or directions changed since this move was deleted, so it can no longer line up.",
 			"partsGeometry": "This character's frame size or directions changed since this was deleted, so it can no longer line up.",
-			"moveItemsMissing": "One of this move items is in Trash. Restore that item first, then this move.",
+			"moveItemsMissing": "One of this move’s items is in the Trash. Restore that item first, then this move.",
 			"outfitPresent": "This outfit is already on the character."
 		},
 		"restoring": "Restoring…",
@@ -744,7 +744,9 @@
 		"thisRemovesTheMoveFromTheBody": "The body and every item lose the frames for this move. You can bring it back for up to 30 days.",
 		"demoRenameLocked": "The demo’s moves and states can’t be renamed",
 		"removeOutfit": "Its items stay in the Wardrobe. You can bring it back from the Trash for up to 30 days.",
-		"demoOutfitLocked": "Demo outfits can’t be deleted"
+		"demoOutfitLocked": "The demo’s own outfits can’t be moved to the Trash",
+		"labelRemoveOutfit": "Remove",
+		"outfitGone": "This outfit was already removed."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Free: never regenerates items already made.",
@@ -1195,7 +1197,8 @@
 		"resetColors": "Reset colors",
 		"randomItem": "Random {name} item",
 		"saveOutfit": "Save outfit",
-		"deleteOutfit": "Delete outfit",
+		"deleteOutfit": "Move outfit to Trash",
+		"removeOutfit": "Remove outfit",
 		"renameOutfit": "Rename outfit",
 		"show": "Show {name}",
 		"hide": "Hide {name}",
@@ -1780,90 +1783,23 @@
 			"gem": "Gem"
 		},
 		"ideas": {
-			"head": [
-				"wizard hat",
-				"iron knight helmet",
-				"golden crown",
-				"hood"
-			],
-			"hair": [
-				"long braided hair",
-				"short spiky hair",
-				"ponytail"
-			],
-			"face_acc": [
-				"round glasses",
-				"eye patch",
-				"bandit mask"
-			],
-			"torso_inner": [
-				"leather vest",
-				"chainmail shirt",
-				"blue tunic"
-			],
-			"arms": [
-				"leather gloves",
-				"iron gauntlets",
-				"cloth wraps"
-			],
-			"legs": [
-				"brown trousers",
-				"plate greaves",
-				"pleated skirt"
-			],
-			"feet": [
-				"leather boots",
-				"sandals",
-				"iron sabatons"
-			],
-			"back": [
-				"red cape",
-				"travel backpack",
-				"quiver of arrows"
-			],
-			"main_hand": [
-				"steel sword",
-				"wooden staff",
-				"battle axe"
-			],
-			"off_hand": [
-				"round shield",
-				"iron lantern",
-				"wooden longbow"
-			],
-			"facial_hair": [
-				"full beard",
-				"handlebar mustache",
-				"goatee"
-			],
-			"torso_outer": [
-				"steel plate armor",
-				"hooded robe",
-				"long coat"
-			],
-			"underwear": [
-				"plain white underwear set",
-				"striped swimsuit"
-			],
-			"waist": [
-				"leather belt",
-				"red sash",
-				"belt pouch"
-			],
-			"neck": [
-				"gold amulet",
-				"wool scarf",
-				"bead necklace"
-			],
-			"shoulders": [
-				"steel pauldrons",
-				"fur mantle"
-			],
-			"accessory": [
-				"brass brooch",
-				"ribbon bow",
-				"charm pouch"
-			]
+			"head": ["wizard hat", "iron knight helmet", "golden crown", "hood"],
+			"hair": ["long braided hair", "short spiky hair", "ponytail"],
+			"face_acc": ["round glasses", "eye patch", "bandit mask"],
+			"torso_inner": ["leather vest", "chainmail shirt", "blue tunic"],
+			"arms": ["leather gloves", "iron gauntlets", "cloth wraps"],
+			"legs": ["brown trousers", "plate greaves", "pleated skirt"],
+			"feet": ["leather boots", "sandals", "iron sabatons"],
+			"back": ["red cape", "travel backpack", "quiver of arrows"],
+			"main_hand": ["steel sword", "wooden staff", "battle axe"],
+			"off_hand": ["round shield", "iron lantern", "wooden longbow"],
+			"facial_hair": ["full beard", "handlebar mustache", "goatee"],
+			"torso_outer": ["steel plate armor", "hooded robe", "long coat"],
+			"underwear": ["plain white underwear set", "striped swimsuit"],
+			"waist": ["leather belt", "red sash", "belt pouch"],
+			"neck": ["gold amulet", "wool scarf", "bead necklace"],
+			"shoulders": ["steel pauldrons", "fur mantle"],
+			"accessory": ["brass brooch", "ribbon bow", "charm pouch"]
 		},
 		"enterName": "Enter a name.",
 		"nameExists": "{name} already exists.",

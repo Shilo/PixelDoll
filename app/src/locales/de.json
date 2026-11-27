@@ -744,7 +744,9 @@
 		"thisRemovesTheMoveFromTheBody": "Körper und jeder Gegenstand verlieren die Frames dieser Bewegung. bis zu 30 Tage lang kannst du sie zurückholen.",
 		"demoRenameLocked": "Bewegungen und Zustände der Demo lassen sich nicht umbenennen",
 		"removeOutfit": "Seine Gegenstände bleiben in der Garderobe. Du kannst es bis zu 30 Tage aus dem Papierkorb zurückholen.",
-		"demoOutfitLocked": "Demo-Outfits lassen sich nicht löschen"
+		"demoOutfitLocked": "Die eigenen Outfits der Demo lassen sich nicht in den Papierkorb verschieben",
+		"labelRemoveOutfit": "Entfernen",
+		"outfitGone": "Dieses Outfit wurde bereits entfernt."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Kostenlos: Bereits erstellte Gegenstände werden nie neu generiert.",
@@ -1195,7 +1197,8 @@
 		"resetColors": "Farben zurücksetzen",
 		"randomItem": "Zufälliger Gegenstand: {name}",
 		"saveOutfit": "Outfit speichern",
-		"deleteOutfit": "Outfit löschen",
+		"deleteOutfit": "Outfit in den Papierkorb",
+		"removeOutfit": "Outfit entfernen",
 		"renameOutfit": "Outfit umbenennen",
 		"show": "{name} einblenden",
 		"hide": "{name} ausblenden",
@@ -1780,90 +1783,23 @@
 			"gem": "Edelstein"
 		},
 		"ideas": {
-			"head": [
-				"Zauberhut",
-				"Ritterhelm aus Eisen",
-				"Goldkrone",
-				"Kapuze"
-			],
-			"hair": [
-				"Lange geflochtene Haare",
-				"Kurze stachelige Haare",
-				"Pferdeschwanz"
-			],
-			"face_acc": [
-				"Runde Brille",
-				"Augenklappe",
-				"Banditenmaske"
-			],
-			"torso_inner": [
-				"Lederweste",
-				"Kettenhemd",
-				"Blaue Tunika"
-			],
-			"arms": [
-				"Lederhandschuhe",
-				"Eisenhandschuhe",
-				"Stoffwickel"
-			],
-			"legs": [
-				"Braune Hose",
-				"Plattenschienen",
-				"Faltenrock"
-			],
-			"feet": [
-				"Lederstiefel",
-				"Sandalen",
-				"Eiserne Panzerschuhe"
-			],
-			"back": [
-				"Roter Umhang",
-				"Reiserucksack",
-				"Pfeilköcher"
-			],
-			"main_hand": [
-				"Stahlschwert",
-				"Holzstab",
-				"Streitaxt"
-			],
-			"off_hand": [
-				"Rundschild",
-				"Eisenlaterne",
-				"Langbogen aus Holz"
-			],
-			"facial_hair": [
-				"Vollbart",
-				"Gezwirbelter Schnurrbart",
-				"Ziegenbart"
-			],
-			"torso_outer": [
-				"Plattenrüstung aus Stahl",
-				"Kapuzenrobe",
-				"Langer Mantel"
-			],
-			"underwear": [
-				"Schlichte weiße Unterwäsche",
-				"Gestreifter Badeanzug"
-			],
-			"waist": [
-				"Ledergürtel",
-				"Rote Schärpe",
-				"Gürteltasche"
-			],
-			"neck": [
-				"Goldamulett",
-				"Wollschal",
-				"Perlenkette"
-			],
-			"shoulders": [
-				"Stählerne Schulterplatten",
-				"Pelzkragen"
-			],
-			"accessory": [
-				"Messingbrosche",
-				"Schleife",
-				"Talismanbeutel"
-			]
+			"head": ["Zauberhut", "Ritterhelm aus Eisen", "Goldkrone", "Kapuze"],
+			"hair": ["Lange geflochtene Haare", "Kurze stachelige Haare", "Pferdeschwanz"],
+			"face_acc": ["Runde Brille", "Augenklappe", "Banditenmaske"],
+			"torso_inner": ["Lederweste", "Kettenhemd", "Blaue Tunika"],
+			"arms": ["Lederhandschuhe", "Eisenhandschuhe", "Stoffwickel"],
+			"legs": ["Braune Hose", "Plattenschienen", "Faltenrock"],
+			"feet": ["Lederstiefel", "Sandalen", "Eiserne Panzerschuhe"],
+			"back": ["Roter Umhang", "Reiserucksack", "Pfeilköcher"],
+			"main_hand": ["Stahlschwert", "Holzstab", "Streitaxt"],
+			"off_hand": ["Rundschild", "Eisenlaterne", "Langbogen aus Holz"],
+			"facial_hair": ["Vollbart", "Gezwirbelter Schnurrbart", "Ziegenbart"],
+			"torso_outer": ["Plattenrüstung aus Stahl", "Kapuzenrobe", "Langer Mantel"],
+			"underwear": ["Schlichte weiße Unterwäsche", "Gestreifter Badeanzug"],
+			"waist": ["Ledergürtel", "Rote Schärpe", "Gürteltasche"],
+			"neck": ["Goldamulett", "Wollschal", "Perlenkette"],
+			"shoulders": ["Stählerne Schulterplatten", "Pelzkragen"],
+			"accessory": ["Messingbrosche", "Schleife", "Talismanbeutel"]
 		},
 		"enterName": "Gib einen Namen ein.",
 		"nameExists": "{name} gibt es bereits.",

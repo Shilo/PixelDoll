@@ -276,7 +276,7 @@ test('a stale tab’s routine save keeps a category another tab just added, even
 	records.set(live.id, live);
 	const saved = await saveDress(live.id, stale, { items: { head: 'hat' }, variants: {} }, { base });
 	expect(ids((records.get(live.id) as StoredProject).manifest.slots)).toEqual(['head', 'brooch']);
-	expect(ids(saved)).toEqual(['head', 'brooch']);
+	expect(ids(saved.slots)).toEqual(['head', 'brooch']);
 });
 
 test('a stale tab never brings back an empty category deleted elsewhere, even after editing it', async () => {
@@ -288,6 +288,23 @@ test('a stale tab never brings back an empty category deleted elsewhere, even af
 	records.set(live.id, live); // the record no longer has Charm
 	await saveDress(live.id, stale, { items: {}, variants: {} }, { base });
 	expect(ids((records.get(live.id) as StoredProject).manifest.slots)).toEqual(['head']);
+});
+
+test('a stale tab’s save keeps its own outfit changes and never brings back one moved to the Trash elsewhere', async () => {
+	const live = record();
+	const look = (id: string, name = id) => ({ id, name, items: {}, variants: {} });
+	live.manifest.presets = [look('a'), look('b')];
+	const stale = structuredClone(live.manifest) as unknown as Manifest;
+	const base = structuredClone(stale.slots),
+		presets = structuredClone(stale.presets);
+	// Another tab moved A to the Trash; this one renamed B and saved C meanwhile.
+	live.manifest.presets = [look('b')];
+	records.set(live.id, live);
+	stale.presets = [look('a'), look('b', 'Bee'), look('c')];
+	const saved = await saveDress(live.id, stale, { items: {}, variants: {} }, { base, presets });
+	const names = (list: { name: string }[]) => list.map((preset) => preset.name);
+	expect(names((records.get(live.id) as StoredProject).manifest.presets)).toEqual(['Bee', 'c']);
+	expect(names(saved.presets)).toEqual(['Bee', 'c']);
 });
 
 test('a stale slot edit cannot restore overrides for a removed facing', async () => {
@@ -302,7 +319,7 @@ test('a stale slot edit cannot restore overrides for a removed facing', async ()
 	];
 	records.set(live.id, live);
 	const saved = await saveDress(live.id, stale, { items: {}, variants: {} }, { base });
-	expect(saved[0].zOverrides).toEqual(stale.slots[0].zOverrides.slice(1));
+	expect(saved.slots[0].zOverrides).toEqual(stale.slots[0].zOverrides.slice(1));
 });
 
 test('a deliberate removal is saved, but never of a category holding attempts or changed elsewhere since', async () => {

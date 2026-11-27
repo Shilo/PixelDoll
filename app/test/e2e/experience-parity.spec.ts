@@ -685,6 +685,13 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	await expect(connect).toBeFocused();
 	await page.keyboard.press('ArrowUp');
 	await expect(current).toBeFocused();
+	// That menu is a key away, like any row's: the demo's locked Trash keeps its reason there.
+	await page.keyboard.press('Shift+F10');
+	const own = page.getByRole('menu', { name: /^Actions for / });
+	const locked = own.getByRole('menuitem', { name: 'Move to Trash…', exact: true });
+	await expect(locked).toHaveAccessibleDescription("Demo character can't be deleted");
+	await page.keyboard.press('Escape');
+	await expect(current).toBeFocused();
 	await page.keyboard.press('Home');
 	await expect(copy).toBeFocused();
 	await page.keyboard.press('ArrowDown');

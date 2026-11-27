@@ -543,10 +543,61 @@ test('a deleted outfit keeps only its choices and comes back without items delet
 	live.manifest.items = live.manifest.items.filter((item) => item.id !== 'hat');
 	saved.projects.set(live.id, live);
 	saved.projects.set(entry.id, entry);
-	expect(await restoreOutfitEntry(entry.id)).toEqual({ name: 'Look', projectId: live.id });
+	const out = await restoreOutfitEntry(entry.id);
+	expect(out).toMatchObject({ name: 'Look', projectId: live.id });
 	const back = saved.projects.get(live.id) as StoredProject;
 	expect(back.manifest.presets.find((preset) => preset.id === 'look')?.items).toEqual({
+		head: null,
 		body: record.manifest.rig.baseItem
 	});
+	expect(out.preset).toEqual(back.manifest.presets.find((preset) => preset.id === 'look'));
 	expect(saved.projects.has(entry.id)).toBe(false);
+});
+
+test('a restored outfit wears an item moved since in its new category and drops colors of palettes gone since', async () => {
+	const record = await stored();
+	const body = record.manifest.rig.baseItem;
+	record.manifest.presets.push({
+		id: 'look',
+		name: 'Look',
+		items: { head: 'hat', body },
+		variants: { hat: 'blue', gone: 'red' }
+	});
+	const entry = deletedEntry({
+		kind: 'outfit',
+		record,
+		name: 'Look',
+		context: record.manifest.name,
+		scope: { presetId: 'look' }
+	});
+	const live = structuredClone(record);
+	live.manifest.presets = live.manifest.presets.filter((preset) => preset.id !== 'look');
+	live.manifest.items.find((item) => item.id === 'hat')!.slot = 'face';
+	saved.projects.set(live.id, live);
+	saved.projects.set(entry.id, entry);
+	const { preset } = await restoreOutfitEntry(entry.id);
+	expect(preset.items).toEqual({ head: null, face: 'hat', body });
+	expect(preset.variants).toEqual({ hat: 'blue' });
+});
+
+test('an outfit never comes back on another character that took its character’s key', async () => {
+	const record = await stored();
+	record.manifest.presets.push({ id: 'look', name: 'Look', items: {}, variants: {} });
+	const entry = deletedEntry({
+		kind: 'outfit',
+		record,
+		name: 'Look',
+		context: record.manifest.name,
+		scope: { presetId: 'look' }
+	});
+	const other = structuredClone(record);
+	other.manifest.presets = [];
+	other.restoredFrom = { id: 'rig-someone-else', fingerprint: '', at: '', build: '' };
+	saved.projects.set(other.id, other);
+	saved.projects.set(entry.id, entry);
+	await expect(restoreOutfitEntry(entry.id)).rejects.toMatchObject({
+		translation: { key: 'detailsSheet.notSaved' }
+	});
+	expect((saved.projects.get(other.id) as StoredProject).manifest.presets).toEqual([]);
+	expect(saved.projects.has(entry.id)).toBe(true);
 });

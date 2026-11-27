@@ -744,7 +744,9 @@
 		"thisRemovesTheMoveFromTheBody": "O corpo e cada item perdem seus quadros. Você pode recuperar o movimento por até 30 dias.",
 		"demoRenameLocked": "Movimentos e estados da demo não podem ser renomeados",
 		"removeOutfit": "Os itens continuam no guarda-roupa. Você pode recuperá-lo da Lixeira por até 30 dias.",
-		"demoOutfitLocked": "Roupas da demo não podem ser excluídas"
+		"demoOutfitLocked": "Os trajes próprios da demo não podem ir para a Lixeira",
+		"labelRemoveOutfit": "Remover",
+		"outfitGone": "Este traje já foi removido."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Grátis: nunca gera de novo os itens já criados.",
@@ -1198,7 +1200,8 @@
 		"resetColors": "Restaurar cores",
 		"randomItem": "Sortear item: {name}",
 		"saveOutfit": "Salvar traje",
-		"deleteOutfit": "Excluir traje",
+		"deleteOutfit": "Mover traje para a Lixeira",
+		"removeOutfit": "Remover traje",
 		"renameOutfit": "Renomear traje",
 		"show": "Mostrar {name}",
 		"hide": "Ocultar {name}",
@@ -1786,90 +1789,23 @@
 			"gem": "Gema"
 		},
 		"ideas": {
-			"head": [
-				"chapéu de mago",
-				"elmo de cavaleiro de ferro",
-				"coroa dourada",
-				"capuz"
-			],
-			"hair": [
-				"cabelo longo trançado",
-				"cabelo curto espetado",
-				"rabo de cavalo"
-			],
-			"face_acc": [
-				"óculos redondos",
-				"tapa-olho",
-				"máscara de bandido"
-			],
-			"torso_inner": [
-				"colete de couro",
-				"camisa de cota de malha",
-				"túnica azul"
-			],
-			"arms": [
-				"luvas de couro",
-				"manoplas de ferro",
-				"tiras de tecido"
-			],
-			"legs": [
-				"calça marrom",
-				"caneleiras de placa",
-				"saia plissada"
-			],
-			"feet": [
-				"botas de couro",
-				"sandálias",
-				"sapatos de armadura de ferro"
-			],
-			"back": [
-				"capa vermelha",
-				"mochila de viagem",
-				"aljava de flechas"
-			],
-			"main_hand": [
-				"espada de aço",
-				"cajado de madeira",
-				"machado de batalha"
-			],
-			"off_hand": [
-				"escudo redondo",
-				"lanterna de ferro",
-				"arco longo de madeira"
-			],
-			"facial_hair": [
-				"barba cheia",
-				"bigode com pontas enroladas",
-				"cavanhaque"
-			],
-			"torso_outer": [
-				"armadura de placas de aço",
-				"túnica com capuz",
-				"casaco longo"
-			],
-			"underwear": [
-				"conjunto de roupa íntima branca lisa",
-				"traje de banho listrado"
-			],
-			"waist": [
-				"cinto de couro",
-				"faixa vermelha",
-				"bolsinha de cinto"
-			],
-			"neck": [
-				"amuleto de ouro",
-				"cachecol de lã",
-				"colar de contas"
-			],
-			"shoulders": [
-				"ombreiras de aço",
-				"manto de pele"
-			],
-			"accessory": [
-				"broche de latão",
-				"laço de fita",
-				"bolsinha de talismãs"
-			]
+			"head": ["chapéu de mago", "elmo de cavaleiro de ferro", "coroa dourada", "capuz"],
+			"hair": ["cabelo longo trançado", "cabelo curto espetado", "rabo de cavalo"],
+			"face_acc": ["óculos redondos", "tapa-olho", "máscara de bandido"],
+			"torso_inner": ["colete de couro", "camisa de cota de malha", "túnica azul"],
+			"arms": ["luvas de couro", "manoplas de ferro", "tiras de tecido"],
+			"legs": ["calça marrom", "caneleiras de placa", "saia plissada"],
+			"feet": ["botas de couro", "sandálias", "sapatos de armadura de ferro"],
+			"back": ["capa vermelha", "mochila de viagem", "aljava de flechas"],
+			"main_hand": ["espada de aço", "cajado de madeira", "machado de batalha"],
+			"off_hand": ["escudo redondo", "lanterna de ferro", "arco longo de madeira"],
+			"facial_hair": ["barba cheia", "bigode com pontas enroladas", "cavanhaque"],
+			"torso_outer": ["armadura de placas de aço", "túnica com capuz", "casaco longo"],
+			"underwear": ["conjunto de roupa íntima branca lisa", "traje de banho listrado"],
+			"waist": ["cinto de couro", "faixa vermelha", "bolsinha de cinto"],
+			"neck": ["amuleto de ouro", "cachecol de lã", "colar de contas"],
+			"shoulders": ["ombreiras de aço", "manto de pele"],
+			"accessory": ["broche de latão", "laço de fita", "bolsinha de talismãs"]
 		},
 		"enterName": "Digite um nome.",
 		"nameExists": "{name} já existe.",

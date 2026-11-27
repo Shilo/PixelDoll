@@ -54,6 +54,12 @@
 		await tick();
 		addButton?.focus();
 	}
+	// A removed outfit's row leaves with the focus: the next outfit (or the last) takes it, or Save look when none is left.
+	async function focusAfter(index: number) {
+		await tick();
+		const rows = list?.querySelectorAll<HTMLElement>('.outfits .rows > li .row[aria-pressed]');
+		(rows?.length ? rows[Math.min(index, rows.length - 1)] : addButton)?.focus();
+	}
 	function saveOutfit() {
 		let n = (m?.presets.length ?? 0) + 1;
 		while (m?.presets.some((p) => p.name === `Outfit ${n}`)) n++; // a default name after a deletion stays distinct
@@ -76,9 +82,9 @@
 		<div class="equipment-scroll panel-list" bind:this={list}>
 			<section class="group outfits" aria-label={t('outfits.outfits')}>
 				<ul class="rows">
-					{#each matched as p (p.id)}
+					{#each matched as p, index (p.id)}
 						<li>
-							<OutfitActions id={p.id} name={p.name}>
+							<OutfitActions id={p.id} name={p.name} onremoved={() => void focusAfter(index)}>
 								<button
 									class="row bu-action"
 									data-variant="tile"

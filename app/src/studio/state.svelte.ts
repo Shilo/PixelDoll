@@ -24,6 +24,7 @@ import {
 	openFixture,
 	reconcileItemSlots,
 	saveDress,
+	mergePresetEdits,
 	saveSplit,
 	type DressState,
 	type Outfit
@@ -1030,7 +1031,8 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		if (id === doc.id && (edits !== seen || doc.rev !== revision)) return openProject(id, keep);
 		const m = r.project.manifest;
 		const pr = r.current ?? m.presets[0] ?? { items: {}, variants: {} };
-		const savedSlots = structuredClone(m.slots);
+		const savedSlots = structuredClone(m.slots),
+			savedPresets = structuredClone(m.presets);
 		const unsaved = takeUnsaved(id, m),
 			current = unsaved ?? pr; // replace, never merge: a reset or removal deletes keys
 		if (!quiet) {
@@ -1076,7 +1078,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		if (r.dressUnread && dressUnread !== id)
 			toast(message('state.demoOutfitsUnread'), { tone: 'danger' });
 		dressUnread = r.dressUnread ? id : '';
-		slotBase = { id, slots: savedSlots };
+		slotBase = { id, slots: savedSlots, presets: savedPresets };
 		if (!m.rig.directions.some((d) => d.id === ui.dir)) ui.dir = m.rig.directions[0].id;
 		if (!quiet) ui.frame = 0;
 		store.project = r.project;
@@ -1190,6 +1192,13 @@ function restore(e: UndoStep) {
 		removed = from.filter((s) => !d.slots.some((x) => x.id === s.id));
 	d.slots = retainSlotDirections(mergeSlotEdits(from, d.slots, m.slots, keep), m.rig.directions);
 	const kept = removed.filter((s) => keep.has(s.id) && d.slots.some((x) => x.id === s.id));
+	// An outfit in the Trash (moved there by another tab too) comes back only from the Trash.
+	const trashed = new Set(
+		deleted.entries.flatMap((entry) =>
+			entry.kind === 'outfit' && entry.projectId === doc.id ? [entry.scope.presetId] : []
+		)
+	);
+	d.presets = d.presets.filter((preset) => !trashed.has(preset.id));
 	applyDress(m, d);
 	doc.items = { ...d.current!.items };
 	// An item deleted for good since the snapshot (its Trash entry gone, or another tab) is not worn as a dangling id.
@@ -1369,6 +1378,18 @@ function pushStep(projectId: string, step: UndoStep) {
 	history.undo = [...history.undo.slice(-99), step];
 }
 /** Add a delete to the history: one step whose Undo restores exactly the entry the delete wrote. */
+/** An outfit's Trash and restore are not dress steps: every step of that character's history is made to agree, so Undo
+ *  or Redo never brings back an outfit in the Trash or drops one restored from it. */
+export function syncOutfitSteps(projectId: string, presetId: string, restored?: Preset) {
+	const history = projectId === doc.id ? doc : histories.get(projectId);
+	for (const step of history ? [...history.undo, ...history.redo] : []) {
+		if (!step.snap) continue;
+		const d = JSON.parse(step.snap) as DressState,
+			others = d.presets.filter((preset) => preset.id !== presetId);
+		d.presets = restored ? [...others, structuredClone(restored)] : others;
+		step.snap = JSON.stringify(d);
+	}
+}
 export function pushRecovery(label: Message, trash: string) {
 	if (!store.project) return;
 	pushStep(doc.id, { label, trash, from: slotsNow() });
@@ -1570,14 +1591,16 @@ export async function refreshRestoredLibrary() {
 }
 /** The slot definitions the open character's view continues from (its open or last save): a save writes only the slot
  *  changes made since, so a stale tab's routine save never undoes another tab's category changes. */
-let slotBase: { id: string; slots: Slot[] } | null = null;
+let slotBase: { id: string; slots: Slot[]; presets: Preset[] } | null = null;
 /** Save the dress state with the view's slot changes since slotBase, then continue from what was saved: other tabs' slot
  *  changes come into the view, and its own changes made meanwhile stay to be saved next. */
 async function saveSlotsAndDress(id: string, m: Manifest, cur: Outfit) {
 	// The view's slots now: a save that finished after this one was scheduled may have brought in others' changes.
 	const here = doc.id === id && store.project ? store.project.manifest : m,
 		mine = structuredClone(here.slots),
-		base = slotBase?.id === id ? slotBase.slots : mine;
+		base = slotBase?.id === id ? slotBase.slots : mine,
+		minePresets = structuredClone(here.presets),
+		presetBase = slotBase?.id === id ? slotBase.presets : undefined;
 	const keep = new Set(gens.filter((g) => g.draft.rigId === id).map((g) => g.input.slot));
 	if (base.some((s) => !mine.some((x) => x.id === s.id))) {
 		// A removal (an undone or deleted empty category) also spares slots that attempts saved by other tabs use. Unreadable:
@@ -1589,13 +1612,22 @@ async function saveSlotsAndDress(id: string, m: Manifest, cur: Outfit) {
 			for (const s of base) keep.add(s.id);
 		}
 	}
-	const saved = await saveDress(id, { ...m, slots: mine }, cur, { base, keep });
+	const saved = await saveDress(id, { ...m, slots: mine, presets: minePresets }, cur, {
+		base,
+		keep,
+		presets: presetBase
+	});
 	if (doc.id !== id || !store.project) return;
 	const live = store.project.manifest,
-		next = mergeSlotEdits(mine, live.slots, saved, busySlots(live));
-	slotBase = { id, slots: saved };
-	if (stableStringify(next) !== stableStringify(live.slots)) {
+		next = mergeSlotEdits(mine, live.slots, saved.slots, busySlots(live)),
+		presets = mergePresetEdits(minePresets, live.presets, saved.presets);
+	slotBase = { id, slots: saved.slots, presets: saved.presets };
+	if (
+		stableStringify(next) !== stableStringify(live.slots) ||
+		stableStringify(presets) !== stableStringify(live.presets)
+	) {
 		live.slots = next;
+		live.presets = presets;
 		bump();
 	}
 }
@@ -1639,8 +1671,11 @@ function keepUnsaved() {
 	// While another character loads, doc and store.project still describe this one, so its snapshot stays consistent.
 	if (edits === savedEdits || !doc.id || !store.project) return;
 	try {
-		const base = slotBase?.id === doc.id ? slotBase.slots : undefined;
-		lsSet(unsavedKey(doc.id), JSON.stringify({ ...JSON.parse(snap()), slotBase: base }));
+		const base = slotBase?.id === doc.id ? slotBase : undefined;
+		lsSet(
+			unsavedKey(doc.id),
+			JSON.stringify({ ...JSON.parse(snap()), slotBase: base?.slots, presetBase: base?.presets })
+		);
 	} catch (e) {
 		console.error('unsaved snapshot', e);
 	}
@@ -1648,7 +1683,7 @@ function keepUnsaved() {
 function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'> | null {
 	try {
 		const d = JSON.parse(lsGet(unsavedKey(id)) ?? 'null') as
-			(DressState & { slotBase?: Slot[] }) | null;
+			(DressState & { slotBase?: Slot[]; presetBase?: Preset[] }) | null;
 		// Validate the whole shape first: applyDress changes the manifest in place, so a bad snapshot must not half-apply.
 		const obj = (v: unknown) => typeof v === 'object' && v !== null && !Array.isArray(v);
 		const current = d?.current;
@@ -1663,6 +1698,7 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 			!Array.isArray(d.presets) ||
 			!Array.isArray(d.slots) ||
 			(d.slotBase != null && !Array.isArray(d.slotBase)) ||
+			(d.presetBase != null && !Array.isArray(d.presetBase)) ||
 			(d.hides != null && !obj(d.hides))
 		)
 			return null;
@@ -1672,7 +1708,9 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 			...gens.filter((g) => g.draft.rigId === id).map((g) => g.input.slot)
 		]);
 		const slots = d.slotBase ? mergeSlotEdits(d.slotBase, d.slots, m.slots, keep) : m.slots;
-		applyDress(m, { ...d, slots }); // keeps items added since and never revives removed ones
+		// Likewise only its outfit changes: an outfit moved to the Trash or restored since stays that way.
+		const presets = d.presetBase ? mergePresetEdits(d.presetBase, d.presets, m.presets) : m.presets;
+		applyDress(m, { ...d, slots, presets }); // keeps items added since and never revives removed ones
 		// An item deleted since (another tab) is dropped rather than worn as a dangling id.
 		return {
 			items: Object.fromEntries(
@@ -2209,7 +2247,7 @@ export async function deleteLocalWorkAndReload(): Promise<void> {
 
 /** Other tabs hear about a deletion or restore here: a broadcast is only a hint to re-read, the write itself decides.
  *  `projectId` names a character whose record changed, so a tab showing it refreshes instead of saving a stale copy. */
-function notifyLibraryChanged(projectId?: string) {
+export function notifyLibraryChanged(projectId?: string) {
 	identityChannel?.postMessage({ libraryChanged: true, projectId });
 }
 
@@ -2278,6 +2316,7 @@ async function restoreDeletedEntry(id: string): Promise<boolean> {
 		}
 		if (entry.kind === 'outfit') {
 			const out = await restoreOutfitEntry(id);
+			syncOutfitSteps(out.projectId, out.preset.id, out.preset);
 			await refreshRecentlyDeleted();
 			notifyLibraryChanged(out.projectId);
 			if (doc.id === out.projectId) await openProject(out.projectId, { quiet: true });
@@ -3017,7 +3056,11 @@ async function refreshSaved(projectId: string, request: number) {
 		if (doc.rev !== revision) continue;
 		store.project = fresh.project;
 		store.exportRecord = fresh.rec;
-		slotBase = { id: projectId, slots: structuredClone(fresh.project.manifest.slots) };
+		slotBase = {
+			id: projectId,
+			slots: structuredClone(fresh.project.manifest.slots),
+			presets: structuredClone(fresh.project.manifest.presets)
+		};
 		doc.rev++;
 		return;
 	}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	// An outfit row with its ⋮ (and right-click) menu. Like every object's menu it ends with Rename, Download ZIP and Move to
-	// Trash, which asks first like a move's (docs/design/menus-and-details.md).
+	// Trash, which asks first like a move's (docs/design/menus-and-details.md). An outfit saved on a demo has no Trash: it
+	// is removed as an edit, with Undo.
 	import type { Snippet } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import RowActions from './RowActions.svelte';
@@ -10,9 +11,25 @@
 	import { Download } from './icons.ts';
 	import { doc, openRename } from './state.svelte.ts';
 	import { downloadOutfitZip } from './download.svelte.ts';
-	import { outfitTrashLocked, removeOutfit } from './outfitActions.svelte.ts';
+	import {
+		outfitHasTrash,
+		outfitLocked,
+		removeDemoOutfit,
+		removeOutfit
+	} from './outfitActions.svelte.ts';
 
-	let { id, name, children }: { id: string; name: string; children: Snippet } = $props();
+	let {
+		id,
+		name,
+		onremoved,
+		children
+	}: {
+		id: string;
+		name: string;
+		/** After the outfit is gone: its row is, too, so the list moves focus on. */
+		onremoved: () => void;
+		children: Snippet;
+	} = $props();
 	let trashing = $state(false);
 </script>
 
@@ -33,15 +50,26 @@
 			}}><Download size={16} />{t('common.downloadZip')}</button
 		>
 		<hr class="bu-separator" />
-		<DeleteRow
-			opens
-			label={t('savedActions.labelDeleteOutfit')}
-			locked={outfitTrashLocked() ? t('savedActions.demoOutfitLocked') : ''}
-			onclick={() => {
-				close();
-				trashing = true;
-			}}
-		/>
+		{#if outfitHasTrash()}
+			<DeleteRow
+				opens
+				label={t('savedActions.labelDeleteOutfit')}
+				onclick={() => {
+					close();
+					trashing = true;
+				}}
+			/>
+		{:else}
+			<DeleteRow
+				label={t('savedActions.labelRemoveOutfit')}
+				locked={outfitLocked(id) ? t('savedActions.demoOutfitLocked') : ''}
+				onclick={() => {
+					close();
+					removeDemoOutfit(id);
+					onremoved();
+				}}
+			/>
+		{/if}
 	{/snippet}
 </RowActions>
 {#if trashing}
@@ -52,6 +80,7 @@
 		onconfirm={async () => {
 			await removeOutfit(id);
 			trashing = false;
+			onremoved();
 		}}
 	/>
 {/if}

@@ -307,6 +307,30 @@ export async function saveSplit(
 interface SlotSave {
 	base: readonly Slot[];
 	keep?: Iterable<string>;
+	/** The saved outfits the view continues from: only the outfits it added, changed or removed since are written. */
+	presets?: readonly Preset[];
+}
+
+/** The saved outfits after a save: the view's own changes since `base` (added, renamed, removed) over the saved list
+ *  (`theirs`), so a stale tab never brings back an outfit another tab moved to the Trash or drops one it restored. */
+export function mergePresetEdits(
+	base: readonly Preset[],
+	mine: readonly Preset[],
+	theirs: readonly Preset[]
+): Preset[] {
+	const before = new Map(base.map((p) => [p.id, p])),
+		now = new Map(mine.map((p) => [p.id, p]));
+	const changed = (id: string) => {
+		const a = before.get(id),
+			b = now.get(id);
+		return !a || !b ? a !== b : stableStringify(a) !== stableStringify(b);
+	};
+	const out = theirs.flatMap((p) =>
+		changed(p.id) ? (now.has(p.id) ? [now.get(p.id)!] : []) : [p]
+	);
+	const listed = new Set(theirs.map((p) => p.id));
+	for (const p of mine) if (!listed.has(p.id) && changed(p.id)) out.push(p);
+	return structuredClone(out);
 }
 /** Save. For IndexedDB projects: one atomic read-modify-write (db.update), so concurrent item writes are kept (R6 P1-5).
  *  Returns the slot definitions now saved, for the view to continue from. */
@@ -315,8 +339,10 @@ export async function saveDress(
 	m: Manifest,
 	current: Outfit,
 	slotSave?: SlotSave
-): Promise<Slot[]> {
+): Promise<{ slots: Slot[]; presets: Preset[] }> {
 	const d = structuredClone(dressOf(m, current));
+	const presetsOver = (theirs: readonly Preset[] | undefined) =>
+		slotSave?.presets && theirs ? mergePresetEdits(slotSave.presets, d.presets, theirs) : d.presets;
 	const merged = (theirs: readonly Slot[], items: readonly { slot: string }[]) =>
 		slotSave
 			? mergeSlotEdits(
@@ -340,6 +366,11 @@ export async function saveDress(
 					id: key,
 					kind: 'dress',
 					...d,
+					presets: presetsOver(
+						previous?.format === CURRENT_FORMAT && Array.isArray(previous.presets)
+							? previous.presets
+							: undefined
+					),
 					slots: merged(theirs, m.items),
 					mountSeatOffsets:
 						previous?.format === CURRENT_FORMAT ? previous.mountSeatOffsets : undefined
@@ -348,9 +379,10 @@ export async function saveDress(
 			[],
 			(previous) => archiveFixtureDress(key, previous)
 		);
-		return structuredClone(saved.slots);
+		return structuredClone({ slots: saved.slots, presets: saved.presets });
 	}
 	let saved: Slot[] = [];
+	let presets: Preset[] = [];
 	await db.update<ProjectRecord>('projects', id, (rec) => {
 		if (!rec?.manifest) throw new Error(`project ${id} vanished`);
 		const manifest = rec.manifest,
@@ -380,7 +412,7 @@ export async function saveDress(
 			merged(manifest.slots, manifest.items),
 			manifest.rig.directions
 		);
-		const cleaned = { ...d, materials, current, slots };
+		const cleaned = { ...d, materials, current, slots, presets: presetsOver(manifest.presets) };
 		const knownSlots = new Map(manifest.items.map((it) => [it.id, it.slot]));
 		for (const preset of [...cleaned.presets, ...(current ? [current] : [])]) {
 			reconcileItemSlots(preset.items, knownSlots);
@@ -390,7 +422,8 @@ export async function saveDress(
 		applyDress(manifest, cleaned);
 		rec.dress = { current };
 		saved = structuredClone(manifest.slots);
+		presets = structuredClone(manifest.presets);
 		return rec;
 	});
-	return saved;
+	return { slots: saved, presets };
 }

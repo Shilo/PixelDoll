@@ -2912,6 +2912,30 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	);
 	await expect(page.locator('.outfits .badge')).toHaveCount(0);
 	step('outfit saved and selected without a redundant badge');
+	// The demo has no Trash: its own outfits stay, one saved on it is removed as an edit that Undo reverts.
+	for (const [outfit, locked] of [
+		['Adventurer', true],
+		['Smoke look', false]
+	] as const) {
+		await page.getByRole('button', { name: `More actions for ${outfit}`, exact: true }).click();
+		const remove = page
+			.getByRole('menu', { name: `Actions for ${outfit}`, exact: true })
+			.getByRole('menuitem', { name: 'Remove', exact: true });
+		if (locked) {
+			await expect(remove).toHaveAttribute('aria-disabled', 'true');
+			await expect(remove).toHaveAccessibleDescription(
+				'The demo’s own outfits can’t be moved to the Trash'
+			);
+			await page.keyboard.press('Escape');
+		} else await remove.click();
+	}
+	await expect(page.locator('.outfits .row', { hasText: 'Smoke look' })).toHaveCount(0);
+	await page.locator('.bu-toast-region').getByRole('button', { name: 'Undo', exact: true }).click();
+	await expect(page.locator('.outfits .row', { hasText: 'Smoke look' })).toHaveAttribute(
+		'aria-pressed',
+		'true'
+	);
+	step('a demo outfit saved here can be removed and undone, its own outfits cannot');
 
 	await inspectStage(page);
 	await page.keyboard.press('2');
@@ -11466,6 +11490,26 @@ for (const kind of ['outfit', 'move'] as const) {
 				.locator('.bu-toast-region')
 				.getByRole('button', { name: 'Undo', exact: true })
 				.click();
+			await expect(row).toBeVisible();
+			// A dress edit made while it was in the Trash: undoing that edit later never takes the outfit away again.
+			await trigger.click();
+			await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+			await confirm.getByRole('button', { name: 'Move to Trash', exact: true }).click();
+			await expect(row).toHaveCount(0);
+			// Its row left with the focus: the outfit now last in the list takes it.
+			await expect(page.locator('.outfits .row[aria-pressed]').last()).toBeFocused();
+			await equipmentGroup(page, 'Head');
+			await section(page, 'Head')
+				.getByRole('button', { name: /^Wizard hat(,|$)/ })
+				.click();
+			await equipmentMode(page, 'Outfits');
+			await page
+				.locator('.bu-toast-region')
+				.getByRole('button', { name: 'Undo', exact: true })
+				.first()
+				.click();
+			await expect(row).toBeVisible();
+			await page.keyboard.press('Control+z');
 			await expect(row).toBeVisible();
 			await trigger.click();
 			await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
