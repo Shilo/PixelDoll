@@ -9,7 +9,11 @@ const BASE = process.env.BASE ?? 'http://localhost:5173';
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 await ctx.addInitScript(() => {
-	localStorage.setItem('pixeldoll.welcomed', '1');
+	localStorage.setItem(
+		'pixeldoll.tips',
+		'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+	);
+	localStorage.setItem('pixeldoll.visited', '1');
 	localStorage.setItem('pixeldoll.agentKey', 'off');
 });
 const ok = (s) => console.log('ok', s);
