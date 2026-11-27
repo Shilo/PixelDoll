@@ -105,7 +105,7 @@ async function main() {
 	const due = [
 		...(stagedDate && stagedDate <= until ? [stagedDate] : []),
 		...cutoffs(schedule, after, until)
-	].slice(0, max);
+	];
 	if (!due.length) console.log('No release cutoffs are due.');
 	const builds = new Map<number, string | undefined>();
 	for await (const { date, sha } of liveBuilds(
@@ -117,7 +117,13 @@ async function main() {
 	let previousVersion = previous?.version;
 	const skipped = new Map<number, string>();
 	const plans = [];
-	for (const date of due) {
+	// `max` caps published releases, not cutoffs: skipped cutoffs (no deploy, same version) never use it up.
+	let considered = due.length;
+	for (const [position, date] of due.entries()) {
+		if (plans.length >= max) {
+			considered = position;
+			break;
+		}
 		const cutoff = date.toISOString();
 		const resumed = cutoff === staged?.cutoff ? staged : undefined;
 		const sha = resumed?.sha ?? builds.get(+date);
@@ -160,92 +166,98 @@ async function main() {
 		previousVersion = version;
 	}
 
-	// A prior run can stop after the index push and before the Pages dispatch.
-	if (!dryRun && previous) await deployIndex(github);
+	// A prior run can stop after the index push and before the Pages dispatch; this run's own dispatch covers it
+	// when it lists a release.
+	if (!dryRun && previous && !plans.length) await deployIndex(github);
 	let indexInRun = 0;
-	for (const dueDate of due) {
-		const message = skipped.get(+dueDate);
-		if (message) {
-			console.log(message);
-			continue;
-		}
-		const plan = plans[indexInRun++];
-		const { date, cutoff, sha, version, base, resumed, commits, changes } = plan;
-		const features = changes.groups.find((group) => group.kind === 'new')?.items.length ?? 0;
-		console.log(
-			`${cutoff}  ${sha}  v${version}  ${changes.total} changes, ${features} features${resumed ? ' (staged)' : ''}`
-		);
-		if (dryRun) {
-			for (const { kind, items } of changes.groups) {
-				console.log(`  ${kind}`);
-				for (const item of items) console.log(`    ${item.sha.slice(0, 7)}  ${item.text}`);
+	let listed = 0;
+	try {
+		for (const dueDate of due.slice(0, considered)) {
+			const message = skipped.get(+dueDate);
+			if (message) {
+				console.log(message);
+				continue;
 			}
-			if (indexInRun === 1) {
+			const plan = plans[indexInRun++];
+			const { date, cutoff, sha, version, base, resumed, commits, changes } = plan;
+			const features = changes.groups.find((group) => group.kind === 'new')?.items.length ?? 0;
+			console.log(
+				`${cutoff}  ${sha}  v${version}  ${changes.total} changes, ${features} features${resumed ? ' (staged)' : ''}`
+			);
+			if (dryRun) {
+				for (const { kind, items } of changes.groups) {
+					console.log(`  ${kind}`);
+					for (const item of items) console.log(`    ${item.sha.slice(0, 7)}  ${item.text}`);
+				}
+				if (indexInRun === 1) {
+					const recent = new Set(
+						index.releases.slice(0, 8).map((entry) => readSource(folder, entry.version).bannerHash)
+					);
+					const banner = await composeBanner(version, recent);
+					console.log(
+						`  Banner smoke check passed (${banner.native.length} native bytes, ${banner.large.length} at 4x, ${banner.hash})`
+					);
+				}
+				if (showNotes && key)
+					console.log(
+						JSON.stringify(
+							resumed?.notes ?? (await writeNotes(claudeClient(key), version, date, commits)),
+							null,
+							2
+						)
+					);
+				continue;
+			}
+			if (!key) throw new Error('Publishing requires ANTHROPIC_API_KEY');
+			let source;
+			let notes;
+			let banner;
+			if (resumed) {
+				const assets = readStagedAssets(folder, version);
+				source = resumed;
+				notes = assets.notes;
+				banner = await upscaleBanner(assets.native);
+			} else {
 				const recent = new Set(
 					index.releases.slice(0, 8).map((entry) => readSource(folder, entry.version).bannerHash)
 				);
-				const banner = await composeBanner(version, recent);
-				console.log(
-					`  Banner smoke check passed (${banner.native.length} native bytes, ${banner.large.length} at 4x, ${banner.hash})`
-				);
+				const claude = claudeClient(key);
+				const english = await writeNotes(claude, version, date, commits);
+				notes = await translations(claude, english);
+				const composed = await composeBanner(version, recent);
+				source = {
+					version,
+					date,
+					cutoff,
+					sha,
+					previousSha: base,
+					model: commits.length ? model : null,
+					commits: commits.map((commit) => commit.sha),
+					notes: english,
+					bannerHash: composed.hash
+				} satisfies Source;
+				banner = composed.large;
+				writeStage(folder, source, notes, changes, composed.native);
+				commitReleaseFiles(cwd, `chore(release): stage v${version}`, `releases/${version}`);
 			}
-			if (showNotes && key)
-				console.log(
-					JSON.stringify(
-						resumed?.notes ?? (await writeNotes(claudeClient(key), version, date, commits)),
-						null,
-						2
-					)
-				);
-			continue;
-		}
-		if (!key) throw new Error('Publishing requires ANTHROPIC_API_KEY');
-		let source;
-		let notes;
-		let banner;
-		if (resumed) {
-			const assets = readStagedAssets(folder, version);
-			source = resumed;
-			notes = assets.notes;
-			banner = await upscaleBanner(assets.native);
-		} else {
-			const recent = new Set(
-				index.releases.slice(0, 8).map((entry) => readSource(folder, entry.version).bannerHash)
-			);
-			const claude = claudeClient(key);
-			const english = await writeNotes(claude, version, date, commits);
-			notes = await translations(claude, english);
-			const composed = await composeBanner(version, recent);
-			source = {
+			// Cutoffs publish oldest first, so each new release is the highest version so far and becomes Latest.
+			await publishRelease(github, source, notes.en, changes, banner, true);
+			index.releases.unshift({
 				version,
 				date,
-				cutoff,
-				sha,
-				previousSha: base,
-				model: commits.length ? model : null,
-				commits: commits.map((commit) => commit.sha),
-				notes: english,
-				bannerHash: composed.hash
-			} satisfies Source;
-			banner = composed.large;
-			writeStage(folder, source, notes, changes, composed.native);
-			commitReleaseFiles(cwd, `chore(release): stage v${version}`, `releases/${version}`);
+				features,
+				headline: Object.fromEntries(
+					Object.entries(notes).map(([locale, copy]) => [locale, copy.headline])
+				)
+			});
+			writeJson(indexPath, index);
+			commitReleaseFiles(cwd, `chore(release): list v${version}`, 'releases/index.json');
+			listed++;
 		}
-		// Cutoffs publish oldest first, so each new release is the highest version so far and becomes Latest.
-		await publishRelease(github, source, notes.en, changes, banner, true);
-		index.releases.unshift({
-			version,
-			date,
-			features,
-			headline: Object.fromEntries(
-				Object.entries(notes).map(([locale, copy]) => [locale, copy.headline])
-			)
-		});
-		writeJson(indexPath, index);
-		commitReleaseFiles(cwd, `chore(release): list v${version}`, 'releases/index.json');
+	} finally {
+		// One Pages deploy carries every release this run listed, even if a later one failed.
+		if (!dryRun && listed) await deployIndex(github);
 	}
-	// One Pages deploy carries every release this run listed.
-	if (!dryRun && plans.length) await deployIndex(github);
 }
 
 main().catch((error: unknown) => {
