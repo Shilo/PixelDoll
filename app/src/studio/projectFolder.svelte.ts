@@ -389,9 +389,16 @@ async function publish(link: FolderLink, request: Request) {
 		// publish never writes the look from before that wait. Only a saved character is published.
 		const settings = await readExportSettings();
 		let readAt = changesOf(id);
+		let lastCheckFailed = false;
+		/** The link could not be read, so this publish waits. A background attempt stays quiet once this tab knows
+		 *  automatic updates are off; otherwise the status says it could not finish. */
+		const unreadable = () =>
+			!request.manual && loadedFor === id && projectFolder.link?.auto === false
+				? undefined
+				: report({ kind: 'failed', reason: 'unknown' });
 		const checked = await stillLinked(link);
 		// Without a fresh read this tab cannot know whether the folder was stopped elsewhere, so it waits.
-		if (checked === 'unknown') return report({ kind: 'failed', reason: 'unknown' });
+		if (checked === 'unknown') return unreadable();
 		if (!checked) return superseded(id, readAt, link.linkedAt);
 		link = checked;
 		showLink(id, link, readAt);
@@ -509,7 +516,7 @@ async function publish(link: FolderLink, request: Request) {
 		// Building takes a moment: recheck that the link was not stopped or replaced meanwhile.
 		readAt = changesOf(id);
 		const recheck = await stillLinked(link);
-		if (recheck === 'unknown') return report({ kind: 'failed', reason: 'unknown' });
+		if (recheck === 'unknown') return unreadable();
 		if (!recheck) return superseded(id, readAt, link.linkedAt);
 		showLink(id, recheck, readAt);
 		// Update automatically may also have been turned off meanwhile.
@@ -522,6 +529,7 @@ async function publish(link: FolderLink, request: Request) {
 			proceed: async () => {
 				if (!store.projects.some((p) => p.id === id)) return false; // deleted meanwhile
 				const latest = await stillLinked(link);
+				lastCheckFailed = latest === 'unknown';
 				return typeof latest === 'object' && !!latest && (request.manual || latest.auto);
 			}
 		});
@@ -542,6 +550,8 @@ async function publish(link: FolderLink, request: Request) {
 			);
 		switch (outcome.kind) {
 			case 'stopped': {
+				// The last link check could not be read: say so rather than stop silently.
+				if (lastCheckFailed) return unreadable();
 				readAt = changesOf(id);
 				const latest = await stillLinked(link);
 				return typeof latest === 'object' && latest
