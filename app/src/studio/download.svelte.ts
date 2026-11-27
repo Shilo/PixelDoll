@@ -8,7 +8,7 @@ import type { Manifest, Project } from '../lib/store/manifest.ts';
 import { itemExportId, moveExportId } from '../lib/store/identity.ts';
 import { retainMoveMetadata } from '../lib/rig/moves.ts';
 import { moveLabel } from './model.ts';
-import { currentLook, doc, store, readCharacterForExport, toast } from './state.svelte.ts';
+import { currentLook, lookOf, doc, store, readCharacterForExport, toast } from './state.svelte.ts';
 import { errorMessage, LocalizedError, message } from '../lib/message.ts';
 import { playAudioCue } from './audio.svelte.ts';
 
@@ -79,7 +79,7 @@ async function source(projectId: string): Promise<DownloadSource> {
 	return {
 		project: r.project,
 		record: r.record,
-		look: { items: { ...outfit?.items }, variants: { ...outfit?.variants } }
+		look: lookOf(r.project.manifest, { ...outfit?.items }, { ...outfit?.variants })
 	};
 }
 

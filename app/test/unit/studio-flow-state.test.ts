@@ -2199,6 +2199,12 @@ test('saved outfits keep their linked colors and leave other item colors in the 
 		items: { back: 'cape_red' },
 		variants: { hair: 'azure' }
 	});
+	// A closed character's download reads its autosaved look, which also keeps the unworn hat's color.
+	expect(s.lookOf(manifest, { back: 'cape_red' }, { hair: 'azure', hat: 'gold' }).variants).toEqual(
+		{
+			hair: 'azure'
+		}
+	);
 	expect(s.sameOutfit(saved)).toBe(true);
 	s.setVariant('hair', 'gold');
 	expect(s.sameOutfit(saved)).toBe(false);
