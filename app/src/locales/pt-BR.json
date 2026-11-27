@@ -739,7 +739,8 @@
 		"removeState": "O corpo e cada item perdem os quadros ajustados; movimentos concluídos mantêm os seus. Você pode recuperar o estado por até 30 dias.",
 		"labelDeleteMove": "Mover para a lixeira…",
 		"labelDeleteOutfit": "Excluir traje",
-		"thisRemovesTheMoveFromTheBody": "O corpo e cada item perdem seus quadros. Você pode recuperar o movimento por até 30 dias."
+		"thisRemovesTheMoveFromTheBody": "O corpo e cada item perdem seus quadros. Você pode recuperar o movimento por até 30 dias.",
+		"demoRenameLocked": "Movimentos e estados da demo não podem ser renomeados"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Grátis: nunca gera de novo os itens já criados.",
@@ -3729,5 +3730,25 @@
 		"directionsDetail": "Escolha quais direções são desenhadas e quais espelham outra.",
 		"costEstimateDetail": "Estime quanto custariam mais movimentos, estados e itens.",
 		"frameLocked": "O quadro e as direções deste personagem não podem ser mudados."
+	},
+	"clipWindow": {
+		"move": "Movimento",
+		"state": "Estado",
+		"actions": "Ações do movimento ou estado",
+		"playOnStage": "Tocar no palco",
+		"showOnStage": "Mostrar no palco",
+		"framesSection": "Quadros e qualidade",
+		"itemsSection": "Itens",
+		"fixFramesDetail": "Edite cada quadro de {move} no seu app de desenho.",
+		"redrawDetail": "Redesenhe {move} nas direções que escolher, com preço antes.",
+		"captureDetail": "Salve um quadro de {move} como novo estado.",
+		"itemsDetail": "Desenhe os itens usados que ainda faltam em {move}.",
+		"itemsComplete": "Todos os itens estão desenhados.",
+		"itemsUnavailable": "Itens não podem ser desenhados aqui.",
+		"frames": "Quadros",
+		"length": "Duração",
+		"ms": "{ms} ms",
+		"exportId": "ID de exportação",
+		"gone": "Este movimento não está mais salvo."
 	}
 }

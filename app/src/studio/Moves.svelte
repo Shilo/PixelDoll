@@ -10,11 +10,7 @@
 		view,
 		isDemo,
 		moving,
-		blockedByWork,
-		openPendingWork,
 		openMoveReview,
-		openFrames,
-		openRename,
 		characterItemJobs,
 		elsewhereMove,
 		mirrorElsewhereMove,
@@ -26,18 +22,14 @@
 	import { displayMove } from './displayMove.ts';
 	import type { MoveSpec } from './create.ts';
 	import type { RigAnimation } from '../lib/rig/rig.ts';
-	import { displayError } from '../lib/i18n.ts';
 	import { STATE_CAPTURE_MODE, setupRedoMoves, unposedView } from '../lib/rig/setup.ts';
-	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { clipItemCoverage } from './itemGeneration.ts';
 	import { characterBodySize } from './experience/bounds.ts';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
-	import SavedActions from './SavedActions.svelte';
-	import { downloadMoveZip } from './download.svelte.ts';
+	import ClipActions from './ClipActions.svelte';
 	import ListSearch from './ListSearch.svelte';
 	import { createSearchVisibility } from './searchVisibility.svelte.ts';
 	import { matchesSearch } from '../lib/search/match.ts';
-	import { moveDeletionBlocked, removeMove } from './moveActions.svelte.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { formatNumber, formatPercent, t } from 'svelte-whisper';
@@ -233,48 +225,10 @@
 							dirs.length +
 							m.rig.directions.filter((d) => d.mirrorOf && dirs.some((x) => x.id === d.mirrorOf))
 								.length}
-						{@const lock = moveDeletionBlocked(a.id)}
 						{@const items = clipItemCoverage(m, a.id)}
 						{@const jobs = drawing.filter((job) => job.clip === a.id)}
 						{@const now = jobs.find((job) => job.status === 'drawing')}
-						<SavedActions
-							name={nice(a.id)}
-							{kind}
-							locked={displayError(lock)}
-							onlocked={blockedByWork(lock)
-								? () =>
-										void openPendingWork({
-											projectId: doc.id,
-											flows: !!lock && lock.translation.key !== 'moveRemoval.resolveDrafts'
-										})
-								: undefined}
-							onrename={isDemo() ? undefined : () => openRename(doc.id, { moveId: a.id })}
-							ondownload={() => downloadMoveZip(a.id)}
-							onredraw={kind === 'move' && !isDemo()
-								? () => {
-										ui.redrawMove = a.id;
-										ui.sheet = 'move';
-									}
-								: undefined}
-							onfixframes={() => openFrames('', a.id)}
-							oncapture={!isDemo()
-								? () => {
-										ui.stateCaptureMove = a.id;
-										ui.sheet = 'stateCapture';
-									}
-								: undefined}
-							ongenerateitems={!isDemo() &&
-							a.id !== DEFAULT_MOVE &&
-							!redo.includes(a.id) &&
-							items &&
-							items.drawn < items.total
-								? () => {
-										ui.itemGeneration = a.id;
-										ui.sheet = 'itemGeneration';
-									}
-								: undefined}
-							ondelete={() => removeMove(a.id)}
-						>
+						<ClipActions id={a.id} {kind} name={nice(a.id)}>
 							<button
 								class="move-row bu-action"
 								data-variant="tile"
@@ -336,7 +290,7 @@
 										>{/if}</span
 								>
 							</button>
-						</SavedActions>
+						</ClipActions>
 					{/each}
 					<!-- Running States sit below the saved ones, like a Move being added. -->
 					{#each matchedPending.filter(({ progress }) => progress.status === 'generating') as { attempt, progress } (attempt.token)}

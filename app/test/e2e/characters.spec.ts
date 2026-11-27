@@ -5,6 +5,7 @@ import {
 	equipmentGroup,
 	newItem,
 	selectedItemDetails,
+	openClipTool,
 	openItemSection,
 	pickItem,
 	openPlaybackPicker
@@ -1329,7 +1330,7 @@ test('device import includes sibling moves and preserves explicit selections whe
 	await page.keyboard.press('Escape');
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Right punch', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Create State from…', exact: true }).click();
+	await openClipTool(page, /^Create State from/);
 	const capture = page.getByRole('dialog', { name: 'New State', exact: true });
 	await expect(
 		capture.getByRole('button', { name: 'Source: Right punch', exact: true })
@@ -3248,7 +3249,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		};
 	});
 	const createState = page.getByRole('dialog', { name: 'New State', exact: true });
-	await page.getByRole('menuitem', { name: 'Create State from…', exact: true }).click();
+	await openClipTool(page, /^Create State from/);
 	await createState.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(createState).not.toBeVisible();
 	await expect(
@@ -3256,7 +3257,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	).toBeFocused();
 	expect((await read()).manifest).toEqual(after.manifest);
 	await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Create State from…', exact: true }).click();
+	await openClipTool(page, /^Create State from/);
 	await expect(createState).toBeVisible();
 	idle.frames[0].ms += 1;
 	await page.evaluate(
@@ -3292,7 +3293,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	).toBeEnabled();
 	await createState.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Create State from…', exact: true }).click();
+	await openClipTool(page, /^Create State from/);
 	const nextFrame = createState.getByRole('button', { name: 'Next frame', exact: true });
 	await expect(
 		createState.getByRole('button', { name: 'Source: Idle', exact: true })

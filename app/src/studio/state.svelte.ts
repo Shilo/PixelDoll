@@ -318,7 +318,8 @@ export type SheetId =
 	| 'slots'
 	| 'frames'
 	| 'adjustFrame'
-	| 'cost';
+	| 'cost'
+	| 'clip';
 const sizeNow = (): Size => {
 	const w = innerWidth,
 		h = innerHeight;
@@ -400,7 +401,8 @@ export const ui = $state({
 	frameProject: '', // the character the Adjust frame sheet is for
 	costProject: '', // the character the Cost estimate sheet opens on
 	details: '', // the character the View and edit window is for
-	returnTo: null as 'details' | null, // the window a character tool's Back returns to
+	clip: '', // the move or State the View and edit window is for
+	returnTo: null as 'details' | 'clip' | null, // the window a tool's Back returns to
 	settingsOverlay: false, // Settings opened over the current sheet without replacing it
 	newItem: { group: 'head', slot: '', prompt: '', name: '' } as {
 		reuseMethod?: boolean;
@@ -3124,11 +3126,14 @@ export async function matchItemPalette(
 }
 
 // ---------- Fix frames ----------
-export const frames = $state<{ item: string; anim: string; back?: 'item' }>({ item: '', anim: '' });
+export const frames = $state<{ item: string; anim: string; back?: 'item' | 'clip' }>({
+	item: '',
+	anim: ''
+});
 const framesModule = () => lazy(() => import('../lib/frames/save.ts'));
 /** Open Fix frames for an item (the body when empty) and a move (the one playing when empty). `back` is the sheet it was
  *  opened from, which its Back returns to. */
-export function openFrames(itemId = '', anim = '', back?: 'item') {
+export function openFrames(itemId = '', anim = '', back?: 'item' | 'clip') {
 	const m = store.project?.manifest;
 	if (!m) return;
 	frames.back = back;
@@ -3915,7 +3920,7 @@ export type RenameOf = {
 	outfitId?: string;
 	moveId?: string;
 	/** The window Rename returns to (Back and after saving): an item's or a character's. */
-	back?: 'item' | 'details';
+	back?: 'item' | 'details' | 'clip';
 };
 
 /** Saved characters only, except outfits: a demo's outfits are part of its saved dress-up state. */

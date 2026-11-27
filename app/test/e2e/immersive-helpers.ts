@@ -126,6 +126,17 @@ export async function openItemSection(dialog: Locator, name: string) {
 	return section;
 }
 
+/** From an open move or State ⋮ menu, its View and edit window's tool: frame tools (Fix frames, Redraw, Create State
+ *  from) under Frames & Quality, Generate items under Items. */
+export async function openClipTool(page: Page, tool: RegExp) {
+	await page.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
+	const window = page.locator('dialog.clip-window[open]');
+	await expect(window).toBeVisible();
+	await openItemSection(window, /^Generate items/.test(tool.source) ? 'Items' : 'Frames & Quality');
+	await window.getByRole('button', { name: tool }).click();
+	return window;
+}
+
 export async function pickItem(page: Page, name: string) {
 	await equipmentMode(page, 'Wardrobe');
 	const item = page.locator('.equipment-scroll .item-tile').getByText(name, { exact: true });

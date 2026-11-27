@@ -718,7 +718,8 @@
 		"removeState": "Tubuh dan setiap item kehilangan bingkai yang dipaskan; gerakan selesai tetap menyimpan bingkainya. Anda bisa memulihkan status selama hingga 30 hari.",
 		"labelDeleteMove": "Pindahkan ke tempat sampah…",
 		"labelDeleteOutfit": "Hapus setelan",
-		"thisRemovesTheMoveFromTheBody": "Tubuh dan setiap item kehilangan bingkainya. Anda bisa memulihkan gerakan selama hingga 30 hari."
+		"thisRemovesTheMoveFromTheBody": "Tubuh dan setiap item kehilangan bingkainya. Anda bisa memulihkan gerakan selama hingga 30 hari.",
+		"demoRenameLocked": "Gerakan dan status demo tidak bisa diganti namanya"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratis: item yang sudah dibuat tidak akan dibuat ulang.",
@@ -3619,5 +3620,25 @@
 		"directionsDetail": "Pilih arah mana yang digambar dan mana yang mencerminkan arah lain.",
 		"costEstimateDetail": "Perkirakan biaya gerakan, status, dan item tambahan.",
 		"frameLocked": "Bingkai dan arah karakter ini tidak bisa diubah."
+	},
+	"clipWindow": {
+		"move": "Gerakan",
+		"state": "Status",
+		"actions": "Aksi gerakan atau status",
+		"playOnStage": "Putar di panggung",
+		"showOnStage": "Tampilkan di panggung",
+		"framesSection": "Frame & Kualitas",
+		"itemsSection": "Item",
+		"fixFramesDetail": "Edit setiap frame {move} di aplikasi gambarmu.",
+		"redrawDetail": "Gambar ulang {move} di arah yang kamu pilih, dengan harga lebih dulu.",
+		"captureDetail": "Simpan satu frame {move} sebagai status baru.",
+		"itemsDetail": "Gambar item yang dipakai dan masih hilang dari {move}.",
+		"itemsComplete": "Semua item sudah digambar.",
+		"itemsUnavailable": "Item tidak bisa digambar di sini.",
+		"frames": "Frame",
+		"length": "Durasi",
+		"ms": "{ms} md",
+		"exportId": "ID ekspor",
+		"gone": "Gerakan ini tidak lagi tersimpan."
 	}
 }

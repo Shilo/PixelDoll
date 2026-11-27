@@ -739,7 +739,8 @@
 		"removeState": "Gövde ve her öğe ayarlanmış karelerini kaybeder; bitmiş hareketler kendi karelerini korur. en fazla 30 gün boyunca geri alabilirsiniz.",
 		"labelDeleteMove": "Çöp kutusuna taşı…",
 		"labelDeleteOutfit": "Kıyafeti silin",
-		"thisRemovesTheMoveFromTheBody": "Gövde ve her öğe karelerini kaybeder. en fazla 30 gün boyunca geri alabilirsiniz."
+		"thisRemovesTheMoveFromTheBody": "Gövde ve her öğe karelerini kaybeder. en fazla 30 gün boyunca geri alabilirsiniz.",
+		"demoRenameLocked": "Demonun hareketleri ve durumları yeniden adlandırılamaz"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Ücretsiz: Daha önce yapılmış eşyalar yeniden üretilmez.",
@@ -3720,5 +3721,25 @@
 		"directionsDetail": "Hangi yönlerin çizileceğini ve hangilerinin aynalanacağını seç.",
 		"costEstimateDetail": "Ek hareket, durum ve eşyaların maliyetini tahmin et.",
 		"frameLocked": "Bu karakterin çerçevesi ve yönleri değiştirilemez."
+	},
+	"clipWindow": {
+		"move": "Hareket",
+		"state": "Durum",
+		"actions": "Hareket veya durum işlemleri",
+		"playOnStage": "Sahnede oynat",
+		"showOnStage": "Sahnede göster",
+		"framesSection": "Kareler ve kalite",
+		"itemsSection": "Eşyalar",
+		"fixFramesDetail": "{move} karelerinin hepsini çizim uygulamanda düzenle.",
+		"redrawDetail": "{move} hareketini seçtiğin yönlerde yeniden çiz, önce fiyatı gör.",
+		"captureDetail": "{move} hareketinden bir kareyi yeni durum olarak kaydet.",
+		"itemsDetail": "{move} için hâlâ eksik olan giyilen eşyaları çiz.",
+		"itemsComplete": "Her eşya çizildi.",
+		"itemsUnavailable": "Burada eşya çizilemez.",
+		"frames": "Kareler",
+		"length": "Süre",
+		"ms": "{ms} ms",
+		"exportId": "Dışa aktarma kimliği",
+		"gone": "Bu hareket artık kayıtlı değil."
 	}
 }

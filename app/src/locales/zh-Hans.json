@@ -718,7 +718,8 @@
 		"removeState": "身体和每个物品都会失去适配的帧；已完成的动作会保留自己的帧。最多 30 天内可以恢复。",
 		"labelDeleteMove": "移到回收站…",
 		"labelDeleteOutfit": "删除套装",
-		"thisRemovesTheMoveFromTheBody": "身体和每个物品都会失去它的帧。最多 30 天内可以恢复。"
+		"thisRemovesTheMoveFromTheBody": "身体和每个物品都会失去它的帧。最多 30 天内可以恢复。",
+		"demoRenameLocked": "演示的动作和状态无法重命名"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "免费：不会重新生成已制作的装备。",
@@ -3619,5 +3620,25 @@
 		"directionsDetail": "选择哪些朝向要绘制、哪些镜像其他朝向。",
 		"costEstimateDetail": "估算增加动作、状态和物品的费用。",
 		"frameLocked": "此角色的画框和方向无法更改。"
+	},
+	"clipWindow": {
+		"move": "动作",
+		"state": "状态",
+		"actions": "动作或状态操作",
+		"playOnStage": "在舞台上播放",
+		"showOnStage": "在舞台上显示",
+		"framesSection": "帧与质量",
+		"itemsSection": "物品",
+		"fixFramesDetail": "在绘图软件中编辑 {move} 的每一帧。",
+		"redrawDetail": "按所选朝向重新绘制 {move}，先显示价格。",
+		"captureDetail": "将 {move} 的一帧保存为新状态。",
+		"itemsDetail": "绘制 {move} 仍缺少的已穿戴物品。",
+		"itemsComplete": "所有物品都已绘制。",
+		"itemsUnavailable": "此处无法绘制物品。",
+		"frames": "帧",
+		"length": "时长",
+		"ms": "{ms} 毫秒",
+		"exportId": "导出 ID",
+		"gone": "此动作已不再保存。"
 	}
 }

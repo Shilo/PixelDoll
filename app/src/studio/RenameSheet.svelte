@@ -137,7 +137,9 @@
 		? t('studio.titleItem')
 		: target.back === 'details'
 			? (store.projects.find((project) => project.id === target.projectId)?.name ?? name)
-			: undefined}
+			: target.back === 'clip'
+				? name
+				: undefined}
 	dirty={nameChanged || idChanged}
 	onclose={close}
 >

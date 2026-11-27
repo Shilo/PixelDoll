@@ -739,7 +739,8 @@
 		"removeState": "The body and every item lose its fitted frames; finished moves keep theirs. You can bring it back for up to 30 days.",
 		"labelDeleteMove": "Move to Trash…",
 		"labelDeleteOutfit": "Delete outfit",
-		"thisRemovesTheMoveFromTheBody": "The body and every item lose the frames for this move. You can bring it back for up to 30 days."
+		"thisRemovesTheMoveFromTheBody": "The body and every item lose the frames for this move. You can bring it back for up to 30 days.",
+		"demoRenameLocked": "The demo’s moves and states can’t be renamed"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Free: never regenerates items already made.",
@@ -3720,5 +3721,25 @@
 		"directionsDetail": "Choose which facings are drawn and which mirror another.",
 		"costEstimateDetail": "Estimate what more moves, states and items would cost.",
 		"frameLocked": "This character’s frame and directions can’t be changed."
+	},
+	"clipWindow": {
+		"move": "Move",
+		"state": "State",
+		"actions": "Move or State actions",
+		"playOnStage": "Play on stage",
+		"showOnStage": "Show on stage",
+		"framesSection": "Frames & Quality",
+		"itemsSection": "Items",
+		"fixFramesDetail": "Edit every frame of {move} in your art app.",
+		"redrawDetail": "Draw {move} again in the facings you choose, priced first.",
+		"captureDetail": "Save one frame of {move} as a new State.",
+		"itemsDetail": "Draw the worn items still missing from {move}.",
+		"itemsComplete": "Every item is drawn for it.",
+		"itemsUnavailable": "Items can’t be drawn for it here.",
+		"frames": "Frames",
+		"length": "Length",
+		"ms": "{ms} ms",
+		"exportId": "Export ID",
+		"gone": "This move is no longer saved."
 	}
 }

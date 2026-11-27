@@ -718,7 +718,8 @@
 		"removeState": "体とすべてのアイテムから調整済みフレームが外れます。完了したモーションのフレームは残ります。最大 30 日間は元に戻せます。",
 		"labelDeleteMove": "ゴミ箱に移動…",
 		"labelDeleteOutfit": "コーディネートを削除",
-		"thisRemovesTheMoveFromTheBody": "体とすべてのアイテムからフレームが外れます。最大 30 日間は元に戻せます。"
+		"thisRemovesTheMoveFromTheBody": "体とすべてのアイテムからフレームが外れます。最大 30 日間は元に戻せます。",
+		"demoRenameLocked": "デモの動きと状態は名前を変えられません"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "無料：作成済みのアイテムを再生成することはありません。",
@@ -3619,5 +3620,25 @@
 		"directionsDetail": "描く向きと、別の向きを反転させる向きを選びます。",
 		"costEstimateDetail": "動き・状態・アイテムを追加した場合のコストを見積もります。",
 		"frameLocked": "このキャラクターのフレームと向きは変更できません。"
+	},
+	"clipWindow": {
+		"move": "動き",
+		"state": "状態",
+		"actions": "動き・状態の操作",
+		"playOnStage": "ステージで再生",
+		"showOnStage": "ステージに表示",
+		"framesSection": "フレームと品質",
+		"itemsSection": "アイテム",
+		"fixFramesDetail": "{move}の全フレームを画像編集アプリで編集します。",
+		"redrawDetail": "選んだ向きで{move}を描き直します（先に価格を表示）。",
+		"captureDetail": "{move}の1フレームを新しい状態として保存します。",
+		"itemsDetail": "{move}にまだ足りない装備アイテムを描きます。",
+		"itemsComplete": "すべてのアイテムが描かれています。",
+		"itemsUnavailable": "ここではアイテムを描けません。",
+		"frames": "フレーム",
+		"length": "長さ",
+		"ms": "{ms} ms",
+		"exportId": "エクスポートID",
+		"gone": "この動きはもう保存されていません。"
 	}
 }

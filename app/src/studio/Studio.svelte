@@ -93,6 +93,7 @@
 		notes: () => import('./StageNote.svelte'),
 		gen: () => import('./GenCard.svelte'),
 		details: () => import('./CharacterWindow.svelte'),
+		clip: () => import('./ClipWindow.svelte'),
 		slots: () => import('./SlotsSheet.svelte'),
 		frames: () => import('./FramesSheet.svelte'),
 		adjustFrame: () => import('./AdjustFrameSheet.svelte'),
@@ -211,16 +212,12 @@
 		if (sheetBefore === 'activity' && sheet !== 'activity') cancelWaitingForTab();
 		if (sheet !== 'activity') settingsNavigation.activityOpen = false;
 		if (sheet !== 'cost') settingsNavigation.costOpen = false;
-		// A character tool (or Rename, Move to Trash) returns to the character's window only while one of them, or the
-		// window, is open.
-		if (
-			sheet !== 'details' &&
-			sheet !== 'adjustFrame' &&
-			sheet !== 'directions' &&
-			sheet !== 'cost' &&
-			sheet !== 'rename' &&
-			sheet !== 'delete'
-		)
+		// A tool (or Rename, Move to Trash) returns to the window it was opened from only while it, or that window, is open.
+		const returnsTo = {
+			details: ['details', 'adjustFrame', 'directions', 'cost', 'rename', 'delete'],
+			clip: ['clip', 'frames', 'move', 'stateCapture', 'itemGeneration', 'rename']
+		} as const;
+		if (ui.returnTo && !(returnsTo[ui.returnTo] as readonly string[]).includes(sheet ?? ''))
 			ui.returnTo = null;
 		if (sheet !== 'export' && !(sheet === 'settings' && settingsNavigation.fromExport))
 			settingsNavigation.exportOpen = false;
@@ -443,6 +440,7 @@
 			/>{/key}{/if}
 	{#if ui.sheet === 'delete'}<DeleteSheet />{/if}
 	{#if ui.sheet === 'details'}<Lazy load={parts.details} />{/if}
+	{#if ui.sheet === 'clip'}<Lazy load={parts.clip} />{/if}
 	{#if ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
 	{#if ui.sheet === 'slots'}<Lazy load={parts.slots} />{/if}
 	{#if ui.sheet === 'frames' && store.project}<Lazy load={parts.frames} />{/if}

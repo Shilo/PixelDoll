@@ -88,6 +88,8 @@
 
 <Sheet
 	title={t('itemGeneration.title', { move: name })}
+	back={ui.returnTo === 'clip' ? () => (ui.sheet = 'clip') : undefined}
+	backTo={ui.returnTo === 'clip' ? name : undefined}
 	onclose={() => (ui.sheet = null)}
 	footer={available ? foot : undefined}
 >

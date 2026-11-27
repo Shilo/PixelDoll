@@ -225,7 +225,11 @@
 	locked={busy}
 	wide
 	back={prepared ? reset : frames.back ? () => (ui.sheet = frames.back!) : undefined}
-	backTo={!prepared && frames.back ? t('studio.titleItem') : undefined}
+	backTo={!prepared && frames.back
+		? frames.back === 'clip'
+			? displayMove(ui.clip, store.project?.manifest.rig.animations ?? [])
+			: t('studio.titleItem')
+		: undefined}
 	backDiscards
 	dirty={!!prepared}
 	onclose={() => (ui.sheet = null)}

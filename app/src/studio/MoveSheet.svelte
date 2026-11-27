@@ -1938,8 +1938,14 @@
 			? () => (reviewingSkeletonFor = null)
 			: mine && ui.moveFormOpen
 				? () => (ui.moveFormOpen = false)
-				: undefined}
-	backTo={importPage ? t('moves.add') : undefined}
+				: ui.returnTo === 'clip'
+					? () => (ui.sheet = 'clip')
+					: undefined}
+	backTo={importPage
+		? t('moves.add')
+		: ui.returnTo === 'clip'
+			? displayMove(ui.clip, store.project?.manifest.rig.animations ?? [])
+			: undefined}
 	opener={canImport && !importPage && !redrawTarget
 		? {
 				label: t('moveImport.importMoves'),

@@ -739,7 +739,8 @@
 		"removeState": "Körper und jeder Gegenstand verlieren die angepassten Frames; fertige Bewegungen behalten ihre. bis zu 30 Tage lang kannst du den Zustand zurückholen.",
 		"labelDeleteMove": "In den Papierkorb…",
 		"labelDeleteOutfit": "Outfit löschen",
-		"thisRemovesTheMoveFromTheBody": "Körper und jeder Gegenstand verlieren die Frames dieser Bewegung. bis zu 30 Tage lang kannst du sie zurückholen."
+		"thisRemovesTheMoveFromTheBody": "Körper und jeder Gegenstand verlieren die Frames dieser Bewegung. bis zu 30 Tage lang kannst du sie zurückholen.",
+		"demoRenameLocked": "Bewegungen und Zustände der Demo lassen sich nicht umbenennen"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Kostenlos: Bereits erstellte Gegenstände werden nie neu generiert.",
@@ -3720,5 +3721,25 @@
 		"directionsDetail": "Wählen, welche Blickrichtungen gezeichnet und welche gespiegelt werden.",
 		"costEstimateDetail": "Schätzen, was weitere Bewegungen, Zustände und Gegenstände kosten.",
 		"frameLocked": "Rahmen und Richtungen dieser Figur lassen sich nicht ändern."
+	},
+	"clipWindow": {
+		"move": "Bewegung",
+		"state": "Zustand",
+		"actions": "Aktionen für Bewegung oder Zustand",
+		"playOnStage": "Auf der Bühne abspielen",
+		"showOnStage": "Auf der Bühne zeigen",
+		"framesSection": "Frames & Qualität",
+		"itemsSection": "Gegenstände",
+		"fixFramesDetail": "Jeden Frame von {move} in deinem Grafikprogramm bearbeiten.",
+		"redrawDetail": "{move} in den gewählten Blickrichtungen neu zeichnen, vorher mit Preis.",
+		"captureDetail": "Einen Frame von {move} als neuen Zustand speichern.",
+		"itemsDetail": "Die getragenen Gegenstände zeichnen, die {move} noch fehlen.",
+		"itemsComplete": "Jeder Gegenstand ist dafür gezeichnet.",
+		"itemsUnavailable": "Gegenstände lassen sich hier nicht dafür zeichnen.",
+		"frames": "Frames",
+		"length": "Länge",
+		"ms": "{ms} ms",
+		"exportId": "Export-ID",
+		"gone": "Diese Bewegung ist nicht mehr gespeichert."
 	}
 }

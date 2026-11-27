@@ -6,6 +6,7 @@ import {
 	equipmentGroup,
 	newItem,
 	selectedItemDetails,
+	openClipTool,
 	openItemSection,
 	inspectStage,
 	openAccount,
@@ -4871,7 +4872,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 		.getByRole('button', { name: 'Discard', exact: true })
 		.click();
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
-	await page.getByRole('menuitem', { name: /^Redraw/ }).click();
+	await openClipTool(page, /^Redraw/);
 	if (!(await model.isVisible())) await advanced.click();
 	await expect(model).toHaveValue('skeleton-v3');
 	await move.getByRole('button', { name: 'Close', exact: true }).click();
@@ -7863,7 +7864,7 @@ test('a replacement missing only numeric body checks lands in the staged review 
 	const posts = await skeletonMoveApi(page, context, { recolor: 'east' });
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
-	await page.getByRole('menuitem', { name: /^Redraw/ }).click();
+	await openClipTool(page, /^Redraw/);
 	const sheet = page.getByRole('dialog', { name: /^Redraw / });
 	await sheet
 		.getByRole('group', { name: 'Directions to redraw' })
@@ -8122,7 +8123,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await equipmentMode(page, 'Moves');
 	const redraw = async (name: string) => {
 		await page.getByRole('button', { name: `More actions for ${name}`, exact: true }).click();
-		await page.getByRole('menuitem', { name: /^Redraw/ }).click();
+		await openClipTool(page, /^Redraw/);
 	};
 	await redraw('Cross punch');
 	const sheet = page.getByRole('dialog', { name: /^Redraw / });
@@ -8419,7 +8420,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	const fixture = await targetedRepairFixture(page);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
-	await page.getByRole('menuitem', { name: /^Redraw/ }).click();
+	await openClipTool(page, /^Redraw/);
 	const sheet = page.getByRole('dialog', { name: /^Redraw / });
 	const directions = sheet.getByRole('group', { name: 'Directions to redraw' });
 	const east = directions.getByRole('button', { name: 'East direction', exact: true });
@@ -8656,7 +8657,7 @@ test('targeted move replacement names mirrored effects without offering a separa
 	});
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
-	await page.getByRole('menuitem', { name: /^Redraw/ }).click();
+	await openClipTool(page, /^Redraw/);
 	await expect(
 		page
 			.getByRole('dialog', { name: 'Redraw Walk', exact: true })
@@ -10237,7 +10238,7 @@ test('standing-first items quote standing and draw selected custom moves togethe
 		'0 of 6 items drawn'
 	);
 	await page.getByRole('button', { name: 'More actions for Custom walk', exact: true }).click();
-	await page.getByRole('menuitem', { name: /^Generate items/ }).click();
+	await openClipTool(page, /^Generate items/);
 	const picker = page.getByRole('dialog', { name: 'Generate items for Custom walk', exact: true });
 	const pickerRow = picker.getByRole('button', { name: new RegExp(fixture.itemName) });
 	await expect(pickerRow).toContainText('12 gens');
@@ -10252,7 +10253,11 @@ test('standing-first items quote standing and draw selected custom moves togethe
 	await equipmentMode(page, 'States');
 	await page.getByRole('button', { name: 'More actions for Standing', exact: true }).click();
 	await expect(page.getByRole('menuitem', { name: /^Rename/ })).toBeVisible();
-	await expect(page.getByRole('menuitem', { name: /^Generate items/ })).toHaveCount(0);
+	// Item drawing lives in the State's window, and Standing never needs it.
+	await page.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
+	await expect(
+		page.locator('dialog.clip-window[open]').getByRole('button', { name: /^Generate items/ })
+	).toHaveCount(0);
 	await page.keyboard.press('Escape');
 	// The dimmed tile asks instead of switching Preview to Standing: draw it for this move, or wear it anyway.
 	await equipmentGroup(page, 'Main hand');
@@ -10773,7 +10778,7 @@ test('move review gates item selection and shows live estimates without spending
 	await picker.getByRole('button', { name: 'Not now', exact: true }).click();
 	await expect(picker).toBeHidden();
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
-	await page.getByRole('menuitem', { name: /^Generate items/ }).click();
+	await openClipTool(page, /^Generate items/);
 	const later = page.getByRole('dialog', { name: 'Generate items for Walk', exact: true });
 	await later.getByRole('button', { name: new RegExp(fixture.itemName) }).click();
 	await later.getByRole('button', { name: 'Generate 1 item', exact: true }).click();
@@ -12559,7 +12564,7 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Walk' }).click();
-	await page.getByRole('menuitem', { name: /^Fix frames/ }).click();
+	await openClipTool(page, /^Fix frames/);
 	await expect(sheet.getByRole('combobox', { name: 'Frames of' })).toHaveValue('base');
 	const body = await pixels('walk', 'base');
 	const bodyPng = { w: 512, h: 256, data: new Uint8ClampedArray(body) };

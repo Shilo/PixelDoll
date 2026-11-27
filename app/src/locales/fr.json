@@ -739,7 +739,8 @@
 		"removeState": "Le corps et chaque objet perdent leurs images ajustées ; les mouvements terminés gardent les leurs. Vous pouvez récupérer l’état pendant jusqu’à 30 jours.",
 		"labelDeleteMove": "Vers la corbeille…",
 		"labelDeleteOutfit": "Supprimer la tenue",
-		"thisRemovesTheMoveFromTheBody": "Le corps et chaque objet perdent leurs images. Vous pouvez récupérer le mouvement pendant jusqu’à 30 jours."
+		"thisRemovesTheMoveFromTheBody": "Le corps et chaque objet perdent leurs images. Vous pouvez récupérer le mouvement pendant jusqu’à 30 jours.",
+		"demoRenameLocked": "Les mouvements et états de la démo ne peuvent pas être renommés"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratuit : ne régénère jamais les objets déjà créés.",
@@ -3720,5 +3721,25 @@
 		"directionsDetail": "Choisir les orientations dessinées et celles qui en reflètent une autre.",
 		"costEstimateDetail": "Estimer le coût de mouvements, d’états et d’objets en plus.",
 		"frameLocked": "Le cadre et les directions de ce personnage ne peuvent pas être modifiés."
+	},
+	"clipWindow": {
+		"move": "Mouvement",
+		"state": "État",
+		"actions": "Actions du mouvement ou de l’état",
+		"playOnStage": "Jouer sur la scène",
+		"showOnStage": "Afficher sur la scène",
+		"framesSection": "Images et qualité",
+		"itemsSection": "Objets",
+		"fixFramesDetail": "Modifier chaque image de {move} dans votre logiciel de dessin.",
+		"redrawDetail": "Redessiner {move} dans les orientations choisies, prix indiqué avant.",
+		"captureDetail": "Enregistrer une image de {move} comme nouvel état.",
+		"itemsDetail": "Dessiner les objets portés qui manquent encore à {move}.",
+		"itemsComplete": "Chaque objet est dessiné pour lui.",
+		"itemsUnavailable": "Les objets ne peuvent pas être dessinés ici.",
+		"frames": "Images",
+		"length": "Durée",
+		"ms": "{ms} ms",
+		"exportId": "ID d’export",
+		"gone": "Ce mouvement n’est plus enregistré."
 	}
 }

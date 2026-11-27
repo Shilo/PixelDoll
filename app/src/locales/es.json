@@ -739,7 +739,8 @@
 		"removeState": "El cuerpo y cada objeto pierden sus fotogramas ajustados; los movimientos terminados conservan los suyos. Puedes recuperar el estado durante hasta 30 días.",
 		"labelDeleteMove": "Mover a la papelera…",
 		"labelDeleteOutfit": "Eliminar atuendo",
-		"thisRemovesTheMoveFromTheBody": "El cuerpo y cada objeto pierden sus fotogramas. Puedes recuperar el movimiento durante hasta 30 días."
+		"thisRemovesTheMoveFromTheBody": "El cuerpo y cada objeto pierden sus fotogramas. Puedes recuperar el movimiento durante hasta 30 días.",
+		"demoRenameLocked": "Los movimientos y estados de la demo no se pueden renombrar"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratis: nunca vuelve a generar objetos ya creados.",
@@ -3720,5 +3721,25 @@
 		"directionsDetail": "Elige qué orientaciones se dibujan y cuáles reflejan otra.",
 		"costEstimateDetail": "Calcula cuánto costarían más movimientos, estados y objetos.",
 		"frameLocked": "El marco y las direcciones de este personaje no se pueden cambiar."
+	},
+	"clipWindow": {
+		"move": "Movimiento",
+		"state": "Estado",
+		"actions": "Acciones de movimiento o estado",
+		"playOnStage": "Reproducir en el escenario",
+		"showOnStage": "Mostrar en el escenario",
+		"framesSection": "Fotogramas y calidad",
+		"itemsSection": "Objetos",
+		"fixFramesDetail": "Edita cada fotograma de {move} en tu programa de dibujo.",
+		"redrawDetail": "Vuelve a dibujar {move} en las orientaciones que elijas, con precio antes.",
+		"captureDetail": "Guarda un fotograma de {move} como nuevo estado.",
+		"itemsDetail": "Dibuja los objetos puestos que aún faltan en {move}.",
+		"itemsComplete": "Todos los objetos están dibujados.",
+		"itemsUnavailable": "Aquí no se pueden dibujar objetos para esto.",
+		"frames": "Fotogramas",
+		"length": "Duración",
+		"ms": "{ms} ms",
+		"exportId": "ID de exportación",
+		"gone": "Este movimiento ya no está guardado."
 	}
 }
