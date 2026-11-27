@@ -634,9 +634,7 @@ test('another character’s item on the same body is worn for free, survives rel
 		'Copied Traveling wizard hat from Twin. No generations used.'
 	);
 	// The toast names the moves it will vanish in, before the player first sees it vanish.
-	await expect(page.locator('.bu-toast')).toContainText(
-		/Missing some frames in .+; it hides there\./
-	);
+	await expect(page.locator('.bu-toast')).toContainText(/It won’t show on some frames in .+\./);
 	const own = page
 		.locator('.equipment-scroll [role=group][aria-label="Head items"]')
 		.getByRole('button', { name: /^Traveling wizard hat(,|$)/ })
@@ -764,7 +762,7 @@ test('an item drawn for another body on the same canvas is worn as drawn for fre
 	});
 	await sharedTile(others, 'Stout helmet').click();
 	await expect(page.locator('.bu-toast')).toContainText(
-		'Wearing Stout helmet as drawn for Stout. It may not line up with this body. No generations used.'
+		'Wearing Stout helmet, drawn for Stout. It may not line up on this body.'
 	);
 	const own = page.locator('.equipment-scroll [role=group][aria-label="Head items"]');
 	const worn = own.getByRole('button', {
