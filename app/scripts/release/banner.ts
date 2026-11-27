@@ -128,7 +128,7 @@ export async function composeBanner(version: string, recent: ReadonlySet<string>
 		for (const choice of bannerChoices(version)) {
 			const doll = await dollFrame(manifest, choice);
 			const { color } = choice;
-			const { png, rgba } = await page.evaluate(
+			const drawn = await page.evaluate(
 				({ pixels, w, h, width, height, color }) => {
 					const sprite = document.createElement('canvas');
 					sprite.width = w;
@@ -156,11 +156,11 @@ export async function composeBanner(version: string, recent: ReadonlySet<string>
 						}
 					}
 					if (right < 0) throw new Error('Release banner fixture frame is transparent');
-					const scale = 2;
 					const cropW = right - left + 1;
 					const cropH = bottom - top + 1;
-					if (cropW * scale > width || cropH * scale > height)
-						throw new Error('Release banner fixture frame is too large');
+					// Every banner draws the doll at 2x; a pose too wide or tall for that (a tall hat facing south) is skipped.
+					const scale = 2;
+					if (cropW * scale > width || cropH * scale > height) return null;
 					context.fillStyle = color;
 					context.fillRect(0, 0, width, height);
 					context.imageSmoothingEnabled = false;
@@ -182,6 +182,8 @@ export async function composeBanner(version: string, recent: ReadonlySet<string>
 				},
 				{ pixels: Array.from(doll.data), w: doll.w, h: doll.h, width, height, color }
 			);
+			if (!drawn) continue;
+			const { png, rgba } = drawn;
 			const hash = createHash('sha256').update(Buffer.from(rgba)).digest('hex');
 			if (recent.has(hash)) continue;
 			const native = Buffer.from(png, 'base64');
