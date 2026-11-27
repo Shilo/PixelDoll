@@ -160,7 +160,7 @@ implement those same decisions in their host language; changing JavaScript does 
 | Turn with no active move                     | Throws before mutation                              | Warning and `false`, before mutation          | Warning and `false`, before mutation     |
 | Disposal                                     | `destroy()`                                         | Native `queue_free()`                         | Native `Destroy(gameObject)`             |
 
-All four live controllers must preserve these behaviors:
+All five live controllers (Phaser 3/4, Phaser AE, GDevelop, Godot and Unity) must preserve these behaviors:
 
 - Selecting the active move/direction preserves its progress. Selecting a different move/direction
   starts at the beginning. Selecting a completed once-only clip replays it. Explicit `restart = true`
@@ -184,7 +184,7 @@ All four live controllers must preserve these behaviors:
   warning/boolean results are intentional host-language differences, not permission to fail silently.
 - Unknown material keys in JavaScript replacement maps are retained but have no visual effect; native
   one-material setters reject unknown material IDs. Unknown variant names, like empty strings, use
-  source colors in all four controllers. Phaser mutators return `undefined`; GDevelop returns the doll
+  source colors in all five controllers. Phaser mutators return `undefined`; GDevelop returns the doll
   for chaining. These return conventions do not change rendered results.
 - Stored layer pivots and cell sizes, most-specific depth overrides, slot/role tie order, exact RGB
   swaps, alpha and source-image immutability retain the same meaning in every renderer.
@@ -208,7 +208,7 @@ Layering starts off. `canLayerAction` checks all reachable cells of the current 
 
 The Studio uses the canonical fragment splitter, seam measurement and compositor. It pads the whole cached set around the same pivot without changing Live's world scale. Engine sprites are independently translated and have no shared clipping frame. Export preparation writes source-color body fragments with the original grids and pivots and points whole equipment layers at their existing source sheets. Both parts share normal layer ordering. The upper translation is lower hip minus upper hip plus the baked correction. Native controllers consume only prepared assets and metadata. The host game owns travel speed, action input and hit timing.
 
-For configured attacks, gear without complete attack art is omitted from either action mode. It does not block layering; Live retains the hidden-gear or loading notice. Visible lower-slot gear with complete attack art and incomplete walk art forces a full-body action. Exports record the omissions by attack/facing and the blockers by walk/attack/facing, so the four players do not recalculate image coverage. Seam limits are scaled by unpadded rig width, and off-silhouette hips prefer valid measured or requested coordinates before clamping to the occupied silhouette.
+For configured attacks, gear without complete attack art is omitted from either action mode. It does not block layering; Live retains the hidden-gear or loading notice. Visible lower-slot gear with complete attack art and incomplete walk art forces a full-body action. Exports record the omissions by attack/facing and the blockers by walk/attack/facing, so the five players do not recalculate image coverage. Seam limits are scaled by unpadded rig width, and off-silhouette hips prefer valid measured or requested coordinates before clamping to the occupied silhouette.
 
 ## Maintaining cross-engine consistency
 

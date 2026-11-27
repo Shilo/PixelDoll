@@ -233,6 +233,7 @@ namespace PixelDoll
                 Debug.LogWarning("PixelDoll: unavailable move/direction " + anim + "/" + dir, this);
                 return "";
             }
+            GetComponent<Animator>().Update(0f); // applies a Play requested earlier this frame before reading the gait it layers over
             actionLayered = layerActions && CanLayerAction(anim, dir);
             action = move;
             actionDirection = dir;

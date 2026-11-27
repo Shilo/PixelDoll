@@ -196,6 +196,12 @@ namespace PixelDollNativeReview
             Invoke(doll, "Play", "walk", "south");
             Invoke(doll, "Sync");
             Check(!Playing() && clock.sprite.name == walkFrame, label + ": Play cancels the action without resetting the walk");
+            // no Animator.Update between the calls: the action must see the gait the same frame turned to
+            Invoke(doll, "Play", "walk", "west");
+            Check((string)Invoke(doll, "PlayAction", "jump", "south") == "full", label + ": an action started the frame the gait turned away plays full");
+            Invoke(doll, "Play", "walk", "south");
+            animator.Update(0);
+            Invoke(doll, "Sync");
         }
 
         /// The fixture's one-cell State has a magenta center block that no Move cell has; the hat layer is read because it is not recolored.

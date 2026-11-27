@@ -1850,6 +1850,8 @@ test('actual UI ZIPs materialize global playback in every engine and asset forma
 					const created: Config[] = [];
 					const scene = {
 						textures: { exists: () => true },
+						// a real scene's event emitter; the loader listens for its shutdown
+						events: { once: () => {}, off: () => {} },
 						anims: { exists: () => false, create: (config: Config) => created.push(config) }
 					};
 					const manifest = await api.loadPaperdoll(scene, base);

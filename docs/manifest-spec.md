@@ -321,7 +321,13 @@ export interface ExportInfo {
   exportedAt: string;
   layout: "pixeldoll-sheets/1";
   engines: (
-    "generic" | "godot" | "unity" | "phaser" | "gdevelop" | "aseprite"
+    | "generic"
+    | "godot"
+    | "unity"
+    | "phaser"
+    | "phaser-ae"
+    | "gdevelop"
+    | "aseprite"
   )[]; // RPG Maker zips ship no manifest.json
   pixelsPerUnit: number; // Unity; default = rig.pixelsPerUnit ?? rig.cell.w
   baked?: string[]; // preset ids with baked composites

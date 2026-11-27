@@ -89,7 +89,17 @@ export async function loadPaperdoll(scene, base) {
   if (!cache) loads.set(scene.textures, cache = new Map());
   if (cache.has(base)) return cache.get(base);
   const work = (async () => {
-    const m = await json(base + 'manifest.json');
+    // The scene that runs the loader may stop mid-load: Phaser then resets its loader without a 'complete', so the
+    // shared load rejects, is evicted and removes what it added, and another scene can load the folder again.
+    let onShutdown, queued = [];
+    const shutdown = new Promise((_, reject) => {
+      onShutdown = () => reject(new Error('PixelDoll: the scene loading ' + base + ' shut down before the load finished'));
+    });
+    shutdown.catch(() => {});
+    scene.events.once('shutdown', onShutdown);
+    const phase = (promise) => Promise.race([promise, shutdown]);
+    try {
+    const m = await phase(json(base + 'manifest.json'));
     m._base = base;
     m._atlases = {};
     m._sources = {};
@@ -105,14 +115,14 @@ export async function loadPaperdoll(scene, base) {
     // Fetch all metadata and exact palette pixels before mutating Phaser's caches.
     // Canvas readback rounds the RGB of translucent pixels, making exact lookups miss.
     const sheets = new Map();
-    await Promise.all(entries.flatMap((e) => {
+    await phase(Promise.all(entries.flatMap((e) => {
       const atlas = json(base + 'phaser/' + e.path).then((data) => { m._atlases[e.key] = data; });
       if (!e.exact) return [atlas];
       if (!sheets.has(e.sheet)) sheets.set(e.sheet, exactPixels(base + e.sheet));
       return [atlas, sheets.get(e.sheet).then((pixels) => { m._sources[e.key] = pixels; })];
-    }));
-    const queued = entries.filter((e) => !scene.textures.exists(e.key));
-    if (queued.length) await new Promise((resolve, reject) => {
+    })));
+    queued = entries.filter((e) => !scene.textures.exists(e.key));
+    if (queued.length) await phase(new Promise((resolve, reject) => {
       const failed = new Map(), urls = new Map(queued.map((e) => [e.key, base + e.sheet]));
       const onError = (file) => { if (urls.has(file.key)) failed.set(file.key, file.src ?? urls.get(file.key)); };
       scene.load.on('loaderror', onError);
@@ -126,7 +136,7 @@ export async function loadPaperdoll(scene, base) {
       });
       for (const e of queued) scene.load.atlas(e.key, urls.get(e.key), m._atlases[e.key]);
       if (!scene.load.isLoading()) scene.load.start();
-    });
+    }));
     const body = m.items.find((i) => i.id === m.rig.baseItem).layers.find((l) => l.role === 'fg');
     for (const a of m.rig.animations) for (const d of available(m, a)) {
       const key = animKey(m, a.id, d.id);
@@ -138,6 +148,12 @@ export async function loadPaperdoll(scene, base) {
       }
     }
     return m;
+    } catch (error) {
+      for (const e of queued) if (scene.textures.exists(e.key)) scene.textures.remove(e.key);
+      throw error;
+    } finally {
+      scene.events.off('shutdown', onShutdown);
+    }
   })();
   cache.set(base, work);
   try { return await work; } catch (error) { cache.delete(base); throw error; }

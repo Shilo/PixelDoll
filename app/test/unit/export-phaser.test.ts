@@ -440,6 +440,21 @@ test('concurrent scenes share a folder load through the game-global TextureManag
 	).toHaveLength(1);
 });
 
+test('a scene that shuts down mid-load rejects and evicts the shared load, so the folder can load again', async () => {
+	const m = fixture(),
+		api = runtime(),
+		h = sceneHarness();
+	browserHarness(m);
+	const stopped = api.loadPaperdoll(h.scene, '/hero/');
+	h.scene.events.emit('shutdown');
+	await expect(stopped).rejects.toThrow('shut down before the load finished');
+	expect(h.scene.events.listenerCount('shutdown')).toBe(0);
+	// the stopped load was evicted: loading the folder again runs a fresh load
+	const loaded = await api.loadPaperdoll(h.scene, '/hero/');
+	expect(loaded.rig.baseItem).toBe('base');
+	expect(h.scene.load.queued).toHaveLength(4);
+});
+
 test('generated Phaser runtime recolors source pixels per owner, resolves linked presets and tucked layers, and restores defaults', async () => {
 	const m = fixture(),
 		api = runtime(),

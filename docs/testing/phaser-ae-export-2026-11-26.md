@@ -81,9 +81,9 @@ change. Agreed and implemented:
   through a `hero.ts` module, the actor id is `pixeldoll-1`, integer pivots for crisp stills, MIT runtime versus
   Phaser's engine license, placeholder ids.
 
-Deferred, with board cards: a layered action shows the full action while the gait faces away and returns to layered
-when it faces back (all four JavaScript and native players share this resolver), and the Phaser 3/4 adapter reads its
-palette source through a canvas, so its exact lookups miss translucent pixels too. No view culling: layers may extend
+Deferred at the time and fixed later the same day (commits 518a8eb09 and 92f477cc9): a layered action showed the full
+action while the gait faced away and returned to layered when it faced back, in every player, and the Phaser 3/4
+adapter read its palette source through a canvas, so its exact lookups missed translucent pixels too. No view culling: layers may extend
 past the actor box, and 200 dolls sync in about 1.1 ms per step.
 
 A third round had both reviewers re-run their repros against the implementation. No regressions; fixed from it:
