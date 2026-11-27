@@ -178,12 +178,19 @@ describe('publishFiles', () => {
 	it('starts no further write once one fails, and still writes the manifest only after every other file', async () => {
 		const folder = memoryFolder();
 		const entries = Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`f${i}.png`, 'x']));
-		folder.failRecord = (path) => (path === 'f0.png' ? new Error('storage full') : undefined);
+		let atFailure = -1;
+		folder.failRecord = (path) => {
+			if (path !== 'f0.png') return undefined;
+			atFailure = folder.log.length;
+			return new Error('storage full');
+		};
 		expect(await folder.publish({ ...entries, 'manifest.json': 'm' })).toMatchObject({
 			kind: 'failed'
 		});
-		// At most the writes already under way when f0.png failed (eight at a time) finished; the rest never started.
-		expect(folder.log.length).toBeLessThanOrEqual(8);
+		// No write starts after f0.png fails: only the others already under way (eight at a time, so at most seven) finish.
+		// Which files those are depends on timing, so only the count after the failure is checked.
+		expect(atFailure).toBeGreaterThan(0);
+		expect(folder.log.length - atFailure).toBeLessThanOrEqual(7);
 		expect(folder.text('manifest.json')).toBeNull();
 
 		folder.failRecord = undefined;
