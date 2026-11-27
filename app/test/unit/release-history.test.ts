@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -193,4 +193,23 @@ it('nets the commits of a reverted merge', () => {
 			(prefix) => (prefix === 'ccccccc' ? branch : [])
 		).map(({ subject }) => subject)
 	).toEqual(['kept feature']);
+});
+
+it('schedules the release workflow on the release day and the day after, just after the release hour', () => {
+	const root = new URL('../../../', import.meta.url);
+	const schedule = JSON.parse(readFileSync(new URL('releases/schedule.json', root), 'utf8'));
+	const workflow = readFileSync(new URL('.github/workflows/release.yml', root), 'utf8');
+	const [minute, hour, , , days] = /cron: "([^"]+)"/.exec(workflow)![1].split(' ');
+	const day = [
+		'sunday',
+		'monday',
+		'tuesday',
+		'wednesday',
+		'thursday',
+		'friday',
+		'saturday'
+	].indexOf(schedule.day);
+	expect(Number(minute)).toBeLessThan(60);
+	expect(Number(hour)).toBe(schedule.hourUtc);
+	expect(days).toBe(`${day},${(day + 1) % 7}`);
 });

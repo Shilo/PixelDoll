@@ -2,7 +2,9 @@ name: Release
 
 on:
   schedule:
-    - cron: "17 15 * * *"
+    # The release day and the day after (a backup if GitHub drops a scheduled run), just after releases/schedule.json's
+    # hourUtc. Keep it in step with that file (release-history.test.ts checks); other days need no run.
+    - cron: "17 15 * * 5,6"
   workflow_dispatch:
     inputs:
       dry_run:
