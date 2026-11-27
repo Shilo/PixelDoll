@@ -1438,6 +1438,8 @@ test('character directions can be mirrored and unlinked on import and after savi
 		.getByRole('button', { name: 'Mirror South east from South west', exact: true })
 		.click();
 	await expect(importer.locator('.import-preview')).toContainText('7 directions');
+	await options.getByRole('button', { name: 'South direction', exact: true }).click();
+	await expect(importer.locator('.import-preview')).toContainText('8 directions');
 	await importer.getByRole('switch', { name: 'Set up the pose rig next (recommended)' }).uncheck();
 	await importer.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(importer).toBeHidden();
@@ -1503,6 +1505,51 @@ test('character directions can be mirrored and unlinked on import and after savi
 	await replacement.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(settings).toBeHidden();
 	await reloadStudio(page);
+	const openFrame = async () => {
+		await page.locator('.project-btn').click();
+		await page
+			.getByRole('button', { name: 'More actions for Direction test hero', exact: true })
+			.click();
+		await page
+			.getByRole('menu', { name: 'Actions for Direction test hero', exact: true })
+			.getByRole('menuitem', { name: 'View and edit…', exact: true })
+			.click();
+		const window = page.locator('dialog.character-window[open]');
+		await openItemSection(window, 'Frame & Directions');
+		await window.getByRole('button', { name: /^Adjust frame/ }).click();
+		return page.getByRole('dialog', { name: 'Adjust frame', exact: true });
+	};
+	let frame = await openFrame();
+	await expect(frame.getByRole('spinbutton', { name: 'Frame size' })).toHaveValue('64');
+	const view = frame.getByRole('combobox', { name: 'View', exact: true });
+	await expect(view.locator('option')).toHaveCount(8);
+	await view.selectOption({ label: 'North-east' });
+	await expect(frame.getByLabel('North-east view in a 64 px frame')).toBeVisible();
+	const viewport = page.viewportSize()!;
+	for (const size of [
+		viewport,
+		{ width: 240, height: 320 },
+		{ width: 320, height: 568 },
+		{ width: 844, height: 390 }
+	]) {
+		await page.setViewportSize(size);
+		await expect
+			.poll(() =>
+				frame.locator('.sheet-body').evaluate((body) => body.scrollWidth - body.clientWidth)
+			)
+			.toBe(0);
+		await expect
+			.poll(() =>
+				frame.locator('.frame-outline').evaluate((outline) => {
+					const canvas = outline.querySelector('canvas')!;
+					return canvas.getBoundingClientRect().width <= outline.getBoundingClientRect().width;
+				})
+			)
+			.toBe(true);
+	}
+	await page.setViewportSize(viewport);
+	await page.keyboard.press('Escape');
+	await expect(frame).toBeHidden();
 	await openDirections();
 	await expect(west).toHaveAttribute('aria-pressed', 'true');
 	await northWest.click();
@@ -1544,20 +1591,6 @@ test('character directions can be mirrored and unlinked on import and after savi
 	await expect(settings).toBeHidden();
 	// Adjust frame: move the mirrored character and resize its frame for free, saved across a reload and undone from its
 	// notice.
-	const openFrame = async () => {
-		await page.locator('.project-btn').click();
-		await page
-			.getByRole('button', { name: 'More actions for Direction test hero', exact: true })
-			.click();
-		await page
-			.getByRole('menu', { name: 'Actions for Direction test hero', exact: true })
-			.getByRole('menuitem', { name: 'View and edit…', exact: true })
-			.click();
-		const window = page.locator('dialog.character-window[open]');
-		await openItemSection(window, 'Frame & Directions');
-		await window.getByRole('button', { name: /^Adjust frame/ }).click();
-		return page.getByRole('dialog', { name: 'Adjust frame', exact: true });
-	};
 	// Saves made before export ids existed have none; loading fills a default, and saving must not read that as a change.
 	await page.evaluate(
 		() =>
@@ -1581,7 +1614,8 @@ test('character directions can be mirrored and unlinked on import and after savi
 			})
 	);
 	await reloadStudio(page);
-	let frame = await openFrame();
+	frame = await openFrame();
+	await expect(view.locator('option')).toHaveCount(6);
 	const size = frame.getByRole('spinbutton', { name: 'Frame size', exact: true });
 	const position = frame.getByRole('slider', { name: 'Character in its frame', exact: true });
 	await expect(size).toHaveValue('64');

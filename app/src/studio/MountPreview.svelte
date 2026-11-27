@@ -54,7 +54,10 @@
 	} from './state.svelte.ts';
 	import SettingsItemButton from './SettingsItemButton.svelte';
 
-	let { visibility }: { visibility: Snippet } = $props();
+	let {
+		visibility,
+		poseControls
+	}: { visibility: Snippet; poseControls: Snippet<[string | null]> } = $props();
 	const TURN_MS = 1400;
 	const REPEAT_DELAY_MS = 350;
 	const REPEAT_EVERY_MS = 75;
@@ -571,6 +574,8 @@
 		</div>
 	</div>
 {/if}
+
+{@render poseControls(presentation?.clip ?? null)}
 
 <style>
 	.mount-preview {
