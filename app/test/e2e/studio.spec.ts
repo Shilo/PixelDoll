@@ -2806,9 +2806,14 @@ test('studio demo: touch slot headers scroll before a hold and drag after arming
 	const railHead = rail.locator('[data-rail="head"][data-sortable]');
 	const railSource = (await railHair.boundingBox())!;
 	const railStart = { x: railSource.x + 15, y: railSource.y + railSource.height / 2, id: 3 };
+	// The drag grip replaces the slot icon only while the slot is held, never at rest.
+	await expect(railHair.locator('.slot-grip')).toBeHidden();
+	await expect(railHair.locator('.group-icon')).toBeVisible();
 	await touch('touchStart', [railStart]);
 	await page.clock.runFor(300);
 	await expect(railHair).toHaveAttribute('data-armed', 'true');
+	await expect(railHair.locator('.slot-grip')).toBeVisible();
+	await expect(railHair.locator('.group-icon')).toBeHidden();
 	await touch('touchMove', [{ ...railStart, y: railStart.y - 2 }]);
 	await expect(rail.locator('[data-dragged]')).toHaveCount(0);
 	const railTarget = (await railHead.boundingBox())!;

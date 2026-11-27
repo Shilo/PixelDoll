@@ -95,7 +95,8 @@ html[data-app='studio'] body {
 	font-family: var(--font-mono);
 	font-size: var(--fs-sm);
 }
-.studio-app svg.lucide {
+/* A default with no specificity, so a component's own icon rule wins (the slot drag grip stays hidden until a hold). */
+:where(.studio-app svg.lucide) {
 	flex: none;
 	display: block;
 }
