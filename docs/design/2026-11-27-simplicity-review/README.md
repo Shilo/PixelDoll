@@ -91,3 +91,19 @@ Screenshots live in the ignored `evidence/` folder under the repository's local-
 - The lead downloaded a generic ZIP, saw the completion toast and reopened the ZIP in Import. A synthetic stopped creation showed its recovery and public-report preview. The report stayed in the local preview.
 - The type, locale and format checks passed on Node 24.22.1. Three cases timed out or missed a wait during the initial unit run and passed individually. The final scoped planner pass covered 110 tests.
 - Physical touch, screen-reader audio, live paid generation and the remaining source-only paths in the inventory have gaps. Screenshots show states reached with bundled or mocked data.
+
+## Consistency pass
+
+The owner asked for every agent to apply Impeccable's design practices and for controls and styling to be consistent. Two independent audits followed Impeccable's polish, audit, Operate-mode and craft-floor references, one for controls and one for containers, type and feedback. The detector's only findings in `app/src` were TypeScript generics (`Promise<Img>`) read as images.
+
+| Finding | Change | Alternative considered |
+| --- | --- | --- |
+| Inline notices used a local tinted box (12px text, no stripe) while toasts and a few notices used Bronze's stripe. | Bronze 0.3.16 adds a compact notice (tint, 8px corners, 3px tone stripe, 14px text, 16px icon) and a neutral tone. All 167 inline notices use it, and the local CSS is gone. | Moving the few Bronze notices to the local box would have kept a second notice look outside the theme. |
+| Section headings had about seven treatments, partly unstyled `h3` at the browser's 16.38px bold. | A scoped heading reset and one 14px, 600 section-title rule. Sheet titles stay 18px. | Reusing `.bu-section-title` would truncate headings that need to wrap. |
+| `rem` sizes on a 15px root landed between steps (16.875px, 14.06px, 41.25px). | Pixel values on the 12/14/16/18 scale; the cost total is 28px. | |
+| Sheets had no border while confirm dialogs had the Bronze rim, with different title sizes and 18px padding. | Sheets take the rim, alert titles are 18px and sheet bodies are padded 16px 20px. | |
+| Header icons mixed 16, 18 and 20px in one row; menu command rows mixed plain rows with Bronze actions. | Icon-only buttons use 20px, labeled buttons 16px; command rows share the Bronze action recipe with 18px icons. | |
+| Connect used a legacy 40×24 switch; the custom color picker showed no keyboard focus; disabled Bronze buttons could show the pointer cursor. | Connect uses the Settings switch row; the picker shows the focus ring on its visible chip; the app's pointer fallback applies only to enabled legacy buttons. | |
+| Stray Title Case labels ("Get Secret API Key", "Change Loop", "Frames & Quality", "(Demo)"). | Sentence case in every locale where it applied. | Lowercasing "State" across about 20 strings was reverted: it is the product's capitalized feature name and a glossary decision. |
+
+Left for a decision or a later pass: whether Move and State are proper nouns in labels; two disclosure styles; the API calls popover's own type scale; the offline banner and stage note outside the toast structure; 13px and 15px text roles; mixed icon stroke widths (1.6 in Bronze recipes, 2 elsewhere); the compact Wardrobe ⋮ target under coarse pointers; uneven side padding from `scrollbar-gutter: stable` (`both-edges` costs phones 15px each side).

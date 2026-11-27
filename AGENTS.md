@@ -55,6 +55,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - `@shilo/bronze-ui` is the owner's theme and the only UI kit (source: C:/Programming_Files/Shilocity/bronze-ui).
 - Fix shared appearance there (colors, materials, states, focus, borders, radii), release a new version, then update the dependency and lockfile here; never patch node_modules or override that appearance locally.
 - Layout, geometry and spacing stay local.
+- Design, polish or review UI with the Impeccable skill (`/impeccable`; agents without skills read ~/.claude/skills/impeccable/SKILL.md and its polish, audit and craft-floor references), PRODUCT.md and DESIGN.md as context; brief delegated design agents to do the same.
 - Counter AI design convergence: challenge recurring layouts, palettes, typography and component styling instead of treating model defaults as design decisions. Base visual choices on PixelDoll's character-dressing workflow, simplicity-first usability and immersive experience, with clear visual hierarchy, affordance and readability. Preserve useful conventions; novelty or resemblance to AI-generated work alone is not a reason to change them.
 - Validate substantial visual changes against the current design in the browser using representative workflows, interaction states, dark/light and small screens; record meaningful tradeoffs and untested assumptions.
 - Ownership: docs/design/production-experience.md
