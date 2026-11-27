@@ -75,8 +75,9 @@ vi.mock('../../src/lib/project-folder/target.ts', async (importOriginal) => ({
 const sprite = 'sprite.png';
 const manifest = 'manifest.json';
 const earlier = '2025-02-02T00:00:00.000Z';
-const manifestText = (exportedAt: string, engine: Engine = 'generic') =>
-	JSON.stringify({ name: 'hero', export: { exportedAt, engine } });
+// Like a real export manifest, it names the worn look, so a look change changes it.
+const manifestText = (exportedAt: string, engine: Engine = 'generic', hat = 'original') =>
+	JSON.stringify({ name: 'hero', look: hat, export: { exportedAt, engine } });
 
 function gate() {
 	let open!: () => void;
@@ -125,7 +126,10 @@ async function setup(initial: Record<string, string> = {}) {
 	});
 	studio.build.mockImplementation(async (_, { engine, look, exportedAt }) => ({
 		kind: 'requested',
-		entries: files({ [sprite]: look.items.hat, [manifest]: manifestText(exportedAt, engine) })
+		entries: files({
+			[sprite]: look.items.hat,
+			[manifest]: manifestText(exportedAt, engine, look.items.hat)
+		})
 	}));
 	const openTab = async () => {
 		vi.resetModules();

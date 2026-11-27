@@ -175,10 +175,8 @@ export async function loadFolderLink(characterId: string) {
 		const changed = !again || projectFolder.link?.linkedAt !== link?.linkedAt;
 		showLink(characterId, link, readAt);
 		// A problem this character's folder reported while another character was open, if it is still the same link.
-		if (changed) {
-			projectFolder.status = statusFor(characterId, link);
-			projectFolder.offer = offerFor(link);
-		}
+		if (changed) projectFolder.status = statusFor(characterId, link);
+		projectFolder.offer = offerFor(link);
 	} catch (error) {
 		// Shown in Settings, so a storage failure never looks like "no folder".
 		console.warn('Could not read the linked project folder', error);
@@ -421,6 +419,9 @@ async function publish(link: FolderLink, request: Request) {
 		const target = directoryTarget(link.handle, [link.subfolder]);
 		// Reusing the last timestamp first means an unchanged character matches what is there and writes nothing.
 		const inputs = await fingerprint(link, input, settings);
+		// Until a publish has completed and the matching-files offer was answered, this is still the folder's first check:
+		// a first attempt that failed (a locked file, say) offers on the retry instead.
+		const first = request.fresh || (!link.files && link.offered === undefined);
 		/** Stores what this publish learned on its link, unless the link changed meanwhile. */
 		const remember = async (patch: Parameters<typeof updateLink>[2]) => {
 			try {
@@ -446,8 +447,9 @@ async function publish(link: FolderLink, request: Request) {
 		)
 			return finished({ kind: 'done', kept: record.kept.length, already: false });
 		// It first tries the last time, so an export whose files did not change matches what is there and writes nothing.
+		let same: FolderFile[] | null = null;
 		if (link.exportedAt && !request.overwrite) {
-			const same = await buildFiles(link, input, settings, link.exportedAt);
+			same = await buildFiles(link, input, settings, link.exportedAt);
 			const next = same && (await hashFiles(same));
 			if (
 				next &&
@@ -464,17 +466,23 @@ async function publish(link: FolderLink, request: Request) {
 			}
 		}
 		const now = new Date().toISOString();
-		// A folder chosen again over this character's own earlier export: built with that export's time, an unchanged
-		// character matches it file for file, so every file can be offered rather than the manifest pausing.
-		const earlier = request.fresh && !link.exportedAt ? await sameEarlierExport(target) : null;
+		// The manifest already in the folder decides the time: when a build with the last time (or, for a folder chosen
+		// over this character's own earlier export, that export's time) reproduces it byte for byte, that build is used,
+		// so only files that really differ are written and the manifest never pauses over its time alone. Otherwise the
+		// export gets a new time.
+		const there = await sameEarlierExport(target);
+		const earlier = link.exportedAt ?? (first ? there?.exportedAt : undefined);
 		let exportedAt = now;
 		let files: FolderFile[] | null = null;
-		if (earlier) {
-			const same = await buildFiles(link, input, settings, earlier.exportedAt);
-			const manifest = same?.find((f) => f.name === MANIFEST);
-			if (manifest && (await sha256(manifest.data)) === earlier.hash) {
-				files = same;
-				exportedAt = earlier.exportedAt;
+		if (there && earlier && !request.overwrite) {
+			const built =
+				same && earlier === link.exportedAt
+					? same
+					: await buildFiles(link, input, settings, earlier);
+			const manifest = built?.find((f) => f.name === MANIFEST);
+			if (manifest && (await sha256(manifest.data)) === there.hash) {
+				files = built;
+				exportedAt = earlier;
 			}
 		}
 		files ??= await buildFiles(link, input, settings, now);
@@ -499,7 +507,7 @@ async function publish(link: FolderLink, request: Request) {
 			}
 		});
 		if (
-			request.fresh &&
+			first &&
 			outcome.kind !== 'stopped' &&
 			outcome.kind !== 'failed' &&
 			outcome.matching?.length
@@ -717,7 +725,8 @@ export async function leaveMatchingFiles() {
 /** Forgets a link's answered offer, so it is not asked again after a reload. */
 async function answered(link: FolderLink) {
 	try {
-		const stored = await updateLink(link.characterId, link.linkedAt, { offered: undefined });
+		// An empty list records the answer, so a later retry of the first publish does not ask again.
+		const stored = await updateLink(link.characterId, link.linkedAt, { offered: [] });
 		if (stored) showLink(link.characterId, stored);
 	} catch (error) {
 		console.warn('Could not record the answer to the matching files offer', error);
