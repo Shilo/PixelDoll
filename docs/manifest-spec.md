@@ -1001,26 +1001,34 @@ layer synchronization and oversized pivots with zero page errors. Phaser 3.80 co
 Phaser AE is a separate engine (the Phaser Game Agent's kernel), not a Phaser 3/4 version, and has its own API: no loader
 atlases, scenes or animation manager. Its export reuses the layer sheets and adds `phaser-ae/`:
 
-- `paperdoll.js`: the canonical runtime modules plus the AE adapter. `loadPaperdoll(game, folder, manifest?)` takes the
-  folder's `manifest.json` (a static JSON import, so a headless replay that fetches nothing builds the same frames) or
-  fetches it, loads every sheet as bytes through `game.assets.load` (retries, the loading screen, the game's base URL),
-  decodes them and registers each as a `cols × rows` grid (`game.assets.addGrid`, cell = the layer's cell, rows = rig
-  directions). The whole preparation is tracked; it throws naming the file, and calling it again retries it all.
-  Palette swaps redraw a sheet once into another grid. `Paperdoll` owns one clock per doll, stepped by `game.step`
-  (scene-scoped), and samples the shared timeline with a 1 µs tolerance so frame boundaries land on the step that
-  reaches them at any fixed step rate.
-  The doll is one roster object, `doll.actor`, whose box is the rig cell around the pivot (for picking, collision and
-  camera follow) and which carries the doll's tags. `game.roster.aggregate` makes it emit every `drawList` (or
-  `exportedActionDraws`) layer itself, in order, around its interpolated pivot, so the layers neither drift between
+- `paperdoll.js`: the canonical runtime modules plus the AE adapter. `loadPaperdoll(game, folder, { manifest,
+prepare })` takes the folder's `manifest.json` (a static JSON import, so a headless replay that fetches nothing builds
+  the same frames) or fetches it, loads every sheet as bytes through `game.assets.load` (retries, the loading screen,
+  the game's base URL), checks each sheet's size and registers it as a `cols × rows` grid (`game.assets.addGrid`, cell =
+  the layer's cell, rows = rig directions) in a fixed order. Sheets of items with materials are also decoded exactly
+  (`png.js`, straight RGBA): palette lookups never read a canvas, which premultiplies alpha and changes the RGB of
+  translucent pixels. The whole preparation is tracked; it throws naming the file, and calling it again refetches the
+  files that failed with a cache-busting query. The first outfit's palette grids (and any in `prepare`) are built under
+  the loading screen; others on first use.
+  `Paperdoll` owns one clock per doll, a step named after its actor; a clip started by `play` counts from the next
+  step, so the step that started it never advances it, whatever the step order. Sampling adds a 1 µs tolerance so
+  frame boundaries land on the step that reaches them at any fixed step rate, and looping clocks wrap.
+  The doll is one roster object, `doll.actor` (typed as the game's own `Sprite`), which owns its position, scale,
+  rotation, alpha, tint and visibility; `doll.x/y` are the pivot, derived from and written to the actor, so collision
+  pushes, tweens and wrapping act on the doll. Its box (`options.box`, default the rig cell and pivot) is what picking
+  and collision see, and it carries the doll's tags. `game.roster.aggregate` makes it emit every `drawList` (or
+  `exportedActionDraws`) layer itself, in order, around its interpolated transform, so the layers neither drift between
   steps nor interleave with other objects. Side-on worlds sort the actor by `z`, then spawn order; in a top-down world
-  `z` puts its sort point at the feet. `paperdoll.d.ts` types the doll API and `types.d.ts` the manifest data.
+  `z` (refreshed every frame from the live scale) puts its sort point at the pivot. Draw records are rebuilt only when
+  the pose, equipment or colors change. `paperdoll.d.ts` types the doll API and `types.d.ts` the manifest data.
 - `assets.json`: the manifest and every sheet path under `pixeldoll/<export id>/`, a fragment for the game manifest's
   `assets` list (not `game/assets.json`). The local build copies those files next to the bundle. Phaser's hosted route
   for a person's files, the Pro `upload` command, is not used.
 
 2026-11-26 native run: AE engine v3-82bf126 (kernel 3.0.0-2), side-on and top-down worlds, WebGL2, every outfit, move,
 direction and playlist entry of three synthetic archives and the demo export pixel-equal to `baked/`; overlap (including
-dolls level at their feet and a prop at the feet), clock, turning, rejection and recolor checks with negative controls.
+dolls level at their feet and a prop at the feet), collision, clock order, lifecycle, retry, translucent recolor,
+turning, rejection and recolor checks with negative controls.
 See [Phaser AE export](testing/phaser-ae-export-2026-11-26.md).
 
 ### 6.5 Aseprite — layered `.aseprite` as the zero-code alternative (B11)

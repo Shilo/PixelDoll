@@ -1,6 +1,6 @@
 // Runs Phaser AE exports in the real Phaser AE engine. No PixelLab calls. The engine is not public on npm: make a game
 // folder once with `npx -y @phaser-ae/cli blank <name> <folder>` (a free phaser.io account) and pass it here. This script
-// owns that folder's game/main.ts, game/harness.*, game/manifest.json and game/pixeldoll/: use a folder kept for it.
+// owns that folder's game/main.ts, game/hero.ts, game/harness.*, game/manifest.json and game/pixeldoll/: keep a folder for it.
 // node --experimental-transform-types app/scripts/verify-phaser-ae-export.mjs --game <folder> [--zip actual-ui-export.zip]
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -15,6 +15,9 @@ import { decodePngBytes, encodePngBytes } from '../src/lib/image/pngraw.ts';
 import { bakedSheetPath } from '../src/lib/export/paths.ts';
 import { sampleTimeline, timelineDuration } from '../src/lib/runtime/timeline.js';
 import { reviewArchives } from './export-review-fixtures.mjs';
+import { exportZip } from '../src/lib/export/export.ts';
+import { applyExportSettings } from '../src/lib/store/export-settings.ts';
+import { baseHashOf, cellHash } from '../src/lib/rig/rig.ts';
 
 const app = fileURLToPath(new URL('..', import.meta.url));
 const { values } = parseArgs({
@@ -42,7 +45,59 @@ const original = JSON.parse(readFileSync(join(gameDir, 'manifest.json'), 'utf8')
 const SCREEN = 1024,
 	BACKGROUND = [255, 0, 255];
 
+/**
+ * AE only: translucent body pixels in the palette ramp (alpha 64, 128 and 192). A canvas readback premultiplies alpha and
+ * changes their RGB, so an exact palette lookup that reads the sheet through a canvas misses them.
+ */
+async function translucentArchive(source) {
+	const manifest = structuredClone(source.manifest),
+		images = new Map(source.images);
+	manifest.name = 'Translucent palette';
+	const body = manifest.items.find((item) => item.slot === 'body').layers[0];
+	for (const move of manifest.rig.animations)
+		body.cells[move.id].south = await Promise.all(
+			body.cells[move.id].south.map(async (hash) => {
+				const original = images.get(hash),
+					image = { ...original, data: original.data.slice() };
+				for (let x = 8; x < 56; x++)
+					for (const [row, alpha] of [
+						[40, 64],
+						[44, 128],
+						[48, 192]
+					])
+						image.data.set([50, 100, 150, alpha], (row * image.w + x) * 4);
+				const next = await cellHash(image);
+				images.set(next, image);
+				return next;
+			})
+		);
+	manifest.rig.baseHash = await baseHashOf(
+		manifest.rig,
+		Object.fromEntries(
+			manifest.rig.animations.flatMap((a) =>
+				body.cells[a.id].south.map((hash, i) => [`${a.id}/south/${i}`, hash])
+			)
+		)
+	);
+	for (const item of manifest.items) item.baseHash = manifest.rig.baseHash;
+	manifest.materials[0].ramp = ['#646464', '#326496'];
+	manifest.materials[0].variants = { blue: ['#0000ff', '#00ff00'], red: ['#ff0000', '#ffff00'] };
+	const copy = structuredClone(manifest);
+	applyExportSettings(copy, {
+		engine: 'phaserae',
+		dressedCharacterSheets: true,
+		playOnce: ['jump']
+	});
+	const result = await exportZip(
+		{ manifest: copy, images },
+		{ engines: ['phaserae'], baked: true, exportedAt: '2026-11-26T00:00:00.000Z' }
+	);
+	assert.deepEqual(result.errors, []);
+	return { label: 'translucent-palette', zip: result.zip };
+}
+
 const archives = await reviewArchives('phaserae', cache);
+archives.push(await translucentArchive(archives[0].project));
 for (const file of values.zip ?? [])
 	archives.push({ label: basename(file), zip: new Uint8Array(readFileSync(file)) });
 for (const archive of archives) {
@@ -62,8 +117,8 @@ for (const archive of archives) {
 const CONTROLS = {
 	'wrong-pivot': ['ox: point.x + f.w / 2 - f.x,', 'ox: point.x + f.w / 2 - f.x + 1,'],
 	'restart-every-play': [
-		'if (restart || anim !== this.anim || dir !== this.dir || this.completed) this.elapsed = 0;',
-		'this.elapsed = 0;'
+		'if (restart || anim !== this.anim || dir !== this.dir || this.completed) {',
+		'if (true) {'
 	],
 	'uniform-duration': [
 		'return move ? sampleTimeline(move.frames, this.elapsed + BOUNDARY_MS, move.loop) : null;',
@@ -81,33 +136,49 @@ const CONTROLS = {
 		'    this.dir = dir; this.elapsed = 0;\n    this.sync();'
 	],
 	'no-feet': [
-		"a.z = z - (this.game.world?.kind === 'topdown' ? (f.h - f.y) * scale : 0);",
-		'a.z = z;'
+		"a.z = this.nudge - (this.game.world?.kind === 'topdown' ? this.offset().y + (this.box.h * Math.abs(a.sy)) / 2 : 0);",
+		'a.z = this.nudge;'
 	],
 	'reverse-order': ['this.placed = placed;', 'this.placed = placed.reverse();'],
+	'canvas-lookup': [
+		'const pixels = exact.has(s) ? await decodePngBytes(new Uint8Array(bytes), MAX_SIDE) : null;',
+		"const pixels = exact.has(s) ? await createImageBitmap(new Blob([bytes])).then((b) => { const c = new OffscreenCanvas(b.width, b.height), x = c.getContext('2d'); x.drawImage(b, 0, 0); return { w: b.width, h: b.height, data: x.getImageData(0, 0, b.width, b.height).data }; }) : null;"
+	],
+	'no-dead-check': ['if (!this.actor.alive) { this.dispose(); return; }', ''],
+	'no-stamp': ['if (move && this.stamp !== now) {', 'if (move) {'],
+	'unturned-pivot': [
+		'const cos = Math.cos(a.rot), sin = Math.sin(a.rot);',
+		'const cos = 1, sin = 0;'
+	],
 	'state-loop': [
 		'return !!move && !move.loop && this.elapsed',
 		'return !!move && false && this.elapsed'
 	]
 };
-const controlsFor = (archive, world) => [
-	'none',
-	...(archive.label === 'global-settings-pipeline'
-		? ['wrong-pivot', 'restart-every-play', 'uniform-duration']
-		: []),
-	...(archive.label === 'eight-direction-masks-hands-alpha'
-		? [
-				'no-palette',
-				'no-covers',
-				'no-hides',
-				'wrong-direction',
-				'turn-restarts',
-				'reverse-order',
-				...(world === 'topdown' ? ['no-feet'] : [])
-			]
-		: []),
-	...(archive.label === 'ready-stance-state' ? ['state-loop'] : [])
-];
+const controlsFor = (archive, world) =>
+	world === 'wrap'
+		? archive.label === 'global-settings-pipeline'
+			? ['none']
+			: []
+		: [
+				'none',
+				...(archive.label === 'global-settings-pipeline'
+					? ['wrong-pivot', 'restart-every-play', 'uniform-duration', 'no-stamp', 'unturned-pivot']
+					: []),
+				...(archive.label === 'eight-direction-masks-hands-alpha'
+					? [
+							'no-palette',
+							'no-covers',
+							'no-hides',
+							'wrong-direction',
+							'turn-restarts',
+							'reverse-order',
+							...(world === 'topdown' ? ['no-feet'] : [])
+						]
+					: []),
+				...(archive.label === 'ready-stance-state' ? ['state-loop', 'no-dead-check'] : []),
+				...(archive.label === 'translucent-palette' ? ['canvas-lookup'] : [])
+			];
 
 function bake(manifest, main) {
 	writeFileSync(join(gameDir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
@@ -127,16 +198,28 @@ const screen = {
 	background: '#ff00ff',
 	pixelArt: true
 };
-const withWorld = (world, extra = {}) => ({
-	...original,
-	assets: [],
-	screen,
-	packs: [
-		...original.packs.filter((p) => p.id !== 'world-topdown'),
-		...(world === 'topdown' ? [{ id: 'world-topdown' }] : [])
-	],
-	...extra
-});
+const withWorld = (world, extra = {}) =>
+	world === 'wrap'
+		? {
+				...original,
+				assets: [],
+				screen,
+				packs: [
+					...original.packs.filter((p) => p.id !== 'world-topdown' && p.id !== 'world-side'),
+					{ id: 'world-side', options: { wrap: { w: SCREEN, h: SCREEN } } }
+				],
+				...extra
+			}
+		: {
+				...original,
+				assets: [],
+				screen,
+				packs: [
+					...original.packs.filter((p) => p.id !== 'world-topdown'),
+					...(world === 'topdown' ? [{ id: 'world-topdown' }] : [])
+				],
+				...extra
+			};
 const STAGE = `import { game } from './engine.js';
 export const Stage = { name: 'stage', enter(): void { } };
 game.scenes.register(Stage);
@@ -382,7 +465,8 @@ async function behavior(page, archive, check) {
 			}
 			note(threw && state(d) === before, 'reject: ' + text);
 		};
-		const before = game.roster.tagged('pdtest').length;
+		const count = (tag) => [...game.roster.tagged(tag)].length;
+		const before = count('pdtest');
 		const d = new api.Paperdoll(game, 300, 300, m, undefined, { tags: ['pdtest'] });
 		rejects(d, () => d.setDirection(m.rig.directions[0].id), 'turn before any move');
 		const moves = m.rig.animations.map((a) => a.id),
@@ -463,6 +547,89 @@ async function behavior(page, archive, check) {
 			d.x === 100 && d.y === 120 && spots().every((s) => s[3]),
 			'teleport: the doll must move and show again'
 		);
+		// the engine pushes the actor out of a solid wall, and moving the doll keeps that push
+		const wall = game.spawn({
+			id: 'pdwall',
+			layer: 'world',
+			tags: ['pdwall'],
+			x: 700,
+			y: 300,
+			width: 16,
+			height: 400
+		});
+		game.collide.solid('pdtest', 'pdwall');
+		d.teleport(560, 300);
+		for (let i = 0; i < 40; i++) {
+			d.x += 4;
+			d.y += 0.25;
+			await step(1);
+		}
+		note(
+			d.actor.x + (d.actor.width * Math.abs(d.actor.sx)) / 2 <= 692 + 1,
+			'collision: a solid wall must stop the doll, at x ' + d.actor.x
+		);
+		wall.destroy();
+		// tint and alpha set on the actor reach every layer, in the kernel's own read-back form
+		d.actor.tint = '#ff000080';
+		d.actor.alpha = 0.5;
+		const emitted = [];
+		d.emit({ add: (...args) => emitted.push(args) }, 1, game.world.view);
+		note(
+			emitted.length > 0 && emitted.every((a) => a[5] === 0xff000080 && a[9] === 0.5),
+			'actor: tint and alpha set on the actor must reach the layers, got ' +
+				JSON.stringify(emitted[0]?.slice(5))
+		);
+		d.actor.tint = '#ffffff';
+		d.actor.alpha = 1;
+		// a turned, stretched actor: the pivot stays where the accessors say, and teleport lands on it
+		d.actor.rot = Math.PI / 2;
+		d.actor.sx = 2;
+		d.actor.sy = 3;
+		d.teleport(500, 450);
+		const turned = [];
+		d.emit({ add: (x, y) => turned.push([x, y]) }, 1, game.world.view);
+		// a quarter turn maps the layer's scaled offset (x, y) from the pivot to (-y, x)
+		const part = d.placed[0],
+			pivotX = turned[0][0] + part.oy * 3,
+			pivotY = turned[0][1] - part.ox * 2;
+		note(
+			Math.abs(d.x - 500) < 1e-3 &&
+				Math.abs(d.y - 450) < 1e-3 &&
+				Math.abs(pivotX - 500) < 1e-3 &&
+				Math.abs(pivotY - 450) < 1e-3,
+			// the engine stores positions as 32-bit floats
+			'rotation: the turned doll must draw and read its pivot at 500,450, got ' +
+				[d.x, d.y, pivotX, pivotY]
+		);
+		d.actor.rot = 0;
+		d.actor.sx = 1;
+		d.actor.sy = 1;
+		// a wrapping world: the doll crosses the seam, reads the wrapped pivot and still interpolates
+		if (game.roster.wrap) {
+			const size = game.roster.wrap.w;
+			d.teleport(size - 4, 300);
+			// moved inside a step, as a game moves it, so the step's start is the interpolation's origin
+			const walker = game.step('pdwalk', () => (d.x += 8));
+			await step(3);
+			walker.cancel();
+			const at = (alpha) => {
+				const xs = [];
+				d.emit({ add: (x) => xs.push(x) }, alpha, game.world.view);
+				return xs[0];
+			};
+			const across = d.x;
+			note(
+				across >= 0 && across < size,
+				'wrap: the doll must read the wrapped pivot, got ' + across
+			);
+			note(
+				Math.abs(at(1) - at(0.5) - 4) < 1e-6,
+				'wrap: crossing the seam must interpolate, got ' + [at(0.5), at(1)]
+			);
+			d.y += 1;
+			note(d.x === across, 'wrap: moving on the other axis must keep the wrapped x');
+		}
+		d.teleport(300, 300);
 		rejects(d, () => d.play('missing-move', dir0), 'unknown move');
 		rejects(d, () => d.play(first.id, 'nowhere'), 'unknown direction');
 		rejects(d, () => d.setDirection('nowhere'), 'unknown turn');
@@ -472,7 +639,33 @@ async function behavior(page, archive, check) {
 		rejects(d, () => d.playAction('missing-move', dir0), 'unknown action');
 		d.destroy();
 		await step(2);
-		note(game.roster.tagged('pdtest').length === before, 'destroy: every sprite must be removed');
+		note(count('pdtest') === before, 'destroy: the actor must be removed');
+		// a clip started by a game step registered before the doll's renders from zero
+		let early = null,
+			started = false;
+		const order = game.step('pdorder', () => {
+			if (early && !started) {
+				started = true;
+				early.play(first.id, dir0, true);
+			}
+		});
+		early = new api.Paperdoll(game, 60, 60, m);
+		await step(1);
+		note(early.elapsed === 0, 'order: a clip started in an earlier step must render from zero');
+		order.cancel();
+		early.destroy();
+		// a doll whose actor the game kills stops
+		const killed = new api.Paperdoll(game, 60, 60, m);
+		killed.play(first.id, dir0);
+		killed.actor.destroy();
+		await step(1);
+		const frozen = killed.elapsed;
+		await step(3);
+		note(
+			!killed.alive && killed.elapsed === frozen,
+			'lifecycle: a killed actor must stop its doll'
+		);
+		killed.destroy();
 		out.moves = moves;
 		return out;
 	}, archive.label);
@@ -480,7 +673,8 @@ async function behavior(page, archive, check) {
 	for (const move of m.rig.animations) {
 		const { dir, seen } = log.timeline[move.id];
 		const wanted = seen.map(
-			(_, i) => `${dir}/${sampleTimeline(move.frames, (i * 1000) / 60, move.loop)}`
+			// play() ran between steps, so the step that followed it does not count
+			(_, i) => `${dir}/${sampleTimeline(move.frames, (Math.max(0, i - 1) * 1000) / 60, move.loop)}`
 		);
 		const first = seen.findIndex((cell, i) => cell !== wanted[i]);
 		check(
@@ -508,13 +702,29 @@ try {
 			'export function expose(values) { globalThis.pdTest = values; }\n'
 		);
 		writeFileSync(join(gameDir, 'harness.d.ts'), 'export function expose(values: object): void;\n');
+		writeFileSync(
+			join(gameDir, 'hero.ts'),
+			`import { game } from './engine.js';
+import { loadPaperdoll } from './pixeldoll/hero/phaser-ae/paperdoll.js';
+import heroData from './pixeldoll/hero/manifest.json';
+export const hero = await loadPaperdoll(game, 'pixeldoll/hero/', { manifest: heroData });
+`
+		);
 		const dist = bake(
 			withWorld('side', { assets }),
 			`import { game } from './engine.js';
-import { loadPaperdoll, Paperdoll } from './pixeldoll/hero/phaser-ae/paperdoll.js';
-import heroData from './pixeldoll/hero/manifest.json';
+import { Paperdoll } from './pixeldoll/hero/phaser-ae/paperdoll.js';
+import { hero } from './hero.js';
 import { expose } from './harness.js';
-const hero = await loadPaperdoll(game, 'pixeldoll/hero/', heroData);
+// Compiled, never called: the actor is the game's own Sprite type, with the composed packs' fields.
+export function typed(): void {
+	const doll = new Paperdoll(game, 0, 0, hero);
+	game.rig.follow(doll.actor);
+	const held: Paperdoll<typeof game> = doll;
+	game.rig.follow(held.actor);
+	doll.actor.collide.radius = 4;
+	doll.actor.pointer.enabled = true;
+}
 export const Stage = { name: 'stage', enter(): void { expose({ game, api: { Paperdoll }, m: hero }); } };
 game.scenes.register(Stage);
 await game.start();
@@ -539,7 +749,7 @@ game.scenes.go('stage');
 		server.close();
 	}
 	// 2. Every archive, world and control, with the runtime served next to each archive.
-	for (const world of ['side', 'topdown']) {
+	for (const world of ['side', 'topdown', 'wrap']) {
 		const dist = bake(withWorld(world), STAGE);
 		for (const archive of archives.filter((a) => !values.only || a.label.includes(values.only)))
 			for (const control of controlsFor(archive, world)) {
@@ -557,6 +767,23 @@ game.scenes.go('stage');
 				const check = (ok, text) => ok || failures.push(text);
 				let compared = 0;
 				try {
+					if (archive === archives[0] && control === 'none') {
+						const layer = archive.manifest.items[0].layers[0],
+							clip = archive.manifest.rig.animations[0].id,
+							sheet = layer.sourceSheets?.[clip] ?? layer.sheets[clip];
+						files.set('/hero/' + sheet, new TextEncoder().encode('not a png'));
+						const message = await page.evaluate(async () => {
+							const api = await import('/hero/phaser-ae/paperdoll.js');
+							try {
+								await api.loadPaperdoll(globalThis.game, 'hero/');
+								return 'loaded';
+							} catch (error) {
+								return error.message;
+							}
+						});
+						check(message.includes(sheet), `retry: a corrupt sheet must be named, got ${message}`);
+						files.set('/hero/' + sheet, archive.files.get(sheet));
+					}
 					await page.evaluate(async () => {
 						const api = await import('/hero/phaser-ae/paperdoll.js');
 						globalThis.pdTest = {
@@ -581,7 +808,7 @@ game.scenes.go('stage');
 					failures: failures.slice(0, control === 'none' ? 20 : 3)
 				});
 				console.log(
-					`${passed ? 'PASS' : 'FAIL'} ${label}${control === 'none' ? '' : ` (control caught: ${failures[0] ?? 'nothing'})`}`
+					`${passed ? 'PASS' : 'FAIL'} ${label}${control === 'none' ? (failures.length ? ` (${failures[0]})` : '') : ` (control caught: ${failures[0] ?? 'nothing'})`}`
 				);
 				await page.close();
 				server.close();

@@ -29,7 +29,7 @@ The Phaser AE export (`phaser-ae/` in the ZIP) was run in the real Phaser AE eng
    durations, no palette, no covers, no hides, wrong direction row, turning restarts, reversed layer order, no feet
    sorting (top-down) and a looping State.
 
-Result: 30 of 30 runs passed (8 clean runs, 21 controls caught, the README build).
+Result of the first design: 30 of 30 runs passed (8 clean runs, 21 controls caught, the README build).
 
 ## Independent review
 
@@ -53,11 +53,59 @@ own native game. Fixed:
 Earlier fixes from the first native runs: a doll defaulted to the world's backdrop layer (it now uses `world`), and
 summed steps showed frames late on exact boundaries.
 
+## Three-way review
+
+A Claude Opus (medium) reviewer and a second GPT-6.2 Sol (medium) reviewer each challenged that design in their own
+copies of the engine; the coordinator merged both lists into decisions and both reviewers challenged those before any
+change. Agreed and implemented:
+
+- The actor owns the transform. Both reproduced that a doll kept a second position, so moving it undid collision pushes
+  and broke wrapping, and that tint, alpha, scale and rotation set on the actor never reached the layers. `doll.x/y`
+  are now derived from and written to the actor; emit reads the actor's interpolated position, `sx`, `sy` (a sign flip
+  mirrors without interpolating), rotation, alpha and tint (`#rrggbb` or `#rrggbbaa`). The top-down feet correction
+  follows the live scale every frame. `options.box` sets the actor's box and pivot.
+- `doll.actor` is typed `ReturnType<G['spawn']>` on a generic `Paperdoll<G>`: the game's own `Sprite` with every
+  composed pack's fields, so `game.rig.follow(doll.actor)` and pack fields build in strict mode.
+- Exact recolor lookups: both measured canvas readback changing the RGB of translucent pixels (Opus: 794 of 1270), so
+  exact palette entries missed. The app's PNG decoder moved into the canonical runtime (`png.js`) and recolorable sheets
+  are decoded from their bytes. A translucent-palette archive (alpha 64, 128 and 192) now matches within ±1, and a
+  canvas-readback control misses by 38 levels.
+- Retries: a corrupt 200 response stayed cached by key and URL; failed files are now refetched with a cache-busting
+  query and stable keys, and errors name the file. Every sheet is size-checked and registered in a fixed order.
+- Clock: a clip started inside a step renders from zero whichever step runs first (stamped with `clock.frame`), each
+  doll's step is named after its actor, and looping clocks wrap so long sessions keep the 1 µs tolerance.
+- Lifecycle: a killed actor (game code, collision or scene exit) stops its doll; `alive`; idempotent `destroy()`.
+- Draw records are rebuilt only when pose, equipment or colors change; emit wraps with the view the gather passes, and
+  only on world layers. The first outfit's palette grids (and any in `options.prepare`) are built at load.
+- README and agent doc: copy only `manifest.json`, `phaser-ae/` and the listed sheets, share the loaded manifest
+  through a `hero.ts` module, the actor id is `pixeldoll-1`, integer pivots for crisp stills, MIT runtime versus
+  Phaser's engine license, placeholder ids.
+
+Deferred, with board cards: a layered action shows the full action while the gait faces away and returns to layered
+when it faces back (all four JavaScript and native players share this resolver), and the Phaser 3/4 adapter reads its
+palette source through a canvas, so its exact lookups miss translucent pixels too. No view culling: layers may extend
+past the actor box, and 200 dolls sync in about 1.1 ms per step.
+
+A third round had both reviewers re-run their repros against the implementation. No regressions; fixed from it:
+rotation now enters the pivot accessors, teleport and feet sorting (Sol: a 90° turn drew the pivot 34 px from where it
+read); sheets larger than 4096 px decode (the cell decoder's cap); an empty download in a browser is an error, not blank
+frames; one load reports every bad file and closes every bitmap, and a retry refetches only what failed; a later
+loadPaperdoll call's `prepare` is honored; `cancelAction()` redraws at once; colors are prepared only for an outfit's
+shown items; and `Paperdoll<typeof game>` keeps the Sprite type on a stored doll (the default actor type is a minimal
+handle).
+
+The verifier then ran 41 of 41: 11 clean runs (four archives plus the demo export in side-on and top-down worlds, and a
+wrapping world) with the strict `hero.ts` README build (including a stored `Paperdoll<typeof game>`), solid-wall
+collision, step order, killed actors, corrupt-then-corrected retry, actor tint and alpha, a turned and stretched actor
+and a seam crossing, and 29 negative controls, including canvas-readback recoloring, a missing dead-actor check, a
+missing step-order stamp and an unturned pivot.
+
 ## Not covered natively
 
 - Moving-attack layering (`playAction` with precut fragments) and the headless manifest path ran only in
   `test/unit/export-phaser-ae.test.ts` against a stub kernel: the shared archives have no action layers.
-- WebGPU rendering, wrapping worlds and grids larger than an atlas page (AE then gives a grid its own texture).
+- WebGPU rendering, and grids larger than an atlas page in the verifier itself (the Opus reviewer forced them with
+  `"atlas": 256` and saw the same pixels).
 - Exact recolors of translucent pixels go through a canvas round trip; they matched within ±1 on WebGL2 only.
 - Publishing to phaser.io with files from the manifest `assets` list, and AE's `npm run -s play` tool (its half-size
   viewport cuts off a `fixed` screen larger than it; games normally use `letterbox`).

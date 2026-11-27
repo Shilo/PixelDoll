@@ -119,25 +119,32 @@ const PHASER_AE = `# Phaser AE
 Phaser AE is the Phaser Game Agent's engine, built with the phaser-ae CLI; it is not Phaser 3 or 4.
 Entry: phaser-ae/paperdoll.js, an ES module, typed by phaser-ae/paperdoll.d.ts. Full guide: phaser-ae/README.txt.
 
-This is a local integration: copy the folder into the game as game/pixeldoll/<character>/ and add every path in
-phaser-ae/assets.json to the "assets" list in game/manifest.json (not to game/assets.json), and the build copies those
-files next to the game. Phaser's hosted route for a person's files is the Pro "upload" command; this export does not
-use it. Set "pixelArt": true in the manifest's "screen".
+This is a local integration. Copy manifest.json, phaser-ae/ and the files listed in phaser-ae/assets.json into the game as
+game/pixeldoll/<character>/ (not project.json, cells/ or baked/), and add every path in phaser-ae/assets.json to the
+"assets" list in game/manifest.json (not to game/assets.json): the build copies those files next to the game. Phaser's
+hosted route for a person's files is the Pro "upload" command; this export does not use it. Set "pixelArt": true in the
+manifest's "screen".
 
-    import { loadPaperdoll, Paperdoll } from './pixeldoll/<character>/phaser-ae/paperdoll.js'
+    // hero.ts: loaded once, before await game.start() (main.ts imports it)
+    import { game } from './engine.js'
+    import { loadPaperdoll } from './pixeldoll/<character>/phaser-ae/paperdoll.js'
     import heroData from './pixeldoll/<character>/manifest.json'
-    const model = await loadPaperdoll(game, 'pixeldoll/<character>/', heroData)   // in main.ts, before await game.start()
-    // in a scene's enter(), synchronously:
-    const doll = new Paperdoll(game, 360, 640, model)                  // 360,640 is the pivot: the feet
-    doll.play('walk', 'south')
-    doll.applyPreset(model.presets[0].id)                               // items and colors together
-    doll.equip('torso_inner', 'vest_leather')                           // after a preset; null empties a slot
-    doll.setVariants({ '<material-id>': '<variant-id>' })                // only ids listed in manifest.json
-    game.rig.follow(doll.actor)                                          // the doll as one game object
+    export const hero = await loadPaperdoll(game, 'pixeldoll/<character>/', { manifest: heroData })
 
-Move it with doll.x and doll.y. The doll is one game object, doll.actor, that draws every layer itself, so layers move
-and sort together; tags in its options go on the actor. Its clock is a step of the scene that created it, so create the
-doll in the scene that shows it. setVariants replaces the whole selection map, as in Phaser 3 and 4.
+    // in a scene's enter(), synchronously:
+    const doll = new Paperdoll(game, 360, 640, hero)          // 360,640 is the pivot: the feet
+    doll.play('<move-id>', '<direction>')
+    doll.applyPreset(hero.presets[0].id)                      // items and colors together
+    doll.equip('<slot-id>', '<item-id>')                      // after a preset; null empties a slot
+    doll.setVariants({ '<material-id>': '<variant-id>' })     // only ids listed in manifest.json
+    game.rig.follow(doll.actor)                               // the doll as one game object
+
+doll.actor is the game's own Sprite: it owns the doll's position, scale, rotation, alpha, tint and visibility, so
+collision, tweens and verbs act on it, and it draws every layer itself so they move and sort together. doll.x and
+doll.y are the pivot, read from and written to the actor. Type a stored doll as Paperdoll<typeof game> so doll.actor
+keeps the game's Sprite type. The doll's clock is a step of the scene that created it, so
+create the doll in the scene that shows it; leaving that scene removes it. setVariants replaces the whole selection
+map, as in Phaser 3 and 4.
 `;
 
 const GODOT = `# Godot 4
