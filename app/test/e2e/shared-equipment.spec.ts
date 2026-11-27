@@ -1,4 +1,5 @@
 import {
+	currentCharacterAction,
 	openStudio,
 	reloadStudio,
 	equipmentGroup,
@@ -521,7 +522,7 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await pickCharacter('Adventurer copy');
 	await expect(sharedTiles).toHaveCount(0);
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'Rename character…', exact: true }).click();
+	await currentCharacterAction(page, 'Rename…');
 	const rename = page.getByRole('dialog', { name: 'Rename character', exact: true });
 	const longName = 'Traveling Adventurer with an unusually long character name';
 	await rename.getByRole('textbox', { name: 'Display name', exact: true }).fill(longName);
@@ -659,7 +660,7 @@ test('another character’s item on the same body is worn for free, survives rel
 	await page.getByRole('menuitemradio', { name: 'Twin', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Twin');
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+	await currentCharacterAction(page, 'Move to Trash…');
 	const confirm = page.getByRole('alertdialog');
 	await expect(confirm).toContainText('copied to other characters stay.');
 	await confirm.getByRole('button', { name: 'Move to Trash', exact: true }).click();

@@ -137,6 +137,20 @@ export async function openClipTool(page: Page, tool: RegExp) {
 	return window;
 }
 
+/** From the open header character picker, one of the open character's own ⋮ actions (Rename, Make copy with new
+ *  look...): the picker lists each character with the same menu as the character list. */
+export async function currentCharacterAction(page: Page, action: string | RegExp) {
+	const menu = page.locator('#project-menu');
+	const name = (await menu
+		.getByRole('menuitemradio', { checked: true })
+		.getAttribute('aria-label'))!;
+	await menu.getByRole('button', { name: `More actions for ${name}`, exact: true }).click();
+	await page
+		.getByRole('menu', { name: `Actions for ${name}`, exact: true })
+		.getByRole('menuitem', { name: action })
+		.click();
+}
+
 export async function pickItem(page: Page, name: string) {
 	await equipmentMode(page, 'Wardrobe');
 	const item = page.locator('.equipment-scroll .item-tile').getByText(name, { exact: true });

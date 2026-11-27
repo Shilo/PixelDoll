@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import {
+	currentCharacterAction,
 	equipmentGroup,
 	equipmentMode,
 	openPlaybackPicker,
@@ -3715,7 +3716,7 @@ test('a 320px bar keeps the panel toggle before More and moves actions into More
 	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
 	await expect(page.locator('.name-text')).not.toContainText('(Demo)');
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: /^Rename character/ }).click();
+	await currentCharacterAction(page, 'Rename…');
 	const rename = page.getByRole('dialog', { name: 'Rename character', exact: true });
 	const longName = 'A very long character name that cannot fit';
 	await rename.getByRole('textbox', { name: 'Display name', exact: true }).fill(longName);

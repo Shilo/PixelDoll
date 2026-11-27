@@ -1,4 +1,5 @@
 import {
+	currentCharacterAction,
 	openStudio,
 	reloadStudio,
 	equipmentMode,
@@ -154,7 +155,7 @@ test('Edit appearance makes reviewed character and equipment copies from saved p
 	const action = /^Make copy with new look…$/;
 	const characterEditor = async () => {
 		await nameMenu.click();
-		await page.locator('#project-menu').getByRole('menuitem', { name: action }).click();
+		await currentCharacterAction(page, action);
 		await expect(edit).toBeVisible();
 	};
 	await characterEditor();
@@ -2512,14 +2513,14 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 	);
 	await expect(currentCharacter.locator(':scope > svg')).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'More actions for Imported two' })).toBeVisible();
-	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+	await currentCharacterAction(page, 'Move to Trash…');
 	await expect(page.getByRole('alertdialog')).toContainText('Imported two');
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Imported two');
 	// All characters created by this test are disposable fixtures in an isolated browser context.
 	for (const remaining of ['Imported one', 'Adventurer (demo)']) {
 		await page.locator('.project-btn').click();
-		await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+		await currentCharacterAction(page, 'Move to Trash…');
 		await page
 			.getByRole('alertdialog')
 			.getByRole('button', { name: 'Move to Trash', exact: true })
@@ -2531,8 +2532,14 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 	await reloadStudio(page);
 	await expect(page.locator('.project-btn')).toContainText('Adventurer');
 	await page.locator('.project-btn').click();
-	// The demo keeps Delete in place, unavailable, and says why.
-	const demoDelete = page.getByRole('menuitem', { name: 'Move to Trash…', exact: true });
+	// The demo's own menu keeps Move to Trash in place, unavailable, and says why.
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'More actions for Adventurer (demo)', exact: true })
+		.click();
+	const demoDelete = page
+		.getByRole('menu', { name: 'Actions for Adventurer (demo)', exact: true })
+		.getByRole('menuitem', { name: 'Move to Trash…', exact: true });
 	await expect(demoDelete).toHaveAttribute('aria-disabled', 'true');
 	await expect(demoDelete).toHaveAccessibleDescription("Demo character can't be deleted");
 	await demoDelete.click({ force: true });
@@ -2892,7 +2899,7 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await expect(page.locator('.project-btn')).toContainText('Library hero');
 	await expect(page.locator('.world-loading')).toBeHidden();
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+	await currentCharacterAction(page, 'Move to Trash…');
 	// Queue state is persisted by the real application, and deletion must refuse in-flight paid work.
 	await page.evaluate(async () => {
 		await new Promise<void>((resolve, reject) => {
@@ -4401,7 +4408,7 @@ test('a stopped move blocks deleting only its own character and opens from the b
 	const deletion = page.getByRole('alertdialog');
 	const remove = async () => {
 		await page.locator('.project-btn').click();
-		await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+		await currentCharacterAction(page, 'Move to Trash…');
 	};
 	// Another character's stopped move waits for its own review and does not lock this one.
 	await remove();
@@ -4628,7 +4635,7 @@ test('rename display names and export IDs without changing saved keys or calling
 		return { projectId: studio.doc.id, id: item.id, name: item.name, prompt: item.prompt };
 	});
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'Rename character…', exact: true }).click();
+	await currentCharacterAction(page, 'Rename…');
 	const rename = async (title: string, name: string, alias: string) => {
 		const dialog = page.getByRole('dialog', { name: title, exact: true });
 		await dialog.getByRole('textbox', { name: 'Display name' }).fill(name);
@@ -4733,13 +4740,18 @@ test('rename storage failures leave the name visible and retryable', async ({
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
 		await s.copyDemo();
+	});
+	await page.locator('.project-btn').click();
+	await currentCharacterAction(page, 'Rename…');
+	const dialog = page.getByRole('dialog', { name: 'Rename character', exact: true });
+	// The saved record goes away while Rename is open (another tab deleted it).
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
 		const dbPath = '/src/lib/store/db.ts',
 			db = await import(dbPath);
 		await db.del('projects', s.doc.id);
 	});
-	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'Rename character…', exact: true }).click();
-	const dialog = page.getByRole('dialog', { name: 'Rename character', exact: true });
 	await dialog.getByRole('textbox', { name: 'Display name', exact: true }).fill('Keep this name');
 	await dialog.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(dialog.getByRole('alert')).toContainText(
