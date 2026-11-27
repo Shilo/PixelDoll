@@ -723,8 +723,10 @@
 		"thisRemovesTheMoveFromTheBody": "Tubuh dan setiap item kehilangan bingkainya. Anda bisa memulihkan gerakan selama hingga 30 hari.",
 		"demoRenameLocked": "Gerakan dan status demo tidak bisa diganti namanya",
 		"removeOutfit": "Itemnya tetap di lemari. Kamu bisa mengembalikannya dari Sampah hingga 30 hari.",
-		"demoOutfitLocked": "Setelan bawaan demo tidak bisa dipindahkan ke tempat sampah",
-		"labelRemoveOutfit": "Hapus dari daftar",
+		"demoOutfitLocked": "Setelan bawaan demo tidak bisa dihapus",
+		"labelDeleteDemoOutfit": "Hapus…",
+		"deleteDemoOutfit": "Demo tidak punya tempat sampah, jadi setelan ini dihapus. Urungkan bisa mengembalikannya sampai Anda memuat ulang.",
+		"deleteDemoOutfitTitle": "Hapus {name}?",
 		"outfitGone": "Setelan ini sudah tidak tersedia."
 	},
 	"slotsSheet": {
@@ -1165,7 +1167,7 @@
 		"randomItem": "Acak item {name}",
 		"saveOutfit": "Simpan setelan",
 		"deleteOutfit": "Pindahkan setelan ke tempat sampah",
-		"removeOutfit": "Hapus setelan dari daftar",
+		"deleteDemoOutfit": "Hapus setelan",
 		"renameOutfit": "Ganti nama setelan",
 		"show": "Tampilkan {name}",
 		"hide": "Sembunyikan {name}",

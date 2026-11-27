@@ -37,7 +37,7 @@ function readBundled(projectId: string) {
 	);
 }
 
-/** Outfits saved on a demo have no Trash (its record is not a character's): they are removed as an edit Undo reverts. */
+/** Outfits saved on a demo have no Trash (its record is not a character's): they are deleted, as an edit Undo reverts. */
 export const outfitHasTrash = (projectId = doc.id) => projectId.startsWith('rig-');
 
 /** Why an outfit cannot be removed: a demo's own outfits are part of its bundle. */
@@ -52,12 +52,12 @@ export function outfitLocked(presetId: string, projectId = doc.id) {
 	return ids.includes(presetId);
 }
 
-/** Remove an outfit saved on a demo: one edit, with Undo on its notice and in the history. */
-export function removeDemoOutfit(id: string) {
+/** Delete an outfit saved on a demo: one edit, with Undo on its notice and in the history. */
+export function deleteDemoOutfit(id: string) {
 	const m = store.project?.manifest,
 		preset = m?.presets.find((entry) => entry.id === id);
 	if (!m || !preset || outfitLocked(id)) return;
-	commit(message('history.removeOutfit'), () => {
+	commit(message('history.deleteDemoOutfit'), () => {
 		m.presets = m.presets.filter((entry) => entry.id !== id);
 	});
 	toast(message('state.removedName', { name: preset.name }), {
@@ -74,7 +74,7 @@ export async function removeOutfit(id: string) {
 	const projectId = doc.id;
 	if (!outfitHasTrash(projectId))
 		throw new LocalizedError(
-			'The demo’s own outfits can’t be moved to the Trash',
+			'The demo’s own outfits can’t be deleted',
 			'savedActions.demoOutfitLocked'
 		);
 	await flushSave();

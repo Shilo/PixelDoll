@@ -744,8 +744,10 @@
 		"thisRemovesTheMoveFromTheBody": "Gövde ve her öğe karelerini kaybeder. en fazla 30 gün boyunca geri alabilirsiniz.",
 		"demoRenameLocked": "Demonun hareketleri ve durumları yeniden adlandırılamaz",
 		"removeOutfit": "Eşyaları gardıropta kalır. 30 güne kadar Çöp Kutusundan geri getirebilirsin.",
-		"demoOutfitLocked": "Demonun kendi kıyafetleri çöp kutusuna taşınamaz",
-		"labelRemoveOutfit": "Kaldır",
+		"demoOutfitLocked": "Demonun kendi kıyafetleri silinemez",
+		"labelDeleteDemoOutfit": "Sil…",
+		"deleteDemoOutfit": "Demonun çöp kutusu yok, bu yüzden bu kıyafet silinir. Yeniden yükleyene kadar Geri al ile geri getirebilirsiniz.",
+		"deleteDemoOutfitTitle": "{name} silinsin mi?",
 		"outfitGone": "Bu kıyafet artık yok."
 	},
 	"slotsSheet": {
@@ -1199,7 +1201,7 @@
 		"randomItem": "{name} için rastgele eşya",
 		"saveOutfit": "Kıyafet kaydetme",
 		"deleteOutfit": "Kıyafeti çöp kutusuna taşı",
-		"removeOutfit": "Kıyafet kaldırma",
+		"deleteDemoOutfit": "Kıyafeti sil",
 		"renameOutfit": "Kıyafeti yeniden adlandırma",
 		"show": "Gösterme: {name}",
 		"hide": "Gizleme: {name}",

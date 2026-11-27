@@ -723,8 +723,10 @@
 		"thisRemovesTheMoveFromTheBody": "몸과 모든 아이템에서 프레임이 빠집니다. 최대 30일 동안 되돌릴 수 있습니다.",
 		"demoRenameLocked": "데모의 동작과 상태는 이름을 바꿀 수 없습니다",
 		"removeOutfit": "아이템은 옷장에 남습니다. 30일 동안 휴지통에서 되돌릴 수 있습니다.",
-		"demoOutfitLocked": "데모 기본 코디는 휴지통으로 옮길 수 없습니다",
-		"labelRemoveOutfit": "제거",
+		"demoOutfitLocked": "데모 기본 코디는 삭제할 수 없습니다",
+		"labelDeleteDemoOutfit": "삭제…",
+		"deleteDemoOutfit": "데모에는 휴지통이 없어 이 코디가 삭제됩니다. 새로고침하기 전까지는 실행 취소로 되돌릴 수 있습니다.",
+		"deleteDemoOutfitTitle": "{name}을(를) 삭제할까요?",
 		"outfitGone": "이 코디는 더 이상 없습니다."
 	},
 	"slotsSheet": {
@@ -1165,7 +1167,7 @@
 		"randomItem": "무작위 {name} 아이템",
 		"saveOutfit": "코디 저장",
 		"deleteOutfit": "코디를 휴지통으로 이동",
-		"removeOutfit": "코디 제거",
+		"deleteDemoOutfit": "코디 삭제",
 		"renameOutfit": "코디 이름 변경",
 		"show": "{name} 표시",
 		"hide": "{name} 숨기기",

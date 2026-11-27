@@ -744,8 +744,10 @@
 		"thisRemovesTheMoveFromTheBody": "El cuerpo y cada objeto pierden sus fotogramas. Puedes recuperar el movimiento durante hasta 30 días.",
 		"demoRenameLocked": "Los movimientos y estados de la demo no se pueden renombrar",
 		"removeOutfit": "Sus objetos se quedan en el guardarropa. Puedes recuperarlo de la papelera durante 30 días.",
-		"demoOutfitLocked": "Los atuendos propios de la demo no se pueden mover a la papelera",
-		"labelRemoveOutfit": "Quitar",
+		"demoOutfitLocked": "Los atuendos propios de la demo no se pueden eliminar",
+		"labelDeleteDemoOutfit": "Eliminar…",
+		"deleteDemoOutfit": "La demo no tiene papelera, así que este atuendo se elimina. Deshacer lo recupera hasta que recargues.",
+		"deleteDemoOutfitTitle": "¿Eliminar {name}?",
 		"outfitGone": "Este atuendo ya no está disponible."
 	},
 	"slotsSheet": {
@@ -1199,7 +1201,7 @@
 		"randomItem": "Objeto aleatorio de {name}",
 		"saveOutfit": "Guardar atuendo",
 		"deleteOutfit": "Mover atuendo a la papelera",
-		"removeOutfit": "Quitar atuendo",
+		"deleteDemoOutfit": "Eliminar atuendo",
 		"renameOutfit": "Cambiar nombre del atuendo",
 		"show": "Mostrar {name}",
 		"hide": "Ocultar {name}",

@@ -723,8 +723,10 @@
 		"thisRemovesTheMoveFromTheBody": "身体和每个物品都会失去它的帧。最多 30 天内可以恢复。",
 		"demoRenameLocked": "演示的动作和状态无法重命名",
 		"removeOutfit": "其中的物品留在衣橱中。30 天内可从废纸篓中恢复。",
-		"demoOutfitLocked": "演示自带的套装无法移到回收站",
-		"labelRemoveOutfit": "移除",
+		"demoOutfitLocked": "演示自带的套装无法删除",
+		"labelDeleteDemoOutfit": "删除…",
+		"deleteDemoOutfit": "演示没有回收站，因此此套装会被删除。重新加载前可撤销恢复。",
+		"deleteDemoOutfitTitle": "删除 {name}？",
 		"outfitGone": "此套装已不存在。"
 	},
 	"slotsSheet": {
@@ -1165,7 +1167,7 @@
 		"randomItem": "随机{name}装备",
 		"saveOutfit": "保存套装",
 		"deleteOutfit": "将套装移到回收站",
-		"removeOutfit": "移除套装",
+		"deleteDemoOutfit": "删除套装",
 		"renameOutfit": "重命名套装",
 		"show": "显示{name}",
 		"hide": "隐藏{name}",

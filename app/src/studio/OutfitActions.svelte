@@ -1,13 +1,14 @@
 <script lang="ts">
 	// An outfit row with its ⋮ (and right-click) menu. Like every object's menu it ends with Rename, Download ZIP and Move to
-	// Trash, which asks first like a move's (docs/design/menus-and-details.md). An outfit saved on a demo has no Trash: it
-	// is removed as an edit, with Undo.
+	// Trash, which asks first like a move's (docs/design/menus-and-details.md). An outfit saved on a demo has no Trash: Delete
+	// asks first too, and Undo brings it back until a reload.
 	import type { Snippet } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import RowActions from './RowActions.svelte';
 	import RenameRow from './RenameRow.svelte';
 	import DeleteRow from './DeleteRow.svelte';
 	import TrashDialog from './TrashDialog.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { successorFocus } from './experience/focus.ts';
 	import { Download } from './icons.ts';
 	import { doc, openRename } from './state.svelte.ts';
@@ -15,7 +16,7 @@
 	import {
 		outfitHasTrash,
 		outfitLocked,
-		removeDemoOutfit,
+		deleteDemoOutfit,
 		removeOutfit
 	} from './outfitActions.svelte.ts';
 
@@ -32,7 +33,8 @@
 		children: Snippet;
 	} = $props();
 	let entry = $state<HTMLElement>();
-	let trashing = $state(false);
+	let trashing = $state(false),
+		deleting = $state(false);
 </script>
 
 <RowActions {name} key={id} bind:entry {children}>
@@ -63,18 +65,30 @@
 			/>
 		{:else}
 			<DeleteRow
-				label={t('savedActions.labelRemoveOutfit')}
+				opens
+				label={t('savedActions.labelDeleteDemoOutfit')}
 				locked={outfitLocked(id) ? t('savedActions.demoOutfitLocked') : ''}
 				onclick={() => {
 					close();
-					const land = successorFocus(entry, fallback);
-					removeDemoOutfit(id);
-					void land();
+					deleting = true;
 				}}
 			/>
 		{/if}
 	{/snippet}
 </RowActions>
+{#if deleting}
+	<ConfirmDialog
+		title={t('savedActions.deleteDemoOutfitTitle', { name })}
+		action={t('common.delete')}
+		oncancel={() => (deleting = false)}
+		onconfirm={() => {
+			const land = successorFocus(entry, fallback);
+			deleteDemoOutfit(id);
+			deleting = false;
+			void land();
+		}}><p>{t('savedActions.deleteDemoOutfit')}</p></ConfirmDialog
+	>
+{/if}
 {#if trashing}
 	<TrashDialog
 		{name}

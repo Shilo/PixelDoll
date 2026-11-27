@@ -744,8 +744,10 @@
 		"thisRemovesTheMoveFromTheBody": "O corpo e cada item perdem seus quadros. Você pode recuperar o movimento por até 30 dias.",
 		"demoRenameLocked": "Movimentos e estados da demo não podem ser renomeados",
 		"removeOutfit": "Os itens continuam no guarda-roupa. Você pode recuperá-lo da Lixeira por até 30 dias.",
-		"demoOutfitLocked": "Os trajes próprios da demo não podem ir para a lixeira",
-		"labelRemoveOutfit": "Remover",
+		"demoOutfitLocked": "Os trajes próprios da demo não podem ser excluídos",
+		"labelDeleteDemoOutfit": "Excluir…",
+		"deleteDemoOutfit": "A demo não tem lixeira, então este traje é excluído. Desfazer o traz de volta até você recarregar.",
+		"deleteDemoOutfitTitle": "Excluir {name}?",
 		"outfitGone": "Este traje não está mais disponível."
 	},
 	"slotsSheet": {
@@ -1202,7 +1204,7 @@
 		"randomItem": "Sortear item: {name}",
 		"saveOutfit": "Salvar traje",
 		"deleteOutfit": "Mover traje para a lixeira",
-		"removeOutfit": "Remover traje",
+		"deleteDemoOutfit": "Excluir traje",
 		"renameOutfit": "Renomear traje",
 		"show": "Mostrar {name}",
 		"hide": "Ocultar {name}",

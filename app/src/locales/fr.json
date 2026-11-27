@@ -744,8 +744,10 @@
 		"thisRemovesTheMoveFromTheBody": "Le corps et chaque objet perdent leurs images. Vous pouvez récupérer le mouvement pendant jusqu’à 30 jours.",
 		"demoRenameLocked": "Les mouvements et états de la démo ne peuvent pas être renommés",
 		"removeOutfit": "Ses objets restent dans la garde-robe. Vous pouvez le récupérer dans la corbeille pendant 30 jours.",
-		"demoOutfitLocked": "Les tenues propres à la démo ne peuvent pas aller dans la corbeille",
-		"labelRemoveOutfit": "Retirer",
+		"demoOutfitLocked": "Les tenues propres à la démo ne peuvent pas être supprimées",
+		"labelDeleteDemoOutfit": "Supprimer…",
+		"deleteDemoOutfit": "La démo n’a pas de corbeille : cette tenue est supprimée. Annuler la récupère jusqu’au rechargement.",
+		"deleteDemoOutfitTitle": "Supprimer {name} ?",
 		"outfitGone": "Cette tenue n’est plus disponible."
 	},
 	"slotsSheet": {
@@ -1199,7 +1201,7 @@
 		"randomItem": "Objet aléatoire : {name}",
 		"saveOutfit": "Enregistrement de la tenue",
 		"deleteOutfit": "Tenue vers la corbeille",
-		"removeOutfit": "Retrait de la tenue",
+		"deleteDemoOutfit": "Suppression de la tenue",
 		"renameOutfit": "Renommage de la tenue",
 		"show": "Afficher {name}",
 		"hide": "Masquer {name}",

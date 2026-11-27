@@ -5,7 +5,7 @@
 		Clapperboard,
 		Copy,
 		EyeOff,
-		HandGrab,
+		HandFist,
 		Puzzle,
 		TriangleAlert,
 		UsersRound
@@ -42,7 +42,7 @@
 		check: { icon: TriangleAlert, tone: 'warning' },
 		missing: { icon: Clapperboard, tone: 'warning' },
 		hidden: { icon: EyeOff, tone: 'hidden' },
-		twoHanded: { icon: HandGrab, tone: 'hidden' }
+		twoHanded: { icon: HandFist, tone: 'hidden' }
 	};
 	/** Left to right, on the tile and in its ⋮ menu: worn, where it came from, problems worst first, then how it is held
 	 *  (a crowded tile keeps the problems in view). */

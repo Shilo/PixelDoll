@@ -744,8 +744,10 @@
 		"thisRemovesTheMoveFromTheBody": "Körper und jeder Gegenstand verlieren die Frames dieser Bewegung. bis zu 30 Tage lang kannst du sie zurückholen.",
 		"demoRenameLocked": "Bewegungen und Zustände der Demo lassen sich nicht umbenennen",
 		"removeOutfit": "Seine Gegenstände bleiben in der Garderobe. Du kannst es bis zu 30 Tage aus dem Papierkorb zurückholen.",
-		"demoOutfitLocked": "Die eigenen Outfits der Demo können nicht in den Papierkorb",
-		"labelRemoveOutfit": "Entfernen",
+		"demoOutfitLocked": "Die eigenen Outfits der Demo lassen sich nicht löschen",
+		"labelDeleteDemoOutfit": "Löschen…",
+		"deleteDemoOutfit": "Die Demo hat keinen Papierkorb, daher wird dieses Outfit gelöscht. Rückgängig holt es bis zum Neuladen zurück.",
+		"deleteDemoOutfitTitle": "{name} löschen?",
 		"outfitGone": "Dieses Outfit ist nicht mehr vorhanden."
 	},
 	"slotsSheet": {
@@ -1199,7 +1201,7 @@
 		"randomItem": "Zufälliger Gegenstand: {name}",
 		"saveOutfit": "Outfit speichern",
 		"deleteOutfit": "Outfit in den Papierkorb",
-		"removeOutfit": "Outfit entfernen",
+		"deleteDemoOutfit": "Outfit löschen",
 		"renameOutfit": "Outfit umbenennen",
 		"show": "{name} einblenden",
 		"hide": "{name} ausblenden",

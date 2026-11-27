@@ -744,8 +744,10 @@
 		"thisRemovesTheMoveFromTheBody": "The body and every item lose the frames for this move. You can bring it back for up to 30 days.",
 		"demoRenameLocked": "The demo’s moves and states can’t be renamed",
 		"removeOutfit": "Its items stay in the Wardrobe. You can bring it back from the Trash for up to 30 days.",
-		"demoOutfitLocked": "The demo’s own outfits can’t be moved to the Trash",
-		"labelRemoveOutfit": "Remove",
+		"demoOutfitLocked": "The demo’s own outfits can’t be deleted",
+		"labelDeleteDemoOutfit": "Delete…",
+		"deleteDemoOutfit": "The demo has no Trash, so this outfit is deleted. Undo brings it back until you reload.",
+		"deleteDemoOutfitTitle": "Delete {name}?",
 		"outfitGone": "This outfit is no longer available."
 	},
 	"slotsSheet": {
@@ -1199,7 +1201,7 @@
 		"randomItem": "Random {name} item",
 		"saveOutfit": "Save outfit",
 		"deleteOutfit": "Move outfit to Trash",
-		"removeOutfit": "Remove outfit",
+		"deleteDemoOutfit": "Delete outfit",
 		"renameOutfit": "Rename outfit",
 		"show": "Show {name}",
 		"hide": "Hide {name}",

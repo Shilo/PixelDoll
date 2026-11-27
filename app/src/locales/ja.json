@@ -723,8 +723,10 @@
 		"thisRemovesTheMoveFromTheBody": "体とすべてのアイテムからフレームが外れます。最大 30 日間は元に戻せます。",
 		"demoRenameLocked": "デモの動きと状態は名前を変えられません",
 		"removeOutfit": "アイテムはワードローブに残ります。30日間はゴミ箱から戻せます。",
-		"demoOutfitLocked": "デモ付属のコーディネートはゴミ箱に移動できません",
-		"labelRemoveOutfit": "外す",
+		"demoOutfitLocked": "デモ付属のコーディネートは削除できません",
+		"labelDeleteDemoOutfit": "削除…",
+		"deleteDemoOutfit": "デモにはゴミ箱がないため、このコーディネートは削除されます。再読み込みするまでは元に戻せます。",
+		"deleteDemoOutfitTitle": "{name} を削除しますか？",
 		"outfitGone": "このコーディネートはもうありません。"
 	},
 	"slotsSheet": {
@@ -1165,7 +1167,7 @@
 		"randomItem": "ランダムな{name}",
 		"saveOutfit": "コーディネートの保存",
 		"deleteOutfit": "コーディネートをゴミ箱に移動",
-		"removeOutfit": "コーディネートを外す",
+		"deleteDemoOutfit": "コーディネートを削除",
 		"renameOutfit": "コーディネート名の変更",
 		"show": "{name}の表示",
 		"hide": "{name}の非表示",

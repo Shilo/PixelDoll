@@ -2912,7 +2912,7 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	);
 	await expect(page.locator('.outfits .badge')).toHaveCount(0);
 	step('outfit saved and selected without a redundant badge');
-	// The demo has no Trash: its own outfits stay, one saved on it is removed as an edit that Undo reverts.
+	// The demo has no Trash: its own outfits stay, one saved on it is deleted (asking first) and Undo brings it back.
 	for (const [outfit, locked] of [
 		['Adventurer', true],
 		['Smoke look', false]
@@ -2920,14 +2920,18 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 		await page.getByRole('button', { name: `More actions for ${outfit}`, exact: true }).click();
 		const remove = page
 			.getByRole('menu', { name: `Actions for ${outfit}`, exact: true })
-			.getByRole('menuitem', { name: 'Remove', exact: true });
+			.getByRole('menuitem', { name: 'Delete…', exact: true });
 		if (locked) {
 			await expect(remove).toHaveAttribute('aria-disabled', 'true');
-			await expect(remove).toHaveAccessibleDescription(
-				'The demo’s own outfits can’t be moved to the Trash'
-			);
+			await expect(remove).toHaveAccessibleDescription('The demo’s own outfits can’t be deleted');
 			await page.keyboard.press('Escape');
-		} else await remove.click();
+		} else {
+			await remove.click();
+			await page
+				.getByRole('alertdialog', { name: `Delete ${outfit}?`, exact: true })
+				.getByRole('button', { name: 'Delete', exact: true })
+				.click();
+		}
 	}
 	await expect(page.locator('.outfits .row', { hasText: 'Smoke look' })).toHaveCount(0);
 	await page.locator('.bu-toast-region').getByRole('button', { name: 'Undo', exact: true }).click();
@@ -2935,7 +2939,7 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 		'aria-pressed',
 		'true'
 	);
-	step('a demo outfit saved here can be removed and undone, its own outfits cannot');
+	step('a demo outfit saved here can be deleted and undone, its own outfits cannot');
 
 	await inspectStage(page);
 	await page.keyboard.press('2');
