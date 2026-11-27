@@ -11730,13 +11730,32 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	);
 	expect(iconOffsets).toEqual(Array(iconOffsets.length).fill(iconOffsets.at(-1)));
 	await expect(itemMenu(page).getByRole('menuitem', { name: /Wear|Take off/ })).toHaveCount(0);
+	// Worn or not, the menu keeps the same rows: Recolor stays in place while it is off, saying why.
+	const rows = await items.evaluateAll((list) =>
+		list.map((row) => row.getAttribute('aria-label') ?? row.textContent)
+	);
 	await page.keyboard.press('ArrowDown');
-	await expect(items.nth(1)).toHaveAccessibleName('Make copy with new look…');
+	await expect(items.nth(1)).toHaveAccessibleName('Recolor');
+	await expect(items.nth(1)).toHaveAttribute('aria-disabled', 'true');
+	await expect(items.nth(1)).toHaveAccessibleDescription('Wear it to change its colors');
 	await expect(items.nth(1)).toBeFocused();
 	await page.keyboard.press('ArrowDown');
-	await expect(items.nth(2)).toHaveAccessibleName('Create a variant…');
+	await expect(items.nth(2)).toHaveAccessibleName('Make copy with new look…');
 	await expect(items.nth(2)).toBeFocused();
 	await page.keyboard.press('Escape');
+	await hat.click();
+	await expect(hat).toHaveAttribute('aria-pressed', 'true');
+	await more.click();
+	await expect(items.nth(1)).not.toHaveAttribute('aria-disabled');
+	expect(
+		await items.evaluateAll((list) =>
+			list.map((row) => row.getAttribute('aria-label') ?? row.textContent)
+		)
+	).toEqual(rows);
+	await page.keyboard.press('Escape');
+	await hat.click();
+	await expect(hat).toHaveAttribute('aria-pressed', 'false');
+	await more.focus();
 	await expect.poll(() => menuOpen(page)).toBe(false);
 	await expect(more).toBeFocused();
 	await expect(more).toHaveAttribute('aria-expanded', 'false');

@@ -317,9 +317,10 @@
 			const all = [...group.querySelectorAll<HTMLElement>(menu ? '.row' : 'button')].filter(
 				(o) => !(o as HTMLButtonElement).disabled && o.getClientRects().length
 			);
-			// aria-disabled options stay focusable by Tab with their reason, but arrows (which select) skip them; from one,
-			// arrows step to its nearest enabled neighbor.
-			const opts = all.filter((o) => o.getAttribute('aria-disabled') !== 'true');
+			// aria-disabled options stay focusable by Tab with their reason. Arrows that select skip them (from one, they step
+			// to its nearest enabled neighbor); a menu's arrows only move focus, so its unavailable rows stay in the sequence
+			// and their reason is reachable, as in every menu (experience/focus.ts: navigateMenu).
+			const opts = menu ? all : all.filter((o) => o.getAttribute('aria-disabled') !== 'true');
 			const at = all.indexOf(t);
 			if (at < 0 || !opts.length) return;
 			e.preventDefault();

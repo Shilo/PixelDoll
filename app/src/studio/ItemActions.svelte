@@ -80,6 +80,7 @@
 	// What Details has for the player to review (checks, fit, missing frames): its row shows a dot and describes the reason
 	// (its name stays "Details…"), pointing to where the tile's warning is dealt with. The demo has nothing to act on.
 	const attentionId = $props.id();
+	const recolorReason = `${attentionId}-recolor`;
 	const attention = $derived.by(() => {
 		if (inDetails || isDemo()) return '';
 		const health = healthOf(m, it);
@@ -142,12 +143,21 @@
 							hidden>{attention}</span
 						>{/if}<SurfaceChevron /></button
 				>{/if}
-			{#if canRecolor(m, it.id, worn)}<button
+			{#if canRecolor(m, it.id)}<button
 					class="row bu-action"
 					data-variant="quiet"
 					role="menuitem"
-					onclick={() => act(() => recolorItem(it.id))}
-					><Palette size={16} aria-hidden="true" />{t('itemPane.recolor')}</button
+					aria-label={t('itemPane.recolor')}
+					aria-disabled={worn ? undefined : 'true'}
+					aria-describedby={worn ? undefined : recolorReason}
+					onclick={() => {
+						if (worn) act(() => recolorItem(it.id));
+					}}
+					><Palette size={16} aria-hidden="true" /><span class="row-name"
+						>{t('itemPane.recolor')}{#if !worn}<small class="row-reason" id={recolorReason}
+								>{t('itemPane.recolorWearFirst')}</small
+							>{/if}</span
+					></button
 				>{/if}
 			{#if !isDemo() && !it.variantOf && canEditItemAppearance(m, it)}<button
 					class="row bu-action"
