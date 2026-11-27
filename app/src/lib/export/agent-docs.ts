@@ -74,15 +74,15 @@ manifest.json is the source of truth for layer paths, frame counts, pivots and d
 engine folder has its own README for the file names and runtime API it provides.
 `;
 
-const PHASER = `# Phaser 3.80+ / 4
+const phaser = (runtimePath?: string) => `# Phaser 3.80+ / 4
 
-Entry: phaser/PaperdollContainer.js, an ES module; phaser/types.d.ts types the exported data, not the runtime class.
+Entry: ${runtimePath ?? 'phaser/PaperdollContainer.js'}, an ES module; ${runtimePath ? '../_PixelDoll/phaser/types.d.ts' : 'phaser/types.d.ts'} types the exported data, not the runtime class.
 Full guide: phaser/README.txt. Data: manifest.json and the TexturePacker atlas JSON in phaser/.
 The JSON files in phaser/ are atlas metadata only: their meta.image points at ../layers/<slot>/<item>/<layer>/<move>.png, so
 the exported folder has to stay together.
 
-    import { loadPaperdoll, Paperdoll } from './assets/<character>/phaser/PaperdollContainer.js'
-    const model = await loadPaperdoll(this, 'assets/<character>/')   // the folder with manifest.json
+    import { loadPaperdoll, Paperdoll } from './${runtimePath ? '<folder>/_PixelDoll/phaser/PaperdollContainer.js' : 'assets/<character>/phaser/PaperdollContainer.js'}'
+    const model = await loadPaperdoll(this, '${runtimePath ? '<folder>' : 'assets'}/<character>/')   // the folder with manifest.json
     const doll = new Paperdoll(this, 200, 150, model)                // 200,150 is the pivot: the feet
     doll.play('walk', 'south')
     doll.applyPreset(model.presets[0].id)                            // items and colors together; it also replaces setVariants choices
@@ -97,7 +97,7 @@ A complete game config:
 Use pixelArt: true and roundPixels: true and serve the folder over http: the module fetches manifest.json.
 The path you pass is relative to the document's base URL (document.baseURI), not to PaperdollContainer.js.
 This export does not bundle Phaser. Load Phaser 3.80+ or 4 yourself: a script tag that exposes the global Phaser, or your
-bundler with an explicit import (import Phaser from 'phaser'); then import phaser/PaperdollContainer.js as an ES module.
+bundler with an explicit import (import Phaser from 'phaser'); then import ${runtimePath ?? 'phaser/PaperdollContainer.js'} as an ES module.
 Phaser does not await an async create(): nothing may use the doll until loadPaperdoll resolves, so guard update() on
 this.doll or create it in a scene that starts after loading. loadPaperdoll caches per game, so one scene may load it and
 another may create the doll.
@@ -116,22 +116,27 @@ baked/<outfit>/<move>.png holds the same grid flattened for engines that draw on
 are frames, on export.bakedCell and export.bakedPivot from manifest.json. Nothing else in this folder depends on it.
 `;
 
-const PHASER_AE = `# Phaser AE
+const phaserAe = (runtimePath?: string) => `# Phaser AE
 
 Phaser AE is the Phaser Game Agent's engine, built with the phaser-ae CLI; it is not Phaser 3 or 4.
-Entry: phaser-ae/paperdoll.js, an ES module, typed by phaser-ae/paperdoll.d.ts. Full guide: phaser-ae/README.txt.
+Entry: ${runtimePath ?? 'phaser-ae/paperdoll.js'}, an ES module, typed by ${runtimePath ? '../_PixelDoll/phaser-ae/paperdoll.d.ts' : 'phaser-ae/paperdoll.d.ts'}. Full guide: phaser-ae/README.txt.
 
-This is a local integration. Copy manifest.json, phaser-ae/ and the files listed in phaser-ae/assets.json into the game as
+${
+	runtimePath
+		? `Keep the runtime in the game's game/ folder. Add the sheets from phaser-ae/assets.json to the "assets" list in
+game/manifest.json with their paths relative to game/. Set "pixelArt": true in the manifest's "screen".`
+		: `This is a local integration. Copy manifest.json, phaser-ae/ and the files listed in phaser-ae/assets.json into the game as
 game/pixeldoll/<character>/ (not project.json, cells/ or baked/), and add every path in phaser-ae/assets.json to the
 "assets" list in game/manifest.json (not to game/assets.json): the build copies those files next to the game. Phaser's
 hosted route for a person's files is the Pro "upload" command; this export does not use it. Set "pixelArt": true in the
-manifest's "screen".
+manifest's "screen".`
+}
 
     // hero.ts: loaded once, before await game.start() (main.ts imports it)
     import { game } from './engine.js'
-    import { loadPaperdoll } from './pixeldoll/<character>/phaser-ae/paperdoll.js'
-    import heroData from './pixeldoll/<character>/manifest.json'
-    export const hero = await loadPaperdoll(game, 'pixeldoll/<character>/', { manifest: heroData })
+    import { loadPaperdoll } from './${runtimePath ? '<folder>/_PixelDoll/phaser-ae/paperdoll.js' : 'pixeldoll/<character>/phaser-ae/paperdoll.js'}'
+    import heroData from './${runtimePath ? '<folder>' : 'pixeldoll'}/<character>/manifest.json'
+    export const hero = await loadPaperdoll(game, '${runtimePath ? '<folder>' : 'pixeldoll'}/<character>/', { manifest: heroData })
 
     // in a scene's enter(), synchronously:
     const doll = new Paperdoll(game, 360, 640, hero)          // 360,640 is the pivot: the feet
@@ -149,9 +154,9 @@ create the doll in the scene that shows it; leaving that scene removes it. setVa
 map, as in Phaser 3 and 4.
 `;
 
-const GODOT = `# Godot 4
+const godot = (runtimePath?: string) => `# Godot 4
 
-Entry: godot/Paperdoll.tscn (instance it) and godot/paperdoll.gd. Resources: godot/<item>_<layer>.tres and
+Entry: godot/Paperdoll.tscn (instance it) and ${runtimePath ?? 'godot/paperdoll.gd'}. Resources: godot/<item>_<layer>.tres and
 godot/library.tres, which retains the manifest and every equipment resource.
 Full guide: godot/README.txt.
 
@@ -164,7 +169,7 @@ Full guide: godot/README.txt.
 The scene starts playing the first move facing the first direction from its own _ready, so nothing has to start it; call
 play_anim to change move or direction. The API is safe once the node is in the tree (add_child); before that the scene has
 no manifest, so calls fail. The scene starts in manifest.presets[0].
-Copy the whole export folder anywhere under res:// and keep it together; a scene outside it references
+${runtimePath ? 'Keep the character and shared runtime under res://; a scene outside the character folder references' : 'Copy the whole export folder anywhere under res:// and keep it together; a scene outside it references'}
 godot/Paperdoll.tscn with a res:// path. The scene root is a Node2D running paperdoll.gd, and it exposes manifest and
 equipped as properties, so no other wiring is needed. Read doll.manifest.materials[].variants (or manifest.json) to see
 which variants exist; there is no query API. This targets Godot 4 with format=3 scenes.
@@ -178,20 +183,25 @@ Set Rendering > Textures > Default Texture Filter to Nearest and 2D > Snap 2D Tr
 Manifest depths become native z_index ranks; keep the root's z_index to place the character among scene objects.
 `;
 
-const UNITY = `# Unity 2022.3 / Unity 6
+const unity = (runtimePath?: string) => `# Unity 2022.3 / Unity 6
 
-Entry: unity/Runtime/Paperdoll.cs. The importer unity/Editor/PixelDollImporter.cs reads unity/pixeldoll_unity.json and
+Entry: ${runtimePath ?? 'unity/Runtime/Paperdoll.cs'}. The importer ${runtimePath ? '../_PixelDoll/unity/Editor/PixelDollImporter.cs' : 'unity/Editor/PixelDollImporter.cs'} reads unity/pixeldoll_unity.json and
 builds sliced sheets, clips, the controller and the prefab in unity/Generated/.
 Full guide: unity/README.txt.
 
-Copy the whole folder under Assets/, install com.unity.2d.sprite, and let the scripts compile. If no prefab appears,
-run Tools > PixelDoll > <export id> > Import. Then in play mode:
+${
+	runtimePath
+		? `Use one export destination under Assets/, install com.unity.2d.sprite, and let the scripts compile. Unity imports the
+character automatically when it imports the JSON or reloads scripts. Then in play mode:`
+		: `Copy the whole folder under Assets/, install com.unity.2d.sprite, and let the scripts compile. If no prefab appears,
+run Tools > PixelDoll > <export id> > Import. Then in play mode:`
+}
 
     doll.Play("walk", "south");
     doll.Equip("main_hand", "sword");     // null or "" empties a slot
     doll.ApplyPreset("outfit_id");
 
-The namespace is PixelDoll.<export id>. Use a Pixel Perfect Camera, and keep the source sheets unpacked.
+The namespace is ${runtimePath ? 'PixelDoll' : 'PixelDoll.<export id>'}. Use a Pixel Perfect Camera, and keep the source sheets unpacked.
 The importer takes pixels per unit from export.pixelsPerUnit in manifest.json, or from the rig size when that is absent,
 and keeps it across oversize layers so their world scale matches the body.
 `;
@@ -263,11 +273,11 @@ This export has no manifest.json or layers/: RPG Maker takes one flat sheet. Dia
 no place in this format.
 `;
 
-const API: Record<Engine, string> = {
-	phaser: PHASER,
-	'phaser-ae': PHASER_AE,
-	godot: GODOT,
-	unity: UNITY,
+const API: Record<Engine, string | ((runtimePath?: string) => string)> = {
+	phaser,
+	'phaser-ae': phaserAe,
+	godot,
+	unity,
 	gdevelop: GDEVELOP,
 	aseprite: ASEPRITE,
 	generic: GENERIC,
@@ -276,12 +286,21 @@ const API: Record<Engine, string> = {
 };
 
 /** The root agent files plus one engine reference per requested engine, in one fixed order. */
-export function agentFiles(engines: readonly Engine[]): OutFile[] {
+export function agentFiles(engines: readonly Engine[], runtimePath?: string): OutFile[] {
+	const runtimeNote = runtimePath
+		? `\nThe shared runtime is at ${runtimePath}. When copying this character, copy _PixelDoll too
+and keep them in the same parent folder.\n`
+		: '';
 	const files: OutFile[] = [
-		{ name: 'AGENTS.md', data: AGENTS },
-		{ name: 'CLAUDE.md', data: CLAUDE }
+		{ name: 'AGENTS.md', data: AGENTS + runtimeNote },
+		{ name: 'CLAUDE.md', data: CLAUDE + runtimeNote }
 	];
-	for (const engine of new Set(engines))
-		files.push({ name: `docs/${engine}.md`, data: API[engine] });
+	for (const engine of new Set(engines)) {
+		const guide = API[engine];
+		files.push({
+			name: `docs/${engine}.md`,
+			data: typeof guide === 'string' ? guide : guide(runtimePath) + runtimeNote
+		});
+	}
 	return files;
 }

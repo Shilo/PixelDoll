@@ -3698,7 +3698,10 @@
 			"space": "Disk dolu.",
 			"permission": "Bu klasöre izin verilmiyor. Başka bir klasör seçin.",
 			"failed": "Klasöre yazılamadı. Yeniden deneyin.",
-			"taken": "Bu klasörü zaten başka bir karakter kullanıyor. Başka bir klasör seçin."
+			"taken": "Bu klasörü zaten başka bir karakter kullanıyor. Başka bir klasör seçin.",
+			"outdated": "PixelDoll başka bir sekmede güncellendi. Bu klasörü güncellemeye devam etmek için bu sekmeyi yeniden yükle.",
+			"inside": "Bu klasör, PixelDoll’un yönettiği bir klasörün içinde. Bunun yerine onu içeren klasörü seç.",
+			"unityNested": "Başka bir Unity karakteri bu klasörün içinde veya çevresinde bir klasör kullanıyor. Bir oyundaki tüm Unity karakterlerini aynı klasöre bağla."
 		},
 		"reason": {
 			"edited": "PixelDoll dışında düzenlendi",
@@ -3710,7 +3713,8 @@
 			"reconnect": "Güncellemeye devam etmek için şu klasöre yeniden bağlanın: {folder}",
 			"paused": "Güncellemeler duraklatıldı: klasördeki dosyalar değişti.",
 			"missing": "Şu klasör bulunamadı: {folder}",
-			"failed": "Şu klasör güncellenemedi: {folder}"
+			"failed": "Şu klasör güncellenemedi: {folder}",
+			"outdated": "{folder} klasörünü güncellemeye devam etmek için PixelDoll’u yeniden yükle."
 		},
 		"justUpdated": "Az önce güncellendi",
 		"matching": {
@@ -3719,7 +3723,9 @@
 		},
 		"adopt": "Güncel tut",
 		"leave": "Olduğu gibi bırak",
-		"section": "Oyun projesi"
+		"section": "Oyun projesi",
+		"reload": "Yeniden yükle",
+		"shared": "Paylaşılan çalışma zamanı: {path}"
 	},
 	"tips": {
 		"customizeTitle": "Demoyu giydir",

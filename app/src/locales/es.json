@@ -3698,7 +3698,10 @@
 			"space": "El disco está lleno.",
 			"permission": "Esa carpeta no está permitida. Elige otra.",
 			"failed": "No se pudo escribir en la carpeta. Inténtalo de nuevo.",
-			"taken": "Otro personaje ya usa esta carpeta. Elige otra."
+			"taken": "Otro personaje ya usa esta carpeta. Elige otra.",
+			"outdated": "PixelDoll se actualizó en otra pestaña. Recarga esta pestaña para seguir actualizando esta carpeta.",
+			"inside": "Esta carpeta está dentro de una que gestiona PixelDoll. Elige la carpeta que la contiene.",
+			"unityNested": "Otro personaje de Unity usa una carpeta dentro o alrededor de esta. Vincula todos los personajes de Unity de un juego a la misma carpeta."
 		},
 		"reason": {
 			"edited": "Editado fuera de PixelDoll",
@@ -3710,7 +3713,8 @@
 			"reconnect": "Vuelve a conectar {folder} para seguir actualizando.",
 			"paused": "Actualizaciones en pausa: cambiaron archivos de la carpeta.",
 			"missing": "No se encuentra {folder}.",
-			"failed": "No se pudo actualizar {folder}."
+			"failed": "No se pudo actualizar {folder}.",
+			"outdated": "Recarga PixelDoll para seguir actualizando {folder}."
 		},
 		"justUpdated": "Actualizado hace un momento",
 		"matching": {
@@ -3719,7 +3723,9 @@
 		},
 		"adopt": "Mantener actualizados",
 		"leave": "Dejar como están",
-		"section": "Proyecto de juego"
+		"section": "Proyecto de juego",
+		"reload": "Recargar",
+		"shared": "Runtime compartido: {path}"
 	},
 	"tips": {
 		"customizeTitle": "Viste la demo",

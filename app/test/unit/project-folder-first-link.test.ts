@@ -3,7 +3,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import type { FolderLink } from '../../src/lib/project-folder/links.ts';
 import type { FolderRecord } from '../../src/lib/project-folder/plan.ts';
-import { domError, files, memoryFolder } from './project-folder-memory.ts';
+import { domError, files, insideOf, memoryFolder } from './project-folder-memory.ts';
 
 type UpdateLink = (
 	id: string,
@@ -48,6 +48,8 @@ vi.mock('../../src/lib/store/export-settings.ts', () => ({
 vi.mock('../../src/lib/project-folder/links.ts', () => ({
 	...studio,
 	allLinks: async () => [],
+	allDestinations: async () => [],
+	addDestination: async () => {},
 	recordKey: (link: FolderLink) => link.linkedAt
 }));
 vi.mock('../../src/lib/project-folder/target.ts', async (importOriginal) => ({
@@ -58,6 +60,8 @@ vi.mock('../../src/lib/project-folder/target.ts', async (importOriginal) => ({
 const sprite = 'sprite.png';
 const extra = 'extra.png';
 const manifest = 'manifest.json';
+/** A path as the Studio names it: inside the picked folder, in the character's subfolder. */
+const hero = (path: string) => `hero/${path}`;
 const earlier = '2025-02-02T00:00:00.000Z';
 const manifestText = (exportedAt: string) => JSON.stringify({ export: { exportedAt } });
 
@@ -92,7 +96,7 @@ async function setup(initial: Record<string, string>) {
 		if (hash === null) delete folder.record.written[path];
 		else folder.record.written[path] = hash;
 	});
-	studio.target.mockReturnValue(folder.target);
+	studio.target.mockReturnValue(insideOf(folder.target, 'hero'));
 	studio.build.mockImplementation(async (_, { exportedAt }) => ({
 		kind: 'requested',
 		entries: files({ [sprite]: 'sprite', [extra]: 'extra', [manifest]: manifestText(exportedAt) })
@@ -177,7 +181,7 @@ it('offers matching foreign files after recovering from a failed first publish',
 	expect(folder.log).toEqual([`write ${manifest}`]);
 	expect(Object.hasOwn(folder.record.written, sprite)).toBe(false);
 	expect(Object.hasOwn(folder.record.written, extra)).toBe(false);
-	expect(link()?.offered?.map(({ path }) => path)).toEqual([sprite, extra]);
+	expect(link()?.offered?.map(({ path }) => path)).toEqual([sprite, extra].map(hero));
 });
 
 it('fills a missing file on retry without requiring a timestamp-only replacement', async () => {
@@ -188,9 +192,9 @@ it('fills a missing file on retry without requiring a timestamp-only replacement
 	await api.linkProjectFolder('generic');
 	expect(api.projectFolder.status).toMatchObject({
 		kind: 'blocked',
-		conflicts: [{ path: sprite }]
+		conflicts: [{ path: hero(sprite) }]
 	});
-	expect(api.projectFolder.offer?.files.map(({ path }) => path)).toEqual([manifest]);
+	expect(api.projectFolder.offer?.files.map(({ path }) => path)).toEqual([hero(manifest)]);
 	expect(link()?.exportedAt).toBe(earlier);
 	expect(folder.record.written).toEqual({});
 	folder.set(sprite, 'sprite');
@@ -228,7 +232,9 @@ it('offers matching files when the retry finds the entire earlier export already
 	expect(api.projectFolder.status.kind).toBe('done');
 	expect(folder.log).toEqual([]);
 	expect(folder.record.written).toEqual({});
-	expect(api.projectFolder.offer?.files.map(({ path }) => path)).toEqual([sprite, extra, manifest]);
+	expect(api.projectFolder.offer?.files.map(({ path }) => path)).toEqual(
+		[sprite, extra, manifest].map(hero)
+	);
 });
 
 it('honors an approved sprite replacement without requiring a timestamp-only manifest edit', async () => {
@@ -238,7 +244,7 @@ it('honors an approved sprite replacement without requiring a timestamp-only man
 	});
 	await api.linkProjectFolder('generic');
 	const status = api.projectFolder.status;
-	expect(status).toMatchObject({ kind: 'blocked', conflicts: [{ path: sprite }] });
+	expect(status).toMatchObject({ kind: 'blocked', conflicts: [{ path: hero(sprite) }] });
 	expect(folder.log).toEqual([]);
 	if (status.kind !== 'blocked') throw new Error('Expected the sprite conflict');
 
@@ -294,8 +300,10 @@ it('does not read a kept manifest when publishing other changed files', async ()
 	const { api, folder, link } = await setup({});
 	await api.linkProjectFolder('generic');
 	expect(api.projectFolder.status.kind).toBe('done');
-	expect(link()?.files).toHaveProperty([manifest]);
-	expect(folder.log).toEqual([`write ${sprite}`, `write ${extra}`, `write ${manifest}`]);
+	expect(link()?.files).toHaveProperty([hero(manifest)]);
+	// Images are written several at a time, so their order varies; the manifest always comes last.
+	expect(folder.log.slice(0, 2).sort()).toEqual([`write ${extra}`, `write ${sprite}`]);
+	expect(folder.log.slice(2)).toEqual([`write ${manifest}`]);
 
 	folder.record.kept.push(manifest);
 	folder.set(manifest, 'user-owned manifest');
@@ -368,13 +376,13 @@ it('uses the on-disk manifest time for an established link when only its time di
 	await api.publishProjectFolder();
 	const status = api.projectFolder.status;
 	if (status.kind !== 'blocked') throw new Error('Expected the sprite conflict');
-	expect(status.conflicts.map(({ path }) => path)).toContain(sprite);
+	expect(status.conflicts.map(({ path }) => path)).toContain(hero(sprite));
 	expect(folder.text(sprite)).toBe('game edit');
 	expect(folder.text(manifest)).toBe(manifestText(earlier));
 	expect(folder.log).toEqual(writes);
 
-	const spriteConflict = status.conflicts.find(({ path }) => path === sprite)!;
-	await api.publishProjectFolder(new Map([[sprite, spriteConflict.found!]]), status.linkedAt);
+	const spriteConflict = status.conflicts.find(({ path }) => path === hero(sprite))!;
+	await api.publishProjectFolder(new Map([[hero(sprite), spriteConflict.found!]]), status.linkedAt);
 
 	expect({
 		status: api.projectFolder.status.kind,
@@ -383,7 +391,7 @@ it('uses the on-disk manifest time for an established link when only its time di
 		writes: folder.log.slice(writes.length)
 	}).toEqual({
 		status: 'done',
-		initialConflicts: [sprite],
+		initialConflicts: [hero(sprite)],
 		manifest: manifestText(earlier),
 		writes: [`write ${sprite}`]
 	});

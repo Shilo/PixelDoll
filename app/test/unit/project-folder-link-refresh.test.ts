@@ -46,6 +46,8 @@ vi.mock('../../src/lib/project-folder/support.ts', () => ({
 }));
 vi.mock('../../src/lib/project-folder/links.ts', () => ({
 	...studio,
+	allDestinations: async () => [],
+	addDestination: async () => {},
 	recordKey: (link: FolderLink) => link.linkedAt
 }));
 
@@ -102,6 +104,7 @@ function destination(characterId: string, subfolder = characterId) {
 		characterId,
 		handle,
 		subfolder,
+		destinationId: 'game',
 		engine: 'generic',
 		auto: true,
 		linkedAt: `link-${characterId}-${subfolder}`
@@ -150,9 +153,9 @@ async function linkedStudio() {
 		links.set(id, next);
 		return next;
 	});
-	studio.deleteLink.mockImplementation(async (id: string, linkedAt: string) => {
-		if (links.get(id)?.linkedAt === linkedAt) links.delete(id);
-	});
+	studio.deleteLink.mockImplementation(async (id: string, linkedAt: string) =>
+		links.get(id)?.linkedAt === linkedAt ? links.delete(id) : false
+	);
 	studio.readRecord.mockImplementation(async (key: string): Promise<FolderRecord> =>
 		structuredClone(record(key))
 	);

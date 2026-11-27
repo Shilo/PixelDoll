@@ -7,6 +7,9 @@ import type { Engine } from '../store/manifest.ts';
 export interface FolderLink {
 	characterId: string;
 	handle: FileSystemDirectoryHandle;
+	/** The picked folder, the same for every link to it (found with isSameEntry when linking), so the characters there
+	 *  share one trusted record and one lock for their engine's runtime. */
+	destinationId: string;
 	/** The subfolder PixelDoll manages inside the picked folder, fixed at link time so renames never move files. */
 	subfolder: string;
 	engine: Engine;
@@ -29,23 +32,32 @@ const DB = 'pixeldoll-project-folders';
 const STORE = 'links';
 /** One entry per written or kept path: { link, path, hash?, kept? }, keyed by [link, path]. */
 const FILES = 'files';
+/** Every folder ever linked, by id, kept after its links go, so the shared runtime's record and revision floor stay tied
+ *  to that folder when it is picked again. */
+const DESTINATIONS = 'destinations';
 
 function open(): Promise<IDBDatabase> {
 	return new Promise((resolve, reject) => {
 		if (typeof indexedDB === 'undefined') return reject(new Error('IndexedDB is unavailable'));
-		const request = indexedDB.open(DB, 2);
+		const request = indexedDB.open(DB, 3);
 		request.onupgradeneeded = () => {
 			const db = request.result;
 			if (!db.objectStoreNames.contains(STORE))
 				db.createObjectStore(STORE, { keyPath: 'characterId' });
 			if (!db.objectStoreNames.contains(FILES))
 				db.createObjectStore(FILES, { keyPath: ['link', 'path'] }).createIndex('link', 'link');
+			if (!db.objectStoreNames.contains(DESTINATIONS))
+				db.createObjectStore(DESTINATIONS, { keyPath: 'id' });
 		};
 		let blocked = false;
 		request.onsuccess = () => {
 			// An open that was blocked and later succeeds is no longer wanted: close it instead of leaking it.
 			if (blocked) request.result.close();
-			else resolve(request.result);
+			else {
+				// A newer PixelDoll upgrading the database in another tab must not wait for this connection.
+				request.result.onversionchange = () => request.result.close();
+				resolve(request.result);
+			}
 		};
 		request.onerror = () => reject(request.error);
 		request.onblocked = () => {
@@ -57,13 +69,14 @@ function open(): Promise<IDBDatabase> {
 
 async function run<T>(
 	mode: IDBTransactionMode,
-	work: (store: IDBObjectStore) => IDBRequest
+	work: (store: IDBObjectStore) => IDBRequest,
+	name = STORE
 ): Promise<T> {
 	const db = await open();
 	try {
 		return await new Promise<T>((resolve, reject) => {
-			const tx = db.transaction(STORE, mode);
-			const request = work(tx.objectStore(STORE));
+			const tx = db.transaction(name, mode);
+			const request = work(tx.objectStore(name));
 			tx.oncomplete = () => resolve(request.result as T);
 			tx.onabort = tx.onerror = () => reject(tx.error ?? request.error);
 		});
@@ -77,6 +90,7 @@ const isLink = (value: unknown): value is FolderLink => {
 	return (
 		!!v &&
 		typeof v.characterId === 'string' &&
+		typeof v.destinationId === 'string' &&
 		typeof v.subfolder === 'string' &&
 		typeof v.engine === 'string' &&
 		typeof v.auto === 'boolean' &&
@@ -91,19 +105,23 @@ export async function getLink(characterId: string): Promise<FolderLink | null> {
 	return isLink(value) ? value : null;
 }
 
-/** Removes the character's link, only while it is still the one made at `linkedAt`. */
-export async function deleteLink(characterId: string, linkedAt: string): Promise<void> {
+/** Removes the character's link, only while it is still the one made at `linkedAt`. Resolves to whether it did. */
+export async function deleteLink(characterId: string, linkedAt: string): Promise<boolean> {
 	const db = await open();
 	try {
-		await new Promise<void>((resolve, reject) => {
+		return await new Promise<boolean>((resolve, reject) => {
 			const tx = db.transaction(STORE, 'readwrite');
 			const store = tx.objectStore(STORE);
+			let deleted = false;
 			const read = store.get(characterId);
 			read.onsuccess = () => {
 				const current: unknown = read.result;
-				if (isLink(current) && current.linkedAt === linkedAt) store.delete(characterId);
+				if (isLink(current) && current.linkedAt === linkedAt) {
+					store.delete(characterId);
+					deleted = true;
+				}
 			};
-			tx.oncomplete = () => resolve();
+			tx.oncomplete = () => resolve(deleted);
 			tx.onabort = tx.onerror = () => reject(tx.error);
 		});
 	} finally {
@@ -145,7 +163,10 @@ export async function updateLink(
 export const recordKey = (link: Pick<FolderLink, 'characterId' | 'linkedAt'>) =>
 	`${link.characterId}|${link.linkedAt}`;
 
-type FileEntry = { link: string; path: string; hash?: string; kept?: true };
+type FileEntry = { link: string; path: string; hash?: string; kept?: true; revision?: number };
+
+/** The path of the entry holding a shared runtime's revision floor: no file has an empty path. */
+const FLOOR = '';
 
 async function inFiles<T>(
 	mode: IDBTransactionMode,
@@ -287,3 +308,50 @@ export function deleteRecord(key: string): Promise<void> {
 /** Every stored link, to stop two characters from sharing one folder. */
 export const allLinks = () =>
 	run<unknown[]>('readonly', (s) => s.getAll()).then((values) => values.filter(isLink));
+
+/** The newest runtime revision any tab has started installing under this record (0 when none). A tab with an older
+ *  runtime never writes it: it would replace newer runtime files with older ones. */
+export function readFloor(key: string): Promise<number> {
+	return inFiles('readonly', (store, done) => {
+		const read = store.get([key, FLOOR]);
+		read.onsuccess = () => done((read.result as FileEntry | undefined)?.revision ?? 0);
+	});
+}
+
+/** Raises the floor to `revision` (never lowers it), on disk before any runtime file is written, so a crash part way
+ *  through an update cannot let an older tab take the files back. Resolves to the floor now stored. */
+export function raiseFloor(key: string, revision: number): Promise<number> {
+	return inFiles(
+		'readwrite',
+		(store, done) => {
+			const read = store.get([key, FLOOR]);
+			read.onsuccess = () => {
+				const floor = Math.max((read.result as FileEntry | undefined)?.revision ?? 0, revision);
+				store.put({ link: key, path: FLOOR, revision: floor });
+				done(floor);
+			};
+		},
+		'strict'
+	);
+}
+
+export interface Destination {
+	id: string;
+	handle: FileSystemDirectoryHandle;
+	/** A Unity character was linked here: its runtime may be in the folder even without a record of writing it. */
+	unity?: boolean;
+}
+
+/** Every folder PixelDoll has linked; a malformed entry is skipped. */
+export const allDestinations = () =>
+	run<unknown[]>('readonly', (s) => s.getAll(), DESTINATIONS).then((values) =>
+		values.filter(
+			(v): v is Destination =>
+				typeof (v as Partial<Destination> | undefined)?.id === 'string' &&
+				typeof (v as Partial<Destination>).handle?.getDirectoryHandle === 'function'
+		)
+	);
+
+/** Remembers a newly linked folder. */
+export const addDestination = (destination: Destination) =>
+	run<IDBValidKey>('readwrite', (s) => s.put(destination), DESTINATIONS);

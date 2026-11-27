@@ -3698,7 +3698,10 @@
 			"space": "Le disque est plein.",
 			"permission": "Ce dossier n’est pas autorisé. Choisissez-en un autre.",
 			"failed": "Impossible d’écrire dans le dossier. Réessayez.",
-			"taken": "Un autre personnage utilise déjà ce dossier. Choisissez-en un autre."
+			"taken": "Un autre personnage utilise déjà ce dossier. Choisissez-en un autre.",
+			"outdated": "PixelDoll a été mis à jour dans un autre onglet. Rechargez cet onglet pour continuer à mettre à jour ce dossier.",
+			"inside": "Ce dossier se trouve dans un dossier géré par PixelDoll. Choisissez plutôt le dossier qui le contient.",
+			"unityNested": "Un autre personnage Unity utilise un dossier dans ou autour de celui-ci. Liez tous les personnages Unity d’un jeu au même dossier."
 		},
 		"reason": {
 			"edited": "Modifié en dehors de PixelDoll",
@@ -3710,7 +3713,8 @@
 			"reconnect": "Reconnectez {folder} pour continuer les mises à jour.",
 			"paused": "Mises à jour en pause : des fichiers du dossier ont changé.",
 			"missing": "{folder} est introuvable.",
-			"failed": "Impossible de mettre à jour {folder}."
+			"failed": "Impossible de mettre à jour {folder}.",
+			"outdated": "Rechargez PixelDoll pour continuer à mettre à jour {folder}."
 		},
 		"justUpdated": "Mis à jour à l’instant",
 		"matching": {
@@ -3719,7 +3723,9 @@
 		},
 		"adopt": "Garder à jour",
 		"leave": "Laisser tel quel",
-		"section": "Projet de jeu"
+		"section": "Projet de jeu",
+		"reload": "Recharger",
+		"shared": "Runtime partagé : {path}"
 	},
 	"tips": {
 		"customizeTitle": "Habillez la démo",

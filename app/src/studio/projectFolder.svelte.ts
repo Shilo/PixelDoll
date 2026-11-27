@@ -6,19 +6,35 @@ import { ACTION_LAYER_ENGINES } from '../lib/export/export.ts';
 import { walkMoves } from '../lib/export/rpg-maker.ts';
 import { message, sameMessage, type Message } from '../lib/message.ts';
 import {
+	byScope,
+	combineRecords,
+	hasRuntime,
+	runtimeDir,
+	runtimeKey,
+	scopeOf,
+	SHARED_DIR,
+	under,
+	type Scope
+} from '../lib/project-folder/layout.ts';
+import {
+	addDestination,
+	allDestinations,
 	allLinks,
 	deleteLink,
 	deleteRecord,
 	getLink,
+	raiseFloor,
+	readFloor,
 	readRecord,
 	recordKey,
 	recordWritten,
 	replaceLink,
 	setKept,
 	updateLink,
+	type Destination,
 	type FolderLink
 } from '../lib/project-folder/links.ts';
-import type { PlanAction } from '../lib/project-folder/plan.ts';
+import { NOT_A_FILE, type PlanAction } from '../lib/project-folder/plan.ts';
 import {
 	hashAt,
 	hashFiles,
@@ -63,6 +79,11 @@ export type FolderStatus =
 	/** `linkedAt`: the link these conflicts were found in; an approval only ever applies to that link. */
 	| { kind: 'blocked'; conflicts: PlanAction[]; linkedAt: string }
 	| { kind: 'unavailable' }
+	/** Another tab with a newer PixelDoll has updated this folder's shared runtime: this tab would write an older one. */
+	| { kind: 'outdated' }
+	/** The picked folder is inside one PixelDoll manages (`inside`), or a Unity link would install a second runtime in
+	 *  one game (`unity`). */
+	| { kind: 'overlap'; unity: boolean }
 	| { kind: 'failed'; reason: FailureReason };
 
 class FolderState {
@@ -86,6 +107,32 @@ export function updatedLabel(iso: string, now: number) {
  *  give only the folder's name, never its full path). */
 export const folderPath = (link: Pick<FolderLink, 'handle' | 'subfolder'>) =>
 	`${link.handle.name}/${link.subfolder}/`;
+
+/** Where the engine runtime every character in the folder shares lands, or null for an engine without one. */
+export const runtimePath = (link: Pick<FolderLink, 'handle' | 'engine'>) =>
+	hasRuntime(link.engine) ? `${link.handle.name}/${runtimeDir(link.engine)}/` : null;
+
+/** The parts of the picked folder a link publishes into, each with its own trusted record: the character's subfolder,
+ *  and the engine's shared runtime. */
+const scopesOf = (link: FolderLink): Scope[] => [
+	{ dir: link.subfolder, key: recordKey(link) },
+	...(hasRuntime(link.engine)
+		? [{ dir: runtimeDir(link.engine), key: runtimeKey(link.destinationId, link.engine) }]
+		: [])
+];
+
+/** The link's trusted record, every path relative to the picked folder. */
+const readRecords = async (scopes: readonly Scope[]) =>
+	combineRecords(
+		await Promise.all(scopes.map(async (scope) => ({ scope, record: await readRecord(scope.key) })))
+	);
+
+/** Records a picked-folder-relative path in its own scope's record. */
+function recordAt(scopes: readonly Scope[], path: string, hash: string | null) {
+	const found = scopeOf(scopes, path);
+	if (!found) throw new Error(`No project folder record for ${path}`);
+	return recordWritten(found.scope.key, found.path, hash);
+}
 
 /** Whether the open character's folder needs the user. */
 export const folderNeedsAttention = (status: FolderStatus) =>
@@ -200,7 +247,10 @@ export async function loadFolderLink(characterId: string) {
 		// (such as Unlink) reports nothing.
 		console.warn('Could not read the linked project folder', error);
 		if (readAt === changesOf(characterId))
-			setStatus(characterId, { kind: 'failed', reason: 'unknown' });
+			setStatus(
+				characterId,
+				newerStorage(error) ? { kind: 'outdated' } : { kind: 'failed', reason: 'unknown' }
+			);
 	}
 }
 
@@ -245,9 +295,15 @@ const fingerprint = (
 		)
 	);
 
-/** The export's files, as the Export sheet would build them, or null when no export can be built. `at` gives the same
- *  files with another export time: only the text that carries it changes, so the images are never encoded again. */
-type BuiltFiles = { files: FolderFile[]; at: (exportedAt: string) => Promise<FolderFile[] | null> };
+/** The export's files in the folder layout, every path relative to the picked folder: the shared runtime first (so
+ *  nothing naming it lands before it), then the character's files. Null when no export can be built. `at` gives the
+ *  same files with another export time: only the text that carries it changes, so the images are never encoded again.
+ *  `revision` is the shared runtime's, for an engine that has one. */
+type BuiltFiles = {
+	files: FolderFile[];
+	revision?: number;
+	at: (exportedAt: string) => Promise<FolderFile[] | null>;
+};
 
 async function buildFiles(
 	link: FolderLink,
@@ -268,15 +324,30 @@ async function buildFiles(
 				? input.actionLayering
 				: undefined,
 		exportedAt,
-		filesOnly: true
+		filesOnly: true,
+		layout: 'folder'
 	});
 	if (result.kind !== 'requested') return null;
-	const folder = (entries: readonly { name: string; data: Uint8Array }[]) =>
-		entries.map(({ name, data }) => ({ name, data }));
+	const bundle = result.bundle;
+	// The runtime is shared by every character in the folder, so a build that disagrees with the folder layout (one
+	// without the runtime its engine needs, or with one it does not) is never published.
+	if (!!bundle !== hasRuntime(link.engine) || (bundle && bundle.engine !== link.engine)) {
+		console.warn('Project folder export has an unexpected runtime', link.engine, bundle?.engine);
+		return null;
+	}
+	const runtime = (bundle?.files ?? []).map(({ name, data }) => ({
+		name: under(runtimeDir(link.engine), name),
+		data
+	}));
+	const folder = (entries: readonly { name: string; data: Uint8Array }[]) => [
+		...runtime,
+		...entries.map(({ name, data }) => ({ name: under(link.subfolder, name), data }))
+	];
 	const files = folder(result.entries);
 	const retime = result.retime;
 	return {
 		files,
+		revision: bundle?.revision,
 		at: async (time) => {
 			if (time === exportedAt) return files;
 			const again = retime?.(time);
@@ -297,16 +368,17 @@ async function permission(link: FolderLink): Promise<PermissionState> {
 	}
 }
 
-/** Runs `work` alone across tabs where Web Locks exist. */
-function locked<T>(name: string, work: () => Promise<T>): Promise<T> {
-	return navigator.locks
-		? navigator.locks.request(`pixeldoll:project-folder:${name}`, work)
-		: work();
-}
+/** Runs `work` alone across tabs (folder support requires Web Locks). */
+const locked = <T>(name: string, work: () => Promise<T>): Promise<T> =>
+	navigator.locks.request(`pixeldoll:project-folder:${name}`, work);
 
-/** One publish, link change or unlink at a time per destination. */
+/** One publish, link change or unlink at a time per destination; for an engine with a shared runtime, also one at a time
+ *  per picked folder and engine, since every character there writes that runtime. Always taken in this order (subfolder,
+ *  then runtime), so two publishes can never wait on each other. */
 const exclusive = <T>(link: FolderLink, work: () => Promise<T>) =>
-	locked(`folder:${link.subfolder.toLowerCase()}`, work);
+	locked(`folder:${link.destinationId}:${link.subfolder.toLowerCase()}`, () =>
+		hasRuntime(link.engine) ? locked(`runtime:${link.destinationId}:${link.engine}`, work) : work()
+	);
 
 function notify(link: FolderLink, kind: string, manual: boolean, show: () => unknown) {
 	const key = `${link.characterId}:${kind}`;
@@ -370,12 +442,37 @@ async function superseded(id: string, readAt: number, stale?: string) {
 	}
 }
 
-const MANIFEST = 'manifest.json';
+/** Whether the shared runtime files among `files` (path to hash) are on disk exactly so. A quiet check otherwise
+ *  trusts PixelDoll's record, but the runtime is every character's in the folder: one deleted or edited there breaks
+ *  this character too, so it is always read (it is a few small files). Unreadable counts as not. */
+async function runtimeOnDisk(target: FolderTarget, files: Readonly<Record<string, string>>) {
+	try {
+		for (const [path, hash] of Object.entries(files))
+			if (path.startsWith(`${SHARED_DIR}/`) && (await hashAt(target, path)) !== hash) return false;
+		return true;
+	} catch {
+		return false; // the full publish below reads the folder and reports what is wrong
+	}
+}
+
+/** A kept shared runtime file is the user's to change, never to lose: every character in the folder needs it. Once one
+ *  is gone (or a folder took its place), the runtime's keeps are released, so the publish pauses and lists it to restore
+ *  instead of writing characters that name a missing script. A file that cannot be read leaves them as they are. */
+async function releaseLostRuntime(target: FolderTarget, link: FolderLink) {
+	const key = runtimeKey(link.destinationId, link.engine);
+	for (const path of (await readRecord(key)).kept) {
+		const found = await hashAt(target, under(runtimeDir(link.engine), path)).catch(() => '');
+		if (found === null || found === NOT_A_FILE) return setKept(key, [], false);
+	}
+}
+
+/** The character's export manifest, relative to the picked folder. */
+const manifestOf = (link: FolderLink) => under(link.subfolder, 'manifest.json');
 
 /** The time and bytes of an export manifest already in the folder, if it reads as one. */
-async function sameEarlierExport(target: FolderTarget) {
+async function sameEarlierExport(target: FolderTarget, path: string) {
 	try {
-		const data = await target.read(MANIFEST);
+		const data = await target.read(path);
 		if (!data) return null;
 		const exportedAt: unknown = JSON.parse(new TextDecoder().decode(data))?.export?.exportedAt;
 		return typeof exportedAt === 'string' ? { exportedAt, hash: await sha256(data) } : null;
@@ -397,6 +494,7 @@ async function stillLinked(link: FolderLink): Promise<FolderLink | null | 'unkno
 		const current = await getLink(link.characterId);
 		return current && current.linkedAt === link.linkedAt ? current : null;
 	} catch (error) {
+		if (newerStorage(error)) throw error; // reported as outdated: retrying in this tab cannot help
 		console.warn('Could not recheck the linked project folder', error);
 		return 'unknown';
 	}
@@ -455,11 +553,15 @@ async function publish(link: FolderLink, request: Request) {
 			else if (willPublish(link)) report({ kind: 'publishing' });
 		};
 		report({ kind: 'publishing' });
-		const key = recordKey(link);
-		if (request.release) await setKept(key, [], false);
-		if (request.keep?.length) await setKept(key, request.keep, true);
-		const record = await readRecord(key);
-		const target = directoryTarget(link.handle, [link.subfolder]);
+		const scopes = scopesOf(link);
+		if (request.release) for (const scope of scopes) await setKept(scope.key, [], false);
+		if (request.keep?.length)
+			for (const [scope, paths] of byScope(scopes, request.keep))
+				await setKept(scope.key, paths, true);
+		const target = directoryTarget(link.handle);
+		if (hasRuntime(link.engine)) await releaseLostRuntime(target, link);
+		const record = await readRecords(scopes);
+		const MANIFEST = manifestOf(link);
 		// Reusing the last timestamp first means an unchanged character matches what is there and writes nothing.
 		const inputs = await fingerprint(link, input, settings);
 		// Until a publish has completed and the matching-files offer was answered, this is still the folder's first check:
@@ -487,7 +589,8 @@ async function publish(link: FolderLink, request: Request) {
 			link.exportedAt &&
 			link.files &&
 			link.inputs === inputs &&
-			matchesRecord(record, new Map(Object.entries(link.files)))
+			matchesRecord(record, new Map(Object.entries(link.files))) &&
+			(await runtimeOnDisk(target, link.files))
 		)
 			return finished({ kind: 'done', kept: record.kept.length, already: false });
 		// It first tries the last time, so an export whose files did not change matches what is there and writes nothing.
@@ -503,7 +606,7 @@ async function publish(link: FolderLink, request: Request) {
 				// there need no write.
 				(request.manual || showingProblem || !matchesRecord(record, next)
 					? await inSync(target, record, next)
-					: true)
+					: await runtimeOnDisk(target, Object.fromEntries(next)))
 			) {
 				// A click read every file and found them current: that is an update as far as the user can tell.
 				await remember({
@@ -520,7 +623,7 @@ async function publish(link: FolderLink, request: Request) {
 		// so only files that really differ are written and the manifest never pauses over its time alone. Otherwise the
 		// export gets a new time.
 		// A manifest the user keeps is never written, so it is not read either.
-		const there = record.kept.includes(MANIFEST) ? null : await sameEarlierExport(target);
+		const there = record.kept.includes(MANIFEST) ? null : await sameEarlierExport(target, MANIFEST);
 		let exportedAt = now;
 		let files: FolderFile[] | null = null;
 		// One build serves the whole publish: another time only rewrites the text that carries it, never the images.
@@ -548,27 +651,44 @@ async function publish(link: FolderLink, request: Request) {
 		showLink(id, recheck, readAt);
 		// Update automatically may also have been turned off meanwhile.
 		if (!request.manual && !recheck.auto) return report({ kind: 'idle' });
+		// Checked under this folder's runtime lock: a tab with an older runtime than one another tab began installing
+		// stops, since it would put older runtime files back. Otherwise the floor rises just before the first write (once
+		// nothing pauses this publish), so an update stopped part way can never be taken back by an older tab either.
+		const runtime = hasRuntime(link.engine)
+			? { key: runtimeKey(link.destinationId, link.engine), revision: built?.revision ?? 0 }
+			: null;
+		if (runtime) {
+			if ((await readFloor(runtime.key)) > runtime.revision)
+				return reportOutdated(link, request.manual);
+		}
 		const outcome = await publishFiles(target, files, {
 			record,
 			overwrite: request.overwrite,
-			onRecord: (path, hash) => recordWritten(key, path, hash),
+			manifest: MANIFEST,
+			first: hasRuntime(link.engine) ? runtimeDir(link.engine) : undefined,
+			onRecord: (path, hash) => recordAt(scopes, path, hash),
 			// Planning reads every file, which takes a moment: the last chance to notice a stop before anything is written.
-			proceed: async () => {
+			proceed: async (writes) => {
 				if (!store.projects.some((p) => p.id === id)) return false; // deleted meanwhile
 				const latest = await stillLinked(link);
 				lastCheckFailed = latest === 'unknown';
-				return typeof latest === 'object' && !!latest && (request.manual || latest.auto);
+				const go = typeof latest === 'object' && !!latest && (request.manual || latest.auto);
+				// Only a publish that writes runtime files installs this revision; a character-only one leaves the floor.
+				const runtimePrefix = `${runtimeDir(link.engine)}/`;
+				if (go && runtime && writes.some((w) => w.path.startsWith(runtimePrefix)))
+					await raiseFloor(runtime.key, runtime.revision);
+				return go;
 			}
 		});
-		if (
-			first &&
-			outcome.kind !== 'stopped' &&
-			outcome.kind !== 'failed' &&
-			outcome.matching?.length
-		) {
-			await remember({ offered: outcome.matching });
-			if (loadedFor === id)
-				projectFolder.offer = { linkedAt: link.linkedAt, files: outcome.matching };
+		// Matching shared runtime files are left out of the offer: they are used as they are, and trusting them would
+		// let a tab with an older runtime replace them without the revision floor that a runtime PixelDoll wrote has.
+		const offered =
+			outcome.kind === 'stopped' || outcome.kind === 'failed'
+				? []
+				: (outcome.matching ?? []).filter((m) => !m.path.startsWith(`${SHARED_DIR}/`));
+		if (first && offered.length) {
+			await remember({ offered });
+			if (loadedFor === id) projectFolder.offer = { linkedAt: link.linkedAt, files: offered };
 		}
 		// The earlier export's time stays in use (also while paused), so a retry still matches its files.
 		if (exportedAt !== now && outcome.kind !== 'published' && outcome.kind !== 'unchanged')
@@ -609,6 +729,7 @@ async function publish(link: FolderLink, request: Request) {
 				);
 			case 'failed':
 				console.warn('Project folder publish failed', outcome.error);
+				if (newerStorage(outcome.error)) return reportOutdated(link, request.manual);
 				if (outcome.reason === 'permission') return lostAccess(link, request.manual);
 				if (outcome.reason === 'missing') {
 					report({ kind: 'missing' });
@@ -632,6 +753,23 @@ async function publish(link: FolderLink, request: Request) {
 		}
 	});
 }
+
+/** A newer PixelDoll in another tab got ahead of this one (its runtime, or its project folder storage): this tab must
+ *  reload before it may write this folder again. */
+function reportOutdated(link: FolderLink, manual: boolean) {
+	setStatus(link.characterId, { kind: 'outdated' }, link.linkedAt);
+	notify(link, 'outdated', manual, () =>
+		notice(link, message('projectFolder.toast.outdated', { folder: link.handle.name }), {
+			...lasting,
+			action: () => location.reload(),
+			actionLabel: message('projectFolder.reload')
+		})
+	);
+}
+
+/** Project folder storage that a newer PixelDoll has upgraded can no longer be opened by this one. */
+const newerStorage = (error: unknown) =>
+	error instanceof DOMException && error.name === 'VersionError';
 
 function lostAccess(link: FolderLink, manual: boolean) {
 	setStatus(link.characterId, { kind: 'reconnect' }, link.linkedAt);
@@ -678,14 +816,17 @@ function run(request: Request): Promise<void> {
 					await publish(link, current);
 				} catch (error) {
 					console.warn('Project folder publish stopped', error);
-					setStatus(link.characterId, { kind: 'failed', reason: 'unknown' }, link.linkedAt);
-					notify(link, 'failed:unknown', current.manual, () =>
-						notice(link, message('projectFolder.toast.failed', { folder: link.handle.name }), {
-							tone: 'warning',
-							error,
-							...review(link.characterId)
-						})
-					);
+					if (newerStorage(error)) reportOutdated(link, current.manual);
+					else {
+						setStatus(link.characterId, { kind: 'failed', reason: 'unknown' }, link.linkedAt);
+						notify(link, 'failed:unknown', current.manual, () =>
+							notice(link, message('projectFolder.toast.failed', { folder: link.handle.name }), {
+								tone: 'warning',
+								error,
+								...review(link.characterId)
+							})
+						);
+					}
 				}
 			}
 			next = queued.get(key);
@@ -756,11 +897,11 @@ export async function adoptMatchingFiles() {
 			// Unknown is retried by clicking again; a link stopped or replaced elsewhere has nothing left to adopt.
 			if (latest === 'unknown') throw new Error('Could not recheck the linked project folder');
 			if (!latest) return;
-			const target = directoryTarget(link.handle, [link.subfolder]);
-			const key = recordKey(link);
+			const target = directoryTarget(link.handle);
+			const scopes = scopesOf(latest);
 			for (const file of offer.files)
 				if (file.found && (await hashAt(target, file.path)) === file.found)
-					await recordWritten(key, file.path, file.found);
+					await recordAt(scopes, file.path, file.found);
 		});
 		// Gone once they are recorded, so the offer's disappearing means it took effect.
 		answeredHere.add(offer.linkedAt);
@@ -768,7 +909,11 @@ export async function adoptMatchingFiles() {
 		if (projectFolder.offer?.linkedAt === offer.linkedAt) projectFolder.offer = null;
 	} catch (error) {
 		console.warn('Could not keep the matching project folder files updated', error);
-		setStatus(link.characterId, { kind: 'failed', reason: 'unknown' }, link.linkedAt);
+		setStatus(
+			link.characterId,
+			newerStorage(error) ? { kind: 'outdated' } : { kind: 'failed', reason: 'unknown' },
+			link.linkedAt
+		);
 	}
 }
 
@@ -823,9 +968,23 @@ export async function linkProjectFolder(engine: Engine) {
 			// Read fresh: another tab may have linked or stopped this character since this tab last looked.
 			const previous = await getLink(characterId);
 			const same = !!previous && (await sameFolder(previous.handle, handle));
+			const others = (await allLinks()).filter((other) => other.characterId !== characterId);
+			const destinations = await allDestinations();
+			// Every link to a folder shares its destination, and with it the engine runtime's record, revision floor and
+			// lock, also once every character there was unlinked. A folder that cannot be compared is a new destination:
+			// PixelDoll then trusts nothing it finds there, so anything different asks first.
+			let destinationId = same ? previous.destinationId : undefined;
+			if (!destinationId)
+				for (const known of destinations)
+					if (await sameFolder(known.handle, handle)) {
+						destinationId = known.id;
+						break;
+					}
+			const known = !!destinationId;
 			const fresh: FolderLink = {
 				characterId,
 				handle,
+				destinationId: destinationId ?? crypto.randomUUID(),
 				subfolder: same ? previous.subfolder : characterZipId(project.manifest),
 				engine: same ? previous.engine : engine,
 				auto: previous?.auto ?? true,
@@ -833,19 +992,38 @@ export async function linkProjectFolder(engine: Engine) {
 				linkedAt: `${new Date().toISOString()} ${crypto.randomUUID()}`
 			};
 			// One folder per character: another character's files there are never touched.
-			for (const other of await allLinks())
+			for (const other of others)
 				if (
-					other.characterId !== characterId &&
 					other.subfolder.toLowerCase() === fresh.subfolder.toLowerCase() &&
-					(await sameFolder(other.handle, handle))
+					(other.destinationId === fresh.destinationId || (await sameFolder(other.handle, handle)))
 				)
-					return null;
+					return { kind: 'taken' } as const;
+			// Each link's folder counts, also one stored before PixelDoll kept folders on their own.
+			const folders = new Map(destinations.map((d) => [d.id, d]));
+			for (const other of others)
+				if (!folders.has(other.destinationId))
+					folders.set(other.destinationId, { id: other.destinationId, handle: other.handle });
+			// The character's own earlier folder counts too: its runtime stays there after the move.
+			const earlier = previous && !same ? [previous] : [];
+			for (const other of earlier)
+				if (!folders.has(other.destinationId))
+					folders.set(other.destinationId, { id: other.destinationId, handle: other.handle });
+			const overlap = await overlapping(fresh, [...others, ...earlier], [...folders.values()]);
+			if (overlap) return overlap;
+			// A folder that ever had a Unity character keeps saying so, since its runtime files stay there.
+			if (!known || fresh.engine === 'unity')
+				await addDestination({
+					...folders.get(fresh.destinationId),
+					id: fresh.destinationId,
+					handle,
+					...(fresh.engine === 'unity' ? { unity: true } : {})
+				});
 			// Picking the same folder again keeps what PixelDoll knows it wrote there. replaceLink also keeps the stored Update
 			// automatically choice, which may change while this waits for a publish into the previous folder.
 			const replace = () => replaceLink(fresh, previous, same);
 			return previous ? exclusive(previous, replace) : replace();
 		});
-		if (!saved) return setStatus(characterId, { kind: 'taken' });
+		if ('kind' in saved) return setStatus(characterId, saved);
 		link = saved;
 		noteLinkChange(characterId); // this tab's own link change: an older read never shows the previous link over it
 		for (const [linkedAt, pending] of timers)
@@ -856,12 +1034,61 @@ export async function linkProjectFolder(engine: Engine) {
 	} catch (error) {
 		// Without stored records PixelDoll could not tell its files from the user's, so it publishes nothing.
 		console.warn('Could not save the linked project folder', error);
-		return setStatus(characterId, { kind: 'failed', reason: 'unknown' });
+		return setStatus(
+			characterId,
+			newerStorage(error) ? { kind: 'outdated' } : { kind: 'failed', reason: 'unknown' }
+		);
 	}
 	showLink(characterId, link);
 	if (loadedFor === characterId) projectFolder.offer = null;
 	// This link's own first publish, even if another character was opened meanwhile.
 	await run({ manual: true, linkedAt: link.linkedAt, link });
+}
+
+/** Where `inner` is inside `outer`, as folder names, or null when it is not (or that cannot be told). */
+async function within(outer: FileSystemDirectoryHandle, inner: FileSystemDirectoryHandle) {
+	try {
+		return await outer.resolve(inner);
+	} catch {
+		return null; // a vanished folder holds nothing
+	}
+}
+
+/** Whether a new link's folder overlaps a folder PixelDoll knows: picked inside a folder it manages (a character's
+ *  subfolder or the shared runtime folder), or holding one inside its own. Unity compiles every script in a game, so a
+ *  Unity link whose folder nests with one that has a Unity runtime (even one no character is linked to any more: its
+ *  files stay) would install it twice and stop the game compiling. Folders side by side in one game cannot be told apart
+ *  from two games; the Unity guide asks for one folder per game. */
+async function overlapping(
+	fresh: FolderLink,
+	others: readonly FolderLink[],
+	destinations: readonly Destination[]
+): Promise<Extract<FolderStatus, { kind: 'overlap' }> | null> {
+	const managed = (path: string[] | null, subfolders: readonly string[]) =>
+		!!path?.length && (path[0] === SHARED_DIR || subfolders.includes(path[0].toLowerCase()));
+	for (const destination of destinations) {
+		if (destination.id === fresh.destinationId) continue;
+		const here = others.filter((other) => other.destinationId === destination.id);
+		const inside = await within(destination.handle, fresh.handle);
+		const around = await within(fresh.handle, destination.handle);
+		if (
+			managed(
+				inside,
+				here.map((other) => other.subfolder.toLowerCase())
+			) ||
+			managed(around, [fresh.subfolder.toLowerCase()])
+		)
+			return { kind: 'overlap', unity: false };
+		if (
+			fresh.engine === 'unity' &&
+			(inside || around) &&
+			(destination.unity ||
+				here.some((other) => other.engine === 'unity') ||
+				(await readFloor(runtimeKey(destination.id, 'unity'))) > 0)
+		)
+			return { kind: 'overlap', unity: true };
+	}
+	return null;
 }
 
 async function sameFolder(a: FileSystemDirectoryHandle, b: FileSystemDirectoryHandle) {
@@ -905,7 +1132,10 @@ export async function setFolderAutoPublish(auto: boolean) {
 		showLink(link.characterId, await updateLink(link.characterId, link.linkedAt, { auto }), change);
 	} catch (error) {
 		console.warn('Could not save Update automatically', error);
-		setStatus(link.characterId, { kind: 'failed', reason: 'unknown' });
+		setStatus(
+			link.characterId,
+			newerStorage(error) ? { kind: 'outdated' } : { kind: 'failed', reason: 'unknown' }
+		);
 		return;
 	}
 	if (auto) scheduleFolderPublish();
@@ -917,17 +1147,25 @@ export async function unlinkProjectFolder() {
 	if (!link) return;
 	clearTimeout(timers.get(link.linkedAt)?.timer);
 	timers.delete(link.linkedAt);
+	let removed: boolean;
 	try {
 		// Waits for a publish into this folder to finish; only this link goes, so a newer one from another tab stays.
-		await exclusive(link, async () => {
-			await deleteLink(link.characterId, link.linkedAt);
+		// The shared runtime's record stays too: its files stay in the folder, and other characters may use them.
+		removed = await exclusive(link, async () => {
+			const deleted = await deleteLink(link.characterId, link.linkedAt);
 			await deleteRecord(recordKey(link));
+			return deleted;
 		});
 	} catch (error) {
 		console.warn('Could not remove the linked project folder', error);
-		setStatus(link.characterId, { kind: 'failed', reason: 'unknown' });
+		setStatus(
+			link.characterId,
+			newerStorage(error) ? { kind: 'outdated' } : { kind: 'failed', reason: 'unknown' }
+		);
 		return;
 	}
+	// Another tab had already replaced or stopped this link: show what is stored now rather than claim it was unlinked.
+	if (!removed) return superseded(link.characterId, changesOf(link.characterId), link.linkedAt);
 	noteLinkChange(link.characterId);
 	showLink(link.characterId, null);
 	if (loadedFor === link.characterId) projectFolder.offer = null;

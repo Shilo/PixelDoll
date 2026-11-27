@@ -48,6 +48,9 @@ vi.mock('../../src/lib/export/export.ts', () => ({ ACTION_LAYER_ENGINES: [] }));
 
 // Build stamps Vite defines for the app; the fingerprint of a publish includes them.
 beforeEach(() => {
+	vi.stubGlobal('navigator', {
+		locks: { request: (_name: string, work: () => Promise<unknown>) => work() }
+	});
 	vi.stubGlobal('__APP_VERSION__', 'test');
 	vi.stubGlobal('__APP_COMMIT__', 'test');
 });
@@ -60,6 +63,8 @@ vi.mock('../../src/lib/project-folder/support.ts', () => ({
 vi.mock('../../src/lib/project-folder/links.ts', () => ({
 	...studio,
 	allLinks: async () => [],
+	allDestinations: async () => [],
+	addDestination: async () => {},
 	recordKey: () => 'hero'
 }));
 
@@ -142,7 +147,9 @@ it('does not treat approval of an unreadable edit as approval of a later deletio
 async function linkedStudio() {
 	const identity = <T>(value: T) => value;
 	vi.stubGlobal('$state', Object.assign(identity, { raw: identity, snapshot: structuredClone }));
-	vi.stubGlobal('navigator', {});
+	vi.stubGlobal('navigator', {
+		locks: { request: (_name: string, work: () => Promise<unknown>) => work() }
+	});
 	const contents = new Map<string, Uint8Array>();
 	let exists = true;
 	const checking = vi.fn();
@@ -191,6 +198,7 @@ async function linkedStudio() {
 		characterId: 'hero',
 		handle,
 		subfolder: 'hero',
+		destinationId: 'game',
 		engine: 'generic',
 		auto: false,
 		linkedAt: 'first'
@@ -305,7 +313,7 @@ it('preserves an automatic-mode change while a relink waits for a publish', asyn
 	vi.stubGlobal('navigator', {
 		locks: {
 			async request(name: string, work: () => Promise<unknown>) {
-				if (name.endsWith(':folder:hero')) {
+				if (name.endsWith(':hero') && name.includes(':folder:')) {
 					waiting.resolve();
 					await acquired.promise;
 				}

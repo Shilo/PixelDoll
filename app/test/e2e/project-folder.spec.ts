@@ -113,10 +113,10 @@ const closeSheet = async (page: Page) => {
 };
 
 /** Links the stand-in folder through Settings and returns the row and the published manifest path. */
-async function linkFolder(page: Page) {
+async function linkFolder(page: Page, format = 'PNG + JSON') {
 	await projectFolderCard(page); // Export must be the sheet that shows the format radios.
 	const dialog = page.getByRole('dialog');
-	await dialog.getByRole('radio', { name: 'PNG + JSON', exact: true }).check();
+	await dialog.getByRole('radio', { name: format, exact: true }).check();
 	const row = await openProjectFolderRow(page);
 	await row.getByRole('button', { name: 'Choose folder…' }).click();
 	await expect(row.getByRole('status')).toHaveText('Up to date');
@@ -497,6 +497,35 @@ test('choosing a folder that already holds this export offers once to keep those
 	await reopened.getByRole('button', { name: 'Update now' }).click();
 	await expect(reopened.getByRole('alert')).toContainText('Deleted');
 	expect(await folderText(page, manifestPath)).toBeNull();
+	expect(errors).toEqual([]);
+});
+
+test('a Godot link publishes its runtime once into _PixelDoll and pauses on an edited runtime file', async ({
+	page
+}, info) => {
+	const dev = devURL(info);
+	await fakeProjectFolder(page.context());
+	const errors = watchErrors(page);
+	await savedExport(page, dev);
+	const { row, sub } = await linkFolder(page, 'Godot');
+	const runtime = 'game/_PixelDoll/godot/paperdoll.gd';
+	await expect(row).toContainText('Shared runtime: game/_PixelDoll/godot/');
+	const published = await folderText(page, runtime);
+	expect(published).toContain('extends');
+	// The character keeps only its own files, and its scene names the shared script.
+	expect(await folderText(page, `game/${sub}/godot/paperdoll.gd`)).toBeNull();
+	expect(await folderText(page, `game/${sub}/godot/Paperdoll.tscn`)).toContain(
+		'path="../../_PixelDoll/godot/paperdoll.gd"'
+	);
+	// An edit to the shared runtime pauses the update and is listed with its real path; Replace restores it.
+	await changeFolder(page, runtime, { text: '# my edit' });
+	await row.getByRole('button', { name: 'Update now' }).click();
+	const alert = row.getByRole('alert');
+	await expect(alert).toContainText('_PixelDoll/godot/paperdoll.gd');
+	await expect(alert).toContainText('Edited outside PixelDoll');
+	await row.getByRole('button', { name: 'Replace listed files' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+	expect(await folderText(page, runtime)).toBe(published);
 	expect(errors).toEqual([]);
 });
 

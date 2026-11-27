@@ -21,6 +21,8 @@ const studio = vi.hoisted(() => ({
 	buildExport: vi.fn(),
 	getLink: vi.fn(),
 	allLinks: vi.fn(),
+	allDestinations: async () => [],
+	addDestination: async () => {},
 	updateLink: vi.fn(),
 	replaceLink: vi.fn(),
 	deleteLink: vi.fn(),
@@ -109,6 +111,7 @@ function destination(characterId: string, subfolder = characterId) {
 		characterId,
 		handle,
 		subfolder,
+		destinationId: 'game',
 		engine: 'generic',
 		auto: true,
 		linkedAt: `link-${subfolder}`
@@ -175,7 +178,7 @@ async function linkedStudio() {
 			return next;
 		}
 	);
-	studio.deleteLink.mockImplementation(async (id: string) => void links.delete(id));
+	studio.deleteLink.mockImplementation(async (id: string) => links.delete(id));
 	studio.deleteRecord.mockImplementation(async (key: string) => void records.delete(key));
 	studio.readRecord.mockImplementation(async (key: string): Promise<FolderRecord> =>
 		structuredClone(record(key))

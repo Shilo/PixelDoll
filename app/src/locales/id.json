@@ -3595,7 +3595,10 @@
 			"space": "Disk penuh.",
 			"permission": "Folder itu tidak diizinkan. Pilih folder lain.",
 			"failed": "Tidak dapat menulis ke folder. Coba lagi.",
-			"taken": "Karakter lain sudah memakai folder ini. Pilih folder lain."
+			"taken": "Karakter lain sudah memakai folder ini. Pilih folder lain.",
+			"outdated": "PixelDoll diperbarui di tab lain. Muat ulang tab ini agar folder ini tetap diperbarui.",
+			"inside": "Folder ini ada di dalam folder yang dikelola PixelDoll. Pilih folder yang memuatnya.",
+			"unityNested": "Karakter Unity lain memakai folder di dalam atau di sekitar folder ini. Tautkan semua karakter Unity dalam satu game ke folder yang sama."
 		},
 		"reason": {
 			"edited": "Diedit di luar PixelDoll",
@@ -3607,7 +3610,8 @@
 			"reconnect": "Hubungkan ulang {folder} untuk terus memperbarui.",
 			"paused": "Pembaruan dijeda: file di folder berubah.",
 			"missing": "{folder} tidak ditemukan.",
-			"failed": "Tidak dapat memperbarui {folder}."
+			"failed": "Tidak dapat memperbarui {folder}.",
+			"outdated": "Muat ulang PixelDoll agar {folder} tetap diperbarui."
 		},
 		"justUpdated": "Baru saja diperbarui",
 		"matching": {
@@ -3615,7 +3619,9 @@
 		},
 		"adopt": "Tetap perbarui",
 		"leave": "Biarkan",
-		"section": "Proyek game"
+		"section": "Proyek game",
+		"reload": "Muat ulang",
+		"shared": "Runtime bersama: {path}"
 	},
 	"tips": {
 		"customizeTitle": "Dandani demo",

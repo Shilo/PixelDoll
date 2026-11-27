@@ -5,6 +5,7 @@
 	import type { Engine } from '../lib/store/manifest.ts';
 	import type { PlanAction } from '../lib/project-folder/plan.ts';
 	import { BRAVE_FLAG } from '../lib/project-folder/support.ts';
+	import { keepable } from '../lib/project-folder/layout.ts';
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import {
 		Check,
@@ -31,6 +32,7 @@
 		publishProjectFolder,
 		reconnectProjectFolder,
 		releaseKeptFiles,
+		runtimePath,
 		setFolderAutoPublish,
 		unlinkProjectFolder,
 		updatedLabel
@@ -106,7 +108,7 @@
 	const keep = () =>
 		act(() =>
 			keepProjectFolderFiles(
-				conflicts.map((c) => c.path),
+				conflicts.filter(keepable).map((c) => c.path),
 				conflictLink
 			)
 		);
@@ -120,8 +122,9 @@
 						? 'projectFolder.reason.notOurs'
 						: 'projectFolder.reason.edited'
 		);
-	const fullPath = (path: string) =>
-		link ? `${link.handle.name}/${link.subfolder}/${path}` : path;
+	// Conflict paths are relative to the picked folder: a character's file or the shared runtime's.
+	const fullPath = (path: string) => (link ? `${link.handle.name}/${path}` : path);
+	const shared = $derived(link ? runtimePath(link) : null);
 	const problem = $derived.by(() => {
 		switch (status.kind) {
 			case 'reconnect':
@@ -134,6 +137,12 @@
 				return t('projectFolder.status.blocked');
 			case 'unavailable':
 				return t('projectFolder.status.unavailable');
+			case 'outdated':
+				return t('projectFolder.status.outdated');
+			case 'overlap':
+				return status.unity
+					? t('projectFolder.status.unityNested')
+					: t('projectFolder.status.inside');
 			case 'failed':
 				return status.reason === 'locked'
 					? t('projectFolder.status.locked')
@@ -213,6 +222,12 @@
 				onclick={choose}
 				><FolderOpen size={16} aria-hidden="true" />{t('projectFolder.choose')}</button
 			>
+			{#if status.kind === 'outdated'}<button
+					type="button"
+					class="bu-action btn primary"
+					onclick={() => location.reload()}
+					><RefreshCw size={16} aria-hidden="true" />{t('projectFolder.reload')}</button
+				>{/if}
 			{#if problem}<p class="notice warn small" role="alert">
 					<TriangleAlert size={14} aria-hidden="true" />{problem}
 				</p>{/if}
@@ -222,6 +237,9 @@
 				<div class="destination-text">
 					<span class="destination-path">{folderPath(link)}</span>
 					<span class="destination-format">{formatName}</span>
+					{#if shared}<span class="destination-shared"
+							>{t('projectFolder.shared', { path: shared })}</span
+						>{/if}
 				</div>
 			</div>
 			<label class="check">
@@ -302,6 +320,11 @@
 					<button type="button" class="bu-action btn primary" disabled={working} onclick={reconnect}
 						><Link size={16} aria-hidden="true" />{t('projectFolder.reconnect')}</button
 					>
+				{:else if status.kind === 'outdated'}
+					<!-- A newer PixelDoll got ahead of this tab: reloading is the only way to keep this folder updated. -->
+					<button type="button" class="bu-action btn primary" onclick={() => location.reload()}
+						><RefreshCw size={16} aria-hidden="true" />{t('projectFolder.reload')}</button
+					>
 				{:else if status.kind === 'blocked'}
 					{#if replaceable}
 						<button
@@ -330,14 +353,14 @@
 							><RotateCcw size={16} aria-hidden="true" />{t('projectFolder.tryAgain')}</button
 						>
 					{/if}
-					<button
-						type="button"
-						class="bu-action btn"
-						data-variant="outline"
-						disabled={working}
-						onclick={keep}
-						><FileCheck size={16} aria-hidden="true" />{t('projectFolder.keep')}</button
-					>
+					{#if conflicts.some(keepable)}<button
+							type="button"
+							class="bu-action btn"
+							data-variant="outline"
+							disabled={working}
+							onclick={keep}
+							><FileCheck size={16} aria-hidden="true" />{t('projectFolder.keep')}</button
+						>{/if}
 				{:else if status.kind === 'missing'}
 					<!-- A folder moved back into place is picked up again without waiting for the next change. -->
 					<button
@@ -425,7 +448,9 @@
 		font-weight: 600;
 		overflow-wrap: anywhere;
 	}
-	.destination-format {
+	.destination-format,
+	.destination-shared {
+		overflow-wrap: anywhere;
 		font-size: 0.8125rem;
 		opacity: 0.8;
 	}

@@ -518,7 +518,7 @@ const ENGINE_START: Record<string, string> = {
 };
 
 /** Root README.txt: what is in the folder and how to start (T1 P2-6). */
-export function readme(m: Manifest): string {
+export function readme(m: Manifest, runtimePath?: string): string {
 	const moves = m.rig.animations.map((a) => {
 		const d = (a as { directions?: string[] }).directions;
 		return `${a.id} (${a.cells} frames${d && d.length < m.rig.directions.length ? `, ${d.join(' + ')} only` : ''})`;
@@ -526,7 +526,13 @@ export function readme(m: Manifest): string {
 	return `${m.name}: a paperdoll character exported by PixelDoll (${m.format}).
 
 Quick start
-${(m.export?.engines ?? []).map((e) => `  ${ENGINE_START[e] ?? e}`).join('\n')}
+${
+	runtimePath
+		? `  Follow ${m.export!.engines[0]}/README.txt to add the character to your game.
+  The runtime is at ${runtimePath}. When copying this character, copy _PixelDoll too
+  and keep them in the same parent folder.`
+		: (m.export?.engines ?? []).map((e) => `  ${ENGINE_START[e] ?? e}`).join('\n')
+}
 
 What is inside
   manifest.json   rig (cell ${m.rig.cell.w}x${m.rig.cell.h}, pivot ${m.rig.pivot.x},${m.rig.pivot.y}), moves, slots, items, materials and outfits
@@ -565,9 +571,9 @@ Pixel art: use nearest-neighbor filtering and whole-pixel positions.
 }
 
 /** Layer sheets (all engines need them) + README + manifest. */
-export function coreFiles(p: Project, m: Manifest): OutFile[] {
+export function coreFiles(p: Project, m: Manifest, runtimePath?: string): OutFile[] {
 	const files: OutFile[] = [
-		{ name: 'README.txt', data: readme(m) },
+		{ name: 'README.txt', data: readme(m, runtimePath) },
 		{ name: 'manifest.json', data: JSON.stringify(m, null, 2) + '\n' }
 	];
 	const byId = new Map(p.manifest.items.map((i) => [i.id, i]));

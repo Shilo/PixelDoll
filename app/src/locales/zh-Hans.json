@@ -3595,7 +3595,10 @@
 			"space": "磁盘已满。",
 			"permission": "不允许使用该文件夹。请选择其他文件夹。",
 			"failed": "无法写入文件夹。请重试。",
-			"taken": "另一个角色已在使用此文件夹。请选择其他文件夹。"
+			"taken": "另一个角色已在使用此文件夹。请选择其他文件夹。",
+			"outdated": "PixelDoll 已在另一个标签页中更新。重新加载此标签页以继续更新此文件夹。",
+			"inside": "此文件夹位于 PixelDoll 管理的文件夹内。请改选包含它的文件夹。",
+			"unityNested": "另一个 Unity 角色使用了此文件夹内部或外层的文件夹。请将一个游戏中的所有 Unity 角色链接到同一个文件夹。"
 		},
 		"reason": {
 			"edited": "在 PixelDoll 之外编辑过",
@@ -3607,7 +3610,8 @@
 			"reconnect": "重新连接 {folder} 以继续更新。",
 			"paused": "更新已暂停：文件夹中的文件已更改。",
 			"missing": "找不到 {folder}。",
-			"failed": "无法更新 {folder}。"
+			"failed": "无法更新 {folder}。",
+			"outdated": "重新加载 PixelDoll 以继续更新 {folder}。"
 		},
 		"justUpdated": "刚刚更新",
 		"matching": {
@@ -3615,7 +3619,9 @@
 		},
 		"adopt": "继续更新",
 		"leave": "保持不变",
-		"section": "游戏项目"
+		"section": "游戏项目",
+		"reload": "重新加载",
+		"shared": "共享运行时：{path}"
 	},
 	"tips": {
 		"customizeTitle": "给演示角色换装",

@@ -5,7 +5,7 @@ import type { FolderLink } from '../../src/lib/project-folder/links.ts';
 const studio = vi.hoisted(() => ({
 	doc: { id: 'hero' },
 	getLink: vi.fn<(id: string) => Promise<FolderLink | null>>(),
-	deleteLink: vi.fn<(id: string, linkedAt: string) => Promise<void>>(),
+	deleteLink: vi.fn<(id: string, linkedAt: string) => Promise<boolean>>(),
 	deleteRecord: vi.fn<() => Promise<void>>()
 }));
 
@@ -24,6 +24,8 @@ vi.mock('../../src/lib/project-folder/support.ts', () => ({
 }));
 vi.mock('../../src/lib/project-folder/links.ts', () => ({
 	...studio,
+	allDestinations: async () => [],
+	addDestination: async () => {},
 	recordKey: (link: FolderLink) => link.linkedAt
 }));
 
@@ -33,6 +35,7 @@ function makeLink(characterId: string): FolderLink {
 		linkedAt: `${characterId}-link`,
 		handle: { name: 'Game' } as FileSystemDirectoryHandle,
 		subfolder: characterId,
+		destinationId: 'game',
 		engine: 'generic',
 		auto: true
 	};
@@ -51,7 +54,9 @@ beforeEach(() => {
 	vi.stubGlobal('__APP_COMMIT__', 'test');
 	const identity = <T>(value: T) => value;
 	vi.stubGlobal('$state', Object.assign(identity, { raw: identity }));
-	vi.stubGlobal('navigator', {});
+	vi.stubGlobal('navigator', {
+		locks: { request: (_name: string, work: () => Promise<unknown>) => work() }
+	});
 	studio.doc.id = 'hero';
 });
 
@@ -71,9 +76,9 @@ it('loads the open character’s link even when an offscreen Unlink finishes dur
 	]);
 	const unlinkStarted = gate();
 	const finishUnlink = gate();
-	studio.deleteLink.mockImplementation(async (id, linkedAt) => {
-		if (links.get(id)?.linkedAt === linkedAt) links.delete(id);
-	});
+	studio.deleteLink.mockImplementation(async (id, linkedAt) =>
+		links.get(id)?.linkedAt === linkedAt ? links.delete(id) : false
+	);
 	studio.deleteRecord.mockImplementation(async () => {
 		unlinkStarted.open();
 		await finishUnlink.wait;
@@ -120,6 +125,7 @@ it('keeps the unlinked status when an older refresh rejects', async () => {
 	studio.getLink.mockImplementation(async () => stored);
 	studio.deleteLink.mockImplementation(async () => {
 		stored = null;
+		return true;
 	});
 	studio.deleteRecord.mockResolvedValue(undefined);
 	const api = await import('../../src/studio/projectFolder.svelte.ts');

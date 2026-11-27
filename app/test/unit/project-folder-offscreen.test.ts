@@ -59,6 +59,8 @@ vi.mock('../../src/lib/project-folder/support.ts', () => ({
 vi.mock('../../src/lib/project-folder/links.ts', () => ({
 	...studio,
 	allLinks: async () => [],
+	allDestinations: async () => [],
+	addDestination: async () => {},
 	recordKey: (link: FolderLink) => link.characterId
 }));
 
@@ -113,6 +115,7 @@ function destination(id: string) {
 		characterId: id,
 		handle: root,
 		subfolder: id,
+		destinationId: 'game',
 		engine: 'generic',
 		auto: true,
 		linkedAt: `link-${id}`

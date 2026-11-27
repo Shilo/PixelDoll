@@ -87,6 +87,7 @@ A local CLI that applies an export ZIP to a project is credible for CI and scrip
 | Folder target | [target.ts](../../../app/src/lib/project-folder/target.ts)                                                                                                                                                                                         | Three operations (read, atomic write, remove) over a File System Access directory. Refuses paths that could leave the folder. A native shell or CLI could supply its own target.                                                        |
 | Publisher     | [publish.ts](../../../app/src/lib/project-folder/publish.ts)                                                                                                                                                                                       | Hashes, plans, writes changed files (manifest last) with a final check before each swap, and records each write. Returns an outcome and never throws. Never deletes.                                                                    |
 | Support check | [support.ts](../../../app/src/lib/project-folder/support.ts)                                                                                                                                                                                       | `supported`, `brave-disabled` or `unsupported`. Also refuses insecure pages and cross-origin frames.                                                                                                                                    |
+| Layout        | [layout.ts](../../../app/src/lib/project-folder/layout.ts)                                                                                                                                                                                         | The two parts of a picked folder (character subfolder, shared runtime) and how their records combine.                                                                                                                                   |
 | Link storage  | [links.ts](../../../app/src/lib/project-folder/links.ts)                                                                                                                                                                                           | Per character: the folder handle, subfolder, format and automatic updates; per link: what PixelDoll wrote and what the user kept. Its own `pixeldoll-project-folders` database, never in the library, its backups or the user's folder. |
 | Studio state  | [projectFolder.svelte.ts](../../../app/src/studio/projectFolder.svelte.ts)                                                                                                                                                                         | Builds the open character's export as the Export sheet would, publishes one at a time per character (Web Locks across tabs), turns outcomes into status and at most one background notice per problem.                                  |
 | UI            | [ProjectFolderButton.svelte](../../../app/src/studio/ProjectFolderButton.svelte), [ProjectFolderSetting.svelte](../../../app/src/studio/ProjectFolderSetting.svelte), [ProjectFolderAuto.svelte](../../../app/src/studio/ProjectFolderAuto.svelte) | Export's one button, the Settings > Export row (or the Brave hint), and an invisible watcher loaded on demand only in browsers that have the folder picker.                                                                             |
@@ -99,14 +100,52 @@ Tests:
 - **End to end** (`npm run e2e -- export-picker -g "project folder"`): through the real Export button and Settings row, with a browser-private folder: publishing, an unchanged republish writing nothing, automatic updates, a game edit pausing with a lasting notice, Replace files, reconnecting, a missing folder, Unlink; a separate safety test with an edited earlier extract (nothing written), an approval made stale by a newer edit, a deleted file, a folder in the way, Keep mine and Update them, and untouched sidecars and game files; and a test with the API removed and Brave faked.
 - **Real grant** (manual, Windows Edge): the spike driver in `web-publish-spike/` exercises the native picker and permission prompts. A browser test cannot complete a real picker grant.
 
+## Shared runtime
+
+Characters linked to one folder share their engine's runtime instead of each carrying a copy:
+
+```
+<picked folder>/
+  _PixelDoll/<engine>/      runtime code only: godot, phaser, phaser-ae, unity
+  <character subfolder>/    everything else, as before (data, sheets, engine data, README, AGENTS.md, docs)
+```
+
+- **Why.** Copies of runtime source per character are hard to keep consistent, and the same character in two
+  subfolders (left behind by a relink) broke Unity with duplicate assemblies. Unity's shared runtime now has one stable
+  namespace and assembly (`PixelDoll.Runtime`, `PixelDoll.Editor`) and imports every folder character by path. ZIP
+  exports are byte-identical to before (golden-tested) and keep their own per-character runtime.
+- **What stays per engine.** GDevelop embeds its controller in each character's `game.json` events, so it has nothing
+  to share; PNG + JSON, Aseprite and RPG Maker have no runtime. Their folder output equals the ZIP's files.
+- **One publish, two records.** A publish works on the picked folder: character files under the subfolder, runtime
+  files under `_PixelDoll/<engine>/`. One plan covers both before anything is written, so an edited runtime pauses the
+  character too. The runtime is written first, then the character's images, resources and manifest. Each path is
+  recorded in its own trusted record: the character's (per link) or the runtime's (per picked folder and engine, kept
+  after unlink). Picked folders are remembered in their own store and matched with `isSameEntry`, so every link to
+  one folder shares its runtime record.
+- **Upgrades.** Each runtime has an integer revision, pinned to its bytes by a unit test. Before writing, a tab raises
+  the folder's revision floor; a tab whose runtime is older than the floor stops with Reload instead of putting older
+  runtime files back, also after an update that stopped part way. Newer runtimes must keep playing older character data
+  ([contract](../../architecture/javascript-runtime.md#project-folder-runtime-compatibility)).
+- **Locks.** Each publish holds its character's lock (`folder:<destination>:<subfolder>`), then the folder's runtime
+  lock (`runtime:<destination>:<engine>`), always in that order. Folder publishing needs Web Locks.
+- **Overlaps.** Picking a folder inside one PixelDoll manages is refused, and so is a Unity folder nesting with another
+  that has a Unity runtime. Unity folders side by side in one game cannot be detected by a browser; see
+  [known issues](../../known-issues.md).
+- **Native checks** on the folder layout (two characters, the same character in two subfolders): Godot 4.7.1 root and
+  nested picks with import, play and exported pack; Unity 6000.4 automatic import without a menu call, a ZIP copy
+  alongside, and a player build; Phaser 3.80, 3.90 and 4.1 in Canvas and WebGL with one module; GDevelop 5.6.285 web
+  export; Aseprite 1.3.18; RPG Maker MV 1.6.1; an offline PNG + JSON consumer. Phaser AE's bake was not run (it needs a
+  phaser.io game folder).
+
 ## Writing several files at once
 
 The publisher reads and writes up to eight files at once (`AT_ONCE` in [publish.ts](../../../app/src/lib/project-folder/publish.ts)). The order is:
 
-1. PNGs, eight at a time.
-2. Godot's per-layer `.tres` resources, eight at a time.
-3. Every other file, one at a time in export order.
-4. `manifest.json`, last.
+1. The shared runtime in `_PixelDoll/<engine>/`, one at a time; if any fails, nothing of the character is written.
+2. PNGs, eight at a time.
+3. Godot's per-layer `.tres` resources, eight at a time.
+4. Every other file, one at a time in export order.
+5. The character's `manifest.json`, last.
 
 Each phase waits for the previous one, so no index or scene lands before the files it names. Set `AT_ONCE` to 1 to go back to fully sequential publishing; nothing else depends on it.
 

@@ -3700,7 +3700,10 @@
 			"space": "The disk is full.",
 			"permission": "That folder isn’t allowed. Choose another.",
 			"failed": "Couldn’t write to the folder. Try again.",
-			"taken": "Another character already uses this folder. Choose another one."
+			"taken": "Another character already uses this folder. Choose another one.",
+			"outdated": "PixelDoll was updated in another tab. Reload this tab to keep updating this folder.",
+			"inside": "This folder is inside one PixelDoll manages. Choose the folder that holds it instead.",
+			"unityNested": "Another Unity character uses a folder inside or around this one. Link every Unity character in a game to the same folder."
 		},
 		"reason": {
 			"edited": "Edited outside PixelDoll",
@@ -3712,7 +3715,8 @@
 			"reconnect": "Reconnect {folder} to keep updating.",
 			"paused": "Updates paused: files in the folder changed.",
 			"missing": "Can’t find {folder}.",
-			"failed": "Couldn’t update {folder}."
+			"failed": "Couldn’t update {folder}.",
+			"outdated": "Reload PixelDoll to keep updating {folder}."
 		},
 		"justUpdated": "Updated just now",
 		"matching": {
@@ -3721,7 +3725,9 @@
 		},
 		"adopt": "Keep updated",
 		"leave": "Leave as is",
-		"section": "Game project"
+		"section": "Game project",
+		"reload": "Reload",
+		"shared": "Shared runtime: {path}"
 	},
 	"tips": {
 		"customizeTitle": "Dress up the demo",

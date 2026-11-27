@@ -13,10 +13,10 @@ import {
 import { agentFiles } from './agent-docs.ts';
 import { asepriteFiles } from './aseprite.ts';
 import { coreFiles, exportManifest, genericFiles, validate, type OutFile } from './generic.ts';
-import { godotFiles } from './godot.ts';
-import { phaserFiles } from './phaser.ts';
-import { phaserAeFiles } from './phaser-ae.ts';
-import { unityFiles } from './unity.ts';
+import { godotFiles, godotRuntime } from './godot.ts';
+import { phaserFiles, phaserRuntime } from './phaser.ts';
+import { phaserAeFiles, phaserAeRuntime } from './phaser-ae.ts';
+import { unityFiles, unityRuntime } from './unity.ts';
 import { gdevelopFiles } from './gdevelop.ts';
 import { rpgMakerFiles, walkMove } from './rpg-maker.ts';
 import { checkArchivePixels, projectEntries, type ImportedCharacter } from '../store/import.ts';
@@ -37,6 +37,20 @@ export const ACTION_LAYER_ENGINES: readonly Engine[] = [
 	'unity'
 ];
 
+const folderRuntimes = {
+	godot: godotRuntime,
+	phaser: phaserRuntime,
+	'phaser-ae': phaserAeRuntime,
+	unity: unityRuntime
+};
+
+export interface RuntimeBundle {
+	engine: keyof typeof folderRuntimes;
+	revision: number;
+	/** Paths relative to _PixelDoll/<engine>/. */
+	files: ZipEntry[];
+}
+
 export interface ExportOptions {
 	actionLayering?: ActionSheetOptions;
 	engines: Engine[];
@@ -45,12 +59,15 @@ export interface ExportOptions {
 	exportedAt?: string;
 	/** Build the files without packing a ZIP (project folder publishing writes them one by one). `zip` is then empty. */
 	filesOnly?: boolean;
+	/** One engine, with character files and its shared runtime delivered separately. Implies filesOnly. */
+	layout?: 'zip' | 'folder';
 	projectData?: ImportedCharacter['extra'];
 	/** The walk move RPG Maker sheets take their steps from; the first eligible one when unset or not eligible. */
 	rpgWalk?: string;
 }
 export interface ExportResult {
 	entries: ZipEntry[];
+	bundle?: RuntimeBundle;
 	warnings: string[];
 	errors: string[];
 	/** Localized counterparts aligned with `errors`; an empty slot keeps that English message. */
@@ -67,6 +84,14 @@ export interface ExportResult {
 export type NoteTerm = { direction: DirectionName } | { slot: string } | { move: string };
 
 export async function exportFiles(src: Project, o: ExportOptions): Promise<ExportResult> {
+	const folder = o.layout === 'folder';
+	if (folder && o.engines.length !== 1) throw new Error('Folder exports require one engine.');
+	const engine = o.engines[0];
+	const runtimeEngine = Object.hasOwn(folderRuntimes, engine)
+		? (engine as keyof typeof folderRuntimes)
+		: undefined;
+	const runtime = folder && runtimeEngine ? folderRuntimes[runtimeEngine] : undefined;
+	const runtimePath = runtime && `../_PixelDoll/${runtimeEngine}/${runtime.files[0]!.name}`;
 	const invalid = validate(src);
 	const invalidMessages: (Message | undefined)[] = invalid.map(() => undefined);
 	if (!invalid.length) {
@@ -192,7 +217,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 					attacks: opts.attacks.flatMap((id) => identities.get(id) ?? [])
 				})
 			: [];
-	const files: OutFile[] = rpg ? [] : [...coreFiles(p, m), ...fragments];
+	const files: OutFile[] = rpg ? [] : [...coreFiles(p, m, runtimePath), ...fragments];
 	const sheets = new Map(
 		files.flatMap((f) =>
 			typeof f.data === 'object' && 'w' in f.data ? [[f.name, f.data] as [string, Img]] : []
@@ -204,7 +229,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 		);
 	if (o.engines.includes('godot')) {
 		try {
-			files.push(...godotFiles(m));
+			files.push(...godotFiles(m, folder));
 		} catch (error) {
 			if (!(error instanceof Error) || !error.message.startsWith('Godot: ')) throw error;
 			return {
@@ -217,9 +242,9 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 			};
 		}
 	}
-	if (o.engines.includes('phaser')) files.push(...phaserFiles(m));
-	if (o.engines.includes('phaser-ae')) files.push(...phaserAeFiles(m));
-	if (o.engines.includes('unity')) files.push(...unityFiles(m));
+	if (o.engines.includes('phaser')) files.push(...phaserFiles(m, folder));
+	if (o.engines.includes('phaser-ae')) files.push(...phaserAeFiles(m, folder));
+	if (o.engines.includes('unity')) files.push(...unityFiles(m, folder));
 	if (o.engines.includes('gdevelop')) {
 		try {
 			files.push(...gdevelopFiles(m, sheets));
@@ -274,7 +299,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 			};
 		}
 	}
-	files.push(...agentFiles(o.engines));
+	files.push(...agentFiles(o.engines, runtimePath));
 	const projectFiles = await projectEntries(src, o.projectData);
 	const names = new Set<string>();
 	for (const { name } of [...files, ...projectFiles]) {
@@ -327,11 +352,22 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 	});
 	return {
 		entries,
+		...(runtime && runtimeEngine
+			? {
+					bundle: {
+						engine: runtimeEngine,
+						revision: runtime.revision,
+						files: runtime.files.map(({ name, data }) => ({ name, data: enc.encode(data) }))
+					}
+				}
+			: {}),
 		warnings,
 		warningMessages,
 		errors,
 		errorMessages,
-		...(o.filesOnly ? { retime: (exportedAt: string) => retime(entries, text, m, exportedAt) } : {})
+		...(o.filesOnly || folder
+			? { retime: (exportedAt: string) => retime(entries, text, m, exportedAt) }
+			: {})
 	};
 }
 
@@ -410,7 +446,8 @@ export async function exportZip(
 	} catch {
 		return oversized();
 	}
-	if (o.filesOnly) return { ...r, warnings, warningMessages, zip: new Uint8Array() };
+	if (o.filesOnly || o.layout === 'folder')
+		return { ...r, warnings, warningMessages, zip: new Uint8Array() };
 	let bytes: Uint8Array;
 	try {
 		bytes = await zip(r.entries, { deflate: true });

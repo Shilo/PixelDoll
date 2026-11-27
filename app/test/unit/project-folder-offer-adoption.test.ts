@@ -53,11 +53,15 @@ beforeEach(() => {
 vi.mock('../../src/lib/project-folder/links.ts', () => ({
 	...studio,
 	allLinks: async () => [],
+	allDestinations: async () => [],
+	addDestination: async () => {},
 	recordKey: (link: FolderLink) => link.linkedAt
 }));
 
 const sprite = 'sprite.png';
 const manifest = 'manifest.json';
+/** A path as the Studio names it: inside the picked folder, in the character's subfolder. */
+const hero = (path: string) => `hero/${path}`;
 const earlier = '2025-02-02T00:00:00.000Z';
 function manifestText(exportedAt: string) {
 	return JSON.stringify({ name: 'hero', export: { exportedAt } });
@@ -228,15 +232,17 @@ it('retains a matching-file offer for the character that opened the picker', asy
 	await open('hero');
 
 	expect(api.projectFolder.link?.linkedAt).toBe(links.get('hero')?.linkedAt);
-	expect(api.projectFolder.offer?.files.map((file) => file.path)).toEqual([sprite, manifest]);
+	expect(api.projectFolder.offer?.files.map((file) => file.path)).toEqual(
+		[sprite, manifest].map(hero)
+	);
 });
 
 it('recognizes the earlier export after the user restores the changed file', async () => {
 	const { api, disk } = await setup('game edit');
 	await api.linkProjectFolder('generic');
 	const blocked = api.projectFolder.status;
-	expect(blocked).toMatchObject({ kind: 'blocked', conflicts: [{ path: sprite }] });
-	expect(api.projectFolder.offer?.files.map((file) => file.path)).toEqual([manifest]);
+	expect(blocked).toMatchObject({ kind: 'blocked', conflicts: [{ path: hero(sprite) }] });
+	expect(api.projectFolder.offer?.files.map((file) => file.path)).toEqual([hero(manifest)]);
 	api.leaveMatchingFiles();
 	expect(studio.recordWritten).not.toHaveBeenCalled();
 

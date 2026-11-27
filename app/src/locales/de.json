@@ -3698,7 +3698,10 @@
 			"space": "Der Datenträger ist voll.",
 			"permission": "Dieser Ordner ist nicht erlaubt. Wähle einen anderen.",
 			"failed": "In den Ordner konnte nicht geschrieben werden. Versuche es erneut.",
-			"taken": "Eine andere Figur nutzt diesen Ordner bereits. Wähle einen anderen."
+			"taken": "Eine andere Figur nutzt diesen Ordner bereits. Wähle einen anderen.",
+			"outdated": "PixelDoll wurde in einem anderen Tab aktualisiert. Lade diesen Tab neu, um diesen Ordner weiter zu aktualisieren.",
+			"inside": "Dieser Ordner liegt in einem Ordner, den PixelDoll verwaltet. Wähle stattdessen den Ordner, der ihn enthält.",
+			"unityNested": "Eine andere Unity-Figur nutzt einen Ordner in oder um diesen Ordner. Verknüpfe alle Unity-Figuren eines Spiels mit demselben Ordner."
 		},
 		"reason": {
 			"edited": "Außerhalb von PixelDoll bearbeitet",
@@ -3710,7 +3713,8 @@
 			"reconnect": "Verbinde {folder} neu, um weiter zu aktualisieren.",
 			"paused": "Updates pausiert: Dateien im Ordner wurden geändert.",
 			"missing": "{folder} wurde nicht gefunden.",
-			"failed": "{folder} konnte nicht aktualisiert werden."
+			"failed": "{folder} konnte nicht aktualisiert werden.",
+			"outdated": "Lade PixelDoll neu, um {folder} weiter zu aktualisieren."
 		},
 		"justUpdated": "Gerade aktualisiert",
 		"matching": {
@@ -3719,7 +3723,9 @@
 		},
 		"adopt": "Aktualisieren",
 		"leave": "So lassen",
-		"section": "Spielprojekt"
+		"section": "Spielprojekt",
+		"reload": "Neu laden",
+		"shared": "Gemeinsame Laufzeit: {path}"
 	},
 	"tips": {
 		"customizeTitle": "Demo einkleiden",

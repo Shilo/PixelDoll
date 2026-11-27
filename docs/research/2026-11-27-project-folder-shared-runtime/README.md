@@ -1,5 +1,7 @@
 # Project folder shared runtime research
 
+**Implemented (2026-11-27)** with one stable path per engine rather than versioned directories (Phaser games import the runtime from their own code, so a versioned path would break or freeze that import), the runtime only (docs stay per character), and a revision floor kept in PixelDoll's own records. See [Shared runtime](../2026-11-26-project-folder-sync/README.md#shared-runtime). The findings below are the research that led there.
+
 **Prioritize shared-runtime work without waiting for a user report.** Unity 6000.4.0f1 rejected the generated C# of this branch even with distinct characters (a missing brace that main had already fixed in 21c4cdddf). Repairing that syntax in disposable copies exposed an independent Unity assembly-name conflict when the same export ID was present twice. GDevelop also collided on an equal ID when two exports were merged into one scene. Godot and Phaser ran both sibling exports in every tested case. The project-folder change should put reusable runtime code and integration docs in a PixelDoll-owned directory under the picked parent, with each character pinned to a runtime version. ZIPs should continue carrying everything they need.
 
 ## Test setup

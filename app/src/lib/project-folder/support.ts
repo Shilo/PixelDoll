@@ -12,7 +12,7 @@ interface Env {
 	top?: unknown;
 	showDirectoryPicker?: unknown;
 	FileSystemHandle?: { prototype?: { queryPermission?: unknown; requestPermission?: unknown } };
-	navigator?: { brave?: { isBrave?: () => Promise<boolean> } };
+	navigator?: { brave?: { isBrave?: () => Promise<boolean> }; locks?: unknown };
 }
 
 export async function folderSupport(env: Env = globalThis as Env): Promise<FolderSupport> {
@@ -23,7 +23,9 @@ export async function folderSupport(env: Env = globalThis as Env): Promise<Folde
 		if (
 			typeof env.showDirectoryPicker === 'function' &&
 			typeof handle?.queryPermission === 'function' &&
-			typeof handle?.requestPermission === 'function'
+			typeof handle?.requestPermission === 'function' &&
+			// Tabs publishing into one folder take turns through Web Locks; without them two could write at once.
+			!!env.navigator?.locks
 		)
 			return 'supported';
 		const brave = env.navigator?.brave;

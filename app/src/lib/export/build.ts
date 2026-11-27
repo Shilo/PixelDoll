@@ -74,6 +74,7 @@ async function requestedExport(
 		/** A fixed manifest timestamp, so a project folder republish of an unchanged character writes identical files. */
 		exportedAt?: string;
 		filesOnly?: boolean;
+		layout?: 'zip' | 'folder';
 	}
 ): Promise<ExportResult & { zip: Uint8Array | null }> {
 	const current: Preset = {
@@ -210,7 +211,8 @@ async function requestedExport(
 			rpgWalk: o.rpgWalk,
 			actionLayering: o.actionLayering,
 			exportedAt: o.exportedAt,
-			filesOnly: o.filesOnly
+			filesOnly: o.filesOnly,
+			layout: o.layout
 		},
 		[...warnings],
 		warningMessages

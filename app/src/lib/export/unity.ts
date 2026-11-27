@@ -6,6 +6,9 @@ import { handHides, hidesOf, layerFrame, variantCovers } from '../compose/compos
 import { portableAssetName } from './paths.ts';
 import { exportUnit } from '../rig/rig.ts';
 
+const UNITY_RUNTIME_REVISION = 1;
+const UNITY_RUNTIME_FORMAT = 1;
+
 function exportId(m: Manifest): string {
 	// Namespace + assembly identity: importing different characters must not define duplicate C# types.
 	let h = 0xcbf29ce484222325n;
@@ -14,7 +17,7 @@ function exportId(m: Manifest): string {
 	return `Character_${h.toString(16).padStart(16, '0')}`;
 }
 
-export function unityJson(m: Manifest) {
+export function unityJson(m: Manifest, folder = false) {
 	const { rig } = m;
 	const anchors = (clip: string, part: 'lower' | 'upper', direction: string) =>
 		m.actionLayers?.planes
@@ -25,7 +28,7 @@ export function unityJson(m: Manifest) {
 			) ?? [];
 	return {
 		name: m.exportId ?? portableAssetName(m.name.replace(/[^A-Za-z0-9_-]/g, '_') || 'Paperdoll'),
-		exportId: exportId(m),
+		...(folder ? { runtimeFormat: UNITY_RUNTIME_FORMAT } : { exportId: exportId(m) }),
 		cellW: rig.cell.w,
 		cellH: rig.cell.h,
 		pivotX: rig.pivot.x,
@@ -526,9 +529,123 @@ namespace PixelDoll
 }
 `;
 
-export const IMPORTER_CS = `using System.Collections.Generic;
+const SHARED_IMPORT_HOOKS = `        const int RuntimeFormat = ${UNITY_RUNTIME_FORMAT};
+        const int RuntimeRevision = ${UNITY_RUNTIME_REVISION};
+        static readonly HashSet<string> Pending = new HashSet<string>();
+
+        static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom, bool didDomainReload)
+        {
+            foreach (var path in imported.Concat(moved)) Queue(path);
+            if (!didDomainReload) return;
+            foreach (var guid in AssetDatabase.FindAssets("pixeldoll_unity t:TextAsset", new[] { "Assets" }))
+                Queue(AssetDatabase.GUIDToAssetPath(guid));
+        }
+
+        static void Queue(string path)
+        {
+            if (!path.StartsWith("Assets/") || !path.EndsWith(Json) || !Pending.Add(path)) return;
+            EditorApplication.delayCall += () =>
+            {
+                Pending.Remove(path);
+                if (!File.Exists(path)) return;
+                try { Import(path); }
+                catch (System.Exception error) { Debug.LogError("PixelDoll: could not import " + path + ": " + error.Message); }
+            };
+        }
+
+        static bool Supports(string json)
+        {
+            // JsonUtility alone does not distinguish an omitted field from one explicitly set to its default.
+            using (var reader = JsonReaderWriterFactory.CreateJsonReader(Encoding.UTF8.GetBytes(json), XmlDictionaryReaderQuotas.Max))
+            {
+                reader.MoveToContent();
+                if (reader.GetAttribute("type") != "object") return false;
+                reader.ReadStartElement("root");
+                int format = 0;
+                while (reader.MoveToContent() == XmlNodeType.Element)
+                {
+                    if (reader.Name == "exportId") return false;
+                    if (reader.Name != "runtimeFormat") { reader.Skip(); continue; }
+                    if (format != 0 || reader.GetAttribute("type") != "number" ||
+                        !int.TryParse(reader.ReadElementContentAsString(), NumberStyles.None, CultureInfo.InvariantCulture, out format) ||
+                        format < 1 || format > RuntimeFormat) return false;
+                }
+                return format != 0;
+            }
+        }
+
+        static void CheckAssetPath(string path, HashSet<string> checkedPaths)
+        {
+            if (!checkedPaths.Add(path)) return;
+            foreach (var segment in path.Split('/'))
+                if (segment.Length == 0 || segment.TrimEnd(' ', '.') != segment ||
+                    segment.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || segment.Contains(":") || segment.Contains("\\\\"))
+                    throw new InvalidDataException("Unsafe asset path: " + path);
+            // Unity may write the asset's sidecar too. Reject junctions and symlinks on either path.
+            var directory = Path.GetDirectoryName(path).Replace('\\\\', '/');
+            if (directory.Length != 0) CheckAssetPath(directory, checkedPaths);
+            CheckLink(path);
+            CheckLink(path + ".meta");
+        }
+
+        static void CheckLink(string path)
+        {
+            FileAttributes attributes;
+            try { attributes = File.GetAttributes(path); }
+            catch (FileNotFoundException) { return; }
+            catch (DirectoryNotFoundException) { return; }
+            if ((attributes & FileAttributes.ReparsePoint) != 0)
+                throw new InvalidDataException("Linked asset path: " + path);
+        }
+
+        static string[] ValidatePaths(string root, string outDir, PaperdollData data, HashSet<string> checkedPaths)
+        {
+            var generated = new List<string>();
+            void Output(string stem, string ext)
+            {
+                if (string.IsNullOrEmpty(stem) || stem.Contains("/"))
+                    throw new InvalidDataException("Invalid generated asset name: " + stem);
+                var path = outDir + "/" + stem + ext;
+                CheckAssetPath(path, checkedPaths);
+                generated.Add(path);
+            }
+            Output(data.name, ".controller");
+            Output(data.name, ".prefab");
+            foreach (var anim in data.animations)
+                foreach (var dir in anim.directions) Output(anim.id + "_" + dir, ".anim");
+
+            foreach (var item in data.items)
+                foreach (var layer in item.layers)
+                {
+                    void Sheets(string[] paths, bool required)
+                    {
+                        if (paths == null && !required) return;
+                        if (paths == null || paths.Length != data.animations.Length)
+                            throw new InvalidDataException("Sheets must match the animations.");
+                        foreach (var sheet in paths)
+                        {
+                            if (!required && string.IsNullOrEmpty(sheet)) continue;
+                            if (string.IsNullOrEmpty(sheet) || !sheet.EndsWith(".png", System.StringComparison.OrdinalIgnoreCase))
+                                throw new InvalidDataException("Expected a relative PNG path: " + sheet);
+                            var path = root + "/" + sheet;
+                            CheckAssetPath(path, checkedPaths);
+                            if (!(AssetImporter.GetAtPath(path) is TextureImporter))
+                                throw new InvalidDataException("Missing texture: " + path);
+                        }
+                    }
+                    Sheets(layer.sheets, true);
+                    Sheets(layer.sourceSheets, true);
+                    Sheets(layer.lowerSheets, false);
+                    Sheets(layer.upperSheets, false);
+                }
+            return generated.ToArray();
+        }
+`;
+
+function importerSource(folder = false) {
+	return `using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Linq;${folder ? '\nusing System.Globalization;\nusing System.Runtime.Serialization.Json;\nusing System.Text;\nusing System.Xml;' : ''}
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEditor.U2D.Sprites;
@@ -540,11 +657,14 @@ namespace PixelDoll.Editor
     /// Imports a PixelDoll export folder placed anywhere under Assets/: slices every layer sheet (Point, uncompressed, PPU,
     /// custom pivot), builds body clips + an Animator Controller + a prefab (Sorting Group, Paperdoll, one SpriteRenderer per
     /// slot/role). Requires only the 2D Sprite package, no 2D Animation package.
-    /// Output: <export>/unity/Generated/. Runs on import of unity/pixeldoll_unity.json and from Tools > PixelDoll.
+    /// Output: <export>/unity/Generated/. Runs on import of unity/pixeldoll_unity.json and ${folder ? 'after scripts reload.' : 'from Tools > PixelDoll.'}
     public class PixelDollImporter : AssetPostprocessor
     {
         const string Json = "/unity/pixeldoll_unity.json";
-        const string ExportId = "__EXPORT_ID__";
+${
+	folder
+		? SHARED_IMPORT_HOOKS
+		: `        const string ExportId = "__EXPORT_ID__";
 
         static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
         {
@@ -558,14 +678,30 @@ namespace PixelDoll.Editor
             foreach (var p in AssetDatabase.FindAssets("pixeldoll_unity").Select(AssetDatabase.GUIDToAssetPath).Where(p => p.EndsWith(Json)))
                 Import(p);
         }
-
-        public static void Import(string jsonPath)
+`
+}
+        ${folder ? 'static' : 'public static'} void Import(string jsonPath)
         {
             var unityDir = Path.GetDirectoryName(jsonPath).Replace('\\\\', '/');
-            var root = Path.GetDirectoryName(unityDir).Replace('\\\\', '/');
+            var root = Path.GetDirectoryName(unityDir).Replace('\\\\', '/');${
+							folder
+								? `
+            if (!root.StartsWith("Assets/")) return;
+            var checkedPaths = new HashSet<string>();
+            CheckAssetPath(jsonPath, checkedPaths);
+            var json = File.ReadAllText(jsonPath);
+            if (!Supports(json)) return;
+            var d = JsonUtility.FromJson<PaperdollData>(json);
+            var outDir = unityDir + "/Generated";
+            var outputs = ValidatePaths(root, outDir, d, checkedPaths);
+            var digest = Hash128.Compute(RuntimeRevision + ":" + json).ToString();
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(outDir + "/" + d.name + ".prefab");
+            if (prefab != null && prefab.GetComponent<Paperdoll>()?.importDigest == digest && outputs.All(File.Exists)) return;`
+								: `
             var d = JsonUtility.FromJson<PaperdollData>(File.ReadAllText(jsonPath));
             if (d.exportId != ExportId) return; // other exported characters have independent assemblies/importers
-            var outDir = unityDir + "/Generated";
+            var outDir = unityDir + "/Generated";`
+						}
             if (!AssetDatabase.IsValidFolder(outDir)) AssetDatabase.CreateFolder(unityDir, "Generated");
 
             var library = new List<PdSprites>();
@@ -623,7 +759,7 @@ namespace PixelDoll.Editor
             go.AddComponent<Animator>().runtimeAnimatorController = controller;
             var doll = go.AddComponent<Paperdoll>();
             doll.data = d;
-            doll.library = library;
+            doll.library = library;${folder ? '\n            doll.importDigest = digest;' : ''}
             if (d.presets.Length > 0) doll.ApplyPreset(d.presets[0].id);
             else doll.equipped.Add(new PdEquip { slot = "body", item = d.baseItem });
             var clock = new GameObject("clock");
@@ -643,7 +779,7 @@ namespace PixelDoll.Editor
             doll.Sync();
             PrefabUtility.SaveAsPrefabAsset(go, outDir + "/" + d.name + ".prefab");
             Object.DestroyImmediate(go);
-            AssetDatabase.SaveAssets();
+            ${folder ? 'foreach (var output in outputs) AssetDatabase.SaveAssetIfDirty(AssetDatabase.GUIDFromAssetPath(output));' : 'AssetDatabase.SaveAssets();'}
             Debug.Log("PixelDoll: imported " + d.name + ": " + library.Sum(l => l.sprites.Length) + " sprites in " + library.Count + " layers, " + d.animations.Length * d.directions.Length + " clips -> " + outDir);
         }
 
@@ -711,43 +847,79 @@ namespace PixelDoll.Editor
     }
 }
 `;
+}
+
+export const IMPORTER_CS = importerSource();
 
 const asmdef = (o: object) => JSON.stringify(o, null, 2) + '\n';
 
-export function unityFiles(m: Manifest): OutFile[] {
-	const identity = exportId(m),
-		ns = `PixelDoll.${identity}`;
-	const runtime = PAPERDOLL_CS.replace('namespace PixelDoll', `namespace ${ns}`);
-	const importer = IMPORTER_CS.replace(
-		'namespace PixelDoll.Editor',
-		`namespace ${ns}.Editor`
-	).replaceAll('__EXPORT_ID__', identity);
+function unityRuntimeFiles(ns: string, runtime: string, importer: string) {
 	return [
-		{ name: 'unity/pixeldoll_unity.json', data: JSON.stringify(unityJson(m), null, 1) + '\n' },
-		{ name: 'unity/Runtime/Paperdoll.cs', data: runtime },
-		{ name: 'unity/Runtime/PixelDoll.Runtime.asmdef', data: asmdef({ name: `${ns}.Runtime` }) },
-		{ name: 'unity/Editor/PixelDollImporter.cs', data: importer },
+		{ name: 'Runtime/Paperdoll.cs', data: runtime },
+		{ name: 'Runtime/PixelDoll.Runtime.asmdef', data: asmdef({ name: `${ns}.Runtime` }) },
+		{ name: 'Editor/PixelDollImporter.cs', data: importer },
 		{
-			name: 'unity/Editor/PixelDoll.Editor.asmdef',
+			name: 'Editor/PixelDoll.Editor.asmdef',
 			data: asmdef({
 				name: `${ns}.Editor`,
 				references: [`${ns}.Runtime`, 'Unity.2D.Sprite.Editor'],
 				includePlatforms: ['Editor']
 			})
-		},
+		}
+	];
+}
+
+export const unityRuntime = {
+	revision: UNITY_RUNTIME_REVISION,
+	files: unityRuntimeFiles(
+		'PixelDoll',
+		PAPERDOLL_CS.replace(
+			'        public PaperdollData data;',
+			'        public PaperdollData data;\n        [HideInInspector] public string importDigest;'
+		),
+		importerSource(true)
+	)
+};
+
+export function unityFiles(m: Manifest, folder = false): OutFile[] {
+	const identity = exportId(m);
+	const ns = folder ? 'PixelDoll' : `PixelDoll.${identity}`;
+	const data = unityJson(m, folder);
+	const embedded = folder
+		? []
+		: unityRuntimeFiles(
+				ns,
+				PAPERDOLL_CS.replace('namespace PixelDoll', `namespace ${ns}`),
+				IMPORTER_CS.replace('namespace PixelDoll.Editor', `namespace ${ns}.Editor`).replaceAll(
+					'__EXPORT_ID__',
+					identity
+				)
+			).map((f) => ({ ...f, name: 'unity/' + f.name }));
+	return [
+		{ name: 'unity/pixeldoll_unity.json', data: JSON.stringify(data, null, 1) + '\n' },
+		...embedded,
 		{
 			name: 'unity/README.txt',
-			data: `Unity 2022.3 / Unity 6. Install com.unity.2d.sprite (2D Sprite) with Package Manager, then copy the whole export folder
+			data: `${
+				folder
+					? `Unity 2022.3 / Unity 6. Install com.unity.2d.sprite (2D Sprite) with Package Manager and keep the character under Assets/.
+The shared runtime is ../_PixelDoll/unity/Runtime/Paperdoll.cs and its importer is ../_PixelDoll/unity/Editor/PixelDollImporter.cs
+relative to this character folder. When copying the character, copy _PixelDoll too and keep them in the same parent folder.
+Use a single Unity export destination under Assets/ in each project. A second destination, even a sibling, would install
+duplicate PixelDoll assemblies. Unity imports the character automatically when its JSON is imported or scripts reload,
+and rebuilds unity/Generated/ whenever the character or the shared runtime changes: customize a prefab variant, not those files.`
+					: `Unity 2022.3 / Unity 6. Install com.unity.2d.sprite (2D Sprite) with Package Manager, then copy the whole export folder
 under Assets/. No 2D Animation package is required. Keep this character in one folder: re-export into that same folder.
 Different characters use independent namespaces and assemblies; do not import two copies of the same character.
 If replacing an older PixelDoll exporter, remove its unity/Runtime and unity/Editor scripts first to avoid stale assembly definitions.
 The importer runs on unity/pixeldoll_unity.json import. After scripts finish compiling, use
-Tools > PixelDoll > ${identity} > Import if no prefab appeared.
+Tools > PixelDoll > ${identity} > Import if no prefab appeared.`
+			}
 Output in unity/Generated/: sliced sheets (Point, no compression, PPU ${m.export?.pixelsPerUnit ?? exportUnit(m.rig)}, pivot at the feet),
-<anim>_<dir>.anim clips for supported views, ${unityJson(m).name}.controller and ${unityJson(m).name}.prefab
+<anim>_<dir>.anim clips for supported views, ${data.name}.controller and ${data.name}.prefab
 (Sorting Group + Paperdoll + one SpriteRenderer per slot/role and a hidden animation clock).
 Runtime namespace: ${ns}. Paperdoll.Play(anim, dir, restart = false), SetDirection(dir), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).
-Call SetActionLayering(true) to enable moving attacks when the ZIP contains precut fragments. CanLayerAction(move, direction) checks the whole action set and equipped gear. Invalid PlayAction calls warn and return an empty string without changing playback. PlayAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read IsActionPlaying for completion. Calling Play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
+Call SetActionLayering(true) to enable moving attacks when the ${folder ? 'character export' : 'ZIP'} contains precut fragments. CanLayerAction(move, direction) checks the whole action set and equipped gear. Invalid PlayAction calls warn and return an empty string without changing playback. PlayAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read IsActionPlaying for completion. Calling Play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
 Play preserves an active clip's progress. Calling it again after the same non-looping clip completes replays that clip.
 Changed moves/directions start at the beginning. Pass true as Play's third argument to restart explicitly.
 SetDirection turns the active move (e.g. an aimed attack) and keeps its frame, time, loop count and completion without replaying it; the current direction is a no-op.

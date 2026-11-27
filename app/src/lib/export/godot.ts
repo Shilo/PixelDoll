@@ -48,7 +48,7 @@ export function spriteFramesTres(
 }
 
 /** One AnimatedSprite2D per (slot, role) that any item uses; sprite_frames from the default preset. */
-export function paperdollTscn(m: Manifest): string {
+export function paperdollTscn(m: Manifest, folder = false): string {
 	const { rig } = m,
 		preset = m.presets[0];
 	const initial = rig.animations.find(
@@ -80,7 +80,7 @@ export function paperdollTscn(m: Manifest): string {
 	const first = initial ? `${initial.id}_${initialDir}` : '';
 	const out = [
 		'[gd_scene format=3]\n',
-		'[ext_resource type="Script" path="paperdoll.gd" id="script"]',
+		`[ext_resource type="Script" path=${q(folder ? '../../_PixelDoll/godot/paperdoll.gd' : 'paperdoll.gd')} id="script"]`,
 		'[ext_resource type="Resource" path="library.tres" id="library"]',
 		...res.map(
 			(r) =>
@@ -609,7 +609,12 @@ func _find(list: Array, id: String, key := "id") -> Dictionary:
 	return {}
 `;
 
-export function godotFiles(m: Manifest): OutFile[] {
+export const godotRuntime = {
+	revision: 1,
+	files: [{ name: 'paperdoll.gd', data: PAPERDOLL_GD }]
+};
+
+export function godotFiles(m: Manifest, folder = false): OutFile[] {
 	const files: OutFile[] = [];
 	const layers: string[] = [];
 	for (const it of m.items)
@@ -635,15 +640,18 @@ export function godotFiles(m: Manifest): OutFile[] {
 		name: 'godot/library.tres',
 		data: `[gd_resource type="Resource" format=3]\n\n${layers.map((key, i) => `[ext_resource type="SpriteFrames" path=${q(boundedFileStem(key.replace(':', '@')) + '.tres')} id="f${i}"]`).join('\n')}\n\n[resource]\nmetadata/manifest = ${JSON.stringify(m)}\nmetadata/frames = {${layers.map((key, i) => `${q(key)}: ExtResource("f${i}")`).join(', ')}}\n`
 	});
-	files.push(
-		{ name: 'godot/Paperdoll.tscn', data: paperdollTscn(m) },
-		{ name: 'godot/paperdoll.gd', data: PAPERDOLL_GD }
-	);
+	files.push({ name: 'godot/Paperdoll.tscn', data: paperdollTscn(m, folder) });
+	if (!folder) files.push(...godotRuntime.files.map((f) => ({ ...f, name: 'godot/' + f.name })));
 	files.push({
 		name: 'godot/README.txt',
-		data: `Copy the whole export folder into your Godot 4 project, then instance godot/Paperdoll.tscn.
+		data: `${
+			folder
+				? `Instance godot/Paperdoll.tscn in your Godot 4 project. The scene uses ../_PixelDoll/godot/paperdoll.gd relative to
+this character folder. When copying the character, copy _PixelDoll too and keep them in the same parent folder.`
+				: 'Copy the whole export folder into your Godot 4 project, then instance godot/Paperdoll.tscn.'
+		}
 API: play_anim(anim, dir, restart = false), set_direction(dir), equip(slot, item_id) ("" = empty slot), set_preset(preset_id), set_variant(material_id, variant_name).
-Call set_action_layering(true) to enable moving attacks when the ZIP contains precut fragments. can_layer_action(move, direction) checks the whole action set and equipped gear. Invalid play_action calls warn and return an empty string without changing playback. play_action(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Call is_action_playing() to check completion. Calling play_anim cancels the action. An unsupported outfit switches a layered action to full for the rest of that action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
+Call set_action_layering(true) to enable moving attacks when the ${folder ? 'character export' : 'ZIP'} contains precut fragments. can_layer_action(move, direction) checks the whole action set and equipped gear. Invalid play_action calls warn and return an empty string without changing playback. play_action(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Call is_action_playing() to check completion. Calling play_anim cancels the action. An unsupported outfit switches a layered action to full for the rest of that action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
 play_anim preserves active progress, starts changed moves/directions at the beginning and replays completed once-only clips. Pass true to restart explicitly.
 set_direction turns the active move (e.g. an aimed attack) and keeps its frame, progress and completion without replaying it; the current direction is a no-op.
 These methods return true on success; invalid move/direction, equipment, outfit or material IDs, or set_direction without an active move, return false and emit an engine warning before changing state.

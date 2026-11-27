@@ -1,7 +1,7 @@
 // Project folder: Final link checks that cannot be read, for Update now and for background attempts.
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { FolderLink } from '../../src/lib/project-folder/links.ts';
-import { files, memoryFolder } from './project-folder-memory.ts';
+import { files, insideOf, memoryFolder } from './project-folder-memory.ts';
 
 const studio = vi.hoisted(() => ({
 	getLink: vi.fn<(id: string) => Promise<FolderLink | null>>(),
@@ -66,12 +66,16 @@ afterEach(() => {
 });
 
 async function setup() {
+	vi.stubGlobal('navigator', {
+		locks: { request: (_name: string, work: () => Promise<unknown>) => work() }
+	});
 	const folder = memoryFolder();
 	let link: FolderLink = {
 		characterId: 'hero',
 		linkedAt: 'hero-link',
 		handle: { name: 'Game', queryPermission: async () => 'granted' } as FileSystemDirectoryHandle,
 		subfolder: 'hero',
+		destinationId: 'game',
 		engine: 'generic',
 		auto: true
 	};
@@ -80,7 +84,7 @@ async function setup() {
 		link = { ...link, ...patch };
 		return link;
 	});
-	studio.target.mockReturnValue(folder.target);
+	studio.target.mockReturnValue(insideOf(folder.target, 'hero'));
 	studio.build.mockResolvedValue({ kind: 'requested', entries: files({ 'sprite.png': 'hero' }) });
 	const api = await import('../../src/studio/projectFolder.svelte.ts');
 	await api.loadFolderLink('hero');

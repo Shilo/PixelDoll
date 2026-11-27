@@ -61,6 +61,8 @@ vi.mock('../../src/lib/project-folder/support.ts', () => ({
 vi.mock('../../src/lib/project-folder/links.ts', () => ({
 	...studio,
 	allLinks: async () => [],
+	allDestinations: async () => [],
+	addDestination: async () => {},
 	recordKey: (link: FolderLink) => link.characterId
 }));
 
@@ -191,6 +193,7 @@ async function linkedStudio(...ids: string[]) {
 				characterId: id,
 				handle: folder.root,
 				subfolder: id,
+				destinationId: 'game',
 				engine: 'generic',
 				auto: true,
 				linkedAt: `link-${id}`
@@ -353,7 +356,7 @@ it('does not publish a different character when a relink finishes after a switch
 	const entered = deferred();
 	const finish = deferred();
 	lock.mockImplementation(async (name, work) => {
-		if (name.endsWith(':folder:hero')) {
+		if (name.endsWith(':hero') && name.includes(':folder:')) {
 			entered.resolve();
 			await finish.promise;
 		}

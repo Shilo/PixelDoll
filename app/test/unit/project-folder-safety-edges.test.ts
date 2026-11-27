@@ -160,6 +160,7 @@ it('honors automatic updates being turned off before an in-flight build reaches 
 			characterId: 'hero',
 			handle,
 			subfolder: 'hero',
+			destinationId: 'game',
 			engine: 'generic',
 			auto: true,
 			linkedAt: 'first'

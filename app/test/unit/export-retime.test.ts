@@ -57,7 +57,15 @@ function expectSameFiles(retimed: Built['entries'], built: Built['entries'], lab
 	}
 }
 
-const engines: Engine[] = ['generic', 'godot', 'phaser', 'unity', 'gdevelop', 'aseprite'];
+const engines: Engine[] = [
+	'generic',
+	'godot',
+	'phaser',
+	'phaser-ae',
+	'unity',
+	'gdevelop',
+	'aseprite'
+];
 
 for (const engine of engines)
 	test(`another export time is byte-identical to a build with it (${engine})`, async () => {
@@ -68,6 +76,18 @@ for (const engine of engines)
 		// The build keeps its own bytes: retiming rewrites nothing it was given, and its own time is a no-op.
 		expect(first.retime!(A)).toEqual(first.entries);
 	});
+
+test.each(['godot', 'phaser', 'phaser-ae', 'unity'] as const)(
+	'folder retime rewrites only %s character entries',
+	async (engine) => {
+		const project = await equipmentFixture();
+		const first = await filesAt(project, engine, A, { layout: 'folder' });
+		const second = await filesAt(project, engine, B, { layout: 'folder' });
+		expectSameFiles(first.retime!(B)!, second.entries, engine);
+		expect(first.bundle).toBeDefined();
+		expect(first.bundle).toEqual(second.bundle);
+	}
+);
 
 test('another export time is byte-identical for RPG Maker and action-layered exports', async () => {
 	const project = await loadFixture(fixture);

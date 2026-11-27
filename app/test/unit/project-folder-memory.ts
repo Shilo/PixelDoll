@@ -92,3 +92,17 @@ const toFiles = (o: Record<string, string>): FolderFile[] =>
 export const files = toFiles;
 
 export const domError = (name: string) => new DOMException('x', name);
+
+/** The memory folder as the picked folder's character subfolder `dir`: the Studio publishes picked-folder-relative paths
+ *  (`hero/sprite.png`), which this maps to the folder's own (`sprite.png`). A path outside it is a test mistake. */
+export function insideOf(target: FolderTarget, dir: string): FolderTarget {
+	const inner = (path: string) => {
+		if (!path.startsWith(`${dir}/`)) throw new Error(`Unexpected path outside ${dir}: ${path}`);
+		return path.slice(dir.length + 1);
+	};
+	return {
+		check: () => target.check(),
+		read: (path) => target.read(inner(path)),
+		write: (path, ...rest) => target.write(inner(path), ...rest)
+	};
+}

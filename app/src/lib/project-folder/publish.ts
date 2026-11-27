@@ -91,12 +91,12 @@ async function settleAtOnce<T, R>(
 class Stopped extends Error {}
 
 /** Written several at a time, in two waves: image payloads first, then resources that name only images (Godot's
- *  per-layer SpriteFrames .tres). Every other file (godot/library.tres and scenes naming those resources, other engines'
- *  indexes) follows one at a time in the export's own order, and the manifest last, so nothing that names a file lands
- *  before it. */
+ *  per-layer SpriteFrames .tres, in a godot/ folder at any depth). Every other file (godot/library.tres and scenes naming
+ *  those resources, runtimes, other engines' indexes) follows one at a time in the order given, and the manifest last,
+ *  so nothing that names a file lands before it. */
 const isPayload = (path: string) => path.endsWith('.png');
 const isImageResource = (path: string) =>
-	path.startsWith('godot/') && path.endsWith('.tres') && path !== 'godot/library.tres';
+	/(^|\/)godot\/[^/]+\.tres$/.test(path) && !/(^|\/)godot\/library\.tres$/.test(path);
 
 export async function hashFiles(files: readonly FolderFile[]) {
 	const next = new Map<string, string>();
@@ -147,8 +147,11 @@ export async function inSync(
  *   swap may or may not have happened, so a crash there leaves it to the user), then the new hash after it, or the
  *   previous hash again (null: none) when the write failed before swapping. If recording fails, no further write
  *   starts; writes already under way finish and are recorded, each under its own PENDING mark.
- * @param proceed asked once the plan is ready, just before the first write; false stops without writing (such as
+ * @param proceed asked once the plan is ready, with the writes it will make, just before the first; false stops without writing (such as
  *   automatic updates having been turned off meanwhile).
+ * @param manifest the path written after every other file (default manifest.json).
+ * @param first a folder whose files are written, one at a time, before any other: a runtime shared by the export, so a
+ *   failure there leaves the export's own files untouched.
  */
 export async function publishFiles(
 	target: FolderTarget,
@@ -157,9 +160,12 @@ export async function publishFiles(
 		record: FolderRecord;
 		overwrite?: ReadonlyMap<string, string>;
 		onRecord: (path: string, hash: string | null) => Promise<void>;
-		proceed?: () => Promise<boolean>;
+		proceed?: (writes: readonly PlanAction[]) => Promise<boolean>;
+		manifest?: string;
+		first?: string;
 	}
 ): Promise<PublishOutcome> {
+	const manifest = o.manifest ?? 'manifest.json';
 	let written = 0;
 	// Approved files not yet written, listed again if a later file pauses this publish.
 	let approved: PlanAction[] = [];
@@ -179,7 +185,7 @@ export async function publishFiles(
 		if (plan.conflicts.length) return { kind: 'blocked', conflicts: plan.conflicts, matching };
 		approved = plan.approved;
 		if (!plan.writes.length) return { kind: 'unchanged', kept: o.record.kept.length, matching };
-		if (o.proceed && !(await o.proceed())) return { kind: 'stopped' };
+		if (o.proceed && !(await o.proceed(plan.writes))) return { kind: 'stopped' };
 		// Once any file fails, no further write starts, and one still checking its staged bytes is given up; writes
 		// already past that check finish and are recorded under their own PENDING mark.
 		let stop = false;
@@ -241,16 +247,19 @@ export async function publishFiles(
 				fail(a.path, error);
 			}
 		};
-		const payload = plan.writes.filter((a) => isPayload(a.path));
-		const resources = plan.writes.filter((a) => isImageResource(a.path));
-		const rest = plan.writes.filter(
-			(a) => !isPayload(a.path) && !isImageResource(a.path) && a.path !== 'manifest.json'
+		const isFirst = (path: string) => !!o.first && path.startsWith(`${o.first}/`);
+		const own = plan.writes.filter((a) => !isFirst(a.path));
+		const payload = own.filter((a) => isPayload(a.path));
+		const resources = own.filter((a) => isImageResource(a.path));
+		const rest = own.filter(
+			(a) => !isPayload(a.path) && !isImageResource(a.path) && a.path !== manifest
 		);
+		for (const a of plan.writes) if (isFirst(a.path)) await write(a);
 		await settleAtOnce(payload, write);
 		await settleAtOnce(resources, write);
 		for (const a of rest) await write(a);
 		// The manifest goes last, so a game that reads it never sees it ahead of the files it describes.
-		for (const a of plan.writes) if (a.path === 'manifest.json') await write(a);
+		for (const a of plan.writes) if (a.path === manifest) await write(a);
 		if (failures.length) {
 			// Reported the same way whatever finished first: every conflict in the export's order (with the approved
 			// files not yet written), else the first other failure in that order.

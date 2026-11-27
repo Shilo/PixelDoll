@@ -8,7 +8,7 @@ import type { FolderRecord } from '../../src/lib/project-folder/plan.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import { readCharacterZip } from '../../src/lib/store/import.ts';
 import { CURRENT_FORMAT, type Engine, type Project } from '../../src/lib/store/manifest.ts';
-import { domError, files, memoryFolder } from './project-folder-memory.ts';
+import { domError, files, insideOf, memoryFolder } from './project-folder-memory.ts';
 
 type BuildOptions = { engine: Engine; look: { items: { hat: string } }; exportedAt: string };
 
@@ -67,6 +67,8 @@ vi.mock('../../src/lib/store/export-settings.ts', async (importOriginal) => ({
 vi.mock('../../src/lib/project-folder/links.ts', () => ({
 	...studio,
 	allLinks: async () => [],
+	allDestinations: async () => [],
+	addDestination: async () => {},
 	recordKey: (link: FolderLink) => link.linkedAt
 }));
 vi.mock('../../src/lib/project-folder/target.ts', async (importOriginal) => ({
@@ -76,6 +78,8 @@ vi.mock('../../src/lib/project-folder/target.ts', async (importOriginal) => ({
 
 const sprite = 'sprite.png';
 const manifest = 'manifest.json';
+/** A path as the Studio names it: inside the picked folder, in the character's subfolder. */
+const hero = (path: string) => `hero/${path}`;
 const earlier = '2025-02-02T00:00:00.000Z';
 // Like a real export manifest, it names the worn look, so a look change changes it.
 const manifestText = (exportedAt: string, engine: Engine = 'generic', hat = 'original') =>
@@ -109,7 +113,7 @@ async function setup(initial: Record<string, string> = {}) {
 	studio.source = undefined;
 	studio.settings.engine = 'generic';
 	const folder = memoryFolder(initial);
-	studio.target.mockReturnValue(folder.target);
+	studio.target.mockReturnValue(insideOf(folder.target, 'hero'));
 	studio.prepare.mockResolvedValue(undefined);
 	let link: FolderLink | null = null;
 	studio.getLink.mockImplementation(async (id: string) => (link?.characterId === id ? link : null));
@@ -171,7 +175,7 @@ it('reports an external edit to an unowned matching file on a background check',
 	expect(folder.text(sprite)).toBe('game edit');
 	expect(api.projectFolder.status).toMatchObject({
 		kind: 'blocked',
-		conflicts: expect.arrayContaining([expect.objectContaining({ path: sprite })])
+		conflicts: expect.arrayContaining([expect.objectContaining({ path: hero(sprite) })])
 	});
 });
 
@@ -225,7 +229,7 @@ it('reports a released file conflict on a background check in a new tab', async 
 	});
 	await api.linkProjectFolder('generic');
 	expect(api.projectFolder.status.kind).toBe('blocked');
-	await api.keepProjectFolderFiles([sprite], link()!.linkedAt);
+	await api.keepProjectFolderFiles([hero(sprite)], link()!.linkedAt);
 	expect(api.projectFolder.status).toMatchObject({ kind: 'done', kept: 1 });
 	expect(link()?.inputs).toEqual(expect.any(String));
 	await api.releaseKeptFiles();
@@ -238,7 +242,7 @@ it('reports a released file conflict on a background check in a new tab', async 
 	expect(folder.text(sprite)).toBe('custom sprite');
 	expect(fresh.projectFolder.status).toMatchObject({
 		kind: 'blocked',
-		conflicts: expect.arrayContaining([expect.objectContaining({ path: sprite })])
+		conflicts: expect.arrayContaining([expect.objectContaining({ path: hero(sprite) })])
 	});
 });
 

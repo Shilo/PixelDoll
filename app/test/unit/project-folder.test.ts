@@ -5,6 +5,7 @@ import {
 	hashFiles,
 	inSync,
 	matchesRecord,
+	publishFiles,
 	sha256
 } from '../../src/lib/project-folder/publish.ts';
 import { pathParts } from '../../src/lib/project-folder/target.ts';
@@ -201,6 +202,43 @@ describe('publishFiles', () => {
 		]);
 	});
 
+	it('writes a shared runtime first, then keeps that order for a character in a subfolder', async () => {
+		const entries = {
+			'_PixelDoll/godot/paperdoll.gd': 'runtime',
+			'hero/godot/Paperdoll.tscn': 'scene',
+			'hero/manifest.json': 'm',
+			'hero/godot/library.tres': 'lib',
+			'hero/godot/hair.tres': 'frames',
+			'hero/layers/hair.png': 'png'
+		};
+		const options = {
+			record: { written: {}, kept: [] },
+			onRecord: async () => {},
+			manifest: 'hero/manifest.json',
+			first: '_PixelDoll/godot'
+		};
+		const folder = memoryFolder();
+		await publishFiles(folder.target, files(entries), options);
+		expect(folder.log).toEqual([
+			'write _PixelDoll/godot/paperdoll.gd',
+			'write hero/layers/hair.png',
+			'write hero/godot/hair.tres',
+			'write hero/godot/Paperdoll.tscn',
+			'write hero/godot/library.tres',
+			'write hero/manifest.json'
+		]);
+
+		// A runtime that cannot be written leaves every character file as it was.
+		const failing = memoryFolder();
+		failing.failWrite = (path) =>
+			path.startsWith('_PixelDoll/') ? domError('NoModificationAllowedError') : undefined;
+		expect(await publishFiles(failing.target, files(entries), options)).toMatchObject({
+			kind: 'failed',
+			reason: 'locked'
+		});
+		expect(failing.log).toEqual([]);
+	});
+
 	it('pauses on a deleted published file and restores it only when approved', async () => {
 		const folder = memoryFolder();
 		await folder.publish({ 'a.png': '1', 'b.png': '1' });
@@ -273,7 +311,8 @@ describe('folderSupport', () => {
 		self: 1,
 		top: 1,
 		showDirectoryPicker() {},
-		FileSystemHandle: { prototype: { queryPermission() {}, requestPermission() {} } }
+		FileSystemHandle: { prototype: { queryPermission() {}, requestPermission() {} } },
+		navigator: { locks: {} }
 	};
 	it('detects Chromium, Brave with the flag off, and everything else', async () => {
 		expect(await folderSupport(api)).toBe('supported');
@@ -288,6 +327,8 @@ describe('folderSupport', () => {
 		expect(await folderSupport({ isSecureContext: true, self: 1, top: 1 })).toBe('unsupported');
 		expect(await folderSupport({ ...api, isSecureContext: false })).toBe('unsupported');
 		expect(await folderSupport({ ...api, top: 2 })).toBe('unsupported');
+		// Tabs sharing a folder take turns through Web Locks; without them, writing could interleave.
+		expect(await folderSupport({ ...api, navigator: {} })).toBe('unsupported');
 		expect(
 			await folderSupport({
 				isSecureContext: true,
