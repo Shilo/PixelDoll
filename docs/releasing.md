@@ -30,3 +30,15 @@ Releases are fully automatic: a scheduled workflow tags the build that was live 
 ## Dry run
 
 From `app/`: `npm run release -- --dry-run [--until <ISO time>]` prints the cutoffs, chosen builds, versions and All changes lists without calling Claude or writing anything. Add `--notes` to also call Claude (needs `ANTHROPIC_API_KEY`; costs a few cents per release).
+
+## Data format
+
+The release script writes these files and the app reads them (served from `dist/releases/`, copied there by the build). All JSON is UTF-8; dates are `YYYY-MM-DD` (the cutoff date in UTC).
+
+- `releases/index.json`: `{ "releases": [ { "version": "1.4.12", "date": "2026-11-27", "headline": { "en": "...", "de": "..." }, "highlights": 3 } ] }`, newest first, published releases only. `highlights` is the highlight count (0 never happens; a release with only fixes still has 1). A folder that exists without an index entry is staged and ignored by the app.
+- `releases/<version>/notes.<locale>.json` for `en` and every app locale that translated: `{ "headline": "", "intro": "", "joke": "", "highlights": [ { "title": "", "text": "" } ], "fixes": [ { "text": "" } ] }`. `joke` is empty in every locale except possibly `en`. A missing locale file means the app uses `notes.en.json`.
+- `releases/<version>/changes.json`: `{ "total": 0, "groups": [ { "kind": "new" | "improved" | "fixed", "items": [ { "text": "Export: add a Phaser AE export with a shared version picker", "sha": "<full sha>" } ] } ] }`. Groups appear in that order and only when non-empty. Each item links to `https://github.com/Shilo/PixelDoll/commit/<sha>`.
+- `releases/<version>/banner.png`: the banner at native pixel size (scale it with `image-rendering: pixelated`). Decorative: the app shows it with empty alt text.
+- `releases/<version>/source.json`: the record the script resumes from: `{ "version", "date", "cutoff", "sha", "previousSha", "model", "commits": ["<full sha>"], "notes": <the validated English tool reply with commit citations> }`. The app never reads it.
+
+The GitHub Release body renders the same notes in the same order as the app: headline (release title is "PixelDoll <version>: <headline>"), date and version, banner (a 4x copy uploaded as a release asset), intro and joke, highlights, Fixed, then a collapsed `<details><summary>All changes (N)</summary>` with the groups.
