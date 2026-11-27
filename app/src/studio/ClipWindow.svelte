@@ -16,6 +16,7 @@
 	import { untrack } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import ObjectWindow from './ObjectWindow.svelte';
+	import { rowOf, selectedTab, successorFocus } from './experience/focus.ts';
 	import WindowSection from './WindowSection.svelte';
 	import FacingStrip from './FacingStrip.svelte';
 	import ToolRow from './ToolRow.svelte';
@@ -373,9 +374,11 @@
 				: undefined}
 			oncancel={() => (trashing = false)}
 			onconfirm={async () => {
+				const land = successorFocus(rowOf(id), selectedTab);
 				await removeMove(id);
 				trashing = false;
 				ui.sheet = null;
+				await land();
 			}}
 		/>
 	{/if}

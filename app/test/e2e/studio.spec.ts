@@ -11516,6 +11516,8 @@ for (const kind of ['outfit', 'move'] as const) {
 			await confirm.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 		}
 		await expect(row).toHaveCount(0);
+		// Like every Move to Trash, focus goes on to the row that took its place.
+		if (kind === 'move') await expect(page.locator('.move-list .move-row:focus')).toHaveCount(1);
 		await reloadStudio(page);
 		await equipmentMode(page, kind === 'outfit' ? 'Outfits' : 'Moves');
 		await expect(row).toHaveCount(0);
@@ -11545,6 +11547,23 @@ for (const kind of ['outfit', 'move'] as const) {
 		}
 	});
 }
+
+test('a character moved to the Trash from the selection list hands focus to the row that took its place', async ({
+	page
+}) => {
+	await editableCopy(page);
+	await page.getByRole('button', { name: 'Characters', exact: true }).click();
+	const rows = page.locator('.character-rows');
+	const copy = rows.locator('.character-entry').filter({ hasText: /copy/ });
+	await copy.getByRole('button', { name: /^More actions for / }).click();
+	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+	await page
+		.getByRole('alertdialog')
+		.getByRole('button', { name: 'Move to Trash', exact: true })
+		.click();
+	await expect(copy).toHaveCount(0);
+	await expect(rows.locator('.character-row').first()).toBeFocused();
+});
 
 test('item long-press opens without wearing, cancels on movement, and downloads an editable item ZIP', async ({
 	page

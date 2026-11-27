@@ -5,6 +5,7 @@
 	import { displayMessage, displayError, errorMessage } from '../lib/i18n.ts';
 	import type { Message } from '../lib/message.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import { rowOf, successorFocus } from './experience/focus.ts';
 	import {
 		blockedByWork,
 		ui,
@@ -30,8 +31,10 @@
 		busy = true;
 		error = '';
 		try {
+			const land = successorFocus(rowOf(id));
 			await removeProject(id);
 			ui.sheet = null;
+			await land();
 		} catch (e) {
 			error = errorMessage(e);
 		} finally {

@@ -7,9 +7,18 @@
 	import PopoverArrow from './PopoverArrow.svelte';
 	let {
 		name,
+		key,
+		entry = $bindable(),
 		children,
 		actions
-	}: { name: string; children: Snippet; actions: Snippet<[() => void]> } = $props();
+	}: {
+		name: string;
+		/** Finds the row again in its list (`data-rows`), for focus after it goes to the Trash. */
+		key?: string;
+		entry?: HTMLElement;
+		children: Snippet;
+		actions: Snippet<[() => void]>;
+	} = $props();
 	const menuId = $props.id();
 	let more: HTMLButtonElement;
 	let menu: HTMLElement;
@@ -22,7 +31,12 @@
 	}
 </script>
 
-<div class="character-entry hover-actions" {@attach contextMenu(open)}>
+<div
+	class="character-entry hover-actions"
+	data-row={key}
+	bind:this={entry}
+	{@attach contextMenu(open)}
+>
 	{@render children()}
 	<button
 		bind:this={more}

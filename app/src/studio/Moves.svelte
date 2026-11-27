@@ -192,7 +192,7 @@
 	<div class="equipment-scroll panel-list" bind:this={list}>
 		<div class="colors">
 			{#if m && view.project && thumbnails}
-				<div class="move-list">
+				<div class="move-list" data-rows>
 					{#if query && rowMatches === 0}
 						<p class="faint small no-match">
 							{t(kind === 'state' ? 'moves.noMatchingStates' : 'moves.noMatchingMoves')}

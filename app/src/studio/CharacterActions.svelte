@@ -6,6 +6,6 @@
 	let { id, name, children }: { id: string; name: string; children: Snippet } = $props();
 </script>
 
-<RowActions {name} {children}>
+<RowActions {name} key={id} {children}>
 	{#snippet actions(close)}<CharacterMenu {id} {close} />{/snippet}
 </RowActions>

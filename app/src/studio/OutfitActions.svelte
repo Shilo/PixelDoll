@@ -8,6 +8,7 @@
 	import RenameRow from './RenameRow.svelte';
 	import DeleteRow from './DeleteRow.svelte';
 	import TrashDialog from './TrashDialog.svelte';
+	import { successorFocus } from './experience/focus.ts';
 	import { Download } from './icons.ts';
 	import { doc, openRename } from './state.svelte.ts';
 	import { downloadOutfitZip } from './download.svelte.ts';
@@ -21,19 +22,20 @@
 	let {
 		id,
 		name,
-		onremoved,
+		fallback,
 		children
 	}: {
 		id: string;
 		name: string;
-		/** After the outfit is gone: its row is, too, so the list moves focus on. */
-		onremoved: () => void;
+		/** Takes focus when the last outfit goes. */
+		fallback: () => HTMLElement | undefined;
 		children: Snippet;
 	} = $props();
+	let entry = $state<HTMLElement>();
 	let trashing = $state(false);
 </script>
 
-<RowActions {name} {children}>
+<RowActions {name} key={id} bind:entry {children}>
 	{#snippet actions(close)}
 		<RenameRow
 			onclick={() => {
@@ -65,8 +67,9 @@
 				locked={outfitLocked(id) ? t('savedActions.demoOutfitLocked') : ''}
 				onclick={() => {
 					close();
+					const land = successorFocus(entry, fallback);
 					removeDemoOutfit(id);
-					onremoved();
+					void land();
 				}}
 			/>
 		{/if}
@@ -78,9 +81,10 @@
 		body={t('savedActions.removeOutfit')}
 		oncancel={() => (trashing = false)}
 		onconfirm={async () => {
+			const land = successorFocus(entry, fallback);
 			await removeOutfit(id);
 			trashing = false;
-			onremoved();
+			await land();
 		}}
 	/>
 {/if}

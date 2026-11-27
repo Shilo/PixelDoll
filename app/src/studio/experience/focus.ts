@@ -1,3 +1,4 @@
+import { tick } from 'svelte';
 import {
 	arrow,
 	autoUpdate,
@@ -73,6 +74,55 @@ function inScroller(target: HTMLElement) {
 			return true;
 	}
 	return false;
+}
+/** The row `key` names where it is on screen (a character is listed in the picker and on the selection screen). */
+export const rowOf = (key: string) =>
+	[
+		...document.querySelectorAll<HTMLElement>(
+			`[data-row="${CSS.escape(key)}"], [data-tile="${CSS.escape(key)}"]`
+		)
+	].find((el) => el.getClientRects().length > 0);
+/** After a confirmed Move to Trash, focus goes where the removed row was: to the row now after it in its list, else the
+ *  one before, else `fallback`. Call this with the row before removing it, and what it returns once the row is gone and
+ *  every dialog has closed. A list marks its container `data-rows` and each row `data-row` (Wardrobe tiles: `data-tile`)
+ *  with a key that finds the row again after the list re-renders; a row that is not a button focuses its first one. */
+export function successorFocus(
+	row: Element | null | undefined,
+	fallback?: () => HTMLElement | null | undefined
+) {
+	const list = row?.closest<HTMLElement>('[data-rows]');
+	const key = (el: HTMLElement) => el.dataset.row ?? el.dataset.tile;
+	const rows = () =>
+		[...(list?.querySelectorAll<HTMLElement>('[data-row], [data-tile]') ?? [])].filter(
+			(el) => el.closest('[data-rows]') === list
+		);
+	const before = rows(),
+		at = before.indexOf(row as HTMLElement);
+	const keys = at < 0 ? [] : [before[at + 1], before[at - 1]].map((el) => el && key(el));
+	return async () => {
+		await tick();
+		await new Promise(requestAnimationFrame);
+		const after = rows();
+		const peer = keys.map((k) => k && after.find((el) => key(el) === k)).find(Boolean);
+		(peer ? (peer.matches('button') ? peer : peer.querySelector('button')) : fallback?.())?.focus();
+	};
+}
+/** The customization panel's open tab (Moves, States): where focus goes when its list has no row left. */
+export const selectedTab = () =>
+	document.querySelector<HTMLElement>('[role=tablist] [role=tab][aria-selected="true"]');
+/** An item tile's successor: its category's next tile, else the previous (Empty at least), else the category's heading;
+ *  never the paid New item tile, which is not a row. */
+export function itemSuccessor(id: string) {
+	const tile = rowOf(id);
+	const group = tile?.closest<HTMLElement>('[data-group]')?.dataset.group;
+	return successorFocus(tile, () => {
+		const heading = group
+			? document.querySelector<HTMLElement>(`[data-group="${CSS.escape(group)}"] .bu-section-title`)
+			: null;
+		// The heading takes focus only from script, so it never joins the Tab order.
+		heading?.setAttribute('tabindex', '-1');
+		return heading;
+	});
 }
 export function restoreTrigger(target: HTMLElement | null) {
 	const dialog = [...document.querySelectorAll<HTMLDialogElement>('dialog[open]')].at(-1);

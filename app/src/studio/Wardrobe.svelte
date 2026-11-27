@@ -91,7 +91,7 @@
 	import ItemChoiceMenu from './ItemChoiceMenu.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import ListSearch from './ListSearch.svelte';
-	import { popoverFocus } from './experience/focus.ts';
+	import { itemSuccessor, popoverFocus } from './experience/focus.ts';
 	import {
 		ArrowDown,
 		ArrowUp,
@@ -245,34 +245,11 @@
 				...extra.filter((text): text is string => !!text)
 			].map((label) => (getLocale() === 'en' ? label[0].toLowerCase() + label.slice(1) : label))
 		]);
-	/** Stands for the Empty tile, which has no data-tile key, when picking where focus lands after a removal. */
-	const EMPTY = 'empty';
-	/** Remove an item for good, then focus the next tile in its category, else the previous one (the Empty tile at
-	 * least), else the category's heading: never the page, and never the paid New item button. */
+	/** Move an item to the Trash, then focus where it was (experience/focus.ts: successorFocus). */
 	async function remove(id: string) {
-		const tile = list?.querySelector<HTMLElement>(`[data-tile="${CSS.escape(id)}"]`);
-		const group = tile?.closest<HTMLElement>('[data-group]')?.dataset.group;
-		const tiles = [
-			...(tile?.closest('.slot-tiles')?.querySelectorAll<HTMLElement>('.bu-tile') ?? [])
-		];
-		const at = tiles.indexOf(tile!),
-			next = tiles[at + 1]?.dataset.tile,
-			previous = at > 0 ? (tiles[at - 1].dataset.tile ?? EMPTY) : undefined;
+		const land = itemSuccessor(id);
 		await removeItem(id);
-		await tick();
-		requestAnimationFrame(() => {
-			const section = group
-				? list?.querySelector<HTMLElement>(`[data-group="${CSS.escape(group)}"]`)
-				: null;
-			const find = (key?: string) =>
-				key === EMPTY
-					? section?.querySelector<HTMLElement>('.bu-tile[data-variant="empty"]')
-					: key && list?.querySelector<HTMLElement>(`[data-tile="${CSS.escape(key)}"]`);
-			const heading = section?.querySelector<HTMLElement>('.bu-section-title');
-			// The heading takes focus only from script, so it never joins the Tab order.
-			heading?.setAttribute('tabindex', '-1');
-			(find(next) || find(previous) || heading)?.focus();
-		});
+		await land();
 	}
 	const menuItem = $derived(m?.items.find((i) => i.id === menuFor));
 	const sharedHidden = $derived(sharedItemsHidden(doc.id));
@@ -1158,6 +1135,7 @@
 								</p>{/if}
 							<div
 								class="slot-tiles"
+								data-rows
 								role="group"
 								aria-label={t('wardrobe.labelItems', { label: s.label })}
 							>
@@ -1165,6 +1143,7 @@
 									<button
 										class="bu-tile item-tile"
 										data-variant="empty"
+										data-row="empty:{s.key}"
 										aria-pressed={!s.worn}
 										aria-label={t('wardrobe.emptyLower', { lower })}
 										onclick={() => clearSlots([s.key])}

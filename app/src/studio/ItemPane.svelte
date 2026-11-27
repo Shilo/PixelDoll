@@ -20,6 +20,7 @@
 	import { tick, untrack } from 'svelte';
 	import { currentItemDrawing } from './settingsDefaults.svelte.ts';
 	import ObjectWindow from './ObjectWindow.svelte';
+	import { itemSuccessor } from './experience/focus.ts';
 	import WindowSection from './WindowSection.svelte';
 	import FacingStrip from './FacingStrip.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
@@ -1726,9 +1727,12 @@
 			action={t('common.moveToTrash')}
 			oncancel={() => (confirmRemove = false)}
 			onconfirm={() => {
-				const id = target.id;
+				const id = target.id,
+					land = itemSuccessor(id);
 				confirmRemove = false;
-				void removeItem(id).catch((error) => toast(errorMessage(error), { tone: 'danger', error }));
+				void removeItem(id).then(land, (error) =>
+					toast(errorMessage(error), { tone: 'danger', error })
+				);
 			}}><p>{t('common.deleteRecoverable')}</p></ConfirmDialog
 		>
 	{/if}

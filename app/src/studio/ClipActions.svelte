@@ -5,6 +5,7 @@
 	import RowActions from './RowActions.svelte';
 	import ClipMenu from './ClipMenu.svelte';
 	import TrashDialog from './TrashDialog.svelte';
+	import { selectedTab, successorFocus } from './experience/focus.ts';
 	import { displayError } from '../lib/i18n.ts';
 	import { doc, openPendingWork } from './state.svelte.ts';
 	import { blockedByWork } from './state.svelte.ts';
@@ -17,10 +18,11 @@
 		children
 	}: { id: string; kind: 'move' | 'state'; name: string; children: Snippet } = $props();
 	let trashing = $state(false);
+	let entry = $state<HTMLElement>();
 	const lock = $derived(moveDeletionBlocked(id));
 </script>
 
-<RowActions {name} {children}>
+<RowActions {name} key={id} bind:entry {children}>
 	{#snippet actions(close)}<ClipMenu
 			{id}
 			{kind}
@@ -44,8 +46,10 @@
 			: undefined}
 		oncancel={() => (trashing = false)}
 		onconfirm={async () => {
+			const land = successorFocus(entry, selectedTab);
 			await removeMove(id);
 			trashing = false;
+			await land();
 		}}
 	/>
 {/if}
