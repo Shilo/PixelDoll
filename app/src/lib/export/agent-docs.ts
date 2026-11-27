@@ -7,7 +7,7 @@ import type { OutFile } from './generic.ts';
 const AGENTS = `# PixelDoll paper-doll export
 
 This folder is a 2D pixel-art character with swappable equipment, already aligned on every frame and direction. Read
-this file first, then the doc for your engine in docs/, then that engine's README.txt for its full runtime API.
+this file first, then the doc for your engine in docs/, which names the files to read next.
 
 ## Which kind of export this is
 
@@ -101,13 +101,13 @@ The path you pass is relative to the document's base URL (document.baseURI), not
 	runtimePath
 		? `
 <folder> is the path from the page (document.baseURI) to the folder picked in PixelDoll, and <character> is this
-character's folder in it. If you picked the page's own folder, leave out <folder>/: '<character>/' and
+character's folder in it. Paths starting with ../pixeldoll-phaser/ are relative to this character folder. If you picked the page's own folder, leave out <folder>/: '<character>/' and
 './pixeldoll-phaser/PaperdollContainer.js'. The import assumes the importing module sits beside the page; from another
 module, use its own relative path to the same file (from src/main.js: '../<folder>/pixeldoll-phaser/...').`
 		: ''
 }
 This export does not bundle Phaser. Load Phaser 3.80+ or 4 yourself: a script tag that exposes the global Phaser, or your
-bundler with an explicit import (import Phaser from 'phaser'); then import${runtimePath ? '\n./<folder>/pixeldoll-phaser/PaperdollContainer.js' : ' phaser/PaperdollContainer.js'} as an ES module.
+bundler with an explicit import (import Phaser from 'phaser'); then import${runtimePath ? "\n'./<folder>/pixeldoll-phaser/PaperdollContainer.js'" : ' phaser/PaperdollContainer.js'} as an ES module.
 Phaser does not await an async create(): nothing may use the doll until loadPaperdoll resolves, so guard update() on
 this.doll or create it in a scene that starts after loading. loadPaperdoll caches per game, so one scene may load it and
 another may create the doll.
@@ -134,7 +134,8 @@ Entry: ${runtimePath ?? 'phaser-ae/paperdoll.js'}, an ES module, typed by ${runt
 ${
 	runtimePath
 		? `<folder> is the path from game/ to the folder picked in PixelDoll, and <character> is this character's folder in it;
-keep both and the runtime under game/. If you picked game/ itself, leave out <folder>/ everywhere below: for example
+keep both and the runtime under game/; ../pixeldoll-phaser-ae/ paths are relative to this character folder. If you
+picked game/ itself, leave out <folder>/ everywhere below: for example
 <character>/manifest.json and './pixeldoll-phaser-ae/paperdoll.js'.
 phaser-ae/assets.json lists paths relative to the character folder: add each to the "assets" list in
 game/manifest.json (not to game/assets.json) prefixed with <folder>/<character>/, so the build copies the sheets. Do
@@ -154,7 +155,11 @@ manifest's "screen".`
     import heroData from './${runtimePath ? '<folder>' : 'pixeldoll'}/<character>/manifest.json'
     export const hero = await loadPaperdoll(game, '${runtimePath ? '<folder>' : 'pixeldoll'}/<character>/', { manifest: heroData })
 
-    // in a scene's enter(), synchronously:
+    // a scene in game/scenes/:
+    import { game } from '../engine.js'
+    import { Paperdoll } from '../${runtimePath ? '<folder>/pixeldoll-phaser-ae/paperdoll.js' : 'pixeldoll/<character>/phaser-ae/paperdoll.js'}'
+    import { hero } from '../hero.js'
+    // in its enter(), synchronously:
     const doll = new Paperdoll(game, 360, 640, hero)          // 360,640 is the pivot: the feet
     doll.play('<move-id>', '<direction>')
     doll.applyPreset(hero.presets[0].id)                      // items and colors together
@@ -202,7 +207,7 @@ Manifest depths become native z_index ranks; keep the root's z_index to place th
 const unity = (runtimePath?: string) => `# Unity 2022.3 / Unity 6
 
 Entry: ${runtimePath ?? 'unity/Runtime/Paperdoll.cs'}. The importer ${runtimePath ? '../pixeldoll-unity/Editor/PixelDollImporter.cs' : 'unity/Editor/PixelDollImporter.cs'} reads unity/pixeldoll_unity.json and
-builds sliced sheets, clips, the controller and the prefab in unity/Generated/.
+slices the layer sheets in place and builds clips, the controller and the prefab in unity/Generated/.
 Full guide: unity/README.txt.
 
 ${

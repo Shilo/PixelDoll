@@ -3727,9 +3727,9 @@
 		"reload": "Neu laden",
 		"shared": "Gemeinsame Laufzeit: {path}",
 		"manualStep": {
-			"rpg": "{format} lädt Figuren aus einem eigenen Ordner (img/characters, bei XP Graphics/Characters). Kopiere die Sheets nach einer Aktualisierung dorthin, wie es die README.txt der Figur beschreibt.",
-			"gdevelop": "Wenn du diese Figur in ein anderes GDevelop-Projekt übernommen hast, übertrage Aktualisierungen so, wie es die README.txt der Figur beschreibt.",
-			"phaserAe": "Füge nach neuen Animationen oder Items die neuen Pfade aus phaser-ae/assets.json zu game/manifest.json hinzu, wie es die README.txt der Figur beschreibt."
+			"rpg": "{format} lädt Figuren aus einem eigenen Ordner (img/characters, bei XP, VX Ace und VX Graphics/Characters). Kopiere die Sheets nach einer Aktualisierung dorthin, wie es die README.txt der Figur beschreibt.",
+			"gdevelop": "Wenn du diese Figur in ein anderes GDevelop-Projekt übernommen hast, übertrage Aktualisierungen so, wie es die gdevelop/README.txt der Figur beschreibt.",
+			"phaserAe": "Füge nach neuen Animationen oder Items die neuen Pfade aus phaser-ae/assets.json zu game/manifest.json hinzu, wie es die phaser-ae/README.txt der Figur beschreibt."
 		}
 	},
 	"tips": {

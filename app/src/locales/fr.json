@@ -3727,9 +3727,9 @@
 		"reload": "Recharger",
 		"shared": "Runtime partagé : {path}",
 		"manualStep": {
-			"rpg": "{format} charge les personnages depuis son propre dossier (img/characters, ou Graphics/Characters pour XP). Après une mise à jour, copiez-y les planches comme l’indique le README.txt du personnage.",
-			"gdevelop": "Si vous avez fusionné ce personnage dans un autre projet GDevelop, reportez-y les mises à jour comme l’indique le README.txt du personnage.",
-			"phaserAe": "Après avoir ajouté des mouvements ou des objets, ajoutez les nouveaux chemins de phaser-ae/assets.json à game/manifest.json, comme l’indique le README.txt du personnage."
+			"rpg": "{format} charge les personnages depuis son propre dossier (img/characters, ou Graphics/Characters pour XP, VX Ace et VX). Après une mise à jour, copiez-y les planches comme l’indique le README.txt du personnage.",
+			"gdevelop": "Si vous avez fusionné ce personnage dans un autre projet GDevelop, reportez-y les mises à jour comme l’indique le gdevelop/README.txt du personnage.",
+			"phaserAe": "Après avoir ajouté des mouvements ou des objets, ajoutez les nouveaux chemins de phaser-ae/assets.json à game/manifest.json, comme l’indique le phaser-ae/README.txt du personnage."
 		}
 	},
 	"tips": {

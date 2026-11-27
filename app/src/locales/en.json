@@ -3729,9 +3729,9 @@
 		"reload": "Reload",
 		"shared": "Shared runtime: {path}",
 		"manualStep": {
-			"rpg": "{format} loads characters from its own folder (img/characters, or Graphics/Characters for XP). After an update, copy the sheets there as the character’s README.txt says.",
-			"gdevelop": "If you merged this character into another GDevelop project, bring updates into it as the character’s README.txt says.",
-			"phaserAe": "After adding moves or items, add the new paths from phaser-ae/assets.json to game/manifest.json, as the character’s README.txt says."
+			"rpg": "{format} loads characters from its own folder (img/characters, or Graphics/Characters for XP, VX Ace and VX). After an update, copy the sheets there as the character’s README.txt says.",
+			"gdevelop": "If you merged this character into another GDevelop project, bring updates into it as the character’s gdevelop/README.txt says.",
+			"phaserAe": "After adding moves or items, add the new paths from phaser-ae/assets.json to game/manifest.json, as the character’s phaser-ae/README.txt says."
 		}
 	},
 	"tips": {

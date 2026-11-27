@@ -385,3 +385,30 @@ it('records a new file left empty by a write given up after another file failed,
 	).toMatchObject({ kind: expect.stringMatching(/published|unchanged/) });
 	expect(folder.text('b.png')).toBe('new b');
 });
+
+describe('required kept files after planning', () => {
+	it('pauses before any dependent file when a kept required file goes while the plan is checked', async () => {
+		const folder = memoryFolder({ 'rt/a.js': 'mine' });
+		const outcome = await publishFiles(
+			folder.target,
+			files({ 'rt/a.js': 'stock', 'hero/manifest.json': 'new' }),
+			{
+				record: { written: {}, kept: ['rt/a.js'] },
+				onRecord: async () => {},
+				manifest: 'hero/manifest.json',
+				first: 'rt',
+				required: (path) => path.startsWith('rt/'),
+				// The user moves their kept runtime away just as the publish passes its last check.
+				proceed: async () => {
+					folder.files.delete('rt/a.js');
+					return true;
+				}
+			}
+		);
+		expect(outcome).toMatchObject({
+			kind: 'blocked',
+			conflicts: [{ path: 'rt/a.js', reason: 'deleted', found: DELETED }]
+		});
+		expect(folder.text('hero/manifest.json')).toBeNull();
+	});
+});

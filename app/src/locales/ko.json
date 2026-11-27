@@ -3623,9 +3623,9 @@
 		"reload": "새로고침",
 		"shared": "공유 런타임: {path}",
 		"manualStep": {
-			"rpg": "{format}은(는) 자체 폴더(img/characters, XP는 Graphics/Characters)에서 캐릭터를 불러와요. 업데이트 후 캐릭터의 README.txt에 따라 시트를 그곳에 복사하세요.",
-			"gdevelop": "이 캐릭터를 다른 GDevelop 프로젝트에 합쳤다면 캐릭터의 README.txt에 따라 업데이트를 반영하세요.",
-			"phaserAe": "동작이나 아이템을 추가한 뒤에는 캐릭터의 README.txt에 따라 phaser-ae/assets.json의 새 경로를 game/manifest.json에 추가하세요."
+			"rpg": "{format}은(는) 자체 폴더(img/characters, XP, VX Ace, VX는 Graphics/Characters)에서 캐릭터를 불러와요. 업데이트 후 캐릭터의 README.txt에 따라 시트를 그곳에 복사하세요.",
+			"gdevelop": "이 캐릭터를 다른 GDevelop 프로젝트에 합쳤다면 캐릭터의 gdevelop/README.txt에 따라 업데이트를 반영하세요.",
+			"phaserAe": "동작이나 아이템을 추가한 뒤에는 캐릭터의 phaser-ae/README.txt에 따라 phaser-ae/assets.json의 새 경로를 game/manifest.json에 추가하세요."
 		}
 	},
 	"tips": {

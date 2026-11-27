@@ -268,6 +268,20 @@ export async function publishFiles(
 			(a) => !isPayload(a.path) && !isImageResource(a.path) && a.path !== manifest
 		);
 		for (const a of plan.writes) if (isFirst(a.path)) await write(a);
+		// A required file the user keeps is not written, so nothing else notices if it goes while the plan is checked or
+		// the shared files are written: look again before any file that depends on it lands.
+		if (!stop) {
+			const lost: PlanAction[] = [];
+			for (const k of plan.actions) {
+				if (k.kind !== 'kept' || !o.required?.(k.path)) continue;
+				const found = await hashAt(target, k.path);
+				if (found === null)
+					lost.push({ path: k.path, kind: 'conflict', reason: 'deleted', found: DELETED });
+				else if (found === NOT_A_FILE)
+					lost.push({ path: k.path, kind: 'conflict', reason: 'folder', found: NOT_A_FILE });
+			}
+			if (lost.length) return { kind: 'blocked', conflicts: [...lost, ...approved] };
+		}
 		await settleAtOnce(payload, write);
 		await settleAtOnce(resources, write);
 		for (const a of rest) await write(a);

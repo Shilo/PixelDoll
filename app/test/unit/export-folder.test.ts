@@ -28,7 +28,7 @@ const revisionGoldens: Record<keyof typeof runtimeFiles, Record<number, string>>
 	godot: { 1: '721efb338e2e0623080a00dbb0e45f715bceee0ada8fd80834cfe9c2e132d041' },
 	phaser: { 1: 'c75683d0f5dadb441b579c4fb51ebe1ff67497294f04064543af73175c5fa540' },
 	'phaser-ae': { 1: '545479b480abac837c9db2f1312ce2b6ba173287bbbdb51bcc1dc10cc9e4914e' },
-	unity: { 2: '6cdbf84f7ef26d0f02c4a4b0da3dbf0d5f069205db660071fde9e80bda905e23' }
+	unity: { 2: '7866a826d5961f9a3e87a14c1eaceb4fe8695fa7fb3579978e1989b21068367e' }
 };
 
 // Captured at the fixture's fixed exportedAt from an isolated archive of 67b40dc8e, then updated only for deliberate
@@ -115,6 +115,9 @@ test.each(engines)('%s folder keeps character files and separates its runtime', 
 		const data = JSON.parse(files.get('unity/pixeldoll_unity.json')!);
 		expect(data).not.toHaveProperty('exportId');
 		expect(Number.isSafeInteger(data.runtimeFormat) && data.runtimeFormat >= 1).toBe(true);
+		// The importer slices the layer sheets where they are; Generated/ holds only clips, controller and prefab.
+		for (const guide of ['unity/README.txt', 'docs/unity.md'])
+			expect(files.get(guide)).toContain('slices the layer sheets in place');
 		expect(JSON.parse(decoder.decode(bundle.files[1].data)).name).toBe('PixelDoll.Runtime');
 		expect(JSON.parse(decoder.decode(bundle.files[3].data))).toMatchObject({
 			name: 'PixelDoll.Editor',

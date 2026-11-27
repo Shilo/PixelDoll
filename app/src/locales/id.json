@@ -3623,9 +3623,9 @@
 		"reload": "Muat ulang",
 		"shared": "Runtime bersama: {path}",
 		"manualStep": {
-			"rpg": "{format} memuat karakter dari foldernya sendiri (img/characters, atau Graphics/Characters untuk XP). Setelah pembaruan, salin sheet ke sana seperti yang dijelaskan README.txt karakter.",
-			"gdevelop": "Jika Anda menggabungkan karakter ini ke proyek GDevelop lain, bawa pembaruan ke sana seperti yang dijelaskan README.txt karakter.",
-			"phaserAe": "Setelah menambah gerakan atau item, tambahkan path baru dari phaser-ae/assets.json ke game/manifest.json, seperti yang dijelaskan README.txt karakter."
+			"rpg": "{format} memuat karakter dari foldernya sendiri (img/characters, atau Graphics/Characters untuk XP, VX Ace, dan VX). Setelah pembaruan, salin sheet ke sana seperti yang dijelaskan README.txt karakter.",
+			"gdevelop": "Jika Anda menggabungkan karakter ini ke proyek GDevelop lain, bawa pembaruan ke sana seperti yang dijelaskan gdevelop/README.txt karakter.",
+			"phaserAe": "Setelah menambah gerakan atau item, tambahkan path baru dari phaser-ae/assets.json ke game/manifest.json, seperti yang dijelaskan phaser-ae/README.txt karakter."
 		}
 	},
 	"tips": {

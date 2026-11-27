@@ -257,7 +257,8 @@ it('honors an approved sprite replacement without requiring a timestamp-only man
 	const result = api.projectFolder.status;
 	const conflicts = result.kind === 'blocked' ? result.conflicts.map(({ path }) => path) : [];
 	expect({ status: result.kind, conflicts }).toEqual({ status: 'done', conflicts: [] });
-	expect(folder.log).toEqual([`write ${sprite}`, `write ${extra}`]);
+	// Images are written several at a time, so their order varies.
+	expect([...folder.log].sort()).toEqual([`write ${extra}`, `write ${sprite}`]);
 	expect(Object.hasOwn(folder.record.written, manifest)).toBe(false);
 });
 

@@ -3623,9 +3623,9 @@
 		"reload": "重新加载",
 		"shared": "共享运行时：{path}",
 		"manualStep": {
-			"rpg": "{format} 从自己的文件夹（img/characters，XP 为 Graphics/Characters）加载角色。更新后，请按照角色的 README.txt 将图表复制到那里。",
-			"gdevelop": "如果你已将此角色合并到另一个 GDevelop 项目中，请按照角色的 README.txt 将更新带入该项目。",
-			"phaserAe": "添加动作或物品后，请按照角色的 README.txt 将 phaser-ae/assets.json 中的新路径添加到 game/manifest.json。"
+			"rpg": "{format} 从自己的文件夹（img/characters，XP、VX Ace 和 VX 为 Graphics/Characters）加载角色。更新后，请按照角色的 README.txt 将图表复制到那里。",
+			"gdevelop": "如果你已将此角色合并到另一个 GDevelop 项目中，请按照角色的 gdevelop/README.txt 将更新带入该项目。",
+			"phaserAe": "添加动作或物品后，请按照角色的 phaser-ae/README.txt 将 phaser-ae/assets.json 中的新路径添加到 game/manifest.json。"
 		}
 	},
 	"tips": {

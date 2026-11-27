@@ -686,27 +686,54 @@ const SHARED_IMPORT_HOOKS = `        const int RuntimeFormat = ${UNITY_RUNTIME_F
         // Unity stores all texture import settings, including the importer platform overrides and sprite slicing, in the sidecar.
         static string SheetFingerprint(string path) => Hash128.Compute(File.ReadAllText(path + ".meta")).ToString();
 
-        // A PNG nobody has configured still has the settings of a fresh import in a 3D-mode or 2D-mode project.
+        // A PNG nobody has configured still has everything Slice replaces at the values of a fresh import in a 3D-mode or 2D-mode
+        // project: the import settings, the sprite rects and the Sprite Editor data stored with them.
         static bool StockSheet(string path)
         {
             var ti = (TextureImporter)AssetImporter.GetAtPath(path);
             var settings = new TextureImporterSettings();
             ti.ReadTextureSettings(settings);
             if (ti.filterMode != FilterMode.Bilinear || ti.textureCompression != TextureImporterCompression.Compressed || ti.crunchedCompression ||
-                ti.maxTextureSize != 2048 || ti.isReadable || ti.spritePixelsPerUnit != 100 || settings.spriteMeshType != SpriteMeshType.Tight)
+                ti.maxTextureSize != 2048 || ti.isReadable || ti.spritePixelsPerUnit != 100 || settings.spriteMeshType != SpriteMeshType.Tight ||
+                ti.wrapModeV != ti.wrapModeU || ti.wrapModeW != ti.wrapModeU)
                 return false;
-            if (ti.textureType == TextureImporterType.Default)
-                return ti.npotScale == TextureImporterNPOTScale.ToNearest && ti.wrapMode == TextureWrapMode.Repeat && ti.mipmapEnabled &&
-                    !ti.alphaIsTransparency;
+            bool sprite = ti.textureType == TextureImporterType.Sprite;
+            if (sprite
+                ? ti.spriteImportMode != SpriteImportMode.Multiple || ti.npotScale != TextureImporterNPOTScale.None ||
+                    ti.wrapModeU != TextureWrapMode.Clamp || ti.mipmapEnabled || !ti.alphaIsTransparency
+                : ti.textureType != TextureImporterType.Default || ti.spriteImportMode != SpriteImportMode.None ||
+                    ti.npotScale != TextureImporterNPOTScale.ToNearest || ti.wrapModeU != TextureWrapMode.Repeat || !ti.mipmapEnabled ||
+                    ti.alphaIsTransparency)
+                return false;
+            // A fresh import has one full-sheet sprite in 2D mode and none in 3D mode, with no outlines, physics shapes,
+            // skinning, custom data, metadata or secondary textures.
+            var stockName = Path.GetFileNameWithoutExtension(path) + "_0";
+            int sprites = sprite ? 1 : 0;
+            var sheet = new SerializedObject(ti).FindProperty("m_SpriteSheet");
+            var end = sheet.GetEndProperty();
+            var p = sheet.Copy();
+            for (bool enter = true; p.Next(enter) && !SerializedProperty.EqualContents(p, end); enter = p.propertyType != SerializedPropertyType.String)
+            {
+                if (p.propertyType == SerializedPropertyType.String)
+                {
+                    if (p.stringValue.Length != 0 && p.name != "m_SpriteID" && p.stringValue != stockName) return false;
+                }
+                else if (p.isArray && p.name != "Array")
+                {
+                    bool listed = p.propertyPath == "m_SpriteSheet.m_Sprites" || p.propertyPath == "m_SpriteSheet.m_NameFileIdTable";
+                    if (p.arraySize != (listed ? sprites : 0)) return false;
+                }
+                else if (p.name == "m_TessellationDetail" && p.floatValue != -1) return false;
+            }
+            if (!sprite) return true;
             var factories = new SpriteDataProviderFactories();
             factories.Init();
             var dp = factories.GetSpriteEditorDataProviderFromObject(ti);
             dp.InitSpriteEditorDataProvider();
             var rects = dp.GetSpriteRects();
             ti.GetSourceTextureWidthAndHeight(out var width, out var height);
-            return ti.textureType == TextureImporterType.Sprite && ti.spriteImportMode == SpriteImportMode.Multiple &&
-                ti.npotScale == TextureImporterNPOTScale.None && ti.wrapMode == TextureWrapMode.Clamp && !ti.mipmapEnabled && ti.alphaIsTransparency &&
-                rects.Length == 1 && rects[0].rect == new Rect(0, 0, width, height) && rects[0].alignment == SpriteAlignment.Center;
+            return rects.Length == 1 && rects[0].name == stockName && rects[0].rect == new Rect(0, 0, width, height) &&
+                rects[0].alignment == SpriteAlignment.Center && rects[0].pivot == new Vector2(0.5f, 0.5f) && rects[0].border == Vector4.zero;
         }
 
         // Sheets that leave the manifest keep their records, so their settings are still checked if they return.
@@ -1044,14 +1071,9 @@ If replacing an older PixelDoll exporter, remove its unity/Runtime and unity/Edi
 The importer runs on unity/pixeldoll_unity.json import. After scripts finish compiling, use
 Tools > PixelDoll > ${identity} > Import if no prefab appeared.`
 			}
-${
-	folder
-		? `The importer slices the layer sheets in place: their import settings become Point, no compression,
+The importer slices the layer sheets in place: their import settings become Point, no compression,
 PPU ${m.export?.pixelsPerUnit ?? exportUnit(m.rig)} and pivot at the feet. Output in unity/Generated/: <anim>_<dir>.anim clips for supported views,
-${data.name}.controller and ${data.name}.prefab`
-		: `Output in unity/Generated/: sliced sheets (Point, no compression, PPU ${m.export?.pixelsPerUnit ?? exportUnit(m.rig)}, pivot at the feet),
-<anim>_<dir>.anim clips for supported views, ${data.name}.controller and ${data.name}.prefab`
-}
+${data.name}.controller and ${data.name}.prefab
 (Sorting Group + Paperdoll + one SpriteRenderer per slot/role and a hidden animation clock).
 Runtime namespace: ${ns}. Paperdoll.Play(anim, dir, restart = false), SetDirection(dir), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).
 Call SetActionLayering(true) to enable moving attacks when the ${folder ? 'character export' : 'ZIP'} contains precut fragments. CanLayerAction(move, direction) checks the whole action set and equipped gear. Invalid PlayAction calls warn and return an empty string without changing playback. PlayAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read IsActionPlaying for completion. Calling Play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
