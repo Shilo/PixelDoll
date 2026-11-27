@@ -62,8 +62,11 @@
 	let spacer = $state(0);
 	let query = $state('');
 	// A matching section keeps all of its ramps: "shirt" should reveal that item's full color controls, not pick ramps.
+	// The item Recolor opened stays listed, so the shortcut lands without discarding the person's search.
 	const matched = $derived(
-		query.trim() ? sections.filter((s) => matchesSearch([s.name, ...s.names], query)) : sections
+		query.trim()
+			? sections.filter((s) => s.it.id === targeted || matchesSearch([s.name, ...s.names], query))
+			: sections
 	);
 	const search = createSearchVisibility({
 		element: () => list,
@@ -128,14 +131,10 @@
 		if (list && last) return watchListSpacer(list, last, (h) => (spacer = h));
 	});
 	$effect(() => {
-		// A Recolor shortcut should land even when the current search would filter the item out.
 		const request = ui.colorsFocus;
 		if (!request || !list) return;
 		const { project, item } = request;
-		if (doc.id === project) {
-			target = request;
-			query = '';
-		}
+		if (doc.id === project) target = request;
 		void tick().then(() => {
 			if (ui.colorsFocus !== request) return;
 			ui.colorsFocus = null;
@@ -183,6 +182,9 @@
 						>
 							{s.name}
 						</h3>
+						{#if s.unworn}<span class="muted small not-worn" id="colors-status-{s.it.id}"
+								>{t('colorSections.notWorn')}</span
+							>{/if}
 						<button
 							class="bu-action section-action"
 							data-variant="quiet"
@@ -207,14 +209,9 @@
 					</div>
 					<div class="section-body">
 						{#if s.unworn && view.project}
-							<div class="unworn-summary">
-								<span class="unworn-art" aria-hidden="true">
-									<Thumb project={view.project} item={s.it} box={64} />
-								</span>
-								<span class="muted small" id="colors-status-{s.it.id}"
-									>{t('colorSections.notWorn')}</span
-								>
-							</div>
+							<span class="unworn-art" aria-hidden="true">
+								<Thumb project={view.project} item={s.it} box={48} />
+							</span>
 						{/if}
 						<Colors only={s.it.id} />
 					</div>
@@ -268,16 +265,15 @@
 </div>
 
 <style>
-	.unworn-summary {
-		display: flex;
-		align-items: center;
-		gap: 8px;
+	/* The section head stays visible while scrolling, so the status stays with the name, which truncates first. */
+	.not-worn {
+		flex: none;
+		white-space: nowrap;
 	}
 	.unworn-art {
 		display: grid;
 		place-items: center;
-		width: 64px;
-		height: 64px;
-		flex: none;
+		width: 48px;
+		height: 48px;
 	}
 </style>

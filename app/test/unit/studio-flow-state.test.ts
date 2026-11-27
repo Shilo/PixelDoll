@@ -2194,6 +2194,11 @@ test('saved outfits keep their linked colors and leave other item colors in the 
 	s.savePreset('With a cape');
 	const saved = s.store.project!.manifest.presets.at(-1)!;
 	s.setVariant('hat', 'gold');
+	// Exports call this the current look, so the unworn hat's color stays out of it.
+	expect(s.currentLook(manifest)).toEqual({
+		items: { back: 'cape_red' },
+		variants: { hair: 'azure' }
+	});
 	expect(s.sameOutfit(saved)).toBe(true);
 	s.setVariant('hair', 'gold');
 	expect(s.sameOutfit(saved)).toBe(false);

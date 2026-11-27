@@ -2660,6 +2660,18 @@ function outfitColorIds(m: Manifest, items: Preset['items']) {
 	return ids;
 }
 
+/** What is worn now with only its colors, so Save outfit and exports leave out colors chosen for unworn items. */
+export function currentLook(m: Manifest): Pick<Preset, 'items' | 'variants'> {
+	const items = $state.snapshot(doc.items);
+	const ids = outfitColorIds(m, items);
+	return {
+		items,
+		variants: Object.fromEntries(
+			Object.entries($state.snapshot(doc.variants)).filter(([id]) => ids.has(id))
+		)
+	};
+}
+
 function wearLook(m: Manifest, items: Preset['items'], variants: Preset['variants']) {
 	doc.items = settleHands(m, items, 'main_hand').items;
 	const ids = outfitColorIds(m, doc.items);
@@ -2704,13 +2716,7 @@ export function savePreset(name: string) {
 	for (let n = 2; id === CURRENT_OUTFIT_ID || m.presets.some((p) => p.id === id); n++)
 		id = `${base}-${n}`;
 	commit(message('history.saveOutfit'), () => {
-		const ids = outfitColorIds(m, doc.items);
-		const pr: Preset = {
-			id,
-			name,
-			items: $state.snapshot(doc.items),
-			variants: Object.fromEntries(Object.entries(doc.variants).filter(([id]) => ids.has(id)))
-		};
+		const pr: Preset = { id, name, ...currentLook(m) };
 		m.presets = [...m.presets, pr];
 	});
 }
