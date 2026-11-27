@@ -29,6 +29,7 @@
 		recordArtworkStep,
 		refreshCharacterDirections,
 		splitBeforeEdit,
+		store,
 		toast,
 		ui
 	} from './state.svelte.ts';
@@ -156,6 +157,11 @@
 	title={t('common.directions')}
 	locked={busy}
 	dirty={changed}
+	backDiscards
+	back={ui.returnTo === 'details' ? () => (ui.sheet = 'details') : undefined}
+	backTo={ui.returnTo === 'details'
+		? store.projects.find((p) => p.id === ui.details)?.name
+		: undefined}
 	onclose={() => (ui.sheet = null)}
 >
 	{#if record}

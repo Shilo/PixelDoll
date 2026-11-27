@@ -1,27 +1,22 @@
 <script lang="ts">
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
-	import { canEditItemAppearance } from './appearanceSource.ts';
 	import { t } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
-	import { tick } from 'svelte';
 	import { displayMessage, displayNestedMessage, errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
 	// One shared per-tile item menu (approved in docs/design/2026-11-11-ui-refinement/ui-lab-7.html): an arrowed popover
 	// anchored to the tile's ⋮ at every size, with Wear as a toggle in its header.
 	import PopoverArrow from './PopoverArrow.svelte';
-	import { downloadItemZip } from './download.svelte.ts';
+	import ItemActions from './ItemActions.svelte';
 	import Thumb from './Thumb.svelte';
 	import SharedThumb from './SharedThumb.svelte';
 	import type { SharedItem } from '../lib/equipment/shared.ts';
 	import TileMarks, { type Mark } from './TileMarks.svelte';
-	import DeleteRow from './DeleteRow.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import { swallowTilePress } from './tilePress.ts';
-	import { extendable } from './movePricing.ts';
 	import { slotLabelMessage } from './slots.ts';
-	import { twoHanded } from '../lib/compose/compose.ts';
 	import type { generationStatus } from './generationStatus.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import {
@@ -29,36 +24,12 @@
 		doc,
 		store,
 		view,
-		wear,
-		isDemo,
 		openNewItem,
-		openRename,
-		openAppearance,
-		toggleTwoHanded,
-		otherHandOf,
 		cancelGen,
 		openGenerationReview,
-		addShared,
-		itemSlotTargets,
-		openFrames,
 		type Gen
 	} from './state.svelte.ts';
-	import {
-		Check,
-		Circle,
-		Download,
-		CircleCheck,
-		CopyPlus,
-		Grid2x2,
-		HandGrab,
-		Info,
-		ArrowRightLeft,
-		ChevronLeft,
-		Pencil,
-		Sparkles,
-		RefreshCw,
-		Trash
-	} from './icons.ts';
+	import { Check, Info, RefreshCw, Trash } from './icons.ts';
 
 	let {
 		id,
@@ -108,25 +79,10 @@
 	}
 	const m = $derived(store.project?.manifest);
 	const it = $derived(m?.items.find((i) => i.id === id));
-	const targets = $derived(m && it ? itemSlotTargets(m, it) : []);
 	let pickingSlot = $state(false);
-	async function showTargets(show: boolean) {
-		pickingSlot = show;
-		await tick();
-		menu?.querySelector<HTMLElement>(show ? '[data-move-target]' : '[data-move-trigger]')?.focus();
-	}
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
-	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
-	const otherHand = $derived(m && it ? otherHandOf(m, it.slot) : undefined);
-	const both = $derived(!!m && !!it && twoHanded(m, it));
-	// The header names the category; the lines below it explain each of the tile's icons.
-	const sentence = $derived(
-		it
-			? [displayMessage(slotLabelMessage(m, it.slot)), both ? t('itemMenu.twoHanded') : '']
-					.filter(Boolean)
-					.join(' · ')
-			: ''
-	);
+	// The header names the category; the lines below it explain each of the tile's icons (two hands among them).
+	const sentence = $derived(it ? displayMessage(slotLabelMessage(m, it.slot)) : '');
 	function close() {
 		menu?.hidePopover();
 	}
@@ -261,18 +217,7 @@
 			</div>
 			<TileMarks {marks} list />
 			<div role="menu" aria-labelledby="item-menu-name">
-				{#if !remake}
-					<!-- Free: copies it to this character and wears it; the demo saves an editable copy of itself first. -->
-					<button
-						class="row bu-action"
-						data-variant="quiet"
-						role="menuitem"
-						onclick={() => act(() => void addShared(entry))}
-						><Circle size={16} aria-hidden="true" />{isDemo()
-							? t('itemMenu.wearInACopyOfTheDemo')
-							: t('common.wear')}<small class="row-aside">{t('common.free')}</small></button
-					>
-				{/if}
+				<!-- A tap on its tile wears it (a free copy): the menu explains it and offers the paid copy for this body. -->
 				<!-- The New item sheet that opens next prices it before anything is spent. -->
 				<button
 					class="row bu-action"
@@ -287,9 +232,7 @@
 							})
 						)}
 					><RefreshCw size={16} aria-hidden="true" />{openerLabel(
-						t('itemMenu.remake', {
-							name: m.name
-						})
+						t('itemMenu.remake')
 					)}<SurfaceChevron /></button
 				>
 			</div>
@@ -304,179 +247,18 @@
 					<strong id="item-menu-name">{it.name}</strong>
 					<small>{sentence}</small>
 				</span>
-				<!-- One fixed name; aria-pressed carries the state, and the glyph changes from an empty to a checked circle. -->
-				<button
-					class="bu-action item-menu-wear"
-					data-variant="outline"
-					aria-pressed={on}
-					aria-label={t('itemMenu.wearName', { name: it.name })}
-					title={on ? t('itemMenu.titleWearingTakeOff') : t('common.wear')}
-					onclick={() => wear(it.id)}
-					>{#if on}<CircleCheck size={20} aria-hidden="true" />{:else}<Circle
-							size={20}
-							aria-hidden="true"
-						/>{/if}</button
-				>
 			</div>
 			<TileMarks {marks} list />
-			{#if pickingSlot}
-				<div
-					role="menu"
-					aria-label={t('wardrobe.moveItemTo')}
-					tabindex="-1"
-					onkeydown={(event) => {
-						if (event.key !== 'Escape') return;
-						event.preventDefault();
-						void showTargets(false);
-					}}
-				>
-					<button
-						class="row bu-action"
-						data-variant="quiet"
-						role="menuitem"
-						onclick={() => void showTargets(false)}
-					>
-						<ChevronLeft size={16} aria-hidden="true" />{t('export.sheet.back')}
-					</button>
-					{#each targets as target (target.key)}
-						<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							data-move-target
-							onclick={() => act(() => onmove(it.id, target.key))}
-						>
-							{displayMessage(slotLabelMessage(m, target.key))}
-						</button>
-					{/each}
-				</div>
-			{:else}
-				<div role="menu" aria-labelledby="item-menu-name">
-					<button
-						class="row bu-action"
-						data-variant="quiet"
-						role="menuitem"
-						onclick={() =>
-							act(() => {
-								ui.selected = it.id;
-								ui.sheet = 'item';
-							})}
-						><Info size={16} aria-hidden="true" />{openerLabel(
-							t('common.detailsMenu')
-						)}<SurfaceChevron /></button
-					>
-					{#if !isDemo() && !it.variantOf}
-						<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							onclick={() => act(() => openRename(doc.id, { itemId: it.id }))}
-						>
-							<Pencil size={16} aria-hidden="true" />{openerLabel(
-								t('toolbar.rename')
-							)}<SurfaceChevron />
-						</button>
-						{#if canEditItemAppearance(m, it)}<button
-								class="row bu-action"
-								data-variant="quiet"
-								role="menuitem"
-								aria-haspopup="dialog"
-								onclick={() => act(() => openAppearance(doc.id, it.id))}
-								><Sparkles size={16} aria-hidden="true" />{t('appearance.action')}<SurfaceChevron
-								/></button
-							>{/if}
-					{/if}
-					{#if targets.length}
-						<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							data-move-trigger
-							onclick={() => void showTargets(true)}
-						>
-							<ArrowRightLeft size={16} aria-hidden="true" />{openerLabel(
-								t('wardrobe.moveItemTo')
-							)}<SurfaceChevron />
-						</button>
-					{/if}
-					{#if otherHand}
-						<!-- Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
-						<label class="row bu-action bu-check item-menu-switch" data-variant="quiet">
-							<span><HandGrab size={16} aria-hidden="true" />{t('itemMenu.twoHanded')}</span>
-							<input
-								class="bu-switch"
-								type="checkbox"
-								role="menuitemcheckbox"
-								aria-checked={both}
-								checked={both}
-								onchange={() => toggleTwoHanded(it.id)}
-								onkeydown={(e) => {
-									// a menu item takes Enter as well as Space (a native checkbox only toggles on Space)
-									if (e.key !== 'Enter') return;
-									e.preventDefault();
-									toggleTwoHanded(it.id);
-								}}
-							/>
-						</label>
-						{#if !isDemo() && it.prompt && !both}
-							<!-- The same description drawn for the other hand; the New item sheet prices it first. -->
-							<button
-								class="row bu-action"
-								data-variant="quiet"
-								role="menuitem"
-								onclick={() =>
-									act(() => openNewItem(otherHand, { slot: otherHand, prompt: it.prompt }))}
-								><CopyPlus size={16} aria-hidden="true" />{openerLabel(
-									t('itemMenu.makeForSlot', {
-										slot: displayMessage(slotLabelMessage(m, otherHand))
-									})
-								)}<SurfaceChevron /></button
-							>
-						{/if}
-					{/if}
-					{#if !isDemo() && it.prompt}
-						<!-- The New item sheet that opens next prices the attempt before anything is spent. -->
-						<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							onclick={() =>
-								act(() =>
-									openNewItem(it.slot, {
-										slot: it.slot,
-										prompt: it.prompt,
-										route: it.route
-									})
-								)}
-							><RefreshCw size={16} aria-hidden="true" />{openerLabel(
-								remakeOnly ? t('itemMenu.remake', { name: m.name }) : t('itemMenu.createVariant')
-							)}<SurfaceChevron /></button
-						>
-					{/if}
-					<button
-						class="row bu-action"
-						data-variant="quiet"
-						role="menuitem"
-						onclick={() => act(() => openFrames(it.id))}
-						><Grid2x2 size={16} />{openerLabel(t('fixFrames.open'))}<SurfaceChevron /></button
-					>
-					<button
-						class="row bu-action"
-						data-variant="quiet"
-						role="menuitem"
-						onclick={() => act(() => void downloadItemZip(it.id))}
-						><Download size={16} />{t('common.downloadZip')}</button
-					>
-					<hr class="bu-separator" />
-					<DeleteRow
-						opens
-						class="bu-action"
-						label={t('itemMenu.labelDeleteItem')}
-						locked={isDemo() ? t('itemMenu.demoDeleteLocked') : ''}
-						onclick={() => ask(() => (deleting = { id: it.id, name: it.name }))}
-					/>
-				</div>
-			{/if}
+			<ItemActions
+				{m}
+				{it}
+				worn={on}
+				labelledby="item-menu-name"
+				bind:picking={pickingSlot}
+				{act}
+				onmove={(target) => onmove(it.id, target)}
+				ondelete={() => (deleting = { id: it.id, name: it.name })}
+			/>
 		</div>
 	{/if}
 </div>

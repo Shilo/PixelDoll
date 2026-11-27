@@ -36,7 +36,8 @@
 			"items": "Item",
 			"category": "Kategori",
 			"move": "Gerakan",
-			"state": "Status"
+			"state": "Status",
+			"outfit": "Pakaian"
 		},
 		"errors": {
 			"gone": "Ini tidak lagi ada di tempat sampah.",
@@ -45,12 +46,13 @@
 			"full": "Ruang browser habis, jadi tidak ada yang dipindahkan. Hapus sesuatu di tempat sampah untuk mengosongkan ruang.",
 			"wrongKind": "Item yang dihapus itu milik sebuah karakter. Pulihkan karakternya lebih dulu.",
 			"movePresent": "Gerakan ini sudah ada pada karakter.",
-			"moveGeometry": "Ukuran bingkai atau arah karakter ini berubah sejak gerakan ini dihapus, jadi tidak bisa lagi sejajar.",
-			"partsGeometry": "Ukuran bingkai atau arah karakter ini berubah sejak ini dihapus, jadi tidak bisa lagi sejajar.",
-			"moveItemsMissing": "Salah satu item gerakan ini dihapus. Pulihkan item itu dulu, lalu gerakan ini."
+			"moveGeometry": "Ukuran bingkai atau arah karakter ini berubah setelah gerakan ini dipindahkan ke tempat sampah, jadi tidak bisa lagi sejajar.",
+			"partsGeometry": "Ukuran bingkai atau arah karakter ini berubah setelah ini dipindahkan ke tempat sampah, jadi tidak bisa lagi sejajar.",
+			"moveItemsMissing": "Salah satu item gerakan ini dihapus. Pulihkan item itu dulu, lalu gerakan ini.",
+			"outfitPresent": "Pakaian ini sudah ada pada karakter."
 		},
 		"restoring": "Memulihkan…",
-		"confirmBodyCharacter": "Yang lain yang dihapus darinya ikut hilang. Hilang selamanya, tidak dapat dibatalkan.",
+		"confirmBodyCharacter": "Semua bagiannya yang lain di tempat sampah juga dihapus. Tindakan ini tidak dapat dibatalkan.",
 		"confirmRestore": "Tekan lagi untuk memulihkan",
 		"confirmRestoreNamed": "Tekan lagi untuk memulihkan {name}",
 		"daysLeft": {
@@ -105,7 +107,7 @@
 		"deleteWork": {
 			"deleteAll": "Hapus semua",
 			"confirm": "Konfirmasi",
-			"description": "Menghapus karakter, pakaian, draf, tempat sampah, dan aktivitas di perangkat ini.",
+			"description": "Menghapus permanen karakter, setelan, draf, tempat sampah, dan aktivitas di perangkat ini.",
 			"kept": "Data arsip, preferensi, cadangan yang diunduh, dan kunci PixelLab Anda tetap ada.",
 			"action": "Hapus data lokal…",
 			"title": "Hapus semua pekerjaan lokal?",
@@ -243,7 +245,7 @@
 		"deleteNamed": "Pindahkan {name} ke tempat sampah?",
 		"deleting": "Menghapus…",
 		"details": "Detail",
-		"detailsMenu": "Detail…",
+		"detailsMenu": "Lihat dan edit…",
 		"direction": "Arah",
 		"directions": "Arah",
 		"discard": "Buang",
@@ -331,7 +333,7 @@
 		"unavailable": "Arah tersebut tidak tersedia untuk karakter ini.",
 		"mirrorSource": "Pertahankan arah {source} atau nonaktifkan cerminan untuk arah {mirror}.",
 		"moveArtwork": "Pertahankan arah yang memiliki gambar untuk {moves}.",
-		"equipmentArtwork": "Pertahankan arah yang memiliki gambar untuk {items}, atau hapus dulu perlengkapan tersebut."
+		"equipmentArtwork": "Pertahankan satu arah yang punya gambar untuk {items}, atau pindahkan item itu ke tempat sampah dulu."
 	},
 	"directionNames": {
 		"south": "Selatan",
@@ -372,8 +374,9 @@
 		"costEstimate": "Perkiraan biaya…",
 		"adjustFrame": "Sesuaikan frame…",
 		"directions": "Arah…",
-		"demoDeleteLocked": "Karakter demo tidak dapat dihapus",
-		"labelDeleteCharacter": "Pindahkan ke tempat sampah…"
+		"demoDeleteLocked": "Karakter demo tidak bisa dipindahkan ke tempat sampah",
+		"labelDeleteCharacter": "Pindahkan ke tempat sampah…",
+		"demoRenameLocked": "Buat salinan yang bisa diedit untuk mengganti nama demo"
 	},
 	"characterName": {
 		"demo": "(Demo)"
@@ -436,15 +439,14 @@
 	"deleteSheet": {
 		"viewPendingWork": "Lihat pekerjaan tertunda",
 		"character": "karakter",
-		"demo": "Demo bawaan tidak dapat dihapus.",
+		"demo": "Demo bawaan tidak bisa dipindahkan ke tempat sampah.",
 		"itsOutfitsAndChangesAreRemovedFrom": "Pakaian, item, dan draf yang tidak disimpan ikut pindah; item yang disalin ke karakter lain tetap ada. Anda bisa memulihkannya selama hingga 30 hari."
 	},
 	"demoCopyRow": {
-		"editACopy": "Edit salinan",
+		"editACopy": "Buat salinan yang bisa diedit",
 		"openedYourEditableCopyOfTheDemo": "Salinan demo yang dapat Anda edit sudah dibuka. Tidak ada generasi yang digunakan."
 	},
 	"detailsSheet": {
-		"title": "Detail {name}",
 		"notSaved": "Karakter ini tidak lagi tersimpan.",
 		"withItems": "Dengan item",
 		"itemCost": {
@@ -488,10 +490,6 @@
 		"activity": "Aktivitas…",
 		"cancelGeneration": "Batalkan generasi…",
 		"cancelFromTheTabThatIsGenerating": "Batalkan dari tab yang sedang membuat item ini.",
-		"wearInACopyOfTheDemo": "Kenakan pada salinan demo",
-		"makeOneForName": "Buat untuk {name}",
-		"wearName": "Kenakan {name}",
-		"titleWearingTakeOff": "Sedang dikenakan (lepas)",
 		"twoHanded": "Dua tangan",
 		"createVariant": "Buat varian…",
 		"labelDeleteItem": "Pindahkan ke tempat sampah…",
@@ -499,98 +497,83 @@
 		"generationsAlreadyUsedAreNotRefundedAnd": "Generasi yang sudah digunakan tidak dikembalikan. Permintaan yang sudah dikirim mungkin tetap dikenai biaya.",
 		"cancelSaveError": "Pembatalan tidak dapat disimpan. Biarkan tab ini terbuka dan coba lagi.",
 		"preparing": "Menyiapkan item Anda",
-		"remake": "Buat untuk {name}…",
+		"remake": "Buat salinan untuk karakter ini…",
 		"makeForSlot": "Buat untuk slot {slot}…",
-		"demoDeleteLocked": "Item demo tidak dapat dihapus",
+		"demoDeleteLocked": "Item demo tidak bisa dipindahkan ke tempat sampah",
 		"cancelItem": "Batalkan item",
 		"canceling": "Membatalkan…",
 		"keep": "Pertahankan",
-		"runningDetail": "{status} · {prompt}"
+		"runningDetail": "{status} · {prompt}",
+		"demoRenameLocked": "Item demo tidak bisa diganti namanya"
 	},
 	"itemPane": {
+		"movesSection": "Gerakan dan keadaan",
+		"outfitSection": "Setelan",
+		"technicalDetails": "Detail teknis",
+		"openSprite": "Perbesar {title}",
+		"availableDirectionsFor": "Arah yang tersedia untuk {name}",
+		"drawForMoves": "Buat frame yang hilang",
+		"reviewMissingMoves": "Tinjau gerakan yang hilang",
+		"drawMovesSelect": "Pilih gerakan untuk dibuat.",
+		"selectAllMoves": "Pilih semua",
+		"clearSelection": "Hapus pilihan",
+		"drawMovesHelp": "Hanya mengisi frame item yang hilang.",
+		"repairView": "Perbaiki tampilan {direction}",
+		"redrawView": "Gambar ulang tampilan {direction}",
+		"sendBackward": "Geser ke belakang",
+		"bringForward": "Geser ke depan",
+		"inFrontOf": "Di depan {name}",
+		"behind": "Di belakang {name}",
+		"previewUnavailable": "Tidak ada frame item untuk dipratinjau.",
 		"restoreStanding": {
 			"other": "Pulihkan tampilan berdiri"
 		},
 		"restoreStandingHint": {
-			"other": "Dibuat kembali dari desain item yang tersimpan untuk {directions}. Tidak ada yang digenerasi."
+			"other": "Memakai desain tersimpan untuk {directions}. Tidak perlu pembuatan."
 		},
 		"hiddenByAnotherItem": "Tertutup oleh item lain",
-		"nameInEveryDirection": "{name} dari semua arah",
+		"hiddenByItem": "Tertutup oleh {name}",
+		"layerHiddenHint": "Tampilkan item ini untuk mengubah urutan lapisannya.",
 		"labelNameFacingId": "{name} menghadap {id}",
-		"acceptedAppearanceWarnings": "Peringatan tampilan yang diterima",
-		"titleShowThisFrame": "Tampilkan frame ini",
-		"checksFoundIssuesNoPaidRetryWas": "Pemeriksaan menemukan masalah. Tidak ada percobaan ulang berbayar yang dimulai. Anda dapat meminta percobaan lain atau menerima item ini apa adanya.",
+		"acceptedAppearanceWarnings": "Peringatan desain yang diterima",
+		"titleShowThisFrame": "Tampilkan di panggung",
 		"acceptAsIs": "Terima apa adanya",
-		"pendingWorkBusy": "Ada animasi atau penyiapan yang sedang berjalan atau berhenti. Selesaikan atau buang untuk memakai tindakan ini.",
-		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Menerima gambar saat ini tanpa menggunakan kredit. Masalah yang ditemukan tetap tercatat di detail item.",
-		"keepWithoutMoves": "Simpan tanpa animasi itu",
-		"keepWithoutMovesDetail": "Menyimpan item dari animasinya yang lengkap tanpa memakai kredit. Item disembunyikan di {moves}, yang tetap tercantum sebagai hilang agar Anda bisa membuatnya nanti dengan harganya sendiri.",
-		"youAcceptedThisArtworkWithItsRecorded": "Anda menerima gambar ini beserta catatan kualitasnya.",
-		"generateItemForMove": "Buat item untuk animasi",
-		"coverageTitle": "Cakupan animasi",
-		"coverageAllDrawn": "Digambar di setiap animasi dan status",
-		"coverageMissing": {
-			"other": "{n} animasi belum ada"
-		},
-		"coverageClipDrawn": "{move}: sudah digambar",
-		"coverageClipMissing": "{move}: belum ada",
-		"fillMissingMoves": "Lengkapi animasi yang belum ada",
-		"fillMissingHint": {
-			"other": "Menggambar item ini untuk semua {n} animasi yang belum ada dalam satu penawaran, memakai ulang desain berdirinya."
-		},
-		"labelMakeNameForMissingName": "Buat {name} untuk {missingName}",
-		"generatesOnlyThisItemSMissingViews": "Hanya membuat tampilan item yang belum ada untuk animasi pilihan, memakai ulang desain saat berdiri. Tubuh tetap sama. PixelLab mungkin mengenakan biaya dalam dolar. Waktu antrean bervariasi.",
-		"madeForAnotherBodyItMayNot": "Dibuat untuk tubuh lain. Letaknya mungkin tidak pas.",
-		"itsMirroredViewsUpdateToo": "Tampilan cerminnya juga diperbarui.",
+		"pendingWorkBusy": "Gerakan atau penyiapan sedang memblokir tindakan ini. Selesaikan atau buang dulu.",
+		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Mempertahankan gambar ini. Peringatannya tetap tercantum.",
+		"keepWithoutMovesDetail": "Membuang frame parsialnya di {moves}, tempat item tetap tersembunyi sampai Anda membuatnya.",
+		"youAcceptedThisArtworkWithItsRecorded": "Anda menerima gambar ini. Catatannya tetap tercantum.",
 		"matchingColors": "Mencocokkan warna…",
 		"matchItemColors": "Cocokkan warna item",
 		"recolor": "Warnai ulang",
-		"layerOrder": "Urutan lapisan",
-		"titleDrawInFrontOfTheNext": "Gambar di depan lapisan berikutnya",
-		"forward": "Ke depan",
-		"titleDrawBehindThePreviousLayer": "Gambar di belakang lapisan sebelumnya",
-		"backward": "Ke belakang",
-		"reset": "Atur ulang",
-		"whenWornHide": "Saat dikenakan, sembunyikan",
-		"howItWasMade": "Cara pembuatan",
+		"recolorWearFirst": "Pakai dulu untuk mengubah warnanya",
+		"whenWornHide": "Sembunyikan item lain saat dipakai",
 		"iD": "ID",
 		"slot": "Slot perlengkapan",
-		"route": "Jalur pembuatan",
-		"qA": "QA",
-		"rawBodyDifferences": "Perbedaan tubuh sebelum penyelarasan",
-		"rawKeyReviewFramesFramesHaveNewBodyColoredPixels": "Ada piksel baru sewarna tubuh pada {rawKeyReviewFrames} frame sebelum penyelarasan. Pergeseran wajar saat menggambar ulang bisa memicunya. Status kualitas tidak berubah.",
+		"route": "Metode pembuatan",
+		"qA": "Hasil pemeriksaan",
+		"rawBodyDifferences": "Piksel tubuh sebelum penyelarasan",
+		"rawKeyReviewFramesFramesHaveNewBodyColoredPixels": "Frame dengan piksel baru sewarna tubuh sebelum penyelarasan: {rawKeyReviewFrames}. Menggambar ulang biasa bisa memicunya. Hasil pemeriksaan tidak berubah.",
 		"partialChecks": "Pemeriksaan sebagian",
-		"copiedChecksCoverWholeMovesTotalsMay": "Hasil pemeriksaan yang disalin mencakup animasi utuh. Totalnya dapat mencakup frame yang sudah diganti.",
+		"copiedChecksCoverWholeMovesTotalsMay": "Total dari pemeriksaan seluruh gerakan dapat mencakup frame yang sudah diganti.",
 		"someMovesHaveNotBeenChecked": "Sebagian animasi belum diperiksa.",
 		"measurements": "Pengukuran",
-		"reusedCellsWereNotMeasuredByPixelLab": "Sel yang dipakai ulang tidak diukur oleh PixelLab. Hasil pemeriksaan gabungan tidak tersedia untuk item ini.",
+		"reusedCellsWereNotMeasuredByPixelLab": "Frame yang dipakai ulang tidak punya pengukuran PixelLab, jadi pemeriksaan seluruh item tidak tersedia.",
 		"keyKept": "Warna kunci dipertahankan",
 		"keyOutside": "Warna kunci di luar siluet",
 		"area": "Luas",
 		"paletteDrift": "Pergeseran palet",
-		"edgePx": "Piksel tepi",
+		"edgePx": "Piksel di tepi frame",
 		"hands": "Tangan",
 		"reRolls": "Percobaan ulang",
-		"missingFrames": "Frame yang belum ada",
-		"refitIntro": "Disesuaikan secara gratis dari item milik {from}. Periksa frame berikut:",
-		"remakeToFit": "Buat versi khusus untuk {name} agar pas.",
-		"moveGaps": "Sebagian atau semua frame animasi {move} yang menghadap {directions} belum ada. Item tidak akan terlihat di frame tersebut.",
-		"remakeAllMoves": "Buat versi khusus untuk {name} agar dapat dikenakan di semua animasi.",
+		"missingFrames": "ID frame yang hilang",
+		"refitIntro": "Disesuaikan gratis dari item {from}. Periksa frame berikut:",
+		"remakeToFit": "Buat versi yang disesuaikan untuk {name}.",
+		"moveGaps": "Item tidak akan terlihat di sebagian frame {move} yang menghadap {directions}.",
 		"copyFrom": "Salin dari {name}",
 		"copyFrames": {
-			"other": "{from} memiliki {n} frame item ini yang belum dimiliki {name}. Tidak ada generasi baru."
+			"other": "Menambahkan {n} frame yang hilang ke {name} dari {from}. Tidak perlu pembuatan."
 		},
-		"makeFor": "Buat untuk animasi {move}",
 		"makingMoreMoves": "Membuat item untuk animasi lain",
-		"colorMatchNote": {
-			"other": "Cocokkan {pixels} dalam {n} frame tersimpan dari animasi {move} yang menghadap {direction} dengan palet warna item yang sudah ada."
-		},
-		"colorMatchFixed": "Tampilan lain, animasi lain, material, dan pewarnaan ulang yang tersimpan tidak berubah.",
-		"colorMatchMissing": "Frame {frames} belum punya gambar, jadi tidak disertakan.",
-		"colorMatchUnmatched": {
-			"other": "{n} piksel yang memenuhi syarat tetapi tidak cocok tetap sama."
-		},
-		"colorMatchFree": "Peringatan kualitas yang ada tetap disimpan. Tidak ada permintaan yang dikirim ke PixelLab.",
 		"colorsMatched": "{pixels} dicocokkan dalam {frames}.",
 		"pixels": {
 			"other": "{n} piksel"
@@ -599,48 +582,113 @@
 			"other": "{n} frame"
 		},
 		"onlyFacing": "Hanya saat menghadap {direction}",
-		"hideWhenWorn": "Item yang dicentang disembunyikan saat {name} dikenakan.",
-		"tuckNote": "Jika tidak dicentang, {slots} diselipkan di bawahnya: hanya bagian yang menjuntai di bawah tepian yang terlihat. Centang untuk tudung dan topeng penuh.",
+		"tuckNote": "Item ini mungkin menutupi sebagian {slots}.",
 		"chromaKey": "Warna kunci {color}",
 		"qaStatus": {
-			"pass": "lulus",
-			"warn": "peringatan",
-			"fail": "gagal",
-			"accepted": "diterima"
+			"pass": "Lulus",
+			"warn": "Peringatan",
+			"fail": "Gagal",
+			"accepted": "Diterima"
 		},
 		"areaStats": "min. {ratio} dari median · CV {cv}",
 		"handedness": {
-			"ok": "sesuai",
-			"switched": "tertukar"
+			"ok": "Konsisten",
+			"switched": "Berganti tangan"
 		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
-		"updateNote": "Memperbarui item ini untuk animasi {move} yang menghadap {direction}. Tubuh karakter tidak berubah.",
-		"updateNoteMirrors": "Memperbarui item ini untuk animasi {move} yang menghadap {direction} beserta arah cerminnya. Tubuh karakter tidak berubah.",
-		"repairItem": "Perbaiki item",
-		"redrawItem": "Gambar ulang item",
+		"updateNoteMirrors": "Memperbarui {move} yang menghadap {directions}. Hanya item yang berubah.",
 		"repairFeature": "Perbaikan item",
 		"redrawFeature": "Penggambaran ulang item",
-		"repairHelp": "Paling cocok jika Anda menyukai desainnya. Perubahan dibatasi pada area item.",
-		"redrawHelp": "Bentuk atau cara genggam bisa berubah. Anda yang memilih apakah akan menyimpannya.",
+		"repairHelp": "Mempertahankan desain dan hanya mengubah area item.",
+		"redrawHelp": "Percobaan baru yang dapat mengubah bentuk atau genggaman. Anda membandingkan dulu sebelum menyimpannya.",
+		"itemActions": "Tindakan item",
+		"statusGenerating": "Sedang dibuat",
+		"statusIncomplete": "Belum lengkap",
+		"staleNote": "Dibuat untuk tubuh lain. Periksa kecocokannya.",
+		"previewMove": "Animasi",
+		"openMissingView": "Buka {direction} (hilang)",
+		"missingView": "Hilang",
+		"hiddenWhenWorn": "Memakai {names} menyembunyikan item ini.",
+		"clipsIncomplete": {
+			"other": "{n} gerakan belum lengkap"
+		},
+		"complete": "Lengkap",
+		"clipNoFrames": "Belum ada frame",
+		"clipMissingViews": "Kurang: {directions}",
+		"generateMoves": {
+			"other": "Buat {n} animasi"
+		},
+		"qualitySection": "Kualitas",
+		"passed": "Lulus",
+		"facing": "Arah",
+		"matchColorsDetail": "Menyesuaikan {pixels} di {frames} dengan palet item.",
+		"fixFramesDetail": "Edit semua frame {move} di aplikasi gambar Anda.",
+		"hiddenState": "Tersembunyi",
+		"hidesCount": {
+			"other": "Menyembunyikan {n} kategori"
+		},
+		"outfitPreview": "{name} dalam setelan, menghadap {direction}",
+		"layerScope": "Berlaku untuk semua item {slot}.",
+		"layerNothingToCross": "Tidak ada lapisan yang tumpang tindih di tampilan ini.",
+		"layerBack": "{name} (belakang)",
+		"layerWithSlot": "{name} ({slot})",
+		"resetOrder": "Atur ulang urutan",
+		"hideRulesLater": "Berlaku saat {name} dipakai.",
+		"aboutSection": "Tentang",
+		"generateMovesNone": "Buat",
+		"stopHiding": "Hentikan {names} menyembunyikannya",
+		"keepWithoutNamed": "Simpan tanpa {moves}",
+		"checksFoundIssuesNoPaidRetryWas": "Tidak ada percobaan ulang berbayar yang dimulai.",
 		"repairRequests": {
-			"other": "Perbaikan ini menggunakan {n} permintaan generasi PixelLab."
+			"other": "{n} permintaan PixelLab."
 		},
 		"redrawRequests": {
-			"other": "Penggambaran ulang ini menggunakan {n} permintaan generasi PixelLab."
+			"other": "{n} permintaan PixelLab."
 		},
 		"redrawSaves": {
-			"other": "{n} estimasi generasi lebih sedikit daripada perbaikan."
+			"other": "{n} generasi lebih sedikit daripada Perbaiki."
 		},
 		"redrawCostsMore": {
-			"other": "{n} estimasi generasi lebih banyak daripada perbaikan."
+			"other": "{n} generasi lebih banyak daripada Perbaiki."
 		},
-		"billingNote": "Estimasi ini membandingkan generasi, bukan harga dalam dolar. PixelLab mungkin menagih dalam dolar, dan waktu antrean bisa berbeda."
+		"turnLeft": "Putar ke kiri",
+		"turnRight": "Putar ke kanan",
+		"facingLabel": "Menghadap {direction}",
+		"matchViewColors": "Cocokkan warna tampilan {direction}",
+		"fixOneView": "Perbaiki satu tampilan",
+		"outfitPreviewUnworn": "{name} di pakaian seolah dipakai, menghadap {direction}",
+		"openOutfit": "Buka {name} di pakaian dalam ukuran penuh",
+		"outfitTitle": "{name} di pakaian",
+		"layerPosition": "Lapisan {position} dari {count}",
+		"layerPositionHint": "Lapisan {position} dari {count} di antara lapisan yang tumpang tindih, dihitung dari belakang",
+		"slotLayerOrder": "Urutan lapisan slot {slot}",
+		"layerScopeFacing": "Berlaku untuk semua item {slot} yang menghadap {direction}.",
+		"twoHandedNote": "Memakai kedua tangan, jadi memakainya melepas item {slot}.",
+		"makeForSlotDetail": "Gambar item ini lagi untuk {slot}.",
+		"groupReady": "{ready} dari {count} siap",
+		"remakeFits": "Membuat salinan baru yang pas untuk {name}, karakter yang sedang kamu dandani.",
+		"demoMissing": "Demo tidak pernah memakai generasi PixelLab. Buat salinan yang bisa diedit untuk menggambar frame yang hilang.",
+		"nameInEveryDirection": "{name} dari semua arah",
+		"generateItemForMove": "Buat item untuk animasi",
+		"fillMissingMoves": "Lengkapi animasi yang belum ada",
+		"fillMissingHint": {
+			"other": "Menggambar item ini untuk semua {n} animasi yang belum ada dalam satu penawaran, memakai ulang desain berdirinya."
+		},
+		"labelMakeNameForMissingName": "Buat {name} untuk {missingName}",
+		"generatesOnlyThisItemSMissingViews": "Hanya membuat tampilan item yang belum ada untuk animasi pilihan, memakai ulang desain saat berdiri. Tubuh tetap sama. PixelLab mungkin mengenakan biaya dalam dolar. Waktu antrean bervariasi.",
+		"madeForAnotherBodyItMayNot": "Dibuat untuk tubuh lain. Letaknya mungkin tidak pas.",
+		"titleDrawInFrontOfTheNext": "Gambar di depan lapisan berikutnya",
+		"forward": "Ke depan",
+		"titleDrawBehindThePreviousLayer": "Gambar di belakang lapisan sebelumnya",
+		"backward": "Ke belakang",
+		"makeFor": "Buat untuk animasi {move}",
+		"hideWhenWorn": "Item yang dicentang disembunyikan saat {name} dikenakan."
 	},
 	"newCharacterButton": {
-		"addCharacter": "Tambahkan karakter",
 		"newCharacter": "Karakter baru",
 		"createFromScratch": "Buat…",
+		"addCharacter": "Tambahkan karakter",
 		"fromFile": "Dari file…",
 		"fromPixelLab": "Dari PixelLab…",
 		"createNeedsKey": "Perlu kunci PixelLab dan memakai generasi berbayar"
@@ -705,8 +753,15 @@
 		"labelDeleteState": "Pindahkan ke tempat sampah…",
 		"removeState": "Tubuh dan setiap item kehilangan bingkai yang dipaskan; gerakan selesai tetap menyimpan bingkainya. Anda bisa memulihkan status selama hingga 30 hari.",
 		"labelDeleteMove": "Pindahkan ke tempat sampah…",
-		"labelDeleteOutfit": "Hapus setelan",
-		"thisRemovesTheMoveFromTheBody": "Tubuh dan setiap item kehilangan bingkainya. Anda bisa memulihkan gerakan selama hingga 30 hari."
+		"labelDeleteOutfit": "Pindahkan ke tempat sampah…",
+		"thisRemovesTheMoveFromTheBody": "Tubuh dan setiap item kehilangan bingkainya. Anda bisa memulihkan gerakan selama hingga 30 hari.",
+		"demoRenameLocked": "Gerakan dan status demo tidak bisa diganti namanya",
+		"removeOutfit": "Itemnya tetap di lemari. Kamu bisa mengembalikannya dari Sampah hingga 30 hari.",
+		"demoOutfitLocked": "Setelan bawaan demo tidak bisa dihapus",
+		"labelDeleteDemoOutfit": "Hapus…",
+		"deleteDemoOutfit": "Demo tidak punya tempat sampah, jadi setelan ini dihapus. Urungkan bisa mengembalikannya sampai Anda memuat ulang.",
+		"deleteDemoOutfitTitle": "Hapus {name}?",
+		"outfitGone": "Setelan ini sudah tidak tersedia."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Gratis: item yang sudah dibuat tidak akan dibuat ulang.",
@@ -727,7 +782,7 @@
 		"theSlotAndItsItemsAreDeleted": "Itemnya ikut pindah dan pakaian tidak lagi memakainya. Anda bisa memulihkannya selama hingga 30 hari.",
 		"labelAddedAtTheEndOfWardrobe": "{label} ditambahkan di bagian bawah Lemari.",
 		"valueShownAtTheEndOfWardrobe": "{value} ditampilkan di bagian bawah Lemari.",
-		"demoDeleteLocked": "Item demo bawaan tidak dapat dihapus.",
+		"demoDeleteLocked": "Item di demo bawaan tidak bisa dipindahkan ke tempat sampah.",
 		"renameNote": "Mengganti nama tidak mengubah item, setelan, atau nama ekspornya ({slot}).",
 		"drawOrder": "Bagian depan item di slot ini, termasuk item yang sudah dibuat, digambar di atas {slot} dan di bawah slot berikutnya. Urutan khusus per sisi, misalnya untuk tangan yang lebih dekat, ikut bergeser.",
 		"behindBody": "Bagian yang digambar di belakang tubuh tetap berada di belakangnya.",
@@ -787,7 +842,7 @@
 		"previewRisk": "Karakter tersimpan mungkin tidak bisa digunakan setelah pembaruan.",
 		"previewBackupDescription": "Simpan salinan lokal karakter dan karya Anda.",
 		"youReOfflineEditAndExportLocally": "Anda sedang offline. Edit dan ekspor secara lokal.",
-		"titleInspectCharacter": "Periksa karakter",
+		"titleInspectCharacter": "Lihat frame",
 		"titleWorkspaceCopy": "Salinan ruang kerja",
 		"titleItem": "Item",
 		"titleItemReview": "Tinjau item"
@@ -834,7 +889,6 @@
 			"other": "{n} karakter"
 		},
 		"version": "Versi {version}",
-		"renameCharacter": "Ganti nama karakter…",
 		"rename": "Ganti nama…",
 		"setUpCharacter": "Siapkan karakter…",
 		"connectPixelLab2": "Hubungkan PixelLab…",
@@ -883,6 +937,7 @@
 		"copiedFree": "Disalin dari {from} secara gratis.",
 		"statusNote": "{status}.",
 		"hiddenNote": "Tertutup oleh item lain.",
+		"twoHandedNote": "Memakai kedua tangan.",
 		"fromOthers": "Dari {sources}. Mengenakan item akan menambahkan kategori ini ke {name}.",
 		"source": "Dari {from}",
 		"sourceFree": "Gratis dari {from}",
@@ -947,7 +1002,7 @@
 		"moreActionsFor": "Tindakan lainnya untuk {name}",
 		"actionsFor": "Tindakan untuk {name}",
 		"still": "Diam",
-		"inspect": "Periksa",
+		"inspect": "Lihat frame",
 		"customization": "Penyesuaian",
 		"customizationPanels": "Panel penyesuaian",
 		"tabWorkRunning": "Ada pekerjaan di sini yang sedang berjalan, menunggu, atau siap ditinjau",
@@ -1009,20 +1064,20 @@
 		"finishBeforeMoveImport": "Selesaikan atau tutup pekerjaan generasi yang tertunda sebelum mengimpor gerakan.",
 		"couldNotCheckNamedFrames": "Tidak dapat memeriksa bingkai {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Tidak dapat memeriksa bingkai untuk {names}.",
-		"copyMissingOneMove": "Beberapa bingkai {move} hilang; item tidak terlihat dalam gerakan itu.",
-		"copyMissingFrames": "Beberapa bingkai pada {moves} hilang; item tidak terlihat dalam gerakan tersebut.",
+		"copyMissingOneMove": "Item ini tidak terlihat di beberapa bingkai pada {move}.",
+		"copyMissingFrames": "Item ini tidak terlihat di beberapa bingkai pada {moves}.",
 		"restoreFailed": "Tidak dapat memulihkan {name}: {reason}",
 		"restoreFinishFailed": "Tidak dapat menyelesaikan pemulihan {name}: {reason}",
 		"restoredStanding": "{name} dipulihkan untuk arah {directions}. Tidak ada generasi yang digunakan.",
 		"restoredQualityNotes": "Ada catatan kualitas. Periksa catatan tersebut.",
 		"noStandingToRestore": "Tidak ada lagi tampilan berdiri {name} yang perlu dipulihkan.",
-		"characterChangedNothingDeleted": "Karakter berubah sementara itu. Tidak ada yang dihapus.",
+		"characterChangedNothingDeleted": "Karakter berubah sementara itu. Tidak ada yang dipindahkan ke tempat sampah.",
 		"categoryNowHasItems": {
-			"other": "{label} kini berisi {count} item. Tinjau lagi sebelum menghapus."
+			"other": "{label} sekarang punya {count} item. Tinjau lagi sebelum memindahkannya ke tempat sampah."
 		},
-		"categoryNowHasNoItems": "{label} kini tidak berisi item. Tinjau lagi sebelum menghapus.",
+		"categoryNowHasNoItems": "{label} sekarang tidak punya item. Tinjau lagi sebelum memindahkannya ke tempat sampah.",
 		"categoryItemsGettingMoves": "Animasi baru sedang dibuat untuk item dalam kategori {label}. Tunggu hingga prosesnya selesai atau singkirkan dulu proses yang tertunda.",
-		"reasonNothingDeleted": "{reason} Tidak ada yang dihapus.",
+		"reasonNothingDeleted": "{reason} Tidak ada yang dipindahkan ke tempat sampah.",
 		"itemsPosedForMove": "Pose {names} disesuaikan untuk {moveName}",
 		"itemsRedrawnForMove": "{names} digambar ulang untuk {moveName}",
 		"equipmentPosedForMove": "Pose perlengkapan disesuaikan untuk {moveName}",
@@ -1038,9 +1093,9 @@
 		"waitForCharacter": "Tunggu sampai karakter selesai dimuat.",
 		"manageMovesInOtherTab": "Kelola animasi di tab PixelDoll lain, atau tutup tab itu terlebih dahulu.",
 		"manageCharactersInOtherTab": "Kelola karakter di tab PixelDoll lain, atau tutup tab itu terlebih dahulu.",
-		"finishBeforeCharacterRemoval": "Selesaikan atau singkirkan proses generasi yang tertunda sebelum menghapus karakter.",
+		"finishBeforeCharacterRemoval": "Selesaikan atau tutup pembuatan yang tertunda sebelum memindahkan karakter ke tempat sampah.",
 		"finishBeforeRestore": "Selesaikan atau buang pekerjaan pembuatan yang tertunda sebelum memulihkan karakter ini.",
-		"finishBeforeMoveRemoval": "Selesaikan atau singkirkan proses generasi yang tertunda sebelum menghapus animasi.",
+		"finishBeforeMoveRemoval": "Selesaikan atau tutup pembuatan yang tertunda sebelum memindahkan gerakan ke tempat sampah.",
 		"finishBeforeDirectionRemoval": "Selesaikan atau singkirkan proses generasi yang tertunda sebelum mengubah arah.",
 		"finishBeforeFixFrames": "Tunggu hingga proses generasi yang sedang berjalan selesai sebelum memperbaiki frame.",
 		"couldNotReadYourSavedCharactersReason": "Karakter tersimpan Anda tidak dapat dibaca: {reason}",
@@ -1063,8 +1118,8 @@
 		"openedDemoCopy": "Salinan demo yang dapat Anda edit sudah dibuka.",
 		"tookOffTwoHanded": "{names} dilepas (dua tangan)",
 		"tookOffForTwoHanded": "{names} dilepas: {name} memerlukan dua tangan",
-		"wearingUnfitted": "{name} dikenakan sesuai gambar untuk {sourceName}. Letaknya mungkin tidak pas dengan tubuh ini. Tidak ada generasi yang digunakan.",
-		"wearingUnfittedAtSize": "{name} dikenakan seperti saat digambar untuk {sourceName}, dengan ukuran frame asli ({size}). Letaknya mungkin tidak pas dengan tubuh ini. Tidak ada generasi yang digunakan.",
+		"wearingUnfitted": "Mengenakan {name} yang digambar untuk {sourceName}. Posisinya mungkin kurang pas pada tubuh ini.",
+		"wearingUnfittedAtSize": "Mengenakan {name} yang digambar untuk {sourceName} ({size}). Posisinya mungkin kurang pas pada tubuh ini.",
 		"fittedItem": "{name} dari {sourceName} disesuaikan secara gratis. Periksa di setiap animasi.",
 		"copiedSharedItem": "{name} disalin dari {sourceName}. Tidak ada generasi yang digunakan.",
 		"copiedMoreFrames": {
@@ -1087,8 +1142,8 @@
 		"savedItemAttemptsCouldNotBeRead": "Percobaan item tersimpan tidak dapat dibaca: {reason}",
 		"theCharacterChangedMeanwhileTryAgain": "Karakter sudah berubah. Coba lagi.",
 		"noCharacterIsOpen": "Tidak ada karakter yang terbuka.",
-		"labelChangedMeanwhileReviewItAgainBefore": "{label} sudah berubah. Tinjau lagi sebelum menghapusnya.",
-		"labelHasNewItemsReviewItAgain": "Ada item baru di {label}. Tinjau lagi sebelum menghapusnya.",
+		"labelChangedMeanwhileReviewItAgainBefore": "{label} berubah sementara itu. Tinjau lagi sebelum memindahkannya ke tempat sampah.",
+		"labelHasNewItemsReviewItAgain": "{label} punya item baru. Tinjau lagi sebelum memindahkannya ke tempat sampah.",
 		"categoryAndItemsDeleted": {
 			"other": "{label} dan {count} item dipindahkan ke tempat sampah"
 		},
@@ -1127,7 +1182,8 @@
 		"resetColors": "Atur ulang warna",
 		"randomItem": "Acak item {name}",
 		"saveOutfit": "Simpan setelan",
-		"deleteOutfit": "Hapus setelan",
+		"deleteOutfit": "Pindahkan setelan ke tempat sampah",
+		"deleteDemoOutfit": "Hapus setelan",
 		"renameOutfit": "Ganti nama setelan",
 		"show": "Tampilkan {name}",
 		"hide": "Sembunyikan {name}",
@@ -1138,9 +1194,9 @@
 		"moveCategory": "Pindahkan {name}",
 		"addCategory": "Tambah kategori",
 		"changeCategory": "Ubah {name}",
-		"deleteCategory": "Hapus {name}",
-		"deleteItem": "Hapus {name}",
-		"deleteMove": "Hapus {name}",
+		"deleteCategory": "Pindahkan {name} ke tempat sampah",
+		"deleteItem": "Pindahkan {name} ke tempat sampah",
+		"deleteMove": "Pindahkan {name} ke tempat sampah",
 		"moveItem": "Pindahkan {name}",
 		"changeDirections": "Ubah arah",
 		"restoreOriginals": "Pulihkan yang asli",
@@ -1214,13 +1270,6 @@
 				"sub": "Proyek yang bisa diedit",
 				"detail": "Proyek GDevelop yang bisa diedit, dengan lapisan Sprite, pemutaran tersinkron, dan kontrol perlengkapan. Lihat pratinjaunya atau salin objek dan event ke game Anda."
 			},
-			"rpgMaker": {
-				"sub": "Sprite sheet berjalan",
-				"detail": "Satu sprite sheet berjalan per setelan dengan ukuran asli karakter. Salin file PNG ke img/characters (MZ, MV) atau Graphics/Characters (VX Ace, VX). Memerlukan tampilan depan, samping, dan belakang."
-			},
-			"rpgMakerXp": {
-				"detail": "Satu sprite sheet berjalan berisi 4 frame per setelan dengan ukuran asli karakter, untuk RPG Maker XP dan Pokémon Essentials. Salin file PNG ke Graphics/Characters. Memerlukan tampilan depan, samping, dan belakang."
-			},
 			"aseprite": {
 				"sub": "Lapisan yang bisa diedit",
 				"detail": "Satu animasi .aseprite berlapis dengan tag, pengaturan waktu, titik pivot, dan penampilan saat ini. Buka di Aseprite 1.3 atau yang lebih baru."
@@ -1228,6 +1277,13 @@
 			"generic": {
 				"sub": "Integrasi khusus",
 				"detail": "Sprite sheet dan strip lapisan beserta data pengaturan waktu, titik pivot, perlengkapan, dan palet. Engine Anda memerlukan kode untuk membaca aturan ini."
+			},
+			"rpgMaker": {
+				"sub": "Sprite sheet berjalan",
+				"detail": "Satu sprite sheet berjalan per setelan dengan ukuran asli karakter. Salin file PNG ke img/characters (MZ, MV) atau Graphics/Characters (VX Ace, VX). Memerlukan tampilan depan, samping, dan belakang."
+			},
+			"rpgMakerXp": {
+				"detail": "Satu sprite sheet berjalan berisi 4 frame per setelan dengan ukuran asli karakter, untuk RPG Maker XP dan Pokémon Essentials. Salin file PNG ke Graphics/Characters. Memerlukan tampilan depan, samping, dan belakang."
 			},
 			"phaserAe": {
 				"detail": "Sprite sheet per lapisan dan runtime untuk game Phaser AE, dengan perlengkapan, warna, dan pemutaran yang tersinkron. Cantumkan sheet tersebut di daftar assets pada manifes game Anda, lalu proses build game akan menyalinnya ke dalam game."
@@ -1311,7 +1367,6 @@
 			"noVisibleFrames": "Tubuh tidak memiliki frame yang terlihat.",
 			"godot": "Godot tidak dapat menggunakan sprite sheet ini.",
 			"gdevelop": "GDevelop tidak dapat menggunakan sprite sheet ini.",
-			"rpgMaker": "RPG Maker memerlukan tampilan depan, samping, dan belakang.",
 			"aseprite": "Animasi ini tidak sesuai dengan format Aseprite.",
 			"unsafeNames": "Sebagian nama file tidak dapat dikemas dengan aman.",
 			"tooLarge": "Hasil ekspor ini terlalu besar.",
@@ -1319,7 +1374,8 @@
 			"buildFailed": "Hasil ekspor ini tidak dapat dibuat.",
 			"characterLimits": "Karakter ini melebihi batas ekspor.",
 			"damagedImages": "Sebagian gambar tersimpan rusak.",
-			"artworkFailed": "ZIP gambar tidak dapat disiapkan."
+			"artworkFailed": "ZIP gambar tidak dapat disiapkan.",
+			"rpgMaker": "RPG Maker memerlukan tampilan depan, samping, dan belakang."
 		},
 		"error": {
 			"pixelsPerUnit": "Jumlah piksel per unit harus berupa bilangan positif dan berhingga.",
@@ -1368,7 +1424,6 @@
 		"posesTitle": "Impor juga sebagai varian",
 		"posesHint": "Pilih pose dari tubuh yang sama tanpa perlengkapan yang menyatu dengan gambar. Impor tampilan yang berbeda sebagai karakter terpisah. Pilih animasinya di bawah.",
 		"poseMismatch": "Varian ini memiliki ukuran gambar, arah hadap, atau pengaturan kamera yang berbeda. Impor sebagai karakter terpisah.",
-		"titleFile": "Impor dari file",
 		"titlePixelLab": "Impor dari PixelLab",
 		"browseLibrary": "Jelajahi karakter PixelLab",
 		"standingState": "Varian pose berdiri",
@@ -1452,8 +1507,8 @@
 			"skippedStanding": "“{move}” yang menghadap {direction} tidak disertakan: karakter tidak punya tampilan berdiri ke arah itu.",
 			"semiAlpha": "Tepi yang transparan sebagian diubah menjadi transparansi khas pixel art.",
 			"upscaledBase": "Gambar berdiri tampak diperbesar {scale}x. Gambar tetap seperti apa adanya: item yang dibuat darinya memakai lebih banyak piksel, mencampur ukuran piksel, dan pewarnaan ulang kurang bersih. Impor gambar asli 1x jika ada.",
-			"compressedBase": "Gambar berdiri tampak terkompresi atau diskalakan ulang: banyak warnanya hanya muncul sekali. Gambar tetap seperti apa adanya: item yang dibuat darinya lebih sulit dipotong, diwarnai ulang, dan disejajarkan. Impor gambar aslinya jika bisa.",
-			"detailsDropped": "Beberapa detail karakter yang tersimpan rusak dan tidak disertakan. Siapkan rig pose-nya lagi jika perlu."
+			"detailsDropped": "Beberapa detail karakter yang tersimpan rusak dan tidak disertakan. Siapkan rig pose-nya lagi jika perlu.",
+			"compressedBase": "Gambar berdiri tampak terkompresi atau diskalakan ulang: banyak warnanya hanya muncul sekali. Gambar tetap seperti apa adanya: item yang dibuat darinya lebih sulit dipotong, diwarnai ulang, dan disejajarkan. Impor gambar aslinya jika bisa."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1506,7 +1561,8 @@
 			"cutPixels": "{path} akan kehilangan {cut} piksel terlihat dalam sel berukuran {frame} px. Impor karakter yang lebih kecil. Skala gambar tidak pernah diubah.",
 			"emptyFrame": "{path} adalah frame kosong.",
 			"nameLength": "Masukkan nama karakter sepanjang 1–60 karakter."
-		}
+		},
+		"titleFile": "Impor dari file"
 	},
 	"incompatible": {
 		"error": {
@@ -1741,7 +1797,7 @@
 			"fixedDrawOrder": "Urutan gambar bawaan tidak dapat diubah.",
 			"fixedSettings": "Kategori bawaan hanya dapat ditampilkan, disembunyikan, atau dipindahkan.",
 			"fixedRemoval": "Kategori bawaan hanya dapat disembunyikan.",
-			"nonemptyRemoval": "Hapus itemnya sebelum menghapus kategori."
+			"nonemptyRemoval": "Pindahkan dulu item-itemnya ke tempat sampah."
 		},
 		"use": {
 			"making": {
@@ -1753,7 +1809,7 @@
 		},
 		"busy": {
 			"hide": "{label} berisi {items}. Hanya kategori kosong yang dapat disembunyikan{stopped}.",
-			"delete": "{label} berisi {items}. Hanya kategori kosong yang dapat dihapus{stopped}.",
+			"delete": "{label} punya {items}. Hanya kategori tanpa item yang sedang dibuat yang bisa dipindahkan ke tempat sampah{stopped}.",
 			"reattach": "{label} berisi {items}. Cara pemasangan hanya dapat diubah untuk kategori kosong{stopped}.",
 			"hideWardrobe": "{label} berisi {items}. Hanya slot kosong yang dapat disembunyikan{stopped}.",
 			"dismissStopped": "; singkirkan dulu percobaan yang terhenti di Aktivitas"
@@ -2104,7 +2160,7 @@
 		"noCharge": "PixelLab melaporkan bahwa percobaan ini tidak dikenai biaya.",
 		"newPaidAttempt": "Buat ulang memulai percobaan berbayar baru.",
 		"retryFeature": "Membuat ulang perlengkapan ini",
-		"retryNote": "Buat ulang menggambar ulang desain pose berdiri untuk arah karakter, dengan perkiraan biaya yang ditampilkan. Setelah desainnya sesuai, buat animasi lain secara terpisah. Percobaan ulang untuk kualitas atau perbaikan selanjutnya memerlukan permintaan baru. PixelLab mungkin menagih sebagian panggilan dalam dolar. Waktu antrean bervariasi.",
+		"retryNote": "Buat ulang menggambar ulang desain pose berdiri untuk arah karakter, dengan perkiraan biaya yang ditampilkan. Setelah desainnya sesuai, buat animasi lain secara terpisah. Percobaan ulang untuk kualitas atau perbaikan selanjutnya memerlukan permintaan baru.",
 		"slotKey": "{slot} · warna kunci {key}",
 		"calls": "Panggilan",
 		"call": "{index}: {cells} sel",
@@ -2268,7 +2324,7 @@
 			"chooseReference": "Pilih animasi referensi berdiri.",
 			"noStandingReference": "{move} tidak memiliki tampilan berdiri untuk setiap arah. Pilih animasi dengan semua tampilan.",
 			"needsStandingViews": "Penyiapan rig memerlukan tampilan berdiri asli yang tersimpan atau keempat arah utama. Impor rotasi yang hilang terlebih dahulu.",
-			"emptyBodyFrame": "{move} memiliki frame tubuh yang kosong. Perbaiki atau hapus animasi itu, lalu siapkan lagi."
+			"emptyBodyFrame": "{move} punya bingkai tubuh kosong. Perbaiki gerakan itu atau pindahkan ke tempat sampah, lalu siapkan lagi."
 		},
 		"newRegistration": "Daftarkan ulang"
 	},
@@ -2310,7 +2366,7 @@
 			"partialRepairMustKeep": "Perbaikan sebagian harus mempertahankan jumlah frame yang ada.",
 			"selectedEquipmentLongerStanding": "Perlengkapan yang dipilih tidak lagi memiliki desain pose berdiri untuk semua arah pilihan. Tinjau pilihan perlengkapan sebelum mencoba lagi. Tidak ada generasi yang diminta.",
 			"itemFramesChangedGeneration": "Frame item berubah sebelum generasi. Buka kembali item untuk meninjaunya lagi.",
-			"itemChangedWasRemoved": "Item ini berubah atau dihapus saat animasi disiapkan.",
+			"itemChangedWasRemoved": "Item ini berubah atau dipindahkan ke tempat sampah saat gerakan sedang disiapkan.",
 			"characterChangedAnotherTab": "Karakter ini berubah di tab lain saat animasi dibuat. Buka kembali sebelum mencoba lagi.",
 			"bodyFramesTheirQuality": "Frame tubuh ini atau pemeriksaan kualitasnya berubah sejak ditinjau. Tidak ada yang disimpan dan tidak ada permintaan yang dikirim. Tinjau kembali.",
 			"characterChangedAnotherTab2": "Karakter ini berubah di tab lain sebelum animasi dapat disimpan. Buka kembali sebelum mencoba lagi.",
@@ -2688,10 +2744,10 @@
 		"recovery": {
 			"reuse": "Pakai ulang frame tubuh dan hasil pemeriksaan sendi yang sudah selesai.",
 			"checks": {
-				"other": "Ulangi {count} pemeriksaan sendi yang belum selesai · perkiraan {gens} generasi atau {usd}. Pemeriksaan dengan hasil tak diketahui mungkin sudah dikenai biaya, dan percobaan ulang dapat dikenai biaya lagi. Tagihan dan waktu antrean PixelLab bervariasi."
+				"other": "Ulangi {count} pemeriksaan sendi yang belum selesai · perkiraan {gens} generasi atau {usd}. Pemeriksaan dengan hasil tak diketahui mungkin sudah dikenai biaya, dan percobaan ulang dapat dikenai biaya lagi."
 			},
 			"noRequests": "Tidak ada permintaan tubuh atau sendi yang baru.",
-			"items": "Pose perlengkapan pilihan dibuat setelah tubuh lulus pemeriksaan · perkiraan {gens} generasi tambahan, dengan kemungkinan percobaan ulang dan tagihan dalam dolar."
+			"items": "Pose perlengkapan pilihan dibuat setelah tubuh lulus pemeriksaan · perkiraan {gens} generasi tambahan."
 		},
 		"color": {
 			"pixels": {
@@ -2703,7 +2759,7 @@
 			"match": "Cocokkan {pixels} dengan palet pose berdiri di seluruh {frames}. Bentuk tubuh tetap sama, dan warna lainnya tidak berubah.",
 			"recheck": "Periksa ulang {count} frame yang berubah · perkiraan {gens} generasi atau {usd}.",
 			"items": "Pose perlengkapan pilihan dibuat setelah tubuh lulus pemeriksaan · perkiraan {gens} generasi tambahan.",
-			"billing": "PixelLab mungkin menagih dalam dolar. Percobaan ulang untuk kualitas memerlukan biaya tambahan dan waktu antrean bervariasi. Tampilan tubuh sebelumnya dipertahankan jika ada pemeriksaan yang masih gagal."
+			"kept": "Tampilan tubuh sebelumnya dipertahankan jika ada pemeriksaan yang masih gagal."
 		},
 		"demo": "Animasi ditambahkan ke karakter Anda sendiri.",
 		"needsSetup": "Siapkan rig pose karakter ini untuk menambahkan animasi. Gambar dan lapisan yang sudah ada tetap sejajar.",
@@ -2722,7 +2778,6 @@
 		},
 		"changedDuringEdit": "Animasi ini berubah saat Anda mengeditnya. Pilih kembali untuk melanjutkan.",
 		"duplicateOption": "{move} sudah ada di pilihan animasi. Awali deskripsi dengan kata-kata lain.",
-		"costNotice": "PixelLab mungkin mengenakan biaya dalam dolar. Percobaan ulang dan metode cadangan dikenai biaya tambahan.",
 		"templates": "Templat animasi",
 		"suggestionBuiltIn": "Memakai animasi bawaan gerakan ini.",
 		"suggestionDescribed": "PixelLab menganimasikan gerakan ini dari teks Anda, bukan dari animasi bawaannya.",
@@ -2863,7 +2918,7 @@
 		"ideas": "Ide",
 		"colorHint": "Petunjuk warna",
 		"anyColor": "Bebas",
-		"checksNote": "Pemeriksaan konsistensi berjalan otomatis. Jika ada masalah, Anda memilih untuk menyimpan item atau meminta percobaan ulang berbayar. Tidak ada percobaan ulang atau perbaikan kualitas tanpa permintaan Anda. PixelLab mungkin menagih dalam dolar dan waktu antrean bervariasi.",
+		"checksNote": "Pemeriksaan konsistensi berjalan otomatis. Jika ada masalah, Anda memilih untuk menyimpan item atau meminta percobaan ulang berbayar. Tidak ada percobaan ulang atau perbaikan kualitas tanpa permintaan Anda.",
 		"method": "Metode animasi",
 		"automatic": "Otomatis ({method})",
 		"plan": "{calls} panggilan PixelLab · {cells} frame · {route}. Setiap batch terencana dijalankan sekali. Jika pemeriksaan gagal, proses menunggu tinjauan Anda.",
@@ -2902,8 +2957,8 @@
 		"runningJump": "Lompat sambil berlari"
 	},
 	"appearance": {
-		"action": "Edit tampilan…",
-		"title": "Edit tampilan",
+		"action": "Buat salinan dengan tampilan baru…",
+		"title": "Salinan yang diedit",
 		"choose": "Pilih perubahan",
 		"custom": "Edit khusus",
 		"instructions": "Apa yang ingin Anda ubah?",
@@ -2918,8 +2973,8 @@
 		"characterSource": "Menggunakan bingkai pertama dari {move}.",
 		"characterScope": "Karakter baru diawali dengan tampilan berdiri. Tambahkan animasi dan pasang perlengkapan setelah menyimpan.",
 		"itemScope": "Sumber: {move}, frame pertama. Tambahkan gambar untuk frame lain setelah menyimpan.",
-		"editCharacter": "Edit karakter",
-		"editItem": "Edit item",
+		"editCharacter": "Buat karakter baru",
+		"editItem": "Buat item baru",
 		"editCost": "{action} · {cost}",
 		"saveCharacter": "Simpan sebagai karakter baru",
 		"saveItem": "Simpan sebagai item baru",
@@ -2932,7 +2987,8 @@
 		"keptDirections": "Salinan ini menyimpan gambar asli untuk arah berikut: {directions}.",
 		"incomplete": "Beberapa tampilan hasil edit tidak tersedia. Buka Aktivitas untuk melihat detail atau unduh hasil yang diterima.",
 		"reviewPending": "Simpan atau buang pratinjau tampilan sebelum mengubah sumbernya.",
-		"discardNotice": "Buang pratinjau? Biaya PixelLab tetap berlaku."
+		"discardNotice": "Buang pratinjau? Biaya PixelLab tetap berlaku.",
+		"titleOf": "Salinan {name} yang diedit"
 	},
 	"stateGeneration": {
 		"continueIntro": "Anda dapat menyelesaikan tampilan yang belum pernah dikirim. Tampilan yang sudah selesai akan disimpan.",
@@ -3033,11 +3089,11 @@
 		"unavailable": "Animasi ini tidak lagi tersedia.",
 		"keepStanding": "Pertahankan tampilan berdiri yang digunakan untuk membuat item dan menambahkannya ke animasi lain.",
 		"keepOne": "Pertahankan setidaknya satu animasi pada karakter ini.",
-		"demo": "Animasi demo tidak dapat dihapus.",
-		"resolveDrafts": "Selesaikan atau buang draf item karakter ini sebelum menghapus animasi.",
+		"demo": "Gerakan demo tidak bisa dipindahkan ke tempat sampah",
+		"resolveDrafts": "Selesaikan atau buang draf item karakter ini sebelum memindahkan gerakan ke tempat sampah.",
 		"required": "Animasi berdiri ini diperlukan untuk menambahkan item yang sudah ada ke animasi baru.",
 		"selectedCharacterChanged": "Karakter pilihan berubah.",
-		"concurrentEdit": "Karakter ini berubah sebelum animasi bisa dihapus. Coba lagi."
+		"concurrentEdit": "Karakter berubah sebelum gerakan bisa dipindahkan ke tempat sampah. Coba lagi."
 	},
 	"characterFacts": {
 		"body": "{measure} tubuh",
@@ -3075,9 +3131,9 @@
 		"copyDetails": "Salin detail",
 		"copyFailed": "Detail aplikasi tidak dapat disalin.",
 		"checkForUpdates": "Periksa pembaruan",
-		"checkingForUpdates": "Memeriksa pembaruan...",
+		"checkingForUpdates": "Memeriksa pembaruan…",
 		"upToDate": "Versi Anda sudah terbaru.",
-		"preparingUpdate": "Menyiapkan versi {version}...",
+		"preparingUpdate": "Menyiapkan versi {version}…",
 		"updateStuck": "Pembaruan belum siap.",
 		"updateFailed": "Tidak dapat memeriksa pembaruan."
 	},
@@ -3375,7 +3431,9 @@
 			"other": "{n} panggilan tanpa harga"
 		}
 	},
-	"shortcut": { "control": "Ctrl" },
+	"shortcut": {
+		"control": "Ctrl"
+	},
 	"report": {
 		"action": "Laporkan",
 		"actionLabel": "Laporkan masalah ini",
@@ -3569,6 +3627,59 @@
 		"clear": "Hapus pencarian",
 		"results": "{count} dari {total}"
 	},
+	"spriteViewer": {
+		"missing": "Tidak ada frame untuk ditampilkan",
+		"direction": "Arah",
+		"previousView": "Tampilan sebelumnya",
+		"previousViewHint": "Tampilan sebelumnya (panah kiri)",
+		"nextView": "Tampilan berikutnya",
+		"nextViewHint": "Tampilan berikutnya (panah kanan)",
+		"pauseHint": "Jeda (Spasi)",
+		"playHint": "Putar (Spasi)"
+	},
+	"imageViewer": {
+		"role": "penampil gambar",
+		"keys": "Panah menggeser, plus dan minus memperbesar atau memperkecil, 0 menyesuaikan.",
+		"zoom": "Zoom gambar",
+		"hint": "Gulir atau cubit untuk zoom. Seret untuk menggeser.",
+		"fit": "Sesuaikan dengan jendela",
+		"fitHint": "Sesuaikan dengan jendela (0)",
+		"percent": "{percent}% dari ukuran asli",
+		"zoomed": "Zoom {percent}%",
+		"missing": "Tidak ada gambar"
+	},
+	"characterWindow": {
+		"actions": "Aksi karakter",
+		"open": "Buka karakter",
+		"frameSection": "Bingkai & Arah",
+		"costSection": "Biaya",
+		"adjustFrameDetail": "Ubah ukuran bingkai atau posisi karakter di dalamnya.",
+		"directionsDetail": "Pilih arah mana yang digambar dan mana yang mencerminkan arah lain.",
+		"costEstimateDetail": "Perkirakan biaya gerakan, status, dan item tambahan.",
+		"frameLocked": "Bingkai dan arah karakter ini tidak bisa diubah."
+	},
+	"clipWindow": {
+		"move": "Gerakan",
+		"state": "Status",
+		"actions": "Aksi gerakan atau status",
+		"playOnStage": "Putar di panggung",
+		"showOnStage": "Tampilkan di panggung",
+		"framesSection": "Frame & Kualitas",
+		"itemsSection": "Item",
+		"fixFramesDetail": "Edit setiap frame {move} di aplikasi gambarmu.",
+		"redrawDetail": "Gambar ulang {move} di arah yang kamu pilih, dengan harga lebih dulu.",
+		"captureDetail": "Simpan satu frame {move} sebagai status baru.",
+		"itemsDetail": "Gambar item yang dipakai dan masih hilang dari {move}.",
+		"itemsComplete": "Semua item sudah digambar.",
+		"itemsUnavailable": "Item tidak bisa digambar di sini.",
+		"frames": "Frame",
+		"length": "Durasi",
+		"ms": "{ms} md",
+		"exportId": "ID ekspor",
+		"gone": "Gerakan ini tidak lagi tersimpan.",
+		"itemDrawn": "Digambar",
+		"itemMissing": "Hilang"
+	},
 	"tips": {
 		"customizeTitle": "Dandani demo",
 		"customizeBody": "Coba perlengkapan atau ekspor **karakter demo** untuk game Anda. Tidak perlu kunci PixelLab.",
@@ -3586,7 +3697,7 @@
 		"addItemTitle": "Tambah perlengkapan",
 		"addItemBody": "Pakai **+** di slot untuk menjelaskan item atau menambahkan gambar referensi. PixelLab menyesuaikannya dengan karakter Anda.",
 		"generateItemsTitle": "Sesuaikan perlengkapan dengan animasi ini",
-		"generateItemsBody": "Buka **{menu} opsi lainnya** pada animasi ini dan pilih **Buat item** untuk menggambar perlengkapan Anda di animasi ini.",
+		"generateItemsBody": "Buka **{menu} opsi lainnya** pada animasi ini, pilih **Lihat dan edit**, lalu **Buat item** untuk menggambar perlengkapan Anda di animasi ini.",
 		"addMoveTitle": "Tambah animasi",
 		"addMoveBody": "Animasikan karakter Anda, misalnya Idle, Walk, atau Attack.",
 		"addStateTitle": "Tambah status",

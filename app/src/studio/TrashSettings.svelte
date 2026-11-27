@@ -43,13 +43,15 @@
 		item: { key: 'recentlyDeleted.kind.items', icon: Shirt },
 		category: { key: 'recentlyDeleted.kind.category', icon: Layers2 },
 		move: { key: 'recentlyDeleted.kind.move', icon: Clapperboard },
-		state: { key: 'recentlyDeleted.kind.state', icon: PersonStanding }
+		state: { key: 'recentlyDeleted.kind.state', icon: PersonStanding },
+		outfit: { key: 'recentlyDeleted.kind.outfit', icon: Shirt }
 	} as const;
 	/** A State is a clip like a move; its row says what it was, not how it is stored. */
 	function kindOf(entry: RecentlyDeleted): keyof typeof KIND {
 		if (entry.kind === 'items') return 'item';
 		if (entry.kind === 'category') return 'category';
 		if (entry.kind === 'character') return 'character';
+		if (entry.kind === 'outfit') return 'outfit';
 		const clip = entry.before.manifest.rig.animations.find(
 			(anim) => anim.id === entry.scope.moveId
 		);

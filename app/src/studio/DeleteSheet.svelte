@@ -5,6 +5,7 @@
 	import { displayMessage, displayError, errorMessage } from '../lib/i18n.ts';
 	import type { Message } from '../lib/message.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import { rowOf, successorFocus } from './experience/focus.ts';
 	import {
 		blockedByWork,
 		ui,
@@ -30,8 +31,10 @@
 		busy = true;
 		error = '';
 		try {
+			const land = successorFocus(rowOf(id));
 			await removeProject(id);
 			ui.sheet = null;
+			await land();
 		} catch (e) {
 			error = errorMessage(e);
 		} finally {
@@ -56,7 +59,7 @@
 	problem={error ? displayMessage(error) : displayError(reason)}
 	problemAction={blockedByWork(reason) ? viewPending : undefined}
 	blocked={!!reason}
-	oncancel={() => (ui.sheet = null)}
+	oncancel={() => (ui.sheet = ui.returnTo === 'details' && ui.details === id ? 'details' : null)}
 	onconfirm={() => void remove()}
 	><p>
 		{t('deleteSheet.itsOutfitsAndChangesAreRemovedFrom')}

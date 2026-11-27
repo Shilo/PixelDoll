@@ -263,10 +263,10 @@ export function moveDeletionBlocked(id: string): LocalizedError | '' {
 	if (manifest.rig.animations.length <= 1)
 		return new LocalizedError('Keep at least one move on this character.', 'moveRemoval.keepOne');
 	if (doc.id.startsWith('fixture:'))
-		return new LocalizedError("Demo moves can't be deleted.", 'moveRemoval.demo');
+		return new LocalizedError('The demo’s moves can’t be moved to the Trash', 'moveRemoval.demo');
 	if (gens.some((generation) => generation.draft.rigId === doc.id && !generation.draft.acceptedAt))
 		return new LocalizedError(
-			"Finish or discard this character's item drafts before deleting a move.",
+			"Finish or discard this character's item drafts before moving a move to the Trash.",
 			'moveRemoval.resolveDrafts'
 		);
 	if (
@@ -324,7 +324,7 @@ export async function removeMove(id: string) {
 					throw appearanceReviewHold();
 				if (stableStringify(record.manifest) !== version)
 					throw new LocalizedError(
-						'This character changed before the move could be deleted. Try again.',
+						'This character changed before the move could go to the Trash. Try again.',
 						'moveRemoval.concurrentEdit'
 					);
 				record.manifest = manifest;

@@ -72,7 +72,7 @@ async function setup(page: Page) {
 		.locator('#project-menu')
 		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'New character', exact: true });
 	await sheet.getByRole('textbox', { name: 'Name', exact: true }).fill('Local library name only');
 	const closedAdvanced = sheet.locator('details.advanced:not([open]) > summary');

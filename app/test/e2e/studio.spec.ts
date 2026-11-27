@@ -6,6 +6,8 @@ import {
 	equipmentGroup,
 	newItem,
 	selectedItemDetails,
+	openClipTool,
+	openItemSection,
 	inspectStage,
 	openAccount,
 	pickItem,
@@ -13,7 +15,14 @@ import {
 	playbackPicker,
 	selectPlaybackClip
 } from './immersive-helpers.ts';
-import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
+import {
+	expect,
+	test,
+	type BrowserContext,
+	type Locator,
+	type Page,
+	type TestInfo
+} from '@playwright/test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { unzip, zip } from '../../src/lib/store/zip.ts';
@@ -429,13 +438,13 @@ test('Audio settings start after a gesture and preserve independent levels and m
 	await page.getByRole('button', { name: 'Characters', exact: true }).click();
 	await expect(shortcut).toHaveCSS('display', 'none');
 	await topBar.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	await expect(master).not.toBeChecked();
 	await master.check();
 	await expect(shortcut).toBeVisible();
 	await settings.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.getByRole('button', { name: 'Add character', exact: true }).first().click();
-	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	const draftName = creator.getByRole('textbox', { name: 'Name', exact: true });
 	const creatorScreen = page.locator('dialog.character-sheet:modal');
@@ -599,8 +608,8 @@ async function showNotification(
 test('Settings About opens a page with build details and copies them', async ({ page }, info) => {
 	const openSettings = async () => {
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
-		await expect(page.getByRole('button', { name: 'Help...', exact: true })).toBeVisible();
-		await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+		await expect(page.getByRole('button', { name: 'Help…', exact: true })).toBeVisible();
+		await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	};
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await page.goto('/');
@@ -698,7 +707,7 @@ test.describe('Settings on a touchscreen', () => {
 	test('keeps search unfocused until tapped', async ({ page }) => {
 		await page.goto('/');
 		await page.getByRole('button', { name: 'More options', exact: true }).tap();
-		await page.getByRole('button', { name: 'Settings...', exact: true }).tap();
+		await page.getByRole('button', { name: 'Settings…', exact: true }).tap();
 		const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 		const search = settings.getByRole('searchbox', { name: 'Search settings', exact: true });
 		await expect(search).toBeVisible();
@@ -740,8 +749,8 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	await page.keyboard.press('Enter');
 	await expect(notice).toHaveCount(0);
 	await expect(world).toBeFocused();
-	await showNotification(page, 'Preparing download...', { pending: true });
-	await expect(notice).toContainText('Preparing download...');
+	await showNotification(page, 'Preparing download…', { pending: true });
+	await expect(notice).toContainText('Preparing download…');
 	await expect(notice.locator('.bu-notice-indicator .ring.spin')).toBeVisible();
 	await expect(notice.locator('.bu-notice > svg')).toHaveCount(0);
 	await showNotification(page, 'Saved changes');
@@ -915,12 +924,12 @@ test('tips point at each control in order, end on their action, and come back in
 	await newCharacter.click();
 	await expect(tip).toHaveCount(0);
 	await expect(
-		page.getByRole('menuitem', { name: 'Create...', exact: true })
+		page.getByRole('menuitem', { name: 'Create…', exact: true })
 	).toHaveAccessibleDescription('Needs a PixelLab key and uses paid generations');
 	await page.keyboard.press('Escape');
 	// Connect explains PixelLab on its sign-up button the first time, inside the dialog; typing a key means they have met it.
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
+	await page.getByRole('button', { name: 'Connect PixelLab…', exact: true }).click();
 	await expect(heading('What is PixelLab?')).toBeVisible();
 	await expect(page.locator('dialog[open] [data-tip]')).toHaveCount(1);
 	await pointsAt(page.getByRole('link', { name: 'Start free trial' }));
@@ -937,7 +946,7 @@ test('tips point at each control in order, end on their action, and come back in
 	await enterStudio(page);
 	// An own character: Make your own ends by itself, and its own tips appear where they apply.
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
 	await expect(page.locator('h1')).toHaveText('Adventurer copy');
 	await expect(heading('Add gear')).toBeVisible();
 	// The slot's + in its header, which stays when the slot has gear, not the New tile that goes away.
@@ -945,8 +954,11 @@ test('tips point at each control in order, end on their action, and come back in
 	await tip.getByRole('button', { name: 'Close tip' }).click();
 	await page.getByRole('tab', { name: 'Moves', exact: true }).click();
 	await expect(heading('Fit gear to this move')).toBeVisible();
-	await tip.getByRole('button', { name: 'Close tip' }).click();
+	await tip.locator('.tip-copy p').click();
 	await expect(tip).toHaveCount(0);
+	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toContain(
+		'"generate-items"'
+	);
 	await page.getByRole('tab', { name: 'States', exact: true }).click();
 	await expect(heading('Add a state')).toBeVisible();
 	await pointsAt(page.locator('[data-tip-anchor="add-state"]'));
@@ -959,6 +971,11 @@ test('tips point at each control in order, end on their action, and come back in
 	await expect(heading('Fit gear to this move')).toBeVisible();
 	await expect(page.locator('h1')).toHaveText('Adventurer copy');
 	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toBe('[]');
+	await tip.locator('.bu-popover-arrow').click();
+	await expect(tip).toHaveCount(0);
+	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.tips'))).toBe(
+		'["generate-items"]'
+	);
 });
 
 test('the startup preview notice expires after eight seconds', async ({ page }, info) => {
@@ -1048,7 +1065,7 @@ test('the startup notice and More menu download a library backup with archives',
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	const menu = page.locator('#experience-options');
 	const menuBackup = menu.getByRole('button', { name: 'Back up library', exact: true });
-	await expect(menuBackup.locator('+ button')).toHaveAccessibleName('Activity...');
+	await expect(menuBackup.locator('+ button')).toHaveAccessibleName('Activity…');
 	const [menuDownload] = await Promise.all([page.waitForEvent('download'), menuBackup.click()]);
 	const menuFiles = await unzip(new Uint8Array(readFileSync((await menuDownload.path())!)));
 	expect(menuFiles.has(archive!)).toBe(true);
@@ -1094,14 +1111,14 @@ test('Library deletes local work only after confirmation and offers a backup fir
 	const original = { character: true, archive: true, engine: 'unity', keyKept: true };
 	expect(await saved()).toEqual(original);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await settings.getByRole('button', { name: 'Library', exact: true }).click();
 	const danger = settings.locator('section[data-setting="delete-work"]');
 	await expect(
 		settings.locator('hr.bu-separator + section[data-setting="delete-work"]')
 	).toBeVisible();
-	const remove = danger.getByRole('button', { name: 'Delete local work...', exact: true });
+	const remove = danger.getByRole('button', { name: 'Delete local work…', exact: true });
 	await expect(remove).toBeVisible();
 	await remove.click();
 	const confirmation = page.getByRole('alertdialog', { name: 'Delete all local work?' });
@@ -1196,7 +1213,7 @@ test('Library downloads the raw PixelLab results a saved character still has', a
 		});
 	});
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await settings.getByRole('button', { name: 'Library', exact: true }).click();
 	const downloading = page.waitForEvent('download');
@@ -1216,7 +1233,7 @@ test('Library says when no original generations are kept', async ({ page }, info
 		.baseURL!;
 	await openStudio(page, dev);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await settings.getByRole('button', { name: 'Library', exact: true }).click();
 	let downloaded = false;
@@ -1243,7 +1260,7 @@ test('Settings saves creation choices across reload and resets them by scope', a
 	const sheet = (tab: Page) => tab.getByRole('dialog', { name: 'Settings', exact: true });
 	const openSettings = async (tab = page) => {
 		await tab.getByRole('button', { name: 'More options', exact: true }).click();
-		await tab.getByRole('button', { name: 'Settings...', exact: true }).click();
+		await tab.getByRole('button', { name: 'Settings…', exact: true }).click();
 	};
 	const choices = [
 		['Character', 'character-model', 'pro', 'v3', 'select'],
@@ -1379,7 +1396,7 @@ test('Settings saves creation choices across reload and resets them by scope', a
 	await body.fill('66');
 	await body.press('Tab');
 	await expect(settings.getByRole('alert')).toContainText('4 px steps');
-	await settings.getByRole('button', { name: 'Reset all settings...', exact: true }).click();
+	await settings.getByRole('button', { name: 'Reset all settings…', exact: true }).click();
 	await page
 		.getByRole('alertdialog', { name: 'Reset all settings?' })
 		.getByRole('button', { name: 'Reset settings', exact: true })
@@ -1487,12 +1504,12 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	expect(await saved()).toEqual(changed);
 
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	const nav = settings.getByRole('navigation', { name: 'Settings', exact: true });
 	const pageReset = settings.getByRole('button', { name: 'Reset this page', exact: true });
 	// Reset all is the last row of the index at every size, never a header button.
-	const resetAll = settings.getByRole('button', { name: 'Reset all settings...', exact: true });
+	const resetAll = settings.getByRole('button', { name: 'Reset all settings…', exact: true });
 	const search = settings.getByRole('searchbox', { name: 'Search settings', exact: true });
 	await expect(search).toBeFocused();
 	const focusInPanel = () =>
@@ -1583,7 +1600,7 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	await expect(resetAll).toBeDisabled();
 	await search.fill('reset');
 	const resetResult = settings.getByRole('button', {
-		name: 'Reset all settings...',
+		name: 'Reset all settings…',
 		exact: true
 	});
 	await expect(resetResult).toBeDisabled();
@@ -1674,11 +1691,11 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	await page.setViewportSize({ width: 320, height: 740 });
 	const back = settings.getByRole('button', { name: 'Back to Settings', exact: true });
 	const compactPageReset = settings.getByRole('button', {
-		name: 'Reset this page...',
+		name: 'Reset this page…',
 		exact: true
 	});
 	const compactResetAll = settings.getByRole('button', {
-		name: 'Reset all settings...',
+		name: 'Reset all settings…',
 		exact: true
 	});
 	const header = settings.locator('.sheet-head');
@@ -2307,7 +2324,7 @@ test('dev server: a saved item moves between slots by mouse, keyboard menu and t
 
 	await at('face_acc').focus();
 	await page.keyboard.press('Shift+F10');
-	await expect(page.getByRole('menuitem', { name: 'Details...', exact: true })).toBeFocused();
+	await expect(page.getByRole('menuitem', { name: 'View and edit…', exact: true })).toBeFocused();
 	await page.getByRole('menuitem', { name: 'Move to slot' }).press('Enter');
 	await page.getByRole('menuitem', { name: 'Hair', exact: true }).press('Enter');
 	await expect(at('hair')).toHaveAttribute('aria-pressed', 'true');
@@ -2360,7 +2377,7 @@ test('dev server: a saved item moves between slots by mouse, keyboard menu and t
 	await expect(stopped).toBeHidden();
 	await at('face_acc').focus();
 	await page.keyboard.press('Shift+F10');
-	await expect(page.getByRole('menuitem', { name: 'Details...', exact: true })).toBeFocused();
+	await expect(page.getByRole('menuitem', { name: 'View and edit…', exact: true })).toBeFocused();
 	await page.getByRole('menuitem', { name: 'Move to slot' }).press('Enter');
 	await page.getByRole('menuitem', { name: 'Hair', exact: true }).press('Enter');
 	await page
@@ -2446,7 +2463,7 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	await addSheet.getByRole('button', { name: 'Create slot', exact: true }).click();
 	await expect.poll(scroll).toBe(beforeAdd);
 	await header('accessory').click();
-	await menu.getByRole('menuitem', { name: 'Edit slot...', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Edit slot…', exact: true }).click();
 	const editor = page.getByRole('dialog', { name: 'Accessory', exact: true });
 	await editor.getByRole('textbox', { name: 'Name', exact: true }).fill('Brooch');
 	// Every way out of an edited sheet asks before losing the edit; Keep editing returns to it unchanged.
@@ -2479,7 +2496,7 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	await expect(menu).toContainText('items');
 	await page.keyboard.press('Escape');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	await page.getByRole('button', { name: 'Appearance', exact: true }).click();
 	await page.getByRole('radio', { name: 'Light', exact: true }).check();
 	await page
@@ -2489,7 +2506,7 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	await page.setViewportSize({ width: 320, height: 568 });
 	await equipmentGroup(page, 'Brooch');
 	await header('accessory').click();
-	await menu.getByRole('menuitem', { name: 'Edit slot...', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Edit slot…', exact: true }).click();
 	const compactEditor = page.getByRole('dialog', { name: 'Brooch', exact: true });
 	await expect(compactEditor.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(
 		'Brooch'
@@ -2618,7 +2635,7 @@ test('studio demo: a custom slot chooses its own Wardrobe icon', async ({ contex
 	await header.click();
 	await page
 		.locator('#slot-menu')
-		.getByRole('menuitem', { name: 'Edit slot...', exact: true })
+		.getByRole('menuitem', { name: 'Edit slot…', exact: true })
 		.click();
 	const editor = page.getByRole('dialog', { name: 'Wings', exact: true });
 	const icons = editor.getByRole('radiogroup', { name: 'Icon', exact: true });
@@ -2762,7 +2779,7 @@ test('studio demo: slot header dragging and not-shown restoration are tolerant a
 	await expect(slotMenu).toBeVisible();
 	await expect(slotMenu).toHaveAccessibleName('Underwear slot');
 	await expect(slotMenu.getByRole('menuitem', { name: 'Show slot', exact: true })).toBeVisible();
-	await expect(slotMenu.getByRole('menuitem', { name: 'Make a custom copy...' })).toBeVisible();
+	await expect(slotMenu.getByRole('menuitem', { name: 'Make a custom copy…' })).toBeVisible();
 	await expect(slotMenu.getByRole('menuitem', { name: 'Hide slot' })).toHaveCount(0);
 	expect(await keys()).toEqual(original);
 	await page.keyboard.press('Escape');
@@ -2935,9 +2952,14 @@ test('studio demo: touch slot headers scroll before a hold and drag after arming
 	const railHead = rail.locator('[data-rail="head"][data-sortable]');
 	const railSource = (await railHair.boundingBox())!;
 	const railStart = { x: railSource.x + 15, y: railSource.y + railSource.height / 2, id: 3 };
+	// The drag grip replaces the slot icon only while the slot is held, never at rest.
+	await expect(railHair.locator('.slot-grip')).toBeHidden();
+	await expect(railHair.locator('.group-icon')).toBeVisible();
 	await touch('touchStart', [railStart]);
 	await page.clock.runFor(300);
 	await expect(railHair).toHaveAttribute('data-armed', 'true');
+	await expect(railHair.locator('.slot-grip')).toBeVisible();
+	await expect(railHair.locator('.group-icon')).toBeHidden();
 	await touch('touchMove', [{ ...railStart, y: railStart.y - 2 }]);
 	await expect(rail.locator('[data-dragged]')).toHaveCount(0);
 	const railTarget = (await railHead.boundingBox())!;
@@ -3192,6 +3214,34 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	);
 	await expect(page.locator('.outfits .badge')).toHaveCount(0);
 	step('outfit saved and selected without a redundant badge');
+	// The demo has no Trash: its own outfits stay, one saved on it is deleted (asking first) and Undo brings it back.
+	for (const [outfit, locked] of [
+		['Adventurer', true],
+		['Smoke look', false]
+	] as const) {
+		await page.getByRole('button', { name: `More actions for ${outfit}`, exact: true }).click();
+		const remove = page
+			.getByRole('menu', { name: `Actions for ${outfit}`, exact: true })
+			.getByRole('menuitem', { name: 'Delete…', exact: true });
+		if (locked) {
+			await expect(remove).toHaveAttribute('aria-disabled', 'true');
+			await expect(remove).toHaveAccessibleDescription('The demo’s own outfits can’t be deleted');
+			await page.keyboard.press('Escape');
+		} else {
+			await remove.click();
+			await page
+				.getByRole('alertdialog', { name: `Delete ${outfit}?`, exact: true })
+				.getByRole('button', { name: 'Delete', exact: true })
+				.click();
+		}
+	}
+	await expect(page.locator('.outfits .row', { hasText: 'Smoke look' })).toHaveCount(0);
+	await page.locator('.bu-toast-region').getByRole('button', { name: 'Undo', exact: true }).click();
+	await expect(page.locator('.outfits .row', { hasText: 'Smoke look' })).toHaveAttribute(
+		'aria-pressed',
+		'true'
+	);
+	step('a demo outfit saved here can be deleted and undone, its own outfits cannot');
 
 	await inspectStage(page);
 	await page.keyboard.press('2');
@@ -3208,12 +3258,12 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	await page.keyboard.press('0');
 	step('keyboard: direction + all directions');
 	await page
-		.getByRole('dialog', { name: 'Inspect character', exact: true })
+		.getByRole('dialog', { name: 'View frames', exact: true })
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	await page.getByRole('button', { name: 'Appearance', exact: true }).click();
 	await page.getByRole('radio', { name: 'Light', exact: true }).check();
 	await expect(page.locator('[data-setting="theme"] .lucide-sun-moon')).toBeVisible();
@@ -3276,7 +3326,7 @@ test('studio demo: base colors, Create size and direction pricing, stripped dev 
 		.locator('#project-menu')
 		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 	const cost = async () => {
 		const value = await page.locator('dialog .foot-note').textContent();
 		assert.ok(value, 'Create cost is shown');
@@ -3330,7 +3380,7 @@ test('studio demo: New character fits an HD window and smaller screens scroll to
 		.locator('#project-menu')
 		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	const body = creator.locator('.sheet-body');
 	const foot = creator.locator('.sheet-foot');
@@ -3389,7 +3439,7 @@ test('studio demo: Create without a key opens Connect, Escape restores focus and
 		.locator('#project-menu')
 		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 	await expect(page.locator('dialog').getByLabel('Name', { exact: true })).toBeFocused(); // first field focused, not Cancel (checked before fill() moves focus)
 	await page.locator('dialog textarea').fill('a cheerful elf archer');
 	await page
@@ -3470,7 +3520,7 @@ test('studio demo: move views offer only their directions, call out items withou
 	);
 	step('arrow keys move the direction segmented control');
 	await page
-		.getByRole('dialog', { name: 'Inspect character', exact: true })
+		.getByRole('dialog', { name: 'View frames', exact: true })
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	finish();
@@ -3771,11 +3821,11 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 					const r = el.getBoundingClientRect();
 					return { x: r.x, y: r.y, width: r.width, height: r.height };
 				};
-				const strip = sheet.querySelector('.dir-strip')!,
+				const strip = sheet.querySelector('.window-views')!,
 					sprites = [...strip.querySelectorAll('canvas')];
 				return {
 					strip: box(strip),
-					actions: box(sheet.querySelector('.actions')!),
+					actions: box(sheet.querySelector('.item-move')!),
 					sprites: sprites.map(box),
 					pixels: sprites[0].toDataURL()
 				};
@@ -3788,6 +3838,8 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 			for (const b of sample.sprites) {
 				expect(b.x).toBeGreaterThanOrEqual(sample.strip.x);
 				expect(b.x + b.width).toBeLessThanOrEqual(sample.strip.x + sample.strip.width);
+				expect(b.y).toBeGreaterThanOrEqual(sample.strip.y);
+				expect(b.y + b.height).toBeLessThanOrEqual(sample.strip.y + sample.strip.height);
 			}
 		}
 		expect(new Set(geometry.filter((_, i) => i % 2 === 0)).size).toBe(1);
@@ -3795,8 +3847,59 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 		expect(new Set(pixels).size).toBeGreaterThan(1);
 	}
 	await checkFrames();
-	// Delete asks in an alert over the details; Cancel keeps the item and the details open.
-	await inspector.getByRole('button', { name: 'Move to Trash...', exact: true }).click();
+	const southView = inspector.getByRole('button', { name: 'Enlarge Red cape facing South' });
+	await southView.focus();
+	await page.keyboard.press('Enter');
+	const spritePreview = page.locator('dialog.image-viewer');
+	await expect(spritePreview.locator('canvas')).toBeVisible();
+	// The move and the direction are pickers in the header; its moves menu opens over the viewer.
+	const movePicker = spritePreview.getByRole('button', { name: /^Move: Walk/ });
+	await movePicker.click();
+	await expect(page.getByRole('menuitemradio', { name: 'Walk', exact: true })).toBeVisible();
+	await page.keyboard.press('Escape');
+	const facing = spritePreview.getByRole('combobox', { name: 'Direction', exact: true });
+	await expect(facing).toHaveValue('south');
+	// The move plays; Space pauses and plays it.
+	const playback = spritePreview.getByRole('button', { name: /^(Pause|Play)$/ });
+	await expect(playback).toHaveAccessibleName('Pause');
+	await spritePreview.locator('.sheet-title').focus();
+	await page.keyboard.press(' ');
+	await expect(playback).toHaveAccessibleName('Play');
+	// The arrows walk every direction, then on into the next move or state.
+	await page.keyboard.press('ArrowRight');
+	await expect(facing).toHaveValue('east');
+	await page.keyboard.press('ArrowLeft');
+	await expect(facing).toHaveValue('south');
+	await facing.selectOption('east');
+	await expect(spritePreview.getByRole('application')).toHaveAccessibleName(/^Red cape · East\./);
+	// The image zooms from the keyboard and returns to its fit.
+	const zoomShown = spritePreview.getByRole('button', { name: 'Fit to window', exact: true });
+	const fitted = await zoomShown.textContent();
+	await spritePreview.getByRole('application').focus();
+	await page.keyboard.press('+');
+	await expect(zoomShown).not.toHaveText(fitted!);
+	await page.keyboard.press('0');
+	await expect(zoomShown).toHaveText(fitted!);
+	await expect(inspector).toBeVisible();
+	const viewport = page.viewportSize()!;
+	const previewBox = (await spritePreview.boundingBox())!;
+	expect(Math.round(previewBox.width)).toBe(viewport.width);
+	expect(Math.round(previewBox.height)).toBe(viewport.height);
+	await page.keyboard.press('Escape');
+	await expect(spritePreview).toHaveCount(0);
+	await expect(southView).toBeFocused();
+	await southView.click();
+	await expect(spritePreview).toBeVisible();
+	await spritePreview.getByRole('button', { name: 'Close', exact: true }).click();
+	await expect(spritePreview).toHaveCount(0);
+	await expect(southView).toBeFocused();
+	await southView.click();
+	await page.goBack();
+	await expect(spritePreview).toHaveCount(0);
+	await expect(southView).toBeFocused();
+	// Delete, in the item actions menu, asks in an alert over the details; Cancel keeps the item and the details open.
+	await inspector.getByRole('button', { name: 'Item actions', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 	const deleteAlert = page.getByRole('alertdialog', { name: /^Move .+ to Trash\?$/ });
 	await expect(deleteAlert.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
 	await page.keyboard.press('Escape');
@@ -3847,7 +3950,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 		.locator('#project-menu')
 		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'From file…', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'eight-directions.zip',
 		mimeType: 'application/zip',
@@ -3861,7 +3964,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await selectPlaybackClip(page, 'walk');
 	await pickItem(page, 'Red cape');
 	inspector = await selectedItemDetails(page);
-	await expect(inspector.locator('.dir-strip canvas')).toHaveCount(8);
+	await expect(inspector.locator('.window-views canvas')).toHaveCount(8);
 	await checkFrames();
 	await inspector.getByRole('button', { name: 'Close', exact: true }).click();
 	await inspectStage(page);
@@ -3974,7 +4077,7 @@ test('desktop resize keeps preview controls and customization reachable across p
 		await equipmentMode(page, 'Wardrobe');
 		await pickItem(page, 'Steel helmet');
 		const item = await selectedItemDetails(page);
-		await expect(item.locator('.insp-title')).toHaveText('Steel helmet');
+		await expect(item.locator('.sheet-title')).toHaveText('Steel helmet');
 		await item.getByRole('button', { name: 'Close', exact: true }).click();
 	}
 });
@@ -4012,7 +4115,7 @@ test('New item Enhance describes the item alone at its canvas size, then Undo re
 	});
 	await openStudio(page, '/#/');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	const navigation = settings.getByRole('navigation', { name: 'Settings', exact: true });
 	await navigation.getByRole('button', { name: 'Item', exact: true }).click();
@@ -4101,7 +4204,7 @@ test('Enhance keeps the template a new move opened with, and its settings', asyn
 	);
 	await targetedRepairFixture(page);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	const applied = move
 		.getByRole('group', { name: 'Move templates', exact: true })
@@ -4150,7 +4253,7 @@ test('New move opens on the customized template prompt, and an added suggestion 
 	);
 	await targetedRepairFixture(page);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	const templates = move.getByRole('group', { name: 'Move templates', exact: true });
 	const description = move.getByRole('textbox', { name: 'Describe the motion', exact: true });
@@ -4187,7 +4290,7 @@ test('picking the opening gait template after turning Loop off keeps the templat
 	);
 	await targetedRepairFixture(page);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	const run = move
 		.getByRole('group', { name: 'Move templates', exact: true })
@@ -4236,7 +4339,7 @@ test('Advanced picks a qualified template for a registered character and shows i
 	);
 	await targetedRepairFixture(page);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	await move.getByRole('button', { name: /^Advanced/ }).click();
 	const picker = move.getByRole('combobox', { name: 'More templates', exact: true });
@@ -4309,7 +4412,7 @@ test('a picked template reaches PixelLab as a template request', async ({
 	);
 	await targetedRepairFixture(page);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'New move', exact: true });
 	await move.getByRole('button', { name: /^Advanced/ }).click();
 	await move
@@ -4507,7 +4610,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await expect(item.getByRole('button', { name: /^Make/ })).toContainText(/~\d+ gens/);
 	await expect(
 		item.getByText(
-			'Consistency checks run automatically. If issues are detected, you choose whether to keep the item or request a paid retry. No quality retries or repairs run without your request. PixelLab may bill dollars and queue time varies.',
+			'Consistency checks run automatically. If issues are detected, you choose whether to keep the item or request a paid retry. No quality retries or repairs run without your request.',
 			{ exact: true }
 		)
 	).toBeVisible();
@@ -4534,7 +4637,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
 		.locator('#project-menu')
 		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 	const character = page.getByRole('dialog', { name: 'New character', exact: true });
 	await character
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -4644,7 +4747,7 @@ test('closing Connect before its code loads still discards the pending action', 
 		.locator('#project-menu')
 		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 	const character = page.getByRole('dialog', { name: 'New character', exact: true });
 	await character
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -4716,11 +4819,10 @@ test('free item color matching is offline, scoped, persistent and preserves save
 		dressed: true,
 		frames: 8
 	});
-	const action = pane.getByRole('button', { name: /^Match item colors.*Free$/ });
+	await openItemSection(pane, 'Quality');
+	const action = pane.getByRole('button', { name: /^Match colors in \S+ view$/ });
 	await expect(action).toBeVisible();
-	await expect(pane).toContainText('Match 2 pixels in 2 saved Walk frames facing west');
-	await expect(pane).toContainText('2 unmatched eligible pixels stay unchanged');
-	await expect(pane).toContainText('No PixelLab call is made');
+	await expect(action).toContainText('Matches 2 pixels in 2 frames to the item’s palette.');
 	await context.setOffline(true);
 	await action.click();
 	await expect(pane.getByText('Matched 2 pixels in 2 frames.', { exact: true })).toBeVisible();
@@ -4775,7 +4877,7 @@ test('free item color matching is offline, scoped, persistent and preserves save
 	expect(after).toMatchObject({ selected: fixture.itemId, anim: 'walk', dir: 'west' });
 	expect(after.audit).toHaveLength(1);
 	expect(after.audit[0]).toMatchObject({ version: 'neutral-owned-v1', anim: 'walk', dir: 'west' });
-	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
+	await expect(pane.locator('.window-status')).toHaveText('Accepted');
 	await reloadStudio(page);
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	await page.evaluate(async (id) => {
@@ -4786,10 +4888,11 @@ test('free item color matching is offline, scoped, persistent and preserves save
 		s.pick(id);
 	}, fixture.itemId);
 	await selectedItemDetails(page);
-	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
-	await expect(pane.getByRole('button', { name: /^Match item colors.*Free$/ })).toHaveCount(0);
-	// The saved recolor survives: the item's colors live in the Colors tab, which Recolor opens.
-	await pane.getByRole('button', { name: 'Recolor', exact: true }).click();
+	await expect(pane.locator('.window-status')).toHaveText('Accepted');
+	await expect(pane.getByRole('button', { name: /^Match colors in \S+ view$/ })).toHaveCount(0);
+	// The saved recolor survives: the item's colors live in the Colors tab, which Recolor in its actions menu opens.
+	await pane.getByRole('button', { name: 'Item actions', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Recolor', exact: true }).click();
 	await expect(
 		page
 			.locator(`.color-sections [data-owner="${fixture.itemId}"]`)
@@ -4969,7 +5072,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 		.locator('#project-menu')
 		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'From file…', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'draft-fixture.zip',
 		mimeType: 'application/zip',
@@ -5007,7 +5110,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 			if (document.body.textContent?.includes('pose rig to add moves')) seen.setupNoticeSeen = true;
 		}).observe(document.body, { subtree: true, childList: true, characterData: true });
 	});
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'New move', exact: true })).toBeVisible();
 	const move = page.getByRole('dialog', { name: /^(New move|Redraw .+)$/ });
 	await expect(move.getByRole('textbox', { name: /^Describe the motion$/ })).toBeVisible();
@@ -5112,7 +5215,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 		localStorage.setItem('pixeldoll.creation.items', JSON.stringify({ method: 'anchor' }));
 	});
 	await defaultsTab.close();
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	await expect(description).toHaveValue('jumping in place');
 	await expect(model).toHaveValue('skeleton-v3');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toHaveCount(0);
@@ -5126,7 +5229,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(templates.getByRole('button', { name: 'Ride', exact: true })).toHaveCount(0);
 	await move.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	await description.fill('A jump that starts low');
 	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
 	await cast.click();
@@ -5136,7 +5239,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 		.getByRole('dialog', { name: 'Connect PixelLab' })
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	await expect(cast).toHaveAttribute('aria-pressed', 'true');
 	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
 	await cast.click();
@@ -5154,7 +5257,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await move.getByRole('button', { name: 'Close', exact: true }).click();
 	await reloadStudio(page);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	await description.fill('A jump that starts low');
 	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
 	await move.getByRole('button', { name: 'Close', exact: true }).click();
@@ -5163,18 +5266,18 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 		.getByRole('button', { name: 'Discard', exact: true })
 		.click();
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
-	await page.getByRole('menuitem', { name: /^Redraw/ }).click();
+	await openClipTool(page, /^Redraw/);
 	if (!(await model.isVisible())) await advanced.click();
 	await expect(model).toHaveValue('skeleton-v3');
 	await move.getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentMode(page, 'States');
-	await page.getByRole('button', { name: 'New State...', exact: true }).click();
+	await page.getByRole('button', { name: 'New State…', exact: true }).click();
 	const state = page.getByRole('dialog', { name: 'New State', exact: true });
 	await state.getByRole('switch', { name: 'Edit this pose' }).check();
 	await expect(state.getByRole('combobox', { name: 'Model', exact: true })).toHaveValue('pixen');
 	await state.getByRole('combobox', { name: 'Model', exact: true }).selectOption('pro');
 	await page.keyboard.press('Escape');
-	await page.getByRole('button', { name: 'New State...', exact: true }).click();
+	await page.getByRole('button', { name: 'New State…', exact: true }).click();
 	await state.getByRole('switch', { name: 'Edit this pose' }).check();
 	await expect(state.getByRole('combobox', { name: 'Model', exact: true })).toHaveValue('pixen');
 	await page.keyboard.press('Escape');
@@ -5193,7 +5296,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (Demo)');
 	await expect(page.locator('.move-list')).toBeVisible();
 	// The draft stays with its character: the read-only demo offers no Add a move at all.
-	await expect(page.getByRole('button', { name: 'New move...', exact: true })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: 'New move…', exact: true })).toHaveCount(0);
 	expect(requests).toEqual([]);
 });
 
@@ -5247,7 +5350,7 @@ test('radio groups and tabs use one Tab stop and arrow selection', async ({ page
 		.locator('#project-menu')
 		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 	const editor = page.getByRole('tablist', { name: 'Prompt editor', exact: true });
 	await expect(editor.locator('[tabindex="0"]')).toHaveCount(1);
 	await editor.getByRole('tab', { name: 'Appearance', exact: true }).focus();
@@ -5336,7 +5439,7 @@ test('draft review can inspect every generated move and only its available views
 	await expect(review.getByRole('button', { name: /^Generate again/ })).toContainText('~');
 	await expect(
 		review.getByText(
-			'Generate again redraws the standing design in the character’s directions at the displayed estimate. Generate other moves separately after you like it. Further quality retries or repairs require another request. PixelLab may bill some calls in dollars; queue time varies.',
+			'Generate again redraws the standing design in the character’s directions at the displayed estimate. Generate other moves separately after you like it. Further quality retries or repairs require another request.',
 			{ exact: true }
 		)
 	).toBeVisible();
@@ -5562,7 +5665,7 @@ test('a draft can be worn while it loads: landed views show, pending ones say lo
 	await expect(page.locator('#preview-coverage')).toContainText('Loading helm');
 	await coverage.click();
 	await page.getByRole('button', { name: 'More options for Loading helm', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Review item...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Review item…', exact: true }).click();
 	await page.locator('.gen').getByRole('button', { name: 'Discard', exact: true }).click();
 	await expect(tile).toHaveCount(0);
 	await expect(coverage).toHaveCount(0);
@@ -5641,7 +5744,7 @@ async function busyFirstTab(
 		.locator('#project-menu')
 		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await second.getByRole('menuitem', { name: 'Create...', exact: true }).click();
+	await second.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 	const create = second.getByRole('dialog', { name: 'New character', exact: true });
 	await create
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -5733,9 +5836,7 @@ test('a tab that is not running the generations still opens New item from an ite
 	await equipmentGroup(second, 'Head');
 	await second.getByRole('button', { name: 'More options for Steel helmet', exact: true }).click();
 	// Opening the sheet spends nothing, so only its Make button waits for this tab to take over the jobs.
-	await itemMenu(second)
-		.getByRole('menuitem', { name: 'Create a variant...', exact: true })
-		.click();
+	await itemMenu(second).getByRole('menuitem', { name: 'Create a variant…', exact: true }).click();
 	await expect(second.getByRole('dialog', { name: 'New item', exact: true })).toBeVisible();
 	await expect(second.getByRole('dialog', { name: 'Activity', exact: true })).toHaveCount(0);
 });
@@ -5777,7 +5878,7 @@ test('Create in a second tab takes the jobs from the idle first tab at once and 
 			.locator('#project-menu')
 			.getByRole('button', { name: 'Add character', exact: true })
 			.click();
-		await follower.getByRole('menuitem', { name: 'Create...', exact: true }).click();
+		await follower.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 		return follower.getByRole('dialog', { name: 'New character', exact: true });
 	}
 	let create = await openCreate();
@@ -6194,8 +6295,8 @@ test('a stopped item draft keeps its available frames for free, and an unreadabl
 	});
 	// The saved item lists the view it still lacks among its missing frames.
 	const details = await selectedItemDetails(page);
-	await expect(details.locator('dl', { hasText: 'Missing frames' })).toContainText(
-		/Missing frames.*cross-punch\/south/
+	await expect(details.locator('dl', { hasText: 'Missing frame IDs' })).toContainText(
+		/Missing frame IDs.*cross-punch\/south/
 	);
 	expect(requests.filter((method) => method === 'POST')).toEqual([]);
 });
@@ -6237,7 +6338,7 @@ test('a stopped character creation whose paid review cannot be read offers a fre
 		.locator('#project-menu')
 		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create…', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'New character', exact: true });
 	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A plain human');
 	await sheet.getByRole('button', { name: 'Side-scroller 2', exact: true }).click();
@@ -6712,7 +6813,7 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
 	const menu = page.locator('#item-menu');
 	await expect(menu).toContainText(/Keep this tab open|Waiting for your PixelLab key/);
 	await expect(menu).not.toContainText('picks up where it left off');
-	await menu.getByRole('menuitem', { name: 'Activity...', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Activity…', exact: true }).click();
 	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
 	await expect(activity.locator('#activity-submitting-stop')).toHaveText(
 		'Stop is unavailable until PixelLab responds.'
@@ -7002,7 +7103,7 @@ test('item tile cancellation confirms cost, retries failed saves and stays cance
 	await tile.focus();
 	await page.keyboard.press('Shift+F10');
 	const menu = page.locator('#item-menu');
-	await menu.getByRole('menuitem', { name: 'Cancel generation...', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Cancel generation…', exact: true }).click();
 	const cancelAlert = page.getByRole('alertdialog', { name: 'Cancel Ponytail?' });
 	await expect(menu).not.toBeVisible();
 	await expect(cancelAlert.getByRole('button', { name: 'Keep', exact: true })).toBeFocused();
@@ -7012,12 +7113,12 @@ test('item tile cancellation confirms cost, retries failed saves and stays cance
 	const more = page.getByRole('button', { name: 'More options for Ponytail', exact: true });
 	await expect(more).toBeFocused();
 	await more.click();
-	await menu.getByRole('menuitem', { name: 'Cancel generation...', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Cancel generation…', exact: true }).click();
 	await cancelAlert.getByRole('button', { name: 'Keep', exact: true }).click();
 	await expect(cancelAlert).toHaveCount(0);
 	await expect(tile).toContainText('42%');
 	await more.click();
-	await menu.getByRole('menuitem', { name: 'Cancel generation...', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Cancel generation…', exact: true }).click();
 	await page.evaluate(() => {
 		const put = IDBObjectStore.prototype.put;
 		(window as unknown as { restoreItemPut: () => void }).restoreItemPut = () =>
@@ -7047,7 +7148,7 @@ test('item tile cancellation confirms cost, retries failed saves and stays cance
 		'Ponytail, Canceled'
 	);
 	await page.getByRole('button', { name: 'More options for Ponytail', exact: true }).click();
-	await menu.getByRole('menuitem', { name: 'Review item...', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Review item…', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'Item review', exact: true })).toBeVisible();
 	await page.locator('.gen').getByRole('button', { name: 'Discard', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -7770,7 +7871,9 @@ test('accepted held-item review reasons survive actual reload without claiming a
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	await pickItem(page, name);
 	const pane = await selectedItemDetails(page);
-	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
+	await expect(pane.locator('.window-status')).toHaveText('Accepted');
+	// The review reasons sit in the Quality section, one intentional step from the summary.
+	await openItemSection(pane, 'Quality');
 	await expect(
 		pane.getByText('The grip side is unclear; check the intended hand (idle, west)', {
 			exact: true
@@ -7854,7 +7957,7 @@ test('Export discloses saved item and body review flags without blocking analysi
 	});
 	await reloadStudio(page);
 	await expect(page.locator('.world-actors').first()).toBeVisible();
-	if (await page.getByRole('dialog', { name: 'Item', exact: true }).count())
+	if (await page.locator('dialog.item-detail[open]').count())
 		await page.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'Export', exact: true });
@@ -8170,7 +8273,7 @@ async function skeletonMoveApi(
 
 async function generateNewSkeletonMove(page: Page, template: string) {
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'New move', exact: true });
 	await sheet.getByRole('button', { name: template, exact: true }).click();
 	await sheet.getByRole('button', { name: /^Advanced/ }).click();
@@ -8233,7 +8336,7 @@ test('a new move whose one view stopped saves its finished views for free and en
 	});
 	expect(saved).toEqual({ views: ['south', 'east', 'north'], hold: false, record: null });
 	// No failed-move hold: a new move opens on a fresh form.
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	await expect(sheet.getByRole('textbox', { name: 'Describe the motion' })).toBeVisible();
 	await expect(sheet.getByRole('region', { name: 'Paid results', exact: true })).toHaveCount(0);
 });
@@ -8259,7 +8362,7 @@ test('a replacement missing only numeric body checks lands in the staged review 
 	const posts = await skeletonMoveApi(page, context, { recolor: 'east' });
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
-	await page.getByRole('menuitem', { name: /^Redraw/ }).click();
+	await openClipTool(page, /^Redraw/);
 	const sheet = page.getByRole('dialog', { name: /^Redraw / });
 	await sheet
 		.getByRole('group', { name: 'Directions to redraw' })
@@ -8411,7 +8514,7 @@ test('a view kept without poses names the move and view to make again before equ
 	await expect(stageNote.getByRole('button', { name: /^Make missing views/ })).toContainText(
 		'gens'
 	);
-	await expect(stageNote.getByRole('button', { name: /^Make one for / })).toBeVisible();
+	await expect(stageNote.getByRole('button', { name: /^Make copy for self/ })).toBeVisible();
 	expect(posts.length).toBe(sent);
 });
 
@@ -8478,9 +8581,7 @@ test('an item missing a standing view restores it from its saved design for free
 	const details = await selectedItemDetails(page);
 	const restore = details.getByRole('button', { name: /^Restore standing view/ });
 	await expect(restore).toContainText('Free');
-	await expect(details).toContainText(
-		'Rebuilt from this item’s saved south design. Nothing is generated.'
-	);
+	await expect(details).toContainText('Uses the saved design for south. No generation needed.');
 	await restore.click();
 	await expect(page.locator('.bu-toast').last()).toContainText(
 		`Restored ${itemName} facing south. No generations used.`
@@ -8532,7 +8633,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await equipmentMode(page, 'Moves');
 	const redraw = async (name: string) => {
 		await page.getByRole('button', { name: `More actions for ${name}`, exact: true }).click();
-		await page.getByRole('menuitem', { name: /^Redraw/ }).click();
+		await openClipTool(page, /^Redraw/);
 	};
 	await redraw('Cross punch');
 	const sheet = page.getByRole('dialog', { name: /^Redraw / });
@@ -8629,7 +8730,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 		.getByRole('alertdialog', { name: 'Discard changes?', exact: true })
 		.getByRole('button', { name: 'Discard', exact: true })
 		.click();
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	const custom = page.getByRole('textbox', { name: 'Describe the motion', exact: true });
 	await custom.fill('jumping in place');
 	const add = page.getByRole('dialog', { name: 'New move', exact: true });
@@ -8833,7 +8934,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	const fixture = await targetedRepairFixture(page);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
-	await page.getByRole('menuitem', { name: /^Redraw/ }).click();
+	await openClipTool(page, /^Redraw/);
 	const sheet = page.getByRole('dialog', { name: /^Redraw / });
 	const directions = sheet.getByRole('group', { name: 'Directions to redraw' });
 	const east = directions.getByRole('button', { name: 'East direction', exact: true });
@@ -8870,7 +8971,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		.getByRole('dialog', { name: 'Connect PixelLab' })
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	await expect(east).toHaveAttribute('aria-pressed', 'true');
 	await expect(west).toHaveAttribute('aria-pressed', 'false');
 	await page.evaluate(() => {
@@ -9070,7 +9171,7 @@ test('targeted move replacement names mirrored effects without offering a separa
 	});
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
-	await page.getByRole('menuitem', { name: /^Redraw/ }).click();
+	await openClipTool(page, /^Redraw/);
 	await expect(
 		page
 			.getByRole('dialog', { name: 'Redraw Walk', exact: true })
@@ -9098,6 +9199,11 @@ test('targeted move replacement names mirrored effects without offering a separa
 	await directions.getByRole('button', { name: 'East direction', exact: true }).click();
 	await expect(directions).not.toHaveAccessibleDescription(/Mirrored views also change/);
 });
+
+async function openFrameReplacement(details: Locator) {
+	await expect(details).toBeVisible();
+	await openItemSection(details, 'Quality');
+}
 
 test('stage makes all missing item views while explicit repair stays on the current view', async ({
 	page,
@@ -9208,7 +9314,7 @@ test('stage makes all missing item views while explicit repair stays on the curr
 	await expect(stageNote.getByRole('button', { name: /^Make it again/ })).toHaveCount(0);
 	const make = stageNote.getByRole('button', { name: /^Make missing views/ });
 	await expect(make).toContainText('~6 gens');
-	await expect(make).not.toContainText('...');
+	await expect(make).not.toContainText('…');
 	await expect(make.locator('[data-surface-chevron]')).toHaveCount(0);
 	await make.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
@@ -9229,9 +9335,9 @@ test('stage makes all missing item views while explicit repair stays on the curr
 	// The stopped repair's footer Discard leaves it, as Cancel did.
 	await sheet.getByRole('button', { name: 'Discard', exact: true }).click();
 	await expect(sheet).toBeHidden();
-	await selectedItemDetails(page);
-	const repair = page.getByRole('button', { name: /^Repair item/ });
-	const redraw = page.getByRole('button', { name: /^Redraw item/ });
+	await openFrameReplacement(await selectedItemDetails(page));
+	const repair = page.getByRole('button', { name: /^Repair \S+ view/ });
+	const redraw = page.getByRole('button', { name: /^Redraw \S+ view/ });
 	const simulateRepairPlan = (tier: number) =>
 		page.evaluate(async (tier) => {
 			const appPath = '/src/lib/app.svelte.ts',
@@ -9253,7 +9359,7 @@ test('stage makes all missing item views while explicit repair stays on the curr
 		await simulateRepairPlan(0);
 		await expect(repair).toBeDisabled();
 		await expect(redraw).toBeDisabled();
-		await expect(repair).toHaveAttribute('aria-describedby', 'item-repair-tier');
+		await expect(repair).toHaveAttribute('aria-describedby', /(^| )item-repair-tier( |$)/);
 		await expect(page.locator('#item-repair-tier')).toContainText('Tier 1 required');
 		for (const [tier, gens] of [
 			[1, tierOneGens],
@@ -9265,7 +9371,7 @@ test('stage makes all missing item views while explicit repair stays on the curr
 			await expect(redraw).toContainText(`~${redrawGens} gens`);
 			await expect(repair).toContainText(`~${gens} gens`);
 			await expect(page.locator('#item-repair-tier')).toHaveCount(0);
-			const requests = page.getByText('This repair uses 3 PixelLab generation requests.', {
+			const requests = page.getByText('3 PixelLab requests.', {
 				exact: false
 			});
 			if (gens === 30) await expect(requests).toBeVisible();
@@ -9274,6 +9380,7 @@ test('stage makes all missing item views while explicit repair stays on the curr
 	};
 	await expectRepairTiers(10, 10, 10);
 	await oversizedItemFixture(page, fixture.itemId);
+	await openFrameReplacement(page.locator('dialog.item-detail[open]'));
 	await expectRepairTiers(30, 15, 15);
 	await repair.click();
 	sheet = page.getByRole('dialog', { name: 'Repair item frames', exact: true });
@@ -9421,8 +9528,8 @@ test('a repair whose later batch fails offers its finished repairs for free and 
 		state.ui.all = false;
 		state.pick(id);
 	}, itemId);
-	await selectedItemDetails(page);
-	await page.getByRole('button', { name: /^Repair item/ }).click();
+	await openFrameReplacement(await selectedItemDetails(page));
+	await page.getByRole('button', { name: /^Repair \S+ view/ }).click();
 	const review = page.getByRole('dialog', { name: 'Review item repair' });
 	// The note names what is kept and why the later batch stopped.
 	const stoppedNote = review.getByText(
@@ -9510,7 +9617,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
 	const { itemId } = await targetedRepairFixture(page);
-	const openRepair = async (action = /^Repair item/) => {
+	const openRepair = async (action = /^Repair \S+ view/) => {
 		await page.evaluate(async (id) => {
 			const path = '/src/studio/state.svelte.ts',
 				state = await import(path);
@@ -9519,7 +9626,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 			state.ui.all = false;
 			state.pick(id);
 		}, itemId);
-		await selectedItemDetails(page);
+		await openFrameReplacement(await selectedItemDetails(page));
 		await page.getByRole('button', { name: action }).click();
 	};
 	const saved = () =>
@@ -9579,7 +9686,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 			return put.call(this, value, key);
 		};
 	});
-	await openRepair(/^Redraw item/);
+	await openRepair(/^Redraw \S+ view/);
 	const redrawReview = page.getByRole('dialog', { name: 'Review item redraw' });
 	await expect(
 		redrawReview.getByRole('img', { name: 'Redrawn frame 1', exact: true })
@@ -9715,7 +9822,8 @@ test('the item sheet offers one priced edit-images-v2 request and holds its resu
 				.walk;
 		}, projectId);
 	const pane = await selectedItemDetails(page);
-	const make = pane.getByRole('button', { name: /^Make for Walk/ });
+	await openItemSection(pane, 'Moves & States');
+	const make = pane.getByRole('button', { name: /^Generate \d+ moves?/ });
 	await expect(make).toContainText(`~${gens} gens`);
 	await pane.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
 	const api = page.getByRole('dialog', { name: 'API calls', exact: true });
@@ -9823,8 +9931,10 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 		.locator('.stage-note')
 		.getByRole('button', { name: /^Make missing views/ });
 	await expect(stageMake).toContainText('~10 gens');
-	await selectedItemDetails(page);
-	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toContainText('~10 gens');
+	await openItemSection(await selectedItemDetails(page), 'Moves & States');
+	await expect(page.getByRole('button', { name: /^Generate \d+ moves?/ })).toContainText(
+		'~10 gens'
+	);
 	await page.evaluate(async (id) => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path),
@@ -9840,13 +9950,14 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 	}, fixture.itemId);
 	// A held item cannot use the frozen grid. It used to be refused here; it is now priced on its measured joints with the
 	// suspicious frames named on the quote before anything is bought.
-	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toBeEnabled();
-	await expect(page.getByRole('button', { name: /^Make for Walk/ })).toContainText('gens');
+	await openItemSection(page.locator('dialog.item-detail[open]'), 'Moves & States');
+	await expect(page.getByRole('button', { name: /^Generate \d+ moves?/ })).toBeEnabled();
+	await expect(page.getByRole('button', { name: /^Generate \d+ moves?/ })).toContainText('gens');
 	await expect(
 		page.locator('.notice').filter({ hasText: 'Some measured joints look unusual' }).first()
 	).toContainText('frame 2');
 	await page
-		.getByRole('dialog', { name: 'Item', exact: true })
+		.locator('dialog.item-detail[open]')
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	await inspectStage(page);
@@ -9899,8 +10010,8 @@ test('deferred item repair refuses changed artwork and price after Connect', asy
 		s.ui.dir = 'west';
 		s.pick(id);
 	}, fixture.itemId);
-	await selectedItemDetails(page);
-	const repair = page.getByRole('button', { name: /^Repair item/ });
+	await openFrameReplacement(await selectedItemDetails(page));
+	const repair = page.getByRole('button', { name: /^Repair \S+ view/ });
 	await expect(repair).toContainText('~10 gens');
 	await repair.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
@@ -10583,7 +10694,7 @@ test('bounded body color correction discloses changed checks and equipment cost 
 	expect(errors).toEqual([]);
 });
 
-test('standing-first items quote only standing and offer actual custom moves one at a time', async ({
+test('standing-first items quote standing and draw selected custom moves together', async ({
 	page,
 	context
 }, info) => {
@@ -10677,7 +10788,7 @@ test('standing-first items quote only standing and offer actual custom moves one
 		'0 of 6 items drawn'
 	);
 	await page.getByRole('button', { name: 'More actions for Custom walk', exact: true }).click();
-	await page.getByRole('menuitem', { name: /^Generate items/ }).click();
+	await openClipTool(page, /^Generate items/);
 	const picker = page.getByRole('dialog', { name: 'Generate items for Custom walk', exact: true });
 	const pickerRow = picker.getByRole('button', { name: new RegExp(fixture.itemName) });
 	await expect(pickerRow).toContainText('12 gens');
@@ -10692,8 +10803,13 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await equipmentMode(page, 'States');
 	await page.getByRole('button', { name: 'More actions for Standing', exact: true }).click();
 	await expect(page.getByRole('menuitem', { name: /^Rename/ })).toBeVisible();
-	await expect(page.getByRole('menuitem', { name: /^Generate items/ })).toHaveCount(0);
+	// Item drawing lives in the State's window, and Standing never needs it.
+	await page.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
+	const stateWindow = page.locator('dialog.clip-window[open]');
+	await expect(stateWindow).toBeVisible();
+	await expect(stateWindow.getByRole('button', { name: /^Generate items/ })).toHaveCount(0);
 	await page.keyboard.press('Escape');
+	await expect(stateWindow).toHaveCount(0);
 	// The dimmed tile asks instead of switching Preview to Standing: draw it for this move, or wear it anyway.
 	await equipmentGroup(page, 'Main hand');
 	const tile = page.locator(`[data-tile="${fixture.itemId}"]`);
@@ -10880,24 +10996,31 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await expect(missingItem).toBeInViewport();
 	await missingItem.click();
 	await page.setViewportSize({ width: 1440, height: 900 });
-	const pane = page.getByRole('dialog', { name: 'Item', exact: true });
-	const moves = pane.getByRole('combobox', { name: 'Generate item for move', exact: true });
-	await expect(moves.locator('option')).toHaveText(['Custom walk', 'Custom cross punch']);
-	await moves.selectOption('custom_walk');
-	await expect(pane.getByRole('button', { name: /^Make for Custom walk/ })).toContainText(
-		'~12 gens'
-	);
-	// Coverage marks each move this item is drawn for, and one action fills every missing move together.
-	const coverageList = pane.getByRole('list', { name: 'Move coverage', exact: true });
-	await expect(coverageList.getByRole('listitem', { name: 'Standing: missing' })).toBeVisible();
-	await expect(coverageList.getByRole('listitem', { name: 'Custom walk: missing' })).toBeVisible();
+	const pane = page.locator('dialog.item-detail[open]');
+	await openItemSection(pane, 'Moves & States');
+	const walk = pane.getByRole('checkbox', { name: /^Custom walk/ });
+	const punch = pane.getByRole('checkbox', { name: /^Custom cross punch/ });
+	const draw = pane.getByRole('button', { name: /^Generate \d+ moves?/ });
+	await expect(walk).toBeChecked();
+	await expect(punch).not.toBeChecked();
+	await expect(draw).toContainText('~12 gens');
+	// Every move the item lacks is listed as missing, each with what it lacks.
+	for (const move of ['Standing', 'Custom walk', 'Custom cross punch'])
+		await expect(pane.locator('.clip-row[data-missing]').filter({ hasText: move })).toBeVisible();
 	await expect(
-		coverageList.getByRole('listitem', { name: 'Custom cross punch: missing' })
+		pane.locator('summary').getByText('3 moves incomplete', { exact: true })
 	).toBeVisible();
-	await expect(pane.getByText('Missing 3 moves', { exact: true })).toBeVisible();
-	const fillMissing = pane.getByRole('button', { name: /^Fill missing moves/ });
-	await expect(fillMissing).toContainText('~15 gens');
-	await fillMissing.click();
+	// Two moves need no Select all: each box adds to the one total on the button.
+	await expect(pane.getByRole('button', { name: 'Select all', exact: true })).toHaveCount(0);
+	await punch.check();
+	await expect(draw).toContainText('~15 gens');
+	await walk.uncheck();
+	await punch.uncheck();
+	await expect(pane.getByRole('button', { name: 'Generate', exact: true })).toBeDisabled();
+	await expect(pane.locator('#item-missing-help')).toHaveText('Select a move to generate.');
+	await walk.check();
+	await punch.check();
+	await draw.click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
 		.getByRole('button', { name: 'Close', exact: true })
@@ -10913,6 +11036,7 @@ test('standing-first items quote only standing and offer actual custom moves one
 		await expect(api).not.toContainText(other);
 		await api.getByRole('button', { name: 'Close API calls', exact: true }).click();
 	};
+	await openItemSection(pane, 'Moves & States');
 	await peekCalls('/animate-with-skeleton-v3', '/edit-animation-v2');
 	// Settings > Creation > Moves now draws items on the move's own frames: the open offer follows it.
 	await page.evaluate(async () => {
@@ -10923,11 +11047,12 @@ test('standing-first items quote only standing and offer actual custom moves one
 		);
 		(await import(path)).noteCreationSettings();
 	});
-	await expect(pane.getByRole('button', { name: /^Make for Custom walk/ })).not.toContainText(
+	await expect(pane.getByRole('button', { name: /^Generate \d+ moves?/ })).not.toContainText(
 		'~12 gens'
 	);
 	await peekCalls('/edit-animation-v2', '/animate-with-skeleton-v3');
-	await pane.getByRole('button', { name: /^Make for Custom walk/ }).click();
+	await punch.check();
+	await draw.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	await connect
 		.getByLabel('Paste your Secret API key', { exact: true })
@@ -10946,15 +11071,22 @@ test('standing-first items quote only standing and offer actual custom moves one
 	);
 	const scope = await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts';
-		return (await import(path)).moving.spec;
+		const { moving } = await import(path);
+		return {
+			current: moving.spec,
+			queued: moving.queued.map((move: { spec: unknown }) => move.spec)
+		};
 	});
-	expect(scope).toMatchObject({
+	expect(scope.current).toMatchObject({
 		id: 'custom_walk',
 		items: [fixture.itemId],
 		itemsOnly: true,
 		itemMethod: 'anchor'
 	});
-	expect(scope.dirs).toEqual(['south', 'east', 'north', 'west']);
+	expect(scope.current.dirs).toEqual(['south', 'east', 'north', 'west']);
+	expect(scope.queued).toMatchObject([
+		{ id: 'custom_cross_punch', items: [fixture.itemId], itemsOnly: true }
+	]);
 	expect(posts).toEqual([]);
 });
 
@@ -11201,7 +11333,7 @@ test('move review gates item selection and shows live estimates without spending
 	await picker.getByRole('button', { name: 'Not now', exact: true }).click();
 	await expect(picker).toBeHidden();
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
-	await page.getByRole('menuitem', { name: /^Generate items/ }).click();
+	await openClipTool(page, /^Generate items/);
 	const later = page.getByRole('dialog', { name: 'Generate items for Walk', exact: true });
 	await later.getByRole('button', { name: new RegExp(fixture.itemName) }).click();
 	await later.getByRole('button', { name: 'Generate 1 item', exact: true }).click();
@@ -11220,7 +11352,7 @@ test('move review gates item selection and shows live estimates without spending
 	await replacement.getByRole('button', { name: 'Close', exact: true }).click();
 	await walkReview.click();
 	await review.getByRole('button', { name: 'Discard draft', exact: true }).click();
-	await page.getByRole('button', { name: 'New move...', exact: true }).click();
+	await page.getByRole('button', { name: 'New move…', exact: true }).click();
 	await replacement.getByRole('button', { name: /^Replace Walk views/ }).click();
 	const staleRegeneration = await page.evaluate(async () => {
 		const path = '/src/studio/formDrafts.ts';
@@ -11649,13 +11781,14 @@ for (const changed of ['item', 'rig'] as const)
 		);
 		const fixture = await freePaletteFixture(page),
 			pane = await selectedItemDetails(page);
+		await openItemSection(pane, 'Quality');
 		await page.evaluate(async () => {
 			const path = '/src/lib/i18n.ts',
 				i18n = await import(path);
 			await i18n.selectLanguage('fr');
 		});
 		const action = pane.getByRole('button', {
-			name: /^Harmoniser les couleurs de l’objet.*Gratuit$/
+			name: /^Harmoniser les couleurs de la vue \S+$/
 		});
 		await expect(action).toBeVisible();
 		await page.evaluate(
@@ -11694,7 +11827,7 @@ for (const changed of ['item', 'rig'] as const)
 
 // ---- Per-tile item menu (docs/design/2026-11-11-ui-refinement/ui-lab-7.html) and Wardrobe placement ----
 
-async function editableCopy(page: Page) {
+async function editableCopy(page: Page, url = '/#/') {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem(
@@ -11703,7 +11836,7 @@ async function editableCopy(page: Page) {
 		);
 		localStorage.setItem('pixeldoll.visited', '1');
 	});
-	await openStudio(page, '/#/');
+	await openStudio(page, url);
 	await newItem(page, 'Head');
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	await page.getByRole('textbox', { name: 'What is it?', exact: true }).waitFor();
@@ -11713,6 +11846,18 @@ async function editableCopy(page: Page) {
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 }
+/** Open an item's details from its tile menu without changing what is worn. */
+async function openItemDetails(page: Page, name: string) {
+	await equipmentMode(page, 'Wardrobe');
+	const more = page.getByRole('button', { name: `More options for ${name}`, exact: true }).first();
+	await more.scrollIntoViewIfNeeded();
+	await more.click();
+	await page.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
+	const dialog = page.locator('dialog.item-detail[open]');
+	await expect(dialog).toBeVisible();
+	return dialog;
+}
+
 const itemMenu = (page: Page) => page.locator('#item-menu');
 
 for (const kind of ['outfit', 'move'] as const) {
@@ -11789,8 +11934,13 @@ for (const kind of ['outfit', 'move'] as const) {
 		await expect(menu).toBeVisible();
 		await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 		await expect(menu.locator('hr')).toHaveCount(1);
-		// The first action takes focus: Rename, as in character and item menus.
-		await expect(menu.getByRole('menuitem', { name: 'Rename...', exact: true })).toBeFocused();
+		// The first action takes focus: View and edit for a move (as for characters and items), Rename for an outfit.
+		await expect(
+			menu.getByRole('menuitem', {
+				name: kind === 'outfit' ? 'Rename…' : 'View and edit…',
+				exact: true
+			})
+		).toBeFocused();
 		await page.keyboard.press('Escape');
 		await expect(trigger).toBeFocused();
 		await choice.click({ button: 'right' });
@@ -11867,29 +12017,54 @@ for (const kind of ['outfit', 'move'] as const) {
 				'default',
 				'walk'
 			]);
+		// Moves and outfits both go to the Trash, asking first.
 		await trigger.click();
-		if (kind === 'move') {
+		await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+		const confirm = page.getByRole('alertdialog', {
+			name: `Move ${name} to Trash?`,
+			exact: true
+		});
+		await expect(confirm.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
+		await page.keyboard.press('Escape');
+		await expect(row).toBeVisible();
+		await trigger.click();
+		await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+		await confirm.getByRole('button', { name: 'Move to Trash', exact: true }).click();
+		if (kind === 'outfit') {
+			// Its notice brings it back from the Trash.
+			await expect(row).toHaveCount(0);
+			await page
+				.locator('.bu-toast-region')
+				.getByRole('button', { name: 'Undo', exact: true })
+				.click();
+			await expect(row).toBeVisible();
+			// A dress edit made while it was in the Trash: undoing that edit later never takes the outfit away again.
+			await trigger.click();
 			await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
-			const confirm = page.getByRole('alertdialog', {
-				name: `Move ${name} to Trash?`,
-				exact: true
-			});
-			await expect(confirm.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
-			await page.keyboard.press('Escape');
+			await confirm.getByRole('button', { name: 'Move to Trash', exact: true }).click();
+			await expect(row).toHaveCount(0);
+			// Its row left with the focus: the outfit now last in the list takes it.
+			await expect(page.locator('.outfits .row[aria-pressed]').last()).toBeFocused();
+			await equipmentGroup(page, 'Head');
+			await section(page, 'Head')
+				.getByRole('button', { name: /^Wizard hat(,|$)/ })
+				.click();
+			await equipmentMode(page, 'Outfits');
+			await page
+				.locator('.bu-toast-region')
+				.getByRole('button', { name: 'Undo', exact: true })
+				.first()
+				.click();
+			await expect(row).toBeVisible();
+			await page.keyboard.press('Control+z');
 			await expect(row).toBeVisible();
 			await trigger.click();
 			await menu.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 			await confirm.getByRole('button', { name: 'Move to Trash', exact: true }).click();
-		} else {
-			await menu.getByRole('menuitem', { name: 'Delete outfit', exact: true }).click();
-			await expect(page.getByRole('alertdialog')).toHaveCount(0);
-			await expect(row).toHaveCount(0);
-			await page.getByRole('button', { name: 'Undo Delete outfit', exact: true }).click();
-			await expect(row).toBeVisible();
-			await trigger.click();
-			await menu.getByRole('menuitem', { name: 'Delete outfit', exact: true }).click();
 		}
 		await expect(row).toHaveCount(0);
+		// Like every Move to Trash, focus goes on to the row that took its place.
+		if (kind === 'move') await expect(page.locator('.move-list .move-row:focus')).toHaveCount(1);
 		await reloadStudio(page);
 		await equipmentMode(page, kind === 'outfit' ? 'Outfits' : 'Moves');
 		await expect(row).toHaveCount(0);
@@ -11919,6 +12094,23 @@ for (const kind of ['outfit', 'move'] as const) {
 		}
 	});
 }
+
+test('a character moved to the Trash from the selection list hands focus to the row that took its place', async ({
+	page
+}) => {
+	await editableCopy(page);
+	await page.getByRole('button', { name: 'Characters', exact: true }).click();
+	const rows = page.locator('.character-rows');
+	const copy = rows.locator('.character-entry').filter({ hasText: /copy/ });
+	await copy.getByRole('button', { name: /^More actions for / }).click();
+	await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
+	await page
+		.getByRole('alertdialog')
+		.getByRole('button', { name: 'Move to Trash', exact: true })
+		.click();
+	await expect(copy).toHaveCount(0);
+	await expect(rows.locator('.character-row').first()).toBeFocused();
+});
 
 test('item long-press opens without wearing, cancels on movement, and downloads an editable item ZIP', async ({
 	page
@@ -11994,7 +12186,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 }) => {
 	await editableCopy(page);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	await page
 		.getByRole('dialog', { name: 'Settings' })
 		.getByRole('button', { name: 'Wardrobe', exact: true })
@@ -12067,7 +12259,10 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await expectAnchoredMenu(page);
 	await expect(more).toHaveAttribute('aria-expanded', 'true');
 	const items = itemMenu(page).getByRole('menuitem');
-	await expect(items.first()).toHaveAccessibleName('Details...');
+	await expect(items.first()).toHaveAccessibleName('View and edit…');
+	// The tile's warning is flagged on Details, where it is dealt with: a dot, and the reason as its description.
+	await expect(items.first()).toHaveAccessibleDescription(/^Missing frames in \d+ moves?$/);
+	await expect(items.first().locator('.details-dot')).toBeVisible();
 	await expect(items.first()).toBeFocused();
 	await expect(items.last()).toHaveAccessibleName('Move to Trash…');
 	const iconOffsets = await items.evaluateAll((rows) =>
@@ -12078,13 +12273,32 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	);
 	expect(iconOffsets).toEqual(Array(iconOffsets.length).fill(iconOffsets.at(-1)));
 	await expect(itemMenu(page).getByRole('menuitem', { name: /Wear|Take off/ })).toHaveCount(0);
+	// Worn or not, the menu keeps the same rows: Recolor stays in place while it is off, saying why.
+	const rows = await items.evaluateAll((list) =>
+		list.map((row) => row.getAttribute('aria-label') ?? row.textContent)
+	);
 	await page.keyboard.press('ArrowDown');
-	await expect(items.nth(1)).toHaveAccessibleName('Rename...');
+	await expect(items.nth(1)).toHaveAccessibleName('Recolor');
+	await expect(items.nth(1)).toHaveAttribute('aria-disabled', 'true');
+	await expect(items.nth(1)).toHaveAccessibleDescription('Wear it to change its colors');
 	await expect(items.nth(1)).toBeFocused();
 	await page.keyboard.press('ArrowDown');
-	await expect(items.nth(2)).toHaveAccessibleName('Edit appearance…');
+	await expect(items.nth(2)).toHaveAccessibleName('Make copy with new look…');
 	await expect(items.nth(2)).toBeFocused();
 	await page.keyboard.press('Escape');
+	await hat.click();
+	await expect(hat).toHaveAttribute('aria-pressed', 'true');
+	await more.click();
+	await expect(items.nth(1)).not.toHaveAttribute('aria-disabled');
+	expect(
+		await items.evaluateAll((list) =>
+			list.map((row) => row.getAttribute('aria-label') ?? row.textContent)
+		)
+	).toEqual(rows);
+	await page.keyboard.press('Escape');
+	await hat.click();
+	await expect(hat).toHaveAttribute('aria-pressed', 'false');
+	await more.focus();
 	await expect.poll(() => menuOpen(page)).toBe(false);
 	await expect(more).toBeFocused();
 	await expect(more).toHaveAttribute('aria-expanded', 'false');
@@ -12106,11 +12320,8 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	expect(await page.evaluate(() => document.activeElement !== document.body)).toBe(true);
 	await more.click();
 	await expect(items.first()).toBeFocused();
-	await page.keyboard.press('Shift+Tab');
-	// Shift+Tab from the first command reaches the header's Wear toggle, still inside the menu.
-	await expect(
-		itemMenu(page).getByRole('button', { name: 'Wear Wizard hat', exact: true })
-	).toBeFocused();
+	// The menu has no Wear toggle (a tap on the tile wears it): Shift+Tab from the first command leaves the menu.
+	await expect(itemMenu(page).getByRole('button', { name: /^Wear / })).toHaveCount(0);
 	await page.keyboard.press('Shift+Tab');
 	await expect.poll(() => menuOpen(page)).toBe(false);
 
@@ -12146,21 +12357,6 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await expectAnchoredMenu(page);
 	await expect(items.first()).toBeFocused();
 
-	// Wear is a toggle in the menu header, not a command: one fixed name, the state in aria-pressed, and a different
-	// glyph and status line for each state.
-	const toggle = itemMenu(page).getByRole('button', { name: 'Wear Wizard hat', exact: true });
-	await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-	await expect(toggle).toHaveAttribute('title', 'Wear');
-	const glyph = () => toggle.locator('svg').getAttribute('class');
-	const offGlyph = await glyph();
-	await expect(itemMenu(page).locator('.item-menu-marks')).not.toContainText('Wearing');
-	await toggle.click();
-	await expect(hat).toHaveAttribute('aria-pressed', 'true');
-	await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-	await expect(toggle).toHaveAccessibleName('Wear Wizard hat');
-	await expect.poll(glyph).not.toBe(offGlyph);
-	await expect(itemMenu(page).locator('.item-menu-marks')).toContainText('Wearing');
-
 	// Delete asks first, focusing the safe choice.
 	await items.last().click();
 	const deleteAlert = page.getByRole('alertdialog', { name: 'Move Wizard hat to Trash?' });
@@ -12186,9 +12382,9 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 		exact: true
 	});
 	await helmetMore.click();
-	await itemMenu(page).getByRole('menuitem', { name: 'Details...', exact: true }).click();
-	const details = page.getByRole('dialog', { name: 'Item', exact: true });
-	await expect(details.locator('.insp-title')).toHaveText('Steel helmet');
+	await itemMenu(page).getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
+	const details = page.locator('dialog.item-detail[open]');
+	await expect(details.locator('.sheet-title')).toHaveText('Steel helmet');
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(helmetMore).toBeFocused();
 
@@ -12216,10 +12412,14 @@ test('tile status shows on the tile and in its name, and Recolor opens the item�
 	// The worn helmet hides the worn hair.
 	await pickItem(page, 'Steel helmet');
 	let details = await selectedItemDetails(page);
-	await details
-		.getByRole('group', { name: 'When worn, hide', exact: true })
-		.getByRole('button', { name: 'Hair', exact: true })
-		.click();
+	await openItemSection(details, 'Outfit');
+	const hairChip = details
+		.getByRole('group', { name: 'Hide other items while worn', exact: true })
+		.getByRole('switch', { name: 'Hair', exact: true });
+	await expect(hairChip).not.toBeChecked();
+	await hairChip.click();
+	// The chip itself shows the saved hide (the manifest is raw state, refreshed through doc.rev).
+	await expect(hairChip).toBeChecked();
 	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentGroup(page, 'Hair');
 	const hair = section(page, 'Hair').getByRole('button', {
@@ -12245,7 +12445,8 @@ test('tile status shows on the tile and in its name, and Recolor opens the item�
 	details = await selectedItemDetails(page);
 	// The trimmed sheet links to the Colors tab instead of repeating it.
 	await expect(details.locator('.colors')).toHaveCount(0);
-	await details.getByRole('button', { name: 'Recolor', exact: true }).click();
+	await details.getByRole('button', { name: 'Item actions', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Recolor', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await expect(
 		page
@@ -12256,6 +12457,205 @@ test('tile status shows on the tile and in its name, and Recolor opens the item�
 	await expect(heading).toBeInViewport();
 	const list = (await page.locator('.color-sections').boundingBox())!;
 	expect(Math.abs((await heading.boundingBox())!.y - list.y)).toBeLessThan(24);
+});
+
+/** Page-data tests load the dev server, whose /src modules the preview server does not serve. */
+const devBaseURL = (info: TestInfo) =>
+	info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!;
+
+const wornItem = (page: Page, slot: string) =>
+	page.evaluate(
+		async ({ path, slot }) => {
+			const state = await import(path);
+			return state.doc.items[slot] ?? null;
+		},
+		{ path: '/src/studio/state.svelte.ts', slot }
+	);
+
+const headLayerOverrides = (page: Page) =>
+	page.evaluate(async (path) => {
+		const state = await import(path);
+		return (
+			state.store.project?.manifest.slots.find((slot: { id: string }) => slot.id === 'head')
+				?.zOverrides ?? []
+		);
+	}, '/src/studio/state.svelte.ts');
+
+const headDepths = (page: Page) =>
+	page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts';
+		const composePath = '/src/lib/compose/compose.ts';
+		const { store, ui } = await import(statePath);
+		const { drawList } = await import(composePath);
+		const manifest = store.project.manifest;
+		return ['south', 'east'].map(
+			(dir) =>
+				drawList(
+					manifest,
+					{ head: 'hat_wizard', hair: 'hair_brown', back: 'cape_red' },
+					ui.anim,
+					dir,
+					0
+				).find((draw: { item: { id: string } }) => draw.item.id === 'hat_wizard').z
+		);
+	});
+
+/** The worn helmet hides the worn hair through its Hide other items while worn switch. */
+async function hideHairWithHelmet(page: Page) {
+	await pickItem(page, 'Steel helmet');
+	const details = await selectedItemDetails(page);
+	await openItemSection(details, 'Outfit');
+	await details
+		.getByRole('group', { name: 'Hide other items while worn', exact: true })
+		.getByRole('switch', { name: 'Hair', exact: true })
+		.check();
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
+}
+
+test('item details wears and takes off from its primary action', async ({ page }, info) => {
+	await editableCopy(page, devBaseURL(info));
+	const details = await openItemDetails(page, 'Wizard hat');
+	const wear = details.getByRole('button', { name: 'Wear', exact: true });
+	// The wear action is visible before opening any sections.
+	await expect(wear).toBeInViewport();
+	await wear.click();
+	await expect.poll(() => wornItem(page, 'head')).toBe('hat_wizard');
+	await expect(details.getByRole('button', { name: 'Take off', exact: true })).toBeVisible();
+	await details.getByRole('button', { name: 'Take off', exact: true }).click();
+	await expect.poll(() => wornItem(page, 'head')).toBe(null);
+	await expect(details.getByRole('button', { name: 'Wear', exact: true })).toBeVisible();
+});
+
+test('item details names what hides an item and shows it again', async ({ page }, info) => {
+	await editableCopy(page, devBaseURL(info));
+	await hideHairWithHelmet(page);
+	await pickItem(page, 'Red cape');
+	const cape = await selectedItemDetails(page);
+	await openItemSection(cape, 'Outfit');
+	await cape.getByRole('switch', { name: 'Hair', exact: true }).check();
+	await cape.getByRole('button', { name: 'Close', exact: true }).click();
+	const details = await openItemDetails(page, 'Messy brown hair');
+	const hidden = details.getByText(
+		/^Hidden by (Red cape and Steel helmet|Steel helmet and Red cape)$/
+	);
+	await expect(hidden).toBeVisible();
+	await details.getByRole('button', { name: /^Stop .+ from hiding it$/ }).click();
+	await expect(hidden).toHaveCount(0);
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
+	await equipmentGroup(page, 'Hair');
+	await expect(
+		section(page, 'Hair')
+			.getByRole('button', { name: /^Messy brown hair/ })
+			.first()
+	).not.toHaveAttribute('data-dim');
+});
+
+test('item details reorders layers for an unworn item, gates the ends and resets them', async ({
+	page
+}, info) => {
+	await editableCopy(page, devBaseURL(info));
+	const details = await openItemDetails(page, 'Wizard hat');
+	const layerSection = await openItemSection(details, 'Outfit');
+	const forward = details.getByRole('button', { name: 'Bring forward', exact: true });
+	const backward = details.getByRole('button', { name: 'Send backward', exact: true });
+	// The hat is not worn; it is placed as if worn, so Backward works among the worn layers.
+	await expect(backward).toBeEnabled();
+	const before = await headLayerOverrides(page);
+	const [south, east] = await headDepths(page);
+	const direction = details.getByRole('switch', { name: 'Only for facing south' });
+	await direction.check();
+	await backward.click();
+	const [southOnly, eastOnly] = await headDepths(page);
+	expect(southOnly).toBeLessThan(south);
+	expect(eastOnly).toBe(east);
+	await direction.uncheck();
+	// A step passes only what the shown facing visibly changes: facing south the hat is already behind everything it
+	// overlaps, so the Outfit preview turns east, where it still has a layer to pass, and steps for every facing from there.
+	await expect(backward).toBeDisabled();
+	const outfitArt = details.locator('.layer-art canvas');
+	const southBox = (await outfitArt.boundingBox())!;
+	// Hidden copies of every facing label reserve the widest width; only the shown one is visible.
+	const facingEast = details.getByText(/^Facing east$/i).filter({ visible: true });
+	for (let turn = 0; turn < 8 && !(await facingEast.isVisible()); turn++)
+		await details.getByRole('button', { name: 'Turn right', exact: true }).click();
+	await expect(facingEast).toBeVisible();
+	// Framed once for every facing, the outfit preview keeps its size as it turns, and opens full size in the viewer.
+	const eastBox = (await outfitArt.boundingBox())!;
+	expect([eastBox.width, eastBox.height]).toEqual([southBox.width, southBox.height]);
+	await details.getByRole('button', { name: /^Open .+ in the outfit full size$/ }).click();
+	const outfitViewer = page.locator('dialog.image-viewer');
+	await expect(outfitViewer.getByRole('combobox', { name: 'Direction', exact: true })).toHaveValue(
+		'east'
+	);
+	await page.keyboard.press('Escape');
+	await expect(outfitViewer).toHaveCount(0);
+	await backward.click();
+	await expect.poll(async () => (await headDepths(page))[1]).toBeLessThan(east);
+	await expect.poll(() => headLayerOverrides(page)).not.toEqual(before);
+	await expect(details.getByRole('button', { name: 'Reset order', exact: true })).toBeVisible();
+	await expect(forward).toBeEnabled();
+	// At the very back there is nothing left to move behind: the arrow disables instead of silently doing nothing.
+	for (let step = 0; step < 8 && (await backward.isEnabled()); step++) await backward.click();
+	await expect(backward).toBeDisabled();
+	await expect(forward).toBeEnabled();
+	// A disclosure toggles from the keyboard, and its controls stay reachable.
+	const summary = details.locator('summary').filter({ hasText: 'Outfit' });
+	await summary.focus();
+	await page.keyboard.press('Enter');
+	await expect(layerSection).not.toHaveAttribute('open', '');
+	await page.keyboard.press('Space');
+	await expect(layerSection).toHaveAttribute('open', '');
+	await details.getByRole('button', { name: 'Reset order', exact: true }).click();
+	await expect.poll(() => headLayerOverrides(page)).toEqual(before);
+});
+
+test('layer order explains why a hidden item cannot be reordered', async ({ page }, info) => {
+	await editableCopy(page, devBaseURL(info));
+	await hideHairWithHelmet(page);
+	const details = await openItemDetails(page, 'Messy brown hair');
+	await openItemSection(details, 'Outfit');
+	await expect(details.getByRole('button', { name: 'Bring forward', exact: true })).toBeDisabled();
+	await expect(details.getByRole('button', { name: 'Send backward', exact: true })).toBeDisabled();
+	await expect(details.getByText('Show this item to change its layer order.')).toBeVisible();
+});
+
+test('an unworn item in a hidden category is not called hidden and keeps its order controls', async ({
+	page
+}, info) => {
+	await editableCopy(page, devBaseURL(info));
+	await hideHairWithHelmet(page);
+	// The helmet still hides Hair, but no hair item is worn now.
+	await section(page, 'Hair').getByRole('button', { name: 'Empty hair', exact: true }).click();
+	await expect.poll(() => wornItem(page, 'hair')).toBe(null);
+	const details = await openItemDetails(page, 'Messy brown hair');
+	await expect(details.getByText(/^Hidden by /)).toHaveCount(0);
+	await openItemSection(details, 'Outfit');
+	// Tucked under the helmet, the hair has nothing visible to cross in front of it, but it can still go further back.
+	await expect(details.getByRole('button', { name: 'Send backward', exact: true })).toBeEnabled();
+	await expect(details.getByText('Show this item to change its layer order.')).toHaveCount(0);
+});
+
+test('item details fill a phone screen and keep Wear pinned while the body scrolls', async ({
+	page
+}, info) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	await editableCopy(page, devBaseURL(info));
+	const details = await openItemDetails(page, 'Wizard hat');
+	const viewport = page.viewportSize()!;
+	const bounds = (await details.boundingBox())!;
+	expect(Math.round(bounds.y)).toBe(0);
+	expect(Math.round(bounds.height)).toBe(viewport.height);
+	const wear = details.getByRole('button', { name: 'Wear', exact: true });
+	await expect(wear).toBeInViewport();
+	await expect(details.locator('summary').filter({ hasText: 'Moves & States' })).toContainText(
+		/\d+ moves? incomplete/
+	);
+	for (const section of ['Moves & States', 'Quality', 'Outfit', 'About', 'Technical details'])
+		await openItemSection(details, section);
+	await expect(details.getByRole('heading', { name: 'Quality', level: 3 })).toBeVisible();
+	await details.locator('.sheet-body').evaluate((body) => (body.scrollTop = body.scrollHeight));
+	await expect(wear).toBeInViewport();
+	await expect(details.getByRole('button', { name: 'Close', exact: true })).toBeInViewport();
 });
 
 for (const width of [1280, 390])
@@ -12538,7 +12938,15 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 		});
 		const slotsPath = '/src/lib/items/slots.ts',
 			slots = await import(slotsPath);
-		m.slots.push(slots.slotLadder(m.rig).find((slot: { id: string }) => slot.id === 'off_hand'));
+		const offHand = slots.slotLadder(m.rig).find((slot: { id: string }) => slot.id === 'off_hand');
+		m.slots.push(offHand, slots.createSlot('spare_shield', offHand, 'Spare shield'));
+		m.items.push({
+			...structuredClone(sword),
+			id: 'spare_round_shield',
+			name: 'Spare round shield',
+			slot: 'spare_shield',
+			materials: []
+		});
 		await db.put('projects', ctx.rec.id, ctx.rec);
 		await s.openProject(ctx.rec.id);
 		s.pick(sword.id);
@@ -12552,26 +12960,40 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await expect(sword).toHaveAttribute('aria-pressed', 'true');
 	await expect(shield).toHaveAttribute('aria-pressed', 'true');
 
+	// Two hands and the other hand's copy are rare setup: Details has them, not the tile menu.
 	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
 	await expectAnchoredMenu(page);
-	const twoHanded = itemMenu(page).getByRole('menuitemcheckbox', { name: 'Two-handed' });
+	await expect(itemMenu(page).getByRole('menuitemcheckbox', { name: 'Two-handed' })).toHaveCount(0);
+	await expect(itemMenu(page).getByRole('menuitem', { name: /^Make one for the/ })).toHaveCount(0);
+	await page.keyboard.press('Escape');
+	let details = await openItemDetails(page, 'Steel longsword');
+	await openItemSection(details, 'Outfit');
+	let twoHanded = details.getByRole('switch', { name: 'Two-handed', exact: true });
 	await expect(twoHanded).not.toBeChecked();
-	await expect(
-		itemMenu(page).getByRole('menuitem', { name: 'Make one for the Off hand...', exact: true })
-	).toBeVisible();
+	const otherHandCopy = (slot: string) =>
+		details.getByRole('button', { name: new RegExp(`^Make one for the ${slot}`) });
+	await expect(otherHandCopy('Off hand')).toBeVisible();
 
 	// Switching it on while worn takes the other hand's item off, says so, and Undo brings it back.
-	await twoHanded.click();
+	await twoHanded.check();
 	await expect(twoHanded).toBeChecked();
-	await expect(itemMenu(page).locator('.item-menu-title small')).toContainText('Two-handed');
-	await expect(itemMenu(page).getByRole('menuitem', { name: /^Make one for/ })).toHaveCount(0);
 	await expect(
 		page.getByText('Took off Round shield: Steel longsword is two-handed')
 	).toBeVisible();
-	await page.keyboard.press('Escape');
+	await expect(otherHandCopy('Off hand')).toBeVisible();
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(shield).toHaveAttribute('aria-pressed', 'false');
 	await expect(sword).toHaveAttribute('aria-pressed', 'true');
 	await expect(off).toContainText('Held by Steel longsword (two-handed).');
+	// Its tile says so with a grip icon, which its ⋮ explains.
+	await expect(sword).toHaveAccessibleName(/^Steel longsword, two-handed/);
+	await expect(sword.locator('.tile-status[data-kind="twoHanded"]')).toHaveAttribute(
+		'title',
+		'Uses both hands.'
+	);
+	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
+	await expect(itemMenu(page).locator('.item-menu-marks')).toContainText('Uses both hands.');
+	await page.keyboard.press('Escape');
 
 	// Putting something in the other hand takes the two-handed item off.
 	await shield.click();
@@ -12590,15 +13012,13 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 
 	// Make one for the other hand opens New item for that hand with the same description; the Off hand item offers
 	// the Main hand.
-	await off.getByRole('button', { name: 'More options for Round shield', exact: true }).click();
-	await expect(
-		itemMenu(page).getByRole('menuitem', { name: 'Make one for the Main hand...', exact: true })
-	).toBeVisible();
-	await page.keyboard.press('Escape');
-	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
-	await itemMenu(page)
-		.getByRole('menuitem', { name: 'Make one for the Off hand...', exact: true })
-		.click();
+	details = await openItemDetails(page, 'Round shield');
+	await openItemSection(details, 'Outfit');
+	await expect(otherHandCopy('Main hand')).toBeVisible();
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
+	details = await openItemDetails(page, 'Steel longsword');
+	await openItemSection(details, 'Outfit');
+	await otherHandCopy('Off hand').click();
 	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
 	await expect(
 		sheet.getByRole('button', { name: 'Where does it go?: Off hand', exact: true })
@@ -12613,16 +13033,14 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 		prompt
 	);
 	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
-
-	// Enter toggles the switch like any menu item.
 	await expect(page.getByRole('dialog', { name: 'New item', exact: true })).toHaveCount(0);
-	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
-	await expectAnchoredMenu(page);
-	const toggle = itemMenu(page).getByRole('menuitemcheckbox', { name: 'Two-handed' });
-	await toggle.focus();
-	await page.keyboard.press('Enter');
-	await expect(toggle).toBeChecked();
-	await page.keyboard.press('Escape');
+
+	// On again from Details.
+	details = await openItemDetails(page, 'Steel longsword');
+	await openItemSection(details, 'Outfit');
+	twoHanded = details.getByRole('switch', { name: 'Two-handed', exact: true });
+	await twoHanded.check();
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(shield).toHaveAttribute('aria-pressed', 'false');
 
 	// An outfit keeps the Main hand even when only its Off hand differs from what is worn, and still counts as current.
@@ -12651,6 +13069,16 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await page.getByRole('button', { name: 'Undo Wear Round shield', exact: true }).click();
 	await expect(sword).toHaveAttribute('aria-pressed', 'true');
 	await expect(shield).toHaveAttribute('aria-pressed', 'false');
+
+	details = await openItemDetails(page, 'Steel longsword');
+	await openItemSection(details, 'Outfit');
+	const oppositeHand = details.getByRole('switch', { name: 'Two-handed', exact: true });
+	await expect(details.getByRole('switch', { name: 'Spare shield', exact: true })).toHaveCount(0);
+	await expect(oppositeHand).toBeChecked();
+	await oppositeHand.uncheck();
+	await expect(oppositeHand).not.toBeChecked();
+	await oppositeHand.check();
+	await details.getByRole('button', { name: 'Close', exact: true }).click();
 	expect(posts).toEqual([]);
 });
 
@@ -12713,9 +13141,14 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 			[anim, itemId]
 		);
 	const original = await pixels('walk', 'helmet_steel');
+	// An item's Fix frames is in its details, under Quality.
+	const openItemFixFrames = async () => {
+		const details = await openItemDetails(page, 'Steel helmet');
+		await openItemSection(details, 'Quality');
+		await details.getByRole('button', { name: /^Fix frames/ }).click();
+	};
 
-	await page.getByRole('button', { name: 'More options for Steel helmet' }).click();
-	await page.getByRole('menuitem', { name: /^Fix frames/ }).click();
+	await openItemFixFrames();
 	const sheet = page.getByRole('dialog', { name: 'Fix frames' });
 	await sheet.getByRole('combobox', { name: 'Move' }).selectOption('walk');
 	const [download] = await Promise.all([
@@ -12771,8 +13204,7 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	await expect.poll(() => pixels('walk', 'helmet_steel')).not.toEqual(original);
 	await page.locator('.header-undo').click();
 	await expect.poll(() => pixels('walk', 'helmet_steel')).toEqual(original);
-	await page.getByRole('button', { name: 'More options for Steel helmet' }).click();
-	await page.getByRole('menuitem', { name: /^Fix frames/ }).click();
+	await openItemFixFrames();
 	await sheet.getByRole('combobox', { name: 'Move' }).selectOption('walk');
 
 	await importPng(await edit(3 * 64 + 31, 12));
@@ -12780,11 +13212,10 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	await page.reload();
 	await page.getByRole('button', { name: 'Customize Adventurer copy' }).first().click();
 	await page.getByRole('button', { name: 'More options for Steel helmet' }).click();
-	await page.getByRole('menuitem', { name: /^Details/ }).click();
-	await page
-		.getByRole('dialog', { name: 'Item' })
-		.getByRole('button', { name: /^Fix frames/ })
-		.click();
+	await page.getByRole('menuitem', { name: /^View and edit/ }).click();
+	const itemPane = page.locator('dialog.item-detail[open]');
+	await openItemSection(itemPane, 'Quality');
+	await itemPane.getByRole('button', { name: /^Fix frames/ }).click();
 	await sheet.getByRole('combobox', { name: 'Move' }).selectOption('walk');
 	await sheet.getByRole('button', { name: 'Restore original · 1' }).click();
 	await page.getByRole('alertdialog').getByRole('button', { name: 'Restore', exact: true }).click();
@@ -12800,7 +13231,7 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Walk' }).click();
-	await page.getByRole('menuitem', { name: /^Fix frames/ }).click();
+	await openClipTool(page, /^Fix frames/);
 	await expect(sheet.getByRole('combobox', { name: 'Frames of' })).toHaveValue('base');
 	const body = await pixels('walk', 'base');
 	const bodyPng = { w: 512, h: 256, data: new Uint8ClampedArray(body) };
@@ -12842,7 +13273,8 @@ test('a deleted item comes back from the notice, the history and the Trash after
 
 	async function deleteItem() {
 		const inspector = await selectedItemDetails(page);
-		await inspector.getByRole('button', { name: 'Move to Trash...', exact: true }).click();
+		await inspector.getByRole('button', { name: 'Item actions', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Move to Trash…', exact: true }).click();
 		const alert = page.getByRole('alertdialog', { name: /^Move .+ to Trash\?$/ });
 		await alert.getByRole('button', { name: 'Move to Trash', exact: true }).click();
 		await expect(alert).toHaveCount(0);

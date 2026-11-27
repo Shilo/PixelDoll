@@ -17,11 +17,9 @@
 		onsubmit: () => void;
 		dismiss?: { label: string; disabled?: boolean; onclick: () => void };
 	} = $props();
-	const costId = $props.id();
 </script>
 
 <div class="checkpoint-footer">
-	<p class="muted small" id={costId}>{t('moveSheet.costNotice')}</p>
 	<div class="checkpoint-actions">
 		{#if dismiss}<button
 				class="bu-action btn checkpoint-dismiss"
@@ -36,7 +34,6 @@
 			class="bu-action btn primary checkpoint-primary"
 			data-variant="primary"
 			{disabled}
-			aria-describedby={costId}
 			onclick={onsubmit}
 		>
 			{count
@@ -48,12 +45,7 @@
 
 <style>
 	.checkpoint-footer {
-		display: grid;
-		gap: 8px;
 		width: 100%;
-	}
-	.checkpoint-footer p {
-		margin: 0;
 	}
 	.checkpoint-actions {
 		display: flex;

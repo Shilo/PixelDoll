@@ -140,7 +140,7 @@ test('a backup opened as a copy isolates the library and PixelLab connection', a
 	});
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.getByRole('button', { name: 'Open backup as a copy' })).toBeHidden();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	const exportDialog = page.getByRole('dialog', { name: 'Settings' });
 	await exportDialog.getByRole('button', { name: 'Library', exact: true }).click();
 	await expect(exportDialog.getByRole('button', { name: 'Open backup as a copy' })).toBeHidden();
@@ -254,7 +254,7 @@ test('a backup opened as a copy isolates the library and PixelLab connection', a
 		const recipientPage = await recipientContext.newPage();
 		await recipientPage.goto(dev);
 		await recipientPage.getByRole('button', { name: 'More options', exact: true }).click();
-		await recipientPage.getByRole('button', { name: 'Settings...', exact: true }).click();
+		await recipientPage.getByRole('button', { name: 'Settings…', exact: true }).click();
 		const recipientSettings = recipientPage.getByRole('dialog', { name: 'Settings' });
 		await expect(
 			recipientSettings.getByRole('button', { name: 'PixelLab', exact: true })
@@ -486,7 +486,7 @@ test('a backup opened as a copy isolates the library and PixelLab connection', a
 		}));
 	const originalSettings = await readSettings();
 	await copy.getByRole('button', { name: 'More options', exact: true }).click();
-	await copy.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await copy.getByRole('button', { name: 'Settings…', exact: true }).click();
 	const copySettings = copy.getByRole('dialog', { name: 'Settings', exact: true });
 	await expect(copySettings.getByRole('button', { name: 'PixelLab', exact: true })).toHaveCount(0);
 	await copySettings.getByRole('button', { name: 'Appearance', exact: true }).click();
@@ -524,7 +524,7 @@ test('a backup opened as a copy isolates the library and PixelLab connection', a
 		return route.fulfill({ status: 400, json: { detail: 'Synthetic estimate failure' } });
 	});
 	await copy.getByRole('button', { name: 'More options', exact: true }).click();
-	await copy.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
+	await copy.getByRole('button', { name: 'Connect PixelLab…', exact: true }).click();
 	const connect = copy.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	const useSavedKey = connect.getByRole('button', { name: 'Use saved key', exact: true });
 	await expect(useSavedKey).toBeVisible();
@@ -625,7 +625,7 @@ test('a backup opened as a copy isolates the library and PixelLab connection', a
 	});
 	expect(await captureWorkspaceStore(page, recipientKeys, artworkKeys)).toEqual(recipient);
 	await copy.getByRole('button', { name: 'More options', exact: true }).click();
-	await copy.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
+	await copy.getByRole('button', { name: 'Connect PixelLab…', exact: true }).click();
 	expectedCopyKey = savedKey;
 	const requestsBeforeSavedKey = copyRequests.length;
 	await useSavedKey.click();
@@ -649,7 +649,7 @@ test('a backup opened as a copy isolates the library and PixelLab connection', a
 		copy.getByRole('status').filter({ hasText: 'Workspace copy · PixelLab off' })
 	).toBeVisible();
 	await copy.getByRole('button', { name: 'More options', exact: true }).click();
-	await copy.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
+	await copy.getByRole('button', { name: 'Connect PixelLab…', exact: true }).click();
 	await expect(connect.getByLabel('Paste your Secret API key', { exact: true })).toBeVisible();
 	await expect(useSavedKey).toHaveCount(0);
 	await connect.getByRole('button', { name: 'Close', exact: true }).click();
@@ -2119,7 +2119,7 @@ test('Settings search opens the shared Export settings from the Studio menu', as
 	await openStudio(page, dev);
 	await enterStudio(page);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	const search = settings.getByRole('searchbox', { name: 'Search settings' });
 	await search.fill('no such preference');
@@ -2152,14 +2152,12 @@ test('Settings search opens the shared Export settings from the Studio menu', as
 	await up.click();
 	await expect(search).toBeFocused();
 	await settings.getByRole('button', { name: 'Export', exact: true }).click();
-	await settings
-		.getByRole('button', { name: 'Export Adventurer character...', exact: true })
-		.click();
+	await settings.getByRole('button', { name: 'Export Adventurer character…', exact: true }).click();
 	const dialog = page.getByRole('dialog');
 	await expect(dialog).toHaveAccessibleName('Export');
 	await page.goBack();
 	await expect(settings).toHaveAccessibleName('Settings');
-	const shortcut = settings.getByRole('button', { name: 'Export Adventurer character...' });
+	const shortcut = settings.getByRole('button', { name: 'Export Adventurer character…' });
 	await shortcut.click();
 	await expect(dialog).toHaveAccessibleName('Export');
 	// Back returns to Settings; Escape, like the X, would leave both.
@@ -3626,7 +3624,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
 		.locator('#experience-options')
-		.getByRole('button', { name: 'Share...', exact: true })
+		.getByRole('button', { name: 'Share…', exact: true })
 		.click();
 	await expect(popover).toBeVisible();
 	await expect(shareClipPicker(popover)).toHaveAttribute('value', 'cross-punch');
@@ -3759,7 +3757,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	const disabledRedo = page.locator('.mobile-redo');
 	await expect(disabledRedo).toBeDisabled();
 	await noDisabledHover(page, disabledRedo);
-	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await settings.getByRole('button', { name: 'Developer', exact: true }).click();
 	await settings.getByRole('switch', { name: 'Developer mode', exact: true }).check();
@@ -3801,7 +3799,7 @@ test('Share resets to Standing when switching characters', async ({ page, contex
 	await popover.getByRole('combobox', { name: 'Size' }).selectOption('4');
 	await page.keyboard.press('Escape');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const download = page.waitForEvent('download');
@@ -3812,7 +3810,7 @@ test('Share resets to Standing when switching characters', async ({ page, contex
 		.locator('#project-menu')
 		.getByRole('button', { name: 'Add character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'From file...', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'From file…', exact: true }).click();
 	await page
 		.getByLabel('Character ZIP', { exact: true })
 		.setInputFiles({ name: 'share-memory.zip', mimeType: 'application/zip', buffer: bytes });

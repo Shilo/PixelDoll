@@ -10,6 +10,8 @@ import { supportedFormat } from './manifest.ts';
 import { artworkRefs, pruneHistory } from './workspace.ts';
 import { restoreMove } from '../rig/moves.ts';
 import { stableStringify } from '../image/hash.ts';
+import { reconcileItemSlots } from '../dress/project.ts';
+import type { Preset } from './manifest.ts';
 
 export const RECENTLY_DELETED_PREFIX = 'recently-deleted:';
 /** How long an entry stays restorable. */
@@ -18,13 +20,14 @@ export const KEEP_MS = 30 * 24 * 60 * 60 * 1000;
 export const MAX_ENTRIES = 50;
 
 /** What was deleted. `character` removes a whole saved character; the rest are parts of one. */
-export type DeletedKind = 'character' | 'items' | 'category' | 'move';
+export type DeletedKind = 'character' | 'items' | 'category' | 'move' | 'outfit';
 
 /** Exactly what was removed inside the character record. */
 export interface DeletedScope {
 	itemIds?: string[];
 	slot?: string;
 	moveId?: string;
+	presetId?: string;
 }
 
 /** One removed draft entry, with the shared list it came from. */
@@ -53,7 +56,7 @@ export interface RecentlyDeleted {
 	drafts?: DeletedDraft[];
 }
 
-const KIND_NAMES: readonly DeletedKind[] = ['character', 'items', 'category', 'move'];
+const KIND_NAMES: readonly DeletedKind[] = ['character', 'items', 'category', 'move', 'outfit'];
 
 /** A character's lineage: the original it was restored from, or itself. */
 export const lineageOf = (record: StoredProject) => record.restoredFrom?.id ?? record.id;
@@ -113,6 +116,12 @@ function trimBefore(record: StoredProject, kind: DeletedKind, scope: DeletedScop
 	const trimmed = structuredClone(record),
 		m = trimmed.manifest,
 		ids = new Set(scope.itemIds ?? []);
+	if (kind === 'outfit') {
+		// An outfit is only its saved choices: its items and their artwork stay live on the character.
+		m.items = [];
+		m.presets = m.presets.filter((preset) => preset.id === scope.presetId);
+		return trimmed;
+	}
 	if (kind === 'move') {
 		m.items = m.items.map((item) => {
 			const copy = structuredClone(item);
@@ -409,7 +418,7 @@ export async function restoreParts(id: string): Promise<{
 			out = { ...restored, name: e.name, projectId: e.projectId };
 			if (restored.refused === 'geometry')
 				throw new LocalizedError(
-					"This character's frame size or directions changed since this was deleted, so it can no longer line up.",
+					"This character's frame size or directions changed after this went to the Trash, so it can no longer line up.",
 					'recentlyDeleted.errors.partsGeometry'
 				);
 			return rec;
@@ -449,7 +458,7 @@ export async function restoreMoveEntry(id: string): Promise<{ name: string; proj
 		);
 	if (result === 'geometry')
 		throw new LocalizedError(
-			"This character's frame size or directions changed since this move was deleted, so it can no longer line up.",
+			"This character's frame size or directions changed after this move went to the Trash, so it can no longer line up.",
 			'recentlyDeleted.errors.moveGeometry'
 		);
 	await db.update<StoredProject>(
@@ -475,6 +484,51 @@ export async function restoreMoveEntry(id: string): Promise<{ name: string; proj
 		[id]
 	);
 	return { name: entry.name, projectId: entry.projectId };
+}
+
+/** Put a deleted outfit back on its character as it is now: an item deleted since is left out, one moved to another
+ *  category is worn there, and colors of palettes gone since are dropped. */
+export async function restoreOutfitEntry(
+	id: string
+): Promise<{ name: string; projectId: string; preset: Preset }> {
+	const entry = readEntry(await db.get<unknown>('projects', id));
+	if (!entry) throw gone(id);
+	if (expired(entry)) throw expiredError();
+	const preset = entry.before.manifest.presets.find((p) => p.id === entry.scope.presetId);
+	if (!preset) throw gone(id);
+	let restored: Preset | undefined;
+	await db.update<StoredProject>(
+		'projects',
+		entry.projectId,
+		(rec, related) => {
+			const fresh = readEntry(related(id));
+			if (!fresh) throw gone(id);
+			// The key may now hold another character (this one restored as a copy elsewhere): only its own lineage takes it.
+			if (!rec?.manifest || fresh.projectId !== rec.id || fresh.lineageId !== lineageOf(rec))
+				throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
+			if (rec.manifest.presets.some((p) => p.id === preset.id))
+				throw new LocalizedError(
+					'This outfit is already on the character.',
+					'recentlyDeleted.errors.outfitPresent'
+				);
+			const back = structuredClone(preset);
+			reconcileItemSlots(
+				back.items,
+				new Map(rec.manifest.items.map((item) => [item.id, item.slot]))
+			);
+			const materials = new Set(rec.manifest.materials.map((material) => material.id));
+			for (const material of Object.keys(back.variants))
+				if (!materials.has(material)) delete back.variants[material];
+			rec.manifest.presets = [...rec.manifest.presets, back];
+			rec.savedAt = new Date().toISOString();
+			restored = back;
+			return rec;
+		},
+		[id],
+		undefined,
+		[id]
+	);
+	return { name: entry.name, projectId: entry.projectId, preset: restored! };
 }
 
 export interface RestoredCharacter {

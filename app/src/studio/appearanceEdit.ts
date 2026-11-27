@@ -185,7 +185,7 @@ export async function generateAppearance(
 				throw changed();
 			await run(
 				request,
-				{ text: 'Edit appearance', title: message('appearance.title') },
+				{ text: 'Edited copy', title: message('appearance.title') },
 				'studio-appearance',
 				false,
 				true,

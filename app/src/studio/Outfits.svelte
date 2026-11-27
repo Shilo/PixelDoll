@@ -1,21 +1,13 @@
 <script lang="ts">
 	import { t } from 'svelte-whisper';
 	// Saved looks (presets) for the customization panel's Outfits tab.
-	import {
-		store,
-		doc,
-		applyPreset,
-		savePreset,
-		deletePreset,
-		sameOutfit,
-		openRename
-	} from './state.svelte.ts';
+	import { store, doc, applyPreset, savePreset, sameOutfit, openRename } from './state.svelte.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import { buildPresentation, southStill } from './experience/presentation.ts';
 	import OutfitThumb from './OutfitThumb.svelte';
 	import { tick } from 'svelte';
 	import { Plus, X } from './icons.ts';
-	import SavedActions from './SavedActions.svelte';
+	import OutfitActions from './OutfitActions.svelte';
 	import { downloadOutfitZip } from './download.svelte.ts';
 	import ListSearch from './ListSearch.svelte';
 	import { createSearchVisibility } from './searchVisibility.svelte.ts';
@@ -83,16 +75,10 @@
 		/>
 		<div class="equipment-scroll panel-list" bind:this={list}>
 			<section class="group outfits" aria-label={t('outfits.outfits')}>
-				<ul class="rows">
+				<ul class="rows" data-rows>
 					{#each matched as p (p.id)}
 						<li>
-							<SavedActions
-								name={p.name}
-								kind="outfit"
-								onrename={() => openRename(doc.id, { outfitId: p.id })}
-								ondownload={() => downloadOutfitZip(p.id)}
-								ondelete={() => deletePreset(p.id)}
-							>
+							<OutfitActions id={p.id} name={p.name} fallback={() => addButton}>
 								<button
 									class="row bu-action"
 									data-variant="tile"
@@ -102,7 +88,7 @@
 										>{p.name}</span
 									></button
 								>
-							</SavedActions>
+							</OutfitActions>
 						</li>
 					{:else}
 						<li class="faint small" style="padding:4px 8px">

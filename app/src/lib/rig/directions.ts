@@ -141,7 +141,7 @@ export function directionProblemError(
 		);
 		if (stranded.length)
 			return new LocalizedError(
-				`Keep a direction with artwork for ${stranded.map(({ name }) => name).join(', ')} or remove that equipment first.`,
+				`Keep a direction with artwork for ${stranded.map(({ name }) => name).join(', ')}, or move those items to the Trash first.`,
 				'directionProblem.equipmentArtwork',
 				{ items: stranded.map(({ name }) => name) }
 			);

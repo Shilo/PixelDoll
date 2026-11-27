@@ -36,7 +36,8 @@
 			"items": "아이템",
 			"category": "카테고리",
 			"move": "모션",
-			"state": "상태"
+			"state": "상태",
+			"outfit": "의상"
 		},
 		"errors": {
 			"gone": "이 항목은 더 이상 휴지통에 없습니다.",
@@ -45,12 +46,13 @@
 			"full": "브라우저 공간이 부족하여 아무것도 이동되지 않았습니다. 휴지통에서 항목을 삭제해 공간을 확보하세요.",
 			"wrongKind": "삭제된 항목은 캐릭터에 속합니다. 먼저 캐릭터를 복원하세요.",
 			"movePresent": "이 모션은 이미 캐릭터에 있습니다.",
-			"moveGeometry": "이 모션을 삭제한 뒤 캐릭터의 프레임 크기나 방향이 바뀌어 더 이상 맞출 수 없습니다.",
-			"partsGeometry": "삭제한 뒤 캐릭터의 프레임 크기나 방향이 바뀌어 더 이상 맞출 수 없습니다.",
-			"moveItemsMissing": "이 모션의 아이템 중 하나가 삭제되었습니다. 먼저 그 아이템을 복원한 뒤 이 모션을 복원하세요."
+			"moveGeometry": "이 모션을 휴지통으로 옮긴 뒤 캐릭터의 프레임 크기나 방향이 바뀌어 더 이상 맞출 수 없습니다.",
+			"partsGeometry": "휴지통으로 옮긴 뒤 캐릭터의 프레임 크기나 방향이 바뀌어 더 이상 맞출 수 없습니다.",
+			"moveItemsMissing": "이 모션의 아이템 중 하나가 삭제되었습니다. 먼저 그 아이템을 복원한 뒤 이 모션을 복원하세요.",
+			"outfitPresent": "이 의상은 이미 캐릭터에 있습니다."
 		},
 		"restoring": "복원 중…",
-		"confirmBodyCharacter": "그 안에서 삭제한 것도 함께 사라집니다. 완전히 사라지며 되돌릴 수 없습니다.",
+		"confirmBodyCharacter": "휴지통에 있는 이 캐릭터의 다른 항목도 모두 삭제됩니다. 되돌릴 수 없습니다.",
 		"confirmRestore": "한 번 더 누르면 복원됩니다",
 		"confirmRestoreNamed": "한 번 더 누르면 {name}을(를) 복원합니다",
 		"daysLeft": {
@@ -105,7 +107,7 @@
 		"deleteWork": {
 			"deleteAll": "모두 삭제",
 			"confirm": "확인",
-			"description": "이 기기의 캐릭터, 의상, 초안, 휴지통, 활동 기록을 제거합니다.",
+			"description": "이 기기의 캐릭터, 코디, 초안, 휴지통, 활동을 영구 삭제합니다.",
 			"kept": "보관된 데이터, 환경설정, 다운로드한 백업, PixelLab 키는 유지됩니다.",
 			"action": "로컬 데이터 삭제…",
 			"title": "모든 로컬 작업을 삭제할까요?",
@@ -243,7 +245,7 @@
 		"deleteNamed": "{name}을(를) 휴지통으로 이동할까요?",
 		"deleting": "삭제 중…",
 		"details": "세부 정보",
-		"detailsMenu": "세부 정보…",
+		"detailsMenu": "보기 및 편집…",
 		"direction": "방향",
 		"directions": "방향",
 		"discard": "버리기",
@@ -331,7 +333,7 @@
 		"unavailable": "이 캐릭터에는 해당 방향을 사용할 수 없어요.",
 		"mirrorSource": "{source} 방향을 유지하거나 {mirror} 대칭을 끄세요.",
 		"moveArtwork": "{moves} 동작에 아트워크가 있는 방향을 유지하세요.",
-		"equipmentArtwork": "{items} 아이템에 아트워크가 있는 방향을 유지하거나, 해당 장비를 먼저 제거하세요."
+		"equipmentArtwork": "{items}의 그림이 있는 방향을 하나 남기거나, 먼저 그 아이템을 휴지통으로 옮기세요."
 	},
 	"directionNames": {
 		"south": "남쪽",
@@ -372,8 +374,9 @@
 		"costEstimate": "비용 예상…",
 		"adjustFrame": "프레임 조정…",
 		"directions": "방향…",
-		"demoDeleteLocked": "데모 캐릭터는 삭제할 수 없어요",
-		"labelDeleteCharacter": "휴지통으로 이동…"
+		"demoDeleteLocked": "데모 캐릭터는 휴지통으로 옮길 수 없습니다",
+		"labelDeleteCharacter": "휴지통으로 이동…",
+		"demoRenameLocked": "데모 이름을 바꾸려면 편집 가능한 사본을 만드세요"
 	},
 	"characterName": {
 		"demo": "(데모)"
@@ -436,15 +439,14 @@
 	"deleteSheet": {
 		"viewPendingWork": "대기 중인 작업 보기",
 		"character": "캐릭터",
-		"demo": "함께 제공되는 데모는 삭제할 수 없어요.",
+		"demo": "기본 제공 데모는 휴지통으로 옮길 수 없습니다.",
 		"itsOutfitsAndChangesAreRemovedFrom": "의상, 아이템, 저장하지 않은 초안도 함께 이동합니다. 다른 캐릭터에 복사한 아이템은 남습니다. 최대 30일 동안 되돌릴 수 있습니다."
 	},
 	"demoCopyRow": {
-		"editACopy": "사본 편집",
+		"editACopy": "편집 가능한 복사본 만들기",
 		"openedYourEditableCopyOfTheDemo": "편집 가능한 데모 사본을 열었어요. 생성은 사용하지 않았어요."
 	},
 	"detailsSheet": {
-		"title": "{name} 세부 정보",
 		"notSaved": "이 캐릭터는 더 이상 저장되어 있지 않아요.",
 		"withItems": "아이템 포함",
 		"itemCost": {
@@ -488,10 +490,6 @@
 		"activity": "활동…",
 		"cancelGeneration": "생성 취소…",
 		"cancelFromTheTabThatIsGenerating": "이 아이템을 생성 중인 탭에서 취소해 주세요.",
-		"wearInACopyOfTheDemo": "데모 사본에서 착용",
-		"makeOneForName": "{name} 캐릭터용으로 만들기",
-		"wearName": "{name} 착용",
-		"titleWearingTakeOff": "착용 중(벗기)",
 		"twoHanded": "양손",
 		"createVariant": "변형 만들기…",
 		"labelDeleteItem": "휴지통으로 이동…",
@@ -499,98 +497,83 @@
 		"generationsAlreadyUsedAreNotRefundedAnd": "이미 사용한 생성은 환불되지 않고, 이미 전송된 요청에도 요금이 청구될 수 있어요.",
 		"cancelSaveError": "취소를 저장하지 못했어요. 이 탭을 열어 두고 다시 시도해 주세요.",
 		"preparing": "아이템 준비 중",
-		"remake": "{name} 캐릭터용으로 만들기…",
+		"remake": "이 캐릭터용 복사본 만들기…",
 		"makeForSlot": "{slot} 아이템 만들기…",
-		"demoDeleteLocked": "데모 아이템은 삭제할 수 없어요",
+		"demoDeleteLocked": "데모의 아이템은 휴지통으로 옮길 수 없습니다",
 		"cancelItem": "아이템 취소",
 		"canceling": "취소 중…",
 		"keep": "유지",
-		"runningDetail": "{status} · {prompt}"
+		"runningDetail": "{status} · {prompt}",
+		"demoRenameLocked": "데모의 아이템은 이름을 바꿀 수 없습니다"
 	},
 	"itemPane": {
+		"movesSection": "동작 및 상태",
+		"outfitSection": "코디",
+		"technicalDetails": "기술 세부 정보",
+		"openSprite": "{title} 확대",
+		"availableDirectionsFor": "{name}의 사용 가능한 방향",
+		"drawForMoves": "누락된 프레임 생성",
+		"reviewMissingMoves": "누락된 동작 검토",
+		"drawMovesSelect": "생성할 동작을 선택하세요.",
+		"selectAllMoves": "모두 선택",
+		"clearSelection": "선택 해제",
+		"drawMovesHelp": "누락된 아이템 프레임만 채워요.",
+		"repairView": "{direction} 방향 복구",
+		"redrawView": "{direction} 방향 다시 그리기",
+		"sendBackward": "뒤로 보내기",
+		"bringForward": "앞으로 가져오기",
+		"inFrontOf": "{name} 앞",
+		"behind": "{name} 뒤",
+		"previewUnavailable": "미리 볼 아이템 프레임이 없어요.",
 		"restoreStanding": {
 			"other": "서 있는 모습 복구"
 		},
 		"restoreStandingHint": {
-			"other": "이 아이템에 저장된 {directions} 방향의 디자인으로 복구합니다. 새로 생성하지 않습니다."
+			"other": "{directions} 방향에 저장된 디자인을 사용해요. 생성할 필요가 없어요."
 		},
 		"hiddenByAnotherItem": "다른 아이템에 가려짐",
-		"nameInEveryDirection": "모든 방향의 {name}",
+		"hiddenByItem": "{name}에 가려짐",
+		"layerHiddenHint": "레이어 순서를 바꾸려면 이 아이템을 표시하세요.",
 		"labelNameFacingId": "{id} 방향의 {name}",
-		"acceptedAppearanceWarnings": "수락한 외형 경고",
-		"titleShowThisFrame": "이 프레임 보기",
-		"checksFoundIssuesNoPaidRetryWas": "검사에서 문제가 발견됐어요. 유료 재시도는 시작되지 않았어요. 다시 시도를 요청하거나 이 아이템을 그대로 수락할 수 있어요.",
+		"acceptedAppearanceWarnings": "수락한 디자인 경고",
+		"titleShowThisFrame": "무대에 표시",
 		"acceptAsIs": "그대로 수락",
-		"pendingWorkBusy": "동작이나 설정이 실행 중이거나 멈춰 있어요. 이 작업을 쓰려면 완료하거나 버리세요.",
-		"acceptsTheCurrentArtworkWithoutSpendingCredits": "크레딧을 쓰지 않고 현재 아트워크를 수락해요. 감지된 문제는 세부 정보에 남아요.",
-		"keepWithoutMoves": "그 동작 없이 유지",
-		"keepWithoutMovesDetail": "크레딧을 쓰지 않고 완성된 동작만으로 아이템을 유지해요. {moves}에서는 숨겨지고, 나중에 각자의 가격으로 만들 수 있도록 빠진 동작으로 계속 표시돼요.",
-		"youAcceptedThisArtworkWithItsRecorded": "기록된 품질 참고 사항과 함께 이 아트워크를 수락했어요.",
-		"generateItemForMove": "동작용 아이템 생성",
-		"coverageTitle": "동작 적용 범위",
-		"coverageAllDrawn": "모든 동작과 상태에 그려짐",
-		"coverageMissing": {
-			"other": "{n}개 동작 누락"
-		},
-		"coverageClipDrawn": "{move}: 그려짐",
-		"coverageClipMissing": "{move}: 누락",
-		"fillMissingMoves": "누락된 동작 채우기",
-		"fillMissingHint": {
-			"other": "서 있는 디자인을 재사용해 누락된 {n}개 동작 모두에 이 아이템을 한 번의 견적으로 그립니다."
-		},
-		"labelMakeNameForMissingName": "{missingName} 대상으로 {name} 만들기",
-		"generatesOnlyThisItemSMissingViews": "선택한 동작에 대해 이 아이템의 빠진 뷰만, 서 있는 자세의 디자인을 재사용해 생성해요. 몸체는 그대로예요. PixelLab에서 달러로 요금이 청구될 수 있고 대기 시간은 달라질 수 있어요.",
-		"madeForAnotherBodyItMayNot": "다른 몸체용으로 만들어졌어요. 정렬이 맞지 않을 수 있어요.",
-		"itsMirroredViewsUpdateToo": "대칭으로 복사된 뷰도 함께 업데이트돼요.",
+		"pendingWorkBusy": "동작이나 설정이 이 작업을 막고 있어요. 먼저 완료하거나 버리세요.",
+		"acceptsTheCurrentArtworkWithoutSpendingCredits": "이 아트워크를 유지해요. 경고는 목록에 남아요.",
+		"keepWithoutMovesDetail": "{moves}의 일부 프레임을 버려요. 생성하기 전까지 숨겨진 상태로 남아요.",
+		"youAcceptedThisArtworkWithItsRecorded": "이 아트워크를 수락했어요. 메모는 목록에 남아요.",
 		"matchingColors": "색상 맞추는 중…",
 		"matchItemColors": "아이템 색상 맞추기",
 		"recolor": "색상 변경",
-		"layerOrder": "레이어 순서",
-		"titleDrawInFrontOfTheNext": "다음 레이어 앞에 그리기",
-		"forward": "앞으로",
-		"titleDrawBehindThePreviousLayer": "이전 레이어 뒤에 그리기",
-		"backward": "뒤로",
-		"reset": "초기화",
-		"whenWornHide": "착용 시 가리기",
-		"howItWasMade": "만든 방식",
+		"recolorWearFirst": "색을 바꾸려면 먼저 착용하세요",
+		"whenWornHide": "착용 중 다른 아이템 숨기기",
 		"iD": "ID",
 		"slot": "장착 슬롯",
-		"route": "경로",
-		"qA": "QA",
-		"rawBodyDifferences": "원본 몸체 차이",
-		"rawKeyReviewFramesFramesHaveNewBodyColoredPixels": "정렬 전에 몸 색 픽셀이 새로 생긴 프레임이 {rawKeyReviewFrames}개 있어요. 일반적인 다시 그리기 이동으로도 생길 수 있고 품질 상태는 바뀌지 않아요.",
+		"route": "생성 방식",
+		"qA": "검사 결과",
+		"rawBodyDifferences": "정렬 전 몸체 픽셀",
+		"rawKeyReviewFramesFramesHaveNewBodyColoredPixels": "정렬 전에 몸 색 픽셀이 새로 생긴 프레임: {rawKeyReviewFrames}개. 일반적인 다시 그리기로도 생길 수 있어요. 검사 결과는 바뀌지 않아요.",
 		"partialChecks": "부분 검사",
-		"copiedChecksCoverWholeMovesTotalsMay": "복사된 검사는 동작 전체를 대상으로 해요. 합계에는 교체된 프레임이 포함될 수 있어요.",
+		"copiedChecksCoverWholeMovesTotalsMay": "동작 전체 검사의 합계에는 교체된 프레임이 포함될 수 있어요.",
 		"someMovesHaveNotBeenChecked": "아직 검사하지 않은 동작이 있어요.",
 		"measurements": "측정값",
-		"reusedCellsWereNotMeasuredByPixelLab": "재사용된 셀은 PixelLab이 측정하지 않았어요. 이 아이템에는 통합 검사를 사용할 수 없어요.",
+		"reusedCellsWereNotMeasuredByPixelLab": "재사용한 프레임에는 PixelLab 측정값이 없어 아이템 전체 검사를 쓸 수 없어요.",
 		"keyKept": "키 유지됨",
 		"keyOutside": "키 바깥",
 		"area": "영역",
 		"paletteDrift": "팔레트 편차",
-		"edgePx": "가장자리 px",
+		"edgePx": "프레임 가장자리 픽셀",
 		"hands": "손",
-		"reRolls": "재생성",
-		"missingFrames": "빠진 프레임",
-		"refitIntro": "{from} 캐릭터의 아이템을 무료로 맞췄어요. 이 프레임들을 확인해 주세요:",
-		"remakeToFit": "몸에 맞추려면 {name} 캐릭터용으로 새로 만드세요.",
-		"moveGaps": "{directions} 방향의 {move} 프레임 일부 또는 전부가 빠져 있어요. 그 프레임에서는 표시되지 않아요.",
-		"remakeAllMoves": "모든 동작에서 착용하려면 {name} 캐릭터용으로 새로 만드세요.",
+		"reRolls": "재시도",
+		"missingFrames": "누락된 프레임 ID",
+		"refitIntro": "{from} 캐릭터의 아이템으로 무료로 맞췄어요. 이 프레임들을 확인하세요:",
+		"remakeToFit": "{name} 캐릭터에 맞는 버전을 만드세요.",
+		"moveGaps": "{directions} 방향의 {move} 프레임 일부에서는 아이템이 보이지 않아요.",
 		"copyFrom": "복사 원본: {name}",
 		"copyFrames": {
-			"other": "{from} 캐릭터에는 {name} 캐릭터에 없는 이 아이템 프레임이 {n}개 있어요. 새로 생성하지 않아요."
+			"other": "{from} 캐릭터에서 {name} 캐릭터에 누락된 프레임 {n}개를 추가해요. 생성할 필요가 없어요."
 		},
-		"makeFor": "{move} 동작용 만들기",
 		"makingMoreMoves": "더 많은 동작용 아이템 만드는 중",
-		"colorMatchNote": {
-			"other": "{direction} 방향으로 저장된 {move} 프레임 {n}개에서 아이템의 기존 색상 팔레트에 맞춰요: {pixels}."
-		},
-		"colorMatchFixed": "다른 뷰, 동작, 재질, 저장된 색상 변경은 그대로예요.",
-		"colorMatchMissing": "프레임 {frames}에는 아직 그림이 없어서 제외돼요.",
-		"colorMatchUnmatched": {
-			"other": "일치하지 않는 대상 픽셀 {n}개는 그대로 남아요."
-		},
-		"colorMatchFree": "기존 품질 경고는 유지돼요. PixelLab 호출은 없어요.",
 		"colorsMatched": "색상을 맞췄어요: {pixels}, {frames}.",
 		"pixels": {
 			"other": "픽셀 {n}개"
@@ -599,8 +582,7 @@
 			"other": "프레임 {n}개"
 		},
 		"onlyFacing": "{direction} 방향일 때만",
-		"hideWhenWorn": "{name} 착용 중에는 선택한 아이템이 가려져요.",
-		"tuckNote": "선택하지 않은 {slots} 항목은 그 아래로 들어가서 챙 아래로 내려오는 부분만 보여요. 후드나 얼굴 전체를 가리는 가면이면 선택하세요.",
+		"tuckNote": "이 아이템이 {slots}을(를) 일부 가릴 수 있어요.",
 		"chromaKey": "{color} 키",
 		"qaStatus": {
 			"pass": "통과",
@@ -610,37 +592,103 @@
 		},
 		"areaStats": "중앙값 대비 최소 {ratio} · CV {cv}",
 		"handedness": {
-			"ok": "정상",
-			"switched": "바뀜"
+			"ok": "일치",
+			"switched": "손이 바뀜"
 		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
-		"updateNote": "{move} 동작의 {direction} 방향에서 이 아이템을 업데이트해요. 캐릭터 몸체는 바뀌지 않아요.",
-		"updateNoteMirrors": "{move} 동작의 {direction} 방향과 대칭 방향에서 이 아이템을 업데이트해요. 캐릭터 몸체는 바뀌지 않아요.",
-		"repairItem": "아이템 복구",
-		"redrawItem": "아이템 다시 그리기",
+		"updateNoteMirrors": "{move} 동작의 {directions} 방향을 업데이트해요. 아이템만 바뀌어요.",
 		"repairFeature": "아이템 복구",
 		"redrawFeature": "아이템 다시 그리기",
-		"repairHelp": "디자인이 마음에 들 때 가장 좋아요. 아이템 영역만 바뀌어요.",
-		"redrawHelp": "모양이나 쥐는 방식이 바뀔 수 있어요. 유지할지는 직접 선택해요.",
+		"repairHelp": "디자인은 유지하고 아이템 영역만 바꿔요.",
+		"redrawHelp": "모양이나 쥐는 방식이 바뀔 수 있는 새 시도예요. 비교한 뒤 유지할지 정해요.",
+		"itemActions": "아이템 작업",
+		"statusGenerating": "생성 중",
+		"statusIncomplete": "미완성",
+		"staleNote": "다른 몸체용으로 만들어졌어요. 맞는지 확인하세요.",
+		"previewMove": "동작",
+		"openMissingView": "{direction} 열기(누락)",
+		"missingView": "없음",
+		"hiddenWhenWorn": "{names}을(를) 착용하면 이 아이템이 숨겨져요.",
+		"clipsIncomplete": {
+			"other": "동작 {n}개 미완성"
+		},
+		"complete": "완성",
+		"clipNoFrames": "아직 프레임 없음",
+		"clipMissingViews": "없음: {directions}",
+		"generateMoves": {
+			"other": "동작 {n}개 생성"
+		},
+		"qualitySection": "품질",
+		"passed": "통과",
+		"facing": "방향",
+		"matchColorsDetail": "{frames}의 {pixels}을(를) 아이템 팔레트에 맞춰요.",
+		"fixFramesDetail": "그림 앱에서 {move}의 모든 프레임을 편집하세요.",
+		"hiddenState": "숨겨짐",
+		"hidesCount": {
+			"other": "카테고리 {n}개 숨김"
+		},
+		"outfitPreview": "코디 속 {name}, {direction} 방향",
+		"layerScope": "{slot}의 모든 아이템에 적용돼요.",
+		"layerNothingToCross": "이 보기에는 겹치는 레이어가 없어요.",
+		"layerBack": "{name}(뒤)",
+		"layerWithSlot": "{name}({slot})",
+		"resetOrder": "순서 초기화",
+		"hideRulesLater": "{name}을(를) 착용하면 적용돼요.",
+		"aboutSection": "정보",
+		"generateMovesNone": "생성",
+		"stopHiding": "{names}의 숨기기 끄기",
+		"keepWithoutNamed": "{moves} 없이 유지",
+		"checksFoundIssuesNoPaidRetryWas": "유료 재시도는 시작되지 않았어요.",
 		"repairRequests": {
-			"other": "이 복구에는 PixelLab 생성 요청 {n}건이 사용돼요."
+			"other": "PixelLab 요청 {n}건."
 		},
 		"redrawRequests": {
-			"other": "이 다시 그리기에는 PixelLab 생성 요청 {n}건이 사용돼요."
+			"other": "PixelLab 요청 {n}건."
 		},
 		"redrawSaves": {
-			"other": "복구보다 예상 생성 횟수가 {n}회 적어요."
+			"other": "복구보다 생성 {n}회 적어요."
 		},
 		"redrawCostsMore": {
-			"other": "복구보다 예상 생성 횟수가 {n}회 많아요."
+			"other": "복구보다 생성 {n}회 많아요."
 		},
-		"billingNote": "예상치는 생성 횟수를 비교한 것이며 달러 가격이 아니에요. PixelLab에서 달러로 요금이 청구될 수 있고 대기 시간은 달라질 수 있어요."
+		"turnLeft": "왼쪽으로 회전",
+		"turnRight": "오른쪽으로 회전",
+		"facingLabel": "{direction} 방향",
+		"matchViewColors": "{direction} 방향 색상 맞추기",
+		"fixOneView": "한 방향 수정",
+		"outfitPreviewUnworn": "{name}을(를) 착용한 것처럼 본 의상, {direction} 방향",
+		"openOutfit": "{name} 의상을 전체 크기로 열기",
+		"outfitTitle": "{name} 의상",
+		"layerPosition": "레이어 {count}개 중 {position}",
+		"layerPositionHint": "겹치는 레이어 중 뒤에서부터 {count}개 중 {position}번째",
+		"slotLayerOrder": "{slot} 슬롯 레이어 순서",
+		"layerScopeFacing": "{direction} 방향의 모든 {slot} 아이템에 적용돼요.",
+		"twoHandedNote": "양손을 사용하므로 착용하면 {slot} 아이템이 해제됩니다.",
+		"makeForSlotDetail": "이 아이템을 {slot}용으로 다시 그립니다.",
+		"groupReady": "{count}개 중 {ready}개 준비됨",
+		"remakeFits": "지금 꾸미는 캐릭터 {name}에 맞는 새 복사본을 만듭니다.",
+		"demoMissing": "데모는 PixelLab 생성을 쓰지 않습니다. 빠진 프레임을 그리려면 편집 가능한 복사본을 만드세요.",
+		"nameInEveryDirection": "모든 방향의 {name}",
+		"generateItemForMove": "동작용 아이템 생성",
+		"fillMissingMoves": "누락된 동작 채우기",
+		"fillMissingHint": {
+			"other": "서 있는 디자인을 재사용해 누락된 {n}개 동작 모두에 이 아이템을 한 번의 견적으로 그립니다."
+		},
+		"labelMakeNameForMissingName": "{missingName} 대상으로 {name} 만들기",
+		"generatesOnlyThisItemSMissingViews": "선택한 동작에 대해 이 아이템의 빠진 뷰만, 서 있는 자세의 디자인을 재사용해 생성해요. 몸체는 그대로예요. PixelLab에서 달러로 요금이 청구될 수 있고 대기 시간은 달라질 수 있어요.",
+		"madeForAnotherBodyItMayNot": "다른 몸체용으로 만들어졌어요. 정렬이 맞지 않을 수 있어요.",
+		"titleDrawInFrontOfTheNext": "다음 레이어 앞에 그리기",
+		"forward": "앞으로",
+		"titleDrawBehindThePreviousLayer": "이전 레이어 뒤에 그리기",
+		"backward": "뒤로",
+		"makeFor": "{move} 동작용 만들기",
+		"hideWhenWorn": "{name} 착용 중에는 선택한 아이템이 가려져요."
 	},
 	"newCharacterButton": {
-		"addCharacter": "캐릭터 추가",
 		"newCharacter": "새 캐릭터",
 		"createFromScratch": "만들기…",
+		"addCharacter": "캐릭터 추가",
 		"fromFile": "파일에서…",
 		"fromPixelLab": "PixelLab에서…",
 		"createNeedsKey": "PixelLab 키가 필요하고 유료 생성을 사용해요"
@@ -705,8 +753,15 @@
 		"labelDeleteState": "휴지통으로 이동…",
 		"removeState": "몸과 모든 아이템에서 맞춘 프레임이 빠집니다. 완료된 모션의 프레임은 남습니다. 최대 30일 동안 되돌릴 수 있습니다.",
 		"labelDeleteMove": "휴지통으로 이동…",
-		"labelDeleteOutfit": "코디 삭제",
-		"thisRemovesTheMoveFromTheBody": "몸과 모든 아이템에서 프레임이 빠집니다. 최대 30일 동안 되돌릴 수 있습니다."
+		"labelDeleteOutfit": "휴지통으로 이동…",
+		"thisRemovesTheMoveFromTheBody": "몸과 모든 아이템에서 프레임이 빠집니다. 최대 30일 동안 되돌릴 수 있습니다.",
+		"demoRenameLocked": "데모의 동작과 상태는 이름을 바꿀 수 없습니다",
+		"removeOutfit": "아이템은 옷장에 남습니다. 30일 동안 휴지통에서 되돌릴 수 있습니다.",
+		"demoOutfitLocked": "데모 기본 코디는 삭제할 수 없습니다",
+		"labelDeleteDemoOutfit": "삭제…",
+		"deleteDemoOutfit": "데모에는 휴지통이 없어 이 코디가 삭제됩니다. 새로고침하기 전까지는 실행 취소로 되돌릴 수 있습니다.",
+		"deleteDemoOutfitTitle": "{name}을(를) 삭제할까요?",
+		"outfitGone": "이 코디는 더 이상 없습니다."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "무료: 이미 만든 아이템은 다시 생성하지 않아요.",
@@ -727,7 +782,7 @@
 		"theSlotAndItsItemsAreDeleted": "아이템도 함께 이동하고 의상에서는 더 이상 착용하지 않습니다. 최대 30일 동안 되돌릴 수 있습니다.",
 		"labelAddedAtTheEndOfWardrobe": "옷장 끝에 {label} 항목이 추가됐어요.",
 		"valueShownAtTheEndOfWardrobe": "옷장 끝에 {value} 항목이 표시돼요.",
-		"demoDeleteLocked": "함께 제공되는 데모의 아이템은 삭제할 수 없어요.",
+		"demoDeleteLocked": "기본 제공 데모의 아이템은 휴지통으로 옮길 수 없습니다.",
 		"renameNote": "이름을 바꿔도 아이템, 코디, 내보내기 이름({slot})은 유지돼요.",
 		"drawOrder": "이 슬롯 아이템의 앞면은 이미 만든 아이템까지 포함해 {slot} 위, 다음 슬롯 아래에 그려져요. 가까운 손처럼 좌우별 순서도 함께 이동해요.",
 		"behindBody": "몸체 뒤에 그리는 부위는 계속 뒤에 있어요.",
@@ -787,7 +842,7 @@
 		"previewRisk": "저장된 캐릭터가 업데이트 후 작동하지 않을 수 있어요.",
 		"previewBackupDescription": "캐릭터와 아트워크의 사본을 기기에 보관하세요.",
 		"youReOfflineEditAndExportLocally": "오프라인 상태예요. 로컬에서 편집하고 내보낼 수 있어요.",
-		"titleInspectCharacter": "캐릭터 검사",
+		"titleInspectCharacter": "프레임 보기",
 		"titleWorkspaceCopy": "워크스페이스 사본",
 		"titleItem": "아이템",
 		"titleItemReview": "아이템 검토"
@@ -834,7 +889,6 @@
 			"other": "캐릭터 {n}개"
 		},
 		"version": "버전 {version}",
-		"renameCharacter": "캐릭터 이름 변경…",
 		"rename": "이름 변경…",
 		"setUpCharacter": "캐릭터 설정…",
 		"connectPixelLab2": "PixelLab 연결…",
@@ -883,6 +937,7 @@
 		"copiedFree": "{from} 캐릭터에서 무료로 복사했어요.",
 		"statusNote": "{status}.",
 		"hiddenNote": "다른 아이템에 가려짐.",
+		"twoHandedNote": "양손을 사용합니다.",
 		"fromOthers": "출처: {sources}. 아이템을 착용하면 {name} 캐릭터에 이 카테고리가 추가돼요.",
 		"source": "출처: {from}",
 		"sourceFree": "{from} 캐릭터에서 무료로 가져옴",
@@ -947,7 +1002,7 @@
 		"moreActionsFor": "{name} 작업 더 보기",
 		"actionsFor": "{name} 작업 메뉴",
 		"still": "정지",
-		"inspect": "검사",
+		"inspect": "프레임 보기",
 		"customization": "꾸미기",
 		"customizationPanels": "꾸미기 패널",
 		"tabWorkRunning": "여기에 진행 중이거나 대기 중이거나 검토할 준비가 된 작업이 있습니다",
@@ -1009,20 +1064,20 @@
 		"finishBeforeMoveImport": "동작을 가져오기 전에 대기 중인 생성 작업을 끝내거나 닫으세요.",
 		"couldNotCheckNamedFrames": "{names}의 프레임을 확인할 수 없습니다. {reason}",
 		"couldNotCheckSeveralFrames": "{names}의 프레임을 확인할 수 없습니다.",
-		"copyMissingOneMove": "{move} 동작에 프레임이 일부 없어 해당 구간에서 아이템이 숨겨집니다.",
-		"copyMissingFrames": "{moves} 동작에 프레임이 일부 없어 해당 구간에서 아이템이 숨겨집니다.",
+		"copyMissingOneMove": "{move} 동작의 일부 프레임에는 아이템이 표시되지 않아요.",
+		"copyMissingFrames": "{moves} 동작의 일부 프레임에는 아이템이 표시되지 않아요.",
 		"restoreFailed": "{name} 복구 실패: {reason}",
 		"restoreFinishFailed": "{name} 복구를 완료할 수 없습니다. {reason}",
 		"restoredStanding": "{directions} 방향의 {name}을 복구했습니다. 생성 횟수는 사용하지 않았습니다.",
 		"restoredQualityNotes": "품질 관련 안내가 있습니다. 확인하세요.",
 		"noStandingToRestore": "{name}에 복구할 서 있는 방향이 더 이상 없습니다.",
-		"characterChangedNothingDeleted": "그동안 캐릭터가 변경됐어요. 삭제된 항목은 없어요.",
+		"characterChangedNothingDeleted": "그사이 캐릭터가 바뀌었습니다. 휴지통으로 옮긴 것은 없습니다.",
 		"categoryNowHasItems": {
-			"other": "이제 {label} 항목에 아이템이 {count}개 있어요. 삭제하기 전에 다시 확인하세요."
+			"other": "{label}에 이제 아이템이 {count}개 있습니다. 휴지통으로 옮기기 전에 다시 확인하세요."
 		},
-		"categoryNowHasNoItems": "이제 {label} 항목에 아이템이 없어요. 삭제하기 전에 다시 확인하세요.",
+		"categoryNowHasNoItems": "{label}에 이제 아이템이 없습니다. 휴지통으로 옮기기 전에 다시 확인하세요.",
 		"categoryItemsGettingMoves": "{label} 항목의 아이템에 새 동작을 만드는 중이에요. 완료될 때까지 기다리거나 먼저 버려 주세요.",
-		"reasonNothingDeleted": "{reason} 삭제된 항목은 없어요.",
+		"reasonNothingDeleted": "{reason} 휴지통으로 옮긴 것은 없습니다.",
 		"itemsPosedForMove": "{names}: {moveName} 자세를 맞췄어요",
 		"itemsRedrawnForMove": "{names}: {moveName} 동작용으로 다시 그렸어요",
 		"equipmentPosedForMove": "{moveName} 동작에 맞춰 장비 자세를 잡았어요",
@@ -1038,9 +1093,9 @@
 		"waitForCharacter": "캐릭터 로딩이 끝날 때까지 기다려 주세요.",
 		"manageMovesInOtherTab": "다른 PixelDoll 탭에서 동작을 관리하거나, 그 탭을 먼저 닫아 주세요.",
 		"manageCharactersInOtherTab": "다른 PixelDoll 탭에서 캐릭터를 관리하거나, 그 탭을 먼저 닫아 주세요.",
-		"finishBeforeCharacterRemoval": "캐릭터를 삭제하기 전에 대기 중인 생성 작업을 끝내거나 버려 주세요.",
+		"finishBeforeCharacterRemoval": "캐릭터를 휴지통으로 옮기기 전에 대기 중인 생성 작업을 끝내거나 닫으세요.",
 		"finishBeforeRestore": "이 캐릭터를 복원하기 전에 대기 중인 생성 작업을 완료하거나 버리세요.",
-		"finishBeforeMoveRemoval": "동작을 삭제하기 전에 대기 중인 생성 작업을 끝내거나 버려 주세요.",
+		"finishBeforeMoveRemoval": "모션을 휴지통으로 옮기기 전에 대기 중인 생성 작업을 끝내거나 닫으세요.",
 		"finishBeforeDirectionRemoval": "방향을 바꾸기 전에 대기 중인 생성 작업을 끝내거나 버려 주세요.",
 		"finishBeforeFixFrames": "프레임을 수정하기 전에 진행 중인 생성 작업이 끝날 때까지 기다려 주세요.",
 		"couldNotReadYourSavedCharactersReason": "저장된 캐릭터를 읽지 못했어요: {reason}",
@@ -1063,8 +1118,8 @@
 		"openedDemoCopy": "편집 가능한 데모 사본을 열었어요.",
 		"tookOffTwoHanded": "{names} 벗음(양손)",
 		"tookOffForTwoHanded": "{names} 벗음: {name} 아이템은 양손용이에요",
-		"wearingUnfitted": "{sourceName} 캐릭터에 맞춰 그려진 {name} 아이템을 그대로 착용했어요. 이 몸체와 정렬이 맞지 않을 수 있어요. 생성은 사용하지 않았어요.",
-		"wearingUnfittedAtSize": "{sourceName} 캐릭터에 맞춰 그려진 {name} 아이템을 원래 프레임 크기({size})로 착용했어요. 이 몸체와 정렬이 맞지 않을 수 있어요. 생성 횟수는 사용하지 않았어요.",
+		"wearingUnfitted": "{sourceName}용으로 그린 {name}을 착용했어요. 이 몸체에는 위치가 맞지 않을 수 있어요.",
+		"wearingUnfittedAtSize": "{sourceName}용으로 그린 {name}({size})을 착용했어요. 이 몸체에는 위치가 맞지 않을 수 있어요.",
 		"fittedItem": "{sourceName} 캐릭터의 {name} 아이템을 무료로 맞췄어요. 각 동작에서 확인해 주세요.",
 		"copiedSharedItem": "{sourceName} 캐릭터에서 {name} 아이템을 복사했어요. 생성은 사용하지 않았어요.",
 		"copiedMoreFrames": {
@@ -1087,8 +1142,8 @@
 		"savedItemAttemptsCouldNotBeRead": "저장된 아이템 시도를 읽지 못했어요: {reason}",
 		"theCharacterChangedMeanwhileTryAgain": "그사이 캐릭터가 변경됐어요. 다시 시도해 주세요.",
 		"noCharacterIsOpen": "열린 캐릭터가 없어요.",
-		"labelChangedMeanwhileReviewItAgainBefore": "{label} 항목이 그사이 변경됐어요. 삭제 전에 다시 검토해 주세요.",
-		"labelHasNewItemsReviewItAgain": "{label} 항목에 새 아이템이 있어요. 삭제 전에 다시 검토해 주세요.",
+		"labelChangedMeanwhileReviewItAgainBefore": "그사이 {label}이(가) 바뀌었습니다. 휴지통으로 옮기기 전에 다시 확인하세요.",
+		"labelHasNewItemsReviewItAgain": "{label}에 새 아이템이 있습니다. 휴지통으로 옮기기 전에 다시 확인하세요.",
 		"categoryAndItemsDeleted": {
 			"other": "{label} 및 아이템 {count}개를 휴지통으로 이동했습니다"
 		},
@@ -1127,7 +1182,8 @@
 		"resetColors": "색상 초기화",
 		"randomItem": "무작위 {name} 아이템",
 		"saveOutfit": "코디 저장",
-		"deleteOutfit": "코디 삭제",
+		"deleteOutfit": "코디를 휴지통으로 이동",
+		"deleteDemoOutfit": "코디 삭제",
 		"renameOutfit": "코디 이름 변경",
 		"show": "{name} 표시",
 		"hide": "{name} 숨기기",
@@ -1138,9 +1194,9 @@
 		"moveCategory": "{name} 이동",
 		"addCategory": "카테고리 추가",
 		"changeCategory": "{name} 변경",
-		"deleteCategory": "{name} 삭제",
-		"deleteItem": "{name} 삭제",
-		"deleteMove": "{name} 삭제",
+		"deleteCategory": "{name}을(를) 휴지통으로 이동",
+		"deleteItem": "{name}을(를) 휴지통으로 이동",
+		"deleteMove": "{name}을(를) 휴지통으로 이동",
 		"moveItem": "{name} 옮기기",
 		"changeDirections": "방향 변경",
 		"restoreOriginals": "원본 복원",
@@ -1214,13 +1270,6 @@
 				"sub": "편집 가능한 프로젝트",
 				"detail": "Sprite 레이어, 동기화 재생, 장비 컨트롤이 있는 편집 가능한 GDevelop 프로젝트예요. 미리 보거나 오브젝트와 이벤트를 복사해 게임에 넣으세요."
 			},
-			"rpgMaker": {
-				"sub": "걷기 시트",
-				"detail": "캐릭터 자체 크기로 코디마다 걷기 시트를 만들어요. PNG 파일을 img/characters(MZ, MV) 또는 Graphics/Characters(VX Ace, VX)에 복사하세요. 앞, 옆, 뒤 뷰가 필요해요."
-			},
-			"rpgMakerXp": {
-				"detail": "캐릭터 자체 크기로 코디마다 4프레임 걷기 시트를 만들어요. RPG Maker XP와 Pokémon Essentials용이에요. PNG 파일을 Graphics/Characters에 복사하세요. 앞, 옆, 뒤 뷰가 필요해요."
-			},
 			"aseprite": {
 				"sub": "편집 가능한 레이어",
 				"detail": "태그, 타이밍, 피벗, 현재 룩이 있는 레이어드 .aseprite 애니메이션 하나예요. Aseprite 1.3 이상에서 여세요."
@@ -1228,6 +1277,13 @@
 			"generic": {
 				"sub": "직접 연동",
 				"detail": "타이밍, 피벗, 장비, 팔레트 데이터가 담긴 레이어 시트와 스트립이에요. 이 규칙을 읽으려면 엔진에 코드가 필요해요."
+			},
+			"rpgMaker": {
+				"sub": "걷기 시트",
+				"detail": "캐릭터 자체 크기로 코디마다 걷기 시트를 만들어요. PNG 파일을 img/characters(MZ, MV) 또는 Graphics/Characters(VX Ace, VX)에 복사하세요. 앞, 옆, 뒤 뷰가 필요해요."
+			},
+			"rpgMakerXp": {
+				"detail": "캐릭터 자체 크기로 코디마다 4프레임 걷기 시트를 만들어요. RPG Maker XP와 Pokémon Essentials용이에요. PNG 파일을 Graphics/Characters에 복사하세요. 앞, 옆, 뒤 뷰가 필요해요."
 			},
 			"phaserAe": {
 				"detail": "장비, 색상, 동기화 재생을 지원하는 Phaser AE 게임용 레이어별 스프라이트 시트와 런타임이에요. 게임 매니페스트의 assets 목록에 시트를 추가하면 게임을 빌드할 때 시트가 게임에 복사돼요."
@@ -1311,7 +1367,6 @@
 			"noVisibleFrames": "몸체에 표시되는 프레임이 없어요.",
 			"godot": "Godot에서 이 스프라이트 시트를 사용할 수 없어요.",
 			"gdevelop": "GDevelop에서 이 스프라이트 시트를 사용할 수 없어요.",
-			"rpgMaker": "RPG Maker에는 앞, 옆, 뒤 뷰가 필요해요.",
 			"aseprite": "애니메이션이 Aseprite 형식에 맞지 않아요.",
 			"unsafeNames": "일부 파일 이름을 안전하게 패키징할 수 없어요.",
 			"tooLarge": "이 내보내기는 너무 커요.",
@@ -1319,7 +1374,8 @@
 			"buildFailed": "이 내보내기를 만들지 못했어요.",
 			"characterLimits": "이 캐릭터는 내보내기 한도에 맞지 않아요.",
 			"damagedImages": "저장된 이미지 일부가 손상됐어요.",
-			"artworkFailed": "아트워크 ZIP을 준비하지 못했어요."
+			"artworkFailed": "아트워크 ZIP을 준비하지 못했어요.",
+			"rpgMaker": "RPG Maker에는 앞, 옆, 뒤 뷰가 필요해요."
 		},
 		"error": {
 			"pixelsPerUnit": "단위당 픽셀 수는 양의 유한한 숫자여야 해요.",
@@ -1368,7 +1424,6 @@
 		"posesTitle": "상태로도 가져오기",
 		"posesHint": "장비가 함께 그려져 있지 않은 같은 몸체의 자세를 선택하세요. 외형이 다르면 별도의 캐릭터로 가져오세요. 동작은 아래에서 선택할 수 있어요.",
 		"poseMismatch": "이 상태는 이미지 크기, 방향 또는 카메라 설정이 달라요. 별도의 캐릭터로 가져오세요.",
-		"titleFile": "파일에서 가져오기",
 		"titlePixelLab": "PixelLab에서 가져오기",
 		"browseLibrary": "PixelLab 캐릭터 둘러보기",
 		"standingState": "서 있는 자세 상태",
@@ -1452,8 +1507,8 @@
 			"skippedStanding": "“{move}”의 {direction} 방향은 제외됐어요. 캐릭터에 그 방향의 서 있는 뷰가 없어요.",
 			"semiAlpha": "부분적으로 투명한 가장자리를 픽셀 아트 투명도로 변환했어요.",
 			"upscaledBase": "서 있는 그림이 {scale}배 확대된 것 같습니다. 그대로 유지됩니다. 여기서 만든 아이템은 픽셀이 더 많이 들고 픽셀 크기가 섞이며 색상 교체도 덜 깔끔합니다. 가능하면 원본 1x 이미지를 가져오세요.",
-			"compressedBase": "서 있는 그림이 압축되거나 다시 조정된 것 같습니다. 많은 색이 한 번만 쓰였습니다. 그대로 가져오지만, 여기서 만든 아이템은 잘라내기, 색 변경, 정렬이 더 어렵습니다. 가능하면 원본을 가져오세요.",
-			"detailsDropped": "저장된 캐릭터 정보 일부가 손상되어 제외했어요. 필요하면 자세 리그를 다시 설정하세요."
+			"detailsDropped": "저장된 캐릭터 정보 일부가 손상되어 제외했어요. 필요하면 자세 리그를 다시 설정하세요.",
+			"compressedBase": "서 있는 그림이 압축되거나 다시 조정된 것 같습니다. 많은 색이 한 번만 쓰였습니다. 그대로 가져오지만, 여기서 만든 아이템은 잘라내기, 색 변경, 정렬이 더 어렵습니다. 가능하면 원본을 가져오세요."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1506,7 +1561,8 @@
 			"cutPixels": "{path} 파일은 {frame}px 셀에서 표시 픽셀 {cut}개를 잃게 돼요. 더 작은 캐릭터를 가져오세요. 아트워크 크기는 조정되지 않아요.",
 			"emptyFrame": "{path} 파일은 빈 프레임이에요.",
 			"nameLength": "캐릭터 이름은 1–60자로 입력하세요."
-		}
+		},
+		"titleFile": "파일에서 가져오기"
 	},
 	"incompatible": {
 		"error": {
@@ -1741,7 +1797,7 @@
 			"fixedDrawOrder": "기본 제공 그리기 순서는 바꿀 수 없어요.",
 			"fixedSettings": "기본 제공 카테고리는 표시, 숨기기, 이동만 할 수 있어요.",
 			"fixedRemoval": "기본 제공 카테고리는 숨기기만 할 수 있어요.",
-			"nonemptyRemoval": "카테고리를 삭제하기 전에 아이템을 제거하세요."
+			"nonemptyRemoval": "먼저 그 아이템을 휴지통으로 옮기세요."
 		},
 		"use": {
 			"making": {
@@ -1753,7 +1809,7 @@
 		},
 		"busy": {
 			"hide": "{label} 항목: {items}. 빈 카테고리만 숨길 수 있어요{stopped}.",
-			"delete": "{label} 항목: {items}. 빈 카테고리만 삭제할 수 있어요{stopped}.",
+			"delete": "{label}에 {items}이(가) 있습니다. 만드는 중인 것이 없는 카테고리만 휴지통으로 옮길 수 있습니다{stopped}.",
 			"reattach": "{label} 항목: {items}. 빈 카테고리만 붙는 방식을 바꿀 수 있어요{stopped}.",
 			"hideWardrobe": "{label} 항목: {items}. 빈 슬롯만 숨길 수 있어요{stopped}.",
 			"dismissStopped": "; 먼저 활동에서 중지된 시도를 버려 주세요"
@@ -2104,7 +2160,7 @@
 		"noCharge": "PixelLab이 이번 시도에 청구가 없다고 보고했어요.",
 		"newPaidAttempt": "다시 생성하면 새 유료 시도가 시작돼요.",
 		"retryFeature": "이 장비 다시 생성",
-		"retryNote": "다시 생성하면 표시된 예상 비용으로 캐릭터의 방향에 맞춰 서 있는 디자인을 다시 그려요. 마음에 들면 다른 동작은 따로 생성하세요. 추가 품질 재시도나 복구에는 새 요청이 필요해요. PixelLab에서 일부 호출을 달러로 청구할 수 있고 대기 시간은 달라질 수 있어요.",
+		"retryNote": "다시 생성하면 표시된 예상 비용으로 캐릭터의 방향에 맞춰 서 있는 디자인을 다시 그려요. 마음에 들면 다른 동작은 따로 생성하세요. 추가 품질 재시도나 복구에는 새 요청이 필요해요.",
 		"slotKey": "{slot} · {key} 키",
 		"calls": "호출",
 		"call": "{index}: 셀 {cells}개",
@@ -2268,7 +2324,7 @@
 			"chooseReference": "서 있는 자세의 기준 동작을 선택하세요.",
 			"noStandingReference": "{move}에는 모든 방향의 서 있는 모습이 없어요. 모든 방향이 있는 동작을 선택하세요.",
 			"needsStandingViews": "리그 설정에는 저장된 원래 서 있는 모습이나 네 방향 모두가 필요해요. 먼저 빠진 회전을 가져오세요.",
-			"emptyBodyFrame": "{move}에 빈 몸체 프레임이 있어요. 그 동작을 고치거나 삭제한 뒤 다시 설정하세요."
+			"emptyBodyFrame": "{move}에 빈 몸 프레임이 있습니다. 그 모션을 고치거나 휴지통으로 옮긴 뒤 다시 설정하세요."
 		},
 		"newRegistration": "다시 등록"
 	},
@@ -2310,7 +2366,7 @@
 			"partialRepairMustKeep": "부분 복구는 기존 프레임 수를 유지해야 해요.",
 			"selectedEquipmentLongerStanding": "선택한 장비에 모든 선택 뷰의 서 있는 디자인이 더 이상 없어요. 다시 시도하기 전에 장비 선택을 검토하세요. 생성은 요청되지 않았어요.",
 			"itemFramesChangedGeneration": "생성 전에 아이템 프레임이 바뀌었어요. 아이템을 다시 열어 검토하세요.",
-			"itemChangedWasRemoved": "동작을 준비하는 동안 이 아이템이 바뀌거나 제거됐어요.",
+			"itemChangedWasRemoved": "모션을 준비하는 동안 이 아이템이 바뀌었거나 휴지통으로 옮겨졌습니다.",
 			"characterChangedAnotherTab": "동작을 생성하는 동안 다른 탭에서 이 캐릭터가 바뀌었어요. 다시 시도하기 전에 다시 여세요.",
 			"bodyFramesTheirQuality": "검토 후 이 몸체 프레임이나 품질 검사가 바뀌었어요. 저장된 것도 요청도 없어요. 다시 검토하세요.",
 			"characterChangedAnotherTab2": "동작을 저장하기 전에 다른 탭에서 이 캐릭터가 바뀌었어요. 다시 시도하기 전에 다시 여세요.",
@@ -2688,10 +2744,10 @@
 		"recovery": {
 			"reuse": "완료된 몸체 프레임과 관절 결과를 재사용해요.",
 			"checks": {
-				"other": "끝나지 않은 관절 검사 {count}개 다시 시도 · 예상 생성 {gens}회 또는 {usd}. 결과를 알 수 없는 검사는 이미 요금이 청구됐을 수 있고, 다시 시도하면 또 청구될 수 있어요. PixelLab 청구 방식과 대기 시간은 달라질 수 있어요."
+				"other": "끝나지 않은 관절 검사 {count}개 다시 시도 · 예상 생성 {gens}회 또는 {usd}. 결과를 알 수 없는 검사는 이미 요금이 청구됐을 수 있고, 다시 시도하면 또 청구될 수 있어요."
 			},
 			"noRequests": "새 몸체나 관절 요청은 없어요.",
-			"items": "몸체가 통과하면 선택한 장비 포즈가 이어서 진행돼요 · 추가 예상 생성 {gens}회, 재시도와 달러 청구가 발생할 수 있어요."
+			"items": "몸체가 통과하면 선택한 장비 포즈가 이어서 진행돼요 · 추가 예상 생성 {gens}회"
 		},
 		"color": {
 			"pixels": {
@@ -2703,7 +2759,7 @@
 			"match": "서 있는 자세의 팔레트에 맞춰요: {pixels}({frames}). 몸체 모양은 고정되고 다른 색상은 그대로예요.",
 			"recheck": "변경된 프레임 {count}개 다시 확인 · 예상 생성 {gens}회 또는 {usd}.",
 			"items": "몸체가 통과하면 선택한 장비 포즈가 이어서 진행돼요 · 추가 예상 생성 {gens}회.",
-			"billing": "PixelLab에서 달러로 요금이 청구될 수 있고, 품질 재시도에는 추가 비용이 들며 대기 시간은 달라질 수 있어요. 검사가 계속 실패하면 기존 몸체 뷰는 유지돼요."
+			"kept": "검사가 계속 실패하면 기존 몸체 뷰는 유지돼요."
 		},
 		"demo": "동작은 내 캐릭터에 추가돼요.",
 		"needsSetup": "동작을 추가하려면 이 캐릭터의 자세 리그를 설정하세요. 기존 아트워크와 레이어는 정렬된 상태로 유지돼요.",
@@ -2722,7 +2778,6 @@
 		},
 		"changedDuringEdit": "편집하는 동안 이 동작이 바뀌었어요. 계속하려면 다시 선택하세요.",
 		"duplicateOption": "{move}은(는) 이미 동작 목록에 있어요. 설명을 다른 단어로 시작하세요.",
-		"costNotice": "PixelLab에서 달러로 청구할 수 있어요. 재시도와 대체 방식에는 추가 비용이 들어요.",
 		"templates": "동작 템플릿",
 		"suggestionBuiltIn": "이 동작의 내장 애니메이션을 사용해요.",
 		"suggestionDescribed": "PixelLab이 내장 애니메이션이 아닌 입력한 텍스트로 이 동작을 만들어요.",
@@ -2863,7 +2918,7 @@
 		"ideas": "아이디어",
 		"colorHint": "색상 힌트",
 		"anyColor": "상관없음",
-		"checksNote": "일관성 검사는 자동으로 실행돼요. 문제가 감지되면 아이템을 유지할지 유료 재시도를 요청할지 선택해요. 요청하지 않으면 품질 재시도나 복구는 실행되지 않아요. PixelLab에서 달러로 요금이 청구될 수 있고 대기 시간은 달라질 수 있어요.",
+		"checksNote": "일관성 검사는 자동으로 실행돼요. 문제가 감지되면 아이템을 유지할지 유료 재시도를 요청할지 선택해요. 요청하지 않으면 품질 재시도나 복구는 실행되지 않아요.",
 		"method": "애니메이션 방법",
 		"automatic": "자동({method})",
 		"plan": "PixelLab 호출 {calls}회 · 프레임 {cells}개 · {route}. 계획된 배치는 각각 한 번 실행돼요. 실패한 검사는 검토를 기다려요.",
@@ -2902,8 +2957,8 @@
 		"runningJump": "달리며 점프"
 	},
 	"appearance": {
-		"action": "외형 편집…",
-		"title": "외형 편집",
+		"action": "새 모습으로 복사본 만들기…",
+		"title": "편집된 복사본",
 		"choose": "편집 방식 선택",
 		"custom": "직접 편집",
 		"instructions": "무엇을 바꿀까요?",
@@ -2918,8 +2973,8 @@
 		"characterSource": "{move}의 첫 프레임을 사용합니다.",
 		"characterScope": "새 캐릭터에는 서 있는 모습이 들어 있어요. 저장한 뒤 동작을 추가하고 장비를 맞추세요.",
 		"itemScope": "원본 동작은 {move}이며 첫 프레임을 사용해요. 나머지 프레임은 저장한 뒤 추가하세요.",
-		"editCharacter": "캐릭터 편집",
-		"editItem": "아이템 편집",
+		"editCharacter": "새 캐릭터 만들기",
+		"editItem": "새 아이템 만들기",
 		"editCost": "{action} · {cost}",
 		"saveCharacter": "새 캐릭터로 저장",
 		"saveItem": "새 아이템으로 저장",
@@ -2932,7 +2987,8 @@
 		"keptDirections": "이 사본은 다음 방향에 원본 그림을 유지합니다: {directions}.",
 		"incomplete": "일부 편집 이미지를 가져오지 못했어요. 활동에서 세부 정보를 보거나 받은 결과를 다운로드하세요.",
 		"reviewPending": "원본을 변경하기 전에 외형 미리보기를 저장하거나 버리세요.",
-		"discardNotice": "미리보기를 버릴까요? PixelLab 요금은 그대로 적용돼요."
+		"discardNotice": "미리보기를 버릴까요? PixelLab 요금은 그대로 적용돼요.",
+		"titleOf": "{name}의 편집된 복사본"
 	},
 	"stateGeneration": {
 		"continueIntro": "아직 전송하지 않은 방향의 이미지를 생성할 수 있습니다. 완료된 이미지는 유지됩니다.",
@@ -3033,11 +3089,11 @@
 		"unavailable": "이 동작은 더 이상 사용할 수 없어요.",
 		"keepStanding": "아이템을 만들고 확장하는 데 쓰는 서 있는 뷰를 유지하세요.",
 		"keepOne": "이 캐릭터에 동작을 하나 이상 유지하세요.",
-		"demo": "데모 동작은 삭제할 수 없어요.",
-		"resolveDrafts": "동작을 삭제하기 전에 이 캐릭터의 아이템 초안을 끝내거나 버리세요.",
+		"demo": "데모의 모션은 휴지통으로 옮길 수 없습니다",
+		"resolveDrafts": "모션을 휴지통으로 옮기기 전에 이 캐릭터의 아이템 초안을 끝내거나 버리세요.",
 		"required": "기존 아이템을 새 동작으로 확장하려면 이 서 있는 동작이 필요해요.",
 		"selectedCharacterChanged": "선택한 캐릭터가 바뀌었어요.",
-		"concurrentEdit": "동작을 삭제하기 전에 이 캐릭터가 바뀌었어요. 다시 시도해 주세요."
+		"concurrentEdit": "모션을 휴지통으로 옮기기 전에 캐릭터가 바뀌었습니다. 다시 시도하세요."
 	},
 	"characterFacts": {
 		"body": "{measure} 몸체",
@@ -3075,9 +3131,9 @@
 		"copyDetails": "세부 정보 복사",
 		"copyFailed": "앱 세부 정보를 복사할 수 없습니다.",
 		"checkForUpdates": "업데이트 확인",
-		"checkingForUpdates": "업데이트 확인 중...",
+		"checkingForUpdates": "업데이트 확인 중…",
 		"upToDate": "최신 상태입니다.",
-		"preparingUpdate": "버전 {version} 준비 중...",
+		"preparingUpdate": "버전 {version} 준비 중…",
 		"updateStuck": "업데이트가 아직 준비되지 않았습니다.",
 		"updateFailed": "업데이트를 확인할 수 없습니다."
 	},
@@ -3375,7 +3431,9 @@
 			"other": "요금 정보 없는 호출 {n}건"
 		}
 	},
-	"shortcut": { "control": "Ctrl" },
+	"shortcut": {
+		"control": "Ctrl"
+	},
 	"report": {
 		"action": "신고",
 		"actionLabel": "이 문제 신고",
@@ -3569,6 +3627,59 @@
 		"clear": "검색 지우기",
 		"results": "{total}개 중 {count}개"
 	},
+	"spriteViewer": {
+		"missing": "표시할 프레임이 없습니다",
+		"direction": "방향",
+		"previousView": "이전 보기",
+		"previousViewHint": "이전 보기 (왼쪽 화살표)",
+		"nextView": "다음 보기",
+		"nextViewHint": "다음 보기 (오른쪽 화살표)",
+		"pauseHint": "일시정지 (스페이스)",
+		"playHint": "재생 (스페이스)"
+	},
+	"imageViewer": {
+		"role": "이미지 뷰어",
+		"keys": "화살표로 이동, 플러스와 마이너스로 확대·축소, 0으로 맞춤.",
+		"zoom": "이미지 확대/축소",
+		"hint": "휠이나 핀치로 확대/축소하세요. 드래그해서 이동하세요.",
+		"fit": "창에 맞추기",
+		"fitHint": "창에 맞추기 (0)",
+		"percent": "실제 크기의 {percent}%",
+		"zoomed": "{percent}% 확대",
+		"missing": "표시할 이미지 없음"
+	},
+	"characterWindow": {
+		"actions": "캐릭터 작업",
+		"open": "캐릭터 열기",
+		"frameSection": "프레임 및 방향",
+		"costSection": "비용",
+		"adjustFrameDetail": "프레임 크기나 그 안의 캐릭터 위치를 바꿉니다.",
+		"directionsDetail": "그릴 방향과 다른 방향을 반전할 방향을 고릅니다.",
+		"costEstimateDetail": "동작, 상태, 아이템을 더하면 드는 비용을 추정합니다.",
+		"frameLocked": "이 캐릭터의 프레임과 방향은 바꿀 수 없습니다."
+	},
+	"clipWindow": {
+		"move": "동작",
+		"state": "상태",
+		"actions": "동작 또는 상태 작업",
+		"playOnStage": "무대에서 재생",
+		"showOnStage": "무대에 표시",
+		"framesSection": "프레임 및 품질",
+		"itemsSection": "아이템",
+		"fixFramesDetail": "{move}의 모든 프레임을 그림 앱에서 편집합니다.",
+		"redrawDetail": "고른 방향으로 {move}를 다시 그립니다(먼저 가격 표시).",
+		"captureDetail": "{move}의 한 프레임을 새 상태로 저장합니다.",
+		"itemsDetail": "{move}에 아직 없는 착용 아이템을 그립니다.",
+		"itemsComplete": "모든 아이템이 그려져 있습니다.",
+		"itemsUnavailable": "여기서는 아이템을 그릴 수 없습니다.",
+		"frames": "프레임",
+		"length": "길이",
+		"ms": "{ms}ms",
+		"exportId": "내보내기 ID",
+		"gone": "이 동작은 더 이상 저장되어 있지 않습니다.",
+		"itemDrawn": "그려짐",
+		"itemMissing": "없음"
+	},
 	"tips": {
 		"customizeTitle": "데모 꾸미기",
 		"customizeBody": "장비를 입혀 보거나 **데모 캐릭터**를 게임용으로 내보내 보세요. PixelLab 키가 필요 없어요.",
@@ -3586,7 +3697,7 @@
 		"addItemTitle": "장비 추가",
 		"addItemBody": "슬롯의 **+**로 아이템을 설명하거나 참고 이미지를 추가하세요. PixelLab이 캐릭터에 맞춰 줘요.",
 		"generateItemsTitle": "이 동작에 장비 맞추기",
-		"generateItemsBody": "이 동작의 **{menu} 더 많은 옵션**을 열고 **아이템 생성**을 선택하면 이 동작에 맞는 장비를 그려 줘요.",
+		"generateItemsBody": "이 동작의 **{menu} 더 많은 옵션**을 열고 **보기 및 편집**을 선택한 뒤 **아이템 생성**을 선택하면 이 동작에 맞는 장비를 그려 줘요.",
 		"addMoveTitle": "동작 추가",
 		"addMoveBody": "Idle, Walk, Attack 같은 동작으로 캐릭터를 움직여 보세요.",
 		"addStateTitle": "상태 추가",

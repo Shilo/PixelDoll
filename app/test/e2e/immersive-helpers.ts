@@ -84,7 +84,7 @@ export async function equipmentMode(
 	page: Page,
 	name: 'Wardrobe' | 'Colors' | 'Outfits' | 'States' | 'Moves'
 ) {
-	const inspect = page.getByRole('dialog', { name: 'Inspect character', exact: true });
+	const inspect = page.getByRole('dialog', { name: 'View frames', exact: true });
 	if (await inspect.count())
 		await inspect.getByRole('button', { name: 'Close', exact: true }).click();
 	await page
@@ -116,7 +116,7 @@ export async function newItem(page: Page, group = 'Head') {
 }
 
 export async function selectedItemDetails(page: Page) {
-	const existing = page.getByRole('dialog').filter({ has: page.locator('.insp-body') });
+	const existing = page.locator('dialog.item-detail[open]');
 	if (await existing.count()) return existing;
 	await equipmentMode(page, 'Wardrobe');
 	// The list shows every category, so the selected item's tile is already in it; its ⋮ menu opens the details.
@@ -125,10 +125,47 @@ export async function selectedItemDetails(page: Page) {
 	);
 	await more.scrollIntoViewIfNeeded();
 	await more.click();
-	await page.getByRole('menuitem', { name: 'Details...', exact: true }).click();
-	const dialog = page.getByRole('dialog');
-	await expect(dialog.locator('.insp-body')).toBeVisible();
+	await page.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
+	const dialog = page.locator('dialog.item-detail[open]');
+	await expect(dialog).toBeVisible();
 	return dialog;
+}
+
+/** Open one of the Item sheet's disclosure sections, such as Quality or Outfit. */
+export async function openItemSection(dialog: Locator, name: string) {
+	const summary = dialog.locator('summary').filter({ hasText: name }).first();
+	// `xpath=..` takes the summary's own details: a has: filter would look for the named summary inside each candidate,
+	// where a chained dialog locator never matches.
+	const section = summary.locator('xpath=..');
+	if (!(await section.evaluate((element) => (element as HTMLDetailsElement).open)))
+		await summary.click();
+	await expect(section).toHaveAttribute('open', '');
+	return section;
+}
+
+/** From an open move or State ⋮ menu, its View and edit window's tool: frame tools (Fix frames, Redraw, Create State
+ *  from) under Frames & Quality, Generate items under Items. */
+export async function openClipTool(page: Page, tool: RegExp) {
+	await page.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
+	const window = page.locator('dialog.clip-window[open]');
+	await expect(window).toBeVisible();
+	await openItemSection(window, /Generate items/.test(tool.source) ? 'Items' : 'Frames & Quality');
+	await window.getByRole('button', { name: tool }).click();
+	return window;
+}
+
+/** From the open header character picker, one of the open character's own ⋮ actions (Rename, Make copy with new
+ *  look...): the picker lists each character with the same menu as the character list. */
+export async function currentCharacterAction(page: Page, action: string | RegExp) {
+	const menu = page.locator('#project-menu');
+	const name = (await menu
+		.getByRole('menuitemradio', { checked: true })
+		.getAttribute('aria-label'))!;
+	await menu.getByRole('button', { name: `More actions for ${name}`, exact: true }).click();
+	await page
+		.getByRole('menu', { name: `Actions for ${name}`, exact: true })
+		.getByRole('menuitem', { name: action })
+		.click();
 }
 
 export async function pickItem(page: Page, name: string) {
@@ -148,17 +185,17 @@ export async function pickItem(page: Page, name: string) {
 export async function openInspect(page: Page) {
 	const bar = page
 		.getByRole('toolbar', { name: 'Preview controls', exact: true })
-		.getByRole('button', { name: 'Inspect', exact: true });
+		.getByRole('button', { name: 'View frames', exact: true });
 	if (await bar.isVisible()) return bar.click();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
 		.locator('#experience-options')
-		.getByRole('button', { name: 'Inspect', exact: true })
+		.getByRole('button', { name: 'View frames', exact: true })
 		.click();
 }
 
 export async function inspectStage(page: Page) {
-	if (await page.getByRole('dialog', { name: 'Inspect character', exact: true }).count()) return;
+	if (await page.getByRole('dialog', { name: 'View frames', exact: true }).count()) return;
 	await openInspect(page);
 	await expect(page.locator('.inspection-stage .stage')).toBeVisible();
 }
@@ -168,7 +205,7 @@ export async function openAccount(page: Page) {
 	await page
 		.locator('#experience-options')
 		.getByRole('button', {
-			name: /^(Connect PixelLab\.\.\.$|Reconnect PixelLab\.\.\.$|PixelLab usage\b)/
+			name: /^(Connect PixelLab…$|Reconnect PixelLab…$|PixelLab usage\b)/
 		})
 		.click();
 }

@@ -114,7 +114,6 @@
 					data-variant="quiet"
 					role="menuitem"
 					disabled={offer?.gens == null || !!access.error || ui.waitingForTab}
-					aria-describedby="item-choice-cost"
 					onclick={generate}
 					><Sparkles size={16} aria-hidden="true" />{t('itemGeneration.generateFor', {
 						move
@@ -140,7 +139,6 @@
 							: t('common.wear')}{/if}</button
 				>
 			</div>
-			<p class="muted small item-choice-note" id="item-choice-cost">{t('moveSheet.costNotice')}</p>
 			{#if access.error}<p class="notice warn small item-choice-note" role="status">
 					{access.error}
 				</p>{/if}

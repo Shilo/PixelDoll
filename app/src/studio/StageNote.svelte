@@ -23,6 +23,7 @@
 		queueMoves,
 		withKey,
 		openNewItem,
+		openCopyForSelf,
 		shared,
 		copyFromSource
 	} from './state.svelte.ts';
@@ -239,10 +240,11 @@
 						<button
 							class="bu-action btn sm"
 							data-variant="outline"
-							onclick={() => openNewItem(remake.slot, { slot: remake.slot, prompt: remake.prompt })}
-							>{copyOnly
-								? t('itemMenu.makeOneForName', { name: m?.name })
-								: t('stageNote.makeItAgain')}</button
+							onclick={() =>
+								copyOnly
+									? openCopyForSelf(remake)
+									: openNewItem(remake.slot, { slot: remake.slot, prompt: remake.prompt })}
+							>{copyOnly ? t('itemMenu.remake') : t('stageNote.makeItAgain')}</button
 						>
 					{/if}
 				{/if}

@@ -9,10 +9,11 @@
 	import { iconOf } from './slots.ts';
 	import {
 		Backpack,
-		Crown,
 		Gem,
 		Glasses,
+		HardHat,
 		Hand,
+		Jacket,
 		PersonStanding,
 		Scissors,
 		Shield,
@@ -30,10 +31,11 @@
 	} from './slotIcons.ts';
 	const LUCIDE: Record<LucideSlotIcon, LucideIcon> = {
 		'person-standing': PersonStanding,
-		crown: Crown,
+		'hard-hat': HardHat,
 		scissors: Scissors,
 		glasses: Glasses,
 		shirt: Shirt,
+		jacket: Jacket,
 		hand: Hand,
 		backpack: Backpack,
 		sword: Sword,

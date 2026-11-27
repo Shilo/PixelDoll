@@ -9,6 +9,7 @@ import {
 	busyReason,
 	changesAttachment,
 	categories,
+	defaultFrontOrder,
 	deleteCustom,
 	drawsAbove,
 	hintProblem,
@@ -45,7 +46,7 @@ test('the icon set keeps its keys and Lucide drawing contract', () => {
 				tag === 'path'
 					? (attrs.d.match(/-?\d*\.?\d+/g) ?? []).map(Number)
 					: [attrs.cx - attrs.r, attrs.cx + attrs.r, attrs.cy - attrs.r, attrs.cy + attrs.r];
-			if (tag === 'path') expect(attrs.d, key).toMatch(/^M[MmLlHhVvCcSsQqTtAaZz0-9.,\-\s]+$/);
+			if (tag === 'path') expect(attrs.d, key).toMatch(/^[Mm][MmLlHhVvCcSsQqTtAaZz0-9.,\-\s]+$/);
 			for (const n of numbers) expect(Math.abs(n), key).toBeLessThanOrEqual(SLOT_ICON_VIEW_BOX);
 		}
 	}
@@ -346,6 +347,9 @@ test('switching a held custom category to the other hand rebuilds its whole atta
 	]);
 	// What it generates stays a main-hand item; only the hand and its layering change.
 	expect([slot.profile, slot.label]).toEqual(['main_hand', 'Spare sword']);
+	expect(defaultFrontOrder(m, item('sword', key))).toEqual(
+		off.zOverrides?.filter((rule) => rule.layer === 'fg')
+	);
 	setHand(m, key, 'right');
 	const main = slotLadder(m.rig).find((s) => s.id === 'main_hand')!;
 	expect([

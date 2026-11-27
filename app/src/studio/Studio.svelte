@@ -96,7 +96,8 @@
 		item: () => import('./ItemPane.svelte'),
 		notes: () => import('./StageNote.svelte'),
 		gen: () => import('./GenCard.svelte'),
-		details: () => import('./DetailsSheet.svelte'),
+		details: () => import('./CharacterWindow.svelte'),
+		clip: () => import('./ClipWindow.svelte'),
 		slots: () => import('./SlotsSheet.svelte'),
 		frames: () => import('./FramesSheet.svelte'),
 		adjustFrame: () => import('./AdjustFrameSheet.svelte'),
@@ -232,6 +233,13 @@
 		if (sheetBefore === 'activity' && sheet !== 'activity') cancelWaitingForTab();
 		if (sheet !== 'activity') settingsNavigation.activityOpen = false;
 		if (sheet !== 'cost') settingsNavigation.costOpen = false;
+		// A tool (or Rename, Move to Trash) returns to the window it was opened from only while it, or that window, is open.
+		const returnsTo = {
+			details: ['details', 'adjustFrame', 'directions', 'cost', 'rename', 'delete'],
+			clip: ['clip', 'frames', 'move', 'stateCapture', 'itemGeneration', 'rename']
+		} as const;
+		if (ui.returnTo && !(returnsTo[ui.returnTo] as readonly string[]).includes(sheet ?? ''))
+			ui.returnTo = null;
 		if (sheet !== 'export' && !(sheet === 'settings' && settingsNavigation.fromExport))
 			settingsNavigation.exportOpen = false;
 		sheetBefore = sheet;
@@ -332,9 +340,10 @@
 			const all = [...group.querySelectorAll<HTMLElement>(menu ? '.row' : 'button')].filter(
 				(o) => !(o as HTMLButtonElement).disabled && o.getClientRects().length
 			);
-			// aria-disabled options stay focusable by Tab with their reason, but arrows (which select) skip them; from one,
-			// arrows step to its nearest enabled neighbor.
-			const opts = all.filter((o) => o.getAttribute('aria-disabled') !== 'true');
+			// aria-disabled options stay focusable by Tab with their reason. Arrows that select skip them (from one, they step
+			// to its nearest enabled neighbor); a menu's arrows only move focus, so its unavailable rows stay in the sequence
+			// and their reason is reachable, as in every menu (experience/focus.ts: navigateMenu).
+			const opts = menu ? all : all.filter((o) => o.getAttribute('aria-disabled') !== 'true');
 			const at = all.indexOf(t);
 			if (at < 0 || !opts.length) return;
 			e.preventDefault();
@@ -457,6 +466,7 @@
 			/>{/key}{/if}
 	{#if ui.sheet === 'delete'}<DeleteSheet />{/if}
 	{#if ui.sheet === 'details'}<Lazy load={parts.details} />{/if}
+	{#if ui.sheet === 'clip'}<Lazy load={parts.clip} />{/if}
 	{#if ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
 	{#if ui.sheet === 'slots'}<Lazy load={parts.slots} />{/if}
 	{#if ui.sheet === 'frames' && store.project}<Lazy load={parts.frames} />{/if}

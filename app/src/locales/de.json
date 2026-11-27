@@ -39,7 +39,8 @@
 			"items": "Gegenstand",
 			"category": "Kategorie",
 			"move": "Bewegung",
-			"state": "Zustand"
+			"state": "Zustand",
+			"outfit": "Outfit"
 		},
 		"errors": {
 			"gone": "Das ist nicht mehr im Papierkorb.",
@@ -48,12 +49,13 @@
 			"full": "Dem Browser geht der Speicher aus, daher wurde nichts verschoben. Lösche etwas im Papierkorb, um Platz zu schaffen.",
 			"wrongKind": "Dieser gelöschte Eintrag gehört zu einem Charakter. Stellen Sie zuerst den Charakter wieder her.",
 			"movePresent": "Diese Bewegung ist bereits auf dem Charakter.",
-			"moveGeometry": "Framegröße oder Richtungen dieses Charakters haben sich seit dem Löschen dieser Bewegung geändert, daher passt sie nicht mehr.",
-			"partsGeometry": "Framegröße oder Richtungen dieses Charakters haben sich seit dem Löschen geändert, daher passt es nicht mehr.",
-			"moveItemsMissing": "Einer der Gegenstände dieser Bewegung ist gelöscht. Stellen Sie zuerst den Gegenstand wieder her, dann die Bewegung."
+			"moveGeometry": "Rahmengröße oder Richtungen dieser Figur haben sich geändert, seit diese Animation im Papierkorb ist, daher passt sie nicht mehr.",
+			"partsGeometry": "Rahmengröße oder Richtungen dieser Figur haben sich geändert, seit dies im Papierkorb ist, daher passt es nicht mehr.",
+			"moveItemsMissing": "Einer der Gegenstände dieser Bewegung ist gelöscht. Stellen Sie zuerst den Gegenstand wieder her, dann die Bewegung.",
+			"outfitPresent": "Dieses Outfit ist schon bei der Figur."
 		},
 		"restoring": "Wird wiederhergestellt…",
-		"confirmBodyCharacter": "Alles andere davon Gelöschte geht mit. Endgültig weg, nicht rückgängig zu machen.",
+		"confirmBodyCharacter": "Alles andere davon im Papierkorb wird ebenfalls gelöscht. Das lässt sich nicht rückgängig machen.",
 		"confirmRestore": "Zum Wiederherstellen erneut drücken",
 		"confirmRestoreNamed": "Zum Wiederherstellen von {name} erneut drücken",
 		"daysLeft": {
@@ -112,7 +114,7 @@
 		"deleteWork": {
 			"deleteAll": "Alles löschen",
 			"confirm": "Bestätigen",
-			"description": "Entfernt die Charaktere, Outfits, Entwürfe, den Papierkorb und die Aktivität auf diesem Gerät.",
+			"description": "Löscht Figuren, Outfits, Entwürfe, Papierkorb und Aktivität auf diesem Gerät endgültig.",
 			"kept": "Archivierte Daten, Einstellungen, heruntergeladene Sicherungen und dein PixelLab-Schlüssel bleiben erhalten.",
 			"action": "Lokale Arbeit löschen…",
 			"title": "Alle lokale Arbeit löschen?",
@@ -250,7 +252,7 @@
 		"deleteNamed": "{name} in den Papierkorb verschieben?",
 		"deleting": "Wird gelöscht…",
 		"details": "Details",
-		"detailsMenu": "Details…",
+		"detailsMenu": "Ansehen und bearbeiten…",
 		"direction": "Blickrichtung",
 		"directions": "Blickrichtungen",
 		"discard": "Verwerfen",
@@ -338,7 +340,7 @@
 		"unavailable": "Diese Blickrichtung ist für die Figur nicht verfügbar.",
 		"mirrorSource": "Behalte {source} oder schalte die Spiegelung für {mirror} aus.",
 		"moveArtwork": "Behalte eine Blickrichtung mit Grafiken für {moves}.",
-		"equipmentArtwork": "Behalte eine Blickrichtung mit Grafiken für {items} oder entferne zuerst diese Ausrüstung."
+		"equipmentArtwork": "Behalte eine Richtung mit Grafik für {items} oder verschiebe diese Gegenstände zuerst in den Papierkorb."
 	},
 	"directionNames": {
 		"south": "Süden",
@@ -379,8 +381,9 @@
 		"costEstimate": "Kostenschätzung…",
 		"adjustFrame": "Frame anpassen…",
 		"directions": "Blickrichtungen…",
-		"demoDeleteLocked": "Die Demo-Figur kann nicht gelöscht werden",
-		"labelDeleteCharacter": "In den Papierkorb…"
+		"demoDeleteLocked": "Die Demo-Figur kann nicht in den Papierkorb",
+		"labelDeleteCharacter": "In den Papierkorb…",
+		"demoRenameLocked": "Erstelle eine bearbeitbare Kopie, um die Demo umzubenennen"
 	},
 	"characterName": {
 		"demo": "(Demo)"
@@ -443,15 +446,14 @@
 	"deleteSheet": {
 		"viewPendingWork": "Ausstehende Aufgaben ansehen",
 		"character": "Figur",
-		"demo": "Die mitgelieferte Demo kann nicht gelöscht werden.",
+		"demo": "Die mitgelieferte Demo kann nicht in den Papierkorb.",
 		"itsOutfitsAndChangesAreRemovedFrom": "Outfits, Gegenstände und nicht behaltene Entwürfe gehen mit; auf andere Charaktere kopierte Gegenstände bleiben. bis zu 30 Tage lang kannst du den Charakter zurückholen."
 	},
 	"demoCopyRow": {
-		"editACopy": "Kopie bearbeiten",
+		"editACopy": "Bearbeitbare Kopie erstellen",
 		"openedYourEditableCopyOfTheDemo": "Deine bearbeitbare Demo-Kopie ist geöffnet. Dafür wurden keine Generierungen verbraucht."
 	},
 	"detailsSheet": {
-		"title": "Details zu {name}",
 		"notSaved": "Diese Figur ist nicht mehr gespeichert.",
 		"withItems": "Mit Gegenständen",
 		"itemCost": {
@@ -498,10 +500,6 @@
 		"activity": "Aktivität…",
 		"cancelGeneration": "Generierung abbrechen…",
 		"cancelFromTheTabThatIsGenerating": "Brich die Generierung in dem Tab ab, in dem sie läuft.",
-		"wearInACopyOfTheDemo": "In einer Demo-Kopie anlegen",
-		"makeOneForName": "Für {name} erstellen",
-		"wearName": "{name} anlegen",
-		"titleWearingTakeOff": "Angelegt (ablegen)",
 		"twoHanded": "Zweihändig",
 		"createVariant": "Variante erstellen…",
 		"labelDeleteItem": "In den Papierkorb…",
@@ -509,105 +507,86 @@
 		"generationsAlreadyUsedAreNotRefundedAnd": "Bereits verbrauchte Generierungen werden nicht erstattet. Bereits gesendete Anfragen können weiterhin Kosten verursachen.",
 		"cancelSaveError": "Der Abbruch konnte nicht gespeichert werden. Lass diesen Tab offen und versuch es noch einmal.",
 		"preparing": "Dein Gegenstand wird vorbereitet",
-		"remake": "Für {name} erstellen…",
+		"remake": "Kopie für diese Figur…",
 		"makeForSlot": "Für {slot} erstellen…",
-		"demoDeleteLocked": "Demo-Gegenstände können nicht gelöscht werden",
+		"demoDeleteLocked": "Die Gegenstände der Demo können nicht in den Papierkorb",
 		"cancelItem": "Gegenstand abbrechen",
 		"canceling": "Wird abgebrochen…",
 		"keep": "Behalten",
-		"runningDetail": "{status} · {prompt}"
+		"runningDetail": "{status} · {prompt}",
+		"demoRenameLocked": "Die Gegenstände der Demo können nicht umbenannt werden"
 	},
 	"itemPane": {
+		"movesSection": "Bewegungen und Zustände",
+		"outfitSection": "Outfit",
+		"technicalDetails": "Technische Details",
+		"openSprite": "{title} vergrößern",
+		"availableDirectionsFor": "Verfügbare Blickrichtungen für {name}",
+		"drawForMoves": "Fehlende Frames generieren",
+		"reviewMissingMoves": "Fehlende Bewegungen prüfen",
+		"drawMovesSelect": "Wähle eine Animation zum Generieren aus.",
+		"selectAllMoves": "Alle auswählen",
+		"clearSelection": "Auswahl aufheben",
+		"drawMovesHelp": "Füllt nur die fehlenden Frames des Gegenstands.",
+		"repairView": "Ansicht {direction} reparieren",
+		"redrawView": "Ansicht {direction} neu zeichnen",
+		"sendBackward": "Nach hinten",
+		"bringForward": "Nach vorne",
+		"inFrontOf": "Vor {name}",
+		"behind": "Hinter {name}",
+		"previewUnavailable": "Keine Gegenstands-Frames zur Vorschau.",
 		"restoreStanding": {
 			"one": "Standansicht wiederherstellen",
 			"other": "Standansichten wiederherstellen"
 		},
 		"restoreStandingHint": {
-			"one": "Aus der gespeicherten Vorlage des Gegenstands für {directions} wiederhergestellt. Es wird nichts generiert.",
-			"other": "Aus den gespeicherten Vorlagen des Gegenstands für {directions} wiederhergestellt. Es wird nichts generiert."
+			"one": "Nutzt das gespeicherte Design für {directions}. Keine Generierung nötig.",
+			"other": "Nutzt die gespeicherten Designs für {directions}. Keine Generierung nötig."
 		},
 		"hiddenByAnotherItem": "Von einem anderen Gegenstand verdeckt",
-		"nameInEveryDirection": "{name} in allen Blickrichtungen",
+		"hiddenByItem": "Verdeckt von {name}",
+		"layerHiddenHint": "Zeige diesen Gegenstand an, um die Ebenenreihenfolge zu ändern.",
 		"labelNameFacingId": "{name}, Blickrichtung: {id}",
-		"acceptedAppearanceWarnings": "Akzeptierte Hinweise zur Darstellung",
-		"titleShowThisFrame": "Diesen Frame anzeigen",
-		"checksFoundIssuesNoPaidRetryWas": "Bei der Prüfung sind Probleme aufgefallen. Es wurde kein kostenpflichtiger Neuversuch gestartet. Du kannst einen weiteren Versuch anfordern oder den Gegenstand unverändert übernehmen.",
+		"acceptedAppearanceWarnings": "Akzeptierte Design-Warnungen",
+		"titleShowThisFrame": "Auf der Bühne zeigen",
 		"acceptAsIs": "Unverändert übernehmen",
-		"pendingWorkBusy": "Eine Animation oder Einrichtung läuft oder wurde gestoppt. Schließe sie ab oder verwirf sie, um diese Aktionen zu nutzen.",
-		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Übernimmt die aktuelle Grafik, ohne Credits zu verbrauchen. Die festgestellten Probleme bleiben in den Details vermerkt.",
-		"keepWithoutMoves": "Ohne diese Animationen behalten",
-		"keepWithoutMovesDetail": "Behält den Gegenstand aus seinen vollständigen Animationen, ohne Guthaben zu verbrauchen. In {moves} ist er ausgeblendet; diese bleiben als fehlend aufgeführt, damit du sie später zu ihrem eigenen Preis erstellen kannst.",
-		"youAcceptedThisArtworkWithItsRecorded": "Du hast diese Grafik mit den festgehaltenen Qualitätshinweisen übernommen.",
-		"generateItemForMove": "Gegenstand für Animation generieren",
-		"coverageTitle": "Animationsabdeckung",
-		"coverageAllDrawn": "In jeder Animation und jedem Zustand gezeichnet",
-		"coverageMissing": {
-			"one": "{n} Animation fehlt",
-			"other": "{n} Animationen fehlen"
-		},
-		"coverageClipDrawn": "{move}: gezeichnet",
-		"coverageClipMissing": "{move}: fehlt",
-		"fillMissingMoves": "Fehlende Animationen füllen",
-		"fillMissingHint": {
-			"one": "Zeichnet diesen Gegenstand für {n} fehlende Animation in einem Angebot, aus dem stehenden Design.",
-			"other": "Zeichnet diesen Gegenstand für alle {n} fehlenden Animationen in einem Angebot, aus dem stehenden Design."
-		},
-		"labelMakeNameForMissingName": "{name} für {missingName} erstellen",
-		"generatesOnlyThisItemSMissingViews": "Generiert nur die fehlenden Ansichten dieses Gegenstands für die gewählte Animation und verwendet dabei sein Design aus der Standpose. Der Grundkörper bleibt unverändert. PixelLab kann Kosten in US-Dollar berechnen. Die Wartezeit kann variieren.",
-		"madeForAnotherBodyItMayNot": "Für einen anderen Grundkörper erstellt. Passt möglicherweise nicht genau.",
-		"itsMirroredViewsUpdateToo": "Die gespiegelten Ansichten werden ebenfalls aktualisiert.",
+		"pendingWorkBusy": "Eine Animation oder Einrichtung blockiert diese Aktionen. Schließe sie zuerst ab oder verwirf sie.",
+		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Behält diese Grafik. Die Warnungen bleiben aufgelistet.",
+		"keepWithoutMovesDetail": "Verwirft die unvollständigen Frames in {moves}. Dort bleibt er ausgeblendet, bis du sie generierst.",
+		"youAcceptedThisArtworkWithItsRecorded": "Du hast diese Grafik akzeptiert. Die Hinweise bleiben aufgelistet.",
 		"matchingColors": "Farben werden abgeglichen…",
 		"matchItemColors": "Gegenstandsfarben abgleichen",
 		"recolor": "Umfärben",
-		"layerOrder": "Ebenenreihenfolge",
-		"titleDrawInFrontOfTheNext": "Vor der nächsten Ebene zeichnen",
-		"forward": "Nach vorn",
-		"titleDrawBehindThePreviousLayer": "Hinter der vorherigen Ebene zeichnen",
-		"backward": "Nach hinten",
-		"reset": "Zurücksetzen",
-		"whenWornHide": "Beim Anlegen ausblenden",
-		"howItWasMade": "So wurde der Gegenstand erstellt",
+		"recolorWearFirst": "Zum Umfärben zuerst anziehen",
+		"whenWornHide": "Andere Gegenstände beim Tragen ausblenden",
 		"iD": "ID",
 		"slot": "Ausrüstungsplatz",
-		"route": "Verfahren",
-		"qA": "Qualitätsprüfung",
-		"rawBodyDifferences": "Abweichungen am Grundkörper vor der Ausrichtung",
-		"rawKeyReviewFramesFramesHaveNewBodyColoredPixels": "Vor der Ausrichtung enthalten {rawKeyReviewFrames} Frames neue Pixel in der Farbe des Grundkörpers. Das kann durch normale Verschiebungen beim Neuzeichnen passieren. Der Qualitätsstatus bleibt unverändert.",
+		"route": "Generierungsmethode",
+		"qA": "Prüfergebnis",
+		"rawBodyDifferences": "Körperpixel vor der Ausrichtung",
+		"rawKeyReviewFramesFramesHaveNewBodyColoredPixels": "Frames mit neuen körperfarbenen Pixeln vor der Ausrichtung: {rawKeyReviewFrames}. Normales Neuzeichnen kann das verursachen. Das Prüfergebnis bleibt unverändert.",
 		"partialChecks": "Teilprüfungen",
-		"copiedChecksCoverWholeMovesTotalsMay": "Übernommene Prüfungen gelten für ganze Animationen. Die Gesamtwerte können auch ersetzte Frames enthalten.",
+		"copiedChecksCoverWholeMovesTotalsMay": "Summen aus Prüfungen ganzer Animationen können ersetzte Frames enthalten.",
 		"someMovesHaveNotBeenChecked": "Einige Animationen wurden nicht geprüft.",
 		"measurements": "Messwerte",
-		"reusedCellsWereNotMeasuredByPixelLab": "PixelLab hat die wiederverwendeten Zellen nicht vermessen. Für diesen Gegenstand gibt es keine zusammengefassten Prüfwerte.",
+		"reusedCellsWereNotMeasuredByPixelLab": "Wiederverwendete Frames haben keine PixelLab-Messwerte, daher sind Prüfungen des ganzen Gegenstands nicht verfügbar.",
 		"keyKept": "Key-Farbe erhalten",
 		"keyOutside": "Key-Farbe außerhalb",
 		"area": "Fläche",
 		"paletteDrift": "Palettenabweichung",
-		"edgePx": "Randpixel",
+		"edgePx": "Pixel am Frame-Rand",
 		"hands": "Hände",
-		"reRolls": "Neuversuche",
-		"missingFrames": "Fehlende Frames",
-		"refitIntro": "Kostenlos aus dem Gegenstand von {from} angepasst. Prüfe diese Frames:",
-		"remakeToFit": "Erstelle den Gegenstand für {name} neu, damit er passt.",
-		"moveGaps": "Für {move} fehlen einige oder alle Frames in diesen Blickrichtungen: {directions}. In diesen Frames ist der Gegenstand nicht sichtbar.",
-		"remakeAllMoves": "Erstelle den Gegenstand für {name} neu, um ihn in allen Animationen zu tragen.",
+		"reRolls": "Wiederholungen",
+		"missingFrames": "Fehlende Frame-IDs",
+		"refitIntro": "Kostenlos an den Gegenstand von {from} angepasst. Prüfe diese Frames:",
+		"remakeToFit": "Erstelle eine Version, die zu {name} passt.",
+		"moveGaps": "Der Gegenstand fehlt in einigen {move}-Frames in Blickrichtung {directions}.",
 		"copyFrom": "Von {name} kopieren",
 		"copyFrames": {
-			"one": "{from} hat {n} Frame dieses Gegenstands, der bei {name} fehlt. Es wird nichts generiert.",
-			"other": "{from} hat {n} Frames dieses Gegenstands, die bei {name} fehlen. Es wird nichts generiert."
+			"one": "Ergänzt {n} fehlenden Frame bei {name} aus {from}. Keine Generierung nötig.",
+			"other": "Ergänzt {n} fehlende Frames bei {name} aus {from}. Keine Generierung nötig."
 		},
-		"makeFor": "Für {move} erstellen",
 		"makingMoreMoves": "Gegenstände werden für weitere Animationen erstellt",
-		"colorMatchNote": {
-			"one": "Gleicht {pixels} an die bestehende Palette des Gegenstands an. Betroffen: {n} gespeicherter Frame in {move}, Blickrichtung {direction}.",
-			"other": "Gleicht {pixels} an die bestehende Palette des Gegenstands an. Betroffen: {n} gespeicherte Frames in {move}, Blickrichtung {direction}."
-		},
-		"colorMatchFixed": "Andere Ansichten, Animationen, Materialien und gespeicherte Farbänderungen bleiben unverändert.",
-		"colorMatchMissing": "Die Frames {frames} haben noch keine Grafik und werden ausgelassen.",
-		"colorMatchUnmatched": {
-			"one": "{n} geeigneter Pixel ohne passende Farbe bleibt unverändert.",
-			"other": "{n} geeignete Pixel ohne passende Farbe bleiben unverändert."
-		},
-		"colorMatchFree": "Vorhandene Qualitätshinweise bleiben erhalten. Es wird keine Anfrage an PixelLab gesendet.",
 		"colorsMatched": "Farbabgleich: {pixels} in {frames}.",
 		"pixels": {
 			"one": "{n} Pixel",
@@ -617,53 +596,122 @@
 			"one": "{n} Frame",
 			"other": "{n} Frames"
 		},
-		"onlyFacing": "Nur in Blickrichtung {direction}",
-		"hideWhenWorn": "Markierte Gegenstände werden ausgeblendet, solange {name} angelegt ist.",
-		"tuckNote": "Ohne Häkchen liegt {slots} darunter: Sichtbar bleibt nur, was unter der Krempe hervorschaut. Setze das Häkchen für Kapuzen und Vollmasken.",
+		"onlyFacing": "Nur für Blickrichtung {direction}",
+		"tuckNote": "Dieser Gegenstand kann {slots} teilweise verdecken.",
 		"chromaKey": "Key-Farbe: {color}",
 		"qaStatus": {
-			"pass": "bestanden",
-			"warn": "Warnung",
-			"fail": "fehlgeschlagen",
-			"accepted": "akzeptiert"
+			"pass": "Bestanden",
+			"warn": "Warnungen",
+			"fail": "Fehlgeschlagen",
+			"accepted": "Akzeptiert"
 		},
 		"areaStats": "mind. {ratio} des Medians · VK {cv}",
 		"handedness": {
-			"ok": "ok",
-			"switched": "vertauscht"
+			"ok": "Einheitlich",
+			"switched": "Wechselt die Hand"
 		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
-		"updateNote": "Aktualisiert diesen Gegenstand für {move} in Blickrichtung {direction}. Der Körper der Figur bleibt unverändert.",
-		"updateNoteMirrors": "Aktualisiert diesen Gegenstand für {move} in Blickrichtung {direction} und in den gespiegelten Ansichten. Der Körper der Figur bleibt unverändert.",
-		"repairItem": "Gegenstand reparieren",
-		"redrawItem": "Gegenstand neu zeichnen",
+		"updateNoteMirrors": "Aktualisiert {move} in Blickrichtung {directions}. Nur der Gegenstand ändert sich.",
 		"repairFeature": "die Gegenstandsreparatur",
 		"redrawFeature": "das Neuzeichnen des Gegenstands",
-		"repairHelp": "Ideal, wenn dir das Design gefällt. Änderungen bleiben auf den Bereich des Gegenstands beschränkt.",
-		"redrawHelp": "Form oder Griff können sich ändern. Du entscheidest, ob du das Ergebnis behältst.",
+		"repairHelp": "Behält das Design und ändert nur den Gegenstandsbereich.",
+		"redrawHelp": "Ein neuer Versuch, der Form oder Griff ändern kann. Du vergleichst, bevor du ihn behältst.",
+		"itemActions": "Gegenstandsaktionen",
+		"statusGenerating": "Wird erstellt",
+		"statusIncomplete": "Unvollständig",
+		"staleNote": "Für einen anderen Körper gemacht. Prüfe die Passform.",
+		"previewMove": "Animation",
+		"openMissingView": "{direction} öffnen (fehlt)",
+		"missingView": "Fehlt",
+		"hiddenWhenWorn": "Beim Tragen von {names} ausgeblendet.",
+		"clipsIncomplete": {
+			"one": "{n} Bewegung unvollständig",
+			"other": "{n} Bewegungen unvollständig"
+		},
+		"complete": "Vollständig",
+		"clipNoFrames": "Noch keine Frames",
+		"clipMissingViews": "Fehlt: {directions}",
+		"generateMoves": {
+			"one": "{n} Animation erstellen",
+			"other": "{n} Animationen erstellen"
+		},
+		"qualitySection": "Qualität",
+		"passed": "Bestanden",
+		"facing": "Blickrichtung",
+		"matchColorsDetail": "Gleicht {pixels} in {frames} an die Palette des Gegenstands an.",
+		"fixFramesDetail": "Bearbeite alle Frames von {move} in deinem Grafikprogramm.",
+		"hiddenState": "Ausgeblendet",
+		"hidesCount": {
+			"one": "Blendet {n} Kategorie aus",
+			"other": "Blendet {n} Kategorien aus"
+		},
+		"outfitPreview": "{name} im Outfit, Blickrichtung {direction}",
+		"layerScope": "Gilt für alle Gegenstände in {slot}.",
+		"layerNothingToCross": "Keine überlappenden Ebenen in dieser Ansicht.",
+		"layerBack": "{name} (hinten)",
+		"layerWithSlot": "{name} ({slot})",
+		"resetOrder": "Reihenfolge zurücksetzen",
+		"hideRulesLater": "Gilt, wenn {name} getragen wird.",
+		"aboutSection": "Info",
+		"generateMovesNone": "Erstellen",
+		"stopHiding": "Ausblenden durch {names} beenden",
+		"keepWithoutNamed": "Ohne {moves} behalten",
+		"checksFoundIssuesNoPaidRetryWas": "Es wurde kein kostenpflichtiger Neuversuch gestartet.",
 		"repairRequests": {
-			"one": "Diese Reparatur nutzt {n} PixelLab-Generierungsanfrage.",
-			"other": "Diese Reparatur nutzt {n} PixelLab-Generierungsanfragen."
+			"one": "{n} PixelLab-Anfrage.",
+			"other": "{n} PixelLab-Anfragen."
 		},
 		"redrawRequests": {
-			"one": "Das Neuzeichnen nutzt {n} PixelLab-Generierungsanfrage.",
-			"other": "Das Neuzeichnen nutzt {n} PixelLab-Generierungsanfragen."
+			"one": "{n} PixelLab-Anfrage.",
+			"other": "{n} PixelLab-Anfragen."
 		},
 		"redrawSaves": {
-			"one": "{n} geschätzte Generierung weniger als bei der Reparatur.",
-			"other": "{n} geschätzte Generierungen weniger als bei der Reparatur."
+			"one": "{n} Generierung weniger als Reparatur.",
+			"other": "{n} Generierungen weniger als Reparatur."
 		},
 		"redrawCostsMore": {
-			"one": "{n} geschätzte Generierung mehr als bei der Reparatur.",
-			"other": "{n} geschätzte Generierungen mehr als bei der Reparatur."
+			"one": "{n} Generierung mehr als Reparatur.",
+			"other": "{n} Generierungen mehr als Reparatur."
 		},
-		"billingNote": "Die Schätzungen vergleichen Generierungen, nicht Dollarpreise. PixelLab kann US-Dollar berechnen, und die Wartezeit kann variieren."
+		"turnLeft": "Nach links drehen",
+		"turnRight": "Nach rechts drehen",
+		"facingLabel": "Blickrichtung {direction}",
+		"matchViewColors": "Farben der Ansicht {direction} abgleichen",
+		"fixOneView": "Eine Ansicht korrigieren",
+		"outfitPreviewUnworn": "{name} im Outfit, als ob getragen, Blickrichtung {direction}",
+		"openOutfit": "{name} im Outfit in voller Größe öffnen",
+		"outfitTitle": "{name} im Outfit",
+		"layerPosition": "Ebene {position} von {count}",
+		"layerPositionHint": "Ebene {position} von {count} unter den überlappenden Ebenen, von hinten gezählt",
+		"slotLayerOrder": "Ebenenreihenfolge im Slot {slot}",
+		"layerScopeFacing": "Gilt für alle Gegenstände im Slot {slot} in Blickrichtung {direction}.",
+		"twoHandedNote": "Braucht beide Hände, daher wird beim Tragen der Gegenstand in {slot} abgelegt.",
+		"makeForSlotDetail": "Diesen Gegenstand noch einmal für {slot} zeichnen.",
+		"groupReady": "{ready} von {count} fertig",
+		"remakeFits": "Erstellt eine neue Kopie, die zu {name} passt, der Figur, die du gerade einkleidest.",
+		"demoMissing": "Die Demo verbraucht nie PixelLab-Generierungen. Erstelle eine bearbeitbare Kopie, um die fehlenden Frames zu zeichnen.",
+		"nameInEveryDirection": "{name} in allen Blickrichtungen",
+		"generateItemForMove": "Gegenstand für Animation generieren",
+		"fillMissingMoves": "Fehlende Animationen füllen",
+		"fillMissingHint": {
+			"one": "Zeichnet diesen Gegenstand für {n} fehlende Animation in einem Angebot, aus dem stehenden Design.",
+			"other": "Zeichnet diesen Gegenstand für alle {n} fehlenden Animationen in einem Angebot, aus dem stehenden Design."
+		},
+		"labelMakeNameForMissingName": "{name} für {missingName} erstellen",
+		"generatesOnlyThisItemSMissingViews": "Generiert nur die fehlenden Ansichten dieses Gegenstands für die gewählte Animation und verwendet dabei sein Design aus der Standpose. Der Grundkörper bleibt unverändert. PixelLab kann Kosten in US-Dollar berechnen. Die Wartezeit kann variieren.",
+		"madeForAnotherBodyItMayNot": "Für einen anderen Grundkörper erstellt. Passt möglicherweise nicht genau.",
+		"titleDrawInFrontOfTheNext": "Vor der nächsten Ebene zeichnen",
+		"forward": "Nach vorn",
+		"titleDrawBehindThePreviousLayer": "Hinter der vorherigen Ebene zeichnen",
+		"backward": "Nach hinten",
+		"makeFor": "Für {move} erstellen",
+		"hideWhenWorn": "Markierte Gegenstände werden ausgeblendet, solange {name} angelegt ist."
 	},
 	"newCharacterButton": {
-		"addCharacter": "Figur hinzufügen",
 		"newCharacter": "Neue Figur",
 		"createFromScratch": "Erstellen…",
+		"addCharacter": "Figur hinzufügen",
 		"fromFile": "Aus Datei…",
 		"fromPixelLab": "Aus PixelLab…",
 		"createNeedsKey": "Braucht einen PixelLab-Schlüssel und kostenpflichtige Generierungen"
@@ -728,8 +776,15 @@
 		"labelDeleteState": "In den Papierkorb…",
 		"removeState": "Körper und jeder Gegenstand verlieren die angepassten Frames; fertige Bewegungen behalten ihre. bis zu 30 Tage lang kannst du den Zustand zurückholen.",
 		"labelDeleteMove": "In den Papierkorb…",
-		"labelDeleteOutfit": "Outfit löschen",
-		"thisRemovesTheMoveFromTheBody": "Körper und jeder Gegenstand verlieren die Frames dieser Bewegung. bis zu 30 Tage lang kannst du sie zurückholen."
+		"labelDeleteOutfit": "In den Papierkorb…",
+		"thisRemovesTheMoveFromTheBody": "Körper und jeder Gegenstand verlieren die Frames dieser Bewegung. bis zu 30 Tage lang kannst du sie zurückholen.",
+		"demoRenameLocked": "Bewegungen und Zustände der Demo lassen sich nicht umbenennen",
+		"removeOutfit": "Seine Gegenstände bleiben in der Garderobe. Du kannst es bis zu 30 Tage aus dem Papierkorb zurückholen.",
+		"demoOutfitLocked": "Die eigenen Outfits der Demo lassen sich nicht löschen",
+		"labelDeleteDemoOutfit": "Löschen…",
+		"deleteDemoOutfit": "Die Demo hat keinen Papierkorb, daher wird dieses Outfit gelöscht. Rückgängig holt es bis zum Neuladen zurück.",
+		"deleteDemoOutfitTitle": "{name} löschen?",
+		"outfitGone": "Dieses Outfit ist nicht mehr vorhanden."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Kostenlos: Bereits erstellte Gegenstände werden nie neu generiert.",
@@ -750,7 +805,7 @@
 		"theSlotAndItsItemsAreDeleted": "Die Gegenstände gehen mit und Outfits tragen sie nicht mehr. bis zu 30 Tage lang kannst du alles zurückholen.",
 		"labelAddedAtTheEndOfWardrobe": "{label} wurde am Ende der Garderobe hinzugefügt.",
 		"valueShownAtTheEndOfWardrobe": "{value} wird am Ende der Garderobe angezeigt.",
-		"demoDeleteLocked": "Gegenstände der mitgelieferten Demo können nicht gelöscht werden.",
+		"demoDeleteLocked": "Gegenstände der mitgelieferten Demo können nicht in den Papierkorb.",
 		"renameNote": "Gegenstände, Outfits und Exportname ({slot}) bleiben beim Umbenennen erhalten.",
 		"drawOrder": "Die Vorderseite der Gegenstände dieses Platzes liegt über {slot} und unter dem nächsten Platz. Das gilt auch für vorhandene Gegenstände. Seitenspezifische Ebenen, etwa die Hand im Vordergrund, werden mitverschoben.",
 		"behindBody": "Teile hinter dem Grundkörper bleiben dahinter.",
@@ -811,7 +866,7 @@
 		"previewRisk": "Gespeicherte Figuren funktionieren nach Updates möglicherweise nicht mehr.",
 		"previewBackupDescription": "Bewahre eine lokale Kopie deiner Figuren und Grafiken auf.",
 		"youReOfflineEditAndExportLocally": "Du bist offline. Bearbeiten und Exportieren geht weiterhin lokal.",
-		"titleInspectCharacter": "Figur prüfen",
+		"titleInspectCharacter": "Frames ansehen",
 		"titleWorkspaceCopy": "Arbeitsbereichskopie",
 		"titleItem": "Gegenstand",
 		"titleItemReview": "Gegenstand prüfen"
@@ -860,7 +915,6 @@
 			"other": "{n} Figuren"
 		},
 		"version": "Version {version}",
-		"renameCharacter": "Figur umbenennen…",
 		"rename": "Umbenennen…",
 		"setUpCharacter": "Figur einrichten…",
 		"connectPixelLab2": "PixelLab verbinden…",
@@ -909,6 +963,7 @@
 		"copiedFree": "Kostenlos von {from} kopiert.",
 		"statusNote": "{status}.",
 		"hiddenNote": "Von einem anderen Gegenstand verdeckt.",
+		"twoHandedNote": "Belegt beide Hände.",
 		"fromOthers": "Von {sources}. Beim Anlegen eines Gegenstands wird diese Kategorie zu {name} hinzugefügt.",
 		"source": "Von {from}",
 		"sourceFree": "Kostenlos von {from}",
@@ -976,7 +1031,7 @@
 		"moreActionsFor": "Weitere Aktionen für {name}",
 		"actionsFor": "Aktionen für {name}",
 		"still": "Standpose",
-		"inspect": "Prüfen",
+		"inspect": "Frames ansehen",
 		"customization": "Anpassen",
 		"customizationPanels": "Bereiche zum Anpassen",
 		"tabWorkRunning": "Hier läuft, wartet oder ist etwas zum Prüfen bereit",
@@ -1041,21 +1096,21 @@
 		"finishBeforeMoveImport": "Schließe ausstehende Generierungen ab oder verwirf sie, bevor du Animationen importierst.",
 		"couldNotCheckNamedFrames": "Bilder für {names} konnten nicht geprüft werden: {reason}",
 		"couldNotCheckSeveralFrames": "Bilder für {names} konnten nicht geprüft werden.",
-		"copyMissingOneMove": "Für {move} fehlen Bilder; der Gegenstand bleibt dort unsichtbar.",
-		"copyMissingFrames": "In {moves} fehlen Bilder; der Gegenstand bleibt dort unsichtbar.",
+		"copyMissingOneMove": "In manchen Frames von {move} ist der Gegenstand nicht sichtbar.",
+		"copyMissingFrames": "In manchen Frames von {moves} ist der Gegenstand nicht sichtbar.",
 		"restoreFailed": "{name} konnte nicht wiederhergestellt werden: {reason}",
 		"restoreFinishFailed": "Die Wiederherstellung von {name} konnte nicht abgeschlossen werden: {reason}",
 		"restoredStanding": "{name} wurde für {directions} wiederhergestellt. Keine Generierungen verbraucht.",
 		"restoredQualityNotes": "Es gibt Qualitätshinweise. Bitte prüfen.",
 		"noStandingToRestore": "Für {name} gibt es keine weiteren Standansichten zum Wiederherstellen.",
-		"characterChangedNothingDeleted": "Die Figur hat sich inzwischen geändert. Es wurde nichts gelöscht.",
+		"characterChangedNothingDeleted": "Die Figur hat sich inzwischen geändert. Nichts wurde in den Papierkorb verschoben.",
 		"categoryNowHasItems": {
-			"one": "Die Kategorie „{label}“ enthält jetzt {count} Gegenstand. Prüfe sie erneut, bevor du sie löschst.",
-			"other": "Die Kategorie „{label}“ enthält jetzt {count} Gegenstände. Prüfe sie erneut, bevor du sie löschst."
+			"one": "{label} hat jetzt {count} Gegenstand. Prüfe es erneut, bevor du es in den Papierkorb verschiebst.",
+			"other": "{label} hat jetzt {count} Gegenstände. Prüfe es erneut, bevor du es in den Papierkorb verschiebst."
 		},
-		"categoryNowHasNoItems": "Die Kategorie „{label}“ enthält jetzt keine Gegenstände mehr. Prüfe sie erneut, bevor du sie löschst.",
+		"categoryNowHasNoItems": "{label} hat jetzt keine Gegenstände. Prüfe es erneut, bevor du es in den Papierkorb verschiebst.",
 		"categoryItemsGettingMoves": "Für Gegenstände in „{label}“ werden neue Animationen erstellt. Warte, bis sie fertig sind, oder verwirf die laufenden Aufgaben zuerst.",
-		"reasonNothingDeleted": "{reason} Es wurde nichts gelöscht.",
+		"reasonNothingDeleted": "{reason} Nichts wurde in den Papierkorb verschoben.",
 		"itemsPosedForMove": "Per Skelett an {moveName} angepasst: {names}",
 		"itemsRedrawnForMove": "Für {moveName} neu gezeichnet: {names}",
 		"equipmentPosedForMove": "Ausrüstung per Skelett an {moveName} angepasst",
@@ -1071,9 +1126,9 @@
 		"waitForCharacter": "Warte, bis die Figur vollständig geladen ist.",
 		"manageMovesInOtherTab": "Verwalte Animationen im anderen PixelDoll-Tab oder schließe ihn zuerst.",
 		"manageCharactersInOtherTab": "Verwalte Figuren im anderen PixelDoll-Tab oder schließe ihn zuerst.",
-		"finishBeforeCharacterRemoval": "Schließe offene Generierungen ab oder verwirf sie, bevor du eine Figur löschst.",
+		"finishBeforeCharacterRemoval": "Schließe ausstehende Generierungen ab oder verwirf sie, bevor du eine Figur in den Papierkorb verschiebst.",
 		"finishBeforeRestore": "Beenden oder verwerfen Sie laufende Generierungen, bevor Sie diesen Charakter wiederherstellen.",
-		"finishBeforeMoveRemoval": "Schließe offene Generierungen ab oder verwirf sie, bevor du eine Animation löschst.",
+		"finishBeforeMoveRemoval": "Schließe ausstehende Generierungen ab oder verwirf sie, bevor du eine Animation in den Papierkorb verschiebst.",
 		"finishBeforeDirectionRemoval": "Schließe offene Generierungen ab oder verwirf sie, bevor du die Blickrichtungen änderst.",
 		"finishBeforeFixFrames": "Warte, bis die laufenden Generierungen abgeschlossen sind, bevor du Frames korrigierst.",
 		"couldNotReadYourSavedCharactersReason": "Deine gespeicherten Figuren konnten nicht gelesen werden: {reason}",
@@ -1096,8 +1151,8 @@
 		"openedDemoCopy": "Deine bearbeitbare Demo-Kopie ist geöffnet.",
 		"tookOffTwoHanded": "{names} abgelegt (zweihändig)",
 		"tookOffForTwoHanded": "{names} abgelegt: {name} ist zweihändig",
-		"wearingUnfitted": "{name} ist so angelegt, wie der Gegenstand für {sourceName} gezeichnet wurde. Er passt möglicherweise nicht genau auf diesen Grundkörper. Dafür wurden keine Generierungen verbraucht.",
-		"wearingUnfittedAtSize": "{name} ist wie für {sourceName} gezeichnet in der ursprünglichen Framegröße ({size}) angelegt. Der Gegenstand passt möglicherweise nicht genau auf diesen Grundkörper. Dafür wurden keine Generierungen verbraucht.",
+		"wearingUnfitted": "{name} wurde für {sourceName} gezeichnet und passt hier möglicherweise nicht genau.",
+		"wearingUnfittedAtSize": "{name} wurde für {sourceName} gezeichnet ({size}) und passt hier möglicherweise nicht genau.",
 		"fittedItem": "{name} von {sourceName} kostenlos angepasst. Prüfe die Passform in jeder Animation.",
 		"copiedSharedItem": "{name} von {sourceName} kopiert. Dafür wurden keine Generierungen verbraucht.",
 		"copiedMoreFrames": {
@@ -1121,8 +1176,8 @@
 		"savedItemAttemptsCouldNotBeRead": "Gespeicherte Versuche für Gegenstände konnten nicht gelesen werden: {reason}",
 		"theCharacterChangedMeanwhileTryAgain": "Die Figur wurde inzwischen geändert. Versuch es noch einmal.",
 		"noCharacterIsOpen": "Es ist keine Figur geöffnet.",
-		"labelChangedMeanwhileReviewItAgainBefore": "{label} wurde inzwischen geändert. Prüfe den Eintrag vor dem Löschen erneut.",
-		"labelHasNewItemsReviewItAgain": "{label} enthält neue Gegenstände. Prüfe den Eintrag vor dem Löschen erneut.",
+		"labelChangedMeanwhileReviewItAgainBefore": "{label} hat sich inzwischen geändert. Prüfe es erneut, bevor du es in den Papierkorb verschiebst.",
+		"labelHasNewItemsReviewItAgain": "{label} hat neue Gegenstände. Prüfe es erneut, bevor du es in den Papierkorb verschiebst.",
 		"categoryAndItemsDeleted": {
 			"one": "{label} und {count} Gegenstand in den Papierkorb verschoben",
 			"other": "{label} und {count} Gegenstände in den Papierkorb verschoben"
@@ -1163,7 +1218,8 @@
 		"resetColors": "Farben zurücksetzen",
 		"randomItem": "Zufälliger Gegenstand: {name}",
 		"saveOutfit": "Outfit speichern",
-		"deleteOutfit": "Outfit löschen",
+		"deleteOutfit": "Outfit in den Papierkorb",
+		"deleteDemoOutfit": "Outfit löschen",
 		"renameOutfit": "Outfit umbenennen",
 		"show": "{name} einblenden",
 		"hide": "{name} ausblenden",
@@ -1174,9 +1230,9 @@
 		"moveCategory": "{name} verschieben",
 		"addCategory": "Kategorie hinzufügen",
 		"changeCategory": "{name} ändern",
-		"deleteCategory": "{name} löschen",
-		"deleteItem": "{name} löschen",
-		"deleteMove": "{name} löschen",
+		"deleteCategory": "{name} in den Papierkorb",
+		"deleteItem": "{name} in den Papierkorb",
+		"deleteMove": "{name} in den Papierkorb",
 		"moveItem": "{name} verschieben",
 		"changeDirections": "Blickrichtungen ändern",
 		"restoreOriginals": "Originale wiederherstellen",
@@ -1250,13 +1306,6 @@
 				"sub": "Bearbeitbares Projekt",
 				"detail": "Bearbeitbares GDevelop-Projekt mit Sprite-Ebenen, synchronisierter Wiedergabe und Ausrüstungssteuerung. Sieh es dir in der Vorschau an oder kopiere die Objekte und das Ereignis in dein Spiel."
 			},
-			"rpgMaker": {
-				"sub": "Geh-Spritesheets",
-				"detail": "Ein Geh-Spritesheet pro Outfit in der Originalgröße deiner Figur. Kopiere die PNG-Dateien nach img/characters (MZ, MV) oder Graphics/Characters (VX Ace, VX). Benötigt Vorder-, Seiten- und Rückansichten."
-			},
-			"rpgMakerXp": {
-				"detail": "Ein Geh-Spritesheet mit 4 Frames pro Outfit in der Originalgröße deiner Figur, für RPG Maker XP und Pokémon Essentials. Kopiere die PNG-Dateien nach Graphics/Characters. Benötigt Vorder-, Seiten- und Rückansichten."
-			},
 			"aseprite": {
 				"sub": "Bearbeitbare Ebenen",
 				"detail": "Eine .aseprite-Animation mit Ebenen, Tags, Frame-Dauer, Drehpunkt und deinem aktuellen Look. Öffne sie in Aseprite 1.3 oder neuer."
@@ -1264,6 +1313,13 @@
 			"generic": {
 				"sub": "Eigene Integration",
 				"detail": "Spritesheets und Streifen pro Ebene mit Frame-Dauer, Drehpunkten, Ausrüstungs- und Palettendaten. Deine Engine braucht Code, der diese Regeln liest."
+			},
+			"rpgMaker": {
+				"sub": "Geh-Spritesheets",
+				"detail": "Ein Geh-Spritesheet pro Outfit in der Originalgröße deiner Figur. Kopiere die PNG-Dateien nach img/characters (MZ, MV) oder Graphics/Characters (VX Ace, VX). Benötigt Vorder-, Seiten- und Rückansichten."
+			},
+			"rpgMakerXp": {
+				"detail": "Ein Geh-Spritesheet mit 4 Frames pro Outfit in der Originalgröße deiner Figur, für RPG Maker XP und Pokémon Essentials. Kopiere die PNG-Dateien nach Graphics/Characters. Benötigt Vorder-, Seiten- und Rückansichten."
 			},
 			"phaserAe": {
 				"detail": "Spritesheets pro Ebene und Laufzeitcode für Phaser-AE-Spiele, mit Ausrüstung, Farben und synchronisierter Wiedergabe. Trage die Spritesheets in die assets-Liste im Manifest deines Spiels ein, dann kopiert der Build deines Spiels sie hinein."
@@ -1354,7 +1410,6 @@
 			"noVisibleFrames": "Der Grundkörper hat keine sichtbaren Frames.",
 			"godot": "Godot konnte diese Spritesheets nicht verwenden.",
 			"gdevelop": "GDevelop konnte diese Spritesheets nicht verwenden.",
-			"rpgMaker": "RPG Maker benötigt Vorder-, Seiten- und Rückansichten.",
 			"aseprite": "Die Animation passt nicht ins Aseprite-Format.",
 			"unsafeNames": "Einige Dateinamen lassen sich nicht sicher ins Archiv aufnehmen.",
 			"tooLarge": "Dieser Export ist zu groß.",
@@ -1362,7 +1417,8 @@
 			"buildFailed": "Dieser Export konnte nicht erstellt werden.",
 			"characterLimits": "Diese Figur überschreitet die Exportgrenzen.",
 			"damagedImages": "Einige gespeicherte Bilder sind beschädigt.",
-			"artworkFailed": "Das ZIP mit den Grafiken konnte nicht vorbereitet werden."
+			"artworkFailed": "Das ZIP mit den Grafiken konnte nicht vorbereitet werden.",
+			"rpgMaker": "RPG Maker benötigt Vorder-, Seiten- und Rückansichten."
 		},
 		"error": {
 			"pixelsPerUnit": "Pixel pro Einheit muss eine positive, endliche Zahl sein.",
@@ -1415,7 +1471,6 @@
 		"posesTitle": "Auch als Zustände importieren",
 		"posesHint": "Wähle Posen desselben Körpers ohne fest eingezeichnete Ausrüstung. Importiere ein anderes Aussehen als separaten Charakter. Die Animationen wählst du weiter unten aus.",
 		"poseMismatch": "Dieser Zustand hat andere Bildabmessungen, Blickrichtungen oder Kameraeinstellungen. Importiere ihn als separaten Charakter.",
-		"titleFile": "Aus Datei importieren",
 		"titlePixelLab": "Aus PixelLab importieren",
 		"browseLibrary": "PixelLab-Figuren durchsuchen",
 		"standingState": "Zustand für die Standpose",
@@ -1502,8 +1557,8 @@
 			"skippedStanding": "„{move}“ in Blickrichtung {direction} wurde weggelassen: Die Figur hat keine Standansicht in diese Richtung.",
 			"semiAlpha": "Teiltransparente Kanten wurden in harte Pixelgrafik-Transparenz umgewandelt.",
 			"upscaledBase": "Die Standbilder sehen wie eine {scale}x-Vergrößerung aus. Sie bleiben unverändert: Gegenstände daraus brauchen mehr Pixel, mischen Pixelgrößen und lassen sich weniger sauber umfärben. Importiere nach Möglichkeit die Originalgrafik in 1x.",
-			"compressedBase": "Die Standbilder sehen komprimiert oder neu skaliert aus: Viele Farben kommen nur einmal vor. Sie bleiben unverändert: Gegenstände daraus lassen sich schlechter freistellen, umfärben und ausrichten. Importiere nach Möglichkeit das Original.",
-			"detailsDropped": "Einige gespeicherte Angaben zur Figur waren beschädigt und wurden ausgelassen. Richte bei Bedarf ihr Posen-Rig erneut ein."
+			"detailsDropped": "Einige gespeicherte Angaben zur Figur waren beschädigt und wurden ausgelassen. Richte bei Bedarf ihr Posen-Rig erneut ein.",
+			"compressedBase": "Die Standbilder sehen komprimiert oder neu skaliert aus: Viele Farben kommen nur einmal vor. Sie bleiben unverändert: Gegenstände daraus lassen sich schlechter freistellen, umfärben und ausrichten. Importiere nach Möglichkeit das Original."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1556,7 +1611,8 @@
 			"cutPixels": "Bei {path} gingen in einer Zelle mit {frame} px Seitenlänge {cut} sichtbare Pixel verloren. Importiere eine kleinere Figur. Grafiken werden nie skaliert.",
 			"emptyFrame": "{path} ist ein leerer Frame.",
 			"nameLength": "Gib einen Figurennamen mit 1–60 Zeichen ein."
-		}
+		},
+		"titleFile": "Aus Datei importieren"
 	},
 	"incompatible": {
 		"error": {
@@ -1797,7 +1853,7 @@
 			"fixedDrawOrder": "Die Ebenenreihenfolge vorgegebener Kategorien ist fest.",
 			"fixedSettings": "Vorgegebene Kategorien lassen sich nur einblenden, ausblenden oder verschieben.",
 			"fixedRemoval": "Vorgegebene Kategorien lassen sich nur ausblenden.",
-			"nonemptyRemoval": "Entferne die Gegenstände, bevor du die Kategorie löschst."
+			"nonemptyRemoval": "Verschiebe zuerst seine Gegenstände in den Papierkorb."
 		},
 		"use": {
 			"making": {
@@ -1811,7 +1867,7 @@
 		},
 		"busy": {
 			"hide": "{label}: {items}. Nur leere Kategorien lassen sich ausblenden{stopped}.",
-			"delete": "{label}: {items}. Nur leere Kategorien lassen sich löschen{stopped}.",
+			"delete": "{label} hat {items}. Nur eine Kategorie, in der nichts entsteht, kann in den Papierkorb{stopped}.",
 			"reattach": "{label}: {items}. Nur bei leeren Kategorien lässt sich die Befestigung ändern{stopped}.",
 			"hideWardrobe": "{label}: {items}. Nur leere Ausrüstungsplätze lassen sich ausblenden{stopped}.",
 			"dismissStopped": "; verwirf zuerst gestoppte Versuche unter „Aktivität“"
@@ -2171,7 +2227,7 @@
 		"noCharge": "PixelLab meldet keine Kosten für diesen Versuch.",
 		"newPaidAttempt": "„Erneut generieren“ startet einen neuen kostenpflichtigen Versuch.",
 		"retryFeature": "Diese Ausrüstung neu generieren",
-		"retryNote": "„Erneut generieren“ zeichnet das Design der Standpose in den Blickrichtungen der Figur neu. Die geschätzten Kosten siehst du hier. Generiere weitere Animationen separat, sobald dir das Design gefällt. Weitere Qualitätsversuche oder Reparaturen erfordern eine neue Anfrage. PixelLab kann manche Aufrufe in US-Dollar abrechnen. Die Wartezeit kann variieren.",
+		"retryNote": "„Erneut generieren“ zeichnet das Design der Standpose in den Blickrichtungen der Figur neu. Die geschätzten Kosten siehst du hier. Generiere weitere Animationen separat, sobald dir das Design gefällt. Weitere Qualitätsversuche oder Reparaturen erfordern eine neue Anfrage.",
 		"slotKey": "{slot} · Key-Farbe: {key}",
 		"calls": "Aufrufe",
 		"call": "{index}: {cells} Zellen",
@@ -2341,7 +2397,7 @@
 			"chooseReference": "Wähle eine Animation als Standreferenz.",
 			"noStandingReference": "{move} hat nicht für jede Blickrichtung eine Standansicht. Wähle eine Animation mit allen Ansichten.",
 			"needsStandingViews": "Die Rig-Einrichtung braucht gespeicherte Original-Standansichten oder alle vier Hauptrichtungen. Importiere zuerst die fehlenden Drehungen.",
-			"emptyBodyFrame": "{move} hat einen leeren Körper-Frame. Korrigiere oder lösche diese Animation und richte dann erneut ein."
+			"emptyBodyFrame": "{move} hat ein leeres Körperbild. Korrigiere diese Animation oder verschiebe sie in den Papierkorb und richte sie dann erneut ein."
 		},
 		"newRegistration": "Neu registrieren"
 	},
@@ -2383,7 +2439,7 @@
 			"partialRepairMustKeep": "Bei einer Teilreparatur muss die Anzahl der Frames unverändert bleiben.",
 			"selectedEquipmentLongerStanding": "Für die gewählte Ausrüstung fehlen jetzt Standdesigns in einigen gewählten Ansichten. Prüfe die Ausrüstungsauswahl erneut, bevor du es noch einmal versuchst. Es wurde keine Generierung angefordert.",
 			"itemFramesChangedGeneration": "Die Gegenstandsframes haben sich vor der Generierung geändert. Öffne den Gegenstand erneut, um sie zu prüfen.",
-			"itemChangedWasRemoved": "Dieser Gegenstand hat sich während der Vorbereitung der Animation geändert oder wurde entfernt.",
+			"itemChangedWasRemoved": "Dieser Gegenstand hat sich geändert oder ist in den Papierkorb gewandert, während die Animation vorbereitet wurde.",
 			"characterChangedAnotherTab": "Diese Figur wurde während der Generierung der Animation in einem anderen Tab geändert. Öffne sie vor einem neuen Versuch erneut.",
 			"bodyFramesTheirQuality": "Diese Grundkörperframes oder ihre Qualitätsprüfungen haben sich seit der Prüfung geändert. Es wurde nichts gespeichert und keine Anfrage gesendet. Prüfe sie erneut.",
 			"characterChangedAnotherTab2": "Diese Figur wurde in einem anderen Tab geändert, bevor die Animation gespeichert werden konnte. Öffne sie vor einem neuen Versuch erneut.",
@@ -2763,11 +2819,11 @@
 		"recovery": {
 			"reuse": "Verwende die fertigen Grundkörperframes und Gelenkprüfergebnisse erneut.",
 			"checks": {
-				"one": "{count} offene Gelenkprüfung wiederholen · geschätzt {gens} Generierungen oder {usd}. Prüfungen mit unbekanntem Ergebnis können bereits Kosten verursacht haben. Ein Neuversuch kann erneut Kosten verursachen. Abrechnung und Wartezeit bei PixelLab können variieren.",
-				"other": "{count} offene Gelenkprüfungen wiederholen · geschätzt {gens} Generierungen oder {usd}. Prüfungen mit unbekanntem Ergebnis können bereits Kosten verursacht haben. Ein Neuversuch kann erneut Kosten verursachen. Abrechnung und Wartezeit bei PixelLab können variieren."
+				"one": "{count} offene Gelenkprüfung wiederholen · geschätzt {gens} Generierungen oder {usd}. Prüfungen mit unbekanntem Ergebnis können bereits Kosten verursacht haben. Ein Neuversuch kann erneut Kosten verursachen.",
+				"other": "{count} offene Gelenkprüfungen wiederholen · geschätzt {gens} Generierungen oder {usd}. Prüfungen mit unbekanntem Ergebnis können bereits Kosten verursacht haben. Ein Neuversuch kann erneut Kosten verursachen."
 			},
 			"noRequests": "Es werden keine neuen Anfragen für Grundkörper oder Gelenke gesendet.",
-			"items": "Die ausgewählte Ausrüstung wird in Pose gebracht, sobald der Grundkörper die Prüfung bestanden hat · ca. {gens} zusätzliche Generierungen. Neuversuche und Abrechnung in US-Dollar sind möglich."
+			"items": "Die ausgewählte Ausrüstung wird in Pose gebracht, sobald der Grundkörper die Prüfung bestanden hat · ca. {gens} zusätzliche Generierungen."
 		},
 		"color": {
 			"pixels": {
@@ -2781,7 +2837,7 @@
 			"match": "Gleicht {pixels} in {frames} an die Palette der Standpose an. Die Form des Grundkörpers und die übrigen Farben bleiben unverändert.",
 			"recheck": "{count} geänderte Frames erneut prüfen · geschätzt {gens} Generierungen oder {usd}.",
 			"items": "Die ausgewählte Ausrüstung wird in Pose gebracht, sobald der Grundkörper die Prüfung bestanden hat · ca. {gens} zusätzliche Generierungen.",
-			"billing": "PixelLab kann in US-Dollar abrechnen. Neue Qualitätsversuche kosten extra und die Wartezeit kann variieren. Wenn eine Prüfung weiterhin fehlschlägt, bleiben die bisherigen Ansichten des Grundkörpers erhalten."
+			"kept": "Wenn eine Prüfung weiterhin fehlschlägt, bleiben die bisherigen Ansichten des Grundkörpers erhalten."
 		},
 		"demo": "Animationen werden deiner eigenen Figur hinzugefügt.",
 		"needsSetup": "Richte das Posen-Rig dieser Figur ein, um Animationen hinzuzufügen. Vorhandene Grafiken und Ebenen passen weiterhin zusammen.",
@@ -2800,7 +2856,6 @@
 		},
 		"changedDuringEdit": "Diese Animation hat sich während der Bearbeitung geändert. Wähle sie erneut aus, um fortzufahren.",
 		"duplicateOption": "{move} steht bereits zur Auswahl. Beginne die Beschreibung mit anderen Wörtern.",
-		"costNotice": "PixelLab kann in US-Dollar abrechnen. Erneute Versuche und Ausweichverfahren kosten extra.",
 		"templates": "Animationsvorlagen",
 		"suggestionBuiltIn": "Nutzt die eingebaute Bewegung dieser Animation.",
 		"suggestionDescribed": "PixelLab animiert diese Animation aus deinem Prompt statt aus ihrer eingebauten Bewegung.",
@@ -2945,7 +3000,7 @@
 		"ideas": "Ideen",
 		"colorHint": "Farbvorgabe",
 		"anyColor": "Beliebig",
-		"checksNote": "Die Konsistenz wird automatisch geprüft. Wenn Probleme auffallen, entscheidest du, ob du den Gegenstand behältst oder einen kostenpflichtigen Neuversuch anforderst. Ohne deine Anfrage laufen keine Qualitätsversuche oder Reparaturen. PixelLab kann in US-Dollar abrechnen. Die Wartezeit kann variieren.",
+		"checksNote": "Die Konsistenz wird automatisch geprüft. Wenn Probleme auffallen, entscheidest du, ob du den Gegenstand behältst oder einen kostenpflichtigen Neuversuch anforderst. Ohne deine Anfrage laufen keine Qualitätsversuche oder Reparaturen.",
 		"method": "Animationsmethode",
 		"automatic": "Automatisch ({method})",
 		"plan": "{calls} PixelLab-Aufrufe · {cells} Frames · {route}. Jeder geplante Stapel läuft einmal. Fehlgeschlagene Prüfungen warten auf deine Begutachtung.",
@@ -2984,8 +3039,8 @@
 		"runningJump": "Sprung im Lauf"
 	},
 	"appearance": {
-		"action": "Aussehen bearbeiten…",
-		"title": "Aussehen bearbeiten",
+		"action": "Kopie mit neuem Look…",
+		"title": "Bearbeitete Kopie",
 		"choose": "Änderung wählen",
 		"custom": "Eigene Änderung",
 		"instructions": "Was soll sich ändern?",
@@ -3000,8 +3055,8 @@
 		"characterSource": "Verwendet das erste Bild aus „{move}“.",
 		"characterScope": "Die neue Figur beginnt mit Standansichten. Füge nach dem Speichern Animationen hinzu und passe Ausrüstung an.",
 		"itemScope": "Quelle: {move}, erster Frame. Ergänze weitere Frames nach dem Speichern.",
-		"editCharacter": "Charakter bearbeiten",
-		"editItem": "Gegenstand bearbeiten",
+		"editCharacter": "Neue Figur erstellen",
+		"editItem": "Neuen Gegenstand erstellen",
 		"editCost": "{action} · {cost}",
 		"saveCharacter": "Als neue Figur speichern",
 		"saveItem": "Als neuen Gegenstand speichern",
@@ -3014,7 +3069,8 @@
 		"keptDirections": "Die Kopie behält das Original für diese Richtungen: {directions}.",
 		"incomplete": "Einige bearbeitete Ansichten fehlen. Öffne die Aktivität für Details oder lade die vorhandenen Ergebnisse herunter.",
 		"reviewPending": "Speichere oder verwirf die Änderungsvorschau, bevor du die Quelle änderst.",
-		"discardNotice": "Vorschau verwerfen? Die PixelLab-Kosten bleiben bestehen."
+		"discardNotice": "Vorschau verwerfen? Die PixelLab-Kosten bleiben bestehen.",
+		"titleOf": "Bearbeitete Kopie von {name}"
 	},
 	"stateGeneration": {
 		"continueIntro": "Du kannst die noch nicht gesendeten Ansichten fertigstellen. Fertige Ansichten bleiben erhalten.",
@@ -3115,11 +3171,11 @@
 		"unavailable": "Diese Animation ist nicht mehr verfügbar.",
 		"keepStanding": "Behalte die Standansichten, die zum Erstellen und Erweitern von Gegenständen dienen.",
 		"keepOne": "Behalte mindestens eine Animation für diese Figur.",
-		"demo": "Demo-Animationen können nicht gelöscht werden.",
-		"resolveDrafts": "Schließe die Gegenstandsentwürfe dieser Figur ab oder verwirf sie, bevor du eine Animation löschst.",
+		"demo": "Die Animationen der Demo können nicht in den Papierkorb",
+		"resolveDrafts": "Schließe die Gegenstandsentwürfe dieser Figur ab oder verwirf sie, bevor du eine Animation in den Papierkorb verschiebst.",
 		"required": "Diese Standanimation wird benötigt, um vorhandene Gegenstände um neue Animationen zu erweitern.",
 		"selectedCharacterChanged": "Die ausgewählte Figur hat sich geändert.",
-		"concurrentEdit": "Diese Figur hat sich geändert, bevor die Animation gelöscht werden konnte. Versuch es noch einmal."
+		"concurrentEdit": "Die Figur hat sich geändert, bevor die Animation in den Papierkorb konnte. Versuche es erneut."
 	},
 	"characterFacts": {
 		"body": "{measure} Grundkörper",
@@ -3157,9 +3213,9 @@
 		"copyDetails": "Details kopieren",
 		"copyFailed": "App-Details konnten nicht kopiert werden.",
 		"checkForUpdates": "Nach Updates suchen",
-		"checkingForUpdates": "Suche nach Updates...",
+		"checkingForUpdates": "Suche nach Updates…",
 		"upToDate": "Du bist auf dem neuesten Stand.",
-		"preparingUpdate": "Version {version} wird vorbereitet...",
+		"preparingUpdate": "Version {version} wird vorbereitet…",
 		"updateStuck": "Das Update ist noch nicht bereit.",
 		"updateFailed": "Die Suche nach Updates ist fehlgeschlagen."
 	},
@@ -3476,7 +3532,9 @@
 			"other": "{n} Aufrufe ohne Preis"
 		}
 	},
-	"shortcut": { "control": "Strg" },
+	"shortcut": {
+		"control": "Strg"
+	},
 	"report": {
 		"action": "Melden",
 		"actionLabel": "Dieses Problem melden",
@@ -3672,6 +3730,59 @@
 		"clear": "Suche leeren",
 		"results": "{count} von {total}"
 	},
+	"spriteViewer": {
+		"missing": "Kein Frame zum Anzeigen",
+		"direction": "Blickrichtung",
+		"previousView": "Vorherige Ansicht",
+		"previousViewHint": "Vorherige Ansicht (Pfeil nach links)",
+		"nextView": "Nächste Ansicht",
+		"nextViewHint": "Nächste Ansicht (Pfeil nach rechts)",
+		"pauseHint": "Pause (Leertaste)",
+		"playHint": "Abspielen (Leertaste)"
+	},
+	"imageViewer": {
+		"role": "Bildbetrachter",
+		"keys": "Pfeiltasten verschieben, Plus und Minus zoomen, 0 passt ein.",
+		"zoom": "Bildzoom",
+		"hint": "Zum Zoomen scrollen oder mit zwei Fingern ziehen. Zum Verschieben ziehen.",
+		"fit": "An Fenster anpassen",
+		"fitHint": "An Fenster anpassen (0)",
+		"percent": "{percent} % der Originalgröße",
+		"zoomed": "Zoom {percent} %",
+		"missing": "Kein Bild vorhanden"
+	},
+	"characterWindow": {
+		"actions": "Figur-Aktionen",
+		"open": "Figur öffnen",
+		"frameSection": "Rahmen & Richtungen",
+		"costSection": "Kosten",
+		"adjustFrameDetail": "Rahmengröße oder Position der Figur darin ändern.",
+		"directionsDetail": "Wählen, welche Blickrichtungen gezeichnet und welche gespiegelt werden.",
+		"costEstimateDetail": "Schätzen, was weitere Bewegungen, Zustände und Gegenstände kosten.",
+		"frameLocked": "Rahmen und Richtungen dieser Figur lassen sich nicht ändern."
+	},
+	"clipWindow": {
+		"move": "Bewegung",
+		"state": "Zustand",
+		"actions": "Aktionen für Bewegung oder Zustand",
+		"playOnStage": "Auf der Bühne abspielen",
+		"showOnStage": "Auf der Bühne zeigen",
+		"framesSection": "Frames & Qualität",
+		"itemsSection": "Gegenstände",
+		"fixFramesDetail": "Jeden Frame von {move} in deinem Grafikprogramm bearbeiten.",
+		"redrawDetail": "{move} in den gewählten Blickrichtungen neu zeichnen, vorher mit Preis.",
+		"captureDetail": "Einen Frame von {move} als neuen Zustand speichern.",
+		"itemsDetail": "Die getragenen Gegenstände zeichnen, die {move} noch fehlen.",
+		"itemsComplete": "Jeder Gegenstand ist dafür gezeichnet.",
+		"itemsUnavailable": "Gegenstände lassen sich hier nicht dafür zeichnen.",
+		"frames": "Frames",
+		"length": "Länge",
+		"ms": "{ms} ms",
+		"exportId": "Export-ID",
+		"gone": "Diese Bewegung ist nicht mehr gespeichert.",
+		"itemDrawn": "Gezeichnet",
+		"itemMissing": "Fehlt"
+	},
 	"tips": {
 		"customizeTitle": "Demo einkleiden",
 		"customizeBody": "Probiere Ausrüstung an oder exportiere die **Demo-Figur** für dein Spiel. Kein PixelLab-Schlüssel nötig.",
@@ -3689,7 +3800,7 @@
 		"addItemTitle": "Ausrüstung hinzufügen",
 		"addItemBody": "Tippe bei einem Platz auf **+**, um einen Gegenstand zu beschreiben oder ein Referenzbild hinzuzufügen. PixelLab passt ihn an deine Figur an.",
 		"generateItemsTitle": "Ausrüstung an diese Animation anpassen",
-		"generateItemsBody": "Öffne bei dieser Animation **{menu} weitere Optionen** und wähle **Gegenstände generieren**, um deine Ausrüstung in dieser Animation zu zeichnen.",
+		"generateItemsBody": "Öffne bei dieser Animation **{menu} weitere Optionen**, wähle **Ansehen und bearbeiten** und dann **Gegenstände generieren**, um deine Ausrüstung in dieser Animation zu zeichnen.",
 		"addMoveTitle": "Animation hinzufügen",
 		"addMoveBody": "Animiere deine Figur, zum Beispiel mit Idle, Walk oder Attack.",
 		"addStateTitle": "Zustand hinzufügen",

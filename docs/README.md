@@ -30,6 +30,8 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 
 **Simplicity-first design:** read the short [Usability principles](usability-principles.md) when changing features, settings, navigation or copy. It defines strong defaults, contextual progressive disclosure and safeguards; linked research is optional.
 
+**Menus and details:** [where each action goes](design/menus-and-details.md) for items, characters, moves and states: the ⋮ menu holds what you can choose from the name alone, details holds what you need to see first.
+
 **Current accepted direction: [Obsidian / Porcelain Bronze](design/2026-10-22-redesign/round-4-discussion/current-design.md).** Source-verified creator workflow; exact unlit sprites; Preview/Top-down/Side-scroller; continuous movement with animation/direction fallbacks; contextual toasts; one-line prompt expansion; and a dynamic mobile joystick. This record supersedes incompatible earlier proposals. [Full desktop/mobile image mockups](design/2026-10-22-redesign/round-5-mockups/image-index.md) are complete: 32 screens and four overview boards. The [isolated playable proof](design/2026-10-22-redesign/round-6-prototype/README.md) now tests screen switching, continuous movement, camera following, equipment, touch and reflections. The [production experience](design/production-experience.md) now integrates this direction with the real Studio workflows on the feature branch. [Direct mockup/live comparisons](design/2026-10-22-redesign/round-6-prototype/comparisons.md) document the readability refinement, south-facing list thumbnails and simplified Light/Dark action.
 
 [Dynamic animation resolver](design/2026-10-22-redesign/round-4-discussion/animation-resolver.md): velocity-based state, nearest-direction mathematics, intended-versus-available coverage, fallback/notification rules, equipment synchronization and acceptance scenarios.
@@ -56,6 +58,7 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 
 ## Current review handoffs and research
 
+- [Simplicity-first review of the whole app](handoff/simplicity-first-app-review.md): brief for a paired Claude and GPT session to review every surface for clutter, clarity and readability, using the practices from the [item details rework](design/2026-11-26-item-details/README.md), then make them permanent in the usability principles and AGENTS.md.
 - [Engine priority (2026-11-26)](research/2026-11-26-engine-priority.md) ranks Phaser (with Phaser AE as the default Phaser export), then Godot 4, then Unity 6 for PixelDoll's 2D, pixel-art and AI-built-game niche, from jam, itch.io, Steam and npm data.
 - [AutoSprite layer-design study](research/2026-11-25-autosprite-layer-design/README.md) reads the current docs, client bundle, free CC0 export and first-party Unity/Godot importers: AutoSprite has a design-time gear picker and bakes one sheet per animation, not equipment layers; measured soft alpha, per-sheet pivot/scale/loop drift, and a PixelDoll fixture projection. No pipeline change.
 - [Attack while moving: layering, split bodies, and what to build](research/2026-11-24-animation-blending/README.md) rejects automatic body splitting but accepts reviewed same-facing action layering from existing art as a free pilot, with authored relative-angle or strafe art for independent aim and whole-body clips for pelvis-driven attacks. Includes [industry research](research/2026-11-24-animation-blending/research-industry.md), an [architecture map](research/2026-11-24-animation-blending/architecture-map.md), a [rendered composite probe](research/2026-11-24-animation-blending/composite-probe.md) and an [independent challenge with its own experiments](research/2026-11-24-animation-blending/review-gpt62/README.md). Research only; no behavior change.
@@ -66,6 +69,7 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 - [PixelLab Character Creator states and animations](research/2026-11-18-character-creator-states.md) describes the website workflow, public endpoint lifecycle, and how PixelDoll currently imports and uses standing references.
 - [PixelDoll state authoring study](research/2026-11-18-pixeldoll-states/README.md) proposes reusable poses, shared playback, state-derived move generation and independent removal. It includes an interactive layout comparison and runtime probe.
 
+- [Item details rework](design/2026-11-26-item-details/README.md): study of two earlier attempts, the layer-order and hide findings, the decisions with rejected alternatives, and live verification behind the current item window.
 - [First-run onboarding: tips](design/onboarding.md): why PixelDoll onboards with a few self-ending tips pointed at real
   controls instead of a welcome screen, slideshow or tour; the reusable tips module, per-tip saved state, placement,
   accessibility, and best practices for future onboarding.

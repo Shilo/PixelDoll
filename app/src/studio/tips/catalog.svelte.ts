@@ -200,8 +200,8 @@ export const catalog: TipSpec[] = [
 		id: 'generate-items',
 		title: 'tips.generateItemsTitle',
 		body: () => 'tips.generateItemsBody',
-		// The ⋮ of a move whose menu offers Generate items. With a mouse it shows only on hover, so the tip keeps it shown
-		// while pointing at it.
+		// The ⋮ of a move missing some gear: its View and edit window offers Generate items. With a mouse the ⋮ shows only
+		// on hover, so the tip keeps it shown while pointing at it.
 		anchor: () => {
 			for (const action of document.querySelectorAll<HTMLElement>(
 				'#customization-panel [data-tip-anchor="generate-items"]'

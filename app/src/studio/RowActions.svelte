@@ -7,9 +7,18 @@
 	import PopoverArrow from './PopoverArrow.svelte';
 	let {
 		name,
+		key,
+		entry = $bindable(),
 		children,
 		actions
-	}: { name: string; children: Snippet; actions: Snippet<[() => void]> } = $props();
+	}: {
+		name: string;
+		/** Finds the row again in its list (`data-rows`), for focus after it goes to the Trash. */
+		key?: string;
+		entry?: HTMLElement;
+		children: Snippet;
+		actions: Snippet<[() => void]>;
+	} = $props();
 	const menuId = $props.id();
 	let more: HTMLButtonElement;
 	let menu: HTMLElement;
@@ -22,7 +31,12 @@
 	}
 </script>
 
-<div class="character-entry hover-actions" {@attach contextMenu(open)}>
+<div
+	class="character-entry hover-actions"
+	data-row={key}
+	bind:this={entry}
+	{@attach contextMenu(open)}
+>
 	{@render children()}
 	<button
 		bind:this={more}
@@ -42,6 +56,16 @@
 	popover
 	bind:this={menu}
 	role="menu"
+	tabindex="-1"
+	onkeydown={(event) => {
+		// Tab or Shift+Tab leaves the menu, which closes; focus goes on from its trigger.
+		if (event.key === 'Tab') close();
+	}}
+	onfocusout={(event) => {
+		// Like any menu, Tab or Shift+Tab out of it closes it, so it never covers where the keyboard went.
+		const to = event.relatedTarget;
+		if (to instanceof HTMLElement && !menu.contains(to) && to !== more) close();
+	}}
 	aria-label={t('experience.actionsFor', { name })}
 	ontoggle={(event) => {
 		expanded = event.newState === 'open';

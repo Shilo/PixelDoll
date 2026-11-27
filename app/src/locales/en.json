@@ -39,7 +39,8 @@
 			"items": "Item",
 			"category": "Category",
 			"move": "Move",
-			"state": "State"
+			"state": "State",
+			"outfit": "Outfit"
 		},
 		"errors": {
 			"gone": "This is no longer in Trash.",
@@ -48,12 +49,13 @@
 			"full": "Your browser is out of space, so nothing was moved to Trash. Delete something in Trash to free space.",
 			"wrongKind": "That item is in Trash with its character. Restore the character first.",
 			"movePresent": "This move is already on the character.",
-			"moveGeometry": "This character's frame size or directions changed since this move was deleted, so it can no longer line up.",
-			"partsGeometry": "This character's frame size or directions changed since this was deleted, so it can no longer line up.",
-			"moveItemsMissing": "One of this move items is in Trash. Restore that item first, then this move."
+			"moveGeometry": "This character's frame size or directions changed after this move went to the Trash, so it can no longer line up.",
+			"partsGeometry": "This character's frame size or directions changed after this went to the Trash, so it can no longer line up.",
+			"moveItemsMissing": "One of this move’s items is in the Trash. Restore that item first, then this move.",
+			"outfitPresent": "This outfit is already on the character."
 		},
 		"restoring": "Restoring…",
-		"confirmBodyCharacter": "Anything else deleted from it goes too. It is gone for good. This cannot be undone.",
+		"confirmBodyCharacter": "Everything else of it in the Trash is deleted too. This cannot be undone.",
 		"confirmRestore": "Press again to restore",
 		"confirmRestoreNamed": "Press again to restore {name}",
 		"daysLeft": {
@@ -112,7 +114,7 @@
 		"deleteWork": {
 			"deleteAll": "Delete all",
 			"confirm": "Confirm",
-			"description": "Removes the characters, outfits, drafts, Trash and Activity on this device.",
+			"description": "Permanently deletes the characters, outfits, drafts, Trash and Activity on this device.",
 			"kept": "Archived data, preferences, downloaded backups and your PixelLab key stay.",
 			"action": "Delete local work…",
 			"title": "Delete all local work?",
@@ -250,7 +252,7 @@
 		"deleteNamed": "Move {name} to Trash?",
 		"deleting": "Deleting…",
 		"details": "Details",
-		"detailsMenu": "Details…",
+		"detailsMenu": "View and edit…",
 		"direction": "Direction",
 		"directions": "Directions",
 		"discard": "Discard",
@@ -338,7 +340,7 @@
 		"unavailable": "That direction is not available for this character.",
 		"mirrorSource": "Keep {source} or turn off its {mirror} mirror.",
 		"moveArtwork": "Keep a direction with artwork for {moves}.",
-		"equipmentArtwork": "Keep a direction with artwork for {items} or remove that equipment first."
+		"equipmentArtwork": "Keep a direction with artwork for {items}, or move those items to the Trash first."
 	},
 	"directionNames": {
 		"south": "South",
@@ -379,8 +381,9 @@
 		"costEstimate": "Cost estimate…",
 		"adjustFrame": "Adjust frame…",
 		"directions": "Directions…",
-		"demoDeleteLocked": "Demo character can't be deleted",
-		"labelDeleteCharacter": "Move to Trash…"
+		"demoDeleteLocked": "The demo character can’t be moved to the Trash",
+		"labelDeleteCharacter": "Move to Trash…",
+		"demoRenameLocked": "Make an editable copy to rename the demo"
 	},
 	"characterName": {
 		"demo": "(Demo)"
@@ -443,15 +446,14 @@
 	"deleteSheet": {
 		"viewPendingWork": "View pending work",
 		"character": "character",
-		"demo": "The bundled demo cannot be deleted.",
+		"demo": "The bundled demo can’t be moved to the Trash.",
 		"itsOutfitsAndChangesAreRemovedFrom": "Its outfits, items and unkept drafts go too; items copied to other characters stay. You can bring it back for up to 30 days."
 	},
 	"demoCopyRow": {
-		"editACopy": "Edit a copy",
+		"editACopy": "Make editable copy",
 		"openedYourEditableCopyOfTheDemo": "Opened your editable copy of the demo. No generations used."
 	},
 	"detailsSheet": {
-		"title": "{name} details",
 		"notSaved": "This character is no longer saved.",
 		"withItems": "With items",
 		"itemCost": {
@@ -498,10 +500,6 @@
 		"activity": "Activity…",
 		"cancelGeneration": "Cancel generation…",
 		"cancelFromTheTabThatIsGenerating": "Cancel from the tab that is generating this item.",
-		"wearInACopyOfTheDemo": "Wear in a copy of the demo",
-		"makeOneForName": "Make one for {name}",
-		"wearName": "Wear {name}",
-		"titleWearingTakeOff": "Wearing (take off)",
 		"twoHanded": "Two-handed",
 		"createVariant": "Create a variant…",
 		"labelDeleteItem": "Move to Trash…",
@@ -509,105 +507,86 @@
 		"generationsAlreadyUsedAreNotRefundedAnd": "Generations already used are not refunded, and requests already sent may still charge.",
 		"cancelSaveError": "Could not save cancellation. Keep this tab open and try again.",
 		"preparing": "Preparing your item",
-		"remake": "Make one for {name}…",
+		"remake": "Make copy for self…",
 		"makeForSlot": "Make one for the {slot}…",
-		"demoDeleteLocked": "Demo items can't be deleted",
+		"demoDeleteLocked": "The demo’s items can’t be moved to the Trash",
 		"cancelItem": "Cancel item",
 		"canceling": "Canceling…",
 		"keep": "Keep",
-		"runningDetail": "{status} · {prompt}"
+		"runningDetail": "{status} · {prompt}",
+		"demoRenameLocked": "The demo’s items can’t be renamed"
 	},
 	"itemPane": {
+		"movesSection": "Moves & States",
+		"outfitSection": "Outfit",
+		"technicalDetails": "Technical details",
+		"openSprite": "Enlarge {title}",
+		"availableDirectionsFor": "Available directions for {name}",
+		"drawForMoves": "Generate missing frames",
+		"reviewMissingMoves": "Review missing moves",
+		"drawMovesSelect": "Select a move to generate.",
+		"selectAllMoves": "Select all",
+		"clearSelection": "Clear selection",
+		"drawMovesHelp": "Fills only the missing item frames.",
+		"repairView": "Repair {direction} view",
+		"redrawView": "Redraw {direction} view",
+		"sendBackward": "Send backward",
+		"bringForward": "Bring forward",
+		"inFrontOf": "In front of {name}",
+		"behind": "Behind {name}",
+		"previewUnavailable": "No item frames to preview.",
 		"restoreStanding": {
 			"one": "Restore standing view",
 			"other": "Restore standing views"
 		},
 		"restoreStandingHint": {
-			"one": "Rebuilt from this item’s saved {directions} design. Nothing is generated.",
-			"other": "Rebuilt from this item’s saved {directions} designs. Nothing is generated."
+			"one": "Uses the saved design for {directions}. No generation needed.",
+			"other": "Uses the saved designs for {directions}. No generation needed."
 		},
 		"hiddenByAnotherItem": "Hidden by another item",
-		"nameInEveryDirection": "{name} in every direction",
+		"hiddenByItem": "Hidden by {name}",
+		"layerHiddenHint": "Show this item to change its layer order.",
 		"labelNameFacingId": "{name} facing {id}",
-		"acceptedAppearanceWarnings": "Accepted appearance warnings",
-		"titleShowThisFrame": "Show this frame",
-		"checksFoundIssuesNoPaidRetryWas": "Checks found issues. No paid retry was started. You can request another attempt or accept this item as it is.",
+		"acceptedAppearanceWarnings": "Accepted design warnings",
+		"titleShowThisFrame": "Show on the stage",
 		"acceptAsIs": "Accept as is",
-		"pendingWorkBusy": "A move or setup is running or stopped. Finish or dismiss it to use these actions.",
-		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Accepts the current artwork without spending credits. The detected issues remain in its details.",
-		"keepWithoutMoves": "Keep without those moves",
-		"keepWithoutMovesDetail": "Keeps the item from its complete moves without spending credits. It is hidden in {moves}, which stay listed as missing so you can make them later at their own price.",
-		"youAcceptedThisArtworkWithItsRecorded": "You accepted this artwork with its recorded quality notes.",
-		"generateItemForMove": "Generate item for move",
-		"coverageTitle": "Move coverage",
-		"coverageAllDrawn": "Drawn in every move and State",
-		"coverageMissing": {
-			"one": "Missing {n} move",
-			"other": "Missing {n} moves"
-		},
-		"coverageClipDrawn": "{move}: drawn",
-		"coverageClipMissing": "{move}: missing",
-		"fillMissingMoves": "Fill missing moves",
-		"fillMissingHint": {
-			"one": "Draws this item for {n} missing move in one offer, reusing its standing design.",
-			"other": "Draws this item for all {n} missing moves in one offer, reusing its standing design."
-		},
-		"labelMakeNameForMissingName": "Make {name} for {missingName}",
-		"generatesOnlyThisItemSMissingViews": "Generates only this item’s missing views for the chosen move, reusing its standing design. The body stays as it is. PixelLab may bill dollars; queue time varies.",
-		"madeForAnotherBodyItMayNot": "Made for another body. It may not line up.",
-		"itsMirroredViewsUpdateToo": "Its mirrored views update too.",
+		"pendingWorkBusy": "A move or setup is blocking these actions. Finish or dismiss it first.",
+		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Keeps this artwork. Its warnings stay listed.",
+		"keepWithoutMovesDetail": "Drops its partial frames in {moves}, where it stays hidden until you generate them.",
+		"youAcceptedThisArtworkWithItsRecorded": "You accepted this artwork. Its notes stay listed.",
 		"matchingColors": "Matching colors…",
 		"matchItemColors": "Match item colors",
 		"recolor": "Recolor",
-		"layerOrder": "Layer order",
-		"titleDrawInFrontOfTheNext": "Draw in front of the next layer",
-		"forward": "Forward",
-		"titleDrawBehindThePreviousLayer": "Draw behind the previous layer",
-		"backward": "Backward",
-		"reset": "Reset",
-		"whenWornHide": "When worn, hide",
-		"howItWasMade": "How it was made",
+		"recolorWearFirst": "Wear it to change its colors",
+		"whenWornHide": "Hide other items while worn",
 		"iD": "ID",
 		"slot": "Slot",
-		"route": "Route",
-		"qA": "QA",
-		"rawBodyDifferences": "Raw body differences",
-		"rawKeyReviewFramesFramesHaveNewBodyColoredPixels": "{rawKeyReviewFrames} frames have new body-colored pixels before alignment. Ordinary redraw shifts can cause this; quality status is unchanged.",
+		"route": "Generation method",
+		"qA": "Check result",
+		"rawBodyDifferences": "Body pixels before alignment",
+		"rawKeyReviewFramesFramesHaveNewBodyColoredPixels": "Frames with new body-colored pixels before alignment: {rawKeyReviewFrames}. Normal redraws can cause this. The check result is unchanged.",
 		"partialChecks": "Partial checks",
-		"copiedChecksCoverWholeMovesTotalsMay": "Copied checks cover whole moves; totals may include replaced frames.",
+		"copiedChecksCoverWholeMovesTotalsMay": "Totals from checks on whole moves may include replaced frames.",
 		"someMovesHaveNotBeenChecked": "Some moves have not been checked.",
 		"measurements": "Measurements",
-		"reusedCellsWereNotMeasuredByPixelLab": "Reused cells were not measured by PixelLab. Aggregate checks are unavailable for this item.",
+		"reusedCellsWereNotMeasuredByPixelLab": "Reused frames have no PixelLab measurements, so whole-item checks are unavailable.",
 		"keyKept": "Key kept",
 		"keyOutside": "Key outside",
 		"area": "Area",
 		"paletteDrift": "Palette drift",
-		"edgePx": "Edge px",
+		"edgePx": "Pixels at the frame edge",
 		"hands": "Hands",
-		"reRolls": "Re-rolls",
-		"missingFrames": "Missing frames",
-		"refitIntro": "Fitted for free from {from}’s item. Check these frames:",
-		"remakeToFit": "Make one for {name} to fit it.",
-		"moveGaps": "Missing some or all {move} frames facing {directions}. It won’t show in those frames.",
-		"remakeAllMoves": "Make one for {name} to wear it in every move.",
+		"reRolls": "Retries",
+		"missingFrames": "Missing frame IDs",
+		"refitIntro": "Fitted for free from {from}’s item. Review these frames:",
+		"remakeToFit": "Create a version fitted to {name}.",
+		"moveGaps": "The item won’t show in some {move} frames facing {directions}.",
 		"copyFrom": "Copy from {name}",
 		"copyFrames": {
-			"one": "{from} has {n} frame of this item that {name} lacks. Nothing is generated.",
-			"other": "{from} has {n} frames of this item that {name} lacks. Nothing is generated."
+			"one": "Adds {n} missing frame to {name} from {from}. No generation needed.",
+			"other": "Adds {n} missing frames to {name} from {from}. No generation needed."
 		},
-		"makeFor": "Make for {move}",
 		"makingMoreMoves": "Making items for more moves",
-		"colorMatchNote": {
-			"one": "Match {pixels} in {n} saved {move} frame facing {direction} to the item’s existing color palette.",
-			"other": "Match {pixels} in {n} saved {move} frames facing {direction} to the item’s existing color palette."
-		},
-		"colorMatchFixed": "Other views, moves, materials and saved recolors stay fixed.",
-		"colorMatchMissing": "Frames {frames} have no art yet, so they are left out.",
-		"colorMatchUnmatched": {
-			"one": "{n} unmatched eligible pixel stays unchanged.",
-			"other": "{n} unmatched eligible pixels stay unchanged."
-		},
-		"colorMatchFree": "Existing quality warnings are kept. No PixelLab call is made.",
 		"colorsMatched": "Matched {pixels} in {frames}.",
 		"pixels": {
 			"one": "{n} pixel",
@@ -617,53 +596,122 @@
 			"one": "{n} frame",
 			"other": "{n} frames"
 		},
-		"onlyFacing": "Only when facing {direction}",
-		"hideWhenWorn": "Checked items are hidden while {name} is worn.",
-		"tuckNote": "Unchecked {slots} is tucked under it: only what hangs below the brim shows. Check it for hoods and full masks.",
+		"onlyFacing": "Only for facing {direction}",
+		"tuckNote": "This item may partly cover {slots}.",
 		"chromaKey": "{color} key",
 		"qaStatus": {
-			"pass": "pass",
-			"warn": "warn",
-			"fail": "fail",
-			"accepted": "accepted"
+			"pass": "Passed",
+			"warn": "Warnings",
+			"fail": "Failed",
+			"accepted": "Accepted"
 		},
 		"areaStats": "min {ratio} of median · CV {cv}",
 		"handedness": {
-			"ok": "ok",
-			"switched": "switched"
+			"ok": "Consistent",
+			"switched": "Switches hands"
 		},
 		"minimum": "{value} (≥ {threshold})",
 		"maximum": "{value} (≤ {threshold})",
-		"updateNote": "Updates this item for {move} facing {direction}. The character body stays unchanged.",
-		"updateNoteMirrors": "Updates this item for {move} facing {direction} and its mirrors. The character body stays unchanged.",
-		"repairItem": "Repair item",
-		"redrawItem": "Redraw item",
+		"updateNoteMirrors": "Updates {move} facing {directions}. Only the item changes.",
 		"repairFeature": "Repair item",
 		"redrawFeature": "Redraw item",
-		"repairHelp": "Best when you like the design. Limits changes to the item area.",
-		"redrawHelp": "May change the shape or grip. You choose whether to keep it.",
+		"repairHelp": "Keeps the design and changes only the item area.",
+		"redrawHelp": "A new attempt that may change shape or grip. You compare before keeping it.",
+		"itemActions": "Item actions",
+		"statusGenerating": "Generating",
+		"statusIncomplete": "Incomplete",
+		"staleNote": "Made for another body. Check the fit.",
+		"previewMove": "Move",
+		"openMissingView": "Open {direction} (missing)",
+		"missingView": "Missing",
+		"hiddenWhenWorn": "Wearing {names} hides this item.",
+		"clipsIncomplete": {
+			"one": "{n} move incomplete",
+			"other": "{n} moves incomplete"
+		},
+		"complete": "Complete",
+		"clipNoFrames": "No frames yet",
+		"clipMissingViews": "Missing {directions}",
+		"generateMoves": {
+			"one": "Generate {n} move",
+			"other": "Generate {n} moves"
+		},
+		"qualitySection": "Quality",
+		"passed": "Passed",
+		"facing": "Facing",
+		"matchColorsDetail": "Matches {pixels} in {frames} to the item’s palette.",
+		"fixFramesDetail": "Edit every {move} frame in your art app.",
+		"hiddenState": "Hidden",
+		"hidesCount": {
+			"one": "Hides {n} category",
+			"other": "Hides {n} categories"
+		},
+		"outfitPreview": "{name} in the outfit, facing {direction}",
+		"layerScope": "Applies to all {slot} items.",
+		"layerNothingToCross": "No overlapping layers in this view.",
+		"layerBack": "{name} (back)",
+		"layerWithSlot": "{name} ({slot})",
+		"resetOrder": "Reset order",
+		"hideRulesLater": "Applies when {name} is worn.",
+		"aboutSection": "About",
+		"generateMovesNone": "Generate",
+		"stopHiding": "Stop {names} from hiding it",
+		"keepWithoutNamed": "Keep without {moves}",
+		"checksFoundIssuesNoPaidRetryWas": "No paid retry was started.",
 		"repairRequests": {
-			"one": "This repair uses {n} PixelLab generation request.",
-			"other": "This repair uses {n} PixelLab generation requests."
+			"one": "{n} PixelLab request.",
+			"other": "{n} PixelLab requests."
 		},
 		"redrawRequests": {
-			"one": "This redraw uses {n} PixelLab generation request.",
-			"other": "This redraw uses {n} PixelLab generation requests."
+			"one": "{n} PixelLab request.",
+			"other": "{n} PixelLab requests."
 		},
 		"redrawSaves": {
-			"one": "{n} fewer estimated generation than Repair.",
-			"other": "{n} fewer estimated generations than Repair."
+			"one": "{n} gen less than Repair.",
+			"other": "{n} gens less than Repair."
 		},
 		"redrawCostsMore": {
-			"one": "{n} more estimated generation than Repair.",
-			"other": "{n} more estimated generations than Repair."
+			"one": "{n} gen more than Repair.",
+			"other": "{n} gens more than Repair."
 		},
-		"billingNote": "Estimates compare generations, not dollar prices. PixelLab may bill dollars, and queue time may vary."
+		"turnLeft": "Turn left",
+		"turnRight": "Turn right",
+		"facingLabel": "Facing {direction}",
+		"matchViewColors": "Match colors in {direction} view",
+		"fixOneView": "Fix one view",
+		"outfitPreviewUnworn": "{name} in the outfit as if worn, facing {direction}",
+		"openOutfit": "Open {name} in the outfit full size",
+		"outfitTitle": "{name} in the outfit",
+		"layerPosition": "Layer {position} of {count}",
+		"layerPositionHint": "Layer {position} of {count} among the layers it overlaps, counted from the back",
+		"slotLayerOrder": "{slot} slot layer order",
+		"layerScopeFacing": "Applies to all {slot} items facing {direction}.",
+		"twoHandedNote": "Uses both hands, so wearing it takes off the {slot} item.",
+		"makeForSlotDetail": "Draw this item again for the {slot}.",
+		"groupReady": "{ready} of {count} ready",
+		"remakeFits": "Makes a new copy that fits {name}, the character you’re dressing.",
+		"demoMissing": "The demo never spends PixelLab generations. Make an editable copy to draw the missing frames.",
+		"nameInEveryDirection": "{name} in every direction",
+		"generateItemForMove": "Generate item for move",
+		"fillMissingMoves": "Fill missing moves",
+		"fillMissingHint": {
+			"one": "Draws this item for {n} missing move in one offer, reusing its standing design.",
+			"other": "Draws this item for all {n} missing moves in one offer, reusing its standing design."
+		},
+		"labelMakeNameForMissingName": "Make {name} for {missingName}",
+		"generatesOnlyThisItemSMissingViews": "Generates only this item’s missing views for the chosen move, reusing its standing design. The body stays as it is. PixelLab may bill dollars; queue time varies.",
+		"madeForAnotherBodyItMayNot": "Made for another body. It may not line up.",
+		"titleDrawInFrontOfTheNext": "Draw in front of the next layer",
+		"forward": "Forward",
+		"titleDrawBehindThePreviousLayer": "Draw behind the previous layer",
+		"backward": "Backward",
+		"makeFor": "Make for {move}",
+		"hideWhenWorn": "Checked items are hidden while {name} is worn."
 	},
 	"newCharacterButton": {
-		"addCharacter": "Add character",
 		"newCharacter": "New character",
 		"createFromScratch": "Create…",
+		"addCharacter": "Add character",
 		"fromFile": "From file…",
 		"fromPixelLab": "From PixelLab…",
 		"createNeedsKey": "Needs a PixelLab key and uses paid generations"
@@ -679,9 +727,9 @@
 		"noMatchingOutfits": "No matching outfits"
 	},
 	"pwaNotice": {
-		"readyToUpdateReloading": "Ready to update. Reloading...",
+		"readyToUpdateReloading": "Ready to update. Reloading…",
 		"readyToUpdate": "Ready to update.",
-		"downloadingUpdate": "Downloading update..."
+		"downloadingUpdate": "Downloading update…"
 	},
 	"pwaRuntime": {
 		"stillDownloading": "The update is still downloading. Reconnect and try again when it is ready.",
@@ -728,8 +776,15 @@
 		"labelDeleteState": "Move to Trash…",
 		"removeState": "The body and every item lose its fitted frames; finished moves keep theirs. You can bring it back for up to 30 days.",
 		"labelDeleteMove": "Move to Trash…",
-		"labelDeleteOutfit": "Delete outfit",
-		"thisRemovesTheMoveFromTheBody": "The body and every item lose the frames for this move. You can bring it back for up to 30 days."
+		"labelDeleteOutfit": "Move to Trash…",
+		"thisRemovesTheMoveFromTheBody": "The body and every item lose the frames for this move. You can bring it back for up to 30 days.",
+		"demoRenameLocked": "The demo’s moves and states can’t be renamed",
+		"removeOutfit": "Its items stay in the Wardrobe. You can bring it back from the Trash for up to 30 days.",
+		"demoOutfitLocked": "The demo’s own outfits can’t be deleted",
+		"labelDeleteDemoOutfit": "Delete…",
+		"deleteDemoOutfit": "The demo has no Trash, so this outfit is deleted. Undo brings it back until you reload.",
+		"deleteDemoOutfitTitle": "Delete {name}?",
+		"outfitGone": "This outfit is no longer available."
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "Free: never regenerates items already made.",
@@ -750,7 +805,7 @@
 		"theSlotAndItsItemsAreDeleted": "Its items go too and outfits stop wearing them. You can bring it back for up to 30 days.",
 		"labelAddedAtTheEndOfWardrobe": "{label} added at the end of Wardrobe.",
 		"valueShownAtTheEndOfWardrobe": "{value} shown at the end of Wardrobe.",
-		"demoDeleteLocked": "Items of the bundled demo can’t be deleted.",
+		"demoDeleteLocked": "Items in the bundled demo can’t be moved to the Trash.",
 		"renameNote": "Renaming keeps its items, outfits and export name ({slot}).",
 		"drawOrder": "The front of its items, including ones already made, draws over {slot} and under the next slot. Side-specific order, like a near hand, moves with it.",
 		"behindBody": "Parts drawn behind the body stay behind it.",
@@ -811,7 +866,7 @@
 		"previewRisk": "Saved characters may stop working after updates.",
 		"previewBackupDescription": "Keep a local copy of your characters and artwork.",
 		"youReOfflineEditAndExportLocally": "You’re offline. Edit and export locally.",
-		"titleInspectCharacter": "Inspect character",
+		"titleInspectCharacter": "View frames",
 		"titleWorkspaceCopy": "Workspace copy",
 		"titleItem": "Item",
 		"titleItemReview": "Item review"
@@ -860,7 +915,6 @@
 			"other": "{n} characters"
 		},
 		"version": "Version {version}",
-		"renameCharacter": "Rename character…",
 		"rename": "Rename…",
 		"setUpCharacter": "Set up character…",
 		"connectPixelLab2": "Connect PixelLab…",
@@ -909,6 +963,7 @@
 		"copiedFree": "Copied from {from} for free.",
 		"statusNote": "{status}.",
 		"hiddenNote": "Hidden by another item.",
+		"twoHandedNote": "Uses both hands.",
 		"fromOthers": "From {sources}. Wearing an item adds this category to {name}.",
 		"source": "From {from}",
 		"sourceFree": "Free from {from}",
@@ -976,7 +1031,7 @@
 		"moreActionsFor": "More actions for {name}",
 		"actionsFor": "Actions for {name}",
 		"still": "Still",
-		"inspect": "Inspect",
+		"inspect": "View frames",
 		"customization": "Customization",
 		"customizationPanels": "Customization panels",
 		"tabWorkRunning": "Work here is running, waiting or ready to review",
@@ -1041,21 +1096,21 @@
 		"finishBeforeMoveImport": "Finish or dismiss pending generation work before importing moves.",
 		"couldNotCheckNamedFrames": "Could not check frames for {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Could not check frames for {names}.",
-		"copyMissingOneMove": "Missing some {move} frames; it hides there.",
-		"copyMissingFrames": "Missing some frames in {moves}; it hides there.",
+		"copyMissingOneMove": "It won’t show on some frames in {move}.",
+		"copyMissingFrames": "It won’t show on some frames in {moves}.",
 		"restoreFailed": "Could not restore {name}: {reason}",
 		"restoreFinishFailed": "Could not finish restoring {name}: {reason}",
 		"restoredStanding": "Restored {name} facing {directions}. No generations used.",
 		"restoredQualityNotes": "It has quality notes. Check it.",
 		"noStandingToRestore": "{name} has no standing views left to restore.",
-		"characterChangedNothingDeleted": "The character changed meanwhile. Nothing was deleted.",
+		"characterChangedNothingDeleted": "The character changed meanwhile. Nothing was moved to the Trash.",
 		"categoryNowHasItems": {
-			"one": "{label} now has {count} item. Review it again before deleting.",
-			"other": "{label} now has {count} items. Review it again before deleting."
+			"one": "{label} now has {count} item. Review it again before moving it to the Trash.",
+			"other": "{label} now has {count} items. Review it again before moving it to the Trash."
 		},
-		"categoryNowHasNoItems": "{label} now has no items. Review it again before deleting.",
+		"categoryNowHasNoItems": "{label} now has no items. Review it again before moving it to the Trash.",
 		"categoryItemsGettingMoves": "New moves are being made for {label} items. Wait for them or dismiss them first.",
-		"reasonNothingDeleted": "{reason} Nothing was deleted.",
+		"reasonNothingDeleted": "{reason} Nothing was moved to the Trash.",
 		"itemsPosedForMove": "{names} posed for {moveName}",
 		"itemsRedrawnForMove": "{names} redrawn for {moveName}",
 		"equipmentPosedForMove": "Equipment posed for {moveName}",
@@ -1071,9 +1126,9 @@
 		"waitForCharacter": "Wait for the character to finish loading.",
 		"manageMovesInOtherTab": "Manage moves in the other PixelDoll tab, or close it first.",
 		"manageCharactersInOtherTab": "Manage characters in the other PixelDoll tab, or close it first.",
-		"finishBeforeCharacterRemoval": "Finish or dismiss pending generation work before deleting a character.",
+		"finishBeforeCharacterRemoval": "Finish or dismiss pending generation work before moving a character to the Trash.",
 		"finishBeforeRestore": "Finish or dismiss pending generation work before restoring this character.",
-		"finishBeforeMoveRemoval": "Finish or dismiss pending generation work before deleting a move.",
+		"finishBeforeMoveRemoval": "Finish or dismiss pending generation work before moving a move to the Trash.",
 		"finishBeforeDirectionRemoval": "Finish or dismiss pending generation work before changing directions.",
 		"finishBeforeFixFrames": "Wait for the current generation work to finish before fixing frames.",
 		"couldNotReadYourSavedCharactersReason": "Could not read your saved characters: {reason}",
@@ -1096,8 +1151,8 @@
 		"openedDemoCopy": "Opened your editable copy of the demo.",
 		"tookOffTwoHanded": "Took off {names} (two-handed)",
 		"tookOffForTwoHanded": "Took off {names}: {name} is two-handed",
-		"wearingUnfitted": "Wearing {name} as drawn for {sourceName}. It may not line up with this body. No generations used.",
-		"wearingUnfittedAtSize": "Wearing {name} as drawn for {sourceName} at its original {size} frame size. It may not line up with this body. No generations used.",
+		"wearingUnfitted": "Wearing {name}, drawn for {sourceName}. It may not line up on this body.",
+		"wearingUnfittedAtSize": "Wearing {name}, drawn for {sourceName} ({size}). It may not line up on this body.",
 		"fittedItem": "Fitted {name} from {sourceName} for free. Check it in each move.",
 		"copiedSharedItem": "Copied {name} from {sourceName}. No generations used.",
 		"copiedMoreFrames": {
@@ -1121,8 +1176,8 @@
 		"savedItemAttemptsCouldNotBeRead": "Saved item attempts could not be read: {reason}",
 		"theCharacterChangedMeanwhileTryAgain": "The character changed meanwhile. Try again.",
 		"noCharacterIsOpen": "No character is open.",
-		"labelChangedMeanwhileReviewItAgainBefore": "{label} changed meanwhile. Review it again before deleting.",
-		"labelHasNewItemsReviewItAgain": "{label} has new items. Review it again before deleting.",
+		"labelChangedMeanwhileReviewItAgainBefore": "{label} changed meanwhile. Review it again before moving it to the Trash.",
+		"labelHasNewItemsReviewItAgain": "{label} has new items. Review it again before moving it to the Trash.",
 		"categoryAndItemsDeleted": {
 			"one": "Moved {label} and its {count} item to Trash",
 			"other": "Moved {label} and its {count} items to Trash"
@@ -1163,7 +1218,8 @@
 		"resetColors": "Reset colors",
 		"randomItem": "Random {name} item",
 		"saveOutfit": "Save outfit",
-		"deleteOutfit": "Delete outfit",
+		"deleteOutfit": "Move outfit to Trash",
+		"deleteDemoOutfit": "Delete outfit",
 		"renameOutfit": "Rename outfit",
 		"show": "Show {name}",
 		"hide": "Hide {name}",
@@ -1174,9 +1230,9 @@
 		"moveCategory": "Move {name}",
 		"addCategory": "Add category",
 		"changeCategory": "Change {name}",
-		"deleteCategory": "Delete {name}",
-		"deleteItem": "Delete {name}",
-		"deleteMove": "Delete {name}",
+		"deleteCategory": "Move {name} to Trash",
+		"deleteItem": "Move {name} to Trash",
+		"deleteMove": "Move {name} to Trash",
 		"moveItem": "Move {name}",
 		"changeDirections": "Change directions",
 		"restoreOriginals": "Restore originals",
@@ -1250,13 +1306,6 @@
 				"sub": "Editable project",
 				"detail": "Editable GDevelop project with Sprite layers, synchronized playback and equipment controls. Preview it or copy the objects and event into your game."
 			},
-			"rpgMaker": {
-				"sub": "Walking sheets",
-				"detail": "A walking sheet per outfit at your character’s own size. Copy the PNG files into img/characters (MZ, MV) or Graphics/Characters (VX Ace, VX). Needs front, side and back views."
-			},
-			"rpgMakerXp": {
-				"detail": "A 4-frame walking sheet per outfit at your character’s own size, for RPG Maker XP and Pokémon Essentials. Copy the PNG files into Graphics/Characters. Needs front, side and back views."
-			},
 			"aseprite": {
 				"sub": "Editable layers",
 				"detail": "One layered .aseprite animation with tags, timing, pivot and your current look. Open in Aseprite 1.3 or later."
@@ -1264,6 +1313,13 @@
 			"generic": {
 				"sub": "Custom integration",
 				"detail": "Layer sheets and strips with timing, pivots, equipment and palette data. Your engine needs code to read these rules."
+			},
+			"rpgMaker": {
+				"sub": "Walking sheets",
+				"detail": "A walking sheet per outfit at your character’s own size. Copy the PNG files into img/characters (MZ, MV) or Graphics/Characters (VX Ace, VX). Needs front, side and back views."
+			},
+			"rpgMakerXp": {
+				"detail": "A 4-frame walking sheet per outfit at your character’s own size, for RPG Maker XP and Pokémon Essentials. Copy the PNG files into Graphics/Characters. Needs front, side and back views."
 			},
 			"phaserAe": {
 				"detail": "Layer sheets and a runtime for Phaser AE games, with equipment, colors and synchronized playback. Add the sheets to the assets list in your game’s manifest, and its build copies them in."
@@ -1354,7 +1410,6 @@
 			"noVisibleFrames": "The body has no visible frames.",
 			"godot": "Godot could not use these sprite sheets.",
 			"gdevelop": "GDevelop could not use these sprite sheets.",
-			"rpgMaker": "RPG Maker needs front, side and back views.",
 			"aseprite": "The animation does not fit the Aseprite format.",
 			"unsafeNames": "Some file names cannot be packaged safely.",
 			"tooLarge": "This export is too large.",
@@ -1362,7 +1417,8 @@
 			"buildFailed": "Could not build this export.",
 			"characterLimits": "This character does not fit the export limits.",
 			"damagedImages": "Some saved images are damaged.",
-			"artworkFailed": "The artwork ZIP could not be prepared."
+			"artworkFailed": "The artwork ZIP could not be prepared.",
+			"rpgMaker": "RPG Maker needs front, side and back views."
 		},
 		"error": {
 			"pixelsPerUnit": "Pixels per unit must be a positive finite number.",
@@ -1415,7 +1471,6 @@
 		"posesTitle": "Also import as States",
 		"posesHint": "Choose poses of the same body with no baked-in gear. Import a different look as a separate character. Moves are selected below.",
 		"poseMismatch": "This state has different artwork dimensions, facings, or camera settings. Import it as a separate character.",
-		"titleFile": "Import from file",
 		"titlePixelLab": "Import from PixelLab",
 		"browseLibrary": "Browse PixelLab characters",
 		"standingState": "Standing pose state",
@@ -1502,8 +1557,8 @@
 			"skippedStanding": "“{move}” facing {direction} was left out: the character has no standing view facing that way.",
 			"semiAlpha": "Partially transparent edges were converted to pixel-art transparency.",
 			"upscaledBase": "The standing artwork looks like a {scale}x upscale. It is kept as it is: items made from it cost more pixels, mix pixel sizes and recolor less cleanly. Import the original 1x art if you can.",
-			"compressedBase": "The standing artwork looks compressed or resampled: many of its colors appear only once. It is kept as it is: items made from it are harder to cut out, recolor and line up. Import the original art if you can.",
-			"detailsDropped": "Some saved character details were damaged and were left out. Set up its pose rig again if needed."
+			"detailsDropped": "Some saved character details were damaged and were left out. Set up its pose rig again if needed.",
+			"compressedBase": "The standing artwork looks compressed or resampled: many of its colors appear only once. It is kept as it is: items made from it are harder to cut out, recolor and line up. Import the original art if you can."
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1556,7 +1611,8 @@
 			"cutPixels": "{path} would lose {cut} visible pixels in a {frame} px cell. Import a smaller character; artwork is never rescaled.",
 			"emptyFrame": "{path} is an empty frame.",
 			"nameLength": "Enter a character name of 1–60 characters."
-		}
+		},
+		"titleFile": "Import from file"
 	},
 	"incompatible": {
 		"error": {
@@ -1640,7 +1696,7 @@
 		}
 	},
 	"download": {
-		"preparing": "Preparing {label}...",
+		"preparing": "Preparing {label}…",
 		"failed": "Could not download {label}.",
 		"failedRetry": "Could not download {label}. Try again.",
 		"recoveryStarted": "Full export unavailable. Source PNG download started.",
@@ -1797,7 +1853,7 @@
 			"fixedDrawOrder": "Built-in drawing order stays fixed.",
 			"fixedSettings": "Built-in categories can only be shown, hidden or moved.",
 			"fixedRemoval": "Built-in categories can only be hidden.",
-			"nonemptyRemoval": "Remove its items before deleting the category."
+			"nonemptyRemoval": "Move its items to the Trash first."
 		},
 		"use": {
 			"making": {
@@ -1811,7 +1867,7 @@
 		},
 		"busy": {
 			"hide": "{label} has {items}. Only an empty category can be hidden{stopped}.",
-			"delete": "{label} has {items}. Only an empty category can be deleted{stopped}.",
+			"delete": "{label} has {items}. Only a category with nothing being made can be moved to the Trash{stopped}.",
 			"reattach": "{label} has {items}. Only an empty category can change how it attaches{stopped}.",
 			"hideWardrobe": "{label} has {items}. Only empty slots can be hidden{stopped}.",
 			"dismissStopped": "; dismiss stopped attempts in Activity first"
@@ -2171,7 +2227,7 @@
 		"noCharge": "PixelLab reported no charge for this attempt.",
 		"newPaidAttempt": "Generate again starts a new paid attempt.",
 		"retryFeature": "Generating this equipment again",
-		"retryNote": "Generate again redraws the standing design in the character’s directions at the displayed estimate. Generate other moves separately after you like it. Further quality retries or repairs require another request. PixelLab may bill some calls in dollars; queue time varies.",
+		"retryNote": "Generate again redraws the standing design in the character’s directions at the displayed estimate. Generate other moves separately after you like it. Further quality retries or repairs require another request.",
 		"slotKey": "{slot} · {key} key",
 		"calls": "Calls",
 		"call": "{index}: {cells} cells",
@@ -2341,7 +2397,7 @@
 			"chooseReference": "Choose a standing reference move.",
 			"noStandingReference": "{move} has no standing view for every direction. Choose a move with every view.",
 			"needsStandingViews": "Rig setup needs saved original standing views or all four cardinal views. Import the missing rotations first.",
-			"emptyBodyFrame": "{move} has an empty body frame. Fix or delete that move, then set up again."
+			"emptyBodyFrame": "{move} has an empty body frame. Fix that move or move it to the Trash, then set up again."
 		},
 		"newRegistration": "Register again"
 	},
@@ -2383,7 +2439,7 @@
 			"partialRepairMustKeep": "A partial repair must keep the existing frame count.",
 			"selectedEquipmentLongerStanding": "Selected equipment no longer has standing designs for all selected views. Review the equipment selection before trying again. No generation was requested.",
 			"itemFramesChangedGeneration": "The item frames changed before generation. Reopen the item to review them again.",
-			"itemChangedWasRemoved": "This item changed or was removed while the move was being prepared.",
+			"itemChangedWasRemoved": "This item changed or went to the Trash while the move was being prepared.",
 			"characterChangedAnotherTab": "This character changed in another tab while the move was generating. Reopen it before trying again.",
 			"bodyFramesTheirQuality": "These body frames or their quality checks changed since review. Nothing was saved and no request was made. Review them again.",
 			"characterChangedAnotherTab2": "This character changed in another tab before the move could be saved. Reopen it before trying again.",
@@ -2763,11 +2819,11 @@
 		"recovery": {
 			"reuse": "Reuse the completed body frames and joint results.",
 			"checks": {
-				"one": "Retry {count} unfinished joint check · estimated {gens} gens or {usd}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary.",
-				"other": "Retry {count} unfinished joint checks · estimated {gens} gens or {usd}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary."
+				"one": "Retry {count} unfinished joint check · estimated {gens} gens or {usd}. Unknown checks may already have charged; retrying can charge again.",
+				"other": "Retry {count} unfinished joint checks · estimated {gens} gens or {usd}. Unknown checks may already have charged; retrying can charge again."
 			},
 			"noRequests": "No new body or joint requests are made.",
-			"items": "Selected equipment poses follow after the body passes · estimated {gens} additional gens, with retries and dollar billing possible."
+			"items": "Selected equipment poses follow after the body passes · estimated {gens} additional gens."
 		},
 		"color": {
 			"pixels": {
@@ -2781,7 +2837,7 @@
 			"match": "Match {pixels} to the standing palette across {frames}. The body shape stays fixed; other colors are left alone.",
 			"recheck": "Recheck {count} changed frames · estimated {gens} gens or {usd}.",
 			"items": "Selected equipment poses follow after the body passes · estimated {gens} additional gens.",
-			"billing": "PixelLab may bill dollars; quality retries cost extra and queue time varies. Existing body views are kept if a check still fails."
+			"kept": "Existing body views are kept if a check still fails."
 		},
 		"demo": "Moves are added to your own character.",
 		"needsSetup": "Set up this character’s pose rig to add moves. Your existing artwork and layers stay aligned.",
@@ -2800,7 +2856,6 @@
 		},
 		"changedDuringEdit": "This move changed while you were editing. Select it again to continue.",
 		"duplicateOption": "{move} is already a move option. Start the description with different words.",
-		"costNotice": "PixelLab may charge in dollars. Retries and fallbacks cost extra.",
 		"templates": "Move templates",
 		"suggestionBuiltIn": "Uses this move's built-in motion.",
 		"suggestionDescribed": "PixelLab animates this move from your prompt instead of its built-in motion.",
@@ -2945,7 +3000,7 @@
 		"ideas": "Ideas",
 		"colorHint": "Color hint",
 		"anyColor": "Any",
-		"checksNote": "Consistency checks run automatically. If issues are detected, you choose whether to keep the item or request a paid retry. No quality retries or repairs run without your request. PixelLab may bill dollars and queue time varies.",
+		"checksNote": "Consistency checks run automatically. If issues are detected, you choose whether to keep the item or request a paid retry. No quality retries or repairs run without your request.",
 		"method": "Animation method",
 		"automatic": "Automatic ({method})",
 		"plan": "{calls} PixelLab calls · {cells} frames · {route}. Each planned batch runs once. Failed checks wait for your review.",
@@ -2984,8 +3039,8 @@
 		"runningJump": "Running jump"
 	},
 	"appearance": {
-		"action": "Edit appearance…",
-		"title": "Edit appearance",
+		"action": "Make copy with new look…",
+		"title": "Edited copy",
 		"choose": "Choose an edit",
 		"custom": "Custom edit",
 		"instructions": "What should change?",
@@ -3000,8 +3055,8 @@
 		"characterSource": "Uses the first frame of {move}.",
 		"characterScope": "The new character starts with Standing views. Add moves and fit gear after saving.",
 		"itemScope": "Source: {move}, first frame. Add artwork for other frames after saving.",
-		"editCharacter": "Edit character",
-		"editItem": "Edit item",
+		"editCharacter": "Create new character",
+		"editItem": "Create new item",
 		"editCost": "{action} · {cost}",
 		"saveCharacter": "Save as new character",
 		"saveItem": "Save as new item",
@@ -3014,7 +3069,8 @@
 		"keptDirections": "Saving this copy keeps the original artwork for these directions: {directions}.",
 		"incomplete": "Some edited views are unavailable. Open Activity for details or download the results you received.",
 		"reviewPending": "Save or discard the appearance preview before changing its source.",
-		"discardNotice": "Discard the preview? PixelLab charges still apply."
+		"discardNotice": "Discard the preview? PixelLab charges still apply.",
+		"titleOf": "Edited copy of {name}"
 	},
 	"stateGeneration": {
 		"continueIntro": "You can finish the views that were never sent. Completed views will be kept.",
@@ -3115,11 +3171,11 @@
 		"unavailable": "This move is no longer available.",
 		"keepStanding": "Keep the standing views used to create and extend items.",
 		"keepOne": "Keep at least one move on this character.",
-		"demo": "Demo moves can't be deleted.",
-		"resolveDrafts": "Finish or discard this character's item drafts before deleting a move.",
+		"demo": "The demo’s moves can’t be moved to the Trash",
+		"resolveDrafts": "Finish or discard this character's item drafts before moving a move to the Trash.",
 		"required": "This standing move is needed to extend existing items to new moves.",
 		"selectedCharacterChanged": "The selected character changed.",
-		"concurrentEdit": "This character changed before the move could be deleted. Try again."
+		"concurrentEdit": "This character changed before the move could go to the Trash. Try again."
 	},
 	"characterFacts": {
 		"body": "{measure} body",
@@ -3157,9 +3213,9 @@
 		"copyDetails": "Copy details",
 		"copyFailed": "Could not copy app details.",
 		"checkForUpdates": "Check for updates",
-		"checkingForUpdates": "Checking for updates...",
+		"checkingForUpdates": "Checking for updates…",
 		"upToDate": "You're up to date.",
-		"preparingUpdate": "Getting version {version} ready...",
+		"preparingUpdate": "Getting version {version} ready…",
 		"updateStuck": "The update isn't ready yet.",
 		"updateFailed": "Couldn't check for updates."
 	},
@@ -3674,6 +3730,59 @@
 		"clear": "Clear search",
 		"results": "{count} of {total}"
 	},
+	"spriteViewer": {
+		"missing": "No frame to show",
+		"direction": "Direction",
+		"previousView": "Previous view",
+		"previousViewHint": "Previous view (Left arrow)",
+		"nextView": "Next view",
+		"nextViewHint": "Next view (Right arrow)",
+		"pauseHint": "Pause (Space)",
+		"playHint": "Play (Space)"
+	},
+	"imageViewer": {
+		"role": "image viewer",
+		"keys": "Arrows move, plus and minus zoom, 0 fits.",
+		"zoom": "Image zoom",
+		"hint": "Wheel or pinch to zoom. Drag to move.",
+		"fit": "Fit to window",
+		"fitHint": "Fit to window (0)",
+		"percent": "{percent}% of actual size",
+		"zoomed": "Zoom {percent}%",
+		"missing": "No image to show"
+	},
+	"characterWindow": {
+		"actions": "Character actions",
+		"open": "Open character",
+		"frameSection": "Frame & Directions",
+		"costSection": "Cost",
+		"adjustFrameDetail": "Change the frame size or where the character sits in it.",
+		"directionsDetail": "Choose which facings are drawn and which mirror another.",
+		"costEstimateDetail": "Estimate what more moves, states and items would cost.",
+		"frameLocked": "This character’s frame and directions can’t be changed."
+	},
+	"clipWindow": {
+		"move": "Move",
+		"state": "State",
+		"actions": "Move or State actions",
+		"playOnStage": "Play on stage",
+		"showOnStage": "Show on stage",
+		"framesSection": "Frames & Quality",
+		"itemsSection": "Items",
+		"fixFramesDetail": "Edit every frame of {move} in your art app.",
+		"redrawDetail": "Draw {move} again in the facings you choose, priced first.",
+		"captureDetail": "Save one frame of {move} as a new State.",
+		"itemsDetail": "Draw the worn items still missing from {move}.",
+		"itemsComplete": "Every item is drawn for it.",
+		"itemsUnavailable": "Items can’t be drawn for it here.",
+		"frames": "Frames",
+		"length": "Length",
+		"ms": "{ms} ms",
+		"exportId": "Export ID",
+		"gone": "This move is no longer saved.",
+		"itemDrawn": "Drawn",
+		"itemMissing": "Missing"
+	},
 	"tips": {
 		"customizeTitle": "Dress up the demo",
 		"customizeBody": "Try on gear or export the **demo character** for your game. No PixelLab key needed.",
@@ -3691,7 +3800,7 @@
 		"addItemTitle": "Add gear",
 		"addItemBody": "Use **+** on a slot to describe an item or add a reference image. PixelLab fits it to your character.",
 		"generateItemsTitle": "Fit gear to this move",
-		"generateItemsBody": "Open this move's **{menu} more options** and choose **Generate items** to draw your gear in this move.",
+		"generateItemsBody": "Open this move's **{menu} more options**, choose **View and edit**, then **Generate items** to draw your gear in this move.",
 		"addMoveTitle": "Add a move",
 		"addMoveBody": "Animate your character, such as Idle, Walk or Attack.",
 		"addStateTitle": "Add a state",

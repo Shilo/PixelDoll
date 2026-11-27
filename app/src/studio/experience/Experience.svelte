@@ -914,7 +914,7 @@
 						})}
 					/>
 				</div>{/if}
-			<div class="character-rows" bind:this={rows}>
+			<div class="character-rows" data-rows bind:this={rows}>
 				{#each pending as run (run.id)}
 					{@const spec = run.spec}
 					{@const step = CREATE_STEPS.findIndex((stage) => stage.id === run.progress?.step)}

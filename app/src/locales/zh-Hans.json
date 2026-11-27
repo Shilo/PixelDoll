@@ -36,7 +36,8 @@
 			"items": "物品",
 			"category": "分类",
 			"move": "动作",
-			"state": "状态"
+			"state": "状态",
+			"outfit": "服装"
 		},
 		"errors": {
 			"gone": "这已不在回收站中。",
@@ -45,12 +46,13 @@
 			"full": "浏览器空间不足，因此没有移动任何内容。请在回收站中删除一些内容以释放空间。",
 			"wrongKind": "该已删除项目属于一个角色。请先恢复该角色。",
 			"movePresent": "该角色已经有这个动作。",
-			"moveGeometry": "删除此动作后，角色的帧尺寸或方向已更改，因此无法再对齐。",
-			"partsGeometry": "删除后，角色的帧尺寸或方向已更改，因此无法再对齐。",
-			"moveItemsMissing": "此动作的一个物品已被删除。请先恢复该物品，再恢复此动作。"
+			"moveGeometry": "此动作移到回收站后，角色的画框尺寸或方向已更改，因此无法再对齐。",
+			"partsGeometry": "移到回收站后，角色的画框尺寸或方向已更改，因此无法再对齐。",
+			"moveItemsMissing": "此动作的一个物品已被删除。请先恢复该物品，再恢复此动作。",
+			"outfitPresent": "此服装已在角色上。"
 		},
 		"restoring": "正在恢复…",
-		"confirmBodyCharacter": "从它那里删除的其他内容也会一起消失。彻底消失，无法撤销。",
+		"confirmBodyCharacter": "回收站中属于它的其他内容也会一并删除。此操作无法撤销。",
 		"confirmRestore": "再按一次即可恢复",
 		"confirmRestoreNamed": "再按一次即可恢复 {name}",
 		"daysLeft": {
@@ -105,7 +107,7 @@
 		"deleteWork": {
 			"deleteAll": "全部删除",
 			"confirm": "确认",
-			"description": "删除此设备上的角色、服装、草稿、回收站和活动记录。",
+			"description": "永久删除此设备上的角色、套装、草稿、回收站和活动。",
 			"kept": "归档数据、偏好设置、已下载的备份和你的 PixelLab 密钥都会保留。",
 			"action": "删除本地数据…",
 			"title": "要删除所有本地作品吗？",
@@ -243,7 +245,7 @@
 		"deleteNamed": "将 {name} 移到回收站？",
 		"deleting": "正在删除…",
 		"details": "详情",
-		"detailsMenu": "详情…",
+		"detailsMenu": "查看和编辑…",
 		"direction": "朝向",
 		"directions": "朝向",
 		"discard": "放弃",
@@ -331,7 +333,7 @@
 		"unavailable": "此角色无法使用该朝向。",
 		"mirrorSource": "请保留{source}，或关闭其{mirror}镜像。",
 		"moveArtwork": "请保留一个有{moves}图像的朝向。",
-		"equipmentArtwork": "请保留一个有{items}图像的朝向，或先移除该装备。"
+		"equipmentArtwork": "请保留一个有 {items} 图像的方向，或先将这些物品移到回收站。"
 	},
 	"directionNames": {
 		"south": "南",
@@ -372,8 +374,9 @@
 		"costEstimate": "费用估算…",
 		"adjustFrame": "调整帧…",
 		"directions": "朝向…",
-		"demoDeleteLocked": "演示角色无法删除",
-		"labelDeleteCharacter": "移到回收站…"
+		"demoDeleteLocked": "演示角色无法移到回收站",
+		"labelDeleteCharacter": "移到回收站…",
+		"demoRenameLocked": "要重命名演示，请先制作可编辑副本"
 	},
 	"characterName": {
 		"demo": "（演示）"
@@ -436,15 +439,14 @@
 	"deleteSheet": {
 		"viewPendingWork": "查看待处理工作",
 		"character": "角色",
-		"demo": "内置演示无法删除。",
+		"demo": "内置演示无法移到回收站。",
 		"itsOutfitsAndChangesAreRemovedFrom": "其服装、物品和未保存的草稿也会一起移动；复制到其他角色的物品会留下。最多 30 天内可以恢复。"
 	},
 	"demoCopyRow": {
-		"editACopy": "编辑副本",
+		"editACopy": "制作可编辑副本",
 		"openedYourEditableCopyOfTheDemo": "已打开演示的可编辑副本。未消耗生成次数。"
 	},
 	"detailsSheet": {
-		"title": "{name}的详情",
 		"notSaved": "此角色已不再保存。",
 		"withItems": "含装备",
 		"itemCost": {
@@ -488,10 +490,6 @@
 		"activity": "活动…",
 		"cancelGeneration": "取消生成…",
 		"cancelFromTheTabThatIsGenerating": "请在生成此装备的标签页中取消。",
-		"wearInACopyOfTheDemo": "在演示副本中穿戴",
-		"makeOneForName": "为{name}制作一件",
-		"wearName": "穿戴{name}",
-		"titleWearingTakeOff": "已穿戴（脱下）",
 		"twoHanded": "双手",
 		"createVariant": "创建变体…",
 		"labelDeleteItem": "移到回收站…",
@@ -499,98 +497,83 @@
 		"generationsAlreadyUsedAreNotRefundedAnd": "已使用的生成次数不会退还，已发送的请求仍可能计费。",
 		"cancelSaveError": "无法保存取消状态。请保持此标签页打开并重试。",
 		"preparing": "正在准备你的装备",
-		"remake": "为{name}制作一件…",
+		"remake": "为此角色制作副本…",
 		"makeForSlot": "为{slot}制作一件…",
-		"demoDeleteLocked": "演示装备无法删除",
+		"demoDeleteLocked": "演示的物品无法移到回收站",
 		"cancelItem": "取消生成",
 		"canceling": "正在取消…",
 		"keep": "保留",
-		"runningDetail": "{status} · {prompt}"
+		"runningDetail": "{status} · {prompt}",
+		"demoRenameLocked": "演示的物品无法重命名"
 	},
 	"itemPane": {
+		"movesSection": "动作与状态",
+		"outfitSection": "套装",
+		"technicalDetails": "技术详情",
+		"openSprite": "放大{title}",
+		"availableDirectionsFor": "{name}的可用朝向",
+		"drawForMoves": "生成缺失的帧",
+		"reviewMissingMoves": "查看缺失的动作",
+		"drawMovesSelect": "选择要生成的动作。",
+		"selectAllMoves": "全选",
+		"clearSelection": "清除选择",
+		"drawMovesHelp": "仅补全缺失的装备帧。",
+		"repairView": "修复朝向{direction}的视角",
+		"redrawView": "重绘朝向{direction}的视角",
+		"sendBackward": "下移一层",
+		"bringForward": "上移一层",
+		"inFrontOf": "位于{name}前方",
+		"behind": "位于{name}后方",
+		"previewUnavailable": "没有可预览的装备帧。",
 		"restoreStanding": {
 			"other": "恢复站立视图"
 		},
 		"restoreStandingHint": {
-			"other": "使用此物品已保存的 {directions} 朝向设计来恢复，不会生成新画面。"
+			"other": "使用已保存的 {directions} 朝向设计，无需生成。"
 		},
 		"hiddenByAnotherItem": "被另一件装备遮挡",
-		"nameInEveryDirection": "所有朝向的{name}",
+		"hiddenByItem": "被 {name} 遮挡",
+		"layerHiddenHint": "显示此装备后才能更改图层顺序。",
 		"labelNameFacingId": "{name}，朝向{id}",
-		"acceptedAppearanceWarnings": "已接受的外观警告",
-		"titleShowThisFrame": "显示此帧",
-		"checksFoundIssuesNoPaidRetryWas": "检查发现问题。未启动付费重试。你可以请求另一次尝试，或按现状接受此装备。",
+		"acceptedAppearanceWarnings": "已接受的设计警告",
+		"titleShowThisFrame": "在舞台上显示",
 		"acceptAsIs": "按现状接受",
-		"pendingWorkBusy": "有动作或设置正在运行或已停止。请完成或放弃它以使用这些操作。",
-		"acceptsTheCurrentArtworkWithoutSpendingCredits": "按现状接受当前图像，不消耗点数。检测到的问题仍保留在详情中。",
-		"keepWithoutMoves": "不含这些动作并保留",
-		"keepWithoutMovesDetail": "不花费积分，仅保留该装备在完整动作中的帧。它在{moves}中隐藏，这些动作仍标为缺失，你可以稍后按各自的价格制作。",
-		"youAcceptedThisArtworkWithItsRecorded": "你已接受此图像及其记录的质量说明。",
-		"generateItemForMove": "为动作生成装备",
-		"coverageTitle": "动作覆盖",
-		"coverageAllDrawn": "已在所有动作和状态中绘制",
-		"coverageMissing": {
-			"other": "缺少 {n} 个动作"
-		},
-		"coverageClipDrawn": "{move}：已绘制",
-		"coverageClipMissing": "{move}：缺少",
-		"fillMissingMoves": "补齐缺少的动作",
-		"fillMissingHint": {
-			"other": "复用站立设计，一次报价为全部 {n} 个缺少的动作绘制这个物品。"
-		},
-		"labelMakeNameForMissingName": "为{missingName}制作{name}",
-		"generatesOnlyThisItemSMissingViews": "仅为所选动作中此装备缺失的视图生成，并复用其站立设计。身体保持不变。PixelLab 可能按美元计费；排队时间不定。",
-		"madeForAnotherBodyItMayNot": "为另一个身体制作，可能无法对齐。",
-		"itsMirroredViewsUpdateToo": "其镜像视图也会更新。",
+		"pendingWorkBusy": "有动作或设置正在阻止这些操作。请先完成或放弃。",
+		"acceptsTheCurrentArtworkWithoutSpendingCredits": "保留此图像，其警告仍会列出。",
+		"keepWithoutMovesDetail": "丢弃{moves}中的部分帧，生成前它会保持隐藏。",
+		"youAcceptedThisArtworkWithItsRecorded": "你已接受此图像，其备注仍会列出。",
 		"matchingColors": "匹配颜色…",
 		"matchItemColors": "匹配装备颜色",
 		"recolor": "重新上色",
-		"layerOrder": "图层顺序",
-		"titleDrawInFrontOfTheNext": "绘制在下一图层上方",
-		"forward": "前移",
-		"titleDrawBehindThePreviousLayer": "绘制在上一图层下方",
-		"backward": "后移",
-		"reset": "重置",
-		"whenWornHide": "穿戴时隐藏",
-		"howItWasMade": "制作方式",
+		"recolorWearFirst": "穿上后才能更改颜色",
+		"whenWornHide": "穿戴时隐藏其他装备",
 		"iD": "ID",
 		"slot": "装备栏",
-		"route": "生成路线",
-		"qA": "质检",
-		"rawBodyDifferences": "原始身体差异",
-		"rawKeyReviewFramesFramesHaveNewBodyColoredPixels": "对齐前，有 {rawKeyReviewFrames} 帧出现新的身体颜色像素。普通重绘偏移可能导致此现象；质量状态不变。",
+		"route": "生成方式",
+		"qA": "检查结果",
+		"rawBodyDifferences": "对齐前的身体像素",
+		"rawKeyReviewFramesFramesHaveNewBodyColoredPixels": "对齐前出现新身体颜色像素的帧：{rawKeyReviewFrames}。普通重绘可能导致此现象。检查结果不变。",
 		"partialChecks": "部分检查",
-		"copiedChecksCoverWholeMovesTotalsMay": "复制的检查覆盖整个动作；总计可能包含被替换的帧。",
+		"copiedChecksCoverWholeMovesTotalsMay": "整个动作的检查总计可能包含被替换的帧。",
 		"someMovesHaveNotBeenChecked": "部分动作尚未检查。",
 		"measurements": "测量",
-		"reusedCellsWereNotMeasuredByPixelLab": "复用的单元格未由 PixelLab 测量。此装备无法提供汇总检查。",
+		"reusedCellsWereNotMeasuredByPixelLab": "复用的帧没有 PixelLab 测量数据，因此无法进行整件装备检查。",
 		"keyKept": "色键保留率",
 		"keyOutside": "范围外色键",
 		"area": "面积",
 		"paletteDrift": "调色板偏移",
-		"edgePx": "边缘像素",
+		"edgePx": "帧边缘像素",
 		"hands": "手部",
-		"reRolls": "重抽",
-		"missingFrames": "缺失帧",
-		"refitIntro": "已免费从{from}的装备适配。请检查这些帧：",
-		"remakeToFit": "为{name}制作一件以适配。",
-		"moveGaps": "朝向{directions}的{move}帧部分或全部缺失。这些帧中不会显示它。",
-		"remakeAllMoves": "为{name}制作一件，以便在所有动作中穿戴。",
+		"reRolls": "重试",
+		"missingFrames": "缺失的帧 ID",
+		"refitIntro": "已从{from}的装备免费适配。请检查这些帧：",
+		"remakeToFit": "为{name}创建适配版本。",
+		"moveGaps": "朝向{directions}的部分{move}帧中不会显示该装备。",
 		"copyFrom": "从{name}复制",
 		"copyFrames": {
-			"other": "{name}缺少此装备的 {n} 帧，可从{from}复制。不会生成任何内容。"
+			"other": "从{from}为{name}补充 {n} 个缺失帧，无需生成。"
 		},
-		"makeFor": "为{move}制作",
 		"makingMoreMoves": "正在为更多动作制作装备",
-		"colorMatchNote": {
-			"other": "将朝向{direction}的 {n} 个已保存{move}帧中的 {pixels} 匹配到装备现有的调色板。"
-		},
-		"colorMatchFixed": "其他视图、动作、材质和已保存的重新上色保持不变。",
-		"colorMatchMissing": "第 {frames} 帧还没有图像，因此不包括在内。",
-		"colorMatchUnmatched": {
-			"other": "有 {n} 个未匹配的可用像素保持不变。"
-		},
-		"colorMatchFree": "保留现有质量警告。不会调用 PixelLab。",
 		"colorsMatched": "已在 {frames}中匹配 {pixels}。",
 		"pixels": {
 			"other": "{n} 个像素"
@@ -598,9 +581,8 @@
 		"frames": {
 			"other": "{n} 帧"
 		},
-		"onlyFacing": "仅朝向{direction}时",
-		"hideWhenWorn": "穿戴{name}时，勾选的装备会被隐藏。",
-		"tuckNote": "未勾选的{slots}会收在其下方：只显示帽檐以下的部分。兜帽和全脸面具请勾选此项。",
+		"onlyFacing": "仅限朝向{direction}时",
+		"tuckNote": "此装备可能部分遮挡{slots}。",
 		"chromaKey": "色键：{color}",
 		"qaStatus": {
 			"pass": "通过",
@@ -610,37 +592,103 @@
 		},
 		"areaStats": "最小为中位数的 {ratio} · CV {cv}",
 		"handedness": {
-			"ok": "正常",
-			"switched": "已换手"
+			"ok": "一致",
+			"switched": "会换手"
 		},
 		"minimum": "{value}（≥ {threshold}）",
 		"maximum": "{value}（≤ {threshold}）",
-		"updateNote": "更新此装备在{move}中朝向{direction}的帧。角色身体保持不变。",
-		"updateNoteMirrors": "更新此装备在{move}中朝向{direction}及其镜像朝向的帧。角色身体保持不变。",
-		"repairItem": "修复装备",
-		"redrawItem": "重绘装备",
+		"updateNoteMirrors": "更新{move}中朝向{directions}的视角。只会改变装备。",
 		"repairFeature": "修复装备",
 		"redrawFeature": "重绘装备",
-		"repairHelp": "适合在你喜欢当前设计时使用。只修改装备所在区域。",
-		"redrawHelp": "可能改变形状或握持方式。是否保留由你决定。",
+		"repairHelp": "保留设计，只修改装备区域。",
+		"redrawHelp": "重新尝试，可能改变形状或握持方式。保留前可先对比。",
+		"itemActions": "装备操作",
+		"statusGenerating": "生成中",
+		"statusIncomplete": "不完整",
+		"staleNote": "为另一个身体制作。请检查适配。",
+		"previewMove": "动作",
+		"openMissingView": "打开{direction}（缺失）",
+		"missingView": "缺失",
+		"hiddenWhenWorn": "穿戴{names}会隐藏此装备。",
+		"clipsIncomplete": {
+			"other": "{n} 个动作不完整"
+		},
+		"complete": "完整",
+		"clipNoFrames": "尚无帧",
+		"clipMissingViews": "缺少：{directions}",
+		"generateMoves": {
+			"other": "生成 {n} 个动作"
+		},
+		"qualitySection": "质量",
+		"passed": "通过",
+		"facing": "朝向",
+		"matchColorsDetail": "将{frames}中的{pixels}匹配到装备的调色板。",
+		"fixFramesDetail": "在你的绘图软件中编辑{move}的所有帧。",
+		"hiddenState": "已隐藏",
+		"hidesCount": {
+			"other": "隐藏 {n} 个类别"
+		},
+		"outfitPreview": "套装中的{name}，朝向{direction}",
+		"layerScope": "适用于所有{slot}装备。",
+		"layerNothingToCross": "此视图中没有重叠的图层。",
+		"layerBack": "{name}（背面）",
+		"layerWithSlot": "{name}（{slot}）",
+		"resetOrder": "重置顺序",
+		"hideRulesLater": "穿戴{name}时生效。",
+		"aboutSection": "关于",
+		"generateMovesNone": "生成",
+		"stopHiding": "不再让{names}隐藏它",
+		"keepWithoutNamed": "保留，不含{moves}",
+		"checksFoundIssuesNoPaidRetryWas": "未启动付费重试。",
 		"repairRequests": {
-			"other": "此次修复会使用 {n} 次 PixelLab 生成请求。"
+			"other": "{n} 次 PixelLab 请求。"
 		},
 		"redrawRequests": {
-			"other": "此次重绘会使用 {n} 次 PixelLab 生成请求。"
+			"other": "{n} 次 PixelLab 请求。"
 		},
 		"redrawSaves": {
-			"other": "预计比修复少 {n} 次生成。"
+			"other": "比修复少 {n} 次生成。"
 		},
 		"redrawCostsMore": {
-			"other": "预计比修复多 {n} 次生成。"
+			"other": "比修复多 {n} 次生成。"
 		},
-		"billingNote": "这些估算比较的是生成次数，不是美元价格。PixelLab 可能按美元计费，排队时间可能不同。"
+		"turnLeft": "向左转",
+		"turnRight": "向右转",
+		"facingLabel": "朝向{direction}",
+		"matchViewColors": "匹配朝向{direction}视角的颜色",
+		"fixOneView": "修复单个视角",
+		"outfitPreviewUnworn": "假设穿上{name}的整套装扮，朝向{direction}",
+		"openOutfit": "全尺寸打开{name}的整套装扮",
+		"outfitTitle": "{name}的整套装扮",
+		"layerPosition": "第 {position} 层，共 {count} 层",
+		"layerPositionHint": "在重叠的图层中从后往前数，第 {position} 层，共 {count} 层",
+		"slotLayerOrder": "{slot}槽位图层顺序",
+		"layerScopeFacing": "适用于所有朝向{direction}的{slot}物品。",
+		"twoHandedNote": "需要双手，穿戴时会卸下{slot}的物品。",
+		"makeForSlotDetail": "为{slot}再画一次这件物品。",
+		"groupReady": "{count} 个中 {ready} 个就绪",
+		"remakeFits": "制作一个适合 {name}（你正在装扮的角色）的新副本。",
+		"demoMissing": "演示从不消耗 PixelLab 生成次数。制作可编辑副本即可绘制缺少的帧。",
+		"nameInEveryDirection": "所有朝向的{name}",
+		"generateItemForMove": "为动作生成装备",
+		"fillMissingMoves": "补齐缺少的动作",
+		"fillMissingHint": {
+			"other": "复用站立设计，一次报价为全部 {n} 个缺少的动作绘制这个物品。"
+		},
+		"labelMakeNameForMissingName": "为{missingName}制作{name}",
+		"generatesOnlyThisItemSMissingViews": "仅为所选动作中此装备缺失的视图生成，并复用其站立设计。身体保持不变。PixelLab 可能按美元计费；排队时间不定。",
+		"madeForAnotherBodyItMayNot": "为另一个身体制作，可能无法对齐。",
+		"titleDrawInFrontOfTheNext": "绘制在下一图层上方",
+		"forward": "前移",
+		"titleDrawBehindThePreviousLayer": "绘制在上一图层下方",
+		"backward": "后移",
+		"makeFor": "为{move}制作",
+		"hideWhenWorn": "穿戴{name}时，勾选的装备会被隐藏。"
 	},
 	"newCharacterButton": {
-		"addCharacter": "添加角色",
 		"newCharacter": "新建角色",
 		"createFromScratch": "创建…",
+		"addCharacter": "添加角色",
 		"fromFile": "从文件…",
 		"fromPixelLab": "从 PixelLab…",
 		"createNeedsKey": "需要 PixelLab 密钥，并会使用付费生成次数"
@@ -705,8 +753,15 @@
 		"labelDeleteState": "移到回收站…",
 		"removeState": "身体和每个物品都会失去适配的帧；已完成的动作会保留自己的帧。最多 30 天内可以恢复。",
 		"labelDeleteMove": "移到回收站…",
-		"labelDeleteOutfit": "删除套装",
-		"thisRemovesTheMoveFromTheBody": "身体和每个物品都会失去它的帧。最多 30 天内可以恢复。"
+		"labelDeleteOutfit": "移到回收站…",
+		"thisRemovesTheMoveFromTheBody": "身体和每个物品都会失去它的帧。最多 30 天内可以恢复。",
+		"demoRenameLocked": "演示的动作和状态无法重命名",
+		"removeOutfit": "其中的物品留在衣橱中。30 天内可从废纸篓中恢复。",
+		"demoOutfitLocked": "演示自带的套装无法删除",
+		"labelDeleteDemoOutfit": "删除…",
+		"deleteDemoOutfit": "演示没有回收站，因此此套装会被删除。重新加载前可撤销恢复。",
+		"deleteDemoOutfitTitle": "删除 {name}？",
+		"outfitGone": "此套装已不存在。"
 	},
 	"slotsSheet": {
 		"freeNeverRegeneratesItemsAlreadyMade": "免费：不会重新生成已制作的装备。",
@@ -727,7 +782,7 @@
 		"theSlotAndItsItemsAreDeleted": "其物品也会一起移动，服装不再穿着它们。最多 30 天内可以恢复。",
 		"labelAddedAtTheEndOfWardrobe": "{label}已添加到衣橱末尾。",
 		"valueShownAtTheEndOfWardrobe": "{value}显示在衣橱末尾。",
-		"demoDeleteLocked": "内置演示的装备无法删除。",
+		"demoDeleteLocked": "内置演示的物品无法移到回收站。",
 		"renameNote": "重命名会保留其装备、套装和导出名称（{slot}）。",
 		"drawOrder": "其装备的正面（包括已制作的装备）会绘制在{slot}之上、下一装备栏之下。针对具体一侧的顺序（如近侧的手）会随之移动。",
 		"behindBody": "绘制在身体后方的部件会保持在身体后方。",
@@ -787,7 +842,7 @@
 		"previewRisk": "已保存的角色可能在更新后无法使用。",
 		"previewBackupDescription": "在本地保留角色和美术素材的副本。",
 		"youReOfflineEditAndExportLocally": "你处于离线状态。可在本地编辑和导出。",
-		"titleInspectCharacter": "检查角色",
+		"titleInspectCharacter": "查看帧",
 		"titleWorkspaceCopy": "工作区副本",
 		"titleItem": "装备",
 		"titleItemReview": "装备检查"
@@ -834,7 +889,6 @@
 			"other": "{n} 个角色"
 		},
 		"version": "版本 {version}",
-		"renameCharacter": "重命名角色…",
 		"rename": "重命名…",
 		"setUpCharacter": "设置角色…",
 		"connectPixelLab2": "连接 PixelLab…",
@@ -883,6 +937,7 @@
 		"copiedFree": "已免费从{from}复制。",
 		"statusNote": "{status}。",
 		"hiddenNote": "被另一件装备遮挡。",
+		"twoHandedNote": "需要双手持握。",
 		"fromOthers": "来自{sources}。穿戴一件装备会在{name}上显示此类别。",
 		"source": "来自{from}",
 		"sourceFree": "免费来自{from}",
@@ -947,7 +1002,7 @@
 		"moreActionsFor": "{name}的更多操作",
 		"actionsFor": "{name}的操作",
 		"still": "静止",
-		"inspect": "检查",
+		"inspect": "查看帧",
 		"customization": "自定义",
 		"customizationPanels": "自定义面板",
 		"tabWorkRunning": "此处有任务正在进行、等待中或可供审阅",
@@ -1009,20 +1064,20 @@
 		"finishBeforeMoveImport": "导入动作前，请完成或关闭待处理的生成任务。",
 		"couldNotCheckNamedFrames": "无法检查 {names} 的帧：{reason}",
 		"couldNotCheckSeveralFrames": "无法检查 {names} 的帧。",
-		"copyMissingOneMove": "{move} 缺少部分帧，物品会在这些帧中隐藏。",
-		"copyMissingFrames": "{moves} 缺少部分帧，物品会在这些帧中隐藏。",
+		"copyMissingOneMove": "此物品在{move}的部分帧中不会显示。",
+		"copyMissingFrames": "此物品在{moves}的部分帧中不会显示。",
 		"restoreFailed": "无法恢复 {name}：{reason}",
 		"restoreFinishFailed": "未能完成 {name} 的恢复：{reason}",
 		"restoredStanding": "已恢复 {name} 在 {directions} 朝向的画面。未使用生成次数。",
 		"restoredQualityNotes": "有画面质量提示，请检查。",
 		"noStandingToRestore": "{name} 已没有可恢复的站立视图。",
-		"characterChangedNothingDeleted": "角色在此期间发生了变化。未删除任何内容。",
+		"characterChangedNothingDeleted": "角色已在此期间更改。没有移动任何内容到回收站。",
 		"categoryNowHasItems": {
-			"other": "{label}现在有 {count} 件装备。删除前请再次检查。"
+			"other": "{label} 现在有 {count} 件物品。移到回收站前请再检查一次。"
 		},
-		"categoryNowHasNoItems": "{label}现在没有装备。删除前请再次检查。",
+		"categoryNowHasNoItems": "{label} 现在没有物品。移到回收站前请再检查一次。",
 		"categoryItemsGettingMoves": "正在为{label}的装备制作新动作。请等待完成或先放弃这些动作。",
-		"reasonNothingDeleted": "{reason} 未删除任何内容。",
+		"reasonNothingDeleted": "{reason} 没有移动任何内容到回收站。",
 		"itemsPosedForMove": "{names}已为{moveName}摆好姿势",
 		"itemsRedrawnForMove": "已为{moveName}重新绘制{names}",
 		"equipmentPosedForMove": "已为{moveName}摆好装备姿势",
@@ -1038,9 +1093,9 @@
 		"waitForCharacter": "请等待角色加载完成。",
 		"manageMovesInOtherTab": "请在另一个 PixelDoll 标签页中管理动作，或先关闭该标签页。",
 		"manageCharactersInOtherTab": "请在另一个 PixelDoll 标签页中管理角色，或先关闭该标签页。",
-		"finishBeforeCharacterRemoval": "删除角色前，请完成或放弃待处理的生成任务。",
+		"finishBeforeCharacterRemoval": "将角色移到回收站前，请完成或关闭待处理的生成任务。",
 		"finishBeforeRestore": "恢复此角色前，请先完成或放弃待处理的生成任务。",
-		"finishBeforeMoveRemoval": "删除动作前，请完成或放弃待处理的生成任务。",
+		"finishBeforeMoveRemoval": "将动作移到回收站前，请完成或关闭待处理的生成任务。",
 		"finishBeforeDirectionRemoval": "更改朝向之前，请完成或放弃待处理的生成任务。",
 		"finishBeforeFixFrames": "修正帧之前，请等待当前生成任务完成。",
 		"couldNotReadYourSavedCharactersReason": "无法读取已保存的角色：{reason}",
@@ -1063,8 +1118,8 @@
 		"openedDemoCopy": "已打开演示的可编辑副本。",
 		"tookOffTwoHanded": "已脱下{names}（双手）",
 		"tookOffForTwoHanded": "已脱下{names}：{name}是双手装备",
-		"wearingUnfitted": "正在按为{sourceName}绘制的样子穿戴{name}。它可能无法与此身体对齐。未消耗生成次数。",
-		"wearingUnfittedAtSize": "正在按为{sourceName}绘制的样子穿戴{name}，帧尺寸仍为原始的 {size}。它可能无法与此身体对齐。未消耗生成次数。",
+		"wearingUnfitted": "已穿戴为{sourceName}绘制的{name}。它可能与当前身体对不齐。",
+		"wearingUnfittedAtSize": "已穿戴为{sourceName}绘制的{name}（{size}）。它可能与当前身体对不齐。",
 		"fittedItem": "已免费从{sourceName}适配{name}。请在每个动作中检查。",
 		"copiedSharedItem": "已从{sourceName}复制{name}。未消耗生成次数。",
 		"copiedMoreFrames": {
@@ -1087,8 +1142,8 @@
 		"savedItemAttemptsCouldNotBeRead": "无法读取已保存的装备尝试：{reason}",
 		"theCharacterChangedMeanwhileTryAgain": "角色在此期间发生了变化。请重试。",
 		"noCharacterIsOpen": "未打开任何角色。",
-		"labelChangedMeanwhileReviewItAgainBefore": "{label}在此期间发生了变化。删除前请再次检查。",
-		"labelHasNewItemsReviewItAgain": "{label}有新装备。删除前请再次检查。",
+		"labelChangedMeanwhileReviewItAgainBefore": "{label} 已在此期间更改。移到回收站前请再检查一次。",
+		"labelHasNewItemsReviewItAgain": "{label} 有新物品。移到回收站前请再检查一次。",
 		"categoryAndItemsDeleted": {
 			"other": "已将 {label} 及其 {count} 个物品移到回收站"
 		},
@@ -1127,7 +1182,8 @@
 		"resetColors": "重置颜色",
 		"randomItem": "随机{name}装备",
 		"saveOutfit": "保存套装",
-		"deleteOutfit": "删除套装",
+		"deleteOutfit": "将套装移到回收站",
+		"deleteDemoOutfit": "删除套装",
 		"renameOutfit": "重命名套装",
 		"show": "显示{name}",
 		"hide": "隐藏{name}",
@@ -1138,9 +1194,9 @@
 		"moveCategory": "移动{name}",
 		"addCategory": "添加类别",
 		"changeCategory": "更改{name}",
-		"deleteCategory": "删除{name}",
-		"deleteItem": "删除 {name}",
-		"deleteMove": "删除 {name}",
+		"deleteCategory": "将 {name} 移到回收站",
+		"deleteItem": "将 {name} 移到回收站",
+		"deleteMove": "将 {name} 移到回收站",
 		"moveItem": "移动{name}",
 		"changeDirections": "更改朝向",
 		"restoreOriginals": "恢复原始帧",
@@ -1214,13 +1270,6 @@
 				"sub": "可编辑项目",
 				"detail": "带 Sprite 图层、同步播放和装备控制的可编辑 GDevelop 项目。可预览，或将对象和事件复制到你的游戏中。"
 			},
-			"rpgMaker": {
-				"sub": "行走图集",
-				"detail": "按角色原始尺寸、每个套装一张行走图。将 PNG 文件复制到 img/characters（MZ、MV）或 Graphics/Characters（VX Ace、VX）。需要前、侧、后视图。"
-			},
-			"rpgMakerXp": {
-				"detail": "按角色原始尺寸、每个套装一张 4 帧行走图，用于 RPG Maker XP 和 Pokémon Essentials。将 PNG 文件复制到 Graphics/Characters。需要前、侧、后视图。"
-			},
 			"aseprite": {
 				"sub": "可编辑图层",
 				"detail": "一个带标签、时间、枢轴点和当前外观的分层 .aseprite 动画。请在 Aseprite 1.3 或更高版本中打开。"
@@ -1228,6 +1277,13 @@
 			"generic": {
 				"sub": "自定义集成",
 				"detail": "带时间、枢轴点、装备和调色板数据的图层图集和条带。你的引擎需要代码来读取这些规则。"
+			},
+			"rpgMaker": {
+				"sub": "行走图集",
+				"detail": "按角色原始尺寸、每个套装一张行走图。将 PNG 文件复制到 img/characters（MZ、MV）或 Graphics/Characters（VX Ace、VX）。需要前、侧、后视图。"
+			},
+			"rpgMakerXp": {
+				"detail": "按角色原始尺寸、每个套装一张 4 帧行走图，用于 RPG Maker XP 和 Pokémon Essentials。将 PNG 文件复制到 Graphics/Characters。需要前、侧、后视图。"
 			},
 			"phaserAe": {
 				"detail": "用于 Phaser AE 游戏的分图层精灵图集和运行时，支持装备、颜色和同步播放。将这些精灵图集列入游戏清单的 assets 列表，游戏构建时会将其复制到游戏中。"
@@ -1311,7 +1367,6 @@
 			"noVisibleFrames": "身体没有可见的帧。",
 			"godot": "Godot 无法使用这些精灵图集。",
 			"gdevelop": "GDevelop 无法使用这些精灵图集。",
-			"rpgMaker": "RPG Maker 需要前、侧、后视图。",
 			"aseprite": "动画不符合 Aseprite 格式。",
 			"unsafeNames": "部分文件名无法安全打包。",
 			"tooLarge": "此导出过大。",
@@ -1319,7 +1374,8 @@
 			"buildFailed": "无法构建此导出。",
 			"characterLimits": "此角色不符合导出限制。",
 			"damagedImages": "部分已保存的图像已损坏。",
-			"artworkFailed": "无法准备图像 ZIP。"
+			"artworkFailed": "无法准备图像 ZIP。",
+			"rpgMaker": "RPG Maker 需要前、侧、后视图。"
 		},
 		"error": {
 			"pixelsPerUnit": "每单位像素数必须为正的有限数值。",
@@ -1368,7 +1424,6 @@
 		"posesTitle": "同时作为状态导入",
 		"posesHint": "请选择同一身体且未画入装备的姿势。外观不同的请作为独立角色导入。请在下方选择动作。",
 		"poseMismatch": "此状态的图像尺寸、朝向或相机设置不同。请将其作为独立角色导入。",
-		"titleFile": "从文件导入",
 		"titlePixelLab": "从 PixelLab 导入",
 		"browseLibrary": "浏览 PixelLab 角色",
 		"standingState": "站立姿势状态",
@@ -1452,8 +1507,8 @@
 			"skippedStanding": "已略过朝向{direction}的“{move}”：角色没有朝向该方向的站立视图。",
 			"semiAlpha": "部分透明的边缘已转换为像素画透明。",
 			"upscaledBase": "站立图像看起来是 {scale}x 放大后的结果。它会保持原样：用它制作的装备会占用更多像素、混用不同的像素尺寸，重新着色也更不干净。如果可以，请导入原始的 1x 图像。",
-			"compressedBase": "站立图看起来经过压缩或重新缩放：许多颜色只出现一次。仍按原样导入，但用它制作的物品更难抠图、换色和对齐。如有可能，请导入原始图像。",
-			"detailsDropped": "部分已保存的角色信息已损坏，已被略过。如有需要，请重新设置其姿势绑定结构。"
+			"detailsDropped": "部分已保存的角色信息已损坏，已被略过。如有需要，请重新设置其姿势绑定结构。",
+			"compressedBase": "站立图看起来经过压缩或重新缩放：许多颜色只出现一次。仍按原样导入，但用它制作的物品更难抠图、换色和对齐。如有可能，请导入原始图像。"
 		},
 		"error": {
 			"detail": "{detail}",
@@ -1506,7 +1561,8 @@
 			"cutPixels": "{path}在 {frame} px 单元格中会丢失 {cut} 个可见像素。请导入更小的角色；图像绝不会被缩放。",
 			"emptyFrame": "{path}是空帧。",
 			"nameLength": "请输入 1–60 个字符的角色名称。"
-		}
+		},
+		"titleFile": "从文件导入"
 	},
 	"incompatible": {
 		"error": {
@@ -1741,7 +1797,7 @@
 			"fixedDrawOrder": "内置绘制顺序保持固定。",
 			"fixedSettings": "内置类别只能显示、隐藏或移动。",
 			"fixedRemoval": "内置类别只能隐藏。",
-			"nonemptyRemoval": "请先移除其装备，再删除该类别。"
+			"nonemptyRemoval": "请先将其中的物品移到回收站。"
 		},
 		"use": {
 			"making": {
@@ -1753,7 +1809,7 @@
 		},
 		"busy": {
 			"hide": "{label}有 {items}。只有空类别可以隐藏{stopped}。",
-			"delete": "{label}有 {items}。只有空类别可以删除{stopped}。",
+			"delete": "{label} 有 {items}。只有没有正在制作内容的分类才能移到回收站{stopped}。",
 			"reattach": "{label}有 {items}。只有空类别可以更改附着方式{stopped}。",
 			"hideWardrobe": "{label}有 {items}。只有空装备栏可以隐藏{stopped}。",
 			"dismissStopped": "；请先在“活动”中放弃已停止的尝试"
@@ -2104,7 +2160,7 @@
 		"noCharge": "PixelLab 报告此次尝试未收费。",
 		"newPaidAttempt": "重新生成会开始新的付费尝试。",
 		"retryFeature": "再次生成此装备",
-		"retryNote": "重新生成会按显示的预估费用，在角色的各朝向上重绘站立设计。满意后，请再单独生成其他动作。进一步的质量重试或修复需要另一次请求。PixelLab 可能对部分调用按美元计费；排队时间不定。",
+		"retryNote": "重新生成会按显示的预估费用，在角色的各朝向上重绘站立设计。满意后，请再单独生成其他动作。进一步的质量重试或修复需要另一次请求。",
 		"slotKey": "{slot} · 色键：{key}",
 		"calls": "调用",
 		"call": "{index}：{cells} 个单元格",
@@ -2268,7 +2324,7 @@
 			"chooseReference": "请选择一个站立参考动作。",
 			"noStandingReference": "{move}并非每个朝向都有站立视图。请选择包含所有视图的动作。",
 			"needsStandingViews": "绑定设置需要已保存的原始站立视图或全部四个基本朝向。请先导入缺少的朝向。",
-			"emptyBodyFrame": "{move}中有空的身体帧。请修正或删除该动作，然后重新设置。"
+			"emptyBodyFrame": "{move} 有空白的身体帧。请修复该动作或将其移到回收站，然后重新设置。"
 		},
 		"newRegistration": "重新登记"
 	},
@@ -2310,7 +2366,7 @@
 			"partialRepairMustKeep": "部分修复必须保持现有帧数。",
 			"selectedEquipmentLongerStanding": "所选装备不再为所有所选视图提供站立设计。重试前请检查装备选择。未请求生成。",
 			"itemFramesChangedGeneration": "装备帧在生成前已更改。请重新打开装备再次检查。",
-			"itemChangedWasRemoved": "准备动作时，此装备已更改或被移除。",
+			"itemChangedWasRemoved": "准备动作时，此物品已更改或被移到回收站。",
 			"characterChangedAnotherTab": "生成动作时，此角色在另一个标签页中已更改。重试前请重新打开它。",
 			"bodyFramesTheirQuality": "这些身体帧或其质量检查自检查以来已更改。未保存任何内容，也未发出请求。请再次检查。",
 			"characterChangedAnotherTab2": "保存动作前，此角色在另一个标签页中已更改。重试前请重新打开它。",
@@ -2688,10 +2744,10 @@
 		"recovery": {
 			"reuse": "复用已完成的身体帧和关节结果。",
 			"checks": {
-				"other": "重试 {count} 项未完成的关节检查 · 预计 {gens} 次生成或 {usd}。未知检查可能已经计费；重试可能会再次计费。PixelLab 的计费和排队时间不定。"
+				"other": "重试 {count} 项未完成的关节检查 · 预计 {gens} 次生成或 {usd}。未知检查可能已经计费；重试可能会再次计费。"
 			},
 			"noRequests": "不会发出新的身体或关节请求。",
-			"items": "所选装备姿势会在身体通过后接续 · 预计额外 {gens} 次生成，可能发生重试和美元计费。"
+			"items": "所选装备姿势会在身体通过后接续 · 预计额外 {gens} 次生成。"
 		},
 		"color": {
 			"pixels": {
@@ -2703,7 +2759,7 @@
 			"match": "在 {frames}中，将 {pixels}匹配到站立调色板。身体形状保持固定；其他颜色不受影响。",
 			"recheck": "重新检查 {count} 个已更改帧 · 预计 {gens} 次生成或 {usd}。",
 			"items": "所选装备姿势会在身体通过后接续 · 预计额外 {gens} 次生成。",
-			"billing": "PixelLab 可能按美元计费；质量重试需额外费用，排队时间不定。如果检查仍然失败，现有身体视图会保留。"
+			"kept": "如果检查仍然失败，现有身体视图会保留。"
 		},
 		"demo": "动作会添加到你的角色上。",
 		"needsSetup": "设置此角色的姿势绑定结构以添加动作。现有图像和图层会保持对齐。",
@@ -2722,7 +2778,6 @@
 		},
 		"changedDuringEdit": "编辑期间此动作已更改。请重新选择它以继续。",
 		"duplicateOption": "{move} 已在动作选项中。请用其他词语开头。",
-		"costNotice": "PixelLab 可能以美元收费。重试和备用方案会产生额外费用。",
 		"templates": "动作模板",
 		"suggestionBuiltIn": "使用此动作内置的动画。",
 		"suggestionDescribed": "PixelLab 会根据你的文本而不是内置动画来生成此动作。",
@@ -2863,7 +2918,7 @@
 		"ideas": "灵感",
 		"colorHint": "颜色提示",
 		"anyColor": "任意",
-		"checksNote": "一致性检查会自动运行。如果检测到问题，你可以选择保留装备或请求付费重试。未经你的请求，不会运行质量重试或修复。PixelLab 可能按美元计费，排队时间不定。",
+		"checksNote": "一致性检查会自动运行。如果检测到问题，你可以选择保留装备或请求付费重试。未经你的请求，不会运行质量重试或修复。",
 		"method": "动画方法",
 		"automatic": "自动（{method}）",
 		"plan": "{calls} 次 PixelLab 调用 · {cells} 帧 · {route}。每个计划批次只运行一次。未通过的检查会等待你查看。",
@@ -2902,8 +2957,8 @@
 		"runningJump": "奔跑跳跃"
 	},
 	"appearance": {
-		"action": "编辑外观…",
-		"title": "编辑外观",
+		"action": "以新外观制作副本…",
+		"title": "编辑后的副本",
 		"choose": "选择编辑方式",
 		"custom": "自定义编辑",
 		"instructions": "你想修改什么？",
@@ -2918,8 +2973,8 @@
 		"characterSource": "使用“{move}”的第一帧。",
 		"characterScope": "新角色从站立视图开始。保存后可添加动作并调整装备。",
 		"itemScope": "来源：{move}的第一帧。保存后可补充其他帧的图像。",
-		"editCharacter": "编辑角色",
-		"editItem": "编辑物品",
+		"editCharacter": "创建新角色",
+		"editItem": "创建新物品",
 		"editCost": "{action} · {cost}",
 		"saveCharacter": "另存为新角色",
 		"saveItem": "另存为新装备",
@@ -2932,7 +2987,8 @@
 		"keptDirections": "此副本会在以下方向保留原始图像：{directions}。",
 		"incomplete": "部分编辑后的视图不可用。请打开活动查看详情，或下载已收到的结果。",
 		"reviewPending": "更改来源前，请先保存或丢弃外观预览。",
-		"discardNotice": "要丢弃预览吗？PixelLab 的费用仍然适用。"
+		"discardNotice": "要丢弃预览吗？PixelLab 的费用仍然适用。",
+		"titleOf": "{name} 的编辑副本"
 	},
 	"stateGeneration": {
 		"continueIntro": "你可以完成从未提交的视角。已完成的视角将保留。",
@@ -3033,11 +3089,11 @@
 		"unavailable": "此动作已不可用。",
 		"keepStanding": "请保留用于创建和扩展装备的站立视图。",
 		"keepOne": "请在此角色上保留至少一个动作。",
-		"demo": "演示动作无法删除。",
-		"resolveDrafts": "删除动作前，请先完成或放弃此角色的装备草稿。",
+		"demo": "演示的动作无法移到回收站",
+		"resolveDrafts": "将动作移到回收站前，请完成或丢弃此角色的物品草稿。",
 		"required": "需要此站立动作才能将现有装备扩展到新动作。",
 		"selectedCharacterChanged": "所选角色已更改。",
-		"concurrentEdit": "删除动作前此角色已更改。请重试。"
+		"concurrentEdit": "动作移到回收站前角色已更改。请重试。"
 	},
 	"characterFacts": {
 		"body": "{measure} 身体",
@@ -3375,7 +3431,9 @@
 			"other": "{n} 次调用价格未知"
 		}
 	},
-	"shortcut": { "control": "Ctrl" },
+	"shortcut": {
+		"control": "Ctrl"
+	},
 	"report": {
 		"action": "报告",
 		"actionLabel": "报告此问题",
@@ -3569,6 +3627,59 @@
 		"clear": "清除搜索",
 		"results": "{total} 项中显示 {count} 项"
 	},
+	"spriteViewer": {
+		"missing": "没有可显示的帧",
+		"direction": "朝向",
+		"previousView": "上一个视图",
+		"previousViewHint": "上一个视图（左方向键）",
+		"nextView": "下一个视图",
+		"nextViewHint": "下一个视图（右方向键）",
+		"pauseHint": "暂停（空格）",
+		"playHint": "播放（空格）"
+	},
+	"imageViewer": {
+		"role": "图片查看器",
+		"keys": "方向键移动，加号和减号缩放，0 适应窗口。",
+		"zoom": "图片缩放",
+		"hint": "滚动滚轮或双指捏合缩放。拖动以移动。",
+		"fit": "适应窗口",
+		"fitHint": "适应窗口（0）",
+		"percent": "实际大小的 {percent}%",
+		"zoomed": "缩放 {percent}%",
+		"missing": "没有可显示的图片"
+	},
+	"characterWindow": {
+		"actions": "角色操作",
+		"open": "打开角色",
+		"frameSection": "画框与方向",
+		"costSection": "费用",
+		"adjustFrameDetail": "更改画框大小或角色在其中的位置。",
+		"directionsDetail": "选择哪些朝向要绘制、哪些镜像其他朝向。",
+		"costEstimateDetail": "估算增加动作、状态和物品的费用。",
+		"frameLocked": "此角色的画框和方向无法更改。"
+	},
+	"clipWindow": {
+		"move": "动作",
+		"state": "状态",
+		"actions": "动作或状态操作",
+		"playOnStage": "在舞台上播放",
+		"showOnStage": "在舞台上显示",
+		"framesSection": "帧与质量",
+		"itemsSection": "物品",
+		"fixFramesDetail": "在绘图软件中编辑 {move} 的每一帧。",
+		"redrawDetail": "按所选朝向重新绘制 {move}，先显示价格。",
+		"captureDetail": "将 {move} 的一帧保存为新状态。",
+		"itemsDetail": "绘制 {move} 仍缺少的已穿戴物品。",
+		"itemsComplete": "所有物品都已绘制。",
+		"itemsUnavailable": "此处无法绘制物品。",
+		"frames": "帧",
+		"length": "时长",
+		"ms": "{ms} 毫秒",
+		"exportId": "导出 ID",
+		"gone": "此动作已不再保存。",
+		"itemDrawn": "已绘制",
+		"itemMissing": "缺少"
+	},
 	"tips": {
 		"customizeTitle": "给演示角色换装",
 		"customizeBody": "试穿装备，或将**演示角色**导出到你的游戏中。无需 PixelLab 密钥。",
@@ -3586,7 +3697,7 @@
 		"addItemTitle": "添加装备",
 		"addItemBody": "在槽位点**+**描述一件物品或添加参考图，PixelLab 会让它贴合你的角色。",
 		"generateItemsTitle": "让装备适配这个动作",
-		"generateItemsBody": "打开这个动作的**{menu} 更多选项**并选择**生成装备**，为装备绘制这个动作的画面。",
+		"generateItemsBody": "打开这个动作的**{menu} 更多选项**，选择**查看和编辑**，再选择**生成装备**，为装备绘制这个动作的画面。",
 		"addMoveTitle": "添加动作",
 		"addMoveBody": "为角色加入动画，例如 Idle、Walk 或 Attack。",
 		"addStateTitle": "添加状态",

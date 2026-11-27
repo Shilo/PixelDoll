@@ -172,7 +172,7 @@
 				aria-hidden="true"
 			/>{:else}{piece}{/if}{/each}{/snippet}
 
-<div class="tip-layer" {@attach inLayer}>
+<div class="tip-layer" role="presentation" onclick={dismiss} {@attach inLayer}>
 	<p class="sr" role="status">{announce && announced ? `${title}. ${plain}` : ''}</p>
 	<!-- Not a popover: the app reads an open popover as an open menu and pauses stage keys and zoom for it. -->
 	<section
@@ -200,8 +200,7 @@
 				onkeydown={closeKeys}
 				data-variant="quiet"
 				aria-label={t('tips.close')}
-				title={t('tips.close')}
-				onclick={dismiss}><X size={16} aria-hidden="true" /></button
+				title={t('tips.close')}><X size={16} aria-hidden="true" /></button
 			>
 		</div>
 	</section>
@@ -221,6 +220,10 @@
 		inset: 0 auto auto 0;
 		width: min(288px, calc(100vw - 16px));
 		margin: 0;
+		cursor: pointer;
+	}
+	.tip > :global(.bu-popover-arrow) {
+		pointer-events: visiblePainted;
 	}
 	.tip:not(:global([data-positioned])),
 	.tip:global([data-away]) {
