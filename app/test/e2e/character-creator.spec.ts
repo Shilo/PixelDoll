@@ -321,6 +321,13 @@ test.describe('creation safety', () => {
 		await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toBeVisible(
 			{ timeout: 120_000 }
 		);
+		await sheet
+			.getByRole('img', { name: /^Keep my outfit/ })
+			.first()
+			.click({ button: 'right' });
+		const actions = sheet.getByRole('menu', { name: 'Actions for Keep my outfit', exact: true });
+		await expect(actions.getByRole('menuitem', { name: 'Rename…', exact: true })).toBeVisible();
+		await page.keyboard.press('Escape');
 		await sheet.getByRole('button', { name: 'Start dressing up', exact: true }).click();
 		const first = await page.evaluate(async () => {
 			const modulePath = '/src/lib/store/db.ts';

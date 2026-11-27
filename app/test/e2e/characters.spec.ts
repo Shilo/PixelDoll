@@ -664,6 +664,13 @@ test('character actions download and delete an unopened character without select
 	const menu = page.getByRole('menu', { name: 'Actions for Disposable hero', exact: true });
 	await expect(menu).toBeVisible();
 	await expect(selected).toContainText('Adventurer');
+	const actions = await menu.getByRole('menuitem').allTextContents();
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'Select Disposable hero', exact: true }).click({
+		button: 'right'
+	});
+	await expect(menu.getByRole('menuitem')).toHaveText(actions);
+	await expect(selected).toContainText('Adventurer');
 	const downloaded = page.waitForEvent('download');
 	await menu.getByRole('menuitem', { name: 'Download ZIP', exact: true }).click();
 	const download = await downloaded;
@@ -693,6 +700,35 @@ test('character actions download and delete an unopened character without select
 			return !!(await (await import(path)).get('projects', id));
 		}, target)
 	).toBe(false);
+
+	const demoMenu = page.getByRole('menu', { name: 'Actions for Adventurer (demo)', exact: true });
+	await page.locator('.selected-name').click({ button: 'right' });
+	await expect(demoMenu.getByRole('menuitem', { name: 'Make editable copy' })).toBeVisible();
+	const demoActions = await demoMenu.getByRole('menuitem').allTextContents();
+	await page.keyboard.press('Escape');
+	await page.locator('.customize-action').click();
+	await page.locator('.name-menu').click({ button: 'right' });
+	await expect(demoMenu.getByRole('menuitem')).toHaveText(demoActions);
+	await page.keyboard.press('Escape');
+	const stage = page.locator('.world-stage');
+	for (const view of ['Preview', 'Top-down', 'Side-scroller']) {
+		await page.getByRole('button', { name: view, exact: true }).click();
+		await expect(stage).toHaveAttribute('data-presentation', /still|animation/);
+		const hit = await stage.locator('.world-actors').evaluate((canvas: HTMLCanvasElement) => {
+			const { width, height } = canvas;
+			const pixels = canvas.getContext('2d')!.getImageData(0, 0, width, height).data;
+			for (let y = 0; y < height; y++) {
+				for (let x = 0; x < width; x++) {
+					if (pixels[(y * width + x) * 4 + 3] === 255)
+						return { x: (x + 0.5) / devicePixelRatio, y: (y + 0.5) / devicePixelRatio };
+				}
+			}
+			throw new Error('No character pixels on the stage');
+		});
+		await page.mouse.click(hit.x, hit.y, { button: 'right' });
+		await expect(demoMenu.getByRole('menuitem')).toHaveText(demoActions);
+		await page.keyboard.press('Escape');
+	}
 });
 
 test('character rows keep their ⋮ out of sight until hover or keyboard focus on desktop', async ({
