@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fetchReleaseIndex } from '../../src/lib/releases.ts';
 
 const current = {
 	build: '00000000-0000-4000-8000-000000000001',
@@ -116,7 +117,7 @@ async function setup() {
 	};
 	const { getRegistration, register } = serviceWorker;
 	const fetch = vi.fn(
-		async () =>
+		async (_input: RequestInfo | URL) =>
 			new Response(JSON.stringify(published), { headers: { 'content-type': 'application/json' } })
 	);
 	const matchMedia = () => ({
@@ -197,6 +198,23 @@ const never = () => new Promise<never>(() => {});
 
 describe('PWA update schedule', () => {
 	const hour = 3_600_000;
+
+	it('keeps published notes separate from app update discovery under the same base', async () => {
+		const app = await setup();
+		app.fetch.mockImplementation(async (input) =>
+			String(input) === scope + 'releases/index.json'
+				? Response.json({ releases: [] })
+				: Response.json(next)
+		);
+		app.start();
+		expect(await fetchReleaseIndex()).toEqual([]);
+		await settle();
+		expect(get(app.client.pwa)).toMatchObject({ available: next, ready: true });
+		expect(app.fetch.mock.calls.map(([url]) => String(url)).sort()).toEqual([
+			expect.stringMatching(/^https:\/\/example\.test\/app\/release\.json\?check=\d+$/),
+			scope + 'releases/index.json'
+		]);
+	});
 
 	it('checks immediately on launch, then discovers a deployment at one hour without reloading', async () => {
 		const app = await setup();

@@ -1,4 +1,20 @@
 {
+	"releaseNews": {
+		"title": "新着情報",
+		"unseen": "未読のアップデート",
+		"fixed": "修正",
+		"allChanges": "すべての変更",
+		"allChangesCount": {
+			"other": "すべての変更（{n}件）"
+		},
+		"new": "新機能",
+		"improved": "改善",
+		"pastUpdates": "過去のアップデート",
+		"loadError": "リリースノートを読み込めませんでした。",
+		"empty": "公開されたアップデートはまだありません。",
+		"notice": "PixelDollの新着情報",
+		"open": "開く"
+	},
 	"recentlyDeleted": {
 		"empty": "ゴミ箱は空です。ゴミ箱に移動したキャラクター、アイテム、カテゴリ、モーション、ステートは 最大 30 日間残ります。",
 		"kept": "最大 30 日間、最大 50 件まで保管されます。",

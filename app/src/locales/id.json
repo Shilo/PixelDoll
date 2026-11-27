@@ -1,4 +1,20 @@
 {
+	"releaseNews": {
+		"title": "Yang baru",
+		"unseen": "Pembaruan belum dibaca",
+		"fixed": "Perbaikan",
+		"allChanges": "Semua perubahan",
+		"allChangesCount": {
+			"other": "Semua perubahan ({n})"
+		},
+		"new": "Fitur baru",
+		"improved": "Penyempurnaan",
+		"pastUpdates": "Pembaruan sebelumnya",
+		"loadError": "Catatan rilis tidak dapat dimuat.",
+		"empty": "Belum ada pembaruan yang diterbitkan.",
+		"notice": "Yang baru di PixelDoll",
+		"open": "Buka"
+	},
 	"recentlyDeleted": {
 		"empty": "Tempat sampah kosong. Karakter, item, kategori, gerakan, dan status yang Anda pindahkan ke sini disimpan hingga 30 hari.",
 		"kept": "Disimpan hingga 30 hari, maksimal 50 entri.",

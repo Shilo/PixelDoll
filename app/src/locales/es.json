@@ -1,4 +1,21 @@
 {
+	"releaseNews": {
+		"title": "Novedades",
+		"unseen": "Actualización sin leer",
+		"fixed": "Correcciones",
+		"allChanges": "Todos los cambios",
+		"allChangesCount": {
+			"one": "Todos los cambios ({n})",
+			"other": "Todos los cambios ({n})"
+		},
+		"new": "Nuevas funciones",
+		"improved": "Mejoras",
+		"pastUpdates": "Actualizaciones anteriores",
+		"loadError": "No se pudieron cargar las notas de la versión.",
+		"empty": "Aún no se ha publicado ninguna actualización.",
+		"notice": "Novedades de PixelDoll",
+		"open": "Abrir"
+	},
 	"recentlyDeleted": {
 		"empty": "Aquí no hay nada. Los personajes, objetos, categorías, movimientos y estados que muevas a la papelera se guardan hasta 30 días.",
 		"kept": "Se guarda hasta 30 días, hasta 50 entradas.",

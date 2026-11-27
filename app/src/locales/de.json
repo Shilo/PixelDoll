@@ -1,4 +1,21 @@
 {
+	"releaseNews": {
+		"title": "Was ist neu?",
+		"unseen": "Ungelesenes Update",
+		"fixed": "Behoben",
+		"allChanges": "Alle Änderungen",
+		"allChangesCount": {
+			"one": "Alle Änderungen ({n})",
+			"other": "Alle Änderungen ({n})"
+		},
+		"new": "Neu",
+		"improved": "Verbessert",
+		"pastUpdates": "Frühere Updates",
+		"loadError": "Die Versionshinweise konnten nicht geladen werden.",
+		"empty": "Es wurden noch keine Updates veröffentlicht.",
+		"notice": "Was ist neu in PixelDoll?",
+		"open": "Öffnen"
+	},
 	"recentlyDeleted": {
 		"empty": "Der Papierkorb ist leer. Charaktere, Gegenstände, Kategorien, Bewegungen und Zustände, die du in den Papierkorb verschiebst, bleiben bis zu 30 Tage lang hier.",
 		"kept": "bis zu 30 Tage lang aufbewahrt, bis zu 50 Einträge.",

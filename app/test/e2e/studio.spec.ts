@@ -30,6 +30,144 @@ test.beforeEach(async ({ context }) => {
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort()); // stay offline by default; a test's own route overrides this
 });
 
+test.describe("What's new", () => {
+	test.use({ serviceWorkers: 'block' });
+
+	const previous = {
+		version: '1.4.11',
+		date: '2026-11-13',
+		headline: { en: 'Dress the demo', de: 'Die Demo einkleiden' },
+		features: 1
+	};
+	const latest = {
+		version: '1.4.12',
+		date: '2026-11-27',
+		headline: { en: 'A fresh look', de: 'Ein neuer Look' },
+		features: 2
+	};
+	const sha = 'a'.repeat(40);
+	async function routeReleases(page: Page, entries: () => (typeof latest)[]) {
+		const banner = await encodePngBytes({
+			w: 2,
+			h: 2,
+			data: Uint8ClampedArray.from([
+				194, 154, 94, 255, 26, 24, 22, 255, 26, 24, 22, 255, 194, 154, 94, 255
+			])
+		});
+		const requested: string[] = [];
+		await page.route('**/releases/**', async (route) => {
+			const path = new URL(route.request().url()).pathname.split('/releases/')[1]!;
+			requested.push(path);
+			if (path === 'index.json') return route.fulfill({ json: { releases: entries() } });
+			const [version, file] = path.split('/');
+			const entry = [latest, previous].find((release) => release.version === version);
+			if (!entry) return route.fulfill({ status: 404 });
+			if (file === 'banner.png')
+				return route.fulfill({ body: Buffer.from(banner), contentType: 'image/png' });
+			if (file === 'changes.json')
+				return route.fulfill({
+					json: { total: 1, groups: [{ kind: 'new', items: [{ text: 'Add color ramps', sha }] }] }
+				});
+			if (file === 'notes.en.json' || file === 'notes.de.json') {
+				const de = file === 'notes.de.json';
+				return route.fulfill({
+					json: {
+						headline: de ? entry.headline.de : entry.headline.en,
+						intro: de ? 'Färbe deine Ausrüstung um.' : 'Recolor your gear.',
+						joke: de ? '' : 'Patch notes for a patchwork outfit.',
+						highlights: [
+							{
+								title: de ? 'Farbrampen' : 'Color ramps',
+								text: de ? 'Ändere die Farben.' : 'Change the colors.'
+							}
+						],
+						fixes: []
+					}
+				});
+			}
+			return route.fulfill({ status: 404 });
+		});
+		return requested;
+	}
+	const seen = (page: Page) => page.evaluate(() => localStorage.getItem('pixeldoll.seenRelease'));
+	const closePreview = (page: Page) =>
+		page.locator('.studio-toast').getByRole('button', { name: 'Dismiss', exact: true }).click();
+
+	test('acknowledges the first visit and opens an unseen feature release once on return', async ({
+		page
+	}) => {
+		let releases = [previous];
+		const requests = await routeReleases(page, () => releases);
+		await page.addInitScript(() => {
+			localStorage.setItem('pixeldoll.tips', '["customize","new-character"]');
+		});
+		const sheet = page.getByRole('dialog', { name: "What's new" });
+		await page.goto('/');
+		await expect.poll(() => seen(page)).toBe(previous.version);
+		await expect(sheet).toBeHidden();
+		expect(requests).toEqual(['index.json']);
+
+		releases = [latest, previous];
+		await page.reload();
+		await closePreview(page);
+		await expect(sheet.getByRole('heading', { name: 'A fresh look' })).toBeVisible();
+		await expect.poll(() => seen(page)).toBe(latest.version);
+		await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+
+		const notes = `${latest.version}/notes.en.json`;
+		await page.reload();
+		await closePreview(page);
+		await expect.poll(() => requests.filter((path) => path === 'index.json').length).toBe(3);
+		await expect(sheet).toBeHidden();
+		expect(requests.filter((path) => path === notes)).toHaveLength(1);
+	});
+
+	test('offers a dot for a fix-only release and opens lazy notes and commit links from About', async ({
+		page
+	}) => {
+		const requests = await routeReleases(page, () => [{ ...latest, features: 0 }, previous]);
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.addInitScript(() => {
+			localStorage.setItem('pixeldoll.tips', '["customize","new-character"]');
+			localStorage.setItem('pixeldoll.visited', '1');
+			localStorage.setItem('pixeldoll.theme', 'light');
+		});
+		await page.goto('/');
+		await closePreview(page);
+		const more = page.getByRole('button', { name: 'More options', exact: true });
+		await more.click();
+		await page.getByRole('button', { name: /^Help/ }).click();
+		const newsInHelp = page.getByRole('button', { name: "What's new Unread update" });
+		await expect(newsInHelp).toBeVisible();
+		expect(requests).toEqual(['index.json']);
+		await page.keyboard.press('Escape');
+		await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+		const settings = page.getByRole('dialog', { name: 'Settings' });
+		await settings.getByRole('button', { name: 'About', exact: true }).click();
+		await settings.getByRole('button', { name: "What's new Unread update" }).click();
+		const sheet = page.getByRole('dialog', { name: "What's new" });
+		await expect(sheet.getByRole('heading', { name: 'A fresh look' })).toBeVisible();
+		await expect(sheet.locator('img[alt=""]')).toHaveJSProperty('naturalWidth', 2);
+		await expect.poll(() => seen(page)).toBe(latest.version);
+		expect(requests).not.toContain(`${latest.version}/changes.json`);
+		expect(requests).not.toContain(`${previous.version}/notes.en.json`);
+		await sheet.getByText('All changes', { exact: true }).click();
+		await expect(sheet.getByText('All changes (1)', { exact: true })).toBeVisible();
+		const commit = sheet.getByRole('link', { name: 'Add color ramps' });
+		await expect(commit).toHaveAttribute(
+			'href',
+			`https://github.com/Shilo/PixelDoll/commit/${sha}`
+		);
+		await expect(commit).toHaveAttribute('target', '_blank');
+		await expect(commit).toHaveAttribute('rel', 'noopener noreferrer');
+		await page.setViewportSize({ width: 844, height: 390 });
+		await sheet.locator('summary').filter({ hasText: 'Dress the demo' }).click();
+		await expect(sheet.getByRole('heading', { name: 'Dress the demo' })).toBeVisible();
+		await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+		await expect(settings.getByRole('button', { name: "What's new", exact: true })).toBeVisible();
+	});
+});
+
 test('Audio settings start after a gesture and preserve independent levels and mutes', async ({
 	page,
 	baseURL

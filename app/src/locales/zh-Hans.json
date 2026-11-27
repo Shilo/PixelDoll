@@ -1,4 +1,20 @@
 {
+	"releaseNews": {
+		"title": "更新内容",
+		"unseen": "未读更新",
+		"fixed": "修复",
+		"allChanges": "所有变更",
+		"allChangesCount": {
+			"other": "所有变更（{n} 项）"
+		},
+		"new": "新增",
+		"improved": "改进",
+		"pastUpdates": "以往更新",
+		"loadError": "无法加载版本说明。",
+		"empty": "尚未发布任何更新。",
+		"notice": "PixelDoll 更新内容",
+		"open": "打开"
+	},
 	"recentlyDeleted": {
 		"empty": "回收站是空的。你移到回收站的角色、物品、分类、动作和状态会保留 最多 30 天。",
 		"kept": "保留 最多 30 天，最多 50 条。",

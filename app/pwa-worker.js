@@ -5,6 +5,7 @@ const CACHE = PREFIX + RELEASE.build;
 const PARTIAL_PREFIX = `pixeldoll-partial:${SCOPE}:`;
 const PARTIAL = PARTIAL_PREFIX + RELEASE.build;
 const META = `pixeldoll-meta:${SCOPE}`;
+const RELEASE_NOTES = `pixeldoll-release-notes:${SCOPE}`;
 const ACTIVE = new URL('.pwa-meta/active', SCOPE).href;
 const LANGUAGE = new URL('.pwa-meta/language', SCOPE).href;
 const PENDING = new URL('.pwa-meta/pending/', SCOPE).href;
@@ -532,6 +533,35 @@ async function staticResponse(request) {
 	return fetch(request);
 }
 
+async function releaseNotesResponse(request, isIndex) {
+	const cached = () =>
+		caches.match(request, { cacheName: RELEASE_NOTES }).catch((error) => {
+			console.warn('PixelDoll could not read cached release notes:', error);
+		});
+	if (!isIndex) {
+		const saved = await cached();
+		if (saved) return saved;
+	}
+	let response;
+	try {
+		response = await fetch(request, isIndex ? { cache: 'no-store' } : undefined);
+	} catch (error) {
+		if (isIndex) {
+			const saved = await cached();
+			if (saved) return saved;
+		}
+		throw error;
+	}
+	if (response.ok && !response.headers.get('content-type')?.includes('text/html')) {
+		try {
+			await (await caches.open(RELEASE_NOTES)).put(request, response.clone());
+		} catch (error) {
+			console.warn('PixelDoll could not cache release notes:', error);
+		}
+	}
+	return response;
+}
+
 self.addEventListener('fetch', (event) => {
 	const request = event.request,
 		url = new URL(request.url);
@@ -557,6 +587,8 @@ self.addEventListener('fetch', (event) => {
 				}
 			})()
 		);
+	} else if (path.startsWith('releases/')) {
+		event.respondWith(releaseNotesResponse(request, path === 'releases/index.json'));
 	} else if (path.startsWith('assets/') || url.searchParams.has('pd-build')) {
 		event.respondWith(staticResponse(request));
 	}
