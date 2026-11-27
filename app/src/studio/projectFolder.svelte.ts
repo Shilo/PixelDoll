@@ -1,9 +1,7 @@
 // Project folder publishing for the open character: link a game folder once, then PixelDoll writes the export's files
 // into it and keeps them current after each change. Strictly additive: where the browser cannot write folders this does
 // nothing, and every failure becomes a status (and, in the background, at most one notice), never a thrown error.
-import { buildExport } from '../lib/export/build.ts';
-import { ACTION_LAYER_ENGINES, runtimeRevision } from '../lib/export/export.ts';
-import { walkMoves } from '../lib/export/rpg-maker.ts';
+import { lazy } from '../lib/lazy.ts';
 import { message, sameMessage, type Message } from '../lib/message.ts';
 import {
 	byScope,
@@ -297,6 +295,9 @@ const fingerprint = (
 		)
 	);
 
+/** The export code, loaded on first publish: the Studio starts without it, as Download does. */
+const exportModule = () => lazy(() => import('../lib/export/export.ts'));
+
 /** The export's files in the folder layout, every path relative to the picked folder: the shared runtime first (so
  *  nothing naming it lands before it), then the character's files. Null when no export can be built. `at` gives the
  *  same files with another export time: only the text that carries it changes, so the images are never encoded again.
@@ -314,6 +315,12 @@ async function buildFiles(
 	exportedAt: string
 ): Promise<BuiltFiles | null> {
 	const rpg = link.engine === 'rpg-maker' || link.engine === 'rpg-maker-xp';
+	const [{ buildExport }, { ACTION_LAYER_ENGINES, runtimeRevision }, { walkMoves }] =
+		await Promise.all([
+			lazy(() => import('../lib/export/build.ts')),
+			exportModule(),
+			lazy(() => import('../lib/export/rpg-maker.ts'))
+		]);
 	const result = await buildExport(input.project, {
 		engine: link.engine,
 		baked: settings.dressedCharacterSheets ?? true,
@@ -564,7 +571,7 @@ async function publish(link: FolderLink, request: Request) {
 		const runtime = hasRuntime(link.engine)
 			? {
 					key: runtimeKey(link.destinationId, link.engine),
-					revision: runtimeRevision(link.engine) ?? 0
+					revision: (await exportModule()).runtimeRevision(link.engine) ?? 0
 				}
 			: null;
 		if (runtime) {

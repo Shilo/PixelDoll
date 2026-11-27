@@ -1243,6 +1243,7 @@
 		},
 		"settings": {
 			"loadInvalid": "Kayıtlı dışa aktarım ayarları okunamadı.",
+			"resetRequired": "Kayıtlı dışa aktarım ayarları okunamadı. “Dışa aktarın” ekranını açın, ardından “Dışa aktarım ayarlarını sıfırlayın” seçeneğini seçin.",
 			"loadFailed": "Dışa aktarım ayarları yüklenemedi. Dışa aktarım ekranını yeniden açmayı deneyin.",
 			"saveFailed": "Dışa aktarım ayarları kaydedilemedi. Tekrar deneyin.",
 			"resetHint": "Yalnızca dışa aktarım tercihleri varsayılan değerlerine döner. Karakterleriniz ve kıyafetleriniz korunur.",

@@ -103,11 +103,16 @@ function savedMoveKind(anim: RigAnimation | undefined): 'built-in' | 'custom' | 
 /** Opens the report preview. Without an area, the problem belongs to the sheet that is open now. */
 export function reportProblem(problem: Problem) {
 	const area = problem.area ?? areaOf(ui.sheet);
+	// A download can name a character other than the open one, and its failure says nothing about an in-flight move, so only
+	// character facts supplied with the download itself are kept.
+	const character =
+		problem.facts?.character ??
+		(problem.facts?.download === undefined ? characterFacts(area) : undefined);
 	reportDialog.report = buildReport(
 		{
 			...problem,
 			area,
-			facts: { ...problem.facts, character: problem.facts?.character ?? characterFacts(area) }
+			facts: { ...problem.facts, character }
 		},
 		{
 			env: browserEnvironment(getLocale() || 'en', PRE_RELEASE),

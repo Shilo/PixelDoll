@@ -17,7 +17,8 @@ import {
 	test,
 	type BrowserContext,
 	type Locator,
-	type Page
+	type Page,
+	type Request
 } from '@playwright/test';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -2190,11 +2191,27 @@ for (const corruption of ['unsupported-format', 'sparse-array'] as const)
 					key,
 					corruption === 'sparse-array'
 						? { engine: 'godot', dressedCharacterSheets: true, playOnce: Array(1) }
-						: { engine: 'unsupported', dressedCharacterSheets: true, playOnce: [] }
+						: { engine: 'rpgmaker', dressedCharacterSheets: true, playOnce: [] }
 				);
 			},
 			{ key: EXPORT_SETTINGS_KEY, corruption }
 		);
+		const actions = page.locator('#project-menu').getByRole('button', {
+				name: 'More actions for Export settings test',
+				exact: true
+			}),
+			downloadZip = page.getByRole('menuitem', { name: 'Download ZIP', exact: true }),
+			// One variant covers the quick ZIP entry point; both share the same reader and error.
+			quick = corruption === 'unsupported-format';
+		if (quick) {
+			await page.locator('.project-btn').click();
+			await actions.click();
+			await downloadZip.click();
+			await expect(page.locator('.toast')).toContainText(
+				'Saved export settings could not be read. Open Export, then choose Reset export settings.'
+			);
+			await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click();
+		}
 		await page.getByRole('button', { name: 'Export', exact: true }).click();
 		const dialog = page.getByRole('dialog');
 		await expect(dialog.getByRole('alert')).toContainText('Saved export settings');
@@ -2238,6 +2255,12 @@ for (const corruption of ['unsupported-format', 'sparse-array'] as const)
 			})
 		).toEqual(before);
 		await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+		if (quick) {
+			await page.locator('.project-btn').click();
+			await actions.click();
+			const [download] = await Promise.all([page.waitForEvent('download'), downloadZip.click()]);
+			expect(download.suggestedFilename()).toMatch(/\.pixeldoll\.zip$/);
+		}
 		await page.evaluate(() => location.reload());
 		await enterStudio(page);
 		await page.getByRole('button', { name: 'Export', exact: true }).click();
@@ -2346,7 +2369,7 @@ test('invalid move names still allow artwork recovery and storage outages do not
 	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 });
 
-test('quick download recovers working images from an unopened character with a missing image', async ({
+test('quick download reports a missing module, then recovers working images after reload', async ({
 	page
 }, info) => {
 	await savedExport(
@@ -2365,11 +2388,33 @@ test('quick download recovers working images from an unopened character with a m
 	});
 	await page.reload();
 	await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click();
-	await page
-		.getByRole('button', { name: 'More actions for Export settings test', exact: true })
-		.click();
+	const actions = page.getByRole('button', {
+		name: 'More actions for Export settings test',
+		exact: true
+	});
+	const downloadZip = page.getByRole('menuitem', { name: 'Download ZIP', exact: true });
+	const buildModule = '**/src/lib/export/build.ts*';
+	await page.route(buildModule, (route) => route.abort());
+	await actions.click();
+	await downloadZip.click();
+	const notice = page.locator('.toast');
+	await expect(notice).toContainText('Part of PixelDoll could not load. Reload to try again.');
+	await notice.getByRole('button', { name: 'Report this problem', exact: true }).click();
+	const report = page.getByRole('dialog', { name: 'Report this problem', exact: true });
+	const href = await report.getByRole('link', { name: 'Open on GitHub' }).getAttribute('href');
+	const fields = new URL(href!).searchParams;
+	expect(fields.get('details')).toContain('Download: Character ZIP');
+	expect(fields.get('details')).toContain('Message key: common.loadFailed');
+	expect(fields.get('details')).toContain('Service worker: not controlling page');
+	expect(fields.get('details')).not.toContain('Character:');
+	expect([...fields.values()].join('\n')).not.toContain('Export settings test');
+
+	await page.unroute(buildModule);
+	await page.reload();
+	await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click();
+	await actions.click();
 	const downloaded = page.waitForEvent('download');
-	await page.getByRole('menuitem', { name: 'Download ZIP', exact: true }).click();
+	await downloadZip.click();
 	const download = await downloaded;
 	expect(download.suggestedFilename()).toMatch(
 		/^export_settings_test_[a-f0-9]{12}-recovered-artwork\.zip$/
@@ -4332,4 +4377,51 @@ test('a project folder never replaces files changed outside PixelDoll without ap
 	// Files PixelDoll never exported, such as engine sidecars and the game's own notes, are never touched.
 	expect(await folderText(page, at('notes.txt'))).toBe('game notes');
 	expect(await folderText(page, at('manifest.json.import'))).toBe('engine sidecar');
+});
+
+test.describe('quick ZIP after a deploy', () => {
+	// A first visit has no service worker yet; only the startup prefetch keeps the on-demand code.
+	test.use({ serviceWorkers: 'block' });
+
+	test('the first quick ZIP still downloads when the build files disappear after startup', async ({
+		page,
+		context
+	}, testInfo) => {
+		const origin = new URL(testInfo.project.use.baseURL!).origin;
+		const isCode = (url: URL) => url.origin === origin && url.pathname.endsWith('.js');
+		await context.route('https://api.pixellab.ai/**', (route) => route.abort());
+		// ExportSheet starts in the same prefetch batch as the ZIP loader. Let that batch's code requests finish.
+		const open = new Set<Request>();
+		let exportSheet = false;
+		page.on('request', (request) => {
+			if (isCode(new URL(request.url()))) open.add(request);
+		});
+		page.on('requestfinished', (request) => {
+			open.delete(request);
+			if (/\/ExportSheet-[\w-]+\.js$/.test(request.url())) exportSheet = true;
+		});
+		page.on('requestfailed', (request) => open.delete(request));
+		await context.addInitScript(() => {
+			localStorage.setItem('pixeldoll.agentKey', 'off');
+			localStorage.setItem(
+				'pixeldoll.tips',
+				'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+			);
+			localStorage.setItem('pixeldoll.visited', '1');
+		});
+		await page.goto(testInfo.project.use.baseURL! + '/#/');
+		await expect.poll(() => exportSheet && open.size === 0).toBe(true);
+		// The deploy replaced every code file, so anything not fetched yet is gone.
+		await context.route(isCode, (route) => route.abort());
+		await page.locator('.cast-library .character-row').first().click({ button: 'right' });
+		const downloaded = page.waitForEvent('download');
+		await page
+			.getByRole('menu')
+			.getByRole('menuitem', { name: 'Download ZIP', exact: true })
+			.click();
+		await expect(page.locator('.toast')).toContainText(/download started/i);
+		const entries = await unzip(new Uint8Array(await readFile((await (await downloaded).path())!)));
+		expect(entries.has('project.json')).toBe(true);
+		expect([...entries.keys()].some((name) => name.endsWith('.png'))).toBe(true);
+	});
 });

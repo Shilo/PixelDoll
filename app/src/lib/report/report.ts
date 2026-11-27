@@ -24,6 +24,10 @@ export interface CharacterFacts {
 
 /** Facts a failure surface may add. Each is checked again here: a value that does not fit its shape is dropped. */
 export interface ProblemFacts {
+	/** The Studio download action, independent of the name of the file or character. */
+	download?: DownloadAction;
+	/** Whether a service worker controlled the page when a download error was caught. */
+	serviceWorkerControlled?: boolean;
 	/** HTTP status of the failed PixelLab request. */
 	status?: number;
 	method?: string;
@@ -43,6 +47,17 @@ export interface ProblemFacts {
 	/** The open character and failing move, reduced to fixed facts. */
 	character?: CharacterFacts;
 }
+
+const DOWNLOAD_LABELS = {
+	character: 'Character ZIP',
+	item: 'Item ZIP',
+	outfit: 'Outfit ZIP',
+	move: 'Move or State ZIP',
+	frames: 'Frame sheets',
+	originals: 'Original generations',
+	paid: 'Paid results'
+} as const;
+export type DownloadAction = keyof typeof DOWNLOAD_LABELS;
 
 export interface Problem {
 	/** The failing area in English, such as "Add a move"; the Studio fills in the current one. */
@@ -432,6 +447,20 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 	const lines: [string, string | number | undefined][] = [
 		['Area', area],
 		['Kind', kind],
+		[
+			'Download',
+			typeof facts.download === 'string' && Object.hasOwn(DOWNLOAD_LABELS, facts.download)
+				? DOWNLOAD_LABELS[facts.download]
+				: undefined
+		],
+		[
+			'Service worker',
+			typeof facts.serviceWorkerControlled === 'boolean'
+				? facts.serviceWorkerControlled
+					? 'controlling page'
+					: 'not controlling page'
+				: undefined
+		],
 		['Character', characterFacts(facts.character, area)],
 		// The message itself is already the problem text; a plain "Error" name says nothing more.
 		['Message key', english && shown?.key],
