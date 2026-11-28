@@ -495,7 +495,7 @@
 	},
 	"itemPane": {
 		"movesSection": "动作与状态",
-		"newVersionDetail": "为此角色重新绘制{name}，以便补上缺少的动作。",
+		"newVersionDetail": "重新绘制{name}，先显示价格。新版本会替换它。",
 		"outfitSection": "套装",
 		"technicalDetails": "技术详情",
 		"openSprite": "放大{title}",
@@ -811,8 +811,12 @@
 		"titleBackgroundCheckerPlain": "背景（棋盘格/纯色）"
 	},
 	"stageNote": {
-		"missingFrames": "{names}需要{move}的帧",
-		"missingFrameViews": "{names}需要朝向{direction}的{move}帧",
+		"missingFrames": {
+			"other": "{names}需要{move}的帧"
+		},
+		"missingFrameViews": {
+			"other": "{names}需要朝向{direction}的{move}帧"
+		},
 		"making": "正在制作…",
 		"makeMissingViews": "补做缺失朝向",
 		"estimate": {

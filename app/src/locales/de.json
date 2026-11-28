@@ -504,7 +504,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Bewegungen und Zustände",
-		"newVersionDetail": "Zeichnet {name} für diese Figur neu, damit die fehlenden Bewegungen gefüllt werden können.",
+		"newVersionDetail": "Zeichnet {name} neu, mit Preis vorab. Die neue Version ersetzt sie.",
 		"outfitSection": "Outfit",
 		"technicalDetails": "Technische Details",
 		"openSprite": "{title} vergrößern",
@@ -833,8 +833,14 @@
 		"titleBackgroundCheckerPlain": "Hintergrund (Schachbrett/einfarbig)"
 	},
 	"stageNote": {
-		"missingFrames": "Für {names} fehlen Frames in {move}",
-		"missingFrameViews": "Für {names} fehlen Frames in {move} mit Blickrichtung {direction}",
+		"missingFrames": {
+			"one": "Für {names} fehlen Frames in {move}",
+			"other": "Für {names} fehlen Frames in {move}"
+		},
+		"missingFrameViews": {
+			"one": "Für {names} fehlen Frames in {move} mit Blickrichtung {direction}",
+			"other": "Für {names} fehlen Frames in {move} mit Blickrichtung {direction}"
+		},
 		"making": "Wird erstellt…",
 		"makeMissingViews": "Fehlende Ansichten erstellen",
 		"estimate": {

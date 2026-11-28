@@ -495,7 +495,7 @@
 	},
 	"itemPane": {
 		"movesSection": "동작 및 상태",
-		"newVersionDetail": "이 캐릭터용으로 {name}을(를) 다시 그려 빠진 동작을 채울 수 있게 해요.",
+		"newVersionDetail": "{name}을(를) 다시 그려요. 가격을 먼저 보여 주고, 새 버전이 대체해요.",
 		"outfitSection": "코디",
 		"technicalDetails": "기술 세부 정보",
 		"openSprite": "{title} 확대",
@@ -811,8 +811,12 @@
 		"titleBackgroundCheckerPlain": "배경(격자무늬 / 단색)"
 	},
 	"stageNote": {
-		"missingFrames": "{names}: {move} 프레임이 필요해요",
-		"missingFrameViews": "{names}: {move} 동작의 {direction} 방향 프레임이 필요해요",
+		"missingFrames": {
+			"other": "{names}: {move} 프레임이 필요해요"
+		},
+		"missingFrameViews": {
+			"other": "{names}: {move} 동작의 {direction} 방향 프레임이 필요해요"
+		},
 		"making": "만드는 중…",
 		"makeMissingViews": "빠진 방향 만들기",
 		"estimate": {

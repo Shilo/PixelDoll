@@ -504,7 +504,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Mouvements et états",
-		"newVersionDetail": "Redessine {name} pour ce personnage, afin de compléter ses mouvements manquants.",
+		"newVersionDetail": "Redessine {name}, prix affiché d’abord. La nouvelle version le remplace.",
 		"outfitSection": "Tenue",
 		"technicalDetails": "Détails techniques",
 		"openSprite": "Agrandir {title}",
@@ -833,8 +833,14 @@
 		"titleBackgroundCheckerPlain": "Arrière-plan (damier / uni)"
 	},
 	"stageNote": {
-		"missingFrames": "{names} : images manquantes pour {move}",
-		"missingFrameViews": "{names} : images manquantes pour {move} (direction : {direction})",
+		"missingFrames": {
+			"one": "{names} : images manquantes pour {move}",
+			"other": "{names} : images manquantes pour {move}"
+		},
+		"missingFrameViews": {
+			"one": "{names} : images manquantes pour {move} (direction : {direction})",
+			"other": "{names} : images manquantes pour {move} (direction : {direction})"
+		},
 		"making": "Création…",
 		"makeMissingViews": "Générer les vues manquantes",
 		"estimate": {

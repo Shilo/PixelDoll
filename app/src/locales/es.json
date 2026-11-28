@@ -504,7 +504,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Movimientos y estados",
-		"newVersionDetail": "Vuelve a dibujar {name} para este personaje y así completar sus movimientos que faltan.",
+		"newVersionDetail": "Vuelve a dibujar {name}, con el precio antes. La nueva lo sustituye.",
 		"outfitSection": "Atuendo",
 		"technicalDetails": "Detalles técnicos",
 		"openSprite": "Ampliar {title}",
@@ -833,8 +833,14 @@
 		"titleBackgroundCheckerPlain": "Fondo (cuadros / liso)"
 	},
 	"stageNote": {
-		"missingFrames": "{names} necesitan fotogramas para {move}",
-		"missingFrameViews": "{names} necesitan fotogramas para {move} en dirección {direction}",
+		"missingFrames": {
+			"one": "{names} necesita fotogramas para {move}",
+			"other": "{names} necesitan fotogramas para {move}"
+		},
+		"missingFrameViews": {
+			"one": "{names} necesita fotogramas para {move} en dirección {direction}",
+			"other": "{names} necesitan fotogramas para {move} en dirección {direction}"
+		},
 		"making": "Creando…",
 		"makeMissingViews": "Crear vistas que faltan",
 		"estimate": {

@@ -337,18 +337,19 @@
 												aria-hidden="true"
 											/>{:else}<TriangleAlert size={16} aria-hidden="true" />{/if}<span
 											>{row.item.name}</span
-										>{#if !row.drawn && rowReasons.has(row.item.id)}<span
-												class="row-reason"
-												id="{id}-redraw-{row.item.id}">{rowReasons.get(row.item.id)}</span
-											>{#if redrawable.has(row.item.id)}<button
-													type="button"
-													class="bu-action btn sm row-redraw"
-													data-variant="outline"
-													data-trail="clipWindow.redrawItem"
-													aria-describedby="{id}-redraw-{row.item.id}"
-													onclick={() => tool('items', () => redrawItem(row.item))}
-													>{t('itemMenu.newVersion')}</button
-												>{/if}{:else}<span class="sr"
+										>{#if !row.drawn && rowReasons.has(row.item.id)}<span class="row-fix"
+												><span class="row-reason" id="{id}-redraw-{row.item.id}"
+													>{rowReasons.get(row.item.id)}</span
+												>{#if redrawable.has(row.item.id)}<button
+														type="button"
+														class="bu-action btn sm row-redraw"
+														data-variant="outline"
+														data-trail="clipWindow.redrawItem"
+														aria-describedby="{id}-redraw-{row.item.id}"
+														onclick={() => tool('items', () => redrawItem(row.item))}
+														>{t('itemMenu.newVersion')}</button
+													>{/if}</span
+											>{:else}<span class="sr"
 												>{row.drawn ? t('clipWindow.itemDrawn') : t('clipWindow.itemMissing')}</span
 											>{/if}
 									</li>{/each}
@@ -456,8 +457,10 @@
 	}
 	.clip-items li {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
-		gap: 10px;
+		gap: 4px 10px;
+		padding-block: 4px;
 		min-height: 36px;
 		border-block-end: 1px solid var(--bu-line);
 	}
@@ -469,8 +472,14 @@
 		flex: none;
 		min-height: 32px;
 	}
-	.clip-items .row-reason {
+	/* The reason and its action stay together; on a narrow window they move under the name instead of squeezing it. */
+	.clip-items .row-fix {
+		display: flex;
+		align-items: center;
+		gap: 8px;
 		margin-inline-start: auto;
+	}
+	.clip-items .row-reason {
 		color: var(--bu-muted);
 		font-size: var(--fs-sm);
 		text-align: end;

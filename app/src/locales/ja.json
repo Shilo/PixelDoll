@@ -495,7 +495,7 @@
 	},
 	"itemPane": {
 		"movesSection": "動きと状態",
-		"newVersionDetail": "このキャラクター用に{name}を描き直し、足りない動きを埋められるようにします。",
+		"newVersionDetail": "{name}を描き直します（先に価格を表示）。新しいものが置き換わります。",
 		"outfitSection": "コーディネート",
 		"technicalDetails": "技術詳細",
 		"openSprite": "{title}を拡大",
@@ -811,8 +811,12 @@
 		"titleBackgroundCheckerPlain": "背景（市松模様／単色）"
 	},
 	"stageNote": {
-		"missingFrames": "{names}には{move}のフレームが必要です",
-		"missingFrameViews": "{names}には{direction}向きの{move}のフレームが必要です",
+		"missingFrames": {
+			"other": "{names}には{move}のフレームが必要です"
+		},
+		"missingFrameViews": {
+			"other": "{names}には{direction}向きの{move}のフレームが必要です"
+		},
 		"making": "作成中…",
 		"makeMissingViews": "不足している向きを作成",
 		"estimate": {

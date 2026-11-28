@@ -504,7 +504,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Movimentos e estados",
-		"newVersionDetail": "Redesenha {name} para este personagem, para preencher os movimentos que faltam.",
+		"newVersionDetail": "Redesenha {name}, com o preço antes. O novo o substitui.",
 		"outfitSection": "Traje",
 		"technicalDetails": "Detalhes técnicos",
 		"openSprite": "Ampliar {title}",
@@ -833,8 +833,14 @@
 		"titleBackgroundCheckerPlain": "Fundo (quadriculado / liso)"
 	},
 	"stageNote": {
-		"missingFrames": "Faltam quadros para {names} em {move}",
-		"missingFrameViews": "Faltam quadros para {names} em {move} na direção {direction}",
+		"missingFrames": {
+			"one": "Faltam quadros para {names} em {move}",
+			"other": "Faltam quadros para {names} em {move}"
+		},
+		"missingFrameViews": {
+			"one": "Faltam quadros para {names} em {move} na direção {direction}",
+			"other": "Faltam quadros para {names} em {move} na direção {direction}"
+		},
 		"making": "Gerando…",
 		"makeMissingViews": "Gerar vistas que faltam",
 		"estimate": {

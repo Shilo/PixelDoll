@@ -504,7 +504,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Hareketler ve durumlar",
-		"newVersionDetail": "{name} öğesini bu karakter için yeniden çizer, böylece eksik hareketler doldurulabilir.",
+		"newVersionDetail": "{name} öğesini yeniden çizer, önce fiyatı gösterir. Yenisi onun yerini alır.",
 		"outfitSection": "Kıyafet",
 		"technicalDetails": "Teknik ayrıntılar",
 		"openSprite": "{title} görselini büyüt",
@@ -833,8 +833,14 @@
 		"titleBackgroundCheckerPlain": "Arka plan (damalı / düz)"
 	},
 	"stageNote": {
-		"missingFrames": "{names} için {move} kareleri eksik",
-		"missingFrameViews": "{names} için {move} animasyonunun {direction} yönündeki kareleri eksik",
+		"missingFrames": {
+			"one": "{names} için {move} kareleri eksik",
+			"other": "{names} için {move} kareleri eksik"
+		},
+		"missingFrameViews": {
+			"one": "{names} için {move} animasyonunun {direction} yönündeki kareleri eksik",
+			"other": "{names} için {move} animasyonunun {direction} yönündeki kareleri eksik"
+		},
 		"making": "Üretiliyor…",
 		"makeMissingViews": "Eksik görünümleri üret",
 		"estimate": {

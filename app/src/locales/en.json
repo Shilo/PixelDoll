@@ -504,7 +504,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Moves & states",
-		"newVersionDetail": "Draws {name} again for this character, so its missing moves can be filled.",
+		"newVersionDetail": "Draws {name} again, priced first. The new one replaces it.",
 		"outfitSection": "Outfit",
 		"technicalDetails": "Technical details",
 		"openSprite": "Enlarge {title}",
@@ -833,8 +833,14 @@
 		"titleBackgroundCheckerPlain": "Background (checker / plain)"
 	},
 	"stageNote": {
-		"missingFrames": "{names} need frames for {move}",
-		"missingFrameViews": "{names} need frames for {move} facing {direction}",
+		"missingFrames": {
+			"one": "{names} needs frames for {move}",
+			"other": "{names} need frames for {move}"
+		},
+		"missingFrameViews": {
+			"one": "{names} needs frames for {move} facing {direction}",
+			"other": "{names} need frames for {move} facing {direction}"
+		},
 		"making": "Making…",
 		"makeMissingViews": "Make missing views",
 		"estimate": {

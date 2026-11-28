@@ -495,7 +495,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Gerakan dan keadaan",
-		"newVersionDetail": "Menggambar ulang {name} untuk karakter ini agar gerakan yang hilang bisa diisi.",
+		"newVersionDetail": "Menggambar ulang {name}, harga ditampilkan dulu. Yang baru menggantikannya.",
 		"outfitSection": "Setelan",
 		"technicalDetails": "Detail teknis",
 		"openSprite": "Perbesar {title}",
@@ -811,8 +811,12 @@
 		"titleBackgroundCheckerPlain": "Latar belakang (kotak-kotak / polos)"
 	},
 	"stageNote": {
-		"missingFrames": "{names} perlu frame untuk animasi {move}",
-		"missingFrameViews": "{names} perlu frame untuk animasi {move} yang menghadap {direction}",
+		"missingFrames": {
+			"other": "{names} perlu frame untuk animasi {move}"
+		},
+		"missingFrameViews": {
+			"other": "{names} perlu frame untuk animasi {move} yang menghadap {direction}"
+		},
 		"making": "Membuat…",
 		"makeMissingViews": "Buat tampilan yang belum ada",
 		"estimate": {
