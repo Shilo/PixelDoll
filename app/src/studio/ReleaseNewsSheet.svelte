@@ -29,6 +29,7 @@
 			{#key latest.version}
 				<ReleaseArticle
 					entry={latest}
+					previous={releaseNews.entries?.[1]?.version}
 					{locale}
 					date={dateLabel(latest.date)}
 					onshown={() => releaseNews.markShown(latest.version)}
@@ -55,7 +56,7 @@
 		{#if older?.length}
 			<section class="past-releases">
 				<h3>{t('releaseNews.pastUpdates')}</h3>
-				{#each older as entry (entry.version)}
+				{#each older as entry, i (entry.version)}
 					<details
 						ontoggle={(event) => {
 							if (event.currentTarget.open) expanded.add(entry.version);
@@ -73,7 +74,12 @@
 							</span>
 						</summary>
 						{#if expanded.has(entry.version)}
-							<ReleaseArticle {entry} {locale} date={dateLabel(entry.date)} />
+							<ReleaseArticle
+								{entry}
+								previous={older[i + 1]?.version}
+								{locale}
+								date={dateLabel(entry.date)}
+							/>
 						{/if}
 					</details>
 				{/each}

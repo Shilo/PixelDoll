@@ -7,6 +7,7 @@
 		"allChangesCount": {
 			"other": "所有变更（{n} 项）"
 		},
+		"fullDiff": "在 GitHub 上查看完整差异",
 		"new": "新增",
 		"improved": "改进",
 		"pastUpdates": "以往更新",

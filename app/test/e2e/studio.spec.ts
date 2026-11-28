@@ -186,6 +186,10 @@ test.describe("What's new", () => {
 		);
 		await expect(commit).toHaveAttribute('target', '_blank');
 		await expect(commit).toHaveAttribute('rel', 'noopener noreferrer');
+		await expect(sheet.getByRole('link', { name: 'See the full diff on GitHub' })).toHaveAttribute(
+			'href',
+			`https://github.com/Shilo/PixelDoll/compare/v${previous.version}...v${latest.version}`
+		);
 		await page.setViewportSize({ width: 844, height: 390 });
 		await sheet.locator('summary').filter({ hasText: 'Dress the demo' }).click();
 		await expect(sheet.getByRole('heading', { name: 'Dress the demo' })).toBeVisible();

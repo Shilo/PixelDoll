@@ -165,6 +165,9 @@ it('renders the same data as the app, escaping literal commit subjects and bound
 	expect(body).toContain('## Save a sprite\n\nSave your work as a PNG file.');
 	expect(body).toContain('<details><summary>All changes (2)</summary>');
 	expect(body).toContain(
+		'[See the full diff on GitHub](https://example.com/compare)\n\n</details>'
+	);
+	expect(body).toContain(
 		`[Export: Keep \\[layers\\] &amp; &lt;colors&gt;](https://github.com/Shilo/PixelDoll/commit/${feature.sha})`
 	);
 	expect(() =>

@@ -52,7 +52,12 @@ export function releaseMarkdown(
 		if (!changes.total)
 			return `${head}
 `;
-		if (limit < changes.total) groups.push(`[See all ${changes.total} changes](${compareUrl})`);
+		// The app links the same range between the two release tags (ReleaseArticle.svelte).
+		groups.push(
+			limit < changes.total
+				? `[See all ${changes.total} changes](${compareUrl})`
+				: `[See the full diff on GitHub](${compareUrl})`
+		);
 		const all = [
 			`<details><summary>All changes (${changes.total})</summary>`,
 			...groups,

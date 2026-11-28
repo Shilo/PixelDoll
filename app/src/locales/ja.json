@@ -7,6 +7,7 @@
 		"allChangesCount": {
 			"other": "すべての変更（{n}件）"
 		},
+		"fullDiff": "GitHub で全差分を見る",
 		"new": "新機能",
 		"improved": "改善",
 		"pastUpdates": "過去のアップデート",

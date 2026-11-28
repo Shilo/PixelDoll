@@ -8,6 +8,7 @@
 			"one": "Alle Änderungen ({n})",
 			"other": "Alle Änderungen ({n})"
 		},
+		"fullDiff": "Vollständigen Vergleich auf GitHub ansehen",
 		"new": "Neu",
 		"improved": "Verbessert",
 		"pastUpdates": "Frühere Updates",

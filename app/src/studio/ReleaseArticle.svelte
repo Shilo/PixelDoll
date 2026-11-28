@@ -12,10 +12,18 @@
 
 	let {
 		entry,
+		previous,
 		locale,
 		date,
 		onshown
-	}: { entry: ReleaseEntry; locale: string; date: string; onshown?: () => void } = $props();
+	}: {
+		entry: ReleaseEntry;
+		/** The release before this one; the oldest release has none to compare with. */
+		previous?: string;
+		locale: string;
+		date: string;
+		onshown?: () => void;
+	} = $props();
 	let notesAttempt = $state(0);
 	const notes = $derived.by(() => {
 		void notesAttempt;
@@ -142,6 +150,16 @@
 						</ul>
 					</section>
 				{/each}
+				{#if previous}
+					<a
+						class="full-diff"
+						href={`${repository}/compare/v${previous}...v${entry.version}`}
+						target="_blank"
+						rel="noopener noreferrer"
+						aria-describedby={linkHint}
+						>{t('releaseNews.fullDiff')} <ExternalLink size={12} aria-hidden="true" /></a
+					>
+				{/if}
 			{:else if changes === null}
 				{@render retry(loadChanges)}
 			{:else}
@@ -233,7 +251,12 @@
 		color: var(--bu-accent);
 		text-decoration: underline;
 	}
-	.change-group a :global(svg) {
+	.full-diff {
+		display: inline-block;
+		margin-block-start: 12px;
+	}
+	.change-group a :global(svg),
+	.full-diff :global(svg) {
 		display: inline;
 		vertical-align: -1px;
 		opacity: 0.6;
