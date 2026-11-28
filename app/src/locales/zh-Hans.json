@@ -811,12 +811,8 @@
 		"titleBackgroundCheckerPlain": "背景（棋盘格/纯色）"
 	},
 	"stageNote": {
-		"missingFrames": {
-			"other": "{names}需要{move}的帧"
-		},
-		"missingFrameViews": {
-			"other": "{names}需要朝向{direction}的{move}帧"
-		},
+		"missingFrames": "{names}需要{move}的帧",
+		"missingFrameViews": "{names}需要朝向{direction}的{move}帧",
 		"making": "正在制作…",
 		"makeMissingViews": "补做缺失朝向",
 		"estimate": {

@@ -833,14 +833,8 @@
 		"titleBackgroundCheckerPlain": "Background (checker / plain)"
 	},
 	"stageNote": {
-		"missingFrames": {
-			"one": "{names} needs frames for {move}",
-			"other": "{names} need frames for {move}"
-		},
-		"missingFrameViews": {
-			"one": "{names} needs frames for {move} facing {direction}",
-			"other": "{names} need frames for {move} facing {direction}"
-		},
+		"missingFrames": "Missing frames for {move}: {names}",
+		"missingFrameViews": "Missing frames for {move} facing {direction}: {names}",
 		"making": "Making…",
 		"makeMissingViews": "Make missing views",
 		"estimate": {

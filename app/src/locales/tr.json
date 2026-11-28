@@ -833,14 +833,8 @@
 		"titleBackgroundCheckerPlain": "Arka plan (damalı / düz)"
 	},
 	"stageNote": {
-		"missingFrames": {
-			"one": "{names} için {move} kareleri eksik",
-			"other": "{names} için {move} kareleri eksik"
-		},
-		"missingFrameViews": {
-			"one": "{names} için {move} animasyonunun {direction} yönündeki kareleri eksik",
-			"other": "{names} için {move} animasyonunun {direction} yönündeki kareleri eksik"
-		},
+		"missingFrames": "{names} için {move} kareleri eksik",
+		"missingFrameViews": "{names} için {move} animasyonunun {direction} yönündeki kareleri eksik",
 		"making": "Üretiliyor…",
 		"makeMissingViews": "Eksik görünümleri üret",
 		"estimate": {

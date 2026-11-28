@@ -833,14 +833,8 @@
 		"titleBackgroundCheckerPlain": "Fondo (cuadros / liso)"
 	},
 	"stageNote": {
-		"missingFrames": {
-			"one": "{names} necesita fotogramas para {move}",
-			"other": "{names} necesitan fotogramas para {move}"
-		},
-		"missingFrameViews": {
-			"one": "{names} necesita fotogramas para {move} en dirección {direction}",
-			"other": "{names} necesitan fotogramas para {move} en dirección {direction}"
-		},
+		"missingFrames": "Faltan fotogramas para {move}: {names}",
+		"missingFrameViews": "Faltan fotogramas para {move} en dirección {direction}: {names}",
 		"making": "Creando…",
 		"makeMissingViews": "Crear vistas que faltan",
 		"estimate": {

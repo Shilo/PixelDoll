@@ -811,12 +811,8 @@
 		"titleBackgroundCheckerPlain": "배경(격자무늬 / 단색)"
 	},
 	"stageNote": {
-		"missingFrames": {
-			"other": "{names}: {move} 프레임이 필요해요"
-		},
-		"missingFrameViews": {
-			"other": "{names}: {move} 동작의 {direction} 방향 프레임이 필요해요"
-		},
+		"missingFrames": "{names}: {move} 프레임이 필요해요",
+		"missingFrameViews": "{names}: {move} 동작의 {direction} 방향 프레임이 필요해요",
 		"making": "만드는 중…",
 		"makeMissingViews": "빠진 방향 만들기",
 		"estimate": {

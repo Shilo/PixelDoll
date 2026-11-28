@@ -833,14 +833,8 @@
 		"titleBackgroundCheckerPlain": "Fundo (quadriculado / liso)"
 	},
 	"stageNote": {
-		"missingFrames": {
-			"one": "Faltam quadros para {names} em {move}",
-			"other": "Faltam quadros para {names} em {move}"
-		},
-		"missingFrameViews": {
-			"one": "Faltam quadros para {names} em {move} na direção {direction}",
-			"other": "Faltam quadros para {names} em {move} na direção {direction}"
-		},
+		"missingFrames": "Faltam quadros para {names} em {move}",
+		"missingFrameViews": "Faltam quadros para {names} em {move} na direção {direction}",
 		"making": "Gerando…",
 		"makeMissingViews": "Gerar vistas que faltam",
 		"estimate": {

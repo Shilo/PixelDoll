@@ -811,12 +811,8 @@
 		"titleBackgroundCheckerPlain": "背景（市松模様／単色）"
 	},
 	"stageNote": {
-		"missingFrames": {
-			"other": "{names}には{move}のフレームが必要です"
-		},
-		"missingFrameViews": {
-			"other": "{names}には{direction}向きの{move}のフレームが必要です"
-		},
+		"missingFrames": "{names}には{move}のフレームが必要です",
+		"missingFrameViews": "{names}には{direction}向きの{move}のフレームが必要です",
 		"making": "作成中…",
 		"makeMissingViews": "不足している向きを作成",
 		"estimate": {
