@@ -1,3 +1,22 @@
 {
-  "releases": []
+	"releases": [
+		{
+			"version": "0.0.55",
+			"date": "2026-10-23",
+			"features": 9,
+			"banner": true,
+			"headline": {
+				"en": "Bring in characters and take them anywhere",
+				"de": "Figuren importieren und überallhin mitnehmen",
+				"es": "Trae personajes y llévalos a cualquier parte",
+				"fr": "Importez des personnages et emportez-les partout",
+				"id": "Bawa karakter Anda ke mana saja",
+				"ja": "キャラクターを取り込んで、どこへでも持ち出す",
+				"ko": "캐릭터를 가져와 어디서나 사용하세요",
+				"pt-BR": "Traga personagens e leve-os para qualquer lugar",
+				"tr": "Karakterlerinizi içe aktarın ve her yere götürün",
+				"zh-Hans": "导入角色，带去任何地方"
+			}
+		}
+	]
 }
