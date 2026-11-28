@@ -484,7 +484,7 @@
 		"cancelSaveError": "キャンセル状態を保存できませんでした。このタブを開いたまま、もう一度お試しください。",
 		"preparing": "アイテムを準備中",
 		"remake": "このキャラ用にコピー…",
-		"redraw": "描き直す…",
+		"newVersion": "新しいバージョンを作成…",
 		"makeForSlot": "{slot}用に作成…",
 		"demoDeleteLocked": "デモのアイテムはゴミ箱に移動できません",
 		"cancelItem": "生成をキャンセル",
@@ -495,6 +495,7 @@
 	},
 	"itemPane": {
 		"movesSection": "動きと状態",
+		"newVersionDetail": "このキャラクター用に{name}を描き直し、足りない動きを埋められるようにします。",
 		"outfitSection": "コーディネート",
 		"technicalDetails": "技術詳細",
 		"openSprite": "{title}を拡大",
@@ -597,7 +598,7 @@
 		"missingView": "なし",
 		"hiddenWhenWorn": "{names}を装備すると、このアイテムは非表示になります。",
 		"clipsIncomplete": {
-			"other": "{n}件の動きが未完成"
+			"other": "{n}件が未完成"
 		},
 		"complete": "完成",
 		"clipNoFrames": "フレームなし",
@@ -2901,7 +2902,7 @@
 		"defaultIdea": "革の帽子",
 		"shortcut": "Ctrl+EnterまたはCmd+Enterでアイテムを作成します。",
 		"useOffHand": "オフハンドを使う",
-		"replaces": "保持すると{name}と置き換わり、古いものはゴミ箱に移動します。",
+		"replaces": "保持すると{name}と置き換わり、古いものは色と設定ごとゴミ箱に移動します。",
 		"ideas": "アイデア",
 		"colorHint": "色のヒント",
 		"anyColor": "指定なし",
@@ -3743,7 +3744,7 @@
 		"gone": "この動きはもう保存されていません。",
 		"itemDrawn": "描画済み",
 		"itemMissing": "未描画",
-		"needsStandingDesign": "ポーズに使う保存済みデザインなし"
+		"cantDrawOnMoves": "まだ動きに描けません"
 	},
 	"tips": {
 		"customizeTitle": "デモを着せ替える",

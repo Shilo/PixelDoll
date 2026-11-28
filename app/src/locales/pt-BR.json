@@ -493,7 +493,7 @@
 		"cancelSaveError": "Não foi possível salvar o cancelamento. Mantenha esta aba aberta e tente novamente.",
 		"preparing": "Preparando seu item",
 		"remake": "Fazer cópia para este personagem…",
-		"redraw": "Redesenhar…",
+		"newVersion": "Criar nova versão…",
 		"makeForSlot": "Criar um item para o espaço {slot}…",
 		"demoDeleteLocked": "Os itens da demo não podem ir para a lixeira",
 		"cancelItem": "Cancelar item",
@@ -504,6 +504,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Movimentos e estados",
+		"newVersionDetail": "Redesenha {name} para este personagem, para preencher os movimentos que faltam.",
 		"outfitSection": "Traje",
 		"technicalDetails": "Detalhes técnicos",
 		"openSprite": "Ampliar {title}",
@@ -611,8 +612,8 @@
 		"missingView": "Falta",
 		"hiddenWhenWorn": "Usar {names} oculta este item.",
 		"clipsIncomplete": {
-			"one": "{n} movimento incompleto",
-			"other": "{n} movimentos incompletos"
+			"one": "{n} incompleto",
+			"other": "{n} incompletos"
 		},
 		"complete": "Completo",
 		"clipNoFrames": "Ainda sem quadros",
@@ -2991,7 +2992,7 @@
 		"defaultIdea": "um chapéu de couro",
 		"shortcut": "Use Ctrl+Enter ou Cmd+Enter para criar o item.",
 		"useOffHand": "Usar mão secundária",
-		"replaces": "Substitui {name} quando você mantiver. O antigo vai para a Lixeira.",
+		"replaces": "Substitui {name} quando você mantiver. O antigo, com suas cores e configurações, vai para a Lixeira.",
 		"ideas": "Ideias",
 		"colorHint": "Sugestão de cor",
 		"anyColor": "Qualquer cor",
@@ -3856,7 +3857,7 @@
 		"gone": "Este movimento não está mais salvo.",
 		"itemDrawn": "Desenhado",
 		"itemMissing": "Faltando",
-		"needsStandingDesign": "Sem desenho salvo para posar"
+		"cantDrawOnMoves": "Ainda não pode ser desenhado nos movimentos"
 	},
 	"tips": {
 		"customizeTitle": "Vista a demo",

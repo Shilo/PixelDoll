@@ -493,7 +493,7 @@
 		"cancelSaveError": "Impossible d’enregistrer l’annulation. Gardez cet onglet ouvert et réessayez.",
 		"preparing": "Préparation de votre objet",
 		"remake": "Faire une copie pour ce personnage…",
-		"redraw": "Redessiner…",
+		"newVersion": "Créer une nouvelle version…",
 		"makeForSlot": "En créer un pour l’emplacement {slot}…",
 		"demoDeleteLocked": "Les objets de la démo ne peuvent pas aller dans la corbeille",
 		"cancelItem": "Annuler la génération",
@@ -504,6 +504,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Mouvements et états",
+		"newVersionDetail": "Redessine {name} pour ce personnage, afin de compléter ses mouvements manquants.",
 		"outfitSection": "Tenue",
 		"technicalDetails": "Détails techniques",
 		"openSprite": "Agrandir {title}",
@@ -611,8 +612,8 @@
 		"missingView": "Manquant",
 		"hiddenWhenWorn": "Porter {names} masque cet objet.",
 		"clipsIncomplete": {
-			"one": "{n} mouvement incomplet",
-			"other": "{n} mouvements incomplets"
+			"one": "{n} incomplet",
+			"other": "{n} incomplets"
 		},
 		"complete": "Complet",
 		"clipNoFrames": "Pas encore d’images",
@@ -2982,7 +2983,7 @@
 		"defaultIdea": "un chapeau en cuir",
 		"shortcut": "Ctrl+Entrée ou Cmd+Entrée pour créer l’objet.",
 		"useOffHand": "Utiliser la main secondaire",
-		"replaces": "Remplace {name} une fois conservé. L’ancien va dans la Corbeille.",
+		"replaces": "Remplace {name} une fois conservé. L’ancien, avec ses couleurs et réglages, va dans la Corbeille.",
 		"ideas": "Idées",
 		"colorHint": "Indication de couleur",
 		"anyColor": "Sans préférence",
@@ -3847,7 +3848,7 @@
 		"gone": "Ce mouvement n’est plus enregistré.",
 		"itemDrawn": "Dessiné",
 		"itemMissing": "Manquant",
-		"needsStandingDesign": "Aucun modèle enregistré à poser"
+		"cantDrawOnMoves": "Ne peut pas encore être dessiné sur les mouvements"
 	},
 	"tips": {
 		"customizeTitle": "Habillez la démo",

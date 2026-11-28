@@ -484,7 +484,7 @@
 		"cancelSaveError": "취소를 저장하지 못했어요. 이 탭을 열어 두고 다시 시도해 주세요.",
 		"preparing": "아이템 준비 중",
 		"remake": "이 캐릭터용 복사본 만들기…",
-		"redraw": "다시 그리기…",
+		"newVersion": "새 버전 만들기…",
 		"makeForSlot": "{slot} 아이템 만들기…",
 		"demoDeleteLocked": "데모의 아이템은 휴지통으로 옮길 수 없습니다",
 		"cancelItem": "아이템 취소",
@@ -495,6 +495,7 @@
 	},
 	"itemPane": {
 		"movesSection": "동작 및 상태",
+		"newVersionDetail": "이 캐릭터용으로 {name}을(를) 다시 그려 빠진 동작을 채울 수 있게 해요.",
 		"outfitSection": "코디",
 		"technicalDetails": "기술 세부 정보",
 		"openSprite": "{title} 확대",
@@ -597,7 +598,7 @@
 		"missingView": "없음",
 		"hiddenWhenWorn": "{names}을(를) 착용하면 이 아이템이 숨겨져요.",
 		"clipsIncomplete": {
-			"other": "동작 {n}개 미완성"
+			"other": "{n}개 미완성"
 		},
 		"complete": "완성",
 		"clipNoFrames": "아직 프레임 없음",
@@ -2901,7 +2902,7 @@
 		"defaultIdea": "가죽 모자",
 		"shortcut": "Ctrl+Enter 또는 Cmd+Enter로 아이템을 만들어요.",
 		"useOffHand": "보조 손 사용",
-		"replaces": "보관하면 {name}을(를) 대체하고 이전 항목은 휴지통으로 이동해요.",
+		"replaces": "보관하면 {name}을(를) 대체하고, 이전 항목은 색상과 설정째 휴지통으로 이동해요.",
 		"ideas": "아이디어",
 		"colorHint": "색상 힌트",
 		"anyColor": "상관없음",
@@ -3743,7 +3744,7 @@
 		"gone": "이 동작은 더 이상 저장되어 있지 않습니다.",
 		"itemDrawn": "그려짐",
 		"itemMissing": "없음",
-		"needsStandingDesign": "포즈에 쓸 저장된 디자인 없음"
+		"cantDrawOnMoves": "아직 동작에 그릴 수 없어요"
 	},
 	"tips": {
 		"customizeTitle": "데모 꾸미기",

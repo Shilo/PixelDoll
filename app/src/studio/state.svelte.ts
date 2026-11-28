@@ -3376,12 +3376,13 @@ export async function restoreFrames(projectId: string, itemId: string) {
 	}
 }
 
-export async function removeItem(itemId: string) {
-	const it = itemById(itemId);
-	if (!it || isDemo()) return;
-	const projectId = doc.id,
-		request = openRequest;
-	await flushSave();
+/** Move a saved item to Trash in its stored record, open or not, and say so with Undo. Returns the recovery entry. */
+async function trashStoredItem(
+	projectId: string,
+	itemId: string,
+	name: string,
+	beforeToast?: () => void
+) {
 	const prune = await keysToPruneAndForget();
 	let kept: RecentlyDeleted | undefined;
 	try {
@@ -3395,7 +3396,7 @@ export async function removeItem(itemId: string) {
 				const entry = deletedEntry({
 					kind: 'items',
 					record: rec,
-					name: it.name,
+					name,
 					context: rec.manifest.name,
 					scope: { itemIds: [itemId] }
 				});
@@ -3409,15 +3410,26 @@ export async function removeItem(itemId: string) {
 	}
 	await refreshRecentlyDeleted();
 	notifyLibraryChanged(projectId);
-	// The deleted item cannot be inspected any more: close its pane first, so the notice that offers Undo is on screen.
-	if (ui.sheet === 'item' && ui.selected === itemId) ui.sheet = null;
-	if (!kept) toast(message('state.removedName', { name: it.name }));
+	beforeToast?.();
+	if (!kept) toast(message('state.removedName', { name }));
 	else
-		toast(message('state.removedName', { name: it.name }), {
+		toast(message('state.removedName', { name }), {
 			duration: 10000,
 			actionLabel: message('common.undo'),
 			action: () => void restoreDeleted(kept!.id)
 		});
+	return kept;
+}
+export async function removeItem(itemId: string) {
+	const it = itemById(itemId);
+	if (!it || isDemo()) return;
+	const projectId = doc.id,
+		request = openRequest;
+	await flushSave();
+	// The deleted item cannot be inspected any more: close its pane first, so the notice that offers Undo is on screen.
+	const kept = await trashStoredItem(projectId, itemId, it.name, () => {
+		if (ui.sheet === 'item' && ui.selected === itemId) ui.sheet = null;
+	});
 	if (doc.id === projectId && request === openRequest) {
 		// Quietly: the delete stays undoable, and only the slot it held is cleared from the live outfit.
 		await openProject(projectId, { quiet: true });
@@ -4839,10 +4851,13 @@ export async function acceptGen(
 			);
 		} else if (!viewing(g.draft.rigId)) void syncStoredProject(g.draft.rigId);
 		// A redraw replaces the item it was made for: outfits move to the new one and the old one goes to Trash (undoable).
-		const old = g.input.supersedes;
-		if (old && old !== item.id && doc.id === g.draft.rigId && itemById(old)) {
-			await repointItem(g.draft.rigId, old, item.id);
-			await removeItem(old);
+		const old = g.input.supersedes,
+			replaced = old && old !== item.id && ctx.rec.manifest.items.find((it) => it.id === old);
+		if (replaced) {
+			await repointItem(g.draft.rigId, replaced.id, item.id);
+			// The open character updates its live outfit too; a closed one changes only in its stored record.
+			if (doc.id === g.draft.rigId && itemById(replaced.id)) await removeItem(replaced.id);
+			else await trashStoredItem(g.draft.rigId, replaced.id, replaced.name);
 		}
 		if (doc.id !== g.draft.rigId) {
 			drop(g);

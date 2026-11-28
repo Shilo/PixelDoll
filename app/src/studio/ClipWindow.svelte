@@ -167,7 +167,7 @@
 				pending
 					? [[item.id, t('itemGeneration.inProgress')] as const]
 					: !Object.values(item.dressed ?? {}).some(Boolean)
-						? [[item.id, t('clipWindow.needsStandingDesign')] as const]
+						? [[item.id, t('clipWindow.cantDrawOnMoves')] as const]
 						: []
 			)
 		)
@@ -347,7 +347,7 @@
 													data-trail="clipWindow.redrawItem"
 													aria-describedby="{id}-redraw-{row.item.id}"
 													onclick={() => tool('items', () => redrawItem(row.item))}
-													>{t('itemMenu.redraw')}</button
+													>{t('itemMenu.newVersion')}</button
 												>{/if}{:else}<span class="sr"
 												>{row.drawn ? t('clipWindow.itemDrawn') : t('clipWindow.itemMissing')}</span
 											>{/if}

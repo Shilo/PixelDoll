@@ -493,7 +493,7 @@
 		"cancelSaveError": "Could not save cancellation. Keep this tab open and try again.",
 		"preparing": "Preparing your item",
 		"remake": "Make copy for self…",
-		"redraw": "Redraw…",
+		"newVersion": "Make new version…",
 		"makeForSlot": "Make one for the {slot}…",
 		"demoDeleteLocked": "The demo’s items can’t be moved to the Trash",
 		"cancelItem": "Cancel item",
@@ -504,6 +504,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Moves & states",
+		"newVersionDetail": "Draws {name} again for this character, so its missing moves can be filled.",
 		"outfitSection": "Outfit",
 		"technicalDetails": "Technical details",
 		"openSprite": "Enlarge {title}",
@@ -611,8 +612,8 @@
 		"missingView": "Missing",
 		"hiddenWhenWorn": "Wearing {names} hides this item.",
 		"clipsIncomplete": {
-			"one": "{n} move incomplete",
-			"other": "{n} moves incomplete"
+			"one": "{n} incomplete",
+			"other": "{n} incomplete"
 		},
 		"complete": "Complete",
 		"clipNoFrames": "No frames yet",
@@ -2982,7 +2983,7 @@
 		"defaultIdea": "a leather hat",
 		"shortcut": "Ctrl+Enter or Cmd+Enter to make the item.",
 		"useOffHand": "Use off hand",
-		"replaces": "Replaces {name} once you keep it. The old one moves to Trash.",
+		"replaces": "Replaces {name} once you keep it. The old one, with its colors and settings, moves to Trash.",
 		"ideas": "Ideas",
 		"colorHint": "Color hint",
 		"anyColor": "Any",
@@ -3847,7 +3848,7 @@
 		"gone": "This move is no longer saved.",
 		"itemDrawn": "Drawn",
 		"itemMissing": "Missing",
-		"needsStandingDesign": "No saved design to pose"
+		"cantDrawOnMoves": "Can't be drawn on moves yet"
 	},
 	"tips": {
 		"customizeTitle": "Dress up the demo",

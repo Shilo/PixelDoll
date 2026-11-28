@@ -1179,6 +1179,7 @@
 <style>
 	/* Reads as one sentence: the link sits after an ordinary space, not the footer's gap and button padding. */
 	.notes-link {
+		min-height: 24px;
 		padding-inline: 0;
 	}
 	.export-page {

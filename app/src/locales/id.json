@@ -484,7 +484,7 @@
 		"cancelSaveError": "Pembatalan tidak dapat disimpan. Biarkan tab ini terbuka dan coba lagi.",
 		"preparing": "Menyiapkan item Anda",
 		"remake": "Buat salinan untuk karakter ini…",
-		"redraw": "Gambar ulang…",
+		"newVersion": "Buat versi baru…",
 		"makeForSlot": "Buat untuk slot {slot}…",
 		"demoDeleteLocked": "Item demo tidak bisa dipindahkan ke tempat sampah",
 		"cancelItem": "Batalkan item",
@@ -495,6 +495,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Gerakan dan keadaan",
+		"newVersionDetail": "Menggambar ulang {name} untuk karakter ini agar gerakan yang hilang bisa diisi.",
 		"outfitSection": "Setelan",
 		"technicalDetails": "Detail teknis",
 		"openSprite": "Perbesar {title}",
@@ -597,7 +598,7 @@
 		"missingView": "Hilang",
 		"hiddenWhenWorn": "Memakai {names} menyembunyikan item ini.",
 		"clipsIncomplete": {
-			"other": "{n} gerakan belum lengkap"
+			"other": "{n} belum lengkap"
 		},
 		"complete": "Lengkap",
 		"clipNoFrames": "Belum ada frame",
@@ -2901,7 +2902,7 @@
 		"defaultIdea": "topi kulit",
 		"shortcut": "Tekan Ctrl+Enter atau Cmd+Enter untuk membuat item.",
 		"useOffHand": "Gunakan tangan sekunder",
-		"replaces": "Menggantikan {name} setelah disimpan. Yang lama dipindahkan ke Tempat sampah.",
+		"replaces": "Menggantikan {name} setelah disimpan. Yang lama, beserta warna dan pengaturannya, dipindahkan ke Tempat sampah.",
 		"ideas": "Ide",
 		"colorHint": "Petunjuk warna",
 		"anyColor": "Bebas",
@@ -3743,7 +3744,7 @@
 		"gone": "Gerakan ini tidak lagi tersimpan.",
 		"itemDrawn": "Digambar",
 		"itemMissing": "Hilang",
-		"needsStandingDesign": "Tidak ada desain tersimpan untuk dipose"
+		"cantDrawOnMoves": "Belum bisa digambar pada gerakan"
 	},
 	"tips": {
 		"customizeTitle": "Dandani demo",

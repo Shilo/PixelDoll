@@ -52,6 +52,7 @@
 	} from './create.ts';
 	import { setupRedoMoves } from '../lib/rig/setup.ts';
 	import { extendable } from './movePricing.ts';
+	import { redrawItem } from './redrawItem.ts';
 	import { seeded, itemClipDrawn } from './itemGeneration.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { app } from '../lib/app.svelte.ts';
@@ -353,6 +354,16 @@
 	);
 	// A copy without its own standing design cannot be extended to more moves: only an item made for this character can.
 	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
+	// An own item without a saved design to pose has no way onto its missing moves: a new version for this character does.
+	const newVersion = $derived(
+		!!m &&
+			!!it &&
+			!isDemo() &&
+			!!incomplete &&
+			!!it.prompt &&
+			!it.copiedFrom &&
+			!extendable(m, it.id)
+	);
 
 	// ---------- quality and one-view fixes ----------
 	const repairSpec = $derived(
@@ -942,7 +953,9 @@
 					data-tone={callout.tone === 'warn' ? 'warning' : 'neutral'}
 					role="status"
 				>
-					<span>{callout.text}</span>
+					{#if callout.tone === 'warn'}<TriangleAlert size={16} aria-hidden="true" />{/if}<span
+						>{callout.text}</span
+					>
 					{#if callout.action}
 						{@const action = callout.action}
 						<button
@@ -987,8 +1000,19 @@
 						bind:open={open.moves}
 					>
 						<div class="window-body">
-							{#if restorable.length || copyOffer}
+							{#if restorable.length || copyOffer || newVersion}
 								<div class="tool-list">
+									{#if newVersion}<ToolRow
+											{...{
+												icon: RefreshCw,
+												label: t('itemMenu.newVersion'),
+												detail: t('itemPane.newVersionDetail', { name: it.name }),
+												aside: '',
+												opens: true,
+												trail: 'itemPane.newVersion',
+												onclick: () => redrawItem(it)
+											}}
+										/>{/if}
 									{#if restorable.length}<ToolRow
 											{...{
 												icon: RotateCcw,

@@ -241,7 +241,7 @@
 							class="bu-action btn sm"
 							data-variant="outline"
 							onclick={() => (copyOnly ? openCopyForSelf(remake) : redrawItem(remake))}
-							>{copyOnly ? t('itemMenu.remake') : t('itemMenu.redraw')}</button
+							>{copyOnly ? t('itemMenu.remake') : t('itemMenu.newVersion')}</button
 						>
 					{/if}
 				{/if}

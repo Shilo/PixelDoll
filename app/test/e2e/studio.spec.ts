@@ -9168,13 +9168,13 @@ test('stage makes all missing item views while explicit repair stays on the curr
 	await expect(stageNote.getByRole('button', { name: /^Make missing views/ })).toContainText(
 		'~6 gens'
 	);
-	await expect(stageNote.getByRole('button', { name: /^Redraw/ })).toBeVisible();
+	await expect(stageNote.getByRole('button', { name: /^Make new version/ })).toBeVisible();
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
 		s.ui.dir = 'west';
 	});
-	await expect(stageNote.getByRole('button', { name: /^Redraw/ })).toHaveCount(0);
+	await expect(stageNote.getByRole('button', { name: /^Make new version/ })).toHaveCount(0);
 	const make = stageNote.getByRole('button', { name: /^Make missing views/ });
 	await expect(make).toContainText('~6 gens');
 	await expect(make).not.toContainText('…');
@@ -10614,8 +10614,10 @@ test('standing-first items quote standing and draw selected custom moves togethe
 	await expect(walkCoverage).toContainText('5 of 6 items drawn');
 	// The missing row says why it can't be drawn and offers a redraw; Generate items stays visible but disabled.
 	const wizardRow = walkCoverage.getByRole('listitem').filter({ hasText: 'Wizard hat' });
-	await expect(wizardRow).toContainText('No saved design to pose');
-	await expect(wizardRow.getByRole('button', { name: 'Redraw…', exact: true })).toBeVisible();
+	await expect(wizardRow).toContainText("Can't be drawn on moves yet");
+	await expect(
+		wizardRow.getByRole('button', { name: 'Make new version…', exact: true })
+	).toBeVisible();
 	await expect(walkCoverage.getByRole('button', { name: /^Generate items/ })).toBeDisabled();
 	await page.keyboard.press('Escape');
 	await expect(walkWindow).toHaveCount(0);
@@ -10907,9 +10909,7 @@ test('standing-first items quote standing and draw selected custom moves togethe
 	// Every move the item lacks is listed as missing, each with what it lacks.
 	for (const move of ['Standing', 'Custom walk', 'Custom cross punch'])
 		await expect(pane.locator('.clip-row[data-missing]').filter({ hasText: move })).toBeVisible();
-	await expect(
-		pane.locator('summary').getByText('3 moves incomplete', { exact: true })
-	).toBeVisible();
+	await expect(pane.locator('summary').getByText('3 incomplete', { exact: true })).toBeVisible();
 	// Two moves need no Select all: each box adds to the one total on the button.
 	await expect(pane.getByRole('button', { name: 'Select all', exact: true })).toHaveCount(0);
 	await punch.check();
@@ -12596,7 +12596,7 @@ test('item details fill a phone screen and keep Wear pinned while the body scrol
 	const wear = details.getByRole('button', { name: 'Wear', exact: true });
 	await expect(wear).toBeInViewport();
 	await expect(details.locator('summary').filter({ hasText: 'Moves & states' })).toContainText(
-		/\d+ moves? incomplete/
+		/\d+ incomplete/
 	);
 	for (const section of ['Moves & states', 'Quality', 'Outfit', 'About', 'Technical details'])
 		await openItemSection(details, section);

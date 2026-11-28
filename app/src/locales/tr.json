@@ -493,7 +493,7 @@
 		"cancelSaveError": "İptal kaydedilemedi. Bu sekmeyi açık tutun ve tekrar deneyin.",
 		"preparing": "Eşya hazırlanıyor",
 		"remake": "Bu karakter için kopya yap…",
-		"redraw": "Yeniden çiz…",
+		"newVersion": "Yeni sürüm oluştur…",
 		"makeForSlot": "{slot} yuvası için bir tane üretin…",
 		"demoDeleteLocked": "Demonun eşyaları çöp kutusuna taşınamaz",
 		"cancelItem": "Eşyayı iptal edin",
@@ -504,6 +504,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Hareketler ve durumlar",
+		"newVersionDetail": "{name} öğesini bu karakter için yeniden çizer, böylece eksik hareketler doldurulabilir.",
 		"outfitSection": "Kıyafet",
 		"technicalDetails": "Teknik ayrıntılar",
 		"openSprite": "{title} görselini büyüt",
@@ -611,8 +612,8 @@
 		"missingView": "Eksik",
 		"hiddenWhenWorn": "{names} giymek bu eşyayı gizler.",
 		"clipsIncomplete": {
-			"one": "{n} hareket eksik",
-			"other": "{n} hareket eksik"
+			"one": "{n} eksik",
+			"other": "{n} eksik"
 		},
 		"complete": "Tamam",
 		"clipNoFrames": "Henüz kare yok",
@@ -2982,7 +2983,7 @@
 		"defaultIdea": "deri şapka",
 		"shortcut": "Eşyayı üretmek için Ctrl+Enter veya Cmd+Enter kullanın.",
 		"useOffHand": "Diğer eli kullanın",
-		"replaces": "Saklandığında {name} öğesinin yerini alır. Eskisi Çöp kutusuna taşınır.",
+		"replaces": "Saklandığında {name} öğesinin yerini alır. Eskisi renkleri ve ayarlarıyla birlikte Çöp kutusuna taşınır.",
 		"ideas": "Fikirler",
 		"colorHint": "Renk ipucu",
 		"anyColor": "Fark etmez",
@@ -3847,7 +3848,7 @@
 		"gone": "Bu hareket artık kayıtlı değil.",
 		"itemDrawn": "Çizildi",
 		"itemMissing": "Eksik",
-		"needsStandingDesign": "Poz verilecek kayıtlı tasarım yok"
+		"cantDrawOnMoves": "Henüz hareketlere çizilemiyor"
 	},
 	"tips": {
 		"customizeTitle": "Demoyu giydir",

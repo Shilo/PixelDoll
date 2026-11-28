@@ -493,7 +493,7 @@
 		"cancelSaveError": "Der Abbruch konnte nicht gespeichert werden. Lass diesen Tab offen und versuch es noch einmal.",
 		"preparing": "Dein Gegenstand wird vorbereitet",
 		"remake": "Kopie für diese Figur…",
-		"redraw": "Neu zeichnen…",
+		"newVersion": "Neue Version erstellen…",
 		"makeForSlot": "Für {slot} erstellen…",
 		"demoDeleteLocked": "Die Gegenstände der Demo können nicht in den Papierkorb",
 		"cancelItem": "Gegenstand abbrechen",
@@ -504,6 +504,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Bewegungen und Zustände",
+		"newVersionDetail": "Zeichnet {name} für diese Figur neu, damit die fehlenden Bewegungen gefüllt werden können.",
 		"outfitSection": "Outfit",
 		"technicalDetails": "Technische Details",
 		"openSprite": "{title} vergrößern",
@@ -611,8 +612,8 @@
 		"missingView": "Fehlt",
 		"hiddenWhenWorn": "Beim Tragen von {names} ausgeblendet.",
 		"clipsIncomplete": {
-			"one": "{n} Bewegung unvollständig",
-			"other": "{n} Bewegungen unvollständig"
+			"one": "{n} unvollständig",
+			"other": "{n} unvollständig"
 		},
 		"complete": "Vollständig",
 		"clipNoFrames": "Noch keine Frames",
@@ -2982,7 +2983,7 @@
 		"defaultIdea": "ein Lederhut",
 		"shortcut": "Erstelle den Gegenstand mit Strg+Enter oder Cmd+Enter.",
 		"useOffHand": "Nebenhand verwenden",
-		"replaces": "Ersetzt {name}, sobald du es behältst. Das alte kommt in den Papierkorb.",
+		"replaces": "Ersetzt {name}, sobald du es behältst. Das alte kommt mit seinen Farben und Einstellungen in den Papierkorb.",
 		"ideas": "Ideen",
 		"colorHint": "Farbvorgabe",
 		"anyColor": "Beliebig",
@@ -3847,7 +3848,7 @@
 		"gone": "Diese Bewegung ist nicht mehr gespeichert.",
 		"itemDrawn": "Gezeichnet",
 		"itemMissing": "Fehlt",
-		"needsStandingDesign": "Kein gespeichertes Design zum Posieren"
+		"cantDrawOnMoves": "Kann noch nicht in Bewegungen gezeichnet werden"
 	},
 	"tips": {
 		"customizeTitle": "Demo einkleiden",

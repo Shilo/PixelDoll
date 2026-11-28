@@ -10,7 +10,7 @@ Screenshots live in the ignored `evidence/` folder under the repository's local-
 | --- | --- | --- | --- |
 | Characters | Pick a character, every visit | Backup warning can appear on a later visit with only the demo. Reserve it for work at risk. [Baseline](evidence/characters.png) | Rendered |
 | Character selection and name pickers | Switch characters, frequent | Character name, facts and list selection repeat for orientation. Put the picker choices ahead of raw generation material. [Baseline](evidence/character-context-menu.png) | Rendered |
-| Add character menu | Choose create or one of two import sources, occasional | Source choices are clear. Preserve separate, direct destinations and the paid cue before create. [Baseline](evidence/add-character-menu.png) | Rendered |
+| Add character menu | Choose create or one of two import sources, occasional | Source choices are clear. Preserve separate, direct destinations. The menu row no longer warns about cost; the price on Create is the paid cue. [Baseline](evidence/add-character-menu.png) | Rendered |
 | Character creator | Describe and size a new character, occasional | The exact prompt appears below Appearance and again in its own tab. The price sits on the far side of the footer from Create. [Baseline](evidence/create-or-connect.png) | Rendered |
 | Character setup help | Understand a field, occasional | Camera and mirroring help use provider terminology. Show the visual consequence first. Source in `CharacterForm` and `Help`. | Source |
 | Import from file | Load a character ZIP, occasional | Put the accepted artifact by Choose ZIP. Footer repeats the local-copy explanation. [Baseline](evidence/import-from-file.png) | Rendered empty |
@@ -145,6 +145,20 @@ An independent review of the whole branch (simplicity first, readable layouts, m
 
 ## Redraw for items without a design to pose
 
-The owner rejected a dead end: a missing item must always offer a way forward. An item made outside the app's pipeline (the demo's Wizard hat, older imports) has art but no saved design to pose, so no move can be drawn for it. Its row in a Move window now offers **Redraw…**: the priced New item form opens with the item's prompt, its current art as the reference and a line naming what it replaces. Keeping the result moves outfits to the new item and the old one to Trash (undoable), and the new item can then be drawn onto moves. The stage note's own-item remake uses the same path, so neither leaves a duplicate. Generate items stays visible and disabled until something is drawable.
+The owner rejected a dead end: a missing item must always offer a way forward. An item made outside the app's pipeline (the demo's Wizard hat, older imports) has art but no saved design to pose, so no move can be drawn for it. Its row in a Move window now offers **Make new version…** (renamed from Redraw, which already names a different action in the same window): the priced New item form opens with the item's prompt, its current art as the reference and a line naming what it replaces. Keeping the result moves outfits to the new item and the old one to Trash (undoable), and the new item can then be drawn onto moves. The stage note's own-item remake uses the same path, so neither leaves a duplicate. Generate items stays visible and disabled until something is drawable.
 
 The PixelLab tip now opens beside Connect instead of over its title, and finds the key link in Connect's footer on later opens (it pointed at the form, where the link no longer is). The Wardrobe "Try on gear" tip covers the Head header's buttons while it shows; every placement tried covers some control, and the owner accepted it as is.
+
+## Review by the item-details author
+
+| Finding | Outcome |
+| --- | --- |
+| Make new version is a paid dead end because the demo copy is not set up for posing. | Rejected with evidence: a new item on an unset-up character is anchored and keeps a saved design, and anchored items are drawn onto existing moves without joints (`missingItemMoves`; unit test "two-view unrigged imports extend just the chosen sparse move"). |
+| Two actions named Redraw in one window. | Renamed the item action to Make new version…, in the Move window, stage note and item window. |
+| The PixelLab tip covered the pending purchase line in Connect's footer. | The tip does not show while a purchase waits on Connect. |
+| Replacing skipped a closed character and dropped colors without saying so. | The swap runs on the stored record whether or not the character is open; the form says the old one moves to Trash with its colors and settings. |
+| The item window had no way forward for an item without a design. | Its Moves & states section offers Make new version… too. |
+| "3 moves incomplete" counted a state as a move. | The count is "3 incomplete" under the Moves & states heading. |
+| Row reason used jargon. | "Can't be drawn on moves yet". |
+| The export notes link was 16px tall; the item warning callout had no icon. | 24px minimum; warning icon added. |
+| Connect's realistic placeholder key looks filled in. | Kept: it shows the key format, and auth.spec asserts that format on purpose. |

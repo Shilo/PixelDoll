@@ -484,7 +484,7 @@
 		"cancelSaveError": "无法保存取消状态。请保持此标签页打开并重试。",
 		"preparing": "正在准备你的装备",
 		"remake": "为此角色制作副本…",
-		"redraw": "重绘…",
+		"newVersion": "制作新版本…",
 		"makeForSlot": "为{slot}制作一件…",
 		"demoDeleteLocked": "演示的物品无法移到回收站",
 		"cancelItem": "取消生成",
@@ -495,6 +495,7 @@
 	},
 	"itemPane": {
 		"movesSection": "动作与状态",
+		"newVersionDetail": "为此角色重新绘制{name}，以便补上缺少的动作。",
 		"outfitSection": "套装",
 		"technicalDetails": "技术详情",
 		"openSprite": "放大{title}",
@@ -597,7 +598,7 @@
 		"missingView": "缺失",
 		"hiddenWhenWorn": "穿戴{names}会隐藏此装备。",
 		"clipsIncomplete": {
-			"other": "{n} 个动作不完整"
+			"other": "{n} 个不完整"
 		},
 		"complete": "完整",
 		"clipNoFrames": "尚无帧",
@@ -2901,7 +2902,7 @@
 		"defaultIdea": "一顶皮帽",
 		"shortcut": "按 Ctrl+Enter 或 Cmd+Enter 制作装备。",
 		"useOffHand": "使用副手",
-		"replaces": "保留后将替换{name}，旧的会移到回收站。",
+		"replaces": "保留后将替换{name}，旧的连同颜色和设置会移到回收站。",
 		"ideas": "灵感",
 		"colorHint": "颜色提示",
 		"anyColor": "任意",
@@ -3743,7 +3744,7 @@
 		"gone": "此动作已不再保存。",
 		"itemDrawn": "已绘制",
 		"itemMissing": "缺少",
-		"needsStandingDesign": "没有可用于摆姿势的已存设计"
+		"cantDrawOnMoves": "暂时无法画到动作上"
 	},
 	"tips": {
 		"customizeTitle": "给演示角色换装",

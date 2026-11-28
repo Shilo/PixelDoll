@@ -2,7 +2,7 @@
  *  page; nothing here changes the app, and the app never calls in. See docs/design/onboarding.md. */
 import type { WhisperKey } from 'svelte-whisper';
 import { app } from '../../lib/app.svelte.ts';
-import { DEMO, creates, doc, store, ui } from '../state.svelte.ts';
+import { DEMO, creates, doc, pendingConnectionPurchase, store, ui } from '../state.svelte.ts';
 import { experience } from '../experience/state.svelte.ts';
 import { missingMoves } from '../model.ts';
 import { tips, type TipId } from './tips.svelte.ts';
@@ -159,8 +159,9 @@ export const catalog: TipSpec[] = [
 		// is no room beside it (phones).
 		placement: 'left',
 		fallbacks: ['right', 'top', 'bottom'],
-		// Only while Connect asks for a key (not while replacing a working one).
-		when: () => !app.key || app.keyRejected,
+		// Only while Connect asks for a key (not while replacing a working one), and not over a purchase that is waiting
+		// on Connect: its note and price share the footer with the key link.
+		when: () => (!app.key || app.keyRejected) && !pendingConnectionPurchase(),
 		// Connected: a key PixelLab accepted (a remembered key counts once its balance check succeeds).
 		doneWhen: () => !!app.key && !app.keyRejected && !!app.balance,
 		doneOn: "dialog[open] :is(a[href*='pixellab.ai'], input[type='password'])"

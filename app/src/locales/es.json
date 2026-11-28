@@ -493,7 +493,7 @@
 		"cancelSaveError": "No se pudo guardar la cancelación. Mantén esta pestaña abierta e inténtalo de nuevo.",
 		"preparing": "Preparando tu objeto",
 		"remake": "Hacer copia para este personaje…",
-		"redraw": "Redibujar…",
+		"newVersion": "Crear versión nueva…",
 		"makeForSlot": "Crear uno para la ranura {slot}…",
 		"demoDeleteLocked": "Los objetos de la demo no se pueden mover a la papelera",
 		"cancelItem": "Cancelar generación",
@@ -504,6 +504,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Movimientos y estados",
+		"newVersionDetail": "Vuelve a dibujar {name} para este personaje y así completar sus movimientos que faltan.",
 		"outfitSection": "Atuendo",
 		"technicalDetails": "Detalles técnicos",
 		"openSprite": "Ampliar {title}",
@@ -611,8 +612,8 @@
 		"missingView": "Falta",
 		"hiddenWhenWorn": "Llevar {names} oculta este objeto.",
 		"clipsIncomplete": {
-			"one": "{n} movimiento incompleto",
-			"other": "{n} movimientos incompletos"
+			"one": "{n} incompleto",
+			"other": "{n} incompletos"
 		},
 		"complete": "Completo",
 		"clipNoFrames": "Aún sin fotogramas",
@@ -2982,7 +2983,7 @@
 		"defaultIdea": "un sombrero de cuero",
 		"shortcut": "Ctrl+Enter o Cmd+Enter para crear el objeto.",
 		"useOffHand": "Usar mano secundaria",
-		"replaces": "Sustituye a {name} cuando lo conserves. El anterior va a la Papelera.",
+		"replaces": "Sustituye a {name} cuando lo conserves. El anterior, con sus colores y ajustes, va a la Papelera.",
 		"ideas": "Ideas",
 		"colorHint": "Pista de color",
 		"anyColor": "Cualquiera",
@@ -3847,7 +3848,7 @@
 		"gone": "Este movimiento ya no está guardado.",
 		"itemDrawn": "Dibujado",
 		"itemMissing": "Falta",
-		"needsStandingDesign": "Sin diseño guardado para posar"
+		"cantDrawOnMoves": "Aún no se puede dibujar en los movimientos"
 	},
 	"tips": {
 		"customizeTitle": "Viste la demo",
