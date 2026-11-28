@@ -1,6 +1,24 @@
 {
 	"releases": [
 		{
+			"version": "0.5.51",
+			"date": "2026-11-13",
+			"features": 33,
+			"banner": true,
+			"headline": {
+				"en": "Share gear across characters and zoom your way",
+				"de": "Ausrüstung über Figuren teilen und Zoom nach Wunsch",
+				"es": "Comparte equipo entre personajes y amplía a tu manera",
+				"fr": "Partager des équipements entre personnages et zoomer à votre façon",
+				"id": "Bagikan perlengkapan antar karakter dan atur zoom sesuai keinginan",
+				"ja": "キャラクター間で装備を共有して、好きな大きさで見る",
+				"ko": "캐릭터끼리 장비를 공유하고 원하는 대로 확대해요",
+				"pt-BR": "Compartilhe equipamentos entre personagens e amplie do seu jeito",
+				"tr": "Eşyaları karakterler arasında paylaşın ve yakınlaştırmayı kendinize göre ayarlayın",
+				"zh-Hans": "跨角色分享装备，随心缩放"
+			}
+		},
+		{
 			"version": "0.3.34",
 			"date": "2026-11-06",
 			"features": 15,
