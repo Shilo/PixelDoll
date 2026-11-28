@@ -47,6 +47,33 @@ const sendable = (schema: unknown): unknown =>
 
 type Message = Anthropic.Beta.Messages.BetaMessageParam;
 
+/** Turns account problems into a message that says what to fix, so a failed run is easy to act on. */
+async function requestClaude<T>(call: () => Promise<T>): Promise<T> {
+	try {
+		return await call();
+	} catch (error) {
+		const fix =
+			'Update the ANTHROPIC_API_KEY secret in the release environment (Settings > Environments > release), then run Actions > Release > Run workflow again; the run resumes where it stopped.';
+		if (error instanceof Anthropic.AuthenticationError)
+			throw new Error(`Claude rejected the API key: it is invalid, revoked or expired. ${fix}`, {
+				cause: error
+			});
+		if (error instanceof Anthropic.PermissionDeniedError)
+			throw new Error(`The API key may not use ${model}. ${fix}`, { cause: error });
+		if (error instanceof Anthropic.APIError && /credit balance/i.test(error.message))
+			throw new Error(
+				'The Claude account is out of API credit. Add credit or wait for the monthly credit, then run Actions > Release > Run workflow again.',
+				{ cause: error }
+			);
+		if (error instanceof Anthropic.APIError && /usage limits?|spend limit/i.test(error.message))
+			throw new Error(
+				'The Claude workspace reached its spend limit. Raise the limit or wait for next month, then run Actions > Release > Run workflow again.',
+				{ cause: error }
+			);
+		throw error;
+	}
+}
+
 /**
  * The reply as it may be sent back: after a mid-reply model fallback, thinking from before the handoff is dropped and
  * the fallback marker kept, as the refusals and fallback guide requires.
@@ -70,20 +97,22 @@ async function ask<T>(
 	const messages: Message[] = [{ role: 'user', content: JSON.stringify(input) }];
 	for (let attempt = 0; attempt < 2; attempt++) {
 		// Streamed so a large reply budget never hits the request timeout; thinking counts toward max_tokens.
-		const response = await claude.beta.messages
-			.stream({
-				model,
-				max_tokens: 64000,
-				betas: ['server-side-fallback-2026-07-01'],
-				fallbacks: 'default',
-				output_config: {
-					effort: 'medium',
-					format: { type: 'json_schema', schema: sendable(schema) as Record<string, unknown> }
-				},
-				system,
-				messages
-			})
-			.finalMessage();
+		const response = await requestClaude(() =>
+			claude.beta.messages
+				.stream({
+					model,
+					max_tokens: 64000,
+					betas: ['server-side-fallback-2026-07-01'],
+					fallbacks: 'default',
+					output_config: {
+						effort: 'medium',
+						format: { type: 'json_schema', schema: sendable(schema) as Record<string, unknown> }
+					},
+					system,
+					messages
+				})
+				.finalMessage()
+		);
 		if (response.stop_reason === 'refusal')
 			throw new InvalidReply(
 				`Claude declined (${response.stop_details?.category ?? 'no category'})`
@@ -174,10 +203,8 @@ export function labelsFor(text: string, english: Map<string, string>, target: Ma
 	return labels;
 }
 
-export async function translations(claude: Claude, english: CitedNotes) {
-	// The fixed maintenance message has no Claude-written content to translate.
-	if (english === emptyNotes) return { en: publicNotes(english) };
-	const notes = publicNotes(english);
+/** Translates the public English notes into every app locale; a locale whose reply fails validation is left out. */
+export async function translations(claude: Claude, notes: Notes) {
 	const system =
 		prompt('release-notes-translate.md') +
 		'\n' +

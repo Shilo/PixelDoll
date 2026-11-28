@@ -22,6 +22,8 @@ export type Source = {
 	commits: string[];
 	notes: CitedNotes;
 	bannerHash: string;
+	/** The English notes as last published, so an edit to notes.en.json can be told from an unchanged one. */
+	publishedEn?: Notes;
 };
 
 export type Index = {

@@ -142,6 +142,11 @@ export class GitHub {
 		return this.#pages<Asset>(`/releases/${id}/assets`);
 	}
 
+	/** Changes a published release's title and body without touching its Latest status. */
+	async updateRelease(id: number, name: string, body: string) {
+		await this.#json(`/releases/${id}`, 'PATCH', { name, body });
+	}
+
 	async deleteStarterAsset(id: number) {
 		await this.#request(`/releases/assets/${id}`, 'DELETE');
 	}

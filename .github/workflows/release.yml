@@ -5,6 +5,10 @@ on:
     # The release day and the day after (a backup if GitHub drops a scheduled run), just after releases/schedule.json's
     # hourUtc. Keep it in step with that file (release-history.test.ts checks); other days need no run.
     - cron: "17 15 * * 5,6"
+  # Editing a published release's notes or banner on main re-publishes it on GitHub and in the app.
+  push:
+    branches: [main]
+    paths: ["releases/*/notes.*.json", "releases/*/banner.png"]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -15,6 +19,10 @@ on:
         description: Most releases to publish in this run (backfill one at a time to check each)
         type: number
         default: 1
+      update:
+        description: Re-publish these released versions from their folders, space-separated (e.g. 1.4.12)
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -55,9 +63,28 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           gh auth setup-git
       - name: Run release pipeline
-        # One release per run by default: a failure never repeats more than one release's paid Claude calls.
-        run: npm run release -- --max ${{ inputs.max || 1 }} ${{ inputs.dry_run && '--dry-run' || '' }}
+        # One release per run by default: a failure never repeats more than one release's paid Claude calls. A push of
+        # edited release files, or the update input, re-publishes those versions instead.
+        run: |
+          if [[ "$EVENT" == push ]]; then
+            versions=$(git diff --name-only "$BEFORE" "$AFTER" -- releases | sed -nE 's#^releases/([0-9]+.[0-9]+.[0-9]+)/(notes.[^/]+.json|banner.png)$##p' | sort -u)
+          else
+            versions="$UPDATE"
+          fi
+          if [[ -n "${versions// }" ]]; then
+            npm run release -- $(printf -- '--update %s ' $versions)
+          else
+            npm run release -- --max "${MAX:-1}" ${DRY_RUN:+--dry-run}
+          fi
         env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          UPDATE: ${{ inputs.update }}
+          MAX: ${{ inputs.max }}
+          DRY_RUN: ${{ inputs.dry_run && 'true' || '' }}
+          RELEASE_PAGES: ${{ vars.RELEASE_PAGES }}
+          RELEASE_DEPLOYMENTS_REPOSITORY: ${{ vars.RELEASE_DEPLOYMENTS_REPOSITORY }}
           GITHUB_TOKEN: ${{ github.token }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           RELEASES_ENABLED: ${{ vars.RELEASES_ENABLED }}

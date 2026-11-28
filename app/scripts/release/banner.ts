@@ -91,22 +91,21 @@ async function dollFrame(manifest: Manifest, choice: (typeof candidates)[number]
 
 async function scaleBanner(page: Page, native: Uint8Array) {
 	const png = await page.evaluate(
-		async ({ data, width, height }) => {
+		async ({ data }) => {
 			const image = new Image();
 			image.src = `data:image/png;base64,${data}`;
 			await image.decode();
-			if (image.width !== width || image.height !== height)
-				throw new Error('Unexpected native release banner size');
+			// A replaced banner can have any size: scale what was given, 4x by whole pixels.
 			const canvas = document.createElement('canvas');
-			canvas.width = width * 4;
-			canvas.height = height * 4;
+			canvas.width = image.width * 4;
+			canvas.height = image.height * 4;
 			const context = canvas.getContext('2d');
 			if (!context) throw new Error('Cannot scale the release banner without a canvas');
 			context.imageSmoothingEnabled = false;
 			context.drawImage(image, 0, 0, canvas.width, canvas.height);
 			return canvas.toDataURL('image/png').split(',')[1];
 		},
-		{ data: Buffer.from(native).toString('base64'), width, height }
+		{ data: Buffer.from(native).toString('base64') }
 	);
 	return Buffer.from(png, 'base64');
 }

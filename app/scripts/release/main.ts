@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -21,6 +22,8 @@ import { liveBuilds } from './deployments.ts';
 import { GitHub } from './github.ts';
 import { commitReleaseFiles, fetchMain, git } from './git.ts';
 import { publishRelease } from './publish.ts';
+import { updateRelease } from './update.ts';
+import { emptyNotes, publicNotes } from './notes.ts';
 import { cutoffs } from './schedule.ts';
 
 const cwd = fileURLToPath(new URL('../../../', import.meta.url));
@@ -34,7 +37,8 @@ function options() {
 			'dry-run': { type: 'boolean' },
 			notes: { type: 'boolean' },
 			until: { type: 'string' },
-			max: { type: 'string' }
+			max: { type: 'string' },
+			update: { type: 'string', multiple: true }
 		}
 	});
 	const key = process.env.ANTHROPIC_API_KEY;
@@ -55,14 +59,23 @@ function options() {
 		(!/^\d+$/.test(values.max) || !Number.isSafeInteger(max) || max < 1)
 	)
 		throw new Error('--max must be a positive integer');
-	return { dryRun, notes: !!values.notes, until, max, key };
+	const update = values.update ?? [];
+	if (update.some((version) => !/^d+.d+.d+$/.test(version)))
+		throw new Error('--update takes release versions such as 1.4.12');
+	return { dryRun, notes: !!values.notes, until, max, key, update };
 }
 
-async function deployIndex(github: GitHub) {
+// A test repository can read the real site's Pages history while publishing only to itself, without deploying.
+const pagesEnabled = process.env.RELEASE_PAGES !== 'off';
+
+async function deployIndex(github: GitHub, deployments: GitHub) {
+	if (!pagesEnabled)
+		return console.log('Pages deploys are off for this repository (RELEASE_PAGES=off).');
 	const head = fetchMain(cwd);
-	const indexed = git(cwd, 'log', '-1', '--format=%H', head, '--', 'releases/index.json');
+	// The newest release files (a listing, an edit or a replaced banner) must be on the live site.
+	const indexed = git(cwd, 'log', '-1', '--format=%H', head, '--', 'releases');
 	const now = new Date();
-	for await (const { sha } of liveBuilds(github, [now])) {
+	for await (const { sha } of liveBuilds(deployments, [now])) {
 		if (sha) {
 			const check = spawnSync('git', ['merge-base', '--is-ancestor', indexed, sha], {
 				cwd,
@@ -81,9 +94,13 @@ async function deployIndex(github: GitHub) {
 }
 
 async function main() {
-	const { dryRun, notes: showNotes, until, max, key } = options();
+	const { dryRun, notes: showNotes, until, max, key, update } = options();
 	const token = process.env.GITHUB_TOKEN;
 	const github = new GitHub(process.env.GITHUB_REPOSITORY ?? 'Shilo/PixelDoll', token);
+	const deployments = new GitHub(
+		process.env.RELEASE_DEPLOYMENTS_REPOSITORY || github.repository,
+		token
+	);
 	if (!dryRun) {
 		if (!token) throw new Error('Publishing requires GITHUB_TOKEN');
 		if (git(cwd, 'status', '--porcelain')) throw new Error('Publishing requires a clean checkout');
@@ -92,6 +109,24 @@ async function main() {
 		if (git(cwd, 'rev-parse', 'HEAD') !== head) throw new Error('Publishing requires current main');
 	}
 	console.log(dryRun ? 'Release dry run.' : 'Release publishing enabled.');
+	if (update.length) {
+		if (dryRun) throw new Error('--update needs publishing enabled');
+		let edited = false;
+		for (const version of update)
+			edited =
+				(await updateRelease(github, folder, version, () => {
+					if (!key) throw new Error('Re-translating edited notes requires ANTHROPIC_API_KEY');
+					return claudeClient(key);
+				})) || edited;
+		if (edited)
+			commitReleaseFiles(
+				cwd,
+				`chore(release): update ${update.map((v) => 'v' + v).join(', ')}`,
+				'releases'
+			);
+		await deployIndex(github, deployments);
+		return;
+	}
 	const index = readJson<Index>(indexPath);
 	const previous = index.releases[0] && readSource(folder, index.releases[0].version);
 	const staged = readStaged(folder, index);
@@ -105,7 +140,7 @@ async function main() {
 	if (!due.length) console.log('No release cutoffs are due.');
 	const builds = new Map<number, string | undefined>();
 	for await (const { date, sha } of liveBuilds(
-		github,
+		deployments,
 		due.filter((date) => date !== stagedDate)
 	))
 		builds.set(+date, sha);
@@ -165,7 +200,7 @@ async function main() {
 	// A prior run can stop after the index push and before the Pages dispatch; this run's own dispatch covers it
 	// when it lists a release.
 	// An index pushed by an earlier run must reach the site even if this run's release later fails.
-	if (!dryRun && previous) await deployIndex(github);
+	if (!dryRun && previous) await deployIndex(github, deployments);
 	let indexInRun = 0;
 	let listed = 0;
 	let failure: unknown;
@@ -221,7 +256,11 @@ async function main() {
 				);
 				const claude = claudeClient(key);
 				const english = await writeNotes(claude, version, date, commits);
-				notes = await translations(claude, english);
+				// The fixed maintenance message has no Claude-written content to translate.
+				notes =
+					english === emptyNotes
+						? { en: publicNotes(english) }
+						: await translations(claude, publicNotes(english));
 				const composed = await composeBanner(version, recent);
 				source = {
 					version,
@@ -260,7 +299,7 @@ async function main() {
 		// is reported without hiding the publish error that came first.
 		if (!dryRun && listed) {
 			try {
-				await deployIndex(github);
+				await deployIndex(github, deployments);
 			} catch (error) {
 				if (failure === undefined) throw error;
 				console.error(`Pages deploy request also failed: ${String(error)}`);
@@ -270,6 +309,18 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-	console.error(`Release failed: ${error instanceof Error ? error.message : String(error)}`);
+	const message = error instanceof Error ? error.message : String(error);
+	console.error(`Release failed: ${message}`);
+	// The run page shows this summary: what went wrong and that a rerun resumes safely.
+	if (process.env.GITHUB_STEP_SUMMARY)
+		appendFileSync(
+			process.env.GITHUB_STEP_SUMMARY,
+			`## Release failed
+
+${message}
+
+Nothing is left half published: fix the cause, then run Actions > Release > Run workflow again and it resumes where it stopped.
+`
+		);
 	process.exitCode = 1;
 });
