@@ -938,8 +938,7 @@
 				<p
 					class="bu-notice item-callout"
 					data-size="compact"
-					data-tone="neutral"
-					class:warn={callout.tone === 'warn'}
+					data-tone={callout.tone === 'warn' ? 'warning' : 'neutral'}
 					role="status"
 				>
 					<span>{callout.text}</span>

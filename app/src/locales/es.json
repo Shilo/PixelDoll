@@ -2157,7 +2157,7 @@
 		"needsKey": "necesita tu clave",
 		"recent": "Recientes",
 		"tierHint": "El flujo de trabajo requiere PixelLab Tier {tier} o superior. Revisa tu plan y tu saldo antes de reintentar. Una tarea fallida por sí sola no confirma un problema con el plan.",
-		"session": "Esta sesión: {cost}. Algunas animaciones se cobran en dólares en lugar de generaciones; tu saldo de arriba es el total real.",
+		"session": "Esta sesión: {cost}.",
 		"clearFollower": "Bórralas en la pestaña de PixelDoll que ejecuta las tareas",
 		"clear": "Borrar tareas terminadas",
 		"ledger": {
@@ -3845,7 +3845,8 @@
 		"exportId": "ID de exportación",
 		"gone": "Este movimiento ya no está guardado.",
 		"itemDrawn": "Dibujado",
-		"itemMissing": "Falta"
+		"itemMissing": "Falta",
+		"needsStandingDesign": "Falta el diseño de pie"
 	},
 	"tips": {
 		"customizeTitle": "Viste la demo",

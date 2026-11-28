@@ -2166,7 +2166,7 @@
 		"needsKey": "precisa da sua chave",
 		"recent": "Recentes",
 		"tierHint": "Este fluxo requer o plano Tier {tier} ou superior do PixelLab. Confira seu plano e saldo antes de tentar novamente. Uma tarefa com falha não confirma, por si só, que há um problema no plano.",
-		"session": "Nesta sessão: {cost}. Algumas animações são cobradas em dólares, não em gerações. O saldo acima é o total real.",
+		"session": "Nesta sessão: {cost}.",
 		"clearFollower": "Limpe o histórico na aba do PixelDoll que está executando as tarefas",
 		"clear": "Limpar encerradas",
 		"ledger": {
@@ -3854,7 +3854,8 @@
 		"exportId": "ID de exportação",
 		"gone": "Este movimento não está mais salvo.",
 		"itemDrawn": "Desenhado",
-		"itemMissing": "Faltando"
+		"itemMissing": "Faltando",
+		"needsStandingDesign": "Falta o desenho em pé"
 	},
 	"tips": {
 		"customizeTitle": "Vista a demo",

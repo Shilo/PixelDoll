@@ -2092,7 +2092,7 @@
 		"needsKey": "キーが必要です",
 		"recent": "最近のジョブ",
 		"tierHint": "このワークフローにはPixelLabのTier {tier}以上が必要です。再試行する前にプランと残高を確認してください。ジョブの失敗だけでは、プランの問題とは限りません。",
-		"session": "このセッション：{cost}。モーションによっては生成回数ではなくドル建てで請求されます。実際の合計は上の残高で確認してください。",
+		"session": "このセッション：{cost}。",
 		"clearFollower": "ジョブを実行しているPixelDollのタブで消去してください",
 		"clear": "完了したものを消去",
 		"ledger": {
@@ -3741,7 +3741,8 @@
 		"exportId": "エクスポートID",
 		"gone": "この動きはもう保存されていません。",
 		"itemDrawn": "描画済み",
-		"itemMissing": "未描画"
+		"itemMissing": "未描画",
+		"needsStandingDesign": "立ちポーズのデザインが必要"
 	},
 	"tips": {
 		"customizeTitle": "デモを着せ替える",

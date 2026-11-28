@@ -2157,7 +2157,7 @@
 		"needsKey": "needs your key",
 		"recent": "Recent",
 		"tierHint": "Workflow requires PixelLab Tier {tier} or higher. Check your plan and balance before retrying. A failed job alone does not confirm a plan issue.",
-		"session": "This session: {cost}. Some moves are billed in dollars instead of gens; your balance above is the real total.",
+		"session": "This session: {cost}.",
 		"clearFollower": "Clear it in the PixelDoll tab that runs the jobs",
 		"clear": "Clear finished",
 		"ledger": {
@@ -3845,7 +3845,8 @@
 		"exportId": "Export ID",
 		"gone": "This move is no longer saved.",
 		"itemDrawn": "Drawn",
-		"itemMissing": "Missing"
+		"itemMissing": "Missing",
+		"needsStandingDesign": "Needs a standing design"
 	},
 	"tips": {
 		"customizeTitle": "Dress up the demo",

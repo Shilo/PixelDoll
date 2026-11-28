@@ -159,6 +159,22 @@
 			.sort((a, b) => Number(b.drawn) - Number(a.drawn));
 	});
 	const generation = $derived(savedClipItemGeneration(store.project, projectId, id));
+	/** Why a missing item can't be offered, said on its own row so the next step is clear without a summary. */
+	const rowReasons = $derived(
+		new Map(
+			(generation.rows ?? []).flatMap(({ item, pending }) =>
+				pending
+					? [[item.id, t('itemGeneration.inProgress')] as const]
+					: !Object.values(item.dressed ?? {}).some(Boolean)
+						? [[item.id, t('clipWindow.needsStandingDesign')] as const]
+						: []
+			)
+		)
+	);
+	/** Every missing row already says why, so no summary repeats it. */
+	const rowsExplain = $derived(
+		!!generation.rows?.length && generation.rows.every((row) => rowReasons.has(row.item.id))
+	);
 	const unavailableReason = $derived(generation.unavailableReason ?? generation.unposedNote);
 	const canCapture = $derived(!isDemo() && !!m && !!stateCaptureSource(m, id));
 	const length = $derived(clip?.frames.reduce((sum, frame) => sum + frame.ms, 0) ?? 0);
@@ -306,9 +322,11 @@
 												aria-hidden="true"
 											/>{:else}<TriangleAlert size={16} aria-hidden="true" />{/if}<span
 											>{row.item.name}</span
-										><span class="sr"
-											>{row.drawn ? t('clipWindow.itemDrawn') : t('clipWindow.itemMissing')}</span
-										>
+										>{#if !row.drawn && rowReasons.has(row.item.id)}<span class="row-reason"
+												>{rowReasons.get(row.item.id)}</span
+											>{:else}<span class="sr"
+												>{row.drawn ? t('clipWindow.itemDrawn') : t('clipWindow.itemMissing')}</span
+											>{/if}
 									</li>{/each}
 							</ul>
 							{#if generation.available}<div class="tool-list">
@@ -328,9 +346,11 @@
 											}}
 										/>
 									</div>
-								</div>{:else if items.drawn >= items.total}<p class="muted small">
-									{t('clipWindow.itemsComplete')}
-								</p>{:else}<p class="muted small" role="status">
+								</div>{:else if items.drawn >= items.total || rowsExplain}{#if !rowsExplain}<p
+										class="muted small"
+									>
+										{t('clipWindow.itemsComplete')}
+									</p>{/if}{:else}<p class="muted small" role="status">
 									{unavailableReason
 										? displayNestedMessage(unavailableReason)
 										: t('clipWindow.itemsUnavailable')}
@@ -421,6 +441,12 @@
 	.clip-items li :global(svg) {
 		flex: none;
 		color: var(--ok);
+	}
+	.clip-items .row-reason {
+		margin-inline-start: auto;
+		color: var(--bu-muted);
+		font-size: var(--fs-sm);
+		text-align: end;
 	}
 	.clip-items li[data-missing] :global(svg) {
 		color: var(--warn);

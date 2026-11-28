@@ -68,8 +68,7 @@
 			{#each view.notes as note, i (i)}<p
 					class="bu-notice"
 					data-size="compact"
-					data-tone="neutral"
-					class:warn={view.state !== 'ready'}
+					data-tone={view.state === 'ready' ? 'neutral' : 'warning'}
 				>
 					{#if view.state === 'failed'}<CircleAlert size={14} />{/if}{displayNestedMessage(note)}
 				</p>{/each}

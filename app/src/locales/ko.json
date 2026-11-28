@@ -2092,7 +2092,7 @@
 		"needsKey": "키 필요",
 		"recent": "최근",
 		"tierHint": "워크플로에는 PixelLab Tier {tier} 이상이 필요해요. 다시 시도하기 전에 요금제와 잔액을 확인하세요. 작업 실패만으로 요금제 문제라고 단정할 수는 없어요.",
-		"session": "이 세션: {cost}. 일부 동작은 생성 횟수 대신 달러로 청구되며, 위의 잔액이 실제 합계예요.",
+		"session": "이 세션: {cost}.",
 		"clearFollower": "작업을 실행하는 PixelDoll 탭에서 지우세요",
 		"clear": "완료된 작업 지우기",
 		"ledger": {
@@ -3741,7 +3741,8 @@
 		"exportId": "내보내기 ID",
 		"gone": "이 동작은 더 이상 저장되어 있지 않습니다.",
 		"itemDrawn": "그려짐",
-		"itemMissing": "없음"
+		"itemMissing": "없음",
+		"needsStandingDesign": "서 있는 자세 디자인 필요"
 	},
 	"tips": {
 		"customizeTitle": "데모 꾸미기",

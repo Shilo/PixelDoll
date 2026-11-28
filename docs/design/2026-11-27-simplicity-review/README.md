@@ -107,3 +107,17 @@ The owner asked for every agent to apply Impeccable's design practices and for c
 | Inconsistent capitalization in labels such as "Change Loop", "Frames & Quality" and "(Demo)". | Standardized the affected labels in English and updated translations where casing changes applied. | Kept the existing capitalization of "State" pending a glossary decision. |
 
 Left for a decision or a later pass: whether Move and State are proper nouns in labels; two disclosure styles; the API calls popover's own type scale; the offline banner and stage note outside the toast structure; 13px and 15px text roles; mixed icon stroke widths (1.6 in Bronze recipes, 2 elsewhere); the compact Wardrobe ⋮ target under coarse pointers; uneven side padding from `scrollbar-gutter: stable` (`both-edges` costs phones 15px each side).
+
+## Challenge round
+
+An independent review of the whole branch (simplicity first, readable layouts, minimal text, no regressions) tested the changed journeys at four sizes in both themes. The lead argued each finding before accepting it.
+
+| Finding | Outcome |
+| --- | --- |
+| The notice migration dropped conditional warning tones (item details, paid review) and left `ProblemNotice` without any notice styling. | Fixed: tone follows the state, and problem notices use the danger compact notice. |
+| Connect's priced action scrolled below the fold at 844×390. | Fixed: the purchase line and Connect sit in the sheet's fixed footer; the key link stays in the form. |
+| A setup notice with an action squeezed its text into a narrow column on phones. | Fixed in layout: compact notices with an action wrap the action below readable text. The copy stays; it is one sentence with real information. |
+| Activity's empty state led with account details, and the session line repeated billing boilerplate the owner had removed elsewhere. | Fixed: "Nothing generating." leads, the session line shows only after spending, and it no longer explains dollar billing. |
+| Export's footer said "see export notes" without a way to get there. | Fixed: the note is a link that opens the notes and moves focus to them. Download stays available for deliberate partial exports. |
+| A Move window explained a missing standing design only in a summary below the list. | Fixed: each missing row names its reason ("Needs a standing design" or "In progress"), and the summary is dropped when rows say it all. A link to item details was rejected for now: shared items have no details window. |
+| The Wardrobe tip says "Use + on a slot" and can overlap search in short landscape. | Kept: the tip anchors to a slot's +, so the copy matches; the overlap is the existing open item on tip placement. |

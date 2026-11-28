@@ -2157,7 +2157,7 @@
 		"needsKey": "anahtarınız gerekiyor",
 		"recent": "Son işler",
 		"tierHint": "Bu iş akışı için PixelLab Tier {tier} veya üzeri gerekir. Tekrar denemeden önce planınızı ve bakiyenizi kontrol edin. Bir işin başarısız olması tek başına plan sorunu olduğunu göstermez.",
-		"session": "Bu oturum: {cost}. Bazı animasyonlar üretim hakkı yerine dolar olarak ücretlendirilir. Yukarıdaki bakiye gerçek toplamı gösterir.",
+		"session": "Bu oturum: {cost}.",
 		"clearFollower": "İşleri çalıştıran PixelDoll sekmesinden temizleyin",
 		"clear": "Tamamlananları temizleyin",
 		"ledger": {
@@ -3845,7 +3845,8 @@
 		"exportId": "Dışa aktarma kimliği",
 		"gone": "Bu hareket artık kayıtlı değil.",
 		"itemDrawn": "Çizildi",
-		"itemMissing": "Eksik"
+		"itemMissing": "Eksik",
+		"needsStandingDesign": "Ayakta duruş tasarımı gerekli"
 	},
 	"tips": {
 		"customizeTitle": "Demoyu giydir",

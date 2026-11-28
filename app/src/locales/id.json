@@ -2092,7 +2092,7 @@
 		"needsKey": "memerlukan kunci Anda",
 		"recent": "Terbaru",
 		"tierHint": "Alur kerja memerlukan PixelLab Tier {tier} atau lebih tinggi. Periksa paket dan saldo sebelum mencoba lagi. Satu pekerjaan yang gagal belum tentu berarti paket Anda bermasalah.",
-		"session": "Sesi ini: {cost}. Biaya sebagian animasi ditagih dalam dolar, bukan generasi. Saldo di atas mencerminkan total sebenarnya.",
+		"session": "Sesi ini: {cost}.",
 		"clearFollower": "Bersihkan di tab PixelDoll yang menjalankan pekerjaan",
 		"clear": "Bersihkan yang selesai",
 		"ledger": {
@@ -3741,7 +3741,8 @@
 		"exportId": "ID ekspor",
 		"gone": "Gerakan ini tidak lagi tersimpan.",
 		"itemDrawn": "Digambar",
-		"itemMissing": "Hilang"
+		"itemMissing": "Hilang",
+		"needsStandingDesign": "Perlu desain pose berdiri"
 	},
 	"tips": {
 		"customizeTitle": "Dandani demo",

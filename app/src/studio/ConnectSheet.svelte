@@ -67,6 +67,7 @@
 	const activityScope = crypto.randomUUID();
 	const externalHint = $props.id();
 	const purchaseHint = `${externalHint}-purchase`;
+	const formId = `${externalHint}-form`;
 	const purchaseCost = `${externalHint}-cost`;
 	const purchase = pendingConnectionPurchase();
 	const purchaseEstimate = $derived(purchase ? displayMessage(purchase.estimate) : '');
@@ -208,6 +209,7 @@
 
 <Sheet
 	{title}
+	footer={showForm ? connectFooter : undefined}
 	back={settingsNavigation.accountOpen ? closeSettingsAccount : undefined}
 	backTo={t('export.sheet.settings')}
 	onclose={() => (ui.sheet = null)}
@@ -371,6 +373,7 @@
 			</p>
 		{/if}
 		<form
+			id={formId}
 			class="form"
 			onsubmit={(e) => {
 				e.preventDefault();
@@ -418,11 +421,6 @@
 			<p class="small bu-muted">{t('connectSheet.sentOnlyToApiPixellabAi')}</p>
 			{#if !purchase}<p class="small bu-muted">{t('connectSheet.demoNoAccount')}</p>{/if}
 			<AffiliationNotice multiline />
-			{#if purchase && !replacing}
-				<p id={purchaseHint} class="small">
-					{t('connectSheet.resumePurchase', { name: purchase.name })}
-				</p>
-			{/if}
 			<div class="field-row">
 				<a
 					class="bu-action btn"
@@ -434,42 +432,48 @@
 					>{t('connectSheet.getSecretKey')}
 					<ExternalLink size={14} aria-hidden="true" /></a
 				>
-				<span class="actions">
-					{#if app.keyRejected && !checking}<button
-							type="button"
-							class="bu-action btn plain"
-							data-variant="quiet"
-							onclick={forget}>{t('connectSheet.forgetKey')}</button
-						>{/if}
-					{#if replacing && !checking}<button
-							type="button"
-							class="bu-action btn plain"
-							data-variant="quiet"
-							onclick={cancelReplace}>{t('connectSheet.keepKey')}</button
-						>{/if}
-					<span class="api-action"
-						><button
-							class="bu-action btn primary"
-							data-variant="primary"
-							type="submit"
-							disabled={!key.trim() || checking}
-							aria-describedby={purchase && !replacing
-								? `${purchaseHint} ${purchaseCost}`
-								: undefined}
-							>{submitLabel}
-							{#if purchase && !replacing}<span class="cost" aria-hidden="true"
-									>~{purchaseEstimate}</span
-								>{/if}</button
-						>{#if purchase && !replacing}<span id={purchaseCost} hidden
-								>{t('create.sheet.estimated', { gens: purchaseEstimate })}</span
-							>{/if}</span
-					>
-				</span>
 			</div>
 		</form>
 	{/if}
 	<span id={externalHint} hidden>{t('noticeLink.opensInANewTab')}</span>
 </Sheet>
+
+{#snippet connectFooter()}
+	{#if purchase && !replacing}
+		<p id={purchaseHint} class="small connect-purchase">
+			{t('connectSheet.resumePurchase', { name: purchase.name })}
+		</p>
+	{/if}
+	<span class="actions">
+		{#if app.keyRejected && !checking}<button
+				type="button"
+				class="bu-action btn plain"
+				data-variant="quiet"
+				onclick={forget}>{t('connectSheet.forgetKey')}</button
+			>{/if}
+		{#if replacing && !checking}<button
+				type="button"
+				class="bu-action btn plain"
+				data-variant="quiet"
+				onclick={cancelReplace}>{t('connectSheet.keepKey')}</button
+			>{/if}
+		<span class="api-action"
+			><button
+				class="bu-action btn primary"
+				data-variant="primary"
+				type="submit"
+				form={formId}
+				disabled={!key.trim() || checking}
+				aria-describedby={purchase && !replacing ? `${purchaseHint} ${purchaseCost}` : undefined}
+				>{submitLabel}
+				{#if purchase && !replacing}<span class="cost" aria-hidden="true">~{purchaseEstimate}</span
+					>{/if}</button
+			>{#if purchase && !replacing}<span id={purchaseCost} hidden
+					>{t('create.sheet.estimated', { gens: purchaseEstimate })}</span
+				>{/if}</span
+		>
+	</span>
+{/snippet}
 
 <style>
 	.trial-guide {
@@ -479,6 +483,10 @@
 		width: 100%;
 		justify-content: space-between;
 		text-align: start;
+	}
+	.connect-purchase {
+		margin: 0 auto 0 0;
+		min-width: 0;
 	}
 	.copy-label {
 		display: inline-flex;

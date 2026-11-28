@@ -679,6 +679,15 @@
 		);
 		if (result.kind === 'requested') ui.sheet = null;
 	}
+	let notesDetails = $state<HTMLDetailsElement>();
+	/** The footer's notes link opens the notes and brings them into view, so a warning is one press away. */
+	function showNotes() {
+		if (!notesDetails) return;
+		notesDetails.open = true;
+		const summary = notesDetails.querySelector('summary');
+		summary?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+		summary?.focus({ preventScroll: true });
+	}
 </script>
 
 {#snippet exportFooter()}
@@ -694,8 +703,14 @@
 					: result?.kind === 'failed'
 						? t('export.sheet.noZip')
 						: hasNotes
-							? t('export.sheet.readyNotes')
-							: t('export.sheet.free')}</span
+							? ''
+							: t(
+									'export.sheet.free'
+								)}{#if ready && !pendingExport && result?.kind !== 'recovery' && result?.kind !== 'failed' && hasNotes}<button
+				type="button"
+				class="btn link notes-link"
+				onclick={showNotes}>{t('export.sheet.readyNotes')}</button
+			>{/if}</span
 	>
 	{#if ready && !pendingExport && result?.kind === 'failed' && result.retryable}
 		<button class="bu-action btn primary lg" data-variant="primary" onclick={() => attempt++}
@@ -1020,7 +1035,7 @@
 							</p>
 						{/if}
 						{#if hasNotes}
-							<details class="disclosure">
+							<details class="disclosure" bind:this={notesDetails}>
 								<summary><ChevronRight size={14} />{t('export.notes.title')}</summary>
 								<div class="small">
 									{#if reviewItems.length}<p>

@@ -2092,7 +2092,7 @@
 		"needsKey": "需要你的密钥",
 		"recent": "最近",
 		"tierHint": "工作流需要 PixelLab Tier {tier} 或更高套餐。重试前请检查你的套餐和余额。仅任务失败并不能确认是套餐问题。",
-		"session": "本次会话：{cost}。部分动作按美元而非生成次数计费；上方的余额才是实际总额。",
+		"session": "本次会话：{cost}。",
 		"clearFollower": "请在运行任务的 PixelDoll 标签页中清除",
 		"clear": "清除已完成",
 		"ledger": {
@@ -3741,7 +3741,8 @@
 		"exportId": "导出 ID",
 		"gone": "此动作已不再保存。",
 		"itemDrawn": "已绘制",
-		"itemMissing": "缺少"
+		"itemMissing": "缺少",
+		"needsStandingDesign": "需要站立姿势设计"
 	},
 	"tips": {
 		"customizeTitle": "给演示角色换装",

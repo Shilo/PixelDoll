@@ -2157,7 +2157,7 @@
 		"needsKey": "braucht deinen Schlüssel",
 		"recent": "Letzte Aufträge",
 		"tierHint": "Dieser Ablauf braucht mindestens PixelLab Tier {tier}. Prüfe vor einem neuen Versuch Tarif und Kontostand. Ein fehlgeschlagener Auftrag allein bedeutet nicht, dass es am Tarif liegt.",
-		"session": "Diese Sitzung: {cost}. Einige Animationen werden in US-Dollar statt in Generierungen abgerechnet. Maßgeblich ist der Kontostand oben.",
+		"session": "Diese Sitzung: {cost}.",
 		"clearFollower": "Entferne die Einträge in dem PixelDoll-Tab, in dem die Aufträge laufen",
 		"clear": "Abgeschlossene entfernen",
 		"ledger": {
@@ -3845,7 +3845,8 @@
 		"exportId": "Export-ID",
 		"gone": "Diese Bewegung ist nicht mehr gespeichert.",
 		"itemDrawn": "Gezeichnet",
-		"itemMissing": "Fehlt"
+		"itemMissing": "Fehlt",
+		"needsStandingDesign": "Standpose-Design fehlt"
 	},
 	"tips": {
 		"customizeTitle": "Demo einkleiden",

@@ -500,6 +500,14 @@ dialog select option {
 .bu-notice[data-size='compact'] .btn {
 	margin-left: auto;
 }
+/* The text keeps a readable width; on narrow sheets the action drops below it instead of squeezing it. */
+.bu-notice[data-size='compact']:has(> .btn) {
+	flex-wrap: wrap;
+}
+.bu-notice[data-size='compact']:has(> .btn) > span {
+	flex: 1 1 14rem;
+	min-width: 0;
+}
 
 /* ---------- progress ---------- */
 .ring {

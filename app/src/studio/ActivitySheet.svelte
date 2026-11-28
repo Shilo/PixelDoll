@@ -294,6 +294,9 @@
 				</div>
 			</div>
 		{/if}
+		{#if !ui.waitingForTab && !running.length && !queued.length && !flowsPending}<p class="muted">
+				{t('activity.nothing')}
+			</p>{/if}
 		<PixelLabUsage>
 			{#snippet actions()}
 				{#if app.key}<span class="api-action"
@@ -353,9 +356,6 @@
 					>{/if}
 			</p>
 		{/if}
-		{#if !ui.waitingForTab && !running.length && !queued.length && !flowsPending}<p class="muted">
-				{t('activity.nothing')}
-			</p>{/if}
 		{#if running.length}
 			<section class="act-group">
 				<span class="section-title">{t('activity.generating')}</span>
@@ -477,9 +477,9 @@
 				</ul>
 			</section>
 		{/if}
-		<p class="faint small">
-			{t('activity.session', { cost: sessionCost })}
-		</p>
+		{#if $queue.sessionGens || $queue.sessionUsd || $queue.sessionUnknown}<p class="faint small">
+				{t('activity.session', { cost: sessionCost })}
+			</p>{/if}
 		<details class="disclosure">
 			<summary><ChevronRight size={14} />{t('common.details')}</summary>
 			<div>

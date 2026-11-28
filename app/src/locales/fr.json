@@ -2157,7 +2157,7 @@
 		"needsKey": "nécessite votre clé",
 		"recent": "Récent",
 		"tierHint": "Cette opération nécessite un forfait PixelLab Tier {tier} ou supérieur. Vérifiez votre forfait et votre solde avant de réessayer. Une tâche en échec ne suffit pas à établir un problème de forfait.",
-		"session": "Cette session : {cost}. Certaines animations sont facturées en dollars américains plutôt qu’en générations. Le solde affiché ci-dessus fait foi.",
+		"session": "Cette session : {cost}.",
 		"clearFollower": "Effacez-les dans l’onglet PixelDoll qui exécute les tâches",
 		"clear": "Effacer les tâches terminées",
 		"ledger": {
@@ -3845,7 +3845,8 @@
 		"exportId": "ID d’export",
 		"gone": "Ce mouvement n’est plus enregistré.",
 		"itemDrawn": "Dessiné",
-		"itemMissing": "Manquant"
+		"itemMissing": "Manquant",
+		"needsStandingDesign": "Modèle debout manquant"
 	},
 	"tips": {
 		"customizeTitle": "Habillez la démo",

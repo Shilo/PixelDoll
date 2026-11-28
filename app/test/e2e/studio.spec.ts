@@ -10614,10 +10614,11 @@ test('standing-first items quote standing and draw selected custom moves togethe
 	const walkWindow = page.locator('dialog.clip-window[open]');
 	const walkCoverage = await openItemSection(walkWindow, 'Wardrobe items');
 	await expect(walkCoverage).toContainText('5 of 6 items drawn');
+	// The missing row names what it needs, so no separate summary repeats it.
 	await expect(walkCoverage.getByRole('listitem').filter({ hasText: 'Wizard hat' })).toContainText(
-		'Missing'
+		'Needs a standing design'
 	);
-	await expect(walkCoverage.getByRole('status')).toHaveText('A standing design is needed first.');
+	await expect(walkCoverage.getByRole('status')).toHaveCount(0);
 	await expect(walkCoverage.getByRole('button', { name: 'Generate items' })).toHaveCount(0);
 	await page.keyboard.press('Escape');
 	await expect(walkWindow).toHaveCount(0);
