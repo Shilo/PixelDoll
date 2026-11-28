@@ -18,7 +18,7 @@ export class BannerError extends Error {}
  */
 export function bannerPrompt(scene: string) {
 	const sentence = scene.trim().replace(/[\s.!?]*$/, '.');
-	return `Wide, eye-level pixel-art scene in a cozy fantasy world of clothes and costumes. ${sentence} Garments, fabrics and accessories fill the setting. Crisp silhouettes and a clearly lit focal action. The setting fills the canvas to all four edges.`;
+	return `Wide, eye-level pixel-art scene in a cozy fantasy world of clothes and costumes. ${sentence} Garments, fabrics and accessories in rich, vivid colors fill the setting. Bright, warm lighting, crisp silhouettes and a clearly lit focal action. The setting fills the canvas to all four edges.`;
 }
 
 /** The release's own banner when it has one, else the shared default `releases/banner.png`. */

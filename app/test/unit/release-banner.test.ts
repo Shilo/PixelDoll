@@ -43,7 +43,7 @@ it('drops an unusable banner scene instead of the notes', () => {
 it('ends the scene with exactly one period inside the fixed frame', () => {
 	for (const scene of ['A tailor fits a cape', 'A tailor fits a cape.', 'A tailor fits a cape ...'])
 		expect(bannerPrompt(` ${scene} `)).toBe(
-			'Wide, eye-level pixel-art scene in a cozy fantasy world of clothes and costumes. A tailor fits a cape. Garments, fabrics and accessories fill the setting. Crisp silhouettes and a clearly lit focal action. The setting fills the canvas to all four edges.'
+			'Wide, eye-level pixel-art scene in a cozy fantasy world of clothes and costumes. A tailor fits a cape. Garments, fabrics and accessories in rich, vivid colors fill the setting. Bright, warm lighting, crisp silhouettes and a clearly lit focal action. The setting fills the canvas to all four edges.'
 		);
 });
 
