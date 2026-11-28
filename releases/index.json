@@ -1,6 +1,24 @@
 {
 	"releases": [
 		{
+			"version": "0.7.38",
+			"date": "2026-11-20",
+			"features": 46,
+			"banner": true,
+			"headline": {
+				"en": "Dress any character in any item",
+				"de": "Jede Figur mit jedem Gegenstand ausstatten",
+				"es": "Viste cualquier personaje con cualquier objeto",
+				"fr": "Habillez n'importe quel personnage avec n'importe quel objet",
+				"id": "Pakai item apa pun pada karakter mana pun",
+				"ja": "どのキャラクターにも、どのアイテムでも着せられます",
+				"ko": "어떤 캐릭터에든 어떤 아이템이든 입혀 보세요",
+				"pt-BR": "Vista qualquer personagem com qualquer item",
+				"tr": "Her karaktere her eşyayı giydirin",
+				"zh-Hans": "在任意角色上穿戴任意装备"
+			}
+		},
+		{
 			"version": "0.5.51",
 			"date": "2026-11-13",
 			"features": 33,
