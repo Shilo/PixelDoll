@@ -1,0 +1,33 @@
+{
+	"headline": "Partager des équipements entre personnages et zoomer à votre façon",
+	"intro": "Votre garde-robe s'étend désormais à tous les personnages, et la scène zoome comme vous l'attendez. Exportez vers RPG Maker, et profitez au passage de listes et de menus plus nets.",
+	"highlights": [
+		{
+			"title": "Porter des objets d'autres personnages",
+			"text": "Les objets d'autres personnages apparaissent désormais sur chaque personnage, y compris la démo. Les objets conçus pour un autre corps peuvent être portés tels quels et sont marqués « À vérifier »."
+		},
+		{
+			"title": "Exporter des feuilles de marche pour RPG Maker",
+			"text": "Une nouvelle carte RPG Maker exporte une feuille de marche par tenue. Son menu Version permet de choisir Standard (MZ, MV, VX Ace, VX) ou XP (XP et Pokemon Essentials)."
+		},
+		{
+			"title": "Zoomer la scène à taille réelle",
+			"text": "100 % affiche désormais votre personnage à taille réelle. La molette, les touches et les boutons parcourent les mêmes niveaux de zoom sur les deux écrans, et une molette ou un pincement zoome la scène Personnages."
+		},
+		{
+			"title": "Objets à deux mains et mains séparées",
+			"text": "Main principale et Main secondaire sont désormais des groupes distincts dans la garde-robe, donc une épée et un bouclier se fabriquent et se portent séparément. L'interrupteur À deux mains fait masquer l'autre main par l'objet."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Au démarrage, le bouton Recharger s'affiche désormais au lieu de rester bloqué sur le message d'accueil."
+		},
+		{
+			"text": "Les garde-robes nouvellement ouvertes commencent désormais en haut de la liste."
+		},
+		{
+			"text": "La molette au-dessus d'une liste défilante fait défiler la liste au lieu de changer de personnage."
+		}
+	]
+}

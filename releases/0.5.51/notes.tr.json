@@ -1,0 +1,33 @@
+{
+	"headline": "Eşyaları karakterler arasında paylaşın ve yakınlaştırmayı kendinize göre ayarlayın",
+	"intro": "Dolabınız artık tüm karakterlere uzanıyor ve sahne beklediğiniz gibi yakınlaşıyor. RPG Maker'a dışa aktarın, bu arada daha düzenli listelerin ve menülerin keyfini çıkarın.",
+	"highlights": [
+		{
+			"title": "Diğer karakterlerin eşyalarını giydirin",
+			"text": "Diğer karakterlerin eşyaları artık demo dahil her karaktere görünüyor. Farklı bir gövde için yapılmış eşyalar çizildiği gibi giydirilebilir ve İnceleme gerekli olarak işaretlenir."
+		},
+		{
+			"title": "RPG Maker için yürüme tabloları dışa aktarın",
+			"text": "Yeni RPG Maker kartı her kıyafet için bir yürüme tablosu dışa aktarır. Sürüm menüsünden Standart (MZ, MV, VX Ace, VX) ya da XP (XP ve Pokemon Essentials) seçebilirsiniz."
+		},
+		{
+			"title": "Sahneyi gerçek boyutuna yakınlaştırın",
+			"text": "%100 artık karakterinizi gerçek boyutunda gösterir. Fare tekerleği, tuşlar ve düğmeler iki ekranda da aynı yakınlaştırma düzeylerinde ilerler; fare tekerleği ya da parmakla kıstırma Karakterler sahnesini yakınlaştırır."
+		},
+		{
+			"title": "Çift elli eşyalar ve ayrı eller",
+			"text": "Ana el ve Diğer el artık ayrı dolap grupları, bu yüzden kılıç ve kalkan ayrı ayrı yapılır ve giydirilir. Çift elli anahtarı, eşyanın diğer eli gizlemesini sağlar."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Başlangıçta artık takılı kalmak yerine Yeniden yükle düğmesi gösterilir."
+		},
+		{
+			"text": "Yeni açılan dolaplar artık listenin en üstünden başlar."
+		},
+		{
+			"text": "Kaydırılabilir bir listenin üzerindeki fare tekerleği karakter değiştirmek yerine listeyi kaydırır."
+		}
+	]
+}

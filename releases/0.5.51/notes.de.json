@@ -1,0 +1,33 @@
+{
+	"headline": "Ausrüstung über Figuren teilen und Zoom nach Wunsch",
+	"intro": "Dein Kleiderschrank reicht jetzt über alle Figuren, und die Bühne zoomt so, wie du es erwartest. Exportiere nach RPG Maker und genieße dabei übersichtlichere Listen und Menüs.",
+	"highlights": [
+		{
+			"title": "Gegenstände anderer Figuren anlegen",
+			"text": "Gegenstände anderer Figuren erscheinen jetzt auf jeder Figur, auch auf der Demo. Gegenstände für einen anderen Körper lassen sich so anlegen, wie sie gezeichnet sind, und werden mit Bitte prüfen markiert."
+		},
+		{
+			"title": "Laufanimationen für RPG Maker exportieren",
+			"text": "Eine neue RPG-Maker-Karte exportiert pro Outfit ein Lauf-Sheet. Im Menü Version wählst du Standard (MZ, MV, VX Ace, VX) oder XP (XP und Pokemon Essentials)."
+		},
+		{
+			"title": "Szene auf echte Größe zoomen",
+			"text": "100 % zeigt deine Figur in echter Größe. Mausrad, Tasten und Schaltflächen wechseln auf beiden Bildschirmen durch dieselben Zoomstufen, und Mausrad oder Pinch zoomt die Figuren-Szene."
+		},
+		{
+			"title": "Zweihändige Gegenstände und getrennte Hände",
+			"text": "Haupthand und Nebenhand sind jetzt getrennte Gruppen im Kleiderschrank, sodass ein Schwert und ein Schild getrennt hergestellt und angelegt werden. Mit dem Schalter Zweihändig blendet ein Gegenstand die andere Hand aus."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Der Start zeigt jetzt die Schaltfläche Neu laden, statt bei der Startmeldung hängen zu bleiben."
+		},
+		{
+			"text": "Neu geöffnete Kleiderschränke beginnen jetzt oben in der Liste."
+		},
+		{
+			"text": "Das Mausrad über einer scrollbaren Liste scrollt sie, statt zwischen Figuren zu wechseln."
+		}
+	]
+}

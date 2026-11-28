@@ -1,0 +1,33 @@
+{
+	"headline": "Share gear across characters and zoom your way",
+	"intro": "Your wardrobe now reaches across every character, and the stage zooms the way you expect. Export to RPG Maker, and enjoy tidier lists and menus along the way.",
+	"highlights": [
+		{
+			"title": "Wear items from other characters",
+			"text": "Items from other characters now appear on every character, including the demo. Items made for a different body can be worn as drawn and are marked Needs a look."
+		},
+		{
+			"title": "Export walking sheets for RPG Maker",
+			"text": "A new RPG Maker card exports a walking sheet per outfit. Its Version menu lets you choose Standard (MZ, MV, VX Ace, VX) or XP (XP and Pokemon Essentials)."
+		},
+		{
+			"title": "Zoom the scene to true size",
+			"text": "100% now shows your character at true size. Wheel, keys and buttons step through the same zoom levels on both screens, and a wheel or pinch zooms the Characters scene."
+		},
+		{
+			"title": "Two-handed items and separate hands",
+			"text": "Main hand and Off hand are now separate wardrobe groups, so a sword and a shield are made and worn separately. A Two-handed switch makes an item hide the other hand."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Startup now shows a Reload button instead of getting stuck on the opening message."
+		},
+		{
+			"text": "Newly opened wardrobes now start at the top of the list."
+		},
+		{
+			"text": "Wheel input over a scrollable list scrolls it instead of switching characters."
+		}
+	]
+}

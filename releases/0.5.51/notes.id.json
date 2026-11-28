@@ -1,0 +1,33 @@
+{
+	"headline": "Bagikan perlengkapan antar karakter dan atur zoom sesuai keinginan",
+	"intro": "Lemari pakaian Anda sekarang berlaku untuk semua karakter, dan panggung memperbesar serta memperkecil sesuai harapan Anda. Ekspor ke RPG Maker, dan nikmati daftar dan menu yang lebih rapi.",
+	"highlights": [
+		{
+			"title": "Kenakan item dari karakter lain",
+			"text": "Item dari karakter lain sekarang muncul di setiap karakter, termasuk demo. Item yang dibuat untuk tubuh berbeda bisa dikenakan sesuai gambarnya dan diberi tanda Perlu ditinjau."
+		},
+		{
+			"title": "Ekspor lembar berjalan untuk RPG Maker",
+			"text": "Kartu RPG Maker baru mengekspor satu lembar berjalan per setelan. Menu Versi memungkinkan Anda memilih Standar (MZ, MV, VX Ace, VX) atau XP (XP dan Pokemon Essentials)."
+		},
+		{
+			"title": "Perbesar scene ke ukuran asli",
+			"text": "100% sekarang menampilkan karakter Anda dalam ukuran asli. Roda, tombol keyboard, dan tombol memperbesar atau memperkecil melalui tingkat zoom yang sama di kedua layar, dan roda atau cubit memperbesar scene Karakter."
+		},
+		{
+			"title": "Item dua tangan dan tangan terpisah",
+			"text": "Tangan utama dan Tangan sekunder sekarang menjadi grup lemari terpisah, sehingga pedang dan perisai dibuat dan dikenakan secara terpisah. Sakelar Dua tangan membuat item menyembunyikan tangan lainnya."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Saat dimulai, sekarang ada tombol Muat ulang alih-alih macet di pesan pembuka."
+		},
+		{
+			"text": "Lemari pakaian yang baru dibuka sekarang mulai dari bagian atas daftar."
+		},
+		{
+			"text": "Roda mouse di atas daftar yang bisa digulir sekarang menggulir daftar, bukan mengganti karakter."
+		}
+	]
+}

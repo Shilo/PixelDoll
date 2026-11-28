@@ -1,0 +1,33 @@
+{
+	"headline": "Compartilhe equipamentos entre personagens e amplie do seu jeito",
+	"intro": "Seu guarda-roupa agora alcança todos os personagens, e o palco amplia do jeito que você espera. Exporte para o RPG Maker e aproveite listas e menus mais organizados no caminho.",
+	"highlights": [
+		{
+			"title": "Equipar itens de outros personagens",
+			"text": "Itens de outros personagens agora aparecem em todos os personagens, inclusive no demo. Itens feitos para um corpo diferente podem ser equipados como foram desenhados e são marcados como Precisa de revisão."
+		},
+		{
+			"title": "Exportar folhas de caminhada para o RPG Maker",
+			"text": "Um novo cartão do RPG Maker exporta uma folha de caminhada por traje. Seu menu Versão permite escolher Padrão (MZ, MV, VX Ace, VX) ou XP (XP e Pokemon Essentials)."
+		},
+		{
+			"title": "Ampliar a cena para o tamanho real",
+			"text": "100% agora mostra seu personagem em tamanho real. Roda do mouse, teclas e botões percorrem os mesmos níveis de zoom nas duas telas, e a roda ou o gesto de pinça amplia a cena Personagens."
+		},
+		{
+			"title": "Itens de duas mãos e mãos separadas",
+			"text": "Mão principal e Mão secundária agora são grupos separados do guarda-roupa, então uma espada e um escudo são feitos e equipados separadamente. Uma chave Duas mãos faz o item ocultar a outra mão."
+		}
+	],
+	"fixes": [
+		{
+			"text": "A inicialização agora mostra um botão Recarregar em vez de travar na mensagem de abertura."
+		},
+		{
+			"text": "Guarda-roupas recém-abertos agora começam no topo da lista."
+		},
+		{
+			"text": "A roda do mouse sobre uma lista rolável agora rola a lista em vez de trocar de personagem."
+		}
+	]
+}

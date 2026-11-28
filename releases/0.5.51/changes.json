@@ -1,0 +1,632 @@
+{
+	"total": 153,
+	"groups": [
+		{
+			"kind": "new",
+			"items": [
+				{
+					"sha": "5aa27e3d1bb4d0d7168317b07a5428412af227c3",
+					"text": "Add consistent outfit and move context menus"
+				},
+				{
+					"sha": "647b018911947f5bf009c4640ea9a8b3a50889ee",
+					"text": "Experience: Share zoom with playable views"
+				},
+				{
+					"sha": "7c56b861864ae5eb9754a077d1ed6526b2725376",
+					"text": "Studio: Wear shared items from any frame size or camera with a warning"
+				},
+				{
+					"sha": "9d8b45a02acdc284e31db3cc3073a54674f26800",
+					"text": "Studio: Share items with the demo and wear unfitted shared items"
+				},
+				{
+					"sha": "361ea44dc13934e27017239542ad90248e1135f5",
+					"text": "Experience: Make scene zoom absolute with a whole-multiple ladder"
+				},
+				{
+					"sha": "033777130be43cc191b5edbf740be11423ca7c6b",
+					"text": "Experience: Step zoom through shared levels on both screens"
+				},
+				{
+					"sha": "6b0161b8b74d72b965595f8c2e95e5259e0ec453",
+					"text": "Export: Stop shipping CREDITS.txt"
+				},
+				{
+					"sha": "d8c168cca919b5dc18258126bdb310e06c28c10f",
+					"text": "Show generation details and add advanced creation settings"
+				},
+				{
+					"sha": "38365f88cda6eeb77bf8a86226766becaaa15b38",
+					"text": "Studio: Confirm deletions and item cancel in one concise alert"
+				},
+				{
+					"sha": "c16a85322c1ff1c484e90477a506a3d230602038",
+					"text": "Experience: Wheel zooms the cast, zoom out past the background fit"
+				},
+				{
+					"sha": "a12c8f0661c15d260aaff9a55c66dab8c825eb7a",
+					"text": "Studio: Polish character list, item tiles and delete menus"
+				},
+				{
+					"sha": "ac67d5fbdd10c9c1a5d3ca88901cd617e12db605",
+					"text": "Add bounded scene camera zoom"
+				},
+				{
+					"sha": "183c14a913bb450befe7497ef6dc910673fa8225",
+					"text": "Studio: Simplify item progress and add safe cancellation"
+				},
+				{
+					"sha": "789080a5968b1bee9f7089c81c5adf31fdba7640",
+					"text": "Default new characters to white underwear"
+				},
+				{
+					"sha": "73d1ae9bb050f3d8a898a38ddc6936bb1908da21",
+					"text": "Studio: Add character actions and streamline creation menus"
+				},
+				{
+					"sha": "2c4f09607094c8531e343c4c0df81fc74e65a38b",
+					"text": "Studio: Animate interruptible character carousel"
+				},
+				{
+					"sha": "d15128e4ad66b61a22b29748171706e87ce94f2b",
+					"text": "Studio: Add two-handed hand items and a make-one-for-the-other-hand row"
+				},
+				{
+					"sha": "490b0e4cab69fb11866f0aadb314abc3ea4537b1",
+					"text": "Studio: Use shared Bronze joystick materials"
+				},
+				{
+					"sha": "63d2fadf629f663abe19d71bf209bb148e39f2f1",
+					"text": "Studio: Redesign the touch movement joystick"
+				},
+				{
+					"sha": "e71f47fe841ec606f4cb1329f606f5a9901f57ff",
+					"text": "Studio: Show a lineup of facings on wide Preview stages"
+				},
+				{
+					"sha": "c1d6959565b6e4dd7116667a9e987a7733d5f9c6",
+					"text": "Studio: Fit 3 to 4 wardrobe items per row on desktop"
+				},
+				{
+					"sha": "6c532cbe91e4d318eaab8dab9b86118967755c56",
+					"text": "Studio: Ground the world, move identity to the top bar and add a continuous wardrobe"
+				},
+				{
+					"sha": "992183b669c51e583040b4a8cfcdb9cf5e408d07",
+					"text": "Equipment: Show how shared items fit and re-fit hand items across pivots"
+				},
+				{
+					"sha": "14a499331e3f4bdf4438a4a44710bbe021cf0587",
+					"text": "Equipment: Re-fit shared hand items to other characters for free"
+				},
+				{
+					"sha": "6f026e5ec82989adcc4e5e019b41ec7ef81fadb5",
+					"text": "Studio: Share every item across characters by default"
+				},
+				{
+					"sha": "1fb052d56861893f59cb1d0321757d01c4ffa773",
+					"text": "Studio: Split held items into Main hand and Off hand categories"
+				},
+				{
+					"sha": "bfd283c2c9e5d811fe3374cbe9ac98982e1dd6f0",
+					"text": "Items: Mark the held hand with a wrist dot instead of forcing a direction"
+				},
+				{
+					"sha": "782875df9e430b2a7c68baa32f75698daa596005",
+					"text": "Export: Split the RPG Maker card into select and version menu"
+				},
+				{
+					"sha": "2db6c5d487e6a9aef72c22f00aeb00df5640a86b",
+					"text": "Export: Fold RPG Maker XP into the RPG Maker card as a Version choice"
+				},
+				{
+					"sha": "aa2222670aeb25df4b7dc4d9a94c455264012ea2",
+					"text": "Export: Split RPG Maker export by layout and pick steps by leg lead"
+				},
+				{
+					"sha": "4a69269c97aa63d15d7c62241658ad9fde41c144",
+					"text": "Export: Add RPG Maker walking sheets"
+				},
+				{
+					"sha": "2fbe38eb503777f06cd6592ac3c4cd4e4cd7a0dc",
+					"text": "Items: Judge design details in the slash for items over the body"
+				},
+				{
+					"sha": "b11755647117a6b388399702cd4006947069ffb0",
+					"text": "Items: Flag design details lost in posed item frames"
+				}
+			]
+		},
+		{
+			"kind": "improved",
+			"items": [
+				{
+					"sha": "7ea106ce0c3e5b53072cbdb5c07b9b0c3cc47c4e",
+					"text": "Studio: Repaint the stage only when its frame changes"
+				},
+				{
+					"sha": "a9d19d7ec85c201d6b1ad9dd7a84d42e7a9f5006",
+					"text": "Preload the startup chunks so the Studio mounts sooner"
+				}
+			]
+		},
+		{
+			"kind": "fixed",
+			"items": [
+				{
+					"sha": "8168b53ba0fe687f865ecbc17fe3ed3e4c5cd7fd",
+					"text": "Experience: Unify standing-grounded sprite reflections"
+				},
+				{
+					"sha": "1e22bd1b31a82842c9f1460733b79c8505ffc4d3",
+					"text": "Studio: Keep selectable list rows fixed height"
+				},
+				{
+					"sha": "8d55d70256626786e8daf571de1c4396acde1a4e",
+					"text": "Show loading indicators on pending toasts"
+				},
+				{
+					"sha": "75099e64453e3531954d2901b789ce894b7879cf",
+					"text": "Studio: Align selectable list row heights"
+				},
+				{
+					"sha": "623fa9e3b2ed40ecde340bd1b0497a326aeb900d",
+					"text": "Studio: Unify move and outfit list styling"
+				},
+				{
+					"sha": "d2135aba03e03a9200ad412194c458bd79b9c158",
+					"text": "Studio: Move the item tile options button to the top right"
+				},
+				{
+					"sha": "0673e5ac3de24d47b1c4b550842d2bc456c8715f",
+					"text": "Studio: Show unselected demo facts and cache cropped thumbnails"
+				},
+				{
+					"sha": "556e8d2ff16873f864d487bc0bb14a14e9f8251f",
+					"text": "Experience: Stabilize centered preview zoom during resize"
+				},
+				{
+					"sha": "a7bb5dda2c37e958f978458acf6cc3c446aa02f7",
+					"text": "Experience: Increase live movement to three ground tiles per second"
+				},
+				{
+					"sha": "aaa7a21f2ee8d8143b5401f876d151bc053018d9",
+					"text": "Experience: Restore saved character without carousel transition"
+				},
+				{
+					"sha": "ccbc4f6c81ae2274b05608855afeddf363b69e52",
+					"text": "Experience: Center magnified art in usable scene space"
+				},
+				{
+					"sha": "b4d8613ac5073a1d6d5908b8c56d700f0ed9ba87",
+					"text": "Studio: Fit the item tile options button inside its border, level with the check"
+				},
+				{
+					"sha": "4a32c15cc1ba90e45e637b307378ad6ad943d445",
+					"text": "Experience: Center zoom and preserve painted grounding"
+				},
+				{
+					"sha": "2667c3d450862fdfa173acd790ca91b9d401ffc2",
+					"text": "Startup: Report a startup module that fails to load and offer Reload"
+				},
+				{
+					"sha": "b599a8b6bbaf4d3141558ef46127cf65a7c1f43f",
+					"text": "Pwa: Answer release files with verified bytes, not a clone's twin"
+				},
+				{
+					"sha": "bf002ca61c4843caa78bb97c4ac073f13728de7e",
+					"text": "Runtime: Align cross-engine API contracts and portable exports"
+				},
+				{
+					"sha": "fd571d0ee993ebd429b008fe05c84fe2591f4144",
+					"text": "Experience: Keep each screen's fit exact so the default view is unchanged"
+				},
+				{
+					"sha": "bf5acc9c8b2dc6033aad3772fb19b477ecd5efe0",
+					"text": "Runtime: Share preview and exported layer ordering"
+				},
+				{
+					"sha": "233aff4be8e78666e989272f77e7188bd964f2f8",
+					"text": "Experience: Never drop a zoom level and keep a chosen scale as chosen"
+				},
+				{
+					"sha": "a8eaccba3c4a5e404090d5c29bdc64b3fbe911f0",
+					"text": "Experience: Give both screens one zoom ladder and ignore no-op steps"
+				},
+				{
+					"sha": "8336840a53b5113d871868849afa81f25bcabb8c",
+					"text": "Experience: Settle pinches on the nearest stop without overriding a reset"
+				},
+				{
+					"sha": "c1a73a2c966fd9dba7b0ad4312e708ee80de9cf3",
+					"text": "Experience: Share one zoom ladder across screens and keep fits exact"
+				},
+				{
+					"sha": "d9eec0a427a4f9abca6c15c446aeb2f9bbc4a91c",
+					"text": "Studio: Make the New character row a half-height borderless character row"
+				},
+				{
+					"sha": "00ade519147caa9ab36e7193eb0d0f1ec4cf54dc",
+					"text": "Studio: Level the item tile options glyph with the corner status icons"
+				},
+				{
+					"sha": "7c2d035ddd9bf55fde007383bf0c45b4cef33397",
+					"text": "Studio: Put the item tile options button on the left edge and status on the right"
+				},
+				{
+					"sha": "fd98e97e91dc91f69fc992966611dd8a1af47559",
+					"text": "Experience: Hide zoom controls whenever zoom reads 100%"
+				},
+				{
+					"sha": "c44a92b45741ad80af2899a162e9bc0fd2e855d8",
+					"text": "Studio: Start newly opened wardrobes at the top"
+				},
+				{
+					"sha": "d7b4ae7ead93fa36b4327098661bffe4de06e5eb",
+					"text": "Studio: Align generation tiles and compact progress feedback"
+				},
+				{
+					"sha": "9d58c764cb3ee135d446068dd6aed9673e0510bb",
+					"text": "Runtime: Align export adapters and guard canonical synchronization"
+				},
+				{
+					"sha": "5a580148208959fba5ab5d2c3c598c1a58f972a1",
+					"text": "Studio: Keep the animated selected character centered"
+				},
+				{
+					"sha": "cfaba3e7e5bfc0f8ae9a48825a032078eb5fa199",
+					"text": "Studio: Stabilize character switching and Customize activation"
+				},
+				{
+					"sha": "60f7bdc39667ec307acb0170ec3694a54307cfc0",
+					"text": "Studio: Skip repeated body splits and test loading across several characters"
+				},
+				{
+					"sha": "7013b1ea14af3feb2d06c0eb361a1d44cb121d72",
+					"text": "Studio: Drop thumbnails of deleted characters"
+				},
+				{
+					"sha": "3edf9ca0a627f8ae2254b581782c2df8e45252e2",
+					"text": "Studio: List developer rigs without reading their dress state"
+				},
+				{
+					"sha": "12d7e89ba4ce13a09b38760aadf83d915def5e34",
+					"text": "Store: Let a load joining an abandoned cell read start its own"
+				},
+				{
+					"sha": "8e5009967d803e8d450fe07e72eb15c49c90ec74",
+					"text": "Studio: Share in-flight frame reads and build the demo once"
+				},
+				{
+					"sha": "d559087e448829385edbb3f23cb6df3c4b0d611f",
+					"text": "Studio: Decode character frames once and keep thumbnails current"
+				},
+				{
+					"sha": "e31e74d410f65609f7945c87a156e854ada7b6a3",
+					"text": "Studio: Share character thumbnails and let scroll views keep the wheel"
+				},
+				{
+					"sha": "1448884f16221fb5574fb818ffab2b51281b477e",
+					"text": "Studio: Keep the Main hand for outfits and make worn-draft conflicts undoable"
+				},
+				{
+					"sha": "460dfcc29081bca929b2f4c186362200959d4aa2",
+					"text": "Studio: Center the selected character in the cast"
+				},
+				{
+					"sha": "ef158dde7e8c4530c98ba3f2a956037e8e4cae4e",
+					"text": "Studio: Raise Preview floor rings conservatively"
+				},
+				{
+					"sha": "31206b38a5214dea447939d6d8eae854bc7c09d0",
+					"text": "Studio: Restyle the joystick in translucent bronze with a fitted groove"
+				},
+				{
+					"sha": "f3187fefb1598b0e5fce69af0b3101caf2e929e1",
+					"text": "Studio: Draw the joystick in theme ink and keep the thumb inside"
+				},
+				{
+					"sha": "ca45a07ad05e16e342e2d79f87c9a5c4d2a3bb4c",
+					"text": "Studio: Draw the joystick as an open ring with full-radius throw"
+				},
+				{
+					"sha": "36ab1c6b8da01d4b0c327ecb8bac4da40cd4fbda",
+					"text": "Studio: Anchor Preview facings and fit simplified controls"
+				},
+				{
+					"sha": "95f2fa95ce34f19ee11049967e0fb1c04ea0615c",
+					"text": "Studio: Harden facing lineup coverage and interaction"
+				},
+				{
+					"sha": "a0b0c5206676e3a6a66bf85c46b976ca70b86bff",
+					"text": "Studio: Lift a Preview lineup so its floor ring clears the playback bar"
+				},
+				{
+					"sha": "bbf60d3bd3afa298df6dc1c886e8644d65264af8",
+					"text": "Studio: Put the selected facing at the lineup's focal slot"
+				},
+				{
+					"sha": "be31a8780a26cb4438950432ea4e3b395c123f88",
+					"text": "Studio: Keep the view tabs from shifting when switching views"
+				},
+				{
+					"sha": "fab0b25d75a5ca4e833fb779f6b49095eff53155",
+					"text": "Studio: Give the Customization panel tabs equal widths"
+				},
+				{
+					"sha": "9d38fe363d421865ee667d239aab8393b8f9bf63",
+					"text": "Studio: Align tabs, rail and bottom edges, and let a lone item's Random re-roll colors"
+				},
+				{
+					"sha": "8ab97385c9b68ebb5960cfab9dbbf4393ae45988",
+					"text": "Studio: Keep the character size fixed when equipping and simplify tile status"
+				},
+				{
+					"sha": "0fed0ab6a72a4000f53945cc44e48ded3e405455",
+					"text": "Studio: Show only fit notes on re-fit item details"
+				},
+				{
+					"sha": "0235a8950c42260cddf4c9c37f45849c36d2c8a8",
+					"text": "Equipment: Let real hand items re-fit and copy a source's later frames for free"
+				},
+				{
+					"sha": "b4f00e8fae3e211adacfef87f5a983a13f8b886b",
+					"text": "Equipment: Tighten free re-fits, cache shared fits and move the shared row below New item"
+				},
+				{
+					"sha": "5e35f55b71b67f33667c7e154f9598ddfef8a47f",
+					"text": "Studio: Keep wardrobe draft selection per group and report unread saved work at startup"
+				},
+				{
+					"sha": "a90d270d781b690746bba65b58b6308a90a33ed3",
+					"text": "Queue: Reserve request input slots depth-first across object keys"
+				},
+				{
+					"sha": "d5607c6271e2c379f565c7cace1194a37c117a0a",
+					"text": "Items: Stop the gray-smudge check flagging gray shared by other views"
+				},
+				{
+					"sha": "0bded5ab4f9650b700010204a898b698b59cc35f",
+					"text": "Chroma: Stop despill from graying blue-gray steel on azure and blue keys"
+				},
+				{
+					"sha": "d35e9a8613b217359d38472b80f9697d904f0704",
+					"text": "Queue: List request input hashes in request order"
+				},
+				{
+					"sha": "28f83b5c34fcd170fcf8d44bd29ada7f98ba2597",
+					"text": "Chroma: Keep near-black item outlines tinted toward the key"
+				},
+				{
+					"sha": "ecbee8deb690b1d388fcc4cff73478bd1c5c2da6",
+					"text": "Studio: Let the starting character's thumbnail wait for the startup open"
+				},
+				{
+					"sha": "3fab349ad1924d166cc7723ca6687f664df86808",
+					"text": "Demo: Download each demo file once per page load"
+				},
+				{
+					"sha": "6a3b2a02d9279a924fbe5a36b18f138db6dcca5e",
+					"text": "Store: Remove the drafts of outdated characters with them"
+				},
+				{
+					"sha": "a1848c34811d7762a4b8ef532b588cd4bc32fe08",
+					"text": "Items: Keep old checks unmeasured and drop two remaining compatibility leftovers"
+				},
+				{
+					"sha": "db895cc9e04b50bafb4958a282f5def5bd5261d0",
+					"text": "Queue: Count a request settled twice once and keep policy-refusal usage in Activity"
+				},
+				{
+					"sha": "4e92d747f2593d563142bca8165dd46ceaab348b",
+					"text": "Queue: Mark paid requests lost during submit as unknown cost"
+				},
+				{
+					"sha": "c06c5ac9a42ffaedff3d57fa69d11560f31c535b",
+					"text": "Activity: Treat calls without final usage as unknown cost everywhere"
+				},
+				{
+					"sha": "e9176f06a6925a6821c80c5222afa768ab3e1112",
+					"text": "Fit: Keep existing cells in extension candidates so reviews show no false gaps"
+				},
+				{
+					"sha": "52c940ae7c446eaac6fa81a518f74f21bea9fcf4",
+					"text": "Address review findings in tests, engine harnesses and export notes"
+				},
+				{
+					"sha": "7884bd45385885e27ed0b9776f0c7d307dcf1ab3",
+					"text": "Dress: Report moves an item only partly covers as missing frames"
+				},
+				{
+					"sha": "4a08656923db675582dfd648cd7712a0a499dfab",
+					"text": "Rig: Tell skeleton-v3 which arm passes in front of the body"
+				},
+				{
+					"sha": "1136e4db1a055a850f0a684e5fb581a2d13aa3bc",
+					"text": "Moves: Accept PixelLab's unstripped start frame on described moves"
+				},
+				{
+					"sha": "14a31bc109fd65323fc9c348beec987d966ab2a4",
+					"text": "Prompts: Trim hard-coded PixelLab wording that tests showed unneeded"
+				},
+				{
+					"sha": "308188b8f68c087833b7147bc13c2b36abbaccd4",
+					"text": "Format: Keep the prompt popup unindented and scope formatting rules"
+				},
+				{
+					"sha": "dad724be47ef355071eafdd256972ebdacd34683",
+					"text": "Export: Ground RPG Maker walk frames and fix review findings"
+				},
+				{
+					"sha": "8f78fbab9b0231cd3d34534dc99b8ae6e3a8765a",
+					"text": "Items: Describe held items without assuming a weapon"
+				},
+				{
+					"sha": "ddee8f27f700c0c2f59d957a0f62702c40871ee2",
+					"text": "Export: Pick RPG Maker walk frames from the bare body without keypoints"
+				},
+				{
+					"sha": "60fd76a6b04ad75afa651e4dfe0de915f88f9ebb",
+					"text": "Items: Review ambiguous motion-based item changes"
+				},
+				{
+					"sha": "cc11e8ac82e8eac762775b7114710c2456f28de5",
+					"text": "Items: Keep long hair in front of armor wider than the body"
+				},
+				{
+					"sha": "c568bf5a8006a20cd7341fed959b7a5d5b7da2e1",
+					"text": "Items: Preserve coherent leans across pelvic tilt"
+				},
+				{
+					"sha": "d4c0c633d4ba9fbffd8a9765420a0527c100e208",
+					"text": "Items: Require the lean about each hip on its own"
+				},
+				{
+					"sha": "3eed2a9c05e90f7b0febccc80e7caff804642ae0",
+					"text": "Items: Judge the knee lean against the hip threshold"
+				},
+				{
+					"sha": "50eeea36446f146f6e499a6325843de8ffb77e96",
+					"text": "Items: Answer the session counter-review findings"
+				},
+				{
+					"sha": "19646f097a44dff32e7c02563e4a744499a8ff0e",
+					"text": "Items: Answer the post-bb830dfb counter-review findings"
+				},
+				{
+					"sha": "d80303915d06b1dd3267e2c7d4fc3699f878e5da",
+					"text": "Chroma: Keep thin dark straps over deep skin on the green key"
+				},
+				{
+					"sha": "666f489a04da97916a964d889f638e5f3833dda0",
+					"text": "Studio: Reuse finished skeleton item frames after a save conflict"
+				},
+				{
+					"sha": "f7c771fad3bcc0411b3e2a0d0eca895292b42747",
+					"text": "Items: Pack repair grids into the cheapest priced layout"
+				},
+				{
+					"sha": "e951da85225c83ae0bb8f3bbecc9120b440fa0cd",
+					"text": "Studio: Keep finished views when one view of an item move fails"
+				},
+				{
+					"sha": "0baa1ac3772cba0c8f8ce7e74ba7794b267986f7",
+					"text": "Items: Price inpaint repair grids by their mean side"
+				},
+				{
+					"sha": "77b863e92dca49250458cacfcae73d1423a3a31b",
+					"text": "Chroma: Keep light thin items over darker skin in the outline guard"
+				},
+				{
+					"sha": "4bc9f3fb8cd0dafcdb51840c4a7b06fd63637aab",
+					"text": "Items: Judge gray smudges across views and read item words more carefully"
+				},
+				{
+					"sha": "15e6d993e83c22c431f195e2a2d221ae2899bd88",
+					"text": "Items: Let a pack worn flat on the back be hidden in front views"
+				},
+				{
+					"sha": "2dbbbf80c31bbd157bbab477d19a8c6e27c01b5f",
+					"text": "Studio: Keep every review draft's result when checks run together"
+				},
+				{
+					"sha": "82b0f4246dc6f9ecfd58ec45d65716382e958d1d",
+					"text": "Studio: Name items from the description head and show the hand summary plainly"
+				},
+				{
+					"sha": "41411fcab3b2c7d8328a49e748cfee8acb67759b",
+					"text": "Studio: Keep moves started before a character first opens from failing"
+				},
+				{
+					"sha": "236876cc6f890abcc32c782ad03baaf9f75b08e0",
+					"text": "Items: Review hanging, waving and body-hidden held items instead of failing them"
+				},
+				{
+					"sha": "edc604be3e188f0c20a5accec800fbef10999a49",
+					"text": "Items: Classify walk vs action moves by whole words and decisive motion"
+				},
+				{
+					"sha": "abcecf0ee733bb45f95dda70af40246906d1b419",
+					"text": "Items: Measure item colors against the chroma key and retry with a safe key"
+				},
+				{
+					"sha": "45d0b4e0b422167a95457e39d5bd7236a4d54bc4",
+					"text": "Items: Apply the held size floor while linking parts; count dark blotches in D1"
+				},
+				{
+					"sha": "735b92d31523ded0267fbfe55789a86c163c3fa8",
+					"text": "Items: Stop cleanup and D1 from rejecting real item parts"
+				},
+				{
+					"sha": "d4795a0f6e471c3e5e924dc4197cce157faefa81",
+					"text": "Rig: Reject malformed source motion timelines"
+				},
+				{
+					"sha": "11a7115bb1dacf308429f0074b537ad5f76750df",
+					"text": "Studio: Show retry price and accurate saved-item reasons"
+				},
+				{
+					"sha": "50cca6484e58b8b81ce87096eb2179a41e100b1c",
+					"text": "Chroma: Keep green-leaning gear colors in despill"
+				},
+				{
+					"sha": "eb55d9a08c44dc786288cb9bcc86f39a33722aab",
+					"text": "Items: Sign held-item direction, measure grip at pixel centers, scale repair disc"
+				},
+				{
+					"sha": "63be333e8b157c6321ea161441033ef9f2a9b6b9",
+					"text": "Items: Preserve color boundaries during automatic dye matching"
+				},
+				{
+					"sha": "398c4ebea7c1725cff1ea1f741e4f53a97d0b82d",
+					"text": "Items: Report standing palette drift per posed frame"
+				},
+				{
+					"sha": "6c5e6411e03d7db07c97a69586cdd3196f1824f3",
+					"text": "Items: Isolate temporal cleanup by move and direction"
+				},
+				{
+					"sha": "43e4db847bfb543ac371906d59d0f7368c024546",
+					"text": "Export: Preserve combined body cuts across layer geometry"
+				},
+				{
+					"sha": "de3445e91d1c8638f57d336261baaf7079252c4f",
+					"text": "Items: Honor body cuts in equipment diagnostics"
+				},
+				{
+					"sha": "78150d72c6e49d636c59064407252d03bdb7dca6",
+					"text": "Studio: Validate described motion before spending"
+				},
+				{
+					"sha": "de7f7b87bfba1bfc5c36853fc37395ff47c6713c",
+					"text": "Items: Preserve equipment dyes and review continuity"
+				},
+				{
+					"sha": "a40b17a0a816370ba784937a9a30b016274b6057",
+					"text": "Items: Recover completed anchored move artwork"
+				},
+				{
+					"sha": "b4b62278f45a669115ba468aa49b842ee536130b",
+					"text": "Items: Check weapon continuity in playback order"
+				},
+				{
+					"sha": "68dc77962b63af1e42599ef0eca9443c9ea5ce75",
+					"text": "Equipment: Match pose reservations to fit quotes"
+				},
+				{
+					"sha": "958767489f79e95f89bf70c97fe5bc6092f511b2",
+					"text": "Items: Register against visible mannequin pixels"
+				},
+				{
+					"sha": "38eda70dab77202338fb065a457765927796ce40",
+					"text": "Studio: Identify equipment missing preview frames"
+				},
+				{
+					"sha": "218f448e66d6766cf91108ae289b3bba5a8350cd",
+					"text": "Items: Fit eligible repairs within Tier 1"
+				}
+			]
+		}
+	]
+}

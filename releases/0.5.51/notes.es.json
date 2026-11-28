@@ -1,0 +1,33 @@
+{
+	"headline": "Comparte equipo entre personajes y amplía a tu manera",
+	"intro": "Tu armario ahora llega a todos los personajes, y la escena se amplía como esperas. Exporta a RPG Maker y disfruta de listas y menús más ordenados.",
+	"highlights": [
+		{
+			"title": "Pon objetos de otros personajes",
+			"text": "Los objetos de otros personajes ahora aparecen en todos los personajes, incluido el de demostración. Los objetos hechos para otro cuerpo se pueden poner tal como están dibujados y se marcan como Por revisar."
+		},
+		{
+			"title": "Exporta hojas de caminar para RPG Maker",
+			"text": "Una nueva tarjeta de RPG Maker exporta una hoja de caminar por atuendo. Su menú Versión te permite elegir Estándar (MZ, MV, VX Ace, VX) o XP (XP y Pokemon Essentials)."
+		},
+		{
+			"title": "Amplía la escena a tamaño real",
+			"text": "100 % ahora muestra tu personaje a tamaño real. La rueda, las teclas y los botones recorren los mismos niveles de zoom en ambas pantallas, y la rueda o el pellizco amplían la escena de Personajes."
+		},
+		{
+			"title": "Objetos a dos manos y manos separadas",
+			"text": "Mano principal y Mano secundaria ahora son grupos separados del armario, así que una espada y un escudo se fabrican y se ponen por separado. Un interruptor A dos manos hace que el objeto oculte la otra mano."
+		}
+	],
+	"fixes": [
+		{
+			"text": "El inicio ahora muestra un botón Recargar en lugar de quedarse atascado en el mensaje de apertura."
+		},
+		{
+			"text": "Los armarios recién abiertos ahora empiezan por la parte superior de la lista."
+		},
+		{
+			"text": "La rueda sobre una lista desplazable ahora la desplaza en lugar de cambiar de personaje."
+		}
+	]
+}
