@@ -1,6 +1,24 @@
 {
 	"releases": [
 		{
+			"version": "0.3.34",
+			"date": "2026-11-06",
+			"features": 15,
+			"banner": true,
+			"headline": {
+				"en": "Work on your characters anywhere, with fewer snags",
+				"de": "An deinen Figuren überall arbeiten, mit weniger Stolpersteinen",
+				"es": "Trabaja con tus personajes en cualquier lugar, con menos problemas",
+				"fr": "Travaillez sur vos personnages partout, avec moins d'obstacles",
+				"id": "Kerjakan karakter Anda di mana saja dengan lebih sedikit kendala",
+				"ja": "どこでもキャラクターを編集、つまずきを減らして",
+				"ko": "어디서든 캐릭터를 더 편하게 작업해 보세요",
+				"pt-BR": "Trabalhe nos seus personagens em qualquer lugar, com menos imprevistos",
+				"tr": "Karakterlerinizle her yerde, daha az sorunla çalışın",
+				"zh-Hans": "随时随地编辑角色，减少麻烦"
+			}
+		},
+		{
 			"version": "0.2.63",
 			"date": "2026-10-30",
 			"features": 41,
