@@ -12,7 +12,15 @@ import {
 	emptyNotes
 } from './notes.ts';
 
-export const model = 'claude-opus-5-5';
+// Writing the notes from a week of commits needs judgment, so it uses Sonnet; translating a short finished text is
+// routine, so it uses Haiku. Both stay far cheaper than Opus while keeping the checks below passing.
+export const model = 'claude-sonnet-5-5';
+const translationModel = 'claude-haiku-5-5';
+
+type Tier = { model: string; effort: 'low' | 'medium'; fallbacks: boolean };
+const writing: Tier = { model, effort: 'medium', fallbacks: true };
+// Haiku has no server-side refusal fallback; a declined translation falls back to English instead.
+const translating: Tier = { model: translationModel, effort: 'low', fallbacks: false };
 const docs = new URL('../../../docs/', import.meta.url);
 const locales = new URL('../../src/locales/', import.meta.url);
 
@@ -59,7 +67,10 @@ async function requestClaude<T>(call: () => Promise<T>): Promise<T> {
 				cause: error
 			});
 		if (error instanceof Anthropic.PermissionDeniedError)
-			throw new Error(`The API key may not use ${model}. ${fix}`, { cause: error });
+			throw new Error(
+				`The API key may not use the release models (${model}, ${translationModel}). ${fix}`,
+				{ cause: error }
+			);
 		if (error instanceof Anthropic.APIError && /credit balance/i.test(error.message))
 			throw new Error(
 				'The Claude account is out of API credit. Add credit or wait for the monthly credit, then run Actions > Release > Run workflow again.',
@@ -89,6 +100,7 @@ export function replayable<T extends { type: string }>(content: T[]) {
 
 async function ask<T>(
 	claude: Claude,
+	tier: Tier,
 	system: string,
 	schema: object,
 	input: object,
@@ -100,12 +112,13 @@ async function ask<T>(
 		const response = await requestClaude(() =>
 			claude.beta.messages
 				.stream({
-					model,
+					model: tier.model,
 					max_tokens: 64000,
-					betas: ['server-side-fallback-2026-07-01'],
-					fallbacks: 'default',
+					...(tier.fallbacks
+						? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const }
+						: {}),
 					output_config: {
-						effort: 'medium',
+						effort: tier.effort,
 						format: { type: 'json_schema', schema: sendable(schema) as Record<string, unknown> }
 					},
 					system,
@@ -158,6 +171,7 @@ export async function writeNotes(
 	if (!commits.length) return emptyNotes;
 	return ask<CitedNotes>(
 		claude,
+		writing,
 		prompt('release-notes.md'),
 		releaseNotesSchema,
 		{
@@ -224,8 +238,13 @@ export async function translations(claude: Claude, notes: Notes) {
 		const locale = file.slice(0, -5);
 		const labels = labelsFor(text, englishLabels, flatten(readCatalog(locale)));
 		try {
-			const result = await ask<Notes>(claude, system, schema, { locale, labels, notes }, (reply) =>
-				validateTranslation(reply, notes)
+			const result = await ask<Notes>(
+				claude,
+				translating,
+				system,
+				schema,
+				{ locale, labels, notes },
+				(reply) => validateTranslation(reply, notes)
 			);
 			translated[locale] = {
 				headline: result.headline,

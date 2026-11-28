@@ -68,6 +68,14 @@ test.describe("What's new", () => {
 			const path = new URL(route.request().url()).pathname.split('/releases/')[1]!;
 			requested.push(path);
 			if (path === 'index.json') return route.fulfill({ json: { releases: entries() } });
+			if (path === 'latest.json') {
+				const [newest] = entries();
+				return route.fulfill({
+					json: newest
+						? { version: newest.version, features: newest.features }
+						: { version: null, features: 0 }
+				});
+			}
 			const [version, file] = path.split('/');
 			const entry = [latest, previous].find((release) => release.version === version);
 			if (!entry) return route.fulfill({ status: 404 });
@@ -116,7 +124,8 @@ test.describe("What's new", () => {
 		await page.goto('/');
 		await expect.poll(() => seen(page)).toBe(previous.version);
 		await expect(sheet).toBeHidden();
-		expect(requests).toEqual(['index.json']);
+		// Startup reads only the tiny latest.json: no release text or images until the window opens.
+		expect(requests).toEqual(['latest.json']);
 
 		releases = [latest, previous];
 		await page.reload();
@@ -128,7 +137,8 @@ test.describe("What's new", () => {
 		const notes = `${latest.version}/notes.en.json`;
 		await page.reload();
 		await closePreview(page);
-		await expect.poll(() => requests.filter((path) => path === 'index.json').length).toBe(3);
+		await expect.poll(() => requests.filter((path) => path === 'latest.json').length).toBe(3);
+		expect(requests.filter((path) => path === 'index.json')).toHaveLength(1);
 		await expect(sheet).toBeHidden();
 		expect(requests.filter((path) => path === notes)).toHaveLength(1);
 	});
@@ -150,7 +160,7 @@ test.describe("What's new", () => {
 		await page.getByRole('button', { name: /^Help/ }).click();
 		const newsInHelp = page.getByRole('button', { name: "What's new Unread update" });
 		await expect(newsInHelp).toBeVisible();
-		expect(requests).toEqual(['index.json']);
+		expect(requests).toEqual(['latest.json']);
 		await page.keyboard.press('Escape');
 		await page.getByRole('button', { name: 'Settings…', exact: true }).click();
 		const settings = page.getByRole('dialog', { name: 'Settings' });

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	compareVersions,
+	fetchLatestRelease,
 	createSeenRelease,
 	fetchReleaseChanges,
 	fetchReleaseIndex,
@@ -118,4 +119,23 @@ it('ignores a damaged read-release value so the unread dot can still show', () =
 it('compares a development build by its version numbers', () => {
 	expect(compareVersions('0.4.12-dev', '0.4.12')).toBe(0);
 	expect(compareVersions('0.4.11-dev', '0.4.12')).toBeLessThan(0);
+});
+
+describe('latest release check', () => {
+	const fetchLatest = vi.fn();
+	beforeEach(() => vi.stubGlobal('fetch', fetchLatest));
+	afterEach(() => {
+		fetchLatest.mockReset();
+		vi.unstubAllGlobals();
+	});
+	it('reads only the version and feature count, with nothing published as null', async () => {
+		fetchLatest.mockResolvedValueOnce(Response.json({ version: '1.4.12', features: 3 }));
+		await expect(fetchLatestRelease()).resolves.toEqual({ version: '1.4.12', features: 3 });
+		fetchLatest.mockResolvedValueOnce(new Response(null, { status: 404 }));
+		await expect(fetchLatestRelease()).resolves.toBeNull();
+		fetchLatest.mockResolvedValueOnce(Response.json({ version: null, features: 0 }));
+		await expect(fetchLatestRelease()).resolves.toBeNull();
+		fetchLatest.mockResolvedValueOnce(Response.json({ version: '../x', features: 1 }));
+		await expect(fetchLatestRelease()).rejects.toThrow('Invalid latest release');
+	});
 });

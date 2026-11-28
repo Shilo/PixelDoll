@@ -6,6 +6,8 @@
 	import { ChevronRight } from './icons.ts';
 	import { releaseNews } from './releaseNews.svelte.ts';
 
+	// The release list (with its headlines) loads only now, when the window opens.
+	if (releaseNews.entries === undefined) void releaseNews.loadList();
 	const latest = $derived(releaseNews.entries?.[0]);
 	const older = $derived(releaseNews.entries?.slice(1));
 	const locale = $derived(getLocale() || 'en');

@@ -1,0 +1,144 @@
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, expect, it, vi } from 'vitest';
+import type { Claude } from '../../scripts/release/claude.ts';
+import type { Asset, Release } from '../../scripts/release/github.ts';
+import { publicNotes, type CitedNotes } from '../../scripts/release/notes.ts';
+import { updateRelease } from '../../scripts/release/update.ts';
+import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
+
+const version = '1.2.3';
+const cited: CitedNotes = {
+	headline: 'Dress faster',
+	intro: 'You can now dress your characters faster.',
+	highlights: [
+		{ title: 'Quick outfits', text: 'Save an outfit in one tap.', commits: ['abc1234'] }
+	],
+	fixes: []
+};
+const release: Release = {
+	id: 7,
+	draft: false,
+	tag_name: 'v1.2.3',
+	upload_url: 'https://x/{?name}'
+};
+const folders: string[] = [];
+afterEach(() => {
+	for (const folder of folders.splice(0)) rmSync(folder, { recursive: true, force: true });
+});
+
+async function setUp() {
+	const folder = mkdtempSync(join(tmpdir(), 'pixeldoll-update-'));
+	folders.push(folder);
+	const dir = join(folder, version);
+	mkdirSync(dir);
+	const json = (path: string, value: unknown) => writeFileSync(path, JSON.stringify(value));
+	json(join(dir, 'source.json'), {
+		version,
+		date: '2026-11-27',
+		cutoff: '2026-11-27T15:00:00.000Z',
+		sha: 'b'.repeat(40),
+		previousSha: 'a'.repeat(40),
+		model: 'claude-sonnet-5-5',
+		commits: [],
+		notes: cited,
+		bannerHash: 'c'.repeat(64)
+	});
+	json(join(dir, 'notes.en.json'), publicNotes(cited));
+	json(join(dir, 'notes.de.json'), { ...publicNotes(cited), headline: 'Schneller anziehen' });
+	json(join(dir, 'changes.json'), { total: 0, groups: [] });
+	// Wider than 400 px: used as given, so the test needs no browser to scale it.
+	const pixels = new Uint8ClampedArray(401 * 2 * 4).fill(200);
+	writeFileSync(join(dir, 'banner.png'), await encodePngBytes({ w: 401, h: 2, data: pixels }));
+	json(join(folder, 'index.json'), {
+		releases: [
+			{
+				version,
+				date: '2026-11-27',
+				features: 1,
+				headline: { en: 'Dress faster', de: 'Schneller anziehen' }
+			}
+		]
+	});
+	let assets: Asset[] = [
+		{
+			id: 1,
+			name: 'banner@4x.png',
+			label: '',
+			state: 'uploaded',
+			size: 1,
+			digest: 'sha256:old',
+			browser_download_url: 'u'
+		}
+	];
+	const github = {
+		repository: 'Shilo/PixelDoll',
+		release: vi.fn(async () => release),
+		assets: vi.fn(async function* () {
+			yield* assets;
+		}),
+		deleteStarterAsset: vi.fn(async (id: number) => {
+			assets = assets.filter((asset) => asset.id !== id);
+		}),
+		uploadAsset: vi.fn(async () => assets[0]),
+		updateRelease: vi.fn(async () => undefined)
+	};
+	return { folder, dir, github };
+}
+
+it('re-publishes an edited banner and body without translating unchanged English notes', async () => {
+	const { folder, github } = await setUp();
+	const claude = vi.fn((): Claude => {
+		throw new Error('unchanged notes must not call Claude');
+	});
+	await expect(updateRelease(github, folder, version, claude)).resolves.toBe(false);
+	expect(claude).not.toHaveBeenCalled();
+	expect(github.deleteStarterAsset).toHaveBeenCalledExactlyOnceWith(1);
+	expect(github.uploadAsset).toHaveBeenCalledOnce();
+	expect(github.updateRelease).toHaveBeenCalledExactlyOnceWith(
+		7,
+		'PixelDoll 1.2.3: Dress faster',
+		expect.stringContaining('releases/download/v1.2.3/banner%404x.png')
+	);
+});
+
+it('re-translates edited English notes, updates the index headlines and records what was published', async () => {
+	const { folder, dir, github } = await setUp();
+	const edited = { ...publicNotes(cited), headline: 'Dress your cast faster' };
+	writeFileSync(join(dir, 'notes.en.json'), JSON.stringify(edited));
+	const stream = vi.fn(() => ({
+		finalMessage: async () => ({
+			stop_reason: 'end_turn',
+			content: [{ type: 'text', text: JSON.stringify({ ...edited, headline: 'Übersetzt' }) }]
+		})
+	}));
+	const claude = { beta: { messages: { stream } } } as unknown as Claude;
+	await expect(updateRelease(github, folder, version, () => claude)).resolves.toBe(true);
+	expect(stream).toHaveBeenCalledTimes(9);
+	expect(JSON.parse(readFileSync(join(dir, 'notes.de.json'), 'utf8')).headline).toBe('Übersetzt');
+	const index = JSON.parse(readFileSync(join(folder, 'index.json'), 'utf8'));
+	expect(index.releases[0].headline).toMatchObject({
+		en: 'Dress your cast faster',
+		de: 'Übersetzt'
+	});
+	expect(JSON.parse(readFileSync(join(folder, 'latest.json'), 'utf8'))).toEqual({
+		version,
+		features: 1
+	});
+	expect(JSON.parse(readFileSync(join(dir, 'source.json'), 'utf8')).publishedEn).toEqual(edited);
+	// A second run sees nothing new to translate.
+	stream.mockClear();
+	await updateRelease(github, folder, version, () => claude);
+	expect(stream).not.toHaveBeenCalled();
+});
+
+it('rejects invalid edited notes before touching GitHub', async () => {
+	const { folder, dir, github } = await setUp();
+	writeFileSync(
+		join(dir, 'notes.en.json'),
+		JSON.stringify({ ...publicNotes(cited), headline: '' })
+	);
+	await expect(updateRelease(github, folder, version, vi.fn())).rejects.toThrow(/not valid/);
+	expect(github.updateRelease).not.toHaveBeenCalled();
+});

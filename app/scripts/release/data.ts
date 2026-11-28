@@ -30,6 +30,19 @@ export type Index = {
 	releases: { version: string; date: string; headline: Record<string, string>; features: number }[];
 };
 
+/**
+ * Writes the release list and the tiny latest.json beside it: the app reads only latest.json at startup and loads the
+ * list (with its headlines) when What's new opens.
+ */
+export function writeIndex(folder: string, index: Index) {
+	writeJson(join(folder, 'index.json'), index);
+	const [latest] = index.releases;
+	writeJson(
+		join(folder, 'latest.json'),
+		latest ? { version: latest.version, features: latest.features } : { version: null, features: 0 }
+	);
+}
+
 export const readJson = <T>(path: string): T => JSON.parse(readFileSync(path, 'utf8')) as T;
 export const writeJson = (path: string, value: unknown) =>
 	writeFileSync(path, JSON.stringify(value, null, '\t') + '\n');

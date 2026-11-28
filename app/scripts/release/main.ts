@@ -13,7 +13,7 @@ import {
 	readSource,
 	readStaged,
 	readStagedAssets,
-	writeJson,
+	writeIndex,
 	writeStage,
 	type Index,
 	type Source
@@ -307,8 +307,13 @@ async function main() {
 					Object.entries(notes).map(([locale, copy]) => [locale, copy.headline])
 				)
 			});
-			writeJson(indexPath, index);
-			commitReleaseFiles(cwd, `chore(release): list v${version}`, 'releases/index.json');
+			writeIndex(folder, index);
+			commitReleaseFiles(
+				cwd,
+				`chore(release): list v${version}`,
+				'releases/index.json',
+				'releases/latest.json'
+			);
 			listed++;
 		}
 	} catch (error) {

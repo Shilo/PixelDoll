@@ -589,7 +589,12 @@ self.addEventListener('fetch', (event) => {
 			})()
 		);
 	} else if (path.startsWith('releases/')) {
-		event.respondWith(releaseNotesResponse(request, path === 'releases/index.json'));
+		event.respondWith(
+			releaseNotesResponse(
+				request,
+				path === 'releases/index.json' || path === 'releases/latest.json'
+			)
+		);
 	} else if (path.startsWith('assets/') || url.searchParams.has('pd-build')) {
 		event.respondWith(staticResponse(request));
 	}

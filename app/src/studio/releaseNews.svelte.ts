@@ -4,8 +4,10 @@ import { pwa } from '../lib/pwa.ts';
 import {
 	compareVersions,
 	createSeenRelease,
+	fetchLatestRelease,
 	fetchReleaseIndex,
 	SEEN_RELEASE_KEY,
+	type LatestRelease,
 	type ReleaseEntry
 } from '../lib/releases.ts';
 import { dismissToast, toast, ui, updateBlocked } from './state.svelte.ts';
@@ -13,11 +15,13 @@ import { updateNotice } from './updateNotice.svelte.ts';
 
 const seenRelease = createSeenRelease();
 let seen = $state<string | null>(null);
+// Startup reads only the newest version and feature count; the list with its headlines loads when the window opens.
+let latest = $state.raw<LatestRelease | null>();
 let entries = $state.raw<ReleaseEntry[] | null>();
 let inFlight: Promise<void> | undefined;
+let listInFlight: Promise<void> | undefined;
 let firstIndex = false;
 
-const latest = $derived(entries?.[0]);
 // Newer than the last one read: an older cached index can never reopen news or rewind what was read.
 const unseen = $derived(!!latest && (!seen || compareVersions(latest.version, seen) > 0));
 let firstVisitSession = false;
@@ -31,20 +35,38 @@ function markSeen(version: string) {
 function refresh() {
 	if (inFlight) return inFlight;
 	if (entries === null) entries = undefined;
-	inFlight = fetchReleaseIndex()
+	inFlight = fetchLatestRelease()
 		.then(
 			(next) => {
-				entries = next;
-				if (firstIndex && next[0]) markSeen(next[0].version);
+				// A newer release than the open list makes the list load again when it is next shown.
+				if (next?.version !== latest?.version && entries) entries = undefined;
+				latest = next;
+				if (firstIndex && next) markSeen(next.version);
 				firstIndex = false;
 			},
-			() => {
-				// A failed refresh keeps the releases already known; the next visible moment retries.
-				if (!entries) entries = null;
+			(error) => {
+				// A failed check keeps what was already known; the next visible moment retries.
+				console.warn('PixelDoll could not check for a new release:', error);
 			}
 		)
 		.finally(() => (inFlight = undefined));
 	return inFlight;
+}
+
+function loadList() {
+	if (listInFlight) return listInFlight;
+	if (entries === null) entries = undefined;
+	listInFlight = fetchReleaseIndex()
+		.then(
+			(next) => {
+				entries = next;
+			},
+			() => {
+				entries = null;
+			}
+		)
+		.finally(() => (listInFlight = undefined));
+	return listInFlight;
 }
 
 function open() {
@@ -61,7 +83,8 @@ export const releaseNews = {
 	get blocked() {
 		return updateNotice.visible;
 	},
-	refresh,
+	refresh: loadList,
+	loadList,
 	markShown(version: string) {
 		markSeen(version);
 		if (ui.toastAfterUpdate) dismissToast();

@@ -5,7 +5,7 @@ import { decodePngBytes } from '../../src/lib/runtime/png.js';
 import { upscaleBanner } from './banner.ts';
 import type { Changes } from './changes.ts';
 import { translations, type Claude } from './claude.ts';
-import { readJson, readSource, writeJson, type Index } from './data.ts';
+import { readJson, readSource, writeIndex, writeJson, type Index } from './data.ts';
 import type { GitHub } from './github.ts';
 import { releaseMarkdown } from './markdown.ts';
 import { publicNotes, validateTranslation, type Notes } from './notes.ts';
@@ -68,9 +68,11 @@ export async function updateRelease(
 				readJson<Notes>(join(dir, name)).headline
 			])
 	);
-	if (!same(entry.headline, headline)) {
+	const sorted = (map: Record<string, string>) =>
+		Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+	if (!same(sorted(entry.headline), sorted(headline))) {
 		entry.headline = headline;
-		writeJson(join(folder, 'index.json'), index);
+		writeIndex(folder, index);
 		touched = true;
 	}
 

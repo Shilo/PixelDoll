@@ -88,6 +88,34 @@ function isReleaseEntry(value: unknown): value is ReleaseEntry {
 	);
 }
 
+export interface LatestRelease {
+	version: string;
+	features: number;
+}
+
+/**
+ * The newest release's version and feature count, the only release data read at startup (no text, no images).
+ * Null while nothing is published.
+ */
+export async function fetchLatestRelease(): Promise<LatestRelease | null> {
+	let value: unknown;
+	try {
+		value = await read('latest.json', true);
+	} catch (error) {
+		if (/HTTP 404/.test(String(error))) return null;
+		throw error;
+	}
+	if (record(value) && value.version === null) return null;
+	if (
+		!record(value) ||
+		!string(value.version) ||
+		!/^\d+\.\d+\.\d+$/.test(value.version) ||
+		!count(value.features)
+	)
+		throw new Error('Invalid latest release');
+	return { version: value.version, features: value.features };
+}
+
 export async function fetchReleaseIndex(): Promise<ReleaseEntry[]> {
 	const value = await read('index.json', true);
 	if (!record(value) || !Array.isArray(value.releases)) throw new Error('Invalid release index');
