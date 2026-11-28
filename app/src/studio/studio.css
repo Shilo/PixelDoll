@@ -1116,10 +1116,14 @@ dialog select option {
 /* ---------- sheets (native <dialog>) ---------- */
 dialog.sheet {
 	padding: 0;
-	border: 1px solid var(--bu-rim);
+	border: 0;
 	color: var(--text);
 	background: var(--bg-raised);
-	box-shadow: var(--shadow-pop);
+	/* The rim is drawn outside the sheet, so it never takes room from its content; on a full-width phone sheet its
+	   sides and bottom fall off-screen by themselves. */
+	box-shadow:
+		0 0 0 1px var(--bu-rim),
+		var(--shadow-pop);
 	display: flex;
 	flex-direction: column;
 	max-height: calc(100dvh - 48px);
@@ -1186,14 +1190,6 @@ dialog.sheet.bottom {
 	border-radius: var(--r-sheet) var(--r-sheet) 0 0;
 	max-height: calc(100dvh - 32px);
 	padding-bottom: env(safe-area-inset-bottom);
-	/* It rests on the screen's bottom edge, so only its top and open sides need the rim. */
-	border-bottom: 0;
-}
-/* Full width, it touches the screen's sides too: no side rim taking width from its content. */
-@media (max-width: 640px) {
-	dialog.sheet.bottom {
-		border-inline: 0;
-	}
 }
 dialog.sheet.side {
 	width: min(62vw, 480px);
