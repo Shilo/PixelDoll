@@ -1,0 +1,33 @@
+{
+	"headline": "Karakterlerinizle her yerde, daha az sorunla çalışın",
+	"intro": "PixelDoll artık telefonda olsanız, çevrimdışıysanız ya da karakterleri başka yerlerden getiriyorsanız rutininize daha kolay uyuyor. Karakterlerinizi giydirmek başından sonuna kadar daha akıcı hissettirmeli.",
+	"highlights": [
+		{
+			"title": "Studio'yu yükleyin ve çevrimdışı kullanın",
+			"text": "Artık PixelDoll'ı uygulama olarak yükleyip bağlantı olmadan Studio'yu açabilirsiniz. Güncellemeler siz çalışırken kontrol edilir ve başlangıçta güvenli biçimde uygulanır, işinizi bölmez."
+		},
+		{
+			"title": "Karakteri ZIP dosyasını bırakarak içe aktarın",
+			"text": "Yeni bir bırakma alanı, karakteri bir ZIP dosyasından getirmenizi sağlar. Ayrıca bir PixelLab karakterinin farklı durumları arasında hareketleri de seçebilirsiniz."
+		},
+		{
+			"title": "Eşya küçük resimlerini kademeli olarak görün",
+			"text": "Eşyalar oluşturulurken kademeli olarak sığdırılmış küçük resimler gösterir, böylece tasarımınızın şekillendiğini görebilirsiniz. Ayakta tasarımlar, seçtiğiniz hareketlerden önce oluşturulur."
+		},
+		{
+			"title": "Kareleri adım adım ilerletin, tam ekran açın",
+			"text": "Studio'da artık görünür kare adımlaması var, böylece animasyonları bir kare bir kare kontrol edebilirsiniz. Yeni tam ekran düğmesi çizimleriniz için daha fazla alan açar."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Gezinme çubuğu artık kısa telefon ekranlarında kapanmıyor."
+		},
+		{
+			"text": "Pencereler içinde sürükledikten sonra yanlışlıkla kapanmıyor."
+		},
+		{
+			"text": "Hareket adları daha okunaklı ve önizleme menüleri yerinde kalıyor."
+		}
+	]
+}

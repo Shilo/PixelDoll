@@ -1,0 +1,211 @@
+{
+	"total": 49,
+	"groups": [
+		{
+			"kind": "new",
+			"items": [
+				{
+					"sha": "a1819de59b96dd10c014b38949ac1c5fc9a6b32a",
+					"text": "Import: Select moves across PixelLab character states"
+				},
+				{
+					"sha": "a2f61e818fc7d10c671362f134a5a6d1e1ca794d",
+					"text": "Import: Add a character ZIP drop area with shared validation"
+				},
+				{
+					"sha": "591a23e45570b75bc39258364dec6bf097dcb7e5",
+					"text": "Studio: Show progressive fitted item thumbnails"
+				},
+				{
+					"sha": "d9a809231560ce8bf7fbd29019da8e01d7d60634",
+					"text": "Items: Generate standing designs before chosen moves"
+				},
+				{
+					"sha": "ae7f0172f58c88fe0b917ffb153843ade222e37f",
+					"text": "Pwa: Apply safe startup updates without blocking"
+				},
+				{
+					"sha": "d41928ee50eb53368d9360508109f4e4f6d14423",
+					"text": "Pwa: Add installable offline Studio with guarded updates"
+				},
+				{
+					"sha": "4d50b8202a4a2d9e9e14742040868e6f25405a23",
+					"text": "Studio: Add native full screen toggle"
+				},
+				{
+					"sha": "00c2a57362bb55c1626363bfca43a49343018a20",
+					"text": "Studio: Add visible frame stepping and native clip validation"
+				},
+				{
+					"sha": "4f3cd796abb580a938b0de265f94c6e21398d4e4",
+					"text": "Add controlled motion workflow qualification pilot"
+				},
+				{
+					"sha": "d7b95556aea855218d9a7783a1265d38c80620d8",
+					"text": "Retain raw held-item body difference diagnostics"
+				},
+				{
+					"sha": "ae6681bdb545ddcf57f96263533048506c22441e",
+					"text": "Qualify managed custom skeleton v3 motion"
+				},
+				{
+					"sha": "48c2969360792e62fcdcf49280fc64ec04fd2793",
+					"text": "Add read-only custom skeleton inspection"
+				},
+				{
+					"sha": "8d50d1e8e17c7138efaf24f05c31215e48ca5383",
+					"text": "Add targeted motion authoring and qualification"
+				},
+				{
+					"sha": "59a20dac9046b6bc0c0eb1726c048e2901d6ad13",
+					"text": "Persist motion calibration and add independent source controls"
+				},
+				{
+					"sha": "9446b2cde217b5b10c9759d31db4ebf6315746ca",
+					"text": "Add offline motion lab and coherent skeleton retargeting"
+				}
+			]
+		},
+		{
+			"kind": "fixed",
+			"items": [
+				{
+					"sha": "14efe1419a5a9c5c32c25fbeb2a05fb4c30b3e32",
+					"text": "Studio: Clear navigation on short phones"
+				},
+				{
+					"sha": "3945100849c35c1a65313bb955e97e60f5716ecf",
+					"text": "Studio: Keep the offline notice compact"
+				},
+				{
+					"sha": "79d24add913f3ab29a7008a2a5c4f2d2abc96839",
+					"text": "Build: Remove production developer artifacts"
+				},
+				{
+					"sha": "80a82736421533937d271cfbb9e9081ef6444ca7",
+					"text": "Pwa: Prepare updates inside PixelDoll"
+				},
+				{
+					"sha": "846b070fd058b14d5ec15bfa05723ecf61950da7",
+					"text": "Pwa: Release stalled update dialogs"
+				},
+				{
+					"sha": "78dbcfe3f2bcd0394c6e5a7eeac3eac3acafba80",
+					"text": "Pwa: Put verified update recovery in the modal"
+				},
+				{
+					"sha": "7e750ad1e59b3813b07e85afd2368dbcc9d0f20d",
+					"text": "Pwa: Recover updates when Studio cannot finish loading"
+				},
+				{
+					"sha": "9e5665844d908580d25c1f7099ef552ed5d4bcb9",
+					"text": "Pwa: Check for updates hourly while visible"
+				},
+				{
+					"sha": "9de08a5645e2f4f66a335dc198763f201f427ed4",
+					"text": "Pwa: Allow slower untouched startup updates"
+				},
+				{
+					"sha": "28fb4fc932c571a5f9f47d4db4cd261a05db23d9",
+					"text": "Pwa: Allow updates with saved halted generation"
+				},
+				{
+					"sha": "6c2cc2ef5bef3761f503792e4a14666d03fa39d3",
+					"text": "Activity: Disable Stop while requests are submitting"
+				},
+				{
+					"sha": "37d701bf6e6449e5ef8919b0d4e5f74786e45da1",
+					"text": "Setup: Measure independent body frames concurrently"
+				},
+				{
+					"sha": "de5c6f0dd6f5c147842138a1f52f689470d194f3",
+					"text": "Import: Retain previews and names while selections update"
+				},
+				{
+					"sha": "f217b4046e13c86c35e4544c2d1bc9df0a206ed5",
+					"text": "Import: Separate standing views from optional state animations"
+				},
+				{
+					"sha": "1a26611630734b45e892159a75964dfbab4ee779",
+					"text": "Studio: Prevent accidental dialog dismissal after dragging"
+				},
+				{
+					"sha": "524b65f738571f5dbd1af367a620efcc6563e7d4",
+					"text": "Import: Simplify browsing and stabilize preview loading"
+				},
+				{
+					"sha": "86209efa5bfb09350f29c10ac4feb1e658b9a9b5",
+					"text": "Import: Reject incomplete PixelLab animation layouts"
+				},
+				{
+					"sha": "5cad85484ce2dc6f892fb75d33ff7d0f395fac13",
+					"text": "Studio: Make move names readable and contain preview menus"
+				},
+				{
+					"sha": "04b9da393bcb273a96220c7508103737a3cd0b28",
+					"text": "Import: Preserve multi-state moves and source frame sizes"
+				},
+				{
+					"sha": "159372eb5af236a439e8ec93bdf8c8b1194021d9",
+					"text": "Pwa: Ignore superseded worker inspection results"
+				},
+				{
+					"sha": "5981ac701521d256de3c7f86cbf1c6885efde3f1",
+					"text": "Studio: Preserve worn artwork through item acceptance"
+				},
+				{
+					"sha": "722c2e28c2d830609b423bf7be09108c6a6c8f9b",
+					"text": "Share: Include currently worn review items"
+				},
+				{
+					"sha": "b00ff8af5f481a519cdcf96005284c0714c129c2",
+					"text": "Studio: Keep item progress and completion reactive"
+				},
+				{
+					"sha": "252a7187f56d0b87ced881db3040db3257660c78",
+					"text": "Creator: Stretch compact appearance controls"
+				},
+				{
+					"sha": "93eb3206f7b18f5af41c8f37c45f2f7bebd199ce",
+					"text": "Pwa: Keep startup updates eligible across internal focus changes"
+				},
+				{
+					"sha": "0ae516eba0c52764d446cb7b44dbc113bafdb82a",
+					"text": "Notices: Time out preview and update toasts"
+				},
+				{
+					"sha": "311f4c3b8038f903552b664dc766c7fcfc214959",
+					"text": "Pwa: Capture native install offers before startup"
+				},
+				{
+					"sha": "7daefa3814bebd798a2e809a7206466cbdf63964",
+					"text": "Auth: Preserve newer credentials during agent startup"
+				},
+				{
+					"sha": "85a187ca9dd05de3a417e47c90452de3937a6168",
+					"text": "Address validated animation review findings"
+				},
+				{
+					"sha": "7806be10e73e905b5dae3e30e27ee99af6edec1c",
+					"text": "Animation: Align walk cadence and validate native attachments"
+				},
+				{
+					"sha": "0865c0b66dd7ea1f1fe5d5c02f0d46759e4dae60",
+					"text": "Preserve paid transport uncertainty and isolate extraction caches"
+				},
+				{
+					"sha": "4f05059868cac1894426dafe6042cccbe9f77b94",
+					"text": "Items: Enforce submitted inpaint masks through extraction and repair"
+				},
+				{
+					"sha": "edfe773534a3407d1b3dd247b0ed49032ebe0f68",
+					"text": "Items: Bound authored equipment extraction to reviewed stencils"
+				},
+				{
+					"sha": "36fd903083fb79f92d2947bcc65f29920c0a21dd",
+					"text": "Stabilize retargeted motion and qualify preset candidates"
+				}
+			]
+		}
+	]
+}

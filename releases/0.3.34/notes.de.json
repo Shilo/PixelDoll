@@ -1,0 +1,33 @@
+{
+	"headline": "An deinen Figuren überall arbeiten, mit weniger Stolpersteinen",
+	"intro": "PixelDoll passt sich jetzt leichter in deinen Alltag ein, ob auf dem Handy, offline oder beim Importieren von Figuren von anderswo. Das Einkleiden deiner Figuren soll sich von Anfang bis Ende flüssiger anfühlen.",
+	"highlights": [
+		{
+			"title": "Studio installieren und offline nutzen",
+			"text": "Du kannst PixelDoll jetzt als App installieren und Studio ohne Verbindung öffnen. Updates werden während der Arbeit geprüft und beim Start sicher angewendet, ohne dich zu stören."
+		},
+		{
+			"title": "Figuren durch Ablegen einer ZIP-Datei importieren",
+			"text": "Ein neuer Ablagebereich erlaubt dir, eine Figur aus einer ZIP-Datei zu importieren. Du kannst außerdem Animationen über die verschiedenen Zustände einer PixelLab-Figur hinweg auswählen."
+		},
+		{
+			"title": "Vorschaubilder der Gegenstände schrittweise anpassen",
+			"text": "Gegenstände zeigen beim Erstellen jetzt schrittweise angepasste Vorschaubilder, damit du dein Design Gestalt annehmen siehst. Standpose-Designs werden vor den Animationen erzeugt, die du auswählst."
+		},
+		{
+			"title": "Frames durchschalten, Vollbild nutzen",
+			"text": "Studio hat jetzt eine sichtbare Frame-Schaltung, damit du Animationen Frame für Frame prüfen kannst. Ein neuer Vollbild-Schalter gibt deinem Artwork mehr Platz."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Die Navigation wird auf kleinen Handybildschirmen nicht mehr verdeckt."
+		},
+		{
+			"text": "Dialoge schließen sich nicht mehr versehentlich, nachdem du innerhalb von ihnen gezogen hast."
+		},
+		{
+			"text": "Namen der Animationen sind leichter lesbar, und Vorschau-Menüs bleiben an ihrer Position."
+		}
+	]
+}

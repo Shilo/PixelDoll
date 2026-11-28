@@ -1,0 +1,33 @@
+{
+	"headline": "Trabaja con tus personajes en cualquier lugar, con menos problemas",
+	"intro": "PixelDoll encaja ahora más fácilmente en tu rutina, ya sea desde el móvil, sin conexión o al traer personajes de otros sitios. Vestir a tus personajes debería sentirse más fluido de principio a fin.",
+	"highlights": [
+		{
+			"title": "Instala Studio y úsalo sin conexión",
+			"text": "Ya puedes instalar PixelDoll como aplicación y abrir Studio sin conexión. Las actualizaciones se comprueban mientras trabajas y se aplican de forma segura al iniciar, sin interrumpirte."
+		},
+		{
+			"title": "Importa personajes arrastrando un ZIP",
+			"text": "Una nueva zona de arrastre te permite importar un personaje desde un archivo ZIP. También puedes elegir animaciones entre los distintos estados de un personaje de PixelLab."
+		},
+		{
+			"title": "Mira las miniaturas de objetos ajustarse progresivamente",
+			"text": "Los objetos muestran ahora miniaturas ajustadas progresivamente mientras se generan, para que veas tu diseño tomar forma. Los diseños De pie se generan antes que las animaciones que elijas."
+		},
+		{
+			"title": "Avanza fotograma a fotograma y usa pantalla completa",
+			"text": "Studio tiene ahora un avance de fotogramas visible para revisar las animaciones de uno en uno. Un nuevo botón de pantalla completa da más espacio a tu arte."
+		}
+	],
+	"fixes": [
+		{
+			"text": "La navegación ya no queda tapada en pantallas de móvil pequeñas."
+		},
+		{
+			"text": "Los diálogos ya no se cierran por accidente después de arrastrar dentro de ellos."
+		},
+		{
+			"text": "Los nombres de las animaciones se leen mejor y los menús de vista previa se mantienen en su sitio."
+		}
+	]
+}

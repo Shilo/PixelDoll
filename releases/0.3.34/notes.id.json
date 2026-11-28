@@ -1,0 +1,33 @@
+{
+	"headline": "Kerjakan karakter Anda di mana saja dengan lebih sedikit kendala",
+	"intro": "PixelDoll kini lebih mudah menyatu dengan rutinitas Anda, baik saat Anda memakai ponsel, sedang luring, maupun membawa karakter dari tempat lain. Mendandani karakter seharusnya terasa lebih lancar dari awal hingga akhir.",
+	"highlights": [
+		{
+			"title": "Pasang Studio dan gunakan secara luring",
+			"text": "Anda kini dapat memasang PixelDoll sebagai aplikasi dan membuka Studio tanpa koneksi. Pembaruan diperiksa saat Anda bekerja dan diterapkan dengan aman saat startup tanpa mengganggu Anda."
+		},
+		{
+			"title": "Impor karakter dengan menyeret berkas ZIP",
+			"text": "Area seret baru memungkinkan Anda mengimpor karakter dari berkas ZIP. Anda juga dapat memilih Gerakan di berbagai status karakter PixelLab."
+		},
+		{
+			"title": "Lihat thumbnail item tersusun secara bertahap",
+			"text": "Item kini menampilkan thumbnail yang tersusun secara bertahap saat dibuat, sehingga Anda dapat melihat desain Anda terbentuk. Berdiri dibuat lebih dulu sebelum Gerakan yang Anda pilih."
+		},
+		{
+			"title": "Telusuri frame, buka layar penuh",
+			"text": "Studio kini memiliki navigasi frame yang terlihat agar Anda dapat memeriksa animasi satu frame demi satu frame. Tombol layar penuh baru memberi ruang lebih untuk karya Anda."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Navigasi tidak lagi tertutup di layar ponsel yang pendek."
+		},
+		{
+			"text": "Dialog tidak lagi tertutup tanpa sengaja setelah Anda menyeret di dalamnya."
+		},
+		{
+			"text": "Nama Gerakan lebih mudah dibaca dan menu pratinjau tetap di tempatnya."
+		}
+	]
+}

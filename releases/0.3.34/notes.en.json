@@ -1,0 +1,33 @@
+{
+	"headline": "Work on your characters anywhere, with fewer snags",
+	"intro": "PixelDoll now fits into your routine more easily, whether you're on a phone, offline or bringing in characters from elsewhere. Dressing up your characters should feel smoother from start to finish.",
+	"highlights": [
+		{
+			"title": "Install Studio and use it offline",
+			"text": "You can now install PixelDoll as an app and open Studio without a connection. Updates are checked while you work and applied safely at startup without getting in your way."
+		},
+		{
+			"title": "Import characters by dropping a ZIP",
+			"text": "A new drop area lets you bring in a character from a ZIP file. You can also pick moves across a PixelLab character's different states."
+		},
+		{
+			"title": "Watch item thumbnails fit progressively",
+			"text": "Items now show progressive fitted thumbnails while they are made, so you can see your design take shape. Standing designs are generated before the moves you choose."
+		},
+		{
+			"title": "Step through frames, go full screen",
+			"text": "Studio now has visible frame stepping so you can check animations one frame at a time. A new full screen toggle gives your artwork more room."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Navigation is no longer covered on short phone screens."
+		},
+		{
+			"text": "Dialogs no longer close by accident after you drag inside them."
+		},
+		{
+			"text": "Move names are easier to read and preview menus stay in place."
+		}
+	]
+}
