@@ -111,7 +111,12 @@ async function deployIndex(github: GitHub, deployments: GitHub) {
 async function main() {
 	const { dryRun, notes: showNotes, until, max, key, update } = options();
 	const token = process.env.GITHUB_TOKEN;
-	const github = new GitHub(process.env.GITHUB_REPOSITORY ?? 'Shilo/PixelDoll', token);
+	// Releases and tags use RELEASE_TOKEN when set: the workflow token may not tag an old commit whose workflow files
+	// differ from today's. Git pushes keep the workflow token, so the bot's own commits never trigger workflows.
+	const github = new GitHub(
+		process.env.GITHUB_REPOSITORY ?? 'Shilo/PixelDoll',
+		process.env.RELEASE_TOKEN || token
+	);
 	const deployments = new GitHub(
 		process.env.RELEASE_DEPLOYMENTS_REPOSITORY || github.repository,
 		token

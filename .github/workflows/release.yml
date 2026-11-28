@@ -74,5 +74,6 @@ jobs:
           RELEASE_PAGES: ${{ vars.RELEASE_PAGES }}
           RELEASE_DEPLOYMENTS_REPOSITORY: ${{ vars.RELEASE_DEPLOYMENTS_REPOSITORY }}
           GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           RELEASES_ENABLED: ${{ vars.RELEASES_ENABLED }}

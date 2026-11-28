@@ -54,6 +54,10 @@ export class GitHub {
 						: (body as Blob),
 			signal: AbortSignal.timeout(60_000)
 		});
+		if (response.status === 403 && method !== 'GET' && url.pathname.includes('/releases'))
+			throw new Error(
+				`GitHub refused to create or change a release (${url.pathname}): the token cannot tag a commit whose workflow files differ from today's. Add a fine-grained token with Contents and Workflows write access as the RELEASE_TOKEN secret of the release environment, then run the workflow again. ${await response.text()}`
+			);
 		if (!response.ok && !(allowMissing && response.status === 404))
 			throw new Error(
 				`GitHub ${method} ${url.pathname}: ${response.status} ${await response.text()}`
