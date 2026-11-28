@@ -10612,12 +10612,10 @@ test('standing-first items quote standing and draw selected custom moves togethe
 	const walkWindow = page.locator('dialog.clip-window[open]');
 	const walkCoverage = await openItemSection(walkWindow, 'Wardrobe items');
 	await expect(walkCoverage).toContainText('5 of 6 items drawn');
-	// The missing row names what it needs and offers to make the item again; Generate items stays visible but disabled.
+	// The missing row says why it can't be drawn; Generate items stays visible but disabled.
 	const wizardRow = walkCoverage.getByRole('listitem').filter({ hasText: 'Wizard hat' });
-	await expect(wizardRow).toContainText('Needs a standing design');
-	await expect(
-		wizardRow.getByRole('button', { name: 'Make it again…', exact: true })
-	).toBeVisible();
+	await expect(wizardRow).toContainText('No saved design to pose');
+	await expect(wizardRow.getByRole('button')).toHaveCount(0);
 	await expect(walkCoverage.getByRole('button', { name: /^Generate items/ })).toBeDisabled();
 	await page.keyboard.press('Escape');
 	await expect(walkWindow).toHaveCount(0);

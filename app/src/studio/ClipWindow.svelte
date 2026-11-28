@@ -37,7 +37,6 @@
 	import { clipKind } from '../lib/runtime/timeline.js';
 	import { clipItemCoverage, clipMissingItems } from './itemGeneration.ts';
 	import { savedClipItemGeneration } from './savedClipItemGeneration.ts';
-	import { remakeAction } from './remakeItem.ts';
 	import { moveDeletionBlocked, removeMove, stateCaptureSource } from './moveActions.svelte.ts';
 	import { setupRedoMoves, unposedView } from '../lib/rig/setup.ts';
 	import { moveExportId } from '../lib/store/identity.ts';
@@ -172,15 +171,9 @@
 			)
 		)
 	);
-	/** A missing item with no standing design can be made again for this character, priced in New item. */
-	const remakes = $derived(
-		new Map(
-			m && !isDemo()
-				? (generation.rows ?? [])
-						.filter(({ item, pending }) => !pending && item.prompt && rowReasons.has(item.id))
-						.map(({ item }) => [item.id, remakeAction(m, item)] as const)
-				: []
-		)
+	/** Every missing row already says why it can't be drawn, so the disabled action does not repeat it. */
+	const rowsExplain = $derived(
+		!!generation.rows?.length && generation.rows.every((row) => rowReasons.has(row.item.id))
 	);
 	const unavailableReason = $derived(generation.unavailableReason ?? generation.unposedNote);
 	const canCapture = $derived(!isDemo() && !!m && !!stateCaptureSource(m, id));
@@ -335,14 +328,7 @@
 											>{row.item.name}</span
 										>{#if !row.drawn && rowReasons.has(row.item.id)}<span class="row-reason"
 												>{rowReasons.get(row.item.id)}</span
-											>{#if remakes.has(row.item.id)}{@const remake = remakes.get(
-													row.item.id
-												)!}<button
-													type="button"
-													class="btn link row-remake"
-													data-trail="clipWindow.remakeItem"
-													onclick={() => tool('items', remake.open)}>{t(remake.label)}</button
-												>{/if}{:else}<span class="sr"
+											>{:else}<span class="sr"
 												>{row.drawn ? t('clipWindow.itemDrawn') : t('clipWindow.itemMissing')}</span
 											>{/if}
 									</li>{/each}
@@ -353,11 +339,12 @@
 											{...{
 												icon: Sparkles,
 												label: t('itemGeneration.open'),
-												detail: generation.available
-													? t('clipWindow.itemsDetail', { move: name })
-													: unavailableReason
-														? displayNestedMessage(unavailableReason)
-														: t('clipWindow.itemsUnavailable'),
+												detail:
+													generation.available || rowsExplain
+														? t('clipWindow.itemsDetail', { move: name })
+														: unavailableReason
+															? displayNestedMessage(unavailableReason)
+															: t('clipWindow.itemsUnavailable'),
 												aside: '',
 												opens: true,
 												disabled: !generation.available,
@@ -463,9 +450,6 @@
 		color: var(--bu-muted);
 		font-size: var(--fs-sm);
 		text-align: end;
-	}
-	.row-remake {
-		flex: none;
 	}
 	.clip-items li[data-missing] :global(svg) {
 		color: var(--warn);

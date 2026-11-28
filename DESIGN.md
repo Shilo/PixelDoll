@@ -311,7 +311,7 @@ The character is drawn on a canvas at an integer pixel scale where possible, wit
 
 ### Icons
 
-Lucide line icons for functional icons, at the size each component sets (for example 16px in header actions and Inspect, 18px in playback). Equipment categories use Lucide icons, with custom drawings for Legs and Feet on the same 24px grid. Bronze's shared recipes use 20px icons with a 1.6 stroke where they apply.
+Lucide line icons for functional icons, at the size each component sets: 20px in icon-only header actions and view tabs, 16px beside a label (Share, Export), 18px in menu rows and playback. Equipment categories use Lucide icons, with custom drawings for Legs and Feet on the same 24px grid. Bronze's shared recipes use 20px icons with a 1.6 stroke where they apply.
 
 ## Do's and Don'ts
 

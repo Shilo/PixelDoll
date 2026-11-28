@@ -126,5 +126,19 @@ An independent review of the whole branch (simplicity first, readable layouts, m
 
 | Question | Decision |
 | --- | --- |
-| Why can't Walk generate the demo copy's Wizard hat, and should it be blocked? | Posing an item onto a move starts from its saved standing design (`dressed`). Items made in the app keep it; demo copies, older imports and some shared copies do not, so nothing can be posed. Generate items now stays visible and disabled with that reason, and the row offers Make it again…, the existing priced remake also used by the stage note (`remakeItem.ts`). Rejected for now: rebuilding the reference offline from the existing standing art (free, medium work, still no north view for the demo) and a prompt-only inpaint route (larger, more view drift). A combined "standing plus move" offer is the next step if it comes up outside demo copies. |
+| Why can't Walk generate the demo copy's Wizard hat, and should it be blocked? | Posing an item onto a move starts from its saved standing design (`dressed`). Items made in the app keep it; demo copies, older imports and some shared copies do not, so nothing can be posed. Generate items stays visible and disabled; the row says "No saved design to pose" and the disabled action keeps its normal description instead of repeating the reason. A row-level "Make it again…" was tried and removed after review: it bought a second item and left the move unfixed. Rejected for now: rebuilding the reference offline from existing standing art, and a prompt-only inpaint route. A replace-in-place remake that then draws the move is the real fix if this shows up outside demo copies. |
 | Where does Get Secret API key belong in Connect? | In the footer, right-aligned before Connect: secondary then primary, as in other sheets. A pending purchase's note takes its own row above both. |
+
+## Second review (handoff author)
+
+| Finding | Outcome |
+| --- | --- |
+| Row "Make it again…" bought a duplicate item, had an 18px target and repeated the reason. | Removed; disabled Generate items keeps its normal description; plainer row reason. |
+| Export counted Standing as a move. | Export counts states apart, with the header's helper (`clipCounts`). |
+| "Ready · see export notes" was one button. | "Ready ·" is text; only "see export notes" is the link. |
+| The principles dropped "Simplification never authorizes extra spending or silently resending a paid request." | Restored. |
+| AGENTS.md named one tool's home folder; DESIGN.md listed old icon sizes. | Fixed both. |
+| Connect shows two links to the account page, and Start free trial looks primary. | Kept: the inline link is part of the first-open instructions and a test asserts it on purpose; Start free trial already turns outline once a key is typed or a tier is needed, so Connect is the only primary while it is usable. |
+| AGENTS.md repeats two rules from the usability principles. | Kept: the owner asked for the practices to be made permanent there. |
+| Create spends on an empty description; branch collision with t3/review-easy-github-tasks. | Left to that branch, which already blocks an empty description; merge it first, then merge main here. |
+| Tips cover the Connect header and the Head slot's buttons. | Existing open item on tip placement. |

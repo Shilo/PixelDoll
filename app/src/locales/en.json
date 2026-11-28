@@ -1236,7 +1236,8 @@
 			"unavailable": "Export unavailable",
 			"sourceOnly": "Source PNGs only",
 			"noZip": "No ZIP available",
-			"readyNotes": "Ready · see export notes",
+			"readyNotes": "Ready ·",
+			"seeNotes": "see export notes",
 			"free": "Free · includes an editable copy",
 			"downloadArtwork": "Download artwork ZIP",
 			"downloadSize": "Download ZIP · {size} KB",
@@ -3845,7 +3846,7 @@
 		"gone": "This move is no longer saved.",
 		"itemDrawn": "Drawn",
 		"itemMissing": "Missing",
-		"needsStandingDesign": "Needs a standing design"
+		"needsStandingDesign": "No saved design to pose"
 	},
 	"tips": {
 		"customizeTitle": "Dress up the demo",

@@ -46,6 +46,7 @@
 	import ReportButton from './ReportButton.svelte';
 	import type { WhisperKey } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
+	import { clipCounts } from './model.ts';
 	import { message, type Message } from '../lib/message.ts';
 	import { ACTION_LAYER_ENGINES, type NoteTerm } from '../lib/export/export.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
@@ -726,13 +727,13 @@
 					: result?.kind === 'failed'
 						? t('export.sheet.noZip')
 						: hasNotes
-							? ''
+							? t('export.sheet.readyNotes')
 							: t(
 									'export.sheet.free'
 								)}{#if ready && !pendingExport && result?.kind !== 'recovery' && result?.kind !== 'failed' && hasNotes}<button
 				type="button"
 				class="btn link notes-link"
-				onclick={showNotes}>{t('export.sheet.readyNotes')}</button
+				onclick={showNotes}>{t('export.sheet.seeNotes')}</button
 			>{/if}</span
 	>
 	{#if ready && !pendingExport && result?.kind === 'failed' && result.retryable}
@@ -1058,7 +1059,7 @@
 										directions: t('export.count.directions', {
 											count: m.rig.directions.length
 										}),
-										moves: t('export.count.moves', { count: m.rig.animations.length }),
+										moves: clipCounts(m).map(displayMessage).join(' · '),
 										items: t('export.count.items', { count: items.length }),
 										outfits: t('export.count.outfits', {
 											count: outfits.length

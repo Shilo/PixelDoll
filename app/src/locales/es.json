@@ -1236,7 +1236,8 @@
 			"unavailable": "Exportación no disponible",
 			"sourceOnly": "Solo PNG de origen",
 			"noZip": "No hay ZIP disponible",
-			"readyNotes": "Listo · consulta las notas de exportación",
+			"readyNotes": "Listo ·",
+			"seeNotes": "consulta las notas de exportación",
 			"free": "Gratis · incluye una copia editable",
 			"downloadArtwork": "Descargar ZIP de imágenes",
 			"downloadSize": "Descargar ZIP · {size} KB",
@@ -3845,7 +3846,7 @@
 		"gone": "Este movimiento ya no está guardado.",
 		"itemDrawn": "Dibujado",
 		"itemMissing": "Falta",
-		"needsStandingDesign": "Falta el diseño de pie"
+		"needsStandingDesign": "Sin diseño guardado para posar"
 	},
 	"tips": {
 		"customizeTitle": "Viste la demo",

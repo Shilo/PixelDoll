@@ -1239,7 +1239,8 @@
 			"unavailable": "Exportação indisponível",
 			"sourceOnly": "Somente PNGs originais",
 			"noZip": "Nenhum ZIP disponível",
-			"readyNotes": "Pronto · consulte as notas de exportação",
+			"readyNotes": "Pronto ·",
+			"seeNotes": "consulte as notas de exportação",
 			"free": "Grátis · inclui uma cópia editável",
 			"downloadArtwork": "Baixar ZIP com a arte",
 			"downloadSize": "Baixar ZIP · {size} KB",
@@ -3854,7 +3855,7 @@
 		"gone": "Este movimento não está mais salvo.",
 		"itemDrawn": "Desenhado",
 		"itemMissing": "Faltando",
-		"needsStandingDesign": "Falta o desenho em pé"
+		"needsStandingDesign": "Sem desenho salvo para posar"
 	},
 	"tips": {
 		"customizeTitle": "Vista a demo",

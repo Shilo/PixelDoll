@@ -1236,7 +1236,8 @@
 			"unavailable": "Dışa aktarım kullanılamıyor",
 			"sourceOnly": "Yalnızca kaynak PNG dosyaları",
 			"noZip": "ZIP yok",
-			"readyNotes": "Hazır · Dışa aktarım notlarını okuyun",
+			"readyNotes": "Hazır ·",
+			"seeNotes": "Dışa aktarım notlarını okuyun",
 			"free": "Ücretsiz · Düzenlenebilir kopya dahil",
 			"downloadArtwork": "Görsellerin ZIP dosyasını indirin",
 			"downloadSize": "ZIP indirin · {size} KB",
@@ -3845,7 +3846,7 @@
 		"gone": "Bu hareket artık kayıtlı değil.",
 		"itemDrawn": "Çizildi",
 		"itemMissing": "Eksik",
-		"needsStandingDesign": "Ayakta duruş tasarımı gerekli"
+		"needsStandingDesign": "Poz verilecek kayıtlı tasarım yok"
 	},
 	"tips": {
 		"customizeTitle": "Demoyu giydir",

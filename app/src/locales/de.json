@@ -1236,7 +1236,8 @@
 			"unavailable": "Export nicht verfügbar",
 			"sourceOnly": "Nur Quell-PNGs",
 			"noZip": "Kein ZIP verfügbar",
-			"readyNotes": "Bereit · siehe Exporthinweise",
+			"readyNotes": "Bereit ·",
+			"seeNotes": "siehe Exporthinweise",
 			"free": "Kostenlos · enthält eine bearbeitbare Kopie",
 			"downloadArtwork": "Grafiken als ZIP herunterladen",
 			"downloadSize": "ZIP herunterladen · {size} KB",
@@ -3845,7 +3846,7 @@
 		"gone": "Diese Bewegung ist nicht mehr gespeichert.",
 		"itemDrawn": "Gezeichnet",
 		"itemMissing": "Fehlt",
-		"needsStandingDesign": "Standpose-Design fehlt"
+		"needsStandingDesign": "Kein gespeichertes Design zum Posieren"
 	},
 	"tips": {
 		"customizeTitle": "Demo einkleiden",

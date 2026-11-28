@@ -1201,7 +1201,8 @@
 			"unavailable": "내보내기 사용 불가",
 			"sourceOnly": "소스 PNG만",
 			"noZip": "사용 가능한 ZIP 없음",
-			"readyNotes": "준비됨 · 내보내기 참고 사항 보기",
+			"readyNotes": "준비됨 ·",
+			"seeNotes": "내보내기 참고 사항 보기",
 			"free": "무료 · 편집 가능한 사본 포함",
 			"downloadArtwork": "아트워크 ZIP 다운로드",
 			"downloadSize": "ZIP 다운로드 · {size}KB",
@@ -3741,7 +3742,7 @@
 		"gone": "이 동작은 더 이상 저장되어 있지 않습니다.",
 		"itemDrawn": "그려짐",
 		"itemMissing": "없음",
-		"needsStandingDesign": "서 있는 자세 디자인 필요"
+		"needsStandingDesign": "포즈에 쓸 저장된 디자인 없음"
 	},
 	"tips": {
 		"customizeTitle": "데모 꾸미기",

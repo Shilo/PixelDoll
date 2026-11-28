@@ -1236,7 +1236,8 @@
 			"unavailable": "Export indisponible",
 			"sourceOnly": "PNG sources uniquement",
 			"noZip": "Aucun ZIP disponible",
-			"readyNotes": "Prêt · voir les notes d’export",
+			"readyNotes": "Prêt ·",
+			"seeNotes": "voir les notes d’export",
 			"free": "Gratuit · inclut une copie modifiable",
 			"downloadArtwork": "Télécharger le ZIP des visuels",
 			"downloadSize": "Télécharger le ZIP · {size} Ko",
@@ -3845,7 +3846,7 @@
 		"gone": "Ce mouvement n’est plus enregistré.",
 		"itemDrawn": "Dessiné",
 		"itemMissing": "Manquant",
-		"needsStandingDesign": "Modèle debout manquant"
+		"needsStandingDesign": "Aucun modèle enregistré à poser"
 	},
 	"tips": {
 		"customizeTitle": "Habillez la démo",

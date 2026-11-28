@@ -1201,7 +1201,8 @@
 			"unavailable": "Ekspor tidak tersedia",
 			"sourceOnly": "Hanya PNG sumber",
 			"noZip": "ZIP tidak tersedia",
-			"readyNotes": "Siap · Lihat catatan ekspor",
+			"readyNotes": "Siap ·",
+			"seeNotes": "Lihat catatan ekspor",
 			"free": "Gratis · Menyertakan salinan yang bisa diedit",
 			"downloadArtwork": "Unduh ZIP gambar",
 			"downloadSize": "Unduh ZIP · {size} KB",
@@ -3741,7 +3742,7 @@
 		"gone": "Gerakan ini tidak lagi tersimpan.",
 		"itemDrawn": "Digambar",
 		"itemMissing": "Hilang",
-		"needsStandingDesign": "Perlu desain pose berdiri"
+		"needsStandingDesign": "Tidak ada desain tersimpan untuk dipose"
 	},
 	"tips": {
 		"customizeTitle": "Dandani demo",

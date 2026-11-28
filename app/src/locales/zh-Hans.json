@@ -1201,7 +1201,8 @@
 			"unavailable": "导出不可用",
 			"sourceOnly": "仅源 PNG",
 			"noZip": "无可用 ZIP",
-			"readyNotes": "就绪 · 查看导出说明",
+			"readyNotes": "就绪 ·",
+			"seeNotes": "查看导出说明",
 			"free": "免费 · 包含可编辑副本",
 			"downloadArtwork": "下载图像 ZIP",
 			"downloadSize": "下载 ZIP · {size} KB",
@@ -3741,7 +3742,7 @@
 		"gone": "此动作已不再保存。",
 		"itemDrawn": "已绘制",
 		"itemMissing": "缺少",
-		"needsStandingDesign": "需要站立姿势设计"
+		"needsStandingDesign": "没有可用于摆姿势的已存设计"
 	},
 	"tips": {
 		"customizeTitle": "给演示角色换装",

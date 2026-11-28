@@ -13,7 +13,7 @@ PixelDoll follows **simplicity-first design**: strong defaults, minimal necessar
 - Preserve keyboard, touch and mouse access, visible focus, accessible names, reduced motion and reachable controls across screen sizes and orientations. Keep accessibility options discoverable. Retain the established dark default and light switch; remember supported explicit choices under existing storage contracts.
 - Make the whole visible row or tile operable and preserve hover, pressed and focus feedback through Bronze UI. Check that notices, tips and adjacent actions leave their targets reachable. Keep previews and control footprints steady when switching views or labels.
 - Use the same control and styling for the same role across screens. Follow the component guidance in [DESIGN.md](../DESIGN.md) and use sentence case for labels, preserving established product and feature names.
-- Save automatically under existing contracts and surface save failures. Show progress, errors, quality limits and recovery when relevant. Keep essential information reachable after transient feedback disappears. Preserve deletion safeguards and paid-request consent, and ask again when a retry or fallback changes what will be bought. Avoid confirmations for routine reversible edits.
+- Save automatically under existing contracts and surface save failures. Show progress, errors, quality limits and recovery when relevant. Keep essential information reachable after transient feedback disappears. Preserve deletion safeguards and paid-request consent, and ask again when a retry or fallback changes what will be bought. Simplification never authorizes extra spending or silently resending a paid request. Avoid confirmations for routine reversible edits.
 
 ## Failures and recovery
 

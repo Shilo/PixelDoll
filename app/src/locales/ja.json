@@ -1201,7 +1201,8 @@
 			"unavailable": "エクスポートできません",
 			"sourceOnly": "元のPNGのみ",
 			"noZip": "利用できるZIPはありません",
-			"readyNotes": "準備完了・エクスポートの注意事項を確認してください",
+			"readyNotes": "準備完了・",
+			"seeNotes": "エクスポートの注意事項を確認してください",
 			"free": "無料・編集用のコピーを含みます",
 			"downloadArtwork": "アートワークのZIPをダウンロード",
 			"downloadSize": "ZIPをダウンロード・{size} KB",
@@ -3741,7 +3742,7 @@
 		"gone": "この動きはもう保存されていません。",
 		"itemDrawn": "描画済み",
 		"itemMissing": "未描画",
-		"needsStandingDesign": "立ちポーズのデザインが必要"
+		"needsStandingDesign": "ポーズに使う保存済みデザインなし"
 	},
 	"tips": {
 		"customizeTitle": "デモを着せ替える",
