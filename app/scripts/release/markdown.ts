@@ -26,7 +26,12 @@ export function releaseMarkdown(
 		dateStyle: 'long',
 		timeZone: 'UTC'
 	});
-	const parts = [`${day} · v${version}`, `![](${bannerUrl})`, escape(notes.intro)];
+	// GitHub readers may not know where the app lives; it always opens the current version, so the link names no version.
+	const parts = [
+		`${day} · v${version} · [Open PixelDoll](https://pixeldoll.app/)`,
+		`![](${bannerUrl})`,
+		escape(notes.intro)
+	];
 	for (const { title, text } of notes.highlights)
 		parts.push(`## ${escape(title)}\n\n${escape(text)}`);
 	if (notes.fixes.length)
