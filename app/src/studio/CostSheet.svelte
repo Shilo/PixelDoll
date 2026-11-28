@@ -406,6 +406,7 @@
 					class="bu-action btn plain icon reset"
 					data-variant="quiet"
 					aria-label={t('costSheet.resetEstimate')}
+					data-trail="cost.reset"
 					title={t('costSheet.resetEstimate')}
 					aria-disabled={!edited}
 					onclick={() => edited && reset()}><RotateCcw size={18} aria-hidden="true" /></button

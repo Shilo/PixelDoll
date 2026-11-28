@@ -43,7 +43,10 @@
 			n = await cleanUp();
 		} catch (e) {
 			console.error('clear finished', e);
-			toast(t('activity.clearFailed', { error: displayError(e) }), { tone: 'danger' });
+			toast(message('activity.clearFailed', { error: displayError(e) }), {
+				tone: 'danger',
+				error: e
+			});
 			return;
 		}
 		toast(
@@ -56,12 +59,12 @@
 		);
 	}
 	import { ChevronRight, CircleAlert, CircleCheck, RefreshCw } from './icons.ts';
-	import { LocalizedError } from '../lib/message.ts';
+	import { LocalizedError, message } from '../lib/message.ts';
 	/** A cancel whose save fails stays canceled in this tab (nothing is sent from here); say so and offer to save it again. */
 	function cancelRecord(id: string) {
 		queue.cancel(id).catch((error: unknown) => {
 			console.error('cancel', error);
-			if (error instanceof LocalizedError) toast(displayError(error), { tone: 'danger' });
+			if (error instanceof LocalizedError) toast(displayError(error), { tone: 'danger', error });
 			else cancelNotSaved(id);
 		});
 	}
@@ -73,7 +76,8 @@
 				queue.retryCancelSave(id).catch((error: unknown) => {
 					console.error('cancel', error);
 					// A stop PixelLab did not confirm is not a failed save: say so instead of offering to save it again.
-					if (error instanceof LocalizedError) toast(displayError(error), { tone: 'danger' });
+					if (error instanceof LocalizedError)
+						toast(displayError(error), { tone: 'danger', error });
 					else cancelNotSaved(id);
 				})
 		});
@@ -288,6 +292,7 @@
 					<button
 						class="bu-action btn sm"
 						data-variant="outline"
+						data-trail="activity.cancelRequest"
 						onclick={() => (canReturnToCreator() ? returnToCreator() : (ui.sheet = null))}
 						>{t('activity.cancelRequest')}</button
 					>
@@ -304,6 +309,7 @@
 							class="bu-action btn icon plain"
 							data-variant="quiet"
 							aria-label={t('activity.refreshBalance')}
+							data-trail="activity.refreshBalance"
 							onclick={() =>
 								refreshBalance({
 									activityScope: balanceScope,
@@ -315,6 +321,7 @@
 					>{:else if !ui.waitingForTab}<button
 						class="bu-action btn sm"
 						data-variant="outline"
+						data-trail="activity.connect"
 						onclick={() => (ui.sheet = 'connect')}
 						>{openerLabel(t('connectSheet.connect'))}<SurfaceChevron /></button
 					>{/if}
@@ -348,6 +355,7 @@
 						><button
 							class="bu-action btn sm"
 							data-variant="outline"
+							data-trail="activity.resume"
 							onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}
 							>{$queue.paused === 'auth'
 								? openerLabel(t('connectSheet.connect'))
@@ -395,6 +403,7 @@
 											aria-describedby={r.state === 'submitting'
 												? 'activity-submitting-stop'
 												: undefined}
+											data-trail="activity.stop"
 											onclick={() => cancelRecord(r.id)}>{t('activity.stop')}</button
 										>{/if}</span
 								></span
@@ -429,6 +438,7 @@
 								><button
 									class="bu-action btn link small"
 									data-variant="quiet"
+									data-trail="activity.cancelQueued"
 									onclick={() => cancelRecord(r.id)}>{t('common.cancel')}</button
 								></span
 							>
@@ -487,6 +497,7 @@
 					<button
 						class="bu-action btn sm"
 						data-variant="outline"
+						data-trail="activity.clear"
 						onclick={clear}
 						disabled={$queue.role === 'follower'}
 						title={$queue.role === 'follower' ? t('activity.clearFollower') : undefined}
@@ -528,11 +539,13 @@
 				class="bu-action btn sm"
 				data-variant="outline"
 				disabled={doc.loading || $queue.role === 'follower'}
+				data-trail="activity.dismiss"
 				onclick={dismiss}>{t('setup.dismiss')}</button
 			>{:else if open}<button
 				class="bu-action btn sm"
 				data-variant="outline"
 				aria-label={t('activity.openWorkNamed', { label })}
+				data-trail="activity.openWork"
 				disabled={doc.loading || $queue.role === 'follower'}
 				onclick={open}>{openerLabel(t('activity.openWork'))}<SurfaceChevron /></button
 			>{/if}

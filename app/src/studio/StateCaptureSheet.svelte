@@ -158,6 +158,8 @@
 	// The edit is priced for free as the form settles; Generate State only enables once the shown price matches it.
 	let pricing = $state(false);
 	let priceFailure = $state<Message | string>('');
+	/** The exception behind `priceFailure`, for Report. */
+	let priceCause = $state.raw<unknown>();
 	let priceRetry = $state(0);
 
 	const source = $derived<StateSourceFrame>({ clip, frame });
@@ -370,6 +372,7 @@
 		const request = ++priceRequest;
 		pricing = true;
 		priceFailure = '';
+		priceCause = undefined;
 		try {
 			const input = stateModelInput(draft.model, draft.description, draft.reference);
 			const prepared = await prepareState(
@@ -391,6 +394,7 @@
 		} catch (error) {
 			if (request !== priceRequest) return;
 			priceFailure = errorMessage(error);
+			priceCause = error;
 			markStale(priceFailure);
 		} finally {
 			if (request === priceRequest) pricing = false;
@@ -515,8 +519,12 @@
 			{#if changed}
 				<div class="bu-notice source-changed" data-size="compact" data-tone="warning" role="status">
 					<p>{t('stateCapture.concurrentEdit')}</p>
-					<button class="bu-btn" data-variant="outline" type="button" onclick={reloadSource}
-						>{t('stateCapture.reload')}</button
+					<button
+						class="bu-btn"
+						data-variant="outline"
+						type="button"
+						data-trail="stateCapture.reload"
+						onclick={reloadSource}>{t('stateCapture.reload')}</button
 					>
 				</div>
 			{:else if !views}
@@ -666,7 +674,10 @@
 			data-tone="danger"
 			role="alert"
 		>
-			{displayNestedMessage(priceFailure)}<ReportButton error={priceFailure} />
+			{displayNestedMessage(priceFailure)}<ReportButton
+				error={priceCause ?? priceFailure}
+				message={typeof priceFailure === 'object' ? priceFailure : undefined}
+			/>
 		</p>{/if}
 </Sheet>
 {#snippet importFoot()}
@@ -699,6 +710,7 @@
 					data-variant="outline"
 					type="button"
 					disabled={!!busy || !formReady}
+					data-trail="stateCapture.retryPrice"
 					onclick={() => priceRetry++}>{t('common.tryAgain')}</button
 				>
 			{:else}
@@ -707,6 +719,7 @@
 					data-variant="primary"
 					type="button"
 					disabled={!!busy || !formReady || !quote}
+					data-trail="stateCapture.generate"
 					onclick={generate}>{t('stateGeneration.generate')}</button
 				>
 			{/if}
@@ -716,6 +729,7 @@
 				data-variant="primary"
 				type="submit"
 				form={formId}
+				data-trail="stateCapture.save"
 				disabled={!!busy || !formReady}
 				>{t(
 					busy === 'stateCapture.saving'

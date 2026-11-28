@@ -44,6 +44,7 @@
 {#snippet viewLock()}
 	<button
 		class="bu-btn"
+		data-trail="trash.viewPendingWork"
 		onclick={() => {
 			oncancel();
 			onlocked?.();

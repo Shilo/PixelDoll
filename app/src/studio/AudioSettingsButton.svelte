@@ -13,6 +13,7 @@
 <button
 	type="button"
 	class={row ? 'row bu-action mobile-audio' : 'bu-action header-audio'}
+	data-trail="toolbar.audio"
 	data-variant="quiet"
 	style:display={hasEnabledAudio() ? undefined : 'none'}
 	aria-label={label}

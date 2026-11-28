@@ -381,6 +381,7 @@
 		"categories": "Catégories de couleurs"
 	},
 	"colorSections": {
+		"notWorn": "Non porté",
 		"randomLowerColors": "Choisir des couleurs au hasard : {lower}",
 		"randomCharacterColors": "Choisir les couleurs du personnage au hasard",
 		"resetLowerColors": "Réinitialiser les couleurs : {lower}",
@@ -541,7 +542,6 @@
 		"matchingColors": "Harmonisation des couleurs…",
 		"matchItemColors": "Harmoniser les couleurs de l’objet",
 		"recolor": "Recolorer",
-		"recolorWearFirst": "Portez-le pour changer ses couleurs",
 		"whenWornHide": "Masquer les autres objets quand il est porté",
 		"iD": "ID",
 		"slot": "Emplacement",
@@ -3525,7 +3525,7 @@
 		"actionLabel": "Signaler ce problème",
 		"actionLabelFor": "Signaler ce problème : {name}",
 		"title": "Signaler ce problème",
-		"intro": "Ouvre un ticket public sur GitHub contenant uniquement le texte ci-dessous. Aucune image, aucun prompt, nom ou clé n’est inclus. Vous le publiez avec votre compte GitHub.",
+		"intro": "N’inclut jamais vos images, prompts, noms, fichiers ni votre clé PixelLab. Vous le relisez sur GitHub avant de le publier.",
 		"preview": "Aperçu du signalement",
 		"copy": "Copier le signalement",
 		"copied": "Copié",

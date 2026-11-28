@@ -1085,6 +1085,7 @@
 										aria-label={s.label}
 										aria-describedby={`${sectionId(s.key)}-count`}
 										data-slot-button={s.key}
+										data-trail="wardrobe.slotMenu"
 										popovertarget="slot-menu"
 										aria-haspopup="menu"
 										aria-expanded={slotMenuOpen && slotFor === s.key}
@@ -1127,12 +1128,14 @@
 									aria-label={t('wardrobe.randomLowerItem', { lower })}
 									title={t('wardrobe.randomLowerItem', { lower })}
 									disabled={!s.choices}
+									data-trail="wardrobe.randomSlot"
 									onclick={() => randomizeGroup(s.key)}><Shuffle size={16} /></button
 								>
 								<button
 									class="bu-action section-action"
 									data-variant="quiet"
 									data-tip-anchor="new-item"
+									data-trail="wardrobe.newItem"
 									aria-label={t('wardrobe.newLowerItem', { lower })}
 									title={t('wardrobe.newLowerItem', { lower })}
 									onclick={() => openNewItem(s.key)}><Plus size={18} /></button
@@ -1155,6 +1158,7 @@
 										class="bu-tile item-tile"
 										data-variant="empty"
 										data-row="empty:{s.key}"
+										data-trail="wardrobe.empty"
 										aria-pressed={!s.worn}
 										aria-label={t('wardrobe.emptyLower', { lower })}
 										onclick={() => clearSlots([s.key])}
@@ -1198,6 +1202,7 @@
 											data-selected={ui.selected === it.id || armedItem === it.id || undefined}
 											data-item-armed={armedItem === it.id || undefined}
 											data-tile={it.id}
+											data-trail="wardrobe.item"
 											data-dim={shownHidden || away || undefined}
 											aria-pressed={on}
 											aria-haspopup={chooses ? 'menu' : undefined}
@@ -1241,6 +1246,7 @@
 											popovertarget="item-menu"
 											aria-haspopup="menu"
 											aria-expanded={menuOpen && menuFor === it.id}
+											data-trail="wardrobe.itemMenu"
 											aria-label={t('wardrobe.moreOptionsForName', { name: it.name })}
 											title={t('wardrobe.titleOptions')}
 											onclick={() => {
@@ -1283,6 +1289,7 @@
 											class="bu-tile item-tile"
 											data-selected={ui.selected === `gen:${x.draft.spec.id}` || undefined}
 											data-tile="gen:{x.draft.spec.id}"
+											data-trail="wardrobe.generation"
 											aria-label={x.phase === 'running'
 												? t('wardrobe.generationTileRunning', {
 														name: x.input.name,
@@ -1365,6 +1372,7 @@
 											popovertarget="item-menu"
 											aria-haspopup="menu"
 											aria-expanded={menuOpen && menuFor === 'gen:' + x.draft.spec.id}
+											data-trail="wardrobe.generationMenu"
 											title={t('wardrobe.titleOptions')}
 											aria-label={t('wardrobe.moreOptionsForName', { name: x.input.name })}
 											onclick={() => {
@@ -1386,6 +1394,7 @@
 											class="bu-tile item-tile shared-tile"
 											data-selected={ui.selected === key || undefined}
 											data-tile={key}
+											data-trail="wardrobe.sharedItem"
 											data-dim={remake || adding || undefined}
 											aria-label={tileName(x.item.name, marks)}
 											aria-busy={adding}
@@ -1405,6 +1414,7 @@
 											popovertarget="item-menu"
 											aria-haspopup="menu"
 											aria-expanded={menuOpen && menuFor === key}
+											data-trail="wardrobe.sharedItemMenu"
 											aria-label={t('wardrobe.moreOptionsForName', { name: x.item.name })}
 											title={t('wardrobe.titleOptions')}
 											onclick={() => {
@@ -1419,6 +1429,7 @@
 									<button
 										class="bu-tile item-tile"
 										data-variant="add"
+										data-trail="wardrobe.newItemTile"
 										aria-label={t('wardrobe.newLowerItem', { lower })}
 										onclick={() => openNewItem(s.key)}
 										><span class="bu-tile-art tile-art" aria-hidden="true"><Plus size={26} /></span
@@ -1443,6 +1454,7 @@
 							data-variant="quiet"
 							aria-expanded={notShownOpen}
 							aria-controls="wardrobe-not-shown"
+							data-trail="wardrobe.notShown"
 							onclick={() => void toggleNotShown()}
 							><EyeOff size={16} aria-hidden="true" /><span class="bu-section-title"
 								>{t('wardrobe.notShown')}</span
@@ -1476,6 +1488,7 @@
 											class="bu-action not-shown-slot"
 											aria-label={t('slotsSheet.showLabel', { label: c.label })}
 											data-show-slot={c.key}
+											data-trail="wardrobe.showHiddenSlot"
 											popovertarget="slot-menu"
 											aria-haspopup="menu"
 											aria-expanded={slotMenuOpen && slotFor === c.key}
@@ -1574,6 +1587,7 @@
 								class="row"
 								data-variant="quiet"
 								role="menuitem"
+								data-trail="slotMenu.show"
 								onclick={() => {
 									closeSlotMenu();
 									void showHidden(s.key);
@@ -1585,6 +1599,7 @@
 								data-variant="quiet"
 								role="menuitem"
 								aria-disabled={slotAt === 0 || undefined}
+								data-trail="slotMenu.moveUp"
 								onclick={() => {
 									if (slotAt === 0) return;
 									closeSlotMenu();
@@ -1596,6 +1611,7 @@
 								data-variant="quiet"
 								role="menuitem"
 								aria-disabled={slotAt === own.length - 1 || undefined}
+								data-trail="slotMenu.moveDown"
 								onclick={() => {
 									if (slotAt === own.length - 1) return;
 									closeSlotMenu();
@@ -1607,6 +1623,7 @@
 								data-variant="quiet"
 								role="menuitem"
 								aria-disabled={!!slotHideBlock || undefined}
+								data-trail="slotMenu.hide"
 								onclick={() => void hide(s.key)}
 								><EyeOff size={16} aria-hidden="true" /><span class="row-name"
 									>{t('wardrobe.hideSlot')}{#if slotHideBlock}<small class="row-reason"
@@ -1620,6 +1637,7 @@
 							class="row"
 							data-variant="quiet"
 							role="menuitem"
+							data-trail="slotMenu.settings"
 							onclick={() => openSlotSettings(s.key)}
 							>{#if slotCustom}<Pencil size={16} aria-hidden="true" />{openerLabel(
 									t('wardrobe.editSlot')
@@ -1667,6 +1685,7 @@
 									class="bu-action slot-tab"
 									data-variant="rail"
 									data-rail={s.key}
+									data-trail="wardrobe.railSlot"
 									popovertarget={!s.fromOthers ? 'slot-menu' : undefined}
 									data-sortable={!s.fromOthers || undefined}
 									data-armed={armed === s.key || undefined}
@@ -1711,6 +1730,7 @@
 									class="bu-action slot-tab"
 									data-variant="rail"
 									data-not-shown
+									data-trail="wardrobe.railNotShown"
 									aria-current={notShownCurrent ? 'true' : undefined}
 									tabindex={notShownCurrent ||
 									!filteredSections.some((slot) => slot.key === ui.group)
@@ -1736,6 +1756,7 @@
 				<div class="slot-rail-footer">
 					<button
 						class="bu-action slot-tab slot-add"
+						data-trail="wardrobe.addSlot"
 						data-variant="rail"
 						aria-label={t('slotsSheet.titleAddSlot')}
 						aria-haspopup="dialog"

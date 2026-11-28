@@ -56,6 +56,8 @@
 	let exportId = $state(originalId);
 	let busy = $state(false),
 		error = $state.raw<Message | null>(null);
+	// The exception behind `error`, for Report.
+	let errorCause = $state.raw<unknown>();
 	const nameChanged = $derived(name.trim() !== originalName);
 	const idChanged = $derived(exportId !== originalId);
 	const characterConflict = $derived(
@@ -116,6 +118,7 @@
 			if (ui.sheet === 'rename' && ui.renameTarget === target) back();
 		} catch (e) {
 			error = message('renameSheet.couldNotRename', { reason: errorMessage(e) });
+			errorCause = e;
 		} finally {
 			busy = false;
 		}
@@ -198,7 +201,10 @@
 		</form>
 	{/if}
 	{#if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
-			{displayNestedMessage(error)}<ReportButton {error} />
+			{displayNestedMessage(error)}<ReportButton
+				error={errorCause ?? error}
+				message={error ?? undefined}
+			/>
 		</p>{/if}
 	{#snippet footer()}
 		<button
@@ -206,6 +212,7 @@
 			data-variant="primary"
 			type="submit"
 			form="rename-identity-form"
+			data-trail="rename.save"
 			disabled={!canSave}>{busy ? t('directionsSheet.saving') : t('common.save')}</button
 		>
 	{/snippet}

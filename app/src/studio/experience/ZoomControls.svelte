@@ -35,11 +35,13 @@
 		class="bu-action"
 		data-variant="quiet"
 		aria-label={t('common.zoomOut')}
+		data-trail="zoom.out"
 		disabled={zoom.scale <= zoom.min + 1e-9}
 		onclick={() => onchange(step(zoom, -1))}><Minus size={18} /></button
 	>
 	<button
 		class="bu-action scene-zoom-reset num"
+		data-trail="zoom.reset"
 		data-variant="quiet"
 		aria-label={words.reset}
 		aria-describedby={description}
@@ -50,6 +52,7 @@
 		class="bu-action"
 		data-variant="quiet"
 		aria-label={t('common.zoomIn')}
+		data-trail="zoom.in"
 		disabled={zoom.scale >= zoom.max - 1e-9}
 		onclick={() => onchange(step(zoom, 1))}><Plus size={18} /></button
 	>

@@ -466,6 +466,7 @@
 				class="bu-btn"
 				data-variant="outline"
 				disabled={!!busy}
+				data-trail="stateReview.discard"
 				onclick={discard}
 				>{t(confirmDiscard ? 'stateGeneration.confirmDiscard' : 'common.discard')}</button
 			>
@@ -475,6 +476,7 @@
 					class="bu-btn"
 					data-variant="primary"
 					disabled={!!busy}
+					data-trail="stateReview.retry"
 					onclick={load}>{t('common.tryAgain')}</button
 				>{/if}
 			<!-- Views never sent are a separately priced choice; saving without them stays free. -->
@@ -483,12 +485,14 @@
 					class="bu-btn"
 					data-variant="outline"
 					disabled={!!busy}
+					data-trail="stateReview.generateRemaining"
 					onclick={generateRemaining}>{t('stateGeneration.generateRemaining')}</button
 				>{:else if review?.unmade.length}<button
 					type="button"
 					class="bu-btn"
 					data-variant="outline"
 					disabled={!!busy}
+					data-trail="stateReview.checkRemainingCost"
 					onclick={checkContinuationCost}>{t('stateGeneration.checkRemainingCost')}</button
 				>{/if}
 			<button
@@ -496,6 +500,7 @@
 				class="bu-btn"
 				data-variant={review?.unfetched.length ? 'outline' : 'primary'}
 				disabled={!!busy || !sourceFits}
+				data-trail="stateReview.save"
 				onclick={save}>{t(withoutViews ? 'stateGeneration.saveWithout' : 'common.save')}</button
 			>
 		</div>
@@ -505,21 +510,38 @@
 {#snippet recoveryFooter()}
 	<div class="state-actions">
 		{#if discardable}
-			<button type="button" class="bu-btn" data-variant="outline" onclick={discard}
+			<button
+				type="button"
+				class="bu-btn"
+				data-variant="outline"
+				data-trail="stateReview.discard"
+				onclick={discard}
 				>{t(confirmDiscard ? 'stateGeneration.confirmDiscard' : 'common.discard')}</button
 			>
 		{/if}
 		{#if continuation}
-			<button type="button" class="bu-btn" data-variant="primary" onclick={generateRemaining}
-				>{t('stateGeneration.generateRemaining')}</button
+			<button
+				type="button"
+				class="bu-btn"
+				data-variant="primary"
+				data-trail="stateReview.generateRemaining"
+				onclick={generateRemaining}>{t('stateGeneration.generateRemaining')}</button
 			>
 		{:else if canContinue}
-			<button type="button" class="bu-btn" data-variant="primary" onclick={checkContinuationCost}
-				>{t('stateGeneration.checkRemainingCost')}</button
+			<button
+				type="button"
+				class="bu-btn"
+				data-variant="primary"
+				data-trail="stateReview.checkRemainingCost"
+				onclick={checkContinuationCost}>{t('stateGeneration.checkRemainingCost')}</button
 			>
 		{:else}
-			<button type="button" class="bu-btn" data-variant="outline" onclick={load}
-				>{t('common.tryAgain')}</button
+			<button
+				type="button"
+				class="bu-btn"
+				data-variant="outline"
+				data-trail="stateReview.retry"
+				onclick={load}>{t('common.tryAgain')}</button
 			>
 		{/if}
 	</div>

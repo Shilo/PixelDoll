@@ -381,6 +381,7 @@
 		"categories": "Farbkategorien"
 	},
 	"colorSections": {
+		"notWorn": "Nicht getragen",
 		"randomLowerColors": "Zufallsfarben: {lower}",
 		"randomCharacterColors": "Zufällige Figurenfarben",
 		"resetLowerColors": "Farben zurücksetzen: {lower}",
@@ -541,7 +542,6 @@
 		"matchingColors": "Farben werden abgeglichen…",
 		"matchItemColors": "Gegenstandsfarben abgleichen",
 		"recolor": "Umfärben",
-		"recolorWearFirst": "Zum Umfärben zuerst anziehen",
 		"whenWornHide": "Andere Gegenstände beim Tragen ausblenden",
 		"iD": "ID",
 		"slot": "Ausrüstungsplatz",
@@ -3525,7 +3525,7 @@
 		"actionLabel": "Dieses Problem melden",
 		"actionLabelFor": "Dieses Problem melden: {name}",
 		"title": "Dieses Problem melden",
-		"intro": "Öffnet ein öffentliches GitHub-Issue nur mit dem Text unten. Bilder, Prompts, Namen und Schlüssel sind nicht enthalten. Du veröffentlichst es mit deinem GitHub-Konto.",
+		"intro": "Enthält nie deine Bilder, Prompts, Namen, Dateien oder deinen PixelLab-Schlüssel. Du prüfst ihn auf GitHub, bevor du ihn veröffentlichst.",
 		"preview": "Vorschau der Meldung",
 		"copy": "Meldung kopieren",
 		"copied": "Kopiert",

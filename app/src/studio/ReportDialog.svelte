@@ -1,10 +1,11 @@
 <script lang="ts">
 	// The report preview: exactly the text the public issue will carry, then Copy report or Open on GitHub, where the
-	// user posts it with their own account. Centered like ConfirmDialog, with the safe choice first.
+	// user posts it with their own account. A centered sheet like the others: the X in the header, actions in the footer.
 	import { t } from 'svelte-whisper';
 	import type { ProblemReport } from '../lib/report/report.ts';
 	import { reportText, reportUrl } from '../lib/report/report.ts';
-	import { ExternalLink } from './icons.ts';
+	import { Check, Copy, ExternalLink, Github } from './icons.ts';
+	import SurfaceHeader from './SurfaceHeader.svelte';
 	import { backdropDismiss } from './backdropDismiss.ts';
 	import { claimSheetExit } from './sheetExit.ts';
 	import { closeReport } from './report.svelte.ts';
@@ -14,14 +15,15 @@
 	const text = $derived(reportText(report));
 	const url = $derived(reportUrl(report));
 	let dialog: HTMLDialogElement;
-	let closeButton: HTMLButtonElement;
+	let title = $state<HTMLHeadingElement>();
 	// Feedback stays inside the modal: a toast would sit under its backdrop.
 	let copied = $state<'' | 'done' | 'failed'>('');
 	$effect(() => claimSheetExit({ alert: true, close: closeReport }));
 	$effect(() => {
 		const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		dialog.showModal();
-		closeButton.focus();
+		// The title, not an action: nothing is copied or opened by a stray Enter.
+		title?.focus();
 		return () => {
 			dialog.close();
 			if (opener?.isConnected && !document.activeElement?.closest('dialog[open]'))
@@ -43,7 +45,7 @@
 <dialog
 	bind:this={dialog}
 	use:backdropDismiss={closeReport}
-	class="report-dialog bu-dialog-surface"
+	class="sheet center report-dialog"
 	aria-labelledby="{id}-title"
 	aria-describedby="{id}-body"
 	onkeydown={(e) => e.stopPropagation()}
@@ -52,73 +54,70 @@
 		closeReport();
 	}}
 >
-	<h2 id="{id}-title">{t('report.title')}</h2>
-	<p id="{id}-body" class="report-intro">{t('report.intro')}</p>
-	<!-- Focusable so keyboard users can scroll a long report. -->
-	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-	<pre
-		class="report-preview"
-		role="region"
-		tabindex="0"
-		aria-label={t('report.preview')}>{text}</pre>
-	{#if copied === 'failed'}<p
-			class="bu-notice"
-			data-size="compact"
-			data-tone="warning"
-			role="alert"
-		>
-			{t('report.copyFailed')}
-		</p>{/if}
-	<p class="bu-sr" role="status" aria-live="polite">
-		{copied === 'done' ? t('report.copied') : ''}
-	</p>
-	<!-- Whole buttons wrap, never their labels; the last (primary) one then fills its own row. -->
-	<div class="report-actions">
-		<button bind:this={closeButton} class="bu-btn" onclick={closeReport}>{t('common.close')}</button
-		>
-		<button class="bu-btn" onclick={copy}
-			>{t(copied === 'done' ? 'report.copied' : 'report.copy')}</button
+	<SurfaceHeader
+		title={t('report.title')}
+		titleId="{id}-title"
+		onclose={closeReport}
+		bind:titleElement={title}
+	/>
+	<div class="sheet-body">
+		<p id="{id}-body" class="report-intro">{t('report.intro')}</p>
+		<!-- Focusable so keyboard users can scroll a long report. -->
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+		<pre
+			class="report-preview"
+			role="region"
+			tabindex="0"
+			aria-label={t('report.preview')}>{text}</pre>
+		{#if copied === 'failed'}<p
+				class="bu-notice"
+				data-size="compact"
+				data-tone="warning"
+				role="alert"
+			>
+				{t('report.copyFailed')}
+			</p>{/if}
+		<p class="bu-sr" role="status" aria-live="polite">
+			{copied === 'done' ? t('report.copied') : ''}
+		</p>
+	</div>
+	<!-- Whole buttons wrap, never their labels; the primary stays last. -->
+	<footer class="sheet-foot report-actions">
+		<button class="bu-btn" data-trail="report.copy" onclick={copy}
+			>{#if copied === 'done'}<Check size={16} aria-hidden="true" />{:else}<Copy
+					size={16}
+					aria-hidden="true"
+				/>{/if}<span>{t(copied === 'done' ? 'report.copied' : 'report.copy')}</span></button
 		>
 		<!-- It stays open: a blocked popup would otherwise lose the report. -->
-		<a class="bu-btn" data-variant="primary" href={url} target="_blank" rel="noreferrer"
-			>{t('report.open')}<ExternalLink size={16} aria-hidden="true" /><span class="bu-sr"
-				>{' ' + t('noticeLink.opensInANewTab')}</span
-			></a
+		<a
+			class="bu-btn"
+			data-variant="primary"
+			data-trail="report.open"
+			href={url}
+			target="_blank"
+			rel="noreferrer"
+			><Github size={16} /><span>{t('report.open')}</span><ExternalLink
+				size={16}
+				aria-hidden="true"
+			/><span class="bu-sr">{' ' + t('noticeLink.opensInANewTab')}</span></a
 		>
-	</div>
+	</footer>
 </dialog>
 
 <style>
+	/* A column whose preview gives up height first, so the header and actions stay in view on short screens. */
 	.report-dialog {
-		width: min(520px, calc(100vw - 32px));
 		max-height: calc(100dvh - 32px);
-		margin: auto;
-		padding: 20px;
-		/* Only when even a short preview cannot fit (a tiny screen, or the copy notice), the dialog itself scrolls. */
-		overflow: auto;
 	}
-	/* A column whose preview gives up height first, so the actions stay in view on short screens. */
 	.report-dialog[open] {
 		display: flex;
 		flex-direction: column;
 	}
-	.report-dialog > :not(.report-preview) {
-		flex: none;
-	}
-	.report-dialog::backdrop {
-		background: var(--bu-scrim);
-	}
-	h2 {
-		margin: 0 0 8px;
-		font-size: 18px;
-		font-weight: 600;
-		text-align: center;
-	}
 	.report-intro {
-		margin: 0 0 12px;
+		margin: 0;
 		color: var(--bu-muted);
 		font-size: 14px;
-		text-align: center;
 	}
 	.report-preview {
 		flex: 0 1 auto;
@@ -136,20 +135,12 @@
 		user-select: text;
 	}
 	.bu-notice {
-		margin: 12px 0 0;
+		margin: 0;
 	}
-	.report-actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-		margin-top: 16px;
-	}
+	/* The standard sheet footer: buttons as wide as their labels, at the end, primary last. */
 	.report-actions > * {
-		flex: 1 0 auto;
-		min-height: 44px;
-		height: auto;
-		white-space: nowrap;
 		gap: 6px;
+		white-space: nowrap;
 		text-decoration: none;
 	}
 </style>

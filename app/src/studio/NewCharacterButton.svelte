@@ -24,6 +24,7 @@
 	aria-label={t('newCharacterButton.addCharacter')}
 	title={row ? undefined : t('newCharacterButton.addCharacter')}
 	aria-haspopup="menu"
+	data-trail="newCharacter.open"
 	popovertarget={id}
 >
 	<span class={{ 'new-character-icon': row }}><Plus size={row ? 24 : 16} aria-hidden="true" /></span
@@ -49,6 +50,7 @@
 			role="menuitem"
 			aria-labelledby="{id}-create"
 			aria-describedby="{id}-paid"
+			data-trail="newCharacter.create"
 			onclick={() => choose('create')}
 			><Sparkles size={18} aria-hidden="true" /><span class="row-name"
 				><span id="{id}-create">{openerLabel(t('newCharacterButton.createFromScratch'))}</span><span
@@ -61,6 +63,7 @@
 			class="row bu-action"
 			data-variant="quiet"
 			role="menuitem"
+			data-trail="newCharacter.importZip"
 			onclick={() => choose('importZip')}
 			><FileArchive size={18} aria-hidden="true" /><span class="row-name"
 				>{openerLabel(t('newCharacterButton.fromFile'))}</span
@@ -70,6 +73,7 @@
 			class="row bu-action"
 			data-variant="quiet"
 			role="menuitem"
+			data-trail="newCharacter.importPixelLab"
 			onclick={() => choose('importPixelLab')}
 			><CloudDownload size={18} aria-hidden="true" /><span class="row-name"
 				>{openerLabel(t('newCharacterButton.fromPixelLab'))}</span

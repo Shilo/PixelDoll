@@ -279,12 +279,14 @@
 					class="bu-action btn checkpoint-discard"
 					data-variant="quiet"
 					disabled={busy || !!blocked}
+					data-trail="moveReview.discard"
 					onclick={() => void decide(false)}>{t('moveSheet.checkpoint.discardDraft')}</button
 				>
 				<button
 					class={['bu-action btn', { 'primary checkpoint-primary': hardFailure }]}
 					data-variant={hardFailure ? 'primary' : 'outline'}
 					disabled={busy || !!blocked}
+					data-trail="moveReview.regenerate"
 					onclick={() => regenerate()}>{t('moveSheet.checkpoint.regenerate')}</button
 				>
 				{#if !hardFailure}
@@ -298,6 +300,7 @@
 						]
 							.filter(Boolean)
 							.join(' ') || undefined}
+						data-trail="moveReview.keep"
 						onclick={() => void decide(true)}
 						>{t(
 							candidate.spec.replace ? 'moveSheet.checkpoint.replace' : 'moveSheet.checkpoint.save'
@@ -358,6 +361,7 @@
 						class="bu-action btn"
 						data-variant="outline"
 						disabled={busy || !!blocked}
+						data-trail="moveReview.skeleton"
 						onclick={() => regenerate(skeletonOffer)}
 					>
 						{t('moveSheet.skeleton.title')}
@@ -391,6 +395,7 @@
 							data-variant="quiet"
 							aria-label={t(playing ? 'common.pause' : 'common.play')}
 							title={t(playing ? 'common.pause' : 'common.play')}
+							data-trail="moveReview.play"
 							onclick={() => (playing = !playing)}
 							>{#if playing}<Pause size={16} />{:else}<Play size={16} />{/if}</button
 						>
@@ -399,6 +404,7 @@
 							data-variant="quiet"
 							aria-label={t('stage.previousFrame')}
 							title={t('stage.previousFrame')}
+							data-trail="moveReview.previousFrame"
 							onclick={() => step(-1)}><ChevronLeft size={16} /></button
 						>
 						<span class="small muted checkpoint-frame"
@@ -412,6 +418,7 @@
 							data-variant="quiet"
 							aria-label={t('stage.nextFrame')}
 							title={t('stage.nextFrame')}
+							data-trail="moveReview.nextFrame"
 							onclick={() => step(1)}><ChevronRight size={16} /></button
 						>
 					</div>

@@ -211,8 +211,12 @@
 				<p class="faint small" id="adjust-frame-keys">{t('adjustFrame.keys')}</p>
 			</div>
 			<div class="controls">
-				<button class="bu-action btn room" data-variant="outline" disabled={busy} onclick={room}
-					><WandSparkles size={16} />{t('adjustFrame.makeRoom')}</button
+				<button
+					class="bu-action btn room"
+					data-variant="outline"
+					data-trail="adjustFrame.makeRoom"
+					disabled={busy}
+					onclick={room}><WandSparkles size={16} />{t('adjustFrame.makeRoom')}</button
 				>
 				<p class="muted small">{t('adjustFrame.makeRoomHelp')}</p>
 				{#if note}<p class="bu-notice" data-size="compact" data-tone="neutral" role="status">
@@ -238,12 +242,14 @@
 							class="bu-action btn"
 							data-variant="outline"
 							disabled={busy}
+							data-trail="adjustFrame.up"
 							onclick={() => nudge(-1)}><ArrowUp size={16} />{t('adjustFrame.up')}</button
 						>
 						<button
 							class="bu-action btn"
 							data-variant="outline"
 							disabled={busy}
+							data-trail="adjustFrame.down"
 							onclick={() => nudge(1)}><ArrowDown size={16} />{t('adjustFrame.down')}</button
 						>
 					</div>
@@ -277,6 +283,7 @@
 					</p>{/if}
 				{#if blockedByWork(blocked)}<button
 						class="bu-btn"
+						data-trail="adjustFrame.viewPendingWork"
 						onclick={() =>
 							void openPendingWork({
 								projectId: id,
@@ -297,6 +304,7 @@
 				class="bu-action btn plain"
 				data-variant="quiet"
 				disabled={busy}
+				data-trail="adjustFrame.downloadBackup"
 				onclick={() => void downloadCharacterZip(id)}
 				><Download size={16} />{t('directionsSheet.downloadBackup')}</button
 			>{/if}
@@ -304,6 +312,7 @@
 			class="bu-action btn primary"
 			data-variant="primary"
 			disabled={!changed || !!issue || !!blocked || busy}
+			data-trail="adjustFrame.save"
 			onclick={() => void save()}>{busy ? t('directionsSheet.saving') : t('common.save')}</button
 		>
 	{/snippet}

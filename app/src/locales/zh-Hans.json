@@ -375,6 +375,7 @@
 		"categories": "颜色分类"
 	},
 	"colorSections": {
+		"notWorn": "未装备",
 		"randomLowerColors": "随机{lower}颜色",
 		"randomCharacterColors": "随机角色颜色",
 		"resetLowerColors": "重置{lower}颜色",
@@ -530,7 +531,6 @@
 		"matchingColors": "匹配颜色…",
 		"matchItemColors": "匹配装备颜色",
 		"recolor": "重新上色",
-		"recolorWearFirst": "穿上后才能更改颜色",
 		"whenWornHide": "穿戴时隐藏其他装备",
 		"iD": "ID",
 		"slot": "装备栏",
@@ -3425,7 +3425,7 @@
 		"actionLabel": "报告此问题",
 		"actionLabelFor": "报告此问题：{name}",
 		"title": "报告此问题",
-		"intro": "这会在 GitHub 上打开一个公开问题，只包含下方文字。不包含图像、提示词、名称或密钥。你需要用自己的 GitHub 账号发布。",
+		"intro": "绝不包含你的图像、提示词、名称、文件或 PixelLab 密钥。发布前你会在 GitHub 上查看。",
 		"preview": "报告预览",
 		"copy": "复制报告",
 		"copied": "已复制",

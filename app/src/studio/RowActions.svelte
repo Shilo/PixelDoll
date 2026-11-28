@@ -47,6 +47,7 @@
 		<button
 			bind:this={more}
 			class="bu-action character-more hover-actions-button"
+			data-trail="rowActions.more"
 			data-variant="quiet"
 			aria-label={t('experience.moreActionsFor', { name })}
 			title={t('experience.moreActionsFor', { name })}

@@ -226,6 +226,7 @@
 			class="bu-action"
 			data-variant="quiet"
 			aria-haspopup="dialog"
+			data-trail="setup.appearance"
 			onclick={() => {
 				formDrafts.setup = { projectId: doc.id, looks, restAnim };
 				openAppearance(doc.id, undefined, 'setup');
@@ -357,6 +358,7 @@
 		{#if mine && settingUp.done}<button
 				class="bu-action btn primary"
 				data-variant="primary"
+				data-trail="setup.startDressing"
 				onclick={async () => {
 					if (!(await dismissSetup())) return;
 					customize();
@@ -376,6 +378,7 @@
 				<button
 					class="bu-action btn plain"
 					data-variant="quiet"
+					data-trail="setup.discard"
 					onclick={async () => {
 						if ((await dismissSetup()) && ui.sheet === 'setup') ui.sheet = null;
 					}}>{t('common.discard')}</button
@@ -386,6 +389,7 @@
 							class="bu-action btn"
 							class:primary={stuck || resumeGens !== null}
 							data-variant={stuck || resumeGens !== null ? 'primary' : 'outline'}
+							data-trail="setup.retry"
 							onclick={() =>
 								settingUp.spec &&
 								withKey(
@@ -411,12 +415,14 @@
 					class="bu-action btn"
 					data-variant="outline"
 					disabled={!looksChanged || saving}
+					data-trail="setup.saveDescription"
 					onclick={save}>{t('setup.saveDescription')}</button
 				>{/if}<span class="api-action"
 				><button
 					class="bu-action btn primary"
 					data-variant="primary"
 					disabled={!plan || !looks.trim() || busyElsewhere}
+					data-trail="setup.start"
 					onclick={go}
 					>{t('setup.setUp')}
 					<span class="cost"

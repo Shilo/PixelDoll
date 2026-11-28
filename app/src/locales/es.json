@@ -381,6 +381,7 @@
 		"categories": "Categorías de color"
 	},
 	"colorSections": {
+		"notWorn": "Sin equipar",
 		"randomLowerColors": "Colores aleatorios de {lower}",
 		"randomCharacterColors": "Colores aleatorios del personaje",
 		"resetLowerColors": "Restablecer colores de {lower}",
@@ -541,7 +542,6 @@
 		"matchingColors": "Igualando colores…",
 		"matchItemColors": "Igualar colores del objeto",
 		"recolor": "Cambiar colores",
-		"recolorWearFirst": "Póntelo para cambiar sus colores",
 		"whenWornHide": "Ocultar otros objetos al llevarlo",
 		"iD": "ID",
 		"slot": "Ranura",
@@ -3525,7 +3525,7 @@
 		"actionLabel": "Informar de este problema",
 		"actionLabelFor": "Informar de este problema: {name}",
 		"title": "Informar de este problema",
-		"intro": "Se abre una incidencia pública en GitHub solo con el texto de abajo. No incluye imágenes, prompts, nombres ni claves. La publicas con tu cuenta de GitHub.",
+		"intro": "Nunca incluye tus imágenes, prompts, nombres, archivos ni tu clave de PixelLab. Lo revisas en GitHub antes de publicarlo.",
 		"preview": "Vista previa del informe",
 		"copy": "Copiar informe",
 		"copied": "Copiado",

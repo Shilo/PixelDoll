@@ -124,6 +124,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 ## Agent testing
 
 - Agents that need PixelLab run npm run dev:agent (launch config app-dev-agent, port 5199). It reads PIXELLAB_API_KEY_AGENT_DEV from the repo-root .env server-side (a worktree without one uses the main checkout's), and the app connects by itself and shows an Agent mode badge.
+- For keyless manual browser checks, use `npm run dev` (`app-dev`). In the agent's preview tab on that origin, run `localStorage.setItem('pixeldoll.developerMode', '1')` and reload before the first click or keystroke in Studio. Agent mode and Developer mode both suppress Studio audio on the dev server.
 - Check GET /balance only unless the task needs generations.
 - Keyless scripts set localStorage pixeldoll.agentKey to off on the agent server so nothing can spend. The switch is read at page load and covers every tab of that origin, so keep it set for the whole run.
 - Never expose the agent server beyond localhost (no --host, tunnels or port forwards).

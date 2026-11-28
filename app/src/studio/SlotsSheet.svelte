@@ -282,6 +282,7 @@
 		class="bu-action btn primary"
 		data-variant="primary"
 		disabled={!!nameProblem || !!hintError || saving}
+		data-trail="slots.save"
 		onclick={() => void save()}>{t('common.save')}</button
 	>
 {/snippet}
@@ -408,6 +409,7 @@
 			<button
 				type="button"
 				class="row danger delete-slot"
+				data-trail="slots.delete"
 				onclick={() => {
 					deleteProblem = '';
 					deleting = edited.key;
@@ -459,10 +461,16 @@
 					><ChevronDown size={12} /></span
 				>
 			</label>
-			{#if ownerHidden}<button class="bu-action btn primary" type="submit"
-					>{t('slotsSheet.showLabel', { label: labelOf(ownerHidden.key) })}</button
+			{#if ownerHidden}<button
+					class="bu-action btn primary"
+					data-trail="slots.showHidden"
+					type="submit">{t('slotsSheet.showLabel', { label: labelOf(ownerHidden.key) })}</button
 				>
-			{:else}<button class="bu-action btn primary" type="submit" disabled={!!addProblem}
+			{:else}<button
+					class="bu-action btn primary"
+					data-trail="slots.create"
+					type="submit"
+					disabled={!!addProblem}
 					><Plus size={16} aria-hidden="true" />{t('slotsSheet.createSlot')}</button
 				>{/if}
 		</form>
@@ -481,6 +489,7 @@
 						<button
 							class="bu-action slot-choice"
 							aria-label={t('slotsSheet.showLabel', { label: labelOf(c.key) })}
+							data-trail="slots.showBuiltIn"
 							onclick={() => show(c.key)}
 						>
 							<GroupIcon group={c.key} surface="inline" /><span class="row-name"

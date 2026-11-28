@@ -44,7 +44,10 @@
 </script>
 
 {#snippet viewPending()}
-	<button class="bu-btn" onclick={() => void openPendingWork({ projectId: id, flows: true })}
+	<button
+		class="bu-btn"
+		data-trail="delete.viewPendingWork"
+		onclick={() => void openPendingWork({ projectId: id, flows: true })}
 		>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
 	>
 {/snippet}

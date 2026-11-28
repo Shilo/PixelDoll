@@ -245,6 +245,7 @@
 						class="bu-action btn icon plain"
 						data-variant="quiet"
 						aria-label={refreshLabel}
+						data-trail="connect.refresh"
 						title={refreshLabel}
 						onclick={refresh}
 						aria-disabled={refreshing}><RefreshCw size={17} aria-hidden="true" /></button
@@ -279,8 +280,11 @@
 					>{t('connectSheet.viewPixelLabPlans')} <ExternalLink size={16} aria-hidden="true" /></a
 				>
 				{#if limitedAccess}
-					<button class="bu-action btn sm" data-variant="outline" onclick={finishConnection}
-						>{t('connectSheet.continueWithLimitedAccess')}</button
+					<button
+						class="bu-action btn sm"
+						data-variant="outline"
+						data-trail="connect.continueLimited"
+						onclick={finishConnection}>{t('connectSheet.continueWithLimitedAccess')}</button
 					>
 				{/if}
 			</div>
@@ -291,19 +295,24 @@
 				data-variant="outline"
 				bind:this={replaceButton}
 				aria-label={t('connectSheet.replaceKey')}
+				data-trail="connect.replaceKey"
 				onclick={() => {
 					replacing = true;
 					remember = app.remembered;
 					void focusKey();
 				}}>{t('connectSheet.replaceKey')}</button
 			>
-			<button class="bu-action btn sm" data-variant="outline" onclick={forget}
-				>{t('connectSheet.forgetKey')}</button
+			<button
+				class="bu-action btn sm"
+				data-variant="outline"
+				data-trail="connect.forget"
+				onclick={forget}>{t('connectSheet.forgetKey')}</button
 			>
 		</div>
 		<a
 			class="small"
 			href={accountUrl}
+			data-trail="connect.openAccount"
 			target="_blank"
 			rel="noreferrer"
 			aria-describedby={externalHint}
@@ -400,6 +409,7 @@
 							class="bu-action btn sm"
 							data-variant="outline"
 							disabled={checking}
+							data-trail="connect.useSavedKey"
 							onclick={useSavedKey}>{t('workspaceCopy.useSavedKey')}</button
 						>
 					</div>{/if}
@@ -421,18 +431,6 @@
 			<p class="small bu-muted">{t('connectSheet.sentOnlyToApiPixellabAi')}</p>
 			{#if !purchase}<p class="small bu-muted">{t('connectSheet.demoNoAccount')}</p>{/if}
 			<AffiliationNotice multiline />
-			<div class="field-row">
-				<a
-					class="bu-action btn"
-					data-variant="outline"
-					href={accountUrl}
-					target="_blank"
-					rel="noreferrer"
-					aria-describedby={externalHint}
-					>{t('connectSheet.getSecretKey')}
-					<ExternalLink size={14} aria-hidden="true" /></a
-				>
-			</div>
 		</form>
 	{/if}
 	<span id={externalHint} hidden>{t('noticeLink.opensInANewTab')}</span>
@@ -440,21 +438,35 @@
 
 {#snippet connectFooter()}
 	{#if purchase && !replacing}
-		<p id={purchaseHint} class="small connect-purchase">
+		<span id={purchaseHint} class="foot-note">
 			{t('connectSheet.resumePurchase', { name: purchase.name })}
-		</p>
+		</span>
 	{/if}
+	<a
+		class="bu-action btn"
+		data-variant="outline"
+		href={accountUrl}
+		target="_blank"
+		rel="noreferrer"
+		aria-describedby={externalHint}
+		data-trail="connect.getKey"
+		>{t('connectSheet.getSecretKey')}
+		<ExternalLink size={14} aria-hidden="true" /></a
+	>
+
 	<span class="actions">
 		{#if app.keyRejected && !checking}<button
 				type="button"
 				class="bu-action btn plain"
 				data-variant="quiet"
+				data-trail="connect.forgetRejected"
 				onclick={forget}>{t('connectSheet.forgetKey')}</button
 			>{/if}
 		{#if replacing && !checking}<button
 				type="button"
 				class="bu-action btn plain"
 				data-variant="quiet"
+				data-trail="connect.keepKey"
 				onclick={cancelReplace}>{t('connectSheet.keepKey')}</button
 			>{/if}
 		<span class="api-action"
@@ -463,6 +475,7 @@
 				data-variant="primary"
 				type="submit"
 				form={formId}
+				data-trail="connect.submit"
 				disabled={!key.trim() || checking}
 				aria-describedby={purchase && !replacing ? `${purchaseHint} ${purchaseCost}` : undefined}
 				>{submitLabel}
@@ -483,10 +496,6 @@
 		width: 100%;
 		justify-content: space-between;
 		text-align: start;
-	}
-	.connect-purchase {
-		margin: 0 auto 0 0;
-		min-width: 0;
 	}
 	.copy-label {
 		display: inline-flex;

@@ -25,6 +25,7 @@
 				class="bu-action btn checkpoint-dismiss"
 				data-variant="quiet"
 				disabled={dismiss.disabled}
+				data-trail="itemGeneration.dismiss"
 				onclick={dismiss.onclick}>{dismiss.label}</button
 			>{/if}
 		<b class="checkpoint-total" aria-live="polite" aria-atomic="true"
@@ -34,6 +35,7 @@
 			class="bu-action btn primary checkpoint-primary"
 			data-variant="primary"
 			{disabled}
+			data-trail="itemGeneration.submit"
 			onclick={onsubmit}
 		>
 			{count

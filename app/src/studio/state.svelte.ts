@@ -179,7 +179,9 @@ import {
 import { acceptCopy, copyMoreFrames, freeFrames, itemKey } from '../lib/equipment/copy.ts';
 import { demoItemsShown } from './wardrobeVisibility.svelte.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
-import { onceShown, type Problem } from '../lib/report/report.ts';
+import { knownErrorName, onceShown, type Problem } from '../lib/report/report.ts';
+import { track } from '../lib/report/trail.ts';
+import { captureProblem } from './problemCapture.svelte.ts';
 import type { FramesFile, PreparedFrames } from '../lib/frames/save.ts';
 import { mountSeatOffset, validMountSeatOffset } from '../lib/rig/riderSeat.ts';
 import type { Img } from '../lib/image/png.ts';
@@ -359,7 +361,7 @@ export const ui = $state({
 	dpr: devicePixelRatio || 1,
 	theme: (lsGet(K.theme) === 'light' ? 'light' : 'dark') as 'light' | 'dark',
 	tab: 'wardrobe' as 'wardrobe' | 'colors' | 'outfits' | 'states' | 'moves', // phone
-	colorsFocus: '', // item id whose Colors section the Colors tab scrolls to once (Recolor in item details)
+	colorsFocus: null as { project: string; item: string } | null, // one Recolor shortcut to a section
 	group: 'head', // a Wardrobe category: its slot key
 	wardrobeOpenRevision: 0,
 	selected: '', // item id, or "gen:<draft id>"
@@ -529,6 +531,9 @@ export function initUi() {
 	};
 	// Actions started without awaiting them (Make item, Keep it, Reset, a review check) would otherwise drop a load failure.
 	const unhandled = (e: PromiseRejectionEvent) => {
+		// An abort is a cancellation, not a failure (onceShown skips it too).
+		if (knownErrorName(e.reason) !== 'AbortError')
+			track({ kind: 'error', name: knownErrorName(e.reason) });
 		if (e.reason instanceof LoadError) {
 			e.preventDefault();
 			toast(errorMessage(e.reason), { tone: 'danger', error: e.reason });
@@ -536,8 +541,10 @@ export function initUi() {
 	};
 	// Cross-origin scripts (extensions, embeds) and browser notices such as ResizeObserver loops carry no error object.
 	const uncaught = (e: ErrorEvent) => {
-		if (e.error && (!e.filename || new URL(e.filename, location.href).origin === location.origin))
+		if (e.error && (!e.filename || new URL(e.filename, location.href).origin === location.origin)) {
+			track({ kind: 'error', name: knownErrorName(e.error) });
 			unexpectedError(e.error);
+		}
 	};
 	addEventListener('unhandledrejection', unhandled);
 	addEventListener('error', uncaught);
@@ -586,6 +593,8 @@ export interface ToastOptions {
 	error?: unknown;
 	/** Additional allow-listed facts for the public report. */
 	facts?: Problem['facts'];
+	/** The report's area when the notice belongs to a sheet that is no longer open (one that failed to load). */
+	area?: Problem['area'];
 	/** Warnings get Report when they carry an error or explicitly opt in. Use false for expected guidance or if a
 	 *  linked failure view already offers Report. 'uncaught' identifies errors that reached the global handlers. */
 	report?: boolean | 'uncaught';
@@ -670,13 +679,18 @@ export function toast(
 	options: number | ToastOptions = 4000
 ) {
 	const o: ToastOptions = typeof options === 'number' ? { duration: options } : options;
-	if (o.tone === 'danger' || o.tone === 'warning')
+	if (o.tone === 'danger' || o.tone === 'warning') {
 		recordDebug(o.tone === 'danger' ? 'error' : 'warn', 'toast', [
 			toastText(o.title),
 			toastText(s),
 			...(o.error === undefined ? [] : [o.error])
 		]);
+	}
 	if (ui.toast && ui.toastTone === 'danger' && o.tone !== 'danger') return false;
+	// Only shown notices, by message key: the text can hold names or provider replies.
+	const noticeKey = (firstMessage(s) ?? firstMessage(o.title))?.key;
+	if (noticeKey && (o.tone === 'danger' || o.tone === 'warning'))
+		track({ kind: 'notice', key: noticeKey, tone: o.tone === 'danger' ? 'error' : 'warning' });
 	stopToastTimer();
 	toastRevision++;
 	ui.toast = s;
@@ -691,13 +705,17 @@ export function toast(
 		(o.tone === 'warning' && (o.error != null || o.report === true || o.report === 'uncaught'));
 	ui.toastProblem =
 		reportable && o.report !== false
-			? {
-					message: firstMessage(s) ?? firstMessage(o.title),
-					error: o.error,
-					facts: o.facts,
-					tone: o.tone === 'danger' ? 'error' : 'warning',
-					uncaught: o.report === 'uncaught'
-				}
+			? captureProblem(
+					{
+						message: firstMessage(s) ?? firstMessage(o.title),
+						error: o.error,
+						facts: o.facts,
+						area: o.area,
+						tone: o.tone === 'danger' ? 'error' : 'warning',
+						uncaught: o.report === 'uncaught'
+					},
+					performance.now()
+				)
 			: null;
 	toastRemaining = o.duration ?? (o.tone === 'danger' ? 0 : o.tone === 'warning' ? 8000 : 4000);
 	armToast();
@@ -809,6 +827,8 @@ class DeletedList {
 	ready = false;
 	/** The last read failed: `entries` is the last list that loaded, which may be empty or out of date. */
 	loadFailed = $state(false);
+	/** Why the last read failed, for Report. */
+	loadCause = $state.raw<unknown>();
 }
 export const deleted = new DeletedList();
 /** An undo or redo step: the dress state to go back to, and the slot definitions (JSON) right after the step, so applying
@@ -2285,6 +2305,7 @@ export async function refreshRecentlyDeleted(): Promise<void> {
 	} catch (error) {
 		// Never show an empty list for a failed read: that reads as "nothing can be restored".
 		console.error('recently deleted', error);
+		deleted.loadCause = error;
 		deleted.loadFailed = true;
 	}
 }
@@ -2627,7 +2648,7 @@ export function randomizeGroup(groupId: string) {
 	ui.selected = it.id;
 	if (wearing || recolored) playAudioCue('recolor');
 }
-/** Colors-only Random for the given item ids (the character or one worn item). Never changes what is worn. */
+/** Colors-only Random for the given item ids. */
 export function randomizeColors(owners: string[], label: Message) {
 	const m = store.project?.manifest;
 	if (!m) return;
@@ -2650,30 +2671,70 @@ export function characterName() {
 		'Character'
 	);
 }
+
+/** A look owns the colors its equipped items use, including the source of any linked color. */
+function outfitColorIds(m: Manifest, items: Preset['items']) {
+	const materials = new Map(m.materials.map((material) => [material.id, material]));
+	const seen = new Set<string>();
+	const ids = new Set<string>();
+	for (const item of equipped(m, items)) {
+		for (const id of item.materials) {
+			let material = materials.get(id);
+			while (material && !seen.has(material.id)) {
+				seen.add(material.id);
+				if (!material.linkTo) ids.add(material.id);
+				material = material.linkTo ? materials.get(material.linkTo) : undefined;
+			}
+		}
+	}
+	return ids;
+}
+
+/** A look with only its own colors, so Save outfit and exports leave out colors chosen for unworn items. */
+export function lookOf(
+	m: Manifest,
+	items: Preset['items'],
+	variants: Preset['variants']
+): Pick<Preset, 'items' | 'variants'> {
+	const ids = outfitColorIds(m, items);
+	return {
+		items: { ...items },
+		variants: Object.fromEntries(Object.entries(variants).filter(([id]) => ids.has(id)))
+	};
+}
+
+/** What is worn now, with only its colors. */
+export const currentLook = (m: Manifest) =>
+	lookOf(m, $state.snapshot(doc.items), $state.snapshot(doc.variants));
+
+function wearLook(m: Manifest, items: Preset['items'], variants: Preset['variants']) {
+	doc.items = settleHands(m, items, 'main_hand').items;
+	const ids = outfitColorIds(m, doc.items);
+	doc.variants = Object.fromEntries([
+		...Object.entries(doc.variants).filter(([id]) => !ids.has(id)),
+		...Object.entries(variants).filter(([id]) => ids.has(id))
+	]);
+}
+
 export function randomize() {
 	const manifest = store.project?.manifest;
 	if (!manifest) return;
 	const r = randomOutfit(manifest);
 	commit(
 		message('common.randomLook'),
-		() => {
-			doc.items = { ...r.items, body: manifest.rig.baseItem };
-			doc.variants = r.variants;
-		},
+		() => wearLook(manifest, { ...r.items, body: manifest.rig.baseItem }, r.variants),
 		{ keepHand: 'main_hand', quiet: true }
 	);
 	playAudioCue('recolor');
 }
 export function applyPreset(p: Preset) {
-	commit(
-		message('history.wear', { name: p.name }),
-		() => {
-			doc.items = { ...p.items };
-			doc.variants = { ...p.variants };
-		},
-		{ keepHand: 'main_hand', quiet: true }
-	);
-	if (store.project?.manifest.rig.animations.some((move) => move.id === DEFAULT_MOVE)) {
+	const m = store.project?.manifest;
+	if (!m) return;
+	commit(message('history.wear', { name: p.name }), () => wearLook(m, { ...p.items }, p.variants), {
+		keepHand: 'main_hand',
+		quiet: true
+	});
+	if (m.rig.animations.some((move) => move.id === DEFAULT_MOVE)) {
 		ui.anim = DEFAULT_MOVE;
 		ui.frame = 0;
 	}
@@ -2690,24 +2751,19 @@ export function savePreset(name: string) {
 	for (let n = 2; id === CURRENT_OUTFIT_ID || m.presets.some((p) => p.id === id); n++)
 		id = `${base}-${n}`;
 	commit(message('history.saveOutfit'), () => {
-		const pr: Preset = {
-			id,
-			name,
-			items: $state.snapshot(doc.items),
-			variants: $state.snapshot(doc.variants)
-		};
+		const pr: Preset = { id, name, ...currentLook(m) };
 		m.presets = [...m.presets, pr];
 	});
 }
 export const sameOutfit = (p: Preset) => {
 	// an outfit saved before one of its hand items became two-handed is worn with the Main hand kept
-	const items = store.project ? settleHands(store.project.manifest, p.items).items : p.items;
+	const m = store.project?.manifest;
+	if (!m) return false;
+	const items = settleHands(m, p.items, 'main_hand').items;
 	return (
 		Object.keys({ ...items, ...doc.items }).every(
 			(k) => (items[k] ?? null) === (doc.items[k] ?? null) || k === 'body'
-		) &&
-		JSON.stringify(Object.entries(p.variants).sort()) ===
-			JSON.stringify(Object.entries($state.snapshot(doc.variants)).sort())
+		) && [...outfitColorIds(m, items)].every((id) => p.variants[id] === doc.variants[id])
 	);
 };
 

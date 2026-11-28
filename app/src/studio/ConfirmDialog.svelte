@@ -79,14 +79,22 @@
 		</p>{/if}
 	{#if problemAction}<div class="problem-action">{@render problemAction()}</div>{/if}
 	<div class="confirm-actions">
-		<button bind:this={keep} class="bu-btn" disabled={busy} onclick={oncancel}
-			>{cancel ?? t('common.cancel')}</button
+		<button
+			bind:this={keep}
+			class="bu-btn"
+			data-trail="confirm.cancel"
+			disabled={busy}
+			onclick={oncancel}>{cancel ?? t('common.cancel')}</button
 		>
 		{#if actionButton}
 			{@render actionButton(busy ? busyAction : action, busy || blocked, onconfirm)}
 		{:else}
-			<button class="bu-btn" data-variant="danger" disabled={busy || blocked} onclick={onconfirm}
-				>{busy ? busyAction : action}</button
+			<button
+				class="bu-btn"
+				data-variant="danger"
+				data-trail="confirm.accept"
+				disabled={busy || blocked}
+				onclick={onconfirm}>{busy ? busyAction : action}</button
 			>
 		{/if}
 	</div>

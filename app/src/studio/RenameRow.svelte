@@ -9,8 +9,15 @@
 	let {
 		locked = '',
 		onclick,
-		class: className = ''
-	}: { locked?: string; onclick: () => void; class?: string } = $props();
+		class: className = '',
+		trail
+	}: {
+		locked?: string;
+		onclick: () => void;
+		class?: string;
+		/** Static name for the problem-report trail (a string literal, never data). */
+		trail?: string;
+	} = $props();
 	const reason = $props.id();
 </script>
 
@@ -18,6 +25,7 @@
 	class={['row', className]}
 	data-variant="quiet"
 	role="menuitem"
+	data-trail={trail}
 	aria-disabled={locked ? 'true' : undefined}
 	aria-describedby={locked ? reason : undefined}
 	onclick={() => {

@@ -31,7 +31,7 @@ const env: ReportEnvironment = {
 	viewportWidth: 1440,
 	viewportHeight: 900
 };
-const context = { env, english: englishMessage, uptime: 754 };
+const context = { env, english: englishMessage };
 
 // Every one of these must vanish from a report, whatever field it reaches.
 const SECRETS = {
@@ -215,13 +215,14 @@ describe('buildReport', () => {
 		const error = new ApiError(
 			422,
 			'invalid',
-			`POST /characters/${SECRETS.uuidKey}/animations?key=1 -> 422: ${SECRETS.prompt} ${SECRETS.email}`
+			`GET /characters/${SECRETS.uuidKey}?key=1 -> 422: ${SECRETS.prompt} ${SECRETS.email}`
 		);
 		const report = buildReport(
 			{
 				area: 'Add a move',
 				message: message('state.couldNotSaveReason', { reason: SECRETS.prompt }),
 				error,
+				uptime: 754,
 				facts: { state: 'failed', jobStatus: 'failed', attempts: 2, seconds: 95 }
 			},
 			context
@@ -235,7 +236,7 @@ describe('buildReport', () => {
 				'Error type: ApiError',
 				'Error kind: invalid',
 				'HTTP status: 422',
-				'Endpoint: POST /characters/{id}/animations',
+				'Endpoint: GET /characters/{id}',
 				'Queue state: failed',
 				'Job status: failed',
 				'Attempts: 2',
@@ -455,7 +456,7 @@ describe('character facts', () => {
 	});
 
 	test('a report without character facts is unchanged', () => {
-		const report = buildReport({}, context);
+		const report = buildReport({ uptime: 754 }, context);
 		expect(report.details).toBe('Area: PixelDoll\nKind: error\nApp open for: 13 min');
 		expect(reportText(report)).not.toContain('Character:');
 	});

@@ -375,6 +375,7 @@
 		"categories": "色のカテゴリ"
 	},
 	"colorSections": {
+		"notWorn": "未装備",
 		"randomLowerColors": "{lower}の色をランダムに",
 		"randomCharacterColors": "キャラクターの色をランダムに",
 		"resetLowerColors": "{lower}の色をリセット",
@@ -530,7 +531,6 @@
 		"matchingColors": "色を合わせています…",
 		"matchItemColors": "アイテムの色を合わせる",
 		"recolor": "色を変更",
-		"recolorWearFirst": "色を変えるには装備してください",
 		"whenWornHide": "装備中は他のアイテムを非表示",
 		"iD": "ID",
 		"slot": "装備スロット",
@@ -3425,7 +3425,7 @@
 		"actionLabel": "この問題を報告",
 		"actionLabelFor": "この問題を報告: {name}",
 		"title": "この問題を報告",
-		"intro": "下のテキストだけを含む公開の GitHub Issue を開きます。画像、プロンプト、名前、キーは含まれません。投稿はご自身の GitHub アカウントで行います。",
+		"intro": "画像、プロンプト、名前、ファイル、PixelLab のキーは一切含まれません。投稿前に GitHub で内容を確認できます。",
 		"preview": "レポートのプレビュー",
 		"copy": "レポートをコピー",
 		"copied": "コピーしました",

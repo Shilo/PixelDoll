@@ -375,6 +375,7 @@
 		"categories": "Kategori warna"
 	},
 	"colorSections": {
+		"notWorn": "Tidak dipakai",
 		"randomLowerColors": "Acak warna {lower}",
 		"randomCharacterColors": "Acak warna karakter",
 		"resetLowerColors": "Atur ulang warna {lower}",
@@ -530,7 +531,6 @@
 		"matchingColors": "Mencocokkan warna…",
 		"matchItemColors": "Cocokkan warna item",
 		"recolor": "Warnai ulang",
-		"recolorWearFirst": "Pakai dulu untuk mengubah warnanya",
 		"whenWornHide": "Sembunyikan item lain saat dipakai",
 		"iD": "ID",
 		"slot": "Slot perlengkapan",
@@ -3425,7 +3425,7 @@
 		"actionLabel": "Laporkan masalah ini",
 		"actionLabelFor": "Laporkan masalah ini: {name}",
 		"title": "Laporkan masalah ini",
-		"intro": "Ini membuka issue publik di GitHub yang hanya berisi teks di bawah. Tidak ada gambar, prompt, nama, atau kunci yang disertakan. Anda mengirimkannya dengan akun GitHub Anda.",
+		"intro": "Tidak pernah menyertakan gambar, prompt, nama, file, atau kunci PixelLab Anda. Anda meninjaunya di GitHub sebelum mengirim.",
 		"preview": "Pratinjau laporan",
 		"copy": "Salin laporan",
 		"copied": "Disalin",

@@ -320,6 +320,7 @@
 								class="tile changed"
 								aria-pressed={selection?.dir === row.dir && selection.cell === c}
 								aria-label={t('fixFrames.changedFrame', frameName(row.dir, c))}
+								data-trail="frames.selectChanged"
 								onclick={() => (selected = key)}
 							>
 								<Sprite img={tile} {k} limit={tileLimit} checker label="" />
@@ -457,6 +458,7 @@
 						class="bu-action btn primary"
 						data-variant="primary"
 						disabled={busy || !!blocked}
+						data-trail="frames.replace"
 						onclick={() => void replace()}
 						>{t('fixFrames.replace', {
 							count: prepared.plan.changed.length,
@@ -469,6 +471,7 @@
 						class="bu-action btn plain"
 						data-variant="quiet"
 						disabled={busy || demo || !!blocked}
+						data-trail="frames.restore"
 						onclick={() => (confirmRestore = true)}
 						><RotateCcw size={16} />{working === 'restoring'
 							? t('fixFrames.restoring')
@@ -482,6 +485,7 @@
 					class="bu-action btn"
 					data-variant="outline"
 					disabled={busy}
+					data-trail="frames.download"
 					onclick={() => void downloadFrames(item.id, move.id)}
 					><Download size={16} />{t(
 						item.layers.length > 1 ? 'fixFrames.downloadZip' : 'fixFrames.downloadPng'
@@ -491,6 +495,7 @@
 					class="bu-action btn primary"
 					data-variant="primary"
 					disabled={busy || demo || !!blocked}
+					data-trail="frames.import"
 					onclick={() => fileInput?.click()}
 					><Upload size={16} />{working === 'reading'
 						? t('fixFrames.reading')

@@ -22,6 +22,7 @@
 <button
 	type="button"
 	class="bu-action btn plain surface-back"
+	data-trail="sheet.back"
 	data-variant="quiet"
 	aria-label={to ? t('common.backTo', { place: to }) : undefined}
 	aria-describedby={describedBy}

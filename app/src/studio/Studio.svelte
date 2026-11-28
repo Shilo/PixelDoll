@@ -30,6 +30,7 @@
 	import { moveDirs } from '../lib/dress/dress.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { experience } from './experience/state.svelte.ts';
+	import { installTrail } from './trail.svelte.ts';
 	import {
 		ui,
 		doc,
@@ -135,6 +136,7 @@
 				loadGens
 			};
 		const off = initUi();
+		const stopTrail = installTrail();
 		const previewNotice = () =>
 			toast(previewNoticeDetails, { ...PREVIEW_NOTICE, action: downloadLibraryBackupWithFeedback });
 		// A first visit has no work at risk yet, so the warning waits for a later visit instead of greeting a newcomer
@@ -187,6 +189,7 @@
 		})().catch(startupFailed);
 		return () => {
 			off();
+			stopTrail();
 			delete document.documentElement.dataset.app;
 		};
 	});

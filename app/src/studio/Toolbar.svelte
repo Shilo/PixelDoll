@@ -300,6 +300,7 @@
 		data-variant="quiet"
 		aria-expanded={panelOpen}
 		aria-controls="customization-rail"
+		data-trail="toolbar.panel"
 		aria-label={t('experience.customization')}
 		title={t('experience.customization')}
 		onclick={onpanel}><PanelIcon size={20} aria-hidden="true" /></button
@@ -310,6 +311,7 @@
 	<div class="header-start">
 		{#if experience.screen === 'studio'}<button
 				class="bu-action header-back"
+				data-trail="toolbar.characters"
 				data-variant="quiet"
 				aria-label={t('common.characters')}
 				title={t('common.characters')}
@@ -322,6 +324,7 @@
 				{@attach contextMenu(oncharacteractions)}
 				popovertarget="project-menu"
 				aria-haspopup="menu"
+				data-trail="toolbar.characterMenu"
 				onclick={() => void refreshProjects()}
 				><span class="name-line"
 					><span class="name-text"><CharacterName id={doc.id} {name} /></span>
@@ -359,6 +362,7 @@
 					class="bu-action"
 					data-variant="tab"
 					aria-pressed={experience.mode === id}
+					data-trail="toolbar.viewMode"
 					aria-controls="world-stage"
 					aria-label={label}
 					title={label}
@@ -383,6 +387,7 @@
 			<button
 				class="bu-action header-undo"
 				class:slot-gone={!undoText}
+				data-trail="toolbar.undo"
 				data-variant="quiet"
 				aria-label={undoText ?? t('common.undo')}
 				title={undoText ?? t('common.undo')}
@@ -393,6 +398,7 @@
 			<button
 				class="bu-action header-redo"
 				class:slot-gone={!redoText}
+				data-trail="toolbar.redo"
 				data-variant="quiet"
 				aria-label={redoText ?? t('common.redo')}
 				title={redoText ?? t('common.redo')}
@@ -403,6 +409,7 @@
 			<AudioSettingsButton />
 			<button
 				class="bu-action header-random"
+				data-trail="toolbar.randomLook"
 				data-variant="quiet"
 				aria-label={t('common.randomLook')}
 				title={t('toolbar.titleRandomLookItemsAndColors')}
@@ -411,6 +418,7 @@
 			>
 			<button
 				class="bu-action header-share"
+				data-trail="toolbar.share"
 				data-variant="outline"
 				aria-label={t('toolbar.shareCharacter')}
 				title={t('common.share')}
@@ -420,6 +428,7 @@
 			>
 			<button
 				class="bu-action header-export"
+				data-trail="toolbar.export"
 				data-variant="outline"
 				aria-label={t('toolbar.export')}
 				title={t('toolbar.export')}
@@ -464,6 +473,7 @@
 					data-variant="quiet"
 					role="menuitem"
 					aria-label={copyMessage}
+					data-trail="characterPicker.copyPrompt"
 					onclick={copyPrompt}
 					><Copy size={18} aria-hidden="true" /><span class="row-name">{copyMessage}</span></button
 				>
@@ -478,6 +488,7 @@
 					data-variant="row"
 					role="menuitemradio"
 					aria-checked={p.id === doc.id}
+					data-trail="characterPicker.pick"
 					aria-label={p.name}
 					onclick={() => pick(p.id)}
 				>
@@ -497,6 +508,7 @@
 				data-variant="quiet"
 				role="menuitem"
 				aria-label={t('toolbar.setUpCharacter')}
+				data-trail="characterPicker.setup"
 				onclick={() => sheet('setup')}
 				><PersonStanding size={18} aria-hidden="true" /><span class="row-name"
 					>{openerLabel(t('toolbar.setUpCharacter'))}</span
@@ -508,6 +520,7 @@
 			data-variant="quiet"
 			role="menuitem"
 			aria-label={app.key ? t('toolbar.pixelLabAccount') : t('toolbar.connectPixelLab2')}
+			data-trail="characterPicker.connect"
 			onclick={() => sheet('connect')}
 			><KeyRound size={18} aria-hidden="true" /><span class="row-name"
 				>{openerLabel(app.key ? t('toolbar.pixelLabAccount') : t('toolbar.connectPixelLab2'))}</span
@@ -524,6 +537,7 @@
 			data-variant="quiet"
 			role="menuitem"
 			aria-label={t('activity.title')}
+			data-trail="characterPicker.activity"
 			onclick={() => sheet('activity')}
 			><Activity size={18} aria-hidden="true" /><span class="row-name"
 				>{openerLabel(t('activity.title'))}</span
@@ -535,6 +549,7 @@
 			data-variant="quiet"
 			role="menuitem"
 			aria-label={t('toolbar.characterSelection')}
+			data-trail="characterPicker.allCharacters"
 			onclick={() => {
 				close();
 				characters();

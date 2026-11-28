@@ -26,6 +26,7 @@
 		aria-label={t('toolbar.moreOptions')}
 		title={t('toolbar.moreOptions')}
 		data-popover-fallback="share-popover"
+		data-trail="toolbar.more"
 		data-activity={activity}
 		aria-describedby={activity ? statusId : undefined}
 		popovertarget="experience-options"><Ellipsis size={20} /></button

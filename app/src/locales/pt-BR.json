@@ -381,6 +381,7 @@
 		"categories": "Categorias de cores"
 	},
 	"colorSections": {
+		"notWorn": "Não equipado",
 		"randomLowerColors": "Sortear cores: {lower}",
 		"randomCharacterColors": "Sortear cores do personagem",
 		"resetLowerColors": "Restaurar cores: {lower}",
@@ -541,7 +542,6 @@
 		"matchingColors": "Ajustando cores…",
 		"matchItemColors": "Ajustar cores do item",
 		"recolor": "Mudar cores",
-		"recolorWearFirst": "Vista para mudar as cores",
 		"whenWornHide": "Ocultar outros itens ao usar",
 		"iD": "ID",
 		"slot": "Espaço",
@@ -3534,7 +3534,7 @@
 		"actionLabel": "Relatar este problema",
 		"actionLabelFor": "Relatar este problema: {name}",
 		"title": "Relatar este problema",
-		"intro": "Isso abre uma issue pública no GitHub só com o texto abaixo. Não inclui imagens, prompts, nomes nem chaves. Você publica com sua conta do GitHub.",
+		"intro": "Nunca inclui suas imagens, prompts, nomes, arquivos nem sua chave do PixelLab. Você revisa no GitHub antes de publicar.",
 		"preview": "Prévia do relatório",
 		"copy": "Copiar relatório",
 		"copied": "Copiado",

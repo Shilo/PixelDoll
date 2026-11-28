@@ -40,6 +40,7 @@
 <RowActions {name} key={id} bind:entry {children}>
 	{#snippet actions(close)}
 		<RenameRow
+			trail="outfitActions.rename"
 			onclick={() => {
 				close();
 				openRename(doc.id, { outfitId: id });
@@ -48,6 +49,7 @@
 		<button
 			class="row"
 			role="menuitem"
+			data-trail="outfitActions.download"
 			onclick={() => {
 				close();
 				void downloadOutfitZip(id);
@@ -58,6 +60,7 @@
 			<DeleteRow
 				opens
 				label={t('savedActions.labelDeleteOutfit')}
+				trail="outfitActions.delete"
 				onclick={() => {
 					close();
 					trashing = true;
@@ -67,6 +70,7 @@
 			<DeleteRow
 				opens
 				label={t('savedActions.labelDeleteDemoOutfit')}
+				trail="outfitActions.deleteDemo"
 				locked={outfitLocked(id) ? t('savedActions.demoOutfitLocked') : ''}
 				onclick={() => {
 					close();

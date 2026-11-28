@@ -381,6 +381,7 @@
 		"categories": "Renk kategorileri"
 	},
 	"colorSections": {
+		"notWorn": "Takılı değil",
 		"randomLowerColors": "{lower} için rastgele renkler",
 		"randomCharacterColors": "Karakter için rastgele renkler",
 		"resetLowerColors": "{lower} renklerini sıfırlayın",
@@ -541,7 +542,6 @@
 		"matchingColors": "Renkler eşleştiriliyor…",
 		"matchItemColors": "Eşya renklerini eşleştirin",
 		"recolor": "Renkleri değiştirin",
-		"recolorWearFirst": "Renklerini değiştirmek için önce giyin",
 		"whenWornHide": "Giyilirken diğer eşyaları gizle",
 		"iD": "ID",
 		"slot": "Ekipman yuvası",
@@ -3525,7 +3525,7 @@
 		"actionLabel": "Bu sorunu bildir",
 		"actionLabelFor": "Bu sorunu bildir: {name}",
 		"title": "Bu sorunu bildir",
-		"intro": "Yalnızca aşağıdaki metni içeren herkese açık bir GitHub kaydı açar. Görsel, istem, ad veya anahtar eklenmez. Kendi GitHub hesabınızla gönderin.",
+		"intro": "Görsellerinizi, istemlerinizi, adlarınızı, dosyalarınızı veya PixelLab anahtarınızı asla içermez. Göndermeden önce GitHub’da gözden geçirirsiniz.",
 		"preview": "Bildirim önizlemesi",
 		"copy": "Bildirimi kopyala",
 		"copied": "Kopyalandı",

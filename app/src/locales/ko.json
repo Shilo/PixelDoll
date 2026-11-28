@@ -375,6 +375,7 @@
 		"categories": "색상 카테고리"
 	},
 	"colorSections": {
+		"notWorn": "미착용",
 		"randomLowerColors": "{lower} 색상 무작위 지정",
 		"randomCharacterColors": "캐릭터 색상 무작위 지정",
 		"resetLowerColors": "{lower} 색상 초기화",
@@ -530,7 +531,6 @@
 		"matchingColors": "색상 맞추는 중…",
 		"matchItemColors": "아이템 색상 맞추기",
 		"recolor": "색상 변경",
-		"recolorWearFirst": "색을 바꾸려면 먼저 착용하세요",
 		"whenWornHide": "착용 중 다른 아이템 숨기기",
 		"iD": "ID",
 		"slot": "장착 슬롯",
@@ -3425,7 +3425,7 @@
 		"actionLabel": "이 문제 신고",
 		"actionLabelFor": "이 문제 신고: {name}",
 		"title": "이 문제 신고",
-		"intro": "아래 텍스트만 담은 공개 GitHub 이슈를 열어요. 이미지, 프롬프트, 이름, 키는 포함되지 않아요. 내 GitHub 계정으로 게시해요.",
+		"intro": "이미지, 프롬프트, 이름, 파일, PixelLab 키는 절대 포함되지 않아요. 게시하기 전에 GitHub에서 확인해요.",
 		"preview": "신고 미리보기",
 		"copy": "신고 내용 복사",
 		"copied": "복사했어요",

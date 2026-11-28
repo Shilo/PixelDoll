@@ -43,6 +43,7 @@
 		<button
 			type="button"
 			class="version-btn"
+			data-trail="exportVersion.open"
 			popovertarget={menuId}
 			aria-haspopup="menu"
 			{disabled}
@@ -82,6 +83,7 @@
 				class="row version-row"
 				role="menuitemradio"
 				aria-checked={current === v.id}
+				data-trail="exportVersion.pick"
 				onclick={() => {
 					onchoose(v.id);
 					menu?.hidePopover();

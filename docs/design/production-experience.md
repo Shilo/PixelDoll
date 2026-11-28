@@ -170,13 +170,20 @@ When a toast has a pressable surface, the surface takes its accessible name from
 Uncaught errors and unhandled rejections show one warning toast per distinct error when the notification area is free of
 pending or actionable work.
 Warning toasts offer Report when they carry an error or explicitly opt in. A notification that opens a failure view can leave
-reporting to that view. Report opens a centered preview of the exact public issue text with Close, Copy report and Open on GitHub
-(it stays open in case the new tab is blocked), which opens GitHub's issue form prefilled through `problem-report.yml` query
+reporting to that view. Report opens a centered sheet (the X in its header) previewing the exact public issue text, with Copy report and Open on
+GitHub in its footer (it stays open in case the new tab is blocked), which opens GitHub's issue form prefilled through `problem-report.yml` query
 parameters; the user posts it with their own account and writes the steps to reproduce if they know them. A report is built
 from an allow-list in `app/src/lib/report/report.ts` (version, build channel and commit, browser and OS families, device and
-screen class, language, the area, the key and English template of an app message with its variables hidden, an error-class
-name, PixelLab status and normalized endpoint path, queue states and timings), then every string passes a sanitizer. It
-never contains images, prompts, names, IDs, hashes, project data, request bodies or storage. A failure before the Studio
+screen class, language, the area, the key and English template of an app message with its variables hidden, the error and
+cause names from a fixed list, where PixelDoll's own built files threw it (chunk.hash.js:line:column, mapped through that commit's
+build), the failed code file, the download step, PixelLab status and normalized endpoint path, queue states and timings,
+offline and waiting-update state), then every string passes a sanitizer. It also lists up to 20 recent actions, newest first
+and timed back from the failure: sheets and screens opened, presses named only by static `data-trail` attributes, problem
+notices by message key, PixelLab request transitions by normalized endpoint, page visibility and connection. The trail
+(`app/src/lib/report/trail.ts`, fed by `app/src/studio/trail.svelte.ts`) lives in memory only and is never stored or sent
+by itself; the preview is the consent. Report facts are frozen where the failure is shown (`captureProblem`), so a later
+Report still describes that moment; a stored Activity failure from another visit gets no trail and no open-character facts.
+It never contains images, prompts, names, IDs, hashes, project data, request bodies or storage. A failure before the Studio
 loads has no Report: its code is not loaded yet, and loading it there would pull Studio modules into the startup page.
 
 ## Ownership

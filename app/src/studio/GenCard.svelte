@@ -362,6 +362,7 @@
 			<button
 				class="bu-action btn"
 				data-variant="outline"
+				data-trail="genCard.wear"
 				onclick={() => wearDraft(g.draft.spec.id)}
 				>{worn ? t('common.takeOff') : t('common.wear')}</button
 			>
@@ -422,6 +423,7 @@
 					class="bu-action"
 					type="button"
 					data-variant="quiet"
+					data-trail="genCard.retryRead"
 					onclick={() => void readGenReview(g)}>{t('common.tryAgain')}</button
 				>
 			{:else if !res?.qa}
@@ -450,6 +452,7 @@
 				<button
 					class="bu-action btn primary"
 					data-variant="primary"
+					data-trail="genCard.keep"
 					onclick={accept}
 					disabled={busy || keepBlocked}>{t('genCard.keep')}</button
 				>
@@ -457,6 +460,7 @@
 						><button
 							class="bu-action btn"
 							data-variant="outline"
+							data-trail="genCard.generateAgain"
 							onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
 							disabled={busy || retryGens === null || retryBlocked}
 							aria-describedby={retryBlocked ? tierNoticeId : undefined}
@@ -471,6 +475,7 @@
 				<button
 					class="bu-action btn plain danger"
 					data-variant="quiet"
+					data-trail="genCard.discard"
 					onclick={() => discardGen(g)}
 					disabled={busy}>{t('common.discard')}</button
 				>
@@ -506,7 +511,9 @@
 						facts: {
 							...(outcome ? jobProblem(outcome.record).facts : {}),
 							phase: g.phase
-						}
+						},
+						// A request's failure time is known only when this tab saw it settle; otherwise its trail runs up to Report.
+						...(outcome && { failedAt: jobProblem(outcome.record).failedAt })
 					}}
 				/>{/if}
 			{#if providerFailed && !g.canceled}
@@ -524,8 +531,11 @@
 				</p>
 			{/if}
 			<div class="recovery-actions">
-				<button class="bu-action btn plain" data-variant="quiet" onclick={() => discardGen(g)}
-					>{t(g.canceled ? 'common.discard' : 'common.cancel')}</button
+				<button
+					class="bu-action btn plain"
+					data-variant="quiet"
+					data-trail="genCard.cancel"
+					onclick={() => discardGen(g)}>{t(g.canceled ? 'common.discard' : 'common.cancel')}</button
 				>
 				<div class="recovery-options">
 					{#if !sameRetry}<span class="api-action"
@@ -533,6 +543,7 @@
 								class="bu-action btn"
 								class:primary={retryLeads}
 								data-variant={retryLeads ? 'primary' : 'outline'}
+								data-trail="genCard.retry"
 								onclick={() =>
 									retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
 								disabled={busy || retryGens === null || retryBlocked}
@@ -566,6 +577,7 @@
 				class="bu-action"
 				type="button"
 				data-variant="quiet"
+				data-trail="genCard.retryPaidRead"
 				onclick={() => {
 					paidReads++;
 					if (!res) void readGenReview(g);

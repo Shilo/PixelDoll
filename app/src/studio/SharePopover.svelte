@@ -395,7 +395,12 @@
 		</div>
 		<hr class="share-divider bu-separator" />
 		<div class="share-actions">
-			<button class="bu-action" data-variant="outline" disabled={!png || copying} onclick={copyPng}
+			<button
+				class="bu-action"
+				data-variant="outline"
+				data-trail="share.copy"
+				disabled={!png || copying}
+				onclick={copyPng}
 				><Copy size={16} aria-hidden="true" />{copying
 					? t('common.copying')
 					: t('share.copy')}</button
@@ -404,10 +409,12 @@
 				class="bu-action"
 				data-variant="outline"
 				disabled={!canShare || encoding}
+				data-trail="share.shareTo"
 				onclick={share}><Share2 size={16} aria-hidden="true" />{t('share.shareTo')}</button
 			>
 			<button
 				class="share-download bu-action"
+				data-trail="share.download"
 				data-variant="primary"
 				aria-label={encoding
 					? t('share.preparingLabel', { format: label })

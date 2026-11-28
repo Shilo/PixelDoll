@@ -376,8 +376,12 @@
 					/>{:else if paidUnread}<p class="bu-notice" data-size="compact" data-tone="warning">
 						{t('paidReview.loadFailed')}
 					</p>
-					<button class="bu-action" type="button" data-variant="quiet" onclick={() => paidReads++}
-						>{t('common.tryAgain')}</button
+					<button
+						class="bu-action"
+						type="button"
+						data-variant="quiet"
+						data-trail="create.retryPaidRead"
+						onclick={() => paidReads++}>{t('common.tryAgain')}</button
 					>{/if}
 			{:else}
 				<p class="muted small">
@@ -404,8 +408,11 @@
 	{#snippet footer()}
 		{#if creating?.projectId}
 			<span class="foot-note">{t('create.sheet.saved')}</span>
-			<button class="bu-action btn primary lg" data-variant="primary" onclick={open}
-				>{t('create.sheet.startDressing')}</button
+			<button
+				class="bu-action btn primary lg"
+				data-variant="primary"
+				data-trail="create.startDressing"
+				onclick={open}>{t('create.sheet.startDressing')}</button
 			>
 		{:else if creating?.error}
 			<div class="recovery-actions">
@@ -413,6 +420,7 @@
 					class="bu-action btn plain"
 					data-variant="quiet"
 					disabled={creating.running}
+					data-trail="create.discard"
 					onclick={async () => {
 						if (
 							creating &&
@@ -428,6 +436,7 @@
 						class="bu-action btn"
 						data-variant="outline"
 						disabled={creating.running}
+						data-trail="create.editSetup"
 						onclick={() => creating && discardCreate(creating.id)}
 						>{t('create.sheet.editSetup')}</button
 					>
@@ -436,6 +445,7 @@
 							class="bu-action btn primary"
 							data-variant="primary"
 							disabled={creating.running}
+							data-trail="create.generateAgain"
 							onclick={() => {
 								if (!creating) return;
 								const id = creating.id;
@@ -466,6 +476,7 @@
 					title={t('create.sheet.costTitle')}
 					aria-describedby={costId}
 					disabled={!!errors.length || enhancing || referenceLoading}
+					data-trail="create.generate"
 					onclick={go}
 					>{accepted.length ? t('create.sheet.createAnyway') : t('create.sheet.create')}
 					<span class="cost" aria-hidden="true">~{gensRange}</span></button
