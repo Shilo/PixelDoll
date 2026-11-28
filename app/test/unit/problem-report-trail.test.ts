@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { LoadError } from '../../src/lib/lazy.ts';
-import { message } from '../../src/lib/message.ts';
+import { LocalizedError, message } from '../../src/lib/message.ts';
 import { englishMessage } from '../../src/lib/report/english.ts';
 import {
 	buildReport,
@@ -160,8 +160,8 @@ describe('trail in a report', () => {
 				entry(47_000, { kind: 'press', area: 'Studio' }, 3),
 				entry(46_000, {
 					kind: 'job',
-					method: 'POST',
-					endpoint: '/characters/abc123def/animations',
+					method: 'GET',
+					endpoint: '/characters/abc123def',
 					state: 'failed'
 				}),
 				entry(40_000, { kind: 'screen', area: 'Studio' }),
@@ -173,7 +173,7 @@ describe('trail in a report', () => {
 				'Recent actions (newest first, time before the problem):',
 				'- 2 s: press characterMenu.download in Studio',
 				'- 3 s: press unnamed controls in Studio (3 times)',
-				'- 4 s: request POST /characters/{id}/animations failed',
+				'- 4 s: request GET /characters/{id} failed',
 				'- 10 s: show Studio',
 				'- 40 s: page visible'
 			].join('\n')
@@ -292,6 +292,32 @@ describe('error facts', () => {
 		const text = all({ error: 'POST /private/alice-secret-folder -> 500: boom', uncaught: true });
 		expect(text).not.toContain('alice');
 		expect(text).not.toContain('private');
+	});
+
+	test('an unknown request gives no status, and an API-shaped object no made-up endpoint', () => {
+		const text = all({ error: 'Could not read (GET /alice-private-filename -> 418)' });
+		expect(text).not.toContain('418');
+		const shaped = all({
+			error: { name: 'Error', status: 418, kind: 'http', message: 'POST /alice-private -> 418' }
+		});
+		expect(shaped).not.toContain('alice');
+		expect(shaped).not.toContain('Endpoint');
+	});
+
+	test('a flow error wrapping a failed request keeps its status and endpoint', () => {
+		const details = buildReport(
+			{
+				error: new LocalizedError(
+					`Draw: failed (POST /create-character-v3 -> 422: "${NAME} knight" refused)`,
+					'create.errors.requestStoppedResume',
+					{ state: 'failed', error: NAME }
+				)
+			},
+			context
+		).details;
+		expect(details).toContain('HTTP status: 422');
+		expect(details).toContain('Endpoint: POST /create-character-v3');
+		expect(details).not.toContain('Alice');
 	});
 
 	test('the known routes cover every route PixelDoll calls', () => {

@@ -446,14 +446,19 @@ export const PIXELLAB_ROUTES: ReadonlySet<string> = new Set([
  *  route. */
 function requestFacts(text: string): ErrorFacts {
 	const request = /\b(GET|POST|PUT|PATCH|DELETE) (\/\S*) -> (\d{3})\b/.exec(text);
-	if (!request) return {};
-	const endpoint = endpointPath(request[2]);
-	return {
-		method: request[1],
-		endpoint: endpoint && PIXELLAB_ROUTES.has(endpoint) ? endpoint : undefined,
-		status: count(Number(request[3]), 999) || undefined
-	};
+	const endpoint = request ? knownEndpoint(request[2]) : undefined;
+	// Not one of PixelDoll's requests: its status would be as made up as its path.
+	return request && endpoint
+		? { method: request[1], endpoint, status: count(Number(request[3]), 999) || undefined }
+		: {};
 }
+
+/** An endpoint as a normalized path, only when it is a route PixelDoll calls. Every endpoint a report prints passes here:
+ *  anything can be thrown, so even an error shaped like the client's can carry a made-up path. */
+const knownEndpoint = (raw: string): string | undefined => {
+	const endpoint = endpointPath(raw);
+	return endpoint && PIXELLAB_ROUTES.has(endpoint) ? endpoint : undefined;
+};
 
 /** What an error may contribute: its name, a localized message, and for a PixelLab error its status, kind and endpoint
  *  path, read from the "METHOD /path -> status" prefix the client writes; the names of its causes; and where in
@@ -488,10 +493,14 @@ function readErrorFacts(error: unknown, base?: string): ErrorFacts {
 			typeof e.message === 'string'
 				? /^(GET|POST|PUT|PATCH|DELETE) (\/\S*) -> \d{3}\b/.exec(e.message)
 				: null;
-		if (request) {
+		const endpoint = request && knownEndpoint(request[2]);
+		if (endpoint) {
 			out.method = request[1];
-			out.endpoint = endpointPath(request[2]);
+			out.endpoint = endpoint;
 		}
+	} else if (typeof e.message === 'string') {
+		// A flow can wrap a failed request in its own error whose message keeps the client's request prefix.
+		Object.assign(out, requestFacts(e.message));
 	}
 	const frames = ownFrames((error as { stack?: unknown }).stack, e.message, base);
 	if (frames.length) out.frames = frames;
@@ -673,7 +682,7 @@ function trailEvent(event: TrailEvent, context: ReportContext, times = 1): strin
 				? `${event.tone} ${event.key}`
 				: undefined;
 		case 'job': {
-			const endpoint = endpointPath(event.endpoint ?? '');
+			const endpoint = knownEndpoint(event.endpoint ?? '');
 			return endpoint && METHODS.has(event.method) && RECORD_STATES.has(event.state)
 				? `request ${event.method} ${endpoint} ${event.state}`
 				: undefined;
@@ -735,7 +744,7 @@ export function buildReport(problem: Problem, context: ReportContext): ProblemRe
 	const area = areaName(problem.area) ?? 'PixelDoll';
 	const kind = problem.tone === 'warning' ? 'warning' : 'error';
 	const unexpected = `Unexpected ${fromError.name && fromError.name !== NON_ERROR ? fromError.name : 'problem'}`;
-	const endpoint = endpointPath(facts.endpoint ?? '') ?? fromError.endpoint;
+	const endpoint = knownEndpoint(facts.endpoint ?? '') ?? fromError.endpoint;
 	// A stored PixelLab failure often keeps only provider text, which is never reported: say what kind of problem it was.
 	const text =
 		english || (endpoint && !problem.uncaught ? 'A PixelLab request failed' : unexpected);

@@ -215,7 +215,7 @@ describe('buildReport', () => {
 		const error = new ApiError(
 			422,
 			'invalid',
-			`POST /characters/${SECRETS.uuidKey}/animations?key=1 -> 422: ${SECRETS.prompt} ${SECRETS.email}`
+			`GET /characters/${SECRETS.uuidKey}?key=1 -> 422: ${SECRETS.prompt} ${SECRETS.email}`
 		);
 		const report = buildReport(
 			{
@@ -236,7 +236,7 @@ describe('buildReport', () => {
 				'Error type: ApiError',
 				'Error kind: invalid',
 				'HTTP status: 422',
-				'Endpoint: POST /characters/{id}/animations',
+				'Endpoint: GET /characters/{id}',
 				'Queue state: failed',
 				'Job status: failed',
 				'Attempts: 2',
