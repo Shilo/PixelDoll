@@ -1,0 +1,33 @@
+{
+	"headline": "Trae personajes y llévalos a cualquier parte",
+	"intro": "Ahora puedes traer tus propios personajes a PixelDoll y exportar tu trabajo terminado en más formatos. Vestir personajes también parece más fiable que antes.",
+	"highlights": [
+		{
+			"title": "Importar y eliminar personajes locales",
+			"text": "Puedes importar a Studio los personajes que ya tienes y eliminar los que ya no quieres, para que tu colección se mantenga ordenada."
+		},
+		{
+			"title": "Exportación en capas a Aseprite",
+			"text": "Exporta un personaje como archivo de Aseprite con una capa por cada capa del personaje, en orden de dibujo. Cada animación y dirección tiene su propia etiqueta."
+		},
+		{
+			"title": "Espadas y escudos en la mano",
+			"text": "Los objetos de la mano principal y de la mano secundaria ahora tienen un tratamiento propio, más grande y cuidado, para que las armas que sostiene el personaje encajen mejor."
+		},
+		{
+			"title": "Añade una animación a tu personaje",
+			"text": "Puedes añadir animaciones como tajo, lanzar hechizo, daño y muerte, y tus objetos equipados se vuelven a posar para encajar con cada una."
+		}
+	],
+	"fixes": [
+		{
+			"text": "La capa, el pelo y el casco encajan mejor en todas las animaciones y direcciones."
+		},
+		{
+			"text": "Las animaciones que aún no tienen fotogramas muestran una nota con una acción Crear."
+		},
+		{
+			"text": "Elegir Crear sin una clave ahora abre Conectar en lugar de cerrarse."
+		}
+	]
+}

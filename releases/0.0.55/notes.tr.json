@@ -1,0 +1,33 @@
+{
+	"headline": "Karakterlerinizi içe aktarın ve her yere götürün",
+	"intro": "Artık kendi karakterlerinizi PixelDoll'a getirebilir ve bitmiş çalışmalarınızı daha fazla biçimde dışa aktarabilirsiniz. Karakterleri giydirmek de öncekinden daha güvenilir görünüyor.",
+	"highlights": [
+		{
+			"title": "Yerel karakterleri içe aktarın ve silin",
+			"text": "Zaten sahip olduğunuz karakterleri Stüdyo'ya aktarabilir ve artık istemediklerinizi silebilirsiniz, böylece koleksiyonunuz düzenli kalır."
+		},
+		{
+			"title": "Katmanlı Aseprite dışa aktarımı",
+			"text": "Bir karakteri, her karakter katmanı için çizim sırasına göre bir katman olacak şekilde Aseprite dosyası olarak dışa aktarın. Her animasyon ve yönün kendi etiketi olur."
+		},
+		{
+			"title": "Elde kılıç ve kalkan",
+			"text": "Ana el ve yan eldeki eşyalar artık kendilerine özgü, daha büyük ve daha özenli bir işlemden geçer; böylece tutulan silahlar karakterinize daha iyi uyar."
+		},
+		{
+			"title": "Karakterinize animasyon ekleyin",
+			"text": "Kılıç saldırısı, büyü, yaralanma ve ölüm gibi animasyonlar ekleyebilirsiniz; giydiğiniz eşyalar her biri için yeniden poz alır."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Pelerin, saç ve kask uyumu animasyonlar ve yönler arasında daha iyi görünüyor."
+		},
+		{
+			"text": "Henüz karesi olmayan animasyonlar, Üretin eylemi içeren bir not gösterir."
+		},
+		{
+			"text": "Anahtar olmadan Oluşturun veya Üretin seçildiğinde artık kapanmak yerine Bağlanın açılır."
+		}
+	]
+}

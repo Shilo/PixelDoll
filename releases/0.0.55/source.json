@@ -1,0 +1,106 @@
+{
+	"version": "0.0.55",
+	"date": "2026-10-23",
+	"cutoff": "2026-10-23T15:00:00.000Z",
+	"sha": "45c7a225ba6821740aff487b3ca8c0092799f5f2",
+	"previousSha": "57da4da1109e878e374ca139dd3e22f7ad418cb7",
+	"model": "claude-sonnet-5-5",
+	"commits": [
+		"010647bd0d88fa6e960cdbc6fc01331345cf3314",
+		"f8821f8474d68d265b41bb2079b9fecb02b75df7",
+		"672b4f6a301f50f0736dc513dfcb0b4d81b34360",
+		"27e78ce5db7c8982dc44a023df52d3dad0408607",
+		"4602c43902b480b3661f93d0c73c0065d273a1e9",
+		"b187ab13957e5a462b1ba28bf35d8900263f0cf0",
+		"46cecd6c71524ad53bd3894f449e4caec0f15f0c",
+		"e87ef483208be8fb54f167d8999935d08200d901",
+		"9baffe542e7c31a36d16497e047aef9bfc19fcd6",
+		"87fbfd603e062dffea0dddbcbfdda154ac0fb6eb",
+		"ff11e2465a67ba4b808310455f55df602b09f185",
+		"6210ced99e63ff84effe8ccc90dfcb5eb17e1f24",
+		"58828ebda6ee2e7ed04ac19cfcb2707c9655e8b1",
+		"9079f7a26345a3076870f4db48f65173b1200db3",
+		"5c27a0faeb06e5014ffadf2ff3e24d9a6afe5d21",
+		"7a4b89496607e3239a1fc8827ce81a71c5673c66",
+		"0df21240492dc1e4cd4582c33b473c273df6f019",
+		"91469daabbdf4b3fed56b27721dc4d431cf65445",
+		"1a71f5283423424851cb030eadb1173131f107ff",
+		"0da5ff0bac57f5bde1c82131f2c938019f56ea76",
+		"7dc91f9c022d21534c5992801c5efdb34d0c7560",
+		"e1f60716d9baf710878609ace5fc1715ac8e0582",
+		"654bfc95b8c435dee2e749f6282370d1a69582c2",
+		"b7830e4df0db78d06d196c4c9a864df5f69492a1",
+		"47ea52cf9a843c2584f466147297842f2caa523f",
+		"0d35ee48a867d5d05c64ffad191e3c6e0bd89c7e",
+		"3ba92ffd24614f7ce6853ac6fb5d8936b7382fb7",
+		"faf2e793fb518593f109fc329999749055a83206",
+		"de72162c1989c26ad166f79b8111d00030615353",
+		"e745bc4c3ed6bb2ae58bc091ee52a411dfe992ee",
+		"1cec6455949fc61ac99f9d9b3e342fd283556dbb",
+		"f1480d9d710f156ece63688bfacc5c2d570d80d3",
+		"4961a3d8503dc1af9049bf9cb3def276faf1d4b3",
+		"32b6313b52202f70c473d91bb878a8854e1a64ba",
+		"b65961a6b79a99802c9d0ce23787e154f97ffc34",
+		"8afef4fd5c9c5899e5222f8f37a6f80e4cff161a",
+		"2ef5a18ba2d2de8068e2b52fca2c2405fdfb30ff",
+		"9c2c8d0fb1c914381ec46adb1902f5279e387c02",
+		"09de196b4b401963c73ea060c91c61115aa4567c",
+		"aee1baf474b8ef52f5b3acb6cc199f30f0a7bc0a"
+	],
+	"notes": {
+		"headline": "Bring in characters and take them anywhere",
+		"intro": "You can now bring your own characters into PixelDoll and send finished work out in more formats. Dressing characters also looks more reliable than before.",
+		"highlights": [
+			{
+				"title": "Import and delete local characters",
+				"text": "You can bring characters you already have into Studio and delete the ones you no longer want, so your collection stays tidy.",
+				"commits": [
+					"7dc91f9",
+					"5c27a0f"
+				]
+			},
+			{
+				"title": "Layered Aseprite export",
+				"text": "Export a character as an Aseprite file with one layer per character layer in draw order. Each move and direction gets its own tag.",
+				"commits": [
+					"1cec645"
+				]
+			},
+			{
+				"title": "Swords and shields in hand",
+				"text": "Items in the main hand and off hand now get their own larger, more careful treatment, so held weapons fit your character better.",
+				"commits": [
+					"b65961a"
+				]
+			},
+			{
+				"title": "Add a move to your character",
+				"text": "You can add moves such as slash, cast, hurt and death, and your worn items are re-posed to match each one.",
+				"commits": [
+					"2ef5a18"
+				]
+			}
+		],
+		"fixes": [
+			{
+				"text": "Cape, hair and helmet fit looks better across moves and directions.",
+				"commits": [
+					"faf2e79"
+				]
+			},
+			{
+				"text": "Moves that have no frames yet show a note with a Make-it action.",
+				"commits": [
+					"32b6313"
+				]
+			},
+			{
+				"text": "Choosing Create or Make without a key now opens Connect instead of closing.",
+				"commits": [
+					"8afef4f"
+				]
+			}
+		],
+		"banner": "In a sunlit tailor's workshop, a freckled apprentice in a mustard apron holds up a teal cape with a bright red lining beside a rack of hats."
+	}
+}

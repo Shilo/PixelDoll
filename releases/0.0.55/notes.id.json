@@ -1,0 +1,33 @@
+{
+	"headline": "Bawa karakter Anda ke mana saja",
+	"intro": "Anda kini bisa membawa karakter sendiri ke PixelDoll dan mengirim hasil akhir dalam lebih banyak format. Proses berpakaian karakter juga terasa lebih andal dari sebelumnya.",
+	"highlights": [
+		{
+			"title": "Impor dan hapus karakter lokal",
+			"text": "Anda bisa membawa karakter yang sudah dimiliki ke Studio dan menghapus yang tidak lagi diinginkan, agar koleksi Anda tetap rapi."
+		},
+		{
+			"title": "Ekspor Aseprite berlapis",
+			"text": "Ekspor karakter sebagai file Aseprite dengan satu lapisan untuk setiap lapisan karakter sesuai urutan gambar. Setiap animasi dan arah mendapat tag sendiri."
+		},
+		{
+			"title": "Pedang dan perisai di tangan",
+			"text": "Item di tangan utama dan tangan cadangan kini mendapat perlakuan yang lebih besar dan lebih teliti, sehingga senjata yang digenggam lebih pas dengan karakter Anda."
+		},
+		{
+			"title": "Tambah animasi ke karakter Anda",
+			"text": "Anda bisa menambah animasi seperti slash, cast, hurt, dan death, dan item yang dikenakan akan diatur ulang posenya sesuai setiap animasi."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Kesesuaian jubah, rambut, dan helm kini tampak lebih baik di seluruh animasi dan arah."
+		},
+		{
+			"text": "Animasi yang belum memiliki frame menampilkan catatan dengan tindakan Buat."
+		},
+		{
+			"text": "Memilih Create atau Buat tanpa kunci kini membuka Hubungkan, bukan menutup."
+		}
+	]
+}

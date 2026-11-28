@@ -1,0 +1,33 @@
+{
+	"headline": "Figuren importieren und überallhin mitnehmen",
+	"intro": "Du kannst jetzt eigene Figuren in PixelDoll einbringen und fertige Arbeiten in mehr Formaten exportieren. Das Anziehen von Figuren wirkt außerdem zuverlässiger als zuvor.",
+	"highlights": [
+		{
+			"title": "Lokale Figuren importieren und löschen",
+			"text": "Du kannst bereits vorhandene Figuren in Studio importieren und die nicht mehr benötigten löschen, damit deine Sammlung übersichtlich bleibt."
+		},
+		{
+			"title": "Aseprite-Export mit Ebenen",
+			"text": "Exportiere eine Figur als Aseprite-Datei mit einer Ebene pro Figurenebene in Zeichenreihenfolge. Jede Animation und jede Blickrichtung bekommt ein eigenes Tag."
+		},
+		{
+			"title": "Schwerter und Schilde in der Hand",
+			"text": "Gegenstände in der Haupt- und Nebenhand bekommen jetzt eine größere, sorgfältigere Darstellung, damit gehaltene Waffen besser zu deiner Figur passen."
+		},
+		{
+			"title": "Animation zu deiner Figur hinzufügen",
+			"text": "Du kannst Animationen wie Hieb, Zauber, Treffer und Tod hinzufügen, und deine getragenen Gegenstände werden für jede neu posiert."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Umhang, Haare und Helmsitz wirken über alle Animationen und Blickrichtungen hinweg besser."
+		},
+		{
+			"text": "Animationen ohne Frames zeigen jetzt einen Hinweis mit einer Erstellen-Aktion."
+		},
+		{
+			"text": "Wenn du Erstellen ohne Schlüssel wählst, öffnet sich jetzt Verbinden, statt zu schließen."
+		}
+	]
+}

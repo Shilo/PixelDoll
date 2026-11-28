@@ -1,0 +1,33 @@
+{
+	"headline": "Bring in characters and take them anywhere",
+	"intro": "You can now bring your own characters into PixelDoll and send finished work out in more formats. Dressing characters also looks more reliable than before.",
+	"highlights": [
+		{
+			"title": "Import and delete local characters",
+			"text": "You can bring characters you already have into Studio and delete the ones you no longer want, so your collection stays tidy."
+		},
+		{
+			"title": "Layered Aseprite export",
+			"text": "Export a character as an Aseprite file with one layer per character layer in draw order. Each move and direction gets its own tag."
+		},
+		{
+			"title": "Swords and shields in hand",
+			"text": "Items in the main hand and off hand now get their own larger, more careful treatment, so held weapons fit your character better."
+		},
+		{
+			"title": "Add a move to your character",
+			"text": "You can add moves such as slash, cast, hurt and death, and your worn items are re-posed to match each one."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Cape, hair and helmet fit looks better across moves and directions."
+		},
+		{
+			"text": "Moves that have no frames yet show a note with a Make-it action."
+		},
+		{
+			"text": "Choosing Create or Make without a key now opens Connect instead of closing."
+		}
+	]
+}

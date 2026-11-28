@@ -1,0 +1,175 @@
+{
+	"total": 40,
+	"groups": [
+		{
+			"kind": "new",
+			"items": [
+				{
+					"sha": "5c27a0faeb06e5014ffadf2ff3e24d9a6afe5d21",
+					"text": "Studio: Prepare imported characters for the shared rig pipeline"
+				},
+				{
+					"sha": "7dc91f9c022d21534c5992801c5efdb34d0c7560",
+					"text": "Studio: Import and delete local characters"
+				},
+				{
+					"sha": "0d35ee48a867d5d05c64ffad191e3c6e0bd89c7e",
+					"text": "Agent-only dev key mode, CI with Pages deploy and dist guard, MIT license"
+				},
+				{
+					"sha": "1cec6455949fc61ac99f9d9b3e342fd283556dbb",
+					"text": "Export: Add layered .aseprite export; rename credits to CREDITS.txt"
+				},
+				{
+					"sha": "b65961a6b79a99802c9d0ce23787e154f97ffc34",
+					"text": "Items: Add 96px held-item route, item cleanup, authored idle; WIP UX fixes"
+				},
+				{
+					"sha": "2ef5a18ba2d2de8068e2b52fca2c2405fdfb30ff",
+					"text": "App: Rig v1.3 skeleton-v3 clips, add-a-move, cross-tab queue lock, oversize layers"
+				},
+				{
+					"sha": "9c2c8d0fb1c914381ec46adb1902f5279e387c02",
+					"text": "App: Add M3 item lab and M4 dress-up, WIP Studio shell"
+				},
+				{
+					"sha": "09de196b4b401963c73ea060c91c61115aa4567c",
+					"text": "App: Add M2 rig freeze and M5 export with Godot/Phaser verification"
+				},
+				{
+					"sha": "aee1baf474b8ef52f5b3acb6cc199f30f0a7bc0a",
+					"text": "App: Add PixelLab client, persistent job queue, IndexedDB store and M1 key/queue mockup"
+				}
+			]
+		},
+		{
+			"kind": "fixed",
+			"items": [
+				{
+					"sha": "010647bd0d88fa6e960cdbc6fc01331345cf3314",
+					"text": "Studio: Keep direction grids clear of warnings"
+				},
+				{
+					"sha": "f8821f8474d68d265b41bb2079b9fecb02b75df7",
+					"text": "Studio: Arrange direction previews in fixed grids"
+				},
+				{
+					"sha": "672b4f6a301f50f0736dc513dfcb0b4d81b34360",
+					"text": "Items: Refresh QA summaries when moves change"
+				},
+				{
+					"sha": "27e78ce5db7c8982dc44a023df52d3dad0408607",
+					"text": "Studio: Hide unavailable developer pages in production"
+				},
+				{
+					"sha": "4602c43902b480b3661f93d0c73c0065d273a1e9",
+					"text": "Studio: Fit preview controls to the desktop stage"
+				},
+				{
+					"sha": "b187ab13957e5a462b1ba28bf35d8900263f0cf0",
+					"text": "Studio: Preserve move draft through connection"
+				},
+				{
+					"sha": "46cecd6c71524ad53bd3894f449e4caec0f15f0c",
+					"text": "Studio: Cancel character imports and clarify ZIP layouts"
+				},
+				{
+					"sha": "e87ef483208be8fb54f167d8999935d08200d901",
+					"text": "Studio: Preserve pose setup draft through connection"
+				},
+				{
+					"sha": "9baffe542e7c31a36d16497e047aef9bfc19fcd6",
+					"text": "Auth: Use only the shared saved API key"
+				},
+				{
+					"sha": "87fbfd603e062dffea0dddbcbfdda154ac0fb6eb",
+					"text": "Items: Review covered helmets and preserve move provenance"
+				},
+				{
+					"sha": "ff11e2465a67ba4b808310455f55df602b09f185",
+					"text": "Studio: Persist equipment worn after acceptance"
+				},
+				{
+					"sha": "6210ced99e63ff84effe8ccc90dfcb5eb17e1f24",
+					"text": "Items: Review body-occluded shield changes without retries"
+				},
+				{
+					"sha": "58828ebda6ee2e7ed04ac19cfcb2707c9655e8b1",
+					"text": "Studio: Clarify equipment is fitted per character"
+				},
+				{
+					"sha": "9079f7a26345a3076870f4db48f65173b1200db3",
+					"text": "Items: Preserve valid tiny held-item motion"
+				},
+				{
+					"sha": "7a4b89496607e3239a1fc8827ce81a71c5673c66",
+					"text": "Studio: Stabilize and contain animated Inspector previews"
+				},
+				{
+					"sha": "0df21240492dc1e4cd4582c33b473c273df6f019",
+					"text": "Import: Restore legacy and wrapped character archives"
+				},
+				{
+					"sha": "91469daabbdf4b3fed56b27721dc4d431cf65445",
+					"text": "Studio: Open demo explicitly from welcome"
+				},
+				{
+					"sha": "1a71f5283423424851cb030eadb1173131f107ff",
+					"text": "Studio: Keep preview usable on narrow desktops"
+				},
+				{
+					"sha": "0da5ff0bac57f5bde1c82131f2c938019f56ea76",
+					"text": "Studio: Preserve connection drafts and cancel pending actions"
+				},
+				{
+					"sha": "e1f60716d9baf710878609ace5fc1715ac8e0582",
+					"text": "Studio: Stabilize responsive panel layouts"
+				},
+				{
+					"sha": "654bfc95b8c435dee2e749f6282370d1a69582c2",
+					"text": "Auth: Standardize shared PixelLab API key names"
+				},
+				{
+					"sha": "b7830e4df0db78d06d196c4c9a864df5f69492a1",
+					"text": "Items: Validate round shields without false rotation failures"
+				},
+				{
+					"sha": "47ea52cf9a843c2584f466147297842f2caa523f",
+					"text": "Security: Harden agent dev token endpoint and guard builds locally"
+				},
+				{
+					"sha": "3ba92ffd24614f7ce6853ac6fb5d8936b7382fb7",
+					"text": "Items: Chunk held-item dress calls under the frame cap for 8-direction rigs"
+				},
+				{
+					"sha": "faf2e793fb518593f109fc329999749055a83206",
+					"text": "Items: Per-clip inpaint-v3 grid fallback, tuck hair under helmets, boots"
+				},
+				{
+					"sha": "de72162c1989c26ad166f79b8111d00030615353",
+					"text": "Items: Coverage-test fixes for hair, cape, chest and trousers"
+				},
+				{
+					"sha": "e745bc4c3ed6bb2ae58bc091ee52a411dfe992ee",
+					"text": "Resolve R6 robustness and security findings"
+				},
+				{
+					"sha": "f1480d9d710f156ece63688bfacc5c2d570d80d3",
+					"text": "Queue: Drive queue and follower ticks from a worker timer"
+				},
+				{
+					"sha": "4961a3d8503dc1af9049bf9cb3def276faf1d4b3",
+					"text": "Studio: Final regression fixes, hide dev rigs, keyboard navigation"
+				},
+				{
+					"sha": "32b6313b52202f70c473d91bb878a8854e1a64ba",
+					"text": "Studio: Resolve T1 P1/P2 UX issues"
+				},
+				{
+					"sha": "8afef4fd5c9c5899e5222f8f37a6f80e4cff161a",
+					"text": "Studio: Keep replacement sheet open when the previous sheet unmounts"
+				}
+			]
+		}
+	]
+}
