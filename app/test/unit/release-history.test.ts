@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildChanges, collectCommits, userCommits } from '../../scripts/release/changes.ts';
 import { liveBuilds } from '../../scripts/release/deployments.ts';
-import { GitHub } from '../../scripts/release/github.ts';
+import { deployRunTitle, GitHub } from '../../scripts/release/github.ts';
 import { cutoffs } from '../../scripts/release/schedule.ts';
 import { appVersion } from '../../version.ts';
 
@@ -241,13 +241,31 @@ it('nets a revert listed in the manual revert map', () => {
 	).toEqual([]);
 });
 
-it('treats an unfinished manual Pages run as the pending release deploy', async () => {
-	const runs = (event: string, status: string) =>
-		vi.fn(async () => Response.json({ workflow_runs: [{ event, status }] }));
+it('treats only an unfinished deploy request or push as the pending release deploy', async () => {
+	const runs = (event: string, status: string, display_title = 'CI and Pages') =>
+		vi.fn(async () => Response.json({ workflow_runs: [{ event, status, display_title }] }));
 	const github = new GitHub('Shilo/PixelDoll', 'token');
-	vi.stubGlobal('fetch', runs('workflow_dispatch', 'queued'));
+	vi.stubGlobal('fetch', runs('workflow_dispatch', 'queued', deployRunTitle));
 	await expect(github.pagesDeployPending('abc')).resolves.toBe(true);
-	vi.stubGlobal('fetch', runs('workflow_dispatch', 'completed'));
+	vi.stubGlobal('fetch', runs('workflow_dispatch', 'queued'));
 	await expect(github.pagesDeployPending('abc')).resolves.toBe(false);
+	vi.stubGlobal('fetch', runs('workflow_dispatch', 'completed', deployRunTitle));
+	await expect(github.pagesDeployPending('abc')).resolves.toBe(false);
+	vi.stubGlobal('fetch', runs('push', 'in_progress', 'feat: something'));
+	await expect(github.pagesDeployPending('abc')).resolves.toBe(true);
 	vi.unstubAllGlobals();
+});
+
+it('lists a change that landed twice only once', () => {
+	const commit = (sha: string, subject: string) => ({
+		sha: sha.padEnd(40, '0'),
+		subject,
+		body: ''
+	});
+	expect(
+		userCommits([
+			commit('dc762aa', 'feat(studio): add compact category counts'),
+			commit('dcf80ad', 'feat(studio): add compact category counts')
+		]).map(({ sha }) => sha.slice(0, 7))
+	).toEqual(['dc762aa']);
 });

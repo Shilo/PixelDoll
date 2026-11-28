@@ -11,7 +11,10 @@ export type Asset = {
 	browser_download_url: string;
 };
 type GitObject = { sha: string; type: string };
-type Run = { status: string; event: string };
+type Run = { status: string; event: string; display_title: string };
+
+/** The run name pages.yml gives a deploy request (its `run-name`), unlike a check-only manual run. */
+export const deployRunTitle = 'Deploy release notes';
 
 export class GitHub {
 	readonly repository: string;
@@ -165,10 +168,12 @@ export class GitHub {
 		const { workflow_runs } = await this.#json<{ workflow_runs: Run[] }>(
 			`/actions/workflows/pages.yml/runs?branch=main&head_sha=${head}&per_page=100`
 		);
-		// A push deploys main; a manual run of main is this script's own deploy request (or close enough to one).
+		// A push deploys main; a manual run deploys only when it is a deploy request.
 		return workflow_runs.some(
 			(run) =>
-				run.status !== 'completed' && (run.event === 'push' || run.event === 'workflow_dispatch')
+				run.status !== 'completed' &&
+				(run.event === 'push' ||
+					(run.event === 'workflow_dispatch' && run.display_title === deployRunTitle))
 		);
 	}
 

@@ -3,6 +3,7 @@ import {
 	afterSeparator,
 	type Claude,
 	labelsFor,
+	replayable,
 	model,
 	translations,
 	writeNotes
@@ -226,4 +227,21 @@ it('leaves out All changes when a maintenance release has none', () => {
 		'https://example.com/compare'
 	);
 	expect(body).not.toContain('<details>');
+});
+
+it('drops thinking from before a model fallback when replaying a reply', () => {
+	const reply = [
+		{ type: 'thinking', thinking: 'first model' },
+		{ type: 'text', text: 'partial' },
+		{ type: 'fallback' },
+		{ type: 'thinking', thinking: 'second model' },
+		{ type: 'text', text: '{}' }
+	];
+	expect(replayable(reply).map((block) => block.type)).toEqual([
+		'text',
+		'fallback',
+		'thinking',
+		'text'
+	]);
+	expect(replayable(reply.slice(3))).toHaveLength(2);
 });

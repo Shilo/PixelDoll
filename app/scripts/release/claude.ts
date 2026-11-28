@@ -47,6 +47,19 @@ const sendable = (schema: unknown): unknown =>
 
 type Message = Anthropic.Beta.Messages.BetaMessageParam;
 
+/**
+ * The reply as it may be sent back: after a mid-reply model fallback, thinking from before the handoff is dropped and
+ * the fallback marker kept, as the refusals and fallback guide requires.
+ */
+export function replayable<T extends { type: string }>(content: T[]) {
+	const handoff = content.findLastIndex((block) => block.type === 'fallback');
+	if (handoff < 0) return content;
+	return content.filter(
+		(block, index) =>
+			index >= handoff || (block.type !== 'thinking' && block.type !== 'redacted_thinking')
+	);
+}
+
 async function ask<T>(
 	claude: Claude,
 	system: string,
@@ -96,7 +109,7 @@ async function ask<T>(
 		messages.push(
 			{
 				role: 'assistant',
-				content: response.content as Anthropic.Beta.Messages.BetaContentBlockParam[]
+				content: replayable(response.content) as Anthropic.Beta.Messages.BetaContentBlockParam[]
 			},
 			{
 				role: 'user',

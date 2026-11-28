@@ -55,6 +55,13 @@ export function userCommits(
 		if (!match || skipped.test(match[2] ?? '')) continue;
 		const [, type, scope = '', title] = match;
 		let length = 7;
+		// The same change landed twice (cherry-picked onto two branches): list it once.
+		if (
+			result.some(
+				(other) => other.type === type && other.scope === scope && other.subject === title
+			)
+		)
+			continue;
 		while (commits.some((other) => other.sha !== sha && other.sha.startsWith(sha.slice(0, length))))
 			length++;
 		result.push({

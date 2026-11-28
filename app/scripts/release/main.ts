@@ -164,7 +164,8 @@ async function main() {
 
 	// A prior run can stop after the index push and before the Pages dispatch; this run's own dispatch covers it
 	// when it lists a release.
-	if (!dryRun && previous && !plans.length) await deployIndex(github);
+	// An index pushed by an earlier run must reach the site even if this run's release later fails.
+	if (!dryRun && previous) await deployIndex(github);
 	let indexInRun = 0;
 	let listed = 0;
 	let failure: unknown;
