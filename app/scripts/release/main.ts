@@ -31,6 +31,17 @@ const folder = join(cwd, 'releases');
 const indexPath = join(folder, 'index.json');
 const schedulePath = join(folder, 'schedule.json');
 
+/** Versions whose notes or banner changed in the pushed commits since `before` (a push of edited release files). */
+function editedVersions(before: string | undefined) {
+	if (!before || /^0+$/.test(before)) return [];
+	const files = git(cwd, 'diff', '--name-only', before, 'HEAD', '--', 'releases').split('\n');
+	const versions = files.flatMap(
+		(file) =>
+			/^releases\/(\d+\.\d+\.\d+)\/(?:notes\.[\w-]+\.json|banner\.png)$/.exec(file)?.[1] ?? []
+	);
+	return [...new Set(versions)];
+}
+
 function options() {
 	const { values } = parseArgs({
 		options: {
@@ -41,6 +52,10 @@ function options() {
 			update: { type: 'string', multiple: true }
 		}
 	});
+	// The workflow passes its inputs as RELEASE_* variables; command-line flags work the same for local runs.
+	values['dry-run'] ||= process.env.RELEASE_DRY_RUN === 'true';
+	values.max ??= process.env.RELEASE_MAX || undefined;
+	values.update ??= process.env.RELEASE_UPDATE?.split(/\s+/).filter(Boolean);
 	const key = process.env.ANTHROPIC_API_KEY;
 	const dryRun = !!values['dry-run'] || process.env.RELEASES_ENABLED !== 'true';
 	if (!dryRun && !key) throw new Error('Releases are enabled but ANTHROPIC_API_KEY is missing');
@@ -59,8 +74,8 @@ function options() {
 		(!/^\d+$/.test(values.max) || !Number.isSafeInteger(max) || max < 1)
 	)
 		throw new Error('--max must be a positive integer');
-	const update = values.update ?? [];
-	if (update.some((version) => !/^d+.d+.d+$/.test(version)))
+	const update = [...(values.update ?? []), ...editedVersions(process.env.RELEASE_EDITS_SINCE)];
+	if (update.some((version) => !/^\d+\.\d+\.\d+$/.test(version)))
 		throw new Error('--update takes release versions such as 1.4.12');
 	return { dryRun, notes: !!values.notes, until, max, key, update };
 }

@@ -64,25 +64,13 @@ jobs:
           gh auth setup-git
       - name: Run release pipeline
         # One release per run by default: a failure never repeats more than one release's paid Claude calls. A push of
-        # edited release files, or the update input, re-publishes those versions instead.
-        run: |
-          if [[ "$EVENT" == push ]]; then
-            versions=$(git diff --name-only "$BEFORE" "$AFTER" -- releases | sed -nE 's#^releases/([0-9]+.[0-9]+.[0-9]+)/(notes.[^/]+.json|banner.png)$##p' | sort -u)
-          else
-            versions="$UPDATE"
-          fi
-          if [[ -n "${versions// }" ]]; then
-            npm run release -- $(printf -- '--update %s ' $versions)
-          else
-            npm run release -- --max "${MAX:-1}" ${DRY_RUN:+--dry-run}
-          fi
+        # edited release files, or the update input, re-publishes those versions instead (app/scripts/release/main.ts).
+        run: npm run release
         env:
-          EVENT: ${{ github.event_name }}
-          BEFORE: ${{ github.event.before }}
-          AFTER: ${{ github.sha }}
-          UPDATE: ${{ inputs.update }}
-          MAX: ${{ inputs.max }}
-          DRY_RUN: ${{ inputs.dry_run && 'true' || '' }}
+          RELEASE_EDITS_SINCE: ${{ github.event_name == 'push' && github.event.before || '' }}
+          RELEASE_UPDATE: ${{ inputs.update }}
+          RELEASE_MAX: ${{ inputs.max || 1 }}
+          RELEASE_DRY_RUN: ${{ inputs.dry_run && 'true' || '' }}
           RELEASE_PAGES: ${{ vars.RELEASE_PAGES }}
           RELEASE_DEPLOYMENTS_REPOSITORY: ${{ vars.RELEASE_DEPLOYMENTS_REPOSITORY }}
           GITHUB_TOKEN: ${{ github.token }}
