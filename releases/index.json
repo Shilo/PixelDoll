@@ -1,6 +1,24 @@
 {
 	"releases": [
 		{
+			"version": "1.4.42",
+			"date": "2026-11-27",
+			"features": 179,
+			"banner": true,
+			"headline": {
+				"en": "Your game folder stays up to date",
+				"de": "Dein Spielordner bleibt auf dem neuesten Stand",
+				"es": "Tu carpeta del juego se mantiene actualizada",
+				"fr": "Votre dossier de jeu reste à jour",
+				"id": "Folder game Anda tetap mutakhir",
+				"ja": "ゲームフォルダーは常に最新の状態に",
+				"ko": "게임 폴더가 항상 최신 상태로 유지돼요",
+				"pt-BR": "Sua pasta do jogo continua atualizada",
+				"tr": "Oyun klasörünüz güncel kalır",
+				"zh-Hans": "游戏文件夹保持最新"
+			}
+		},
+		{
 			"version": "0.7.38",
 			"date": "2026-11-20",
 			"features": 46,
