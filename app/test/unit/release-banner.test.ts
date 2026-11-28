@@ -5,6 +5,7 @@ import {
 	enlargeBanner,
 	generateBanner
 } from '../../scripts/release/banner.ts';
+import { bannerProblem } from '../../scripts/release/notes.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { decodePngBytes } from '../../src/lib/runtime/png.js';
 
@@ -17,7 +18,26 @@ const image = (w: number, h: number, alpha = 255) =>
 const reply = async (png: Uint8Array) =>
 	Response.json({ image: { base64: Buffer.from(png).toString('base64') } });
 
+// An RGB image can mark one color transparent with a tRNS chunk, which the browser honors.
+const withTransparentColor = (png: Uint8Array) =>
+	Buffer.concat([
+		png.subarray(0, 33),
+		Buffer.from([0, 0, 0, 6]),
+		Buffer.from('tRNS'),
+		Buffer.alloc(10),
+		png.subarray(33)
+	]);
+
 afterEach(() => vi.unstubAllGlobals());
+
+it('drops an unusable banner scene instead of the notes', () => {
+	expect(
+		bannerProblem('A tailor fits a red cape on a ranger in a bright workshop.')
+	).toBeUndefined();
+	expect(bannerProblem(' ')).toMatch(/no banner scene/);
+	expect(bannerProblem('A tailor works. A ranger waits.')).toMatch(/more than one sentence/);
+	expect(bannerProblem(Array(31).fill('cape').join(' '))).toMatch(/longer than 30 words/);
+});
 
 it('ends the scene with exactly one period inside the fixed frame', () => {
 	for (const scene of ['A tailor fits a cape', 'A tailor fits a cape.', 'A tailor fits a cape ...'])
@@ -41,6 +61,15 @@ it('accepts only an opaque 320x160 picture and reports every PixelLab failure as
 		[new Response('{}', { status: 402 }), /out of credits/],
 		[new Response('{"code": 5000}', { status: 422 }), /declined the scene/],
 		[new DOMException('timed out', 'TimeoutError'), /did not answer/],
+		[
+			new Response(
+				new ReadableStream({
+					start: (controller) => controller.error(new Error('connection reset'))
+				})
+			),
+			/did not answer/
+		],
+		[await reply(withTransparentColor(await image(320, 160))), /transparent/],
 		[await reply(await image(160, 80)), /is 160x80/],
 		[await reply(await image(320, 160, 0)), /transparent/],
 		[Response.json({}), /no image/]

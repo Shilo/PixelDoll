@@ -36,6 +36,7 @@ const seedOf = (version: string) =>
 /** Generates one banner with PixelLab Pixen. Every failure is a BannerError; nothing paid is ever retried. */
 export async function generateBanner(scene: string, version: string, key: string) {
 	let response: Response;
+	let text: string;
 	try {
 		response = await fetch('https://api.pixellab.ai/v2/create-image-pixen', {
 			method: 'POST',
@@ -51,10 +52,11 @@ export async function generateBanner(scene: string, version: string, key: string
 			}),
 			signal: AbortSignal.timeout(pixenTimeout)
 		});
+		// The body arrives after the headers, so a dropped connection or the timeout can still strike here.
+		text = await response.text();
 	} catch (error) {
 		throw new BannerError(`PixelLab did not answer: ${String(error)}`, { cause: error });
 	}
-	const text = await response.text();
 	if (!response.ok) {
 		const reason =
 			response.status === 401
@@ -84,6 +86,8 @@ export async function generateBanner(scene: string, version: string, key: string
 
 /** A banner must be the banner size and fully opaque; anything else would show as a broken or framed picture. */
 export async function checkBanner(png: Uint8Array, what: string) {
+	// The decoder ignores a tRNS chunk, which browsers honor as transparency in RGB and palette images.
+	if (hasChunk(png, 'tRNS')) throw new BannerError(`${what} has transparent pixels`);
 	let image;
 	try {
 		image = await decodePngBytes(png);
@@ -110,6 +114,16 @@ export async function enlargeBanner(png: Uint8Array) {
 			data.set(image.data.subarray(from, from + 4), (y * w + x) * 4);
 		}
 	return encodePng(w, h, data);
+}
+
+function hasChunk(png: Uint8Array, type: string) {
+	const bytes = Buffer.from(png.buffer, png.byteOffset, png.byteLength);
+	for (let at = 8; at + 8 <= bytes.length; at += 12 + bytes.readUInt32BE(at)) {
+		const name = bytes.toString('latin1', at + 4, at + 8);
+		if (name === type) return true;
+		if (name === 'IEND') return false;
+	}
+	return false;
 }
 
 export const readBanner = (path: string) => new Uint8Array(readFileSync(path));

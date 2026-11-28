@@ -147,7 +147,7 @@ export class GitHub {
 		await this.#json(`/releases/${id}`, 'PATCH', { name, body });
 	}
 
-	async deleteStarterAsset(id: number) {
+	async deleteAsset(id: number) {
 		await this.#request(`/releases/assets/${id}`, 'DELETE');
 	}
 

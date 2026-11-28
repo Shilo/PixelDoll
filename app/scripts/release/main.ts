@@ -31,7 +31,7 @@ import { GitHub } from './github.ts';
 import { commitReleaseFiles, fetchMain, git } from './git.ts';
 import { publishRelease } from './publish.ts';
 import { updateRelease } from './update.ts';
-import { emptyNotes, publicNotes } from './notes.ts';
+import { bannerProblem, emptyNotes, publicNotes } from './notes.ts';
 import { cutoffs } from './schedule.ts';
 
 const cwd = fileURLToPath(new URL('../../../', import.meta.url));
@@ -45,7 +45,17 @@ const schedulePath = join(folder, 'schedule.json');
  */
 function editedVersions(before: string | undefined) {
 	if (!before || /^0+$/.test(before)) return [];
-	const files = git(cwd, 'diff', '--name-only', before, 'HEAD', '--', 'releases').split('\n');
+	// Without rename detection a moved banner lists both folders, so the one that lost it switches to the default.
+	const files = git(
+		cwd,
+		'diff',
+		'--name-only',
+		'--no-renames',
+		before,
+		'HEAD',
+		'--',
+		'releases'
+	).split('\n');
 	const versions = files.flatMap(
 		(file) =>
 			/^releases\/(\d+\.\d+\.\d+)\/(?:notes\.[\w-]+\.json|banner\.png)$/.exec(file)?.[1] ?? []
@@ -60,7 +70,11 @@ function editedVersions(before: string | undefined) {
 function warn(message: string) {
 	console.warn(`Warning: ${message}`);
 	if (process.env.GITHUB_STEP_SUMMARY)
-		appendFileSync(process.env.GITHUB_STEP_SUMMARY, `> [!WARNING]\n> ${message}\n\n`);
+		try {
+			appendFileSync(process.env.GITHUB_STEP_SUMMARY, `> [!WARNING]\n> ${message}\n\n`);
+		} catch (error) {
+			console.error(`Could not add the warning to the run summary: ${String(error)}`);
+		}
 }
 
 /**
@@ -68,7 +82,13 @@ function warn(message: string) {
  * delayed release, and nothing paid is retried.
  */
 async function drawBanner(scene: string | undefined, version: string) {
-	if (!scene) return undefined;
+	// The maintenance message has no scene and simply shows the default banner.
+	if (scene === undefined) return undefined;
+	const problem = bannerProblem(scene);
+	if (problem) {
+		warn(`v${version} uses the default banner because ${problem}.`);
+		return undefined;
+	}
 	const key = process.env.PIXELLAB_API_KEY;
 	if (!key) {
 		warn(`v${version} uses the default banner: PIXELLAB_API_KEY is not set.`);
@@ -76,7 +96,7 @@ async function drawBanner(scene: string | undefined, version: string) {
 	}
 	const started = Date.now();
 	try {
-		const banner = await generateBanner(scene, version, key);
+		const banner = await generateBanner(scene!, version, key);
 		console.log(`  Banner drawn by PixelLab in ${Math.round((Date.now() - started) / 1000)} s`);
 		return banner;
 	} catch (error) {
@@ -120,10 +140,12 @@ function options() {
 		(!/^\d+$/.test(values.max) || !Number.isSafeInteger(max) || max < 1)
 	)
 		throw new Error('--max must be a positive integer');
-	const update = [...(values.update ?? []), ...editedVersions(process.env.RELEASE_EDITS_SINCE)];
+	const update = values.update ?? [];
 	if (update.some((version) => !/^\d+\.\d+\.\d+$/.test(version)))
 		throw new Error('--update takes release versions such as 1.4.12');
-	return { dryRun, notes: !!values.notes, until, max, key, update };
+	// A push of edited release files only ever updates releases, even when no listed release is affected.
+	const editsSince = process.env.RELEASE_EDITS_SINCE || undefined;
+	return { dryRun, notes: !!values.notes, until, max, key, update, editsSince };
 }
 
 // A test repository can read the real site's Pages history while publishing only to itself, without deploying.
@@ -155,7 +177,7 @@ async function deployIndex(github: GitHub, deployments: GitHub) {
 }
 
 async function main() {
-	const { dryRun, notes: showNotes, until, max, key, update } = options();
+	const { dryRun, notes: showNotes, until, max, key, update, editsSince } = options();
 	const token = process.env.GITHUB_TOKEN;
 	// Releases and tags use RELEASE_TOKEN when set: the workflow token may not tag an old commit whose workflow files
 	// differ from today's. Git pushes keep the workflow token, so the bot's own commits never trigger workflows.
@@ -175,22 +197,37 @@ async function main() {
 		if (git(cwd, 'rev-parse', 'HEAD') !== head) throw new Error('Publishing requires current main');
 	}
 	console.log(dryRun ? 'Release dry run.' : 'Release publishing enabled.');
-	if (update.length) {
+	if (update.length || editsSince) {
 		if (dryRun) throw new Error('--update needs publishing enabled');
-		let edited = false;
-		for (const version of update)
-			edited =
-				(await updateRelease(github, folder, version, () => {
+		// Read after syncing to main, so a release listed by a run that finished meanwhile is included.
+		const targets = [...new Set([...update, ...editedVersions(editsSince)])];
+		if (!targets.length) console.log('No listed release uses the edited files.');
+		const done: string[] = [];
+		let failed = false;
+		try {
+			for (const version of targets) {
+				const touched = await updateRelease(github, folder, version, () => {
 					if (!key) throw new Error('Re-translating edited notes requires ANTHROPIC_API_KEY');
 					return claudeClient(key);
-				})) || edited;
-		if (edited)
-			commitReleaseFiles(
-				cwd,
-				`chore(release): update ${update.map((v) => 'v' + v).join(', ')}`,
-				'releases'
+				});
+				// Each release is committed once it is updated, so a later failure never strands it.
+				if (touched) commitReleaseFiles(cwd, `chore(release): update v${version}`, 'releases');
+				done.push(version);
+			}
+		} catch (error) {
+			failed = true;
+			const left = targets.filter((version) => !done.includes(version)).join(' ');
+			throw new Error(
+				`${error instanceof Error ? error.message : String(error)}. After fixing it, run the workflow with update set to "${left}".`,
+				{ cause: error }
 			);
-		await deployIndex(github, deployments);
+		} finally {
+			if (done.length)
+				await deployIndex(github, deployments).catch((error: unknown) => {
+					if (!failed) throw error;
+					console.error(`Pages deploy request also failed: ${String(error)}`);
+				});
+		}
 		return;
 	}
 	const index = readJson<Index>(indexPath);

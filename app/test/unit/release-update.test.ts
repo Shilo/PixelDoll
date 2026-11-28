@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -67,27 +68,34 @@ async function setUp() {
 			}
 		]
 	});
-	let assets: Asset[] = [
-		{
-			id: 1,
-			name: 'banner@4x.png',
-			label: '',
-			state: 'uploaded',
-			size: 1,
-			digest: 'sha256:old',
-			browser_download_url: 'u'
-		}
-	];
+	// Like GitHub: an upload may be stored under a normalized name with the requested name as its label.
+	const stored = new Map<number, Uint8Array>([[1, await banner(4, 4, 10)]]);
+	const asset = (id: number, bytes: Uint8Array): Asset => ({
+		id,
+		name: 'banner.4x.png',
+		label: 'banner@4x.png',
+		state: 'uploaded',
+		size: bytes.length,
+		digest: 'sha256:' + createHash('sha256').update(bytes).digest('hex'),
+		browser_download_url: 'u'
+	});
+	let assets = [asset(1, stored.get(1)!)];
 	const github = {
 		repository: 'Shilo/PixelDoll',
 		release: vi.fn(async () => release),
 		assets: vi.fn(async function* () {
 			yield* assets;
 		}),
-		deleteStarterAsset: vi.fn(async (id: number) => {
-			assets = assets.filter((asset) => asset.id !== id);
+		assetBytes: vi.fn(async (id: number) => Buffer.from(stored.get(id)!)),
+		deleteAsset: vi.fn(async (id: number) => {
+			assets = assets.filter((item) => item.id !== id);
 		}),
-		uploadAsset: vi.fn(async () => assets[0]),
+		uploadAsset: vi.fn(async (_release: Release, _name: string, bytes: Uint8Array) => {
+			const id = Math.max(0, ...stored.keys()) + 1;
+			stored.set(id, bytes);
+			assets.push(asset(id, bytes));
+			return assets.at(-1)!;
+		}),
 		updateRelease: vi.fn(async () => undefined)
 	};
 	return { folder, dir, github };
@@ -100,13 +108,16 @@ it('re-publishes an edited banner and body without translating unchanged English
 	});
 	await expect(updateRelease(github, folder, version, claude)).resolves.toBe(false);
 	expect(claude).not.toHaveBeenCalled();
-	expect(github.deleteStarterAsset).toHaveBeenCalledExactlyOnceWith(1);
+	expect(github.deleteAsset).toHaveBeenCalledExactlyOnceWith(1);
 	expect(github.uploadAsset).toHaveBeenCalledOnce();
 	expect(github.updateRelease).toHaveBeenCalledExactlyOnceWith(
 		7,
 		'PixelDoll 1.2.3: Dress faster',
-		expect.stringContaining('releases/download/v1.2.3/banner%404x.png')
+		expect.stringContaining('releases/download/v1.2.3/banner.4x.png')
 	);
+	// The same banner again is left alone.
+	await updateRelease(github, folder, version, claude);
+	expect(github.uploadAsset).toHaveBeenCalledOnce();
 });
 
 it('re-translates edited English notes, updates the index headlines and records what was published', async () => {

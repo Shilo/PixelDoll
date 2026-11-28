@@ -4,6 +4,7 @@ import type { Source } from '../../scripts/release/data.ts';
 import type { Asset, Release } from '../../scripts/release/github.ts';
 import { emptyNotes } from '../../scripts/release/notes.ts';
 import { publishRelease } from '../../scripts/release/publish.ts';
+import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 
 const source = {
 	version: '1.2.3',
@@ -16,7 +17,9 @@ const source = {
 	notes: emptyNotes
 } satisfies Source;
 const draft = { id: 1, draft: true, tag_name: 'v1.2.3', upload_url: '' } satisfies Release;
-const banner = new Uint8Array([1, 2, 3]);
+const pixel = (shade: number) =>
+	encodePngBytes({ w: 1, h: 1, data: Uint8ClampedArray.from([shade, shade, shade, 255]) });
+const banner = new Uint8Array(await pixel(200));
 const asset = {
 	id: 2,
 	name: 'banner.4x.png',
@@ -45,7 +48,7 @@ function fakeGitHub() {
 		assets: vi.fn(async function* () {
 			yield* assets;
 		}),
-		deleteStarterAsset: vi.fn(async (id: number) => {
+		deleteAsset: vi.fn(async (id: number) => {
 			assets = assets.filter((item) => item.id !== id);
 		}),
 		uploadAsset: vi.fn(async () => {
@@ -93,7 +96,21 @@ it('retries a draft with an interrupted upload, checking the uploaded asset befo
 		yield { ...asset, state: 'starter' };
 	});
 	await publish(github);
-	expect(github.deleteStarterAsset).toHaveBeenCalledExactlyOnceWith(asset.id);
+	expect(github.deleteAsset).toHaveBeenCalledExactlyOnceWith(asset.id);
 	expect(github.uploadAsset).toHaveBeenCalledTimes(1);
+	expect(github.publish).toHaveBeenCalledTimes(1);
+});
+
+it('replaces a banner that no longer matches, such as a default banner changed while the release was staged', async () => {
+	const github = fakeGitHub();
+	await publish(github);
+	github.assetBytes.mockResolvedValueOnce(Buffer.from(await pixel(10)));
+	const stale = { ...asset, digest: 'sha256:' + '0'.repeat(64) };
+	github.assets.mockImplementationOnce(async function* () {
+		yield stale;
+	});
+	await publish(github);
+	expect(github.deleteAsset).toHaveBeenCalledExactlyOnceWith(stale.id);
+	expect(github.uploadAsset).toHaveBeenCalledTimes(2);
 	expect(github.publish).toHaveBeenCalledTimes(1);
 });

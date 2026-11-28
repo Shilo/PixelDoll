@@ -43,8 +43,9 @@ jobs:
   release:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    # A PixelLab banner may take up to 20 minutes on a busy account (app/scripts/release/banner.ts).
-    timeout-minutes: 60
+    # GitHub's 6-hour job limit: each PixelLab banner may take up to 20 minutes on a busy account
+    # (app/scripts/release/banner.ts), so a long backfill still finishes.
+    timeout-minutes: 360
     environment: release
     defaults:
       run:

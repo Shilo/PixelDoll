@@ -1,17 +1,23 @@
-import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { bannerAssetName, bannerPath, checkBanner, enlargeBanner, readBanner } from './banner.ts';
+import { bannerPath, checkBanner, enlargeBanner, readBanner } from './banner.ts';
 import type { Changes } from './changes.ts';
 import { translations, type Claude } from './claude.ts';
 import { readJson, readSource, writeIndex, writeJson, type Index } from './data.ts';
 import type { GitHub } from './github.ts';
 import { releaseMarkdown } from './markdown.ts';
+import { bannerUrl, syncBanner } from './publish.ts';
 import { publicNotes, validateTranslation, type Notes } from './notes.ts';
 
 type Updater = Pick<
 	GitHub,
-	'repository' | 'release' | 'assets' | 'deleteStarterAsset' | 'uploadAsset' | 'updateRelease'
+	| 'repository'
+	| 'release'
+	| 'assets'
+	| 'assetBytes'
+	| 'deleteAsset'
+	| 'uploadAsset'
+	| 'updateRelease'
 >;
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
@@ -83,16 +89,7 @@ export async function updateRelease(
 	const tag = 'v' + version;
 	const release = await github.release(tag);
 	if (!release || release.draft) throw new Error(`Release ${tag} is not published yet`);
-	const banner = await enlargeBanner(native);
-	const digest = 'sha256:' + createHash('sha256').update(banner).digest('hex');
-	let asset;
-	for await (const item of github.assets(release.id))
-		if (item.name === bannerAssetName) asset = item;
-	if (asset?.digest !== digest) {
-		if (asset) await github.deleteStarterAsset(asset.id);
-		await github.uploadAsset(release, bannerAssetName, banner);
-		console.log(`Replaced the banner of ${tag}.`);
-	}
+	const asset = await syncBanner(github, release, await enlargeBanner(native));
 	await github.updateRelease(
 		release.id,
 		`PixelDoll ${version}: ${english.headline}`,
@@ -102,7 +99,7 @@ export async function updateRelease(
 			english,
 			changes,
 			github.repository,
-			`https://github.com/${github.repository}/releases/download/${tag}/${encodeURIComponent(bannerAssetName)}`,
+			bannerUrl(github.repository, tag, asset),
 			`https://github.com/${github.repository}/compare/${source.previousSha}...${source.sha}`
 		)
 	);

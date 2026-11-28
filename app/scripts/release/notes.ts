@@ -128,7 +128,8 @@ function validate(
 	]);
 	const headline = title(notes.headline, 'headline', 8);
 	const intro = prose(notes.intro, 'intro', 40);
-	if (written) prose(notes.banner, 'banner', 30);
+	// The scene is checked on its own (bannerProblem): an unusable one costs only the banner, never the notes.
+	if (written && typeof notes.banner !== 'string') errors.push('banner must be a string');
 	if (english) {
 		if (headline && intro.toLowerCase().includes(headline.toLowerCase()))
 			errors.push('intro repeats the headline');
@@ -164,6 +165,15 @@ function validate(
 		});
 	}
 	return errors;
+}
+
+/** Why a banner scene cannot be drawn as written, or undefined when it can. */
+export function bannerProblem(scene: string | undefined) {
+	const text = scene?.trim() ?? '';
+	if (!text) return 'Claude wrote no banner scene';
+	if ([...words.segment(text)].filter((part) => part.isWordLike).length > 30)
+		return 'the banner scene is longer than 30 words';
+	if (/[.!?]\s+\S/.test(text)) return 'the banner scene is more than one sentence';
 }
 
 export const validateNotes = (value: unknown, input: ReleaseCommit[]) =>
