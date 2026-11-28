@@ -1,0 +1,33 @@
+{
+	"headline": "Tu carpeta del juego se mantiene actualizada",
+	"intro": "Ya puedes vincular una carpeta del juego y dejar que PixelDoll la mantenga al día, mientras que la Papelera te ofrece una red de seguridad para el trabajo eliminado. Moverse por la app también resulta más claro.",
+	"highlights": [
+		{
+			"title": "Publica exportaciones en una carpeta del proyecto",
+			"text": "Vincula una carpeta del juego desde Exportar y PixelDoll escribirá en ella los archivos de tu personaje. Con Actualizar automáticamente activado, se refresca después de cada cambio, y Actualizar ahora revisa la carpeta cuando quieras."
+		},
+		{
+			"title": "Restaura trabajo eliminado desde la Papelera",
+			"text": "Personajes, objetos, categorías, animaciones y atuendos ahora van a la Papelera en lugar de desaparecer. Puedes recuperarlos durante hasta 30 días o usar Deshacer."
+		},
+		{
+			"title": "Exportación a Phaser AE",
+			"text": "La tarjeta de Phaser ahora te permite elegir Phaser AE o Phaser 3 y 4. Cada exportación también incluye guías para el motor que elijas."
+		},
+		{
+			"title": "Música y efectos de sonido opcionales",
+			"text": "Ahora puedes activar la música y los efectos de sonido. Están desactivados hasta que los elijas, y el control de Audio aparece en todas las barras superiores."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Los iconos de ranura del Armario ya no muestran un punto de agarre suelto cuando no estás arrastrando."
+		},
+		{
+			"text": "El clic derecho ataca en Vista cenital y Vista lateral en lugar de abrir un menú."
+		},
+		{
+			"text": "La tarjeta de la Carpeta del proyecto ahora cabe en pantallas estrechas de teléfono."
+		}
+	]
+}

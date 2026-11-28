@@ -1,0 +1,2348 @@
+{
+	"total": 582,
+	"groups": [
+		{
+			"kind": "new",
+			"items": [
+				{
+					"sha": "334572e30ee6ada9f02cbfc5f6a824aa5da5fc7f",
+					"text": "Project-folder: Flat lowercase pixeldoll-<engine> runtime folders with agent docs"
+				},
+				{
+					"sha": "5f5d358154de080ad8e5384043680fdd879ff562",
+					"text": "Project-folder: Share one engine runtime per linked folder"
+				},
+				{
+					"sha": "3106341bb2ea0675e0d24c285cce467eec40f7ec",
+					"text": "Show Updating on the project folder button while it runs"
+				},
+				{
+					"sha": "2b148461daa97d45ff17d80d818ed9332d77c354",
+					"text": "Add Update now beside the Project folder card and unify its path"
+				},
+				{
+					"sha": "22cfd374b384327b8c0512f80d656c33ac37e2ce",
+					"text": "Show where a linked project folder's files land on its Export card"
+				},
+				{
+					"sha": "8bbd4fb77f517d9e6d6a0e0d2d2aff0659aa49ce",
+					"text": "Offer to keep matching files updated after choosing a folder"
+				},
+				{
+					"sha": "4f73893a89f596893605a08f07a1ccf02bb37cfa",
+					"text": "Open Settings at a section and clarify the project folder"
+				},
+				{
+					"sha": "86363db752e2c3e1bce847b1a561dafa1045c410",
+					"text": "Publish exports to a linked project folder"
+				},
+				{
+					"sha": "b97f5fadcde37f225c1534a72de771bf62c84702",
+					"text": "Studio: Open character actions on right-click of a sprite or name"
+				},
+				{
+					"sha": "7354076c91dea0818221a26ac5a6f523b666d33d",
+					"text": "Studio: Rename Live views settings to Play mode"
+				},
+				{
+					"sha": "adc9bfb4fe865f7b11bddaa3a65c525af0687abe",
+					"text": "Studio: Name the automatic riding pose"
+				},
+				{
+					"sha": "3e87e2fccbf9cbf2d47024006e131554d0ecea5f",
+					"text": "Studio: Show enabled Sprint and Mount with a soft accent fill"
+				},
+				{
+					"sha": "511518b7a06c1fc69b502940136e4d611d9ca1d8",
+					"text": "Studio: Swap four slot icons for the owner's Lucide picks"
+				},
+				{
+					"sha": "d2d0eaf9efbf61deb611e47f42a9dbd0b858c874",
+					"text": "Studio: Switch the slot icons to Lucide"
+				},
+				{
+					"sha": "25805011c352fe985b15638b56e2cf6d746af467",
+					"text": "Export: Add a Phaser AE export with a shared version picker"
+				},
+				{
+					"sha": "43eb99ab54bda71faf81e3f5c2a93c0a8b61cc3d",
+					"text": "Studio: Clarify the add character menu and split its icons"
+				},
+				{
+					"sha": "f87ded71eb4fef8bf554713597f50939bc8cb974",
+					"text": "Import: Warn when standing art looks compressed or resampled"
+				},
+				{
+					"sha": "2d536eb96139c7788a1bd9121932b7496de0fdfa",
+					"text": "Studio: Bold keywords in tips, point Fit gear at the move's menu, one discovery tip per visit"
+				},
+				{
+					"sha": "d010e24e232dfa3c0e37e4a36b4700be1beafc5b",
+					"text": "Studio: Give tips the Bronze UI accent rim"
+				},
+				{
+					"sha": "595cadf26995f3dbc9314579aa172b8d005be7fb",
+					"text": "Studio: Point the first tip at Customize and make tips declarative"
+				},
+				{
+					"sha": "b86be197b0feb97a898de952e340f6688270b17b",
+					"text": "Studio: Make tips a reusable module that points at each control"
+				},
+				{
+					"sha": "ba177d921e08bbad17f774aae423198ac9e3c67b",
+					"text": "Studio: Onboard first visits with two self-ending demo tips"
+				},
+				{
+					"sha": "89639d7f28882964723f03e8f121b8acea8cc72e",
+					"text": "Studio: Another character's two-handed item shows the grip icon on its tile too"
+				},
+				{
+					"sha": "b9c576adf5fd5c98e6b0e1f488304ee498223019",
+					"text": "Studio: Two-handed items show a grip icon on their Wardrobe tile, explained in its menu"
+				},
+				{
+					"sha": "54c492111eb68b047a89584361a5ad52ba570f59",
+					"text": "Studio: Outfits go to the Trash with a confirmation and come back from it or its notice"
+				},
+				{
+					"sha": "d140d1e11067288b4875b8756b0ad631d8b76668",
+					"text": "Studio: Move and State View and edit window; their menus keep View and edit, Rename, Download ZIP, Move to Trash"
+				},
+				{
+					"sha": "c24c9100668b89ee79ae6f043375496813f44295",
+					"text": "Studio: Character View and edit window with Frame & Directions, Cost and About; character menus keep whole-character commands"
+				},
+				{
+					"sha": "91d3c0dde7bf22505f873acb94278872896300fc",
+					"text": "Studio: View and edit opens an object's window, View frames on the stage, one ellipsis character on every label"
+				},
+				{
+					"sha": "3b3e9a9ad7dd7efacfe38f18aa6443677e36b693",
+					"text": "Studio: Make copy for self attaches the item's first frame as its reference, plainer copy wording"
+				},
+				{
+					"sha": "82e01fc3cbba101b6aa730ce01b607d6e912e34f",
+					"text": "Studio: Item details list moves and states in labeled groups with ready counts"
+				},
+				{
+					"sha": "e72cd95447be99f9fbe2e727ec2ae99d33544af6",
+					"text": "Studio: Walk every view in the viewer, a full outfit checker and the layer number"
+				},
+				{
+					"sha": "fa19d7ae155760c2c0a84e7ac11ac8ac57042657",
+					"text": "Studio: Zoomable image viewer, outfit viewer and theme-wide press, hover and select sizing"
+				},
+				{
+					"sha": "556bf137842f86d796565d9f6b93af60f740de24",
+					"text": "Studio: Rework item details around preview, moves, quality and outfit"
+				},
+				{
+					"sha": "bcd6891748791473bf551345ece252b00de41b88",
+					"text": "Studio: Draw distinct slot icons and let custom slots pick one"
+				},
+				{
+					"sha": "5880e299b91d787ab0257de4a7a0fa305db2ee79",
+					"text": "Studio: Add a category rail to the Colors tab"
+				},
+				{
+					"sha": "f7c9dfc75eb16903bcc31b67ab8233a9ebd33961",
+					"text": "Studio: Rebuild item details around a summary and primary action"
+				},
+				{
+					"sha": "da712918c16fea1efe7a8d09036458357714c2c5",
+					"text": "Export: Ship agent docs with every export"
+				},
+				{
+					"sha": "a282474ad84a1f55dcf9298d7e7f6934f6bfb600",
+					"text": "Studio: Close the customization panel with a dock-edge drag"
+				},
+				{
+					"sha": "2cf0903bf364736ae35d3a99160b5d6a8275b592",
+					"text": "Studio: Animate the customization sidebar and simplify its toggle"
+				},
+				{
+					"sha": "e7b5a45aa11ffea95a4fe72a17b95dd3b6d49537",
+					"text": "Studio: Make the customization panel collapsible"
+				},
+				{
+					"sha": "a7279012344552f454de2dbd6477b0dd89271190",
+					"text": "Studio: Guide Riding states with saved joints"
+				},
+				{
+					"sha": "b9126d956da2ec74ed649fc92169a867d1ac5c09",
+					"text": "Studio: Show appearance editing tips during character import"
+				},
+				{
+					"sha": "c0ffc20f4e0dd14a4f4732d2799ff82ccf84bae8",
+					"text": "Studio: Load ambient music and varied cues on demand"
+				},
+				{
+					"sha": "4749686a61de1674e784f000229e1430b471bc1b",
+					"text": "Studio: Refine audio controls and playback shortcut"
+				},
+				{
+					"sha": "70d3c8098a1e2bfcfc02277f956b2a697d8ab938",
+					"text": "Studio: Add opt-in music and sound effects"
+				},
+				{
+					"sha": "d31f8c452edd01c80c7275ef0788d77660927398",
+					"text": "Studio: Edit saved character and item appearances"
+				},
+				{
+					"sha": "6629c2461b75b01d3fb0c659121922c3e82950cb",
+					"text": "Studio: Refine the mount seat editor controls"
+				},
+				{
+					"sha": "b977e68ed9abd0f32d93f513c1869250c647bee1",
+					"text": "Studio: Explain when the rider seat cannot be edited"
+				},
+				{
+					"sha": "d542db87fbc8bc1d9cf6c6a0f82011b2c3ecf364",
+					"text": "Studio: Clarify rider seat editing and stabilize the preview"
+				},
+				{
+					"sha": "9215cf6bc8a4aff8cb3c85119129dceba54410da",
+					"text": "Studio: Save rider seat points per facing"
+				},
+				{
+					"sha": "b0592381a34918b47a3c9eb800028a59809705be",
+					"text": "Studio: Check and apply updates from About"
+				},
+				{
+					"sha": "1ef34db4f5acccd14e4f7f9c2ce22bcc41dd57bd",
+					"text": "Studio: Clarify the Live views waist control"
+				},
+				{
+					"sha": "4b1c875eeaa8863c8b9155f2af66b244650121a5",
+					"text": "Studio: Hint the F shortcut on the preview mount button tooltip"
+				},
+				{
+					"sha": "0f18ddd6a829085b018860c8e5510b191e7091c7",
+					"text": "Studio: Add one fuzzy search to Studio lists"
+				},
+				{
+					"sha": "aa451281f3129a7ea7cd15701c0b2d956cbc3144",
+					"text": "Export: Make moving attack layers a global setting"
+				},
+				{
+					"sha": "2cfc0b63e8479550b1222f1a8c4e6c009fec64c1",
+					"text": "Layer walking legs under same-facing attacks"
+				},
+				{
+					"sha": "f59e2b27fdd9449e792b6bc88fddd21f19fcd0c5",
+					"text": "Items: Show move coverage and fill missing moves together"
+				},
+				{
+					"sha": "b831078d8ba7ced7c904d8515cede6f958346446",
+					"text": "Import: Warn about upscaled standing art"
+				},
+				{
+					"sha": "811deda4acb5ee3f1389fc6181f75334df6979a0",
+					"text": "Report: Include safe character facts in problem reports"
+				},
+				{
+					"sha": "389cd677f4d2aee4e858e3a9f93a05cdb476e593",
+					"text": "Studio: Show another tab's running move in Moves"
+				},
+				{
+					"sha": "872d3f9820c234969e4ad2175ff2c815d465d0fb",
+					"text": "Studio: Hint the F shortcut on Show mount for mouse users"
+				},
+				{
+					"sha": "87a7212efc567115125a92fd3b1e458340154a16",
+					"text": "Moves: Offer qualified PixelLab templates in Advanced"
+				},
+				{
+					"sha": "eca9c50cee1ffea313500a6554b0350d76681d39",
+					"text": "Moves: Show when a move suggestion uses its built-in motion"
+				},
+				{
+					"sha": "02f2b8dabf0c855469b97e8e5c9bd31d463866bc",
+					"text": "Studio: Hold-to-act live controls, a resting Attack stick, sprint and a turn-in-place runtime API"
+				},
+				{
+					"sha": "5717c9981f8adf51ae61f772cb66addc66f4fe0b",
+					"text": "Studio: Draw an item on every view of a move in one reviewed sheet"
+				},
+				{
+					"sha": "5d002c40814d5a183b50edfd3a2d06d9a363782e",
+					"text": "States: Offer a free Match colors for States saved off the body palette"
+				},
+				{
+					"sha": "113292027eb59e73ef0376e54488bbd252e90464",
+					"text": "Download original PixelLab generations from the Library"
+				},
+				{
+					"sha": "9b3201a1e4a7e7622cd4f405a198d89f4de479d5",
+					"text": "Studio: Preview custom colors live while the picker is open"
+				},
+				{
+					"sha": "211e25c5bfc7a4f880fba6bdc5127a644e73923f",
+					"text": "Studio: Choose how items are drawn on moves"
+				},
+				{
+					"sha": "f7b9e160ae338a5b0174788ed31d9f94d60dab70",
+					"text": "Studio: Import items from ZIPs and page every import inside its New sheet"
+				},
+				{
+					"sha": "3edc43898da4db02d08a73f7df7f70de40d7c347",
+					"text": "Studio: Mark Wardrobe with its item drafts and give every tab one dot rule"
+				},
+				{
+					"sha": "7833784930479cefa75f9fa0d12618fbbce96d44",
+					"text": "Studio: Configurable Live views moves with attack, jump and mount actions"
+				},
+				{
+					"sha": "988e3872be538ae3c0bdedb62532955cf0d38d50",
+					"text": "Moves: Animate Walk, Run and Jump with qualified PixelLab templates"
+				},
+				{
+					"sha": "8b3e60aa623406177eeab848d7017bbd2e98f74a",
+					"text": "Library: Mark Back up library buttons that include debugging details"
+				},
+				{
+					"sha": "4f153bf722486a6ad0f00a3ec33064368c10df4a",
+					"text": "Library: Include debugging details in Library backups in Developer mode"
+				},
+				{
+					"sha": "f0793dc580fae3d4c2b922d4d2157a3b0d6d99c4",
+					"text": "Studio: Mark Moves and States tabs with their work status"
+				},
+				{
+					"sha": "a68aed435f7dffb6136adbb2166e09f70dbdb6c5",
+					"text": "Studio: Show item generation progress on its move row and Wardrobe tile"
+				},
+				{
+					"sha": "a1af3792d48038ca53930751e253922da42a236b",
+					"text": "Studio: Give every reversible action an undo step"
+				},
+				{
+					"sha": "0537829cda990a806f0b06d3ea1682448541e7da",
+					"text": "Studio: Import moves and States from PixelDoll ZIPs"
+				},
+				{
+					"sha": "32b27bc30561c8d1aa8c8a23f65a031a7d1d28fb",
+					"text": "Studio: Generate missing items per move or State in bulk"
+				},
+				{
+					"sha": "c66d9b26cd3f97b4fe577736c4ab2b34e68c83ec",
+					"text": "Setup: List the moves rig setup will skip before spending"
+				},
+				{
+					"sha": "0a807dcc30918a5a001784025fe689a402974781",
+					"text": "Moves: Save the finished views of a new move whose other views stopped"
+				},
+				{
+					"sha": "1936c6e0bee7794aa3b499446b84416bc0272dde",
+					"text": "Mount: Warn when the Riding pose hides equipped items"
+				},
+				{
+					"sha": "75578b13f95177a9b4f0143f997696932f3c627c",
+					"text": "Studio: Show each model's price in the Move and State model lists"
+				},
+				{
+					"sha": "77de7fcf4356b591e9eb05196d3cadb35eff51e5",
+					"text": "Studio: Allow Moves as the Riding pose"
+				},
+				{
+					"sha": "420afc35dafbd8c5fbb1ddc0e5de2841e5c79ec5",
+					"text": "Moves: Keep a new move whose body frames have no joints, without fitting items"
+				},
+				{
+					"sha": "034fb1521a548ded79ee670cedf8ac9d2022d5a0",
+					"text": "States: Save a State whose source frame changed while it still lines up"
+				},
+				{
+					"sha": "61d53736fe5e49d7c1933a7e1ff5cc6077c22a6f",
+					"text": "Moves: Mark a move rig setup skipped as needing to be made again"
+				},
+				{
+					"sha": "a96bd7f5ca00206b760179c3889e3d2f0dadf17e",
+					"text": "Moves: A failed move holds only its own character"
+				},
+				{
+					"sha": "64baa1066df9109a78d088a2ef0bbcc9fc17b739",
+					"text": "Items: Keep a saved item without the moves it is missing frames in"
+				},
+				{
+					"sha": "522c7d1639c66be387ef5cba21b788f8ccb2da00",
+					"text": "Setup: Skip a move whose frame has no joints instead of failing setup"
+				},
+				{
+					"sha": "8745016dd7710a06256b60070a249d1b94155d42",
+					"text": "Studio: Show failures as a plain title and next step with Details"
+				},
+				{
+					"sha": "e44e4072e15194f2f0cd7d177d9c4c79cb49ddf0",
+					"text": "Moves: Record bridged motion frames as clip evidence"
+				},
+				{
+					"sha": "3b98560720af86875069939b2f7c69db4dcfcb11",
+					"text": "Create: Re-place an overflowing paid draw in a larger frame or lifted"
+				},
+				{
+					"sha": "250f4382ecfaeba5859d7c2d3971fd32b3c765fc",
+					"text": "Selection: Ride the test mount on character selection"
+				},
+				{
+					"sha": "d5eee21908b5204df8b09f96a31936ddbe1ff19f",
+					"text": "Studio: Offer Report when Recently deleted cannot load"
+				},
+				{
+					"sha": "442d85e101c00ba85cff605cb7f8809656cde58d",
+					"text": "Studio: Report any failure to GitHub Issues from a privacy-safe preview"
+				},
+				{
+					"sha": "057a9f091ae17857b11af7fc12e62c747984ca7b",
+					"text": "Settings: Reopen Settings on the page last shown this session"
+				},
+				{
+					"sha": "6c65420c379d1b49d5e85ada5fd1e8bed06b1715",
+					"text": "Settings: Show PixelLab usage above the connection buttons with dividers"
+				},
+				{
+					"sha": "23b0ef75a8fd2b465bde583b10c2d1af089d4411",
+					"text": "Studio: Order tabs Wardrobe, Colors, Outfits, Moves, States"
+				},
+				{
+					"sha": "678452b5008a5af43e9d2525620b7ffe83b58bbc",
+					"text": "Studio: Paste clipboard images into reference and Fix frames drop boxes"
+				},
+				{
+					"sha": "363dbe67b182e8ecb6c9f80c43bad2dbdbde8347",
+					"text": "Studio: Mark not-shown wardrobe tiles with a dashed border and muted name"
+				},
+				{
+					"sha": "bb91bcb2c8c71b263269e6ceba1599427ba71d20",
+					"text": "Studio: Plan several characters in the cost estimate"
+				},
+				{
+					"sha": "c88bb39ded270867601cf805043942f9d31d9467",
+					"text": "Studio: Dim wardrobe tiles not shown in the Preview move"
+				},
+				{
+					"sha": "b3348a41cf3b6b8465119363a3bbd0a88016504b",
+					"text": "Studio: Generate States in the background and review them from the States list"
+				},
+				{
+					"sha": "03dc5251593ca65e52abd63c64debfe0c4481ef3",
+					"text": "Studio: Price New State automatically behind one Generate State button"
+				},
+				{
+					"sha": "43b118179d2fb0da09d1ec947f2ba1383b0fca38",
+					"text": "Studio: Undo then Redo when usable; Activity status on More"
+				},
+				{
+					"sha": "4a824e6cf457d430cd278a49b57867b8da42c9b7",
+					"text": "Studio: Refine top bar order, Export Settings and New character layout"
+				},
+				{
+					"sha": "56fdba2577a589b9d27f58cc97479181bbf8e2b4",
+					"text": "Studio: Standardize app bars, sheet headers and footers"
+				},
+				{
+					"sha": "4c81c7c3123e08892f6c5783962cfa9679e6740e",
+					"text": "Studio: Make the Trash confirm state neutral and unmistakable"
+				},
+				{
+					"sha": "e7b934bb92bab0ee22fbb8c283f267e5a537c883",
+					"text": "Studio: Show days left in Trash and make confirming read as safe"
+				},
+				{
+					"sha": "573d9c5ffa886315dd32ee6ac2fb756b4e4bb56b",
+					"text": "Studio: Make Trash rows buttons and restore a two-press confirm"
+				},
+				{
+					"sha": "16bd6e3e24d5f8cd4fe052f381adf66dadff2d15",
+					"text": "Studio: Make the whole Trash row the recovery action"
+				},
+				{
+					"sha": "d5d02227a11323c230b95cafdafaa12faaac229b",
+					"text": "Studio: Make Trash read as a list with a gutter and hover actions"
+				},
+				{
+					"sha": "ee98c9198bc0f683f4f56042f864cfbed4f69468",
+					"text": "Studio: Give Trash a scannable list with right-aligned actions"
+				},
+				{
+					"sha": "d55e1ed2b31d1c1fc67c88b5c00e2821c66af4b6",
+					"text": "Studio: Give the Trash its own settings page and one verb"
+				},
+				{
+					"sha": "88e63b5e7e84bf1c2cce62a0c033a414ee538a63",
+					"text": "Studio: Undo a deletion from the history, not only the toast"
+				},
+				{
+					"sha": "5694ff3b6fefd12d552fbc0d4a4d00ffe36b26bd",
+					"text": "Studio: Restore deleted characters, items, categories and moves"
+				},
+				{
+					"sha": "6efde5797aa3d76a1a20ec0f0710b3f7c5dc0dc2",
+					"text": "Studio: Open Settings with Ctrl+, or Command+,"
+				},
+				{
+					"sha": "45365f564ee1a8696baf348f0523a96bdc86118b",
+					"text": "Studio: Project the end cost from spent money plus work to go"
+				},
+				{
+					"sha": "5033bffe766b957c1924260be0704f51e2ecb2e3",
+					"text": "Studio: Add the PixelLab cost estimate sheet"
+				},
+				{
+					"sha": "6396dccba9457d9a7cd67fb3ae823d3b057ab2e7",
+					"text": "Settings: Apply saved defaults to creation windows"
+				},
+				{
+					"sha": "6ff0567aa6a0bd4ddc2874a966394faf6f3e0ef5",
+					"text": "Studio: Select idea pills by their text and keep Riding pressed through edits"
+				},
+				{
+					"sha": "ee0e03e04fcd618019ac162872c59169e959e96a",
+					"text": "Studio: Make prompt suggestions customizable"
+				},
+				{
+					"sha": "15ba34934ead710b7ba6e5bcee3873c8dfc261fc",
+					"text": "Studio: Suggest prompts under every prompt box and pick item slots from one field"
+				},
+				{
+					"sha": "2eaccea1c26fb9fb7fb3d3f278adee48252e5c32",
+					"text": "Studio: Redraw a move from its menu and name sheets New item, New move, New State"
+				},
+				{
+					"sha": "874c0f90b3c52144a984350f078dafc86fb606d7",
+					"text": "Settings: Store creation defaults"
+				},
+				{
+					"sha": "f84f8c79d733643e3d825958d2c5471859c44ff5",
+					"text": "Studio: Ride with the Riding State and name the default Automatic"
+				},
+				{
+					"sha": "5804c20ac9df1aaa5bf29a06ec0cdddcb9c5ead6",
+					"text": "Studio: Preview the mount and rider in Mount settings"
+				},
+				{
+					"sha": "d7fa2525ac4badb85bd243dc0c39a1c1418fccf8",
+					"text": "Studio: Ride a mount with a saved Riding pose"
+				},
+				{
+					"sha": "0249d4dab1e172086546184173e13ffe0b5fd548",
+					"text": "Studio: One prompt field with Copy and Enhance for every prompt"
+				},
+				{
+					"sha": "20a1597db79068b67efe3823a24510bf78299240",
+					"text": "Studio: Enhance every prompt from an icon inside its field"
+				},
+				{
+					"sha": "5d1844fadf476d8a1825a752af5cee06e6429212",
+					"text": "Studio: Fit the move review to its cell and scroll long prompts"
+				},
+				{
+					"sha": "171bfb25230ae881b0e1771446a97495f55c120c",
+					"text": "Studio: Show the prompt under review and put Enhance on the label row"
+				},
+				{
+					"sha": "cc4d6be64f19d5857c2395f7b27c0952f94d8f83",
+					"text": "Studio: Fill the move review preview with the letterboxed cell"
+				},
+				{
+					"sha": "4990514a08dea03f84f33c553737f53314e7cc49",
+					"text": "Studio: Open edit and advanced options as a second column"
+				},
+				{
+					"sha": "2d2acbbd113974d5e110cb2eb7c3d8ee24475726",
+					"text": "Studio: Bring Add a move onto the shared start picker and preview"
+				},
+				{
+					"sha": "41d8d6005f394f382a71d5761cfd6be8a2663c6e",
+					"text": "Studio: Share the thumbnail clip picker and redesign State review"
+				},
+				{
+					"sha": "f856dbdad68c1941d30f0782945178b6174cb958",
+					"text": "Studio: Restore the turning State source preview"
+				},
+				{
+					"sha": "0b47f13ef4aa506ce50118219d05a875018e9b2b",
+					"text": "Studio: Unify State creation around one source frame"
+				},
+				{
+					"sha": "e213957144737ef650c4f5f4aa7414be833e838f",
+					"text": "Studio: Checkpoint State recovery and export verification"
+				},
+				{
+					"sha": "b8661e180f36db2ec68b46e88df77327bef226b1",
+					"text": "States: Fit joints for state-derived moves"
+				},
+				{
+					"sha": "25cf0ef3825aedb7b495610ba7e8a7a6aae6ff52",
+					"text": "States: Generate and recover quoted PixelLab variants"
+				},
+				{
+					"sha": "aa45d60edb5a4501557c96939d0f1ead4cf6edf4",
+					"text": "Group States and Moves in Share"
+				},
+				{
+					"sha": "5bc65df3ce1826ed4f9024108facb143d666cda7",
+					"text": "Add saved-frame capture to States"
+				},
+				{
+					"sha": "e5240233c931a250425a362f8cf796128aaec8d3",
+					"text": "Rotate the state capture preview"
+				},
+				{
+					"sha": "fc3c46dff365da7cf92baf19b6f6a1e61122dc7c",
+					"text": "Create states from selected move frames"
+				},
+				{
+					"sha": "8b787db997a2dfa307736c62a59b8b9009323a2e",
+					"text": "Studio: Add character states and move sources"
+				},
+				{
+					"sha": "ddc0ee4b6431c1e2cd58543e6ff43b389293dd46",
+					"text": "Studio: Add move looping and directional frame references"
+				},
+				{
+					"sha": "7187165496887dddf2b5f041bc8d193e252a33b6",
+					"text": "Studio: Rename outfits and moves and edit their export IDs"
+				},
+				{
+					"sha": "ca3f94ed1ef199cc75ac11e726d94f67cf4c3d0c",
+					"text": "Wardrobe: Hide empty slots by dropping them on Not shown"
+				},
+				{
+					"sha": "5bd451e940bd0978a473843878c10a1d4bf426b9",
+					"text": "Studio: Replace Frame size with Adjust frame, which moves the character and makes room"
+				},
+				{
+					"sha": "a67b3bcdb7f76a845d66eec56e78d5bb11834048",
+					"text": "Moves: Check frame room before a move and offer a free enlarge"
+				},
+				{
+					"sha": "e7ff86b4e63434291c732e93142d4ff7e3690bef",
+					"text": "Studio: Add Frame size to the character menu"
+				},
+				{
+					"sha": "54cb95f6387833e2905cd0f44dd50cb4de990fea",
+					"text": "Import: Give PixelLab imports room for moves"
+				},
+				{
+					"sha": "fbab6016f38f7fbeee5e69ab47d1791d47b8af00",
+					"text": "Rig: Add a lossless frame resize and a room-for-moves rule"
+				},
+				{
+					"sha": "8bddfa9f832c2e969a559d6db9059af03d6b8366",
+					"text": "Export: Keep a resized character's world unit"
+				},
+				{
+					"sha": "9a991044c10b4eb4b31af9b1532df82923607768",
+					"text": "Items: Re-roll only failed calls and keep finished paid frames"
+				},
+				{
+					"sha": "f368e37c8ee32592675d2b61545926d6fca90b16",
+					"text": "Moves: Reuse paid move and character results after a stop"
+				},
+				{
+					"sha": "99675b4f82ea1103bec9efe10e875cd1c57d6d26",
+					"text": "Studio: Add a shared review for paid results and preflight warnings"
+				},
+				{
+					"sha": "35318788e68df88377dc5a7d3e83c4cfe4168efd",
+					"text": "Studio: Add a library backup shortcut to More"
+				},
+				{
+					"sha": "3e96252bb09b64d35df32af755f2c1c316bd3e1a",
+					"text": "Studio: Guide first-time PixelLab connections"
+				},
+				{
+					"sha": "855a26ad7948a86b803a248b24c6ce252164828e",
+					"text": "Studio: Reveal row actions on hover on desktop"
+				},
+				{
+					"sha": "6dd10d85e592b884a88b68b97fcb06f3adc34a32",
+					"text": "Simplify move review and item selection"
+				},
+				{
+					"sha": "6e2ca1f0db3a4a86f8951c1b8175735733246516",
+					"text": "Review moves before animating items"
+				},
+				{
+					"sha": "14105edb3c7fe394d592e28dcffc8136d5b48274",
+					"text": "Studio: Suggest Skeleton V3 after move quality failures"
+				},
+				{
+					"sha": "9889fa26164fba93151969f1be432ecc9683bda4",
+					"text": "Settings: Add guarded library deletion and scoped resets"
+				},
+				{
+					"sha": "a894a204cfac5f86526c682ed46f23b1ffeaa48f",
+					"text": "Settings: Show recent PixelLab activity"
+				},
+				{
+					"sha": "2f18d4544e0f30570dd5290352ddd376df5eee0d",
+					"text": "Studio: Gate and group developer diagnostics"
+				},
+				{
+					"sha": "4165f841a55af7d6d0d0deda151a02c07ed28ea5",
+					"text": "Studio: Add Library backup and append-only restore settings"
+				},
+				{
+					"sha": "fd5adb00e590629ef4cb658ba6723cc4fb8e13a6",
+					"text": "Store: Add character backup and restore engine"
+				},
+				{
+					"sha": "b15c8fd3ef171787b99442446c0c357093e89c5b",
+					"text": "Store: Keep records from earlier versions instead of deleting them"
+				},
+				{
+					"sha": "c143ab30e92dd5eae4e27c89198672da040e7b6a",
+					"text": "I18n: Localize library backup and restore copy"
+				},
+				{
+					"sha": "285a0db733d495a75c14ebb246f93c61c8548ae2",
+					"text": "Add public problem reporting from Help"
+				},
+				{
+					"sha": "09a715ab4c648da40a2e3732e1258de46fa3931a",
+					"text": "Studio: Fix any frame by exporting and reimporting edited PNGs"
+				},
+				{
+					"sha": "e16b5198485ed7110dfbfd118fd5fa7b58a3f678",
+					"text": "Workspace: Offer explicit saved PixelLab key reuse"
+				},
+				{
+					"sha": "049d34da75a9412f31e8db0113bb33e345847c36",
+					"text": "Workspace: Connect tab-only PixelLab accounts"
+				},
+				{
+					"sha": "2bc614db7e74f2373aaee81554947a37852ae802",
+					"text": "Studio: Refine settings navigation and account details"
+				},
+				{
+					"sha": "25eca1b21772fd487397fc64bbee5d8f996ac78d",
+					"text": "Studio: Unify settings and streamline the More menu"
+				}
+			]
+		},
+		{
+			"kind": "improved",
+			"items": [
+				{
+					"sha": "2aa8e5d83100779e77cec86b5bb54c096f495b4b",
+					"text": "Write Godot's per-layer resources several at a time"
+				},
+				{
+					"sha": "decffb101551a8195156cd25c1dd5936f98d07bb",
+					"text": "Write project folder images several at a time"
+				},
+				{
+					"sha": "e9b94c8de97ce29af9c0952d243cf90e4cff4f41",
+					"text": "Build a project folder export once per publish"
+				},
+				{
+					"sha": "64e2649702e6da1fe86bc11ccaf205ad2e9c4fde",
+					"text": "Skip rebuilding an unchanged character for its project folder"
+				}
+			]
+		},
+		{
+			"kind": "fixed",
+			"items": [
+				{
+					"sha": "6a6f02c6e967f0968db82570c4f92589d9856480",
+					"text": "Studio: Preload quick ZIP code before an update can replace it"
+				},
+				{
+					"sha": "d87ad33c0ee44c52ba31706a5433bdd3faa5617a",
+					"text": "Report: Describe the failed download without unrelated context"
+				},
+				{
+					"sha": "97b89ff99f5dce1cabef94e57f571b8d6df23401",
+					"text": "Export: Guide quick ZIP users to reset invalid settings"
+				},
+				{
+					"sha": "0fdf7ddfd61287d1e43e597708f9bd64ad6dc426",
+					"text": "Studio: Preserve actionable download failure details"
+				},
+				{
+					"sha": "a8f2b3e162e5c90c2528bb6eff1b55a38f03359e",
+					"text": "Project-folder: Recheck every unwritten runtime file before dependent writes, and guide fixes"
+				},
+				{
+					"sha": "c42acf677dde190e4a4a275650bfa2f2632624dd",
+					"text": "Project-folder: Recheck kept runtime files before dependent writes, stricter Unity stock sheets, guide fixes"
+				},
+				{
+					"sha": "5df70c57c633ea2b1f879c42e85aab968c5693c2",
+					"text": "Project-folder: Per-engine manual steps, Phaser placeholder guidance, and untracked Unity sheet settings"
+				},
+				{
+					"sha": "27fc9314d1d38df7353a30380c5c9d53f5595742",
+					"text": "Project-folder: Protect edited Unity sheet settings, settle kept runtime edge cases, and say which engines need a manual step"
+				},
+				{
+					"sha": "ad104f59f92122ce49fd32e8c26ab8279c655b24",
+					"text": "Project-folder: Read kept runtime files, check the floor first, and protect edited Unity outputs"
+				},
+				{
+					"sha": "8ba84f9efd15ff42af8741e64bdb41b85f9fc34e",
+					"text": "Export: Give Phaser AE scene files imports that resolve from game/scenes/"
+				},
+				{
+					"sha": "9d06cf07e4585d66ab67ac5db59dbdbca2ca2dda",
+					"text": "Give Export and Settings sheets one shared size"
+				},
+				{
+					"sha": "a3ee2edda46a7b243aba28ad767c8e86a37a2b65",
+					"text": "Show the Brave flag as a code block in a note"
+				},
+				{
+					"sha": "3c74a0a0be028e1fe165ea3a43b29c94beb56747",
+					"text": "Keep a character's material order when an item is derived again"
+				},
+				{
+					"sha": "56a707cbcf1e854f0f996de64034da822a085520",
+					"text": "Keep the Project folder card within narrow screens"
+				},
+				{
+					"sha": "7b849631604add712daff90bc080dad09f96fd87",
+					"text": "Put the linked folder's location on the card's second line"
+				},
+				{
+					"sha": "ae15e99cf8196f9705e4edbb3bfa9b4766e4b9b0",
+					"text": "Say when a project folder link check cannot be read"
+				},
+				{
+					"sha": "d83cb99949d9f8cfbf201ef9c986fbec6c33abb7",
+					"text": "Count this tab's project folder link changes per character"
+				},
+				{
+					"sha": "e702a8b742dadb58adacbe723a54718a8a1515f2",
+					"text": "Let a stored answer and the folder's own manifest time decide"
+				},
+				{
+					"sha": "718e251d9e073a41206e9ada90e80a22089a2d76",
+					"text": "Reuse the export time during approvals and finish the first check"
+				},
+				{
+					"sha": "e6f3b21228fa290a7351a2fce0cf4465103d8fa4",
+					"text": "Let Try again match the folder's manifest and keep the first-link offer"
+				},
+				{
+					"sha": "a7586e8aa1fb79978f1efcde7464c3fbdfbf1e6d",
+					"text": "Keep the first-link offer across reloads and offer Try again when paused"
+				},
+				{
+					"sha": "82010399626f5f3baf78d69f2d1932786388381c",
+					"text": "Check the record before skipping an unchanged project folder build"
+				},
+				{
+					"sha": "f05417042836fcc35c576493fd1f7c6e637ce170",
+					"text": "Keep the first-link offer and export time until answered"
+				},
+				{
+					"sha": "78f2b4b081e942753abab3ca06e41b8d5dc3d0af",
+					"text": "Keep project folder problems until a publish checks the folder"
+				},
+				{
+					"sha": "e1bc97e7f6d190e448bc20612ad10cf6de848a11",
+					"text": "Scope project folder problems to their link and character"
+				},
+				{
+					"sha": "e41330f5167b38595acdfe17946261cfe688972b",
+					"text": "Keep each character's project folder problems and queue apart"
+				},
+				{
+					"sha": "a4dcbaa1f7eda51e96157a19dd4e9d92dafa0716",
+					"text": "Publish each character from its saved state"
+				},
+				{
+					"sha": "ac987564f0d4f8c6c6bd446835747ca6afff0e2e",
+					"text": "Close remaining project folder safety gaps from review"
+				},
+				{
+					"sha": "c870ed7f9191e8b6b9f01a8dad0dff5a7d49d9a8",
+					"text": "Keep project folder approvals and status honest"
+				},
+				{
+					"sha": "5254d500ffff61105b30a08090a72a6714803ba1",
+					"text": "Recover a recreated project folder and keep focus visible"
+				},
+				{
+					"sha": "eb0e6f457bc52397a3ca554724b2ec6d9fcdd0f8",
+					"text": "Close project folder races found in review"
+				},
+				{
+					"sha": "62103bddb5793f7dc44ec6cec8b10a7d71a40744",
+					"text": "Separate the project folder in Export and tidy its actions"
+				},
+				{
+					"sha": "13f54cd9796d591893fbcb0a40fbad909f1ef451",
+					"text": "Let users retry after moving a folder out of the way"
+				},
+				{
+					"sha": "323e9f7f735f9afa8afad6c9c1852d0543af848f",
+					"text": "Never overwrite user changes in a linked project folder"
+				},
+				{
+					"sha": "2df3bc31fb3b46f1d92327551ccc6dd306fcd8d0",
+					"text": "Harden project folder publishing after review"
+				},
+				{
+					"sha": "6b49d01d9fa8410ee6b0f19583573995675b702c",
+					"text": "Studio: Keep right-click for attacking in the live views"
+				},
+				{
+					"sha": "2566834bc4caa202f229d035410337d205530b57",
+					"text": "Studio: Name Walk while attacking in translated Export hints"
+				},
+				{
+					"sha": "acb38cc1db0d31a7fdad51a9bc3e8319ce460de6",
+					"text": "Studio: Keep browser Back inside character navigation"
+				},
+				{
+					"sha": "ed4652f57354f541830d9408f0b0048fe2b4b33c",
+					"text": "Studio: Dismiss onboarding tips from the full callout"
+				},
+				{
+					"sha": "7a3dd9cb56ad00ca5918effcfeb585158b1538b9",
+					"text": "Studio: Fit the Adjust frame preview inside narrow sheets"
+				},
+				{
+					"sha": "dcbfe1e62079c29fd9041942f8860e07c011d176",
+					"text": "Studio: Keep Adjust frame controls compact"
+				},
+				{
+					"sha": "9688fa5118b1452c8dfecddb5cce777521ea70c1",
+					"text": "Studio: Hide the slot drag grip until a slot is held"
+				},
+				{
+					"sha": "8059a4dd212037bbae855926f3f8582dfce5b141",
+					"text": "Studio: Shorten the shared item fit warning"
+				},
+				{
+					"sha": "150e3b73b8ebbdfb5c9f436c3d6499090a49cd08",
+					"text": "Studio: Prevent shared item tiles from briefly duplicating"
+				},
+				{
+					"sha": "21c4cdddfffca27eee0e6ab92c5aac9a77d4c875",
+					"text": "Export: Settle Unity actions and stopped Phaser scene loads"
+				},
+				{
+					"sha": "92f477cc970d1c170453e2deb62351cf3afdc1a1",
+					"text": "Export: Hold the gait pose through layered action turns"
+				},
+				{
+					"sha": "518a8eb09ba821d45875663348774cb13be02109",
+					"text": "Export: Preserve translucent Phaser palette colors"
+				},
+				{
+					"sha": "979ce829f7c26fc245cafc19d4f4041046accdac",
+					"text": "Export: Let the Phaser AE actor own the doll and match colors exactly"
+				},
+				{
+					"sha": "0c9c8ed17fa0f206ec57694be27c52228dd7a064",
+					"text": "Export: Draw each Phaser AE doll as one aggregate actor"
+				},
+				{
+					"sha": "342856366d70025a7538ac6906b7f2217f58a018",
+					"text": "Studio: Drop the meaningless dot from the Colors rail"
+				},
+				{
+					"sha": "e0e50f611ea0070a29b40cfe32545d19b910e8ef",
+					"text": "Studio: Preserve rider equipment during mount occlusion"
+				},
+				{
+					"sha": "74fa2767bf094ccfc1ac1f1b2bcbe8b0d6e09c14",
+					"text": "Import: Give the color floor a real job"
+				},
+				{
+					"sha": "549c72e07958fc096578403b7e9be6a977c225f9",
+					"text": "Import: Judge each standing cell on its own palette"
+				},
+				{
+					"sha": "05ea8e3a3f0e0a4896d5250699d7838248150964",
+					"text": "Studio: Draw rail icons at 24 px so they land on whole pixels"
+				},
+				{
+					"sha": "77c0038b944b8cf57fd3c409958f2907c53b05c9",
+					"text": "Studio: Occlude rider legs behind the placed mount"
+				},
+				{
+					"sha": "0f9a6b562035ae71e7a1bcfa154eab8863669798",
+					"text": "Play live control sounds on accepted presses"
+				},
+				{
+					"sha": "63a675bff35f2dfac5c46629cb7469928531e381",
+					"text": "Studio: Say character in the Export tip and more options for both menu icons"
+				},
+				{
+					"sha": "6bd8d9e51174e7bb5bb9df627d283dccf764a80f",
+					"text": "Studio: Keep tips off the key field and behind sticky headers"
+				},
+				{
+					"sha": "9ba1570dc486f16940aa178207d406a139e2b6a3",
+					"text": "Studio: Point Add gear at the slot +, and harden tips from edge-case review"
+				},
+				{
+					"sha": "5c3900eedc510dd6ab47303b44594a9023a0fb2c",
+					"text": "Studio: Keep demo tips clear of the character and replays immediate"
+				},
+				{
+					"sha": "e2640f11c2a3886b257b9c0b4a5607e102324842",
+					"text": "Studio: Demo lock reasons read the same way in every menu and name Make an editable copy"
+				},
+				{
+					"sha": "e301f439ea1e000384dd31adb40118e81796e17b",
+					"text": "Studio: An item's menu keeps the same rows worn or not, with Recolor unavailable and saying why while it is off, and arrows reach every menu's unavailable rows"
+				},
+				{
+					"sha": "c3651e046dea9e656fc3bd1adf75b28bff118f99",
+					"text": "Studio: Two-handed tiles use a centered fist icon, and outfits saved on the demo are deleted (asking first) since the demo has no Trash"
+				},
+				{
+					"sha": "b1841283c6270a78c822ee707df300988abfbee6",
+					"text": "Studio: Every Move to Trash hands focus to the row that took its place, else the one before, else the list's own fallback"
+				},
+				{
+					"sha": "37eed94099b915da6eeaadef7888871dc426582d",
+					"text": "Studio: Say Move to Trash for everything the Trash keeps and Delete only for permanent removal"
+				},
+				{
+					"sha": "139b47cf7dabf4b1d1c7ddc17c195304a5187464",
+					"text": "Studio: An outfit in the Trash stays there across tabs, Undo and reloads, restores fit the character as it is now, and outfits saved on the demo can be removed again"
+				},
+				{
+					"sha": "9b26723c32ac03fbe7ee034adeafac5f4ecbe7db",
+					"text": "Studio: The header character picker uses each character's own menu instead of duplicate Rename, copy and Trash rows"
+				},
+				{
+					"sha": "0a9f12c9672ca1f79cd700028b4633f76eb1e3b7",
+					"text": "Studio: Move windows stay with their character and pick a facing the move has, menus close on Tab, Items lists each item, State capture asks before Back discards, Make editable copy keeps the item open"
+				},
+				{
+					"sha": "96416d7e417da37fb559ea7c6c35440924e8750d",
+					"text": "Studio: Make editable copy, no Wear row for other characters' items, and the demo says why missing moves cannot be drawn"
+				},
+				{
+					"sha": "4bc08fcc3bb2741d32adcbb3f82d18552f7099da",
+					"text": "Studio: Window menus close when Tab leaves them, and Rename, Move to Trash and tools return to the character window where it was"
+				},
+				{
+					"sha": "09223dbeef9612c1570fb1af5726360d69ecb3a0",
+					"text": "Studio: Demo details load without their artwork, and Rename stays in every menu (locked with a reason for the demo)"
+				},
+				{
+					"sha": "0f938bd8f4f592baa32968ade753a53cfa5d8c6b",
+					"text": "Studio: Character window follows the live character, keeps its sections when artwork fails, restores its place on Back and asks before Back discards edits"
+				},
+				{
+					"sha": "a26703ceadeee3cbeb75e3a9994f8e94aa223acf",
+					"text": "Studio: Window sections keep their own layout (Outfit's two columns) and an empty scope takes no room"
+				},
+				{
+					"sha": "211841edaffa1275345cb2c00deed0e8fc3ba481",
+					"text": "Studio: Two-handed items still offer a copy for the other hand"
+				},
+				{
+					"sha": "7b291c5e1f65d078300c3a9d3e75bf558506b362",
+					"text": "Studio: Hand settings lead the item details Outfit section"
+				},
+				{
+					"sha": "5917ad4d1acd91adca388ede53747b86cf9a1a70",
+					"text": "Studio: Facing switch grouped under layer order, outfit turn arrows keep still"
+				},
+				{
+					"sha": "a869efb980649a21e15bf8646582f11fe973c93e",
+					"text": "Studio: Layer steps judged in every facing they change, Reset only when changed, clearer slot layer order"
+				},
+				{
+					"sha": "c19156d808ce18b113e146f71153fa58c20703bf",
+					"text": "Studio: Layer number counts only overlapping layers, icon layer controls and viewer mouse buttons"
+				},
+				{
+					"sha": "144a2424529d0a585f6e067557150973fee6a1a5",
+					"text": "Studio: Viewer previous and next beside play at the bottom right"
+				},
+				{
+					"sha": "10eacb350fa0e7fb37a67edff7b3f4000fd48653",
+					"text": "Studio: Viewer arrows sit square above the bottom controls"
+				},
+				{
+					"sha": "afd704ef8d2218752e0af524c65565ca64838448",
+					"text": "Studio: A simpler viewer that plays the move, and menus that open inside nested dialogs"
+				},
+				{
+					"sha": "f613e08586c1b2605992de887706fdb9bb6d7ec9",
+					"text": "Studio: One set of viewer arrows with the frame as a picker, and right-aligned layer order"
+				},
+				{
+					"sha": "cc3c3563d3e1666af2e537e232eafa0e7d222adc",
+					"text": "Studio: Seamless facing strip with one fullscreen glyph"
+				},
+				{
+					"sha": "f17dab1356cf22752c57088b756d967ed9be76e8",
+					"text": "Studio: Move picker in the item header, named fix views and no generic billing notes"
+				},
+				{
+					"sha": "c09f30baee11334b9cad623fe4b3ec33c10f7dde",
+					"text": "Studio: Facing where it matters, a Details review dot and one section open on entry"
+				},
+				{
+					"sha": "430056584dc5a8393dd592cd454051eaaffac188",
+					"text": "Studio: One-line item header, clearer missing views and shorter item copy"
+				},
+				{
+					"sha": "ba0160b8f87c361234a0684aa036d267cc3d0e26",
+					"text": "Studio: Stack the item Outfit controls on phones"
+				},
+				{
+					"sha": "ee7d306c9404fa194b155d0bc587352507cacbaf",
+					"text": "Studio: Finish the item details review and record the study"
+				},
+				{
+					"sha": "583ebace498c43859a8d1c8fd91916d428e55a58",
+					"text": "Studio: Settle item details focus, header room and the fit remake"
+				},
+				{
+					"sha": "96dae7e2646d4ff5f4f4b51858e5912c4279e534",
+					"text": "Studio: Keep item details in step with its view and layer steps exact"
+				},
+				{
+					"sha": "53153775b4670c05f43ea2318b12de0ae91ee84c",
+					"text": "Studio: Pair the creator traits wherever the column has room"
+				},
+				{
+					"sha": "3a06a5c77d758c066778abd6bf1a99743a590ab6",
+					"text": "Mute audio in local agent and developer modes"
+				},
+				{
+					"sha": "85d5aa83aef88127f233bee56f70497701cd98bb",
+					"text": "Studio: Fit the New character form on one desktop screen"
+				},
+				{
+					"sha": "448f49921377fd73422094dc11d468e2bd652386",
+					"text": "Export: Correct agent doc facts and the recolor example"
+				},
+				{
+					"sha": "6945bc0120e00f2c82424cb0e53a17ac7fb0cd5b",
+					"text": "Studio: Align dropdown carets to the field edge"
+				},
+				{
+					"sha": "fde65951bb4e8df71a866568af86ee4a738dbb86",
+					"text": "Studio: Mirror the panel and top bar insets"
+				},
+				{
+					"sha": "65cbd59cc89aaaa4a5374a29cfaf17d647482819",
+					"text": "Studio: Align the top bar and dock the slot rail on the panel edge"
+				},
+				{
+					"sha": "3efc382b719f4f600a3f7a9f20120e18956d91ac",
+					"text": "Studio: Use the recolor cue for every Random control"
+				},
+				{
+					"sha": "ac9c924d64dc2cc9ad0a2cf2293b290b8db58e8f",
+					"text": "Studio: Use the equip cue for look and item randomization"
+				},
+				{
+					"sha": "a8263ab781a0f2163059352857d0e3d0163e1a63",
+					"text": "Studio: Use one new character action on selection"
+				},
+				{
+					"sha": "906cb098eb82cc7c743f429897dffc65bd3864c8",
+					"text": "Studio: Fit top bar actions before the first paint"
+				},
+				{
+					"sha": "268e077a86ccc12255740760758e4540ac643539",
+					"text": "Studio: Animate the customization panel for its full duration"
+				},
+				{
+					"sha": "a960b85e53940f22a348169c5db1563d0b606b8f",
+					"text": "Studio: Keep the current screen open under Settings"
+				},
+				{
+					"sha": "98cbd8e46008d20fc952ee0ce205fc09317422f0",
+					"text": "Studio: Show Audio only when a channel is audible"
+				},
+				{
+					"sha": "ae3a0b5933eefa8314e43a2c7e691c1fa2b0613d",
+					"text": "Studio: Compress the import notice steps"
+				},
+				{
+					"sha": "9beb4a287f8d3390665b5c7baad06f5ec8db3fbf",
+					"text": "Studio: Set the import notice steps like instructions"
+				},
+				{
+					"sha": "aa78d521c34a65e6c23ef673838c685446d1ef63",
+					"text": "Studio: Name the import notice's buttons"
+				},
+				{
+					"sha": "2f3d846a06668202ced025e7c4624f2efb087549",
+					"text": "Studio: Clarify the character import notice and setup switch"
+				},
+				{
+					"sha": "67b87224fdad6134ce014ff76dac1ffe10f8fd4e",
+					"text": "Studio: Keep Audio on every app top bar"
+				},
+				{
+					"sha": "2993a69313e26adff4beccf24331e1d89305cae1",
+					"text": "Studio: Show Audio when either channel is enabled"
+				},
+				{
+					"sha": "ea8978e7b82942440b6307dc80321bb3bf33b3c1",
+					"text": "Studio: Raise the default audio mix for phone speakers"
+				},
+				{
+					"sha": "1e978a1fe9bb425edbba6698cce1c7590475e976",
+					"text": "Studio: Use a padding-free soundtrack loop"
+				},
+				{
+					"sha": "4618c8af7f76600b490e2e0ec51fb7b471894d1f",
+					"text": "Studio: Reduce repetitive audio and smooth music loops"
+				},
+				{
+					"sha": "59b0361af3d19897fb2b9422904c68fb399e4699",
+					"text": "Studio: Calibrate audio at the slider midpoint"
+				},
+				{
+					"sha": "a52be7f9986edac5607bae301f401d8dc15bf7ad",
+					"text": "Studio: Combine audio controls into channel rows"
+				},
+				{
+					"sha": "b8e2eda5d7d8feec09487c1e96efcb4526510a10",
+					"text": "Settings: Avoid search autofocus on touchscreens"
+				},
+				{
+					"sha": "a59544c33165c8e88c239a10d0d988d98dec1ed0",
+					"text": "Studio: Defer measured element size updates to the next frame"
+				},
+				{
+					"sha": "2bc4b8772b55c5b30eb1130ed233d6c1dd120c5e",
+					"text": "Studio: Fit appearance labels in phone landscape"
+				},
+				{
+					"sha": "2aaddf630cb20a0a28a53353051b0c9f290e0e41",
+					"text": "Studio: Fit appearance labels on narrow screens"
+				},
+				{
+					"sha": "48b924272a6f2c263a37bbeccd45334429b6cba0",
+					"text": "Studio: Match appearance segments to the character creator"
+				},
+				{
+					"sha": "0661567f5e96ce247197f3cb626ddbc233cca49b",
+					"text": "Studio: Preserve useful results from partial appearance edits"
+				},
+				{
+					"sha": "8be0b228460ab95c48ae3114d70b20e657ce9394",
+					"text": "Studio: Keep appearance actions beside rename"
+				},
+				{
+					"sha": "c2f9fc45640eb76c067a514cb792bab82bdcf19d",
+					"text": "Studio: Edit imported characters without standing artwork"
+				},
+				{
+					"sha": "80611eb8a1bff267b8aa96f4e9baa2ec8dadefe1",
+					"text": "Studio: Keep stage notes concise and Preview controls fixed"
+				},
+				{
+					"sha": "caf0cd796e6f9479c37568280a6e232ee7de4c6a",
+					"text": "Studio: Anchor live view notices above the panel"
+				},
+				{
+					"sha": "0b4672fb27c785d4f932e07ca9c00d1a49efc9da",
+					"text": "Studio: Align toast action buttons"
+				},
+				{
+					"sha": "a4c68a8d670919dffa0ec37dba1709e7f2d2a1ca",
+					"text": "Studio: Keep expected live view gaps out of toasts"
+				},
+				{
+					"sha": "90bbbcc37d59172a17a0c39eda7c4b899a3b1d18",
+					"text": "Studio: Allow playback while editing seat position"
+				},
+				{
+					"sha": "027b7a1fdc2e24c296ef966a679e0bde564e3d49",
+					"text": "Studio: Align seat controls and pause while editing"
+				},
+				{
+					"sha": "f17148d31d92c8cf6e749d059092800841ee8d4f",
+					"text": "Studio: Keep seat editing on the selected direction"
+				},
+				{
+					"sha": "7191677086f4ccb817dabd7cb72e292936309676",
+					"text": "Studio: Make seat position adjustable across character poses"
+				},
+				{
+					"sha": "a605c89966b30ac0ba20e2e45c9a67d64d8427af",
+					"text": "Studio: Make the rider seat editor discoverable"
+				},
+				{
+					"sha": "d242c0fc9b482c3d537a0a4cd6d68e90724e4360",
+					"text": "Studio: Stabilize the mount direction dropdown"
+				},
+				{
+					"sha": "a1ce680c863c0dbf227ffc7150c61c965b2b8b92",
+					"text": "Studio: Keep the Wardrobe search clear of short-sheet layout"
+				},
+				{
+					"sha": "9e3898ae0b55731d9b00565f7ddb8fcffc35912c",
+					"text": "Studio: Keep the list spacer out of resize observation loops"
+				},
+				{
+					"sha": "da5a84771887787b1743f506cf100077f6d02d72",
+					"text": "Studio: Restore the Live views number stepper"
+				},
+				{
+					"sha": "2495992fd7d4907d32ecc8c9995cb29d8df9f0cf",
+					"text": "Studio: Align the walk-while-attacking toggle like Show mount"
+				},
+				{
+					"sha": "8094189b6b10e3bfb8c7d666b78839d6ac8e0d6a",
+					"text": "Studio: Refine search empty states and placeholders"
+				},
+				{
+					"sha": "8d09dfdea65c8837f94917980e39fa13f06e88b1",
+					"text": "Complete the real-data gear, hip and seam fixes"
+				},
+				{
+					"sha": "5f491383bd7ee4af4b043fae264888cd93ba022a",
+					"text": "Reject symmetric waist shifts in layered actions"
+				},
+				{
+					"sha": "92630302c83287f92ab3cc45b3206f44431b8f11",
+					"text": "Bound layering to the hips and ship the passing sets"
+				},
+				{
+					"sha": "23281e1affe3e991214e579aca216f7df7968914",
+					"text": "Latch layered actions and correct the split"
+				},
+				{
+					"sha": "292137be29b980034647698878f4696cd87b773c",
+					"text": "Studio: Keep the renderer failure warning on short screens"
+				},
+				{
+					"sha": "226cace2312655ef6b96858ef3b59b3832e78ca0",
+					"text": "A11y: Move menu focus with arrow keys"
+				},
+				{
+					"sha": "a5c9cf7f6a0c78bd4c432ba85a00870de8cb6ee2",
+					"text": "Settings: Name each prompt suggestion row for screen readers"
+				},
+				{
+					"sha": "ffbd8398360de82279b15bbb53f78bb46a9e2076",
+					"text": "Selection: Split painted cast gaps between neighboring hit areas"
+				},
+				{
+					"sha": "027fe417bb3dd05277100eaba6ac57c950e627fd",
+					"text": "Studio: Attack with E and mount with F, beside WASD"
+				},
+				{
+					"sha": "a5c4ea77d3c355ad4e755e44d4a3ba722f82f819",
+					"text": "Studio: Right-align the live game controls with the zoom controls beside the side panel"
+				},
+				{
+					"sha": "470f1ce5d52dbbc3313a441096a501eda4b8d86c",
+					"text": "Studio: Size Sprint and Mount alike as the touch cluster's utility tier"
+				},
+				{
+					"sha": "a3f3e14126a8455eebce9b9752cedb12810a0cd2",
+					"text": "Studio: Keep Jump, Sprint and Mount in one arc around the Attack stick on every screen"
+				},
+				{
+					"sha": "43d7be2eebee8fd30cd8f0de5a300db95b4c396f",
+					"text": "Moves: Keep a Skeleton V3 retry's action when its redraw cannot use a template"
+				},
+				{
+					"sha": "e63b22ec9f2b86c7f4c33f9637c621084f948a79",
+					"text": "Export: Share identical GDevelop frame files so large characters fit the ZIP entry limit"
+				},
+				{
+					"sha": "545a17c60f34aaf5641983c04122c359139599cf",
+					"text": "Items: Flag held and rigid items that lose their fill in posed frames"
+				},
+				{
+					"sha": "977cf9d279f8b1d470fc7848ae5e20326c1b5c7e",
+					"text": "Studio: Stand the live-view character mid-stage with its whole reach in view"
+				},
+				{
+					"sha": "9eb0468e20128f967ef39900303b81086de7071e",
+					"text": "Studio: Keep the way on for a shown view the offer leaves out"
+				},
+				{
+					"sha": "56dba56afc688113d16d84317a9ffd43fccda385",
+					"text": "Studio: Make live-view jumps read as airborne and polish touch, aim and settings"
+				},
+				{
+					"sha": "cb6bde027e1d1f4b6ced3a8c73fb9b7f687d118a",
+					"text": "Studio: Keep every missing item's way on beside a subset offer"
+				},
+				{
+					"sha": "028310068064345c57d9d6c623e8f2ab046e5a21",
+					"text": "Studio: Keep the stage note's redraw instruction beside an item offer"
+				},
+				{
+					"sha": "be388cef83c758ed854795c4f737397b04e2ca25",
+					"text": "Studio: Paste raw clipboard pixels into image drop boxes"
+				},
+				{
+					"sha": "551127e6ef054b47b89bd42d4fe660c5c69c14f4",
+					"text": "Report: Accept report fields by origin, not shape"
+				},
+				{
+					"sha": "54cd9048214d1373a8170205d09fd2be7db4bfc2",
+					"text": "Report: Show sizes and drop filler lines in problem reports"
+				},
+				{
+					"sha": "d19b865ac7f5900706015c999b6b290fbaeb3fbc",
+					"text": "Studio: Keep posing as the default for items on moves"
+				},
+				{
+					"sha": "1b7d707001b77a3ad57ab4b5bc3bd4e6abfdd29e",
+					"text": "Studio: Make every missing item view from the stage note"
+				},
+				{
+					"sha": "28ba08eaebc4f903a186b4f01be805fa2ddd264a",
+					"text": "Studio: Keep both touch sticks, scope held input to the stage and name the aimed facing"
+				},
+				{
+					"sha": "71cf2a30da038957fd879fa61bd772e3891c8885",
+					"text": "States: Snap saved State views to the body palette so recolors cover them"
+				},
+				{
+					"sha": "7bc36ad15d875f3709ed2923767f38e28adc0b39",
+					"text": "Studio: Give More's dot only work no visible tab shows"
+				},
+				{
+					"sha": "99260cab0abe0ee1096cdc8e459132660ed7ca5c",
+					"text": "Moves: Don't flash the setup notice while a set-up character's record loads"
+				},
+				{
+					"sha": "9d0238392e9e5565ef4292cb3bad2e8ff2ff366d",
+					"text": "Studio: Leave tab work to the tab dots and match More's dot to them"
+				},
+				{
+					"sha": "36421b821c750ee74670c6eb56646f042eb68cea",
+					"text": "Studio: Lead the item drawing status with its percent"
+				},
+				{
+					"sha": "accbb7c0be6e114eeaabd2111bc5e1ca0574cfa7",
+					"text": "Studio: Keep older undo steps reachable and finished steps in history"
+				},
+				{
+					"sha": "3a3ac9e59620fe7eb686de7c39d20e26b363cf31",
+					"text": "Studio: Align queued move rows and show live progress"
+				},
+				{
+					"sha": "efb02d411cb9664f6f9843e08088c12cf46e3f5f",
+					"text": "Studio: Keep world keyboard control after a backdrop dismiss"
+				},
+				{
+					"sha": "262f3f9ab938116ba736a804b6ab563b8165a837",
+					"text": "Studio: Keep an undo step on its stack until its write lands"
+				},
+				{
+					"sha": "9f14a49504b29ac814624c24b9303ee58353a052",
+					"text": "Studio: Show the dressed look in clip picker thumbnails"
+				},
+				{
+					"sha": "0ccefe42b0fb6f10138f3ce3ea0cdaab11473a1d",
+					"text": "Setup: Keep the rig when setup runs on a set-up character"
+				},
+				{
+					"sha": "7ea8d3892f56df0c5df21bc4a541beecc9e8291e",
+					"text": "Setup: Save a character's move description for free"
+				},
+				{
+					"sha": "4a171df1e1577ce90ee17ea504f69797066f2eb0",
+					"text": "Queue: A Stop's Try again waits while this tab starts leading"
+				},
+				{
+					"sha": "0f8738ddc701c93abb74ff2a45ff0bd132bd1873",
+					"text": "Queue: Keep a pending explicit Stop over an automatic cancel when this tab starts leading"
+				},
+				{
+					"sha": "81f897c93eeff8d692a7906aa60c08acd340511d",
+					"text": "Queue: Keep an explicit Stop over an automatic cancel in followers, settle either from a stored Stop, scope the storage exception to its probe"
+				},
+				{
+					"sha": "9d2a8314ba1ab99a0744e1061e77e974dac46a9f",
+					"text": "Queue: Let a landed storage probe go on, and keep an explicit Stop distinct from an automatic cancel"
+				},
+				{
+					"sha": "d6efd481ff06ac2085d5df898590f66f85c4f9f0",
+					"text": "Queue: Prove storage with one conditional submit and adopt a stop another tab stored"
+				},
+				{
+					"sha": "d8dbfb7e64b9e482688e9f6cfb70c3e920efa960",
+					"text": "States: Let the State review footer note wrap above the buttons on phones and offer Try again only for failed downloads"
+				},
+				{
+					"sha": "a96f96cf74aae74c48a5046ba5b3263b236520ed",
+					"text": "Items: Show the unposed-view note with its move and view names, and assert it in the UI"
+				},
+				{
+					"sha": "99c6ff7c98522c3b9fe8f239530d3e5adfcefd6c",
+					"text": "Items: Name a move whose views were all kept without poses where equipment offers show"
+				},
+				{
+					"sha": "0f68a3d2d5c3a0f261dac63aa8e88517b6020aad",
+					"text": "Moves: Name views kept without poses in equipment offers and lead with free keeps"
+				},
+				{
+					"sha": "d30b19503c51226dd9878153433fce301c1d5a1e",
+					"text": "Items: Lead item reviews with the free keep and fix review copy"
+				},
+				{
+					"sha": "c36559286ccf4c24148bb255e3481d4eca12107c",
+					"text": "Queue: Return a failed submission to queued and keep a failed Stop unresolved until stored"
+				},
+				{
+					"sha": "b3ca836651f712059dca57e8558187cdcb63175d",
+					"text": "Queue: Retry only plain saves, take a stored row as authoritative in followers, and show a saving status"
+				},
+				{
+					"sha": "5549fab8077ab91573956d69e487ddabc846aee5",
+					"text": "Moves: Lock Generate again only while the paid review loads"
+				},
+				{
+					"sha": "4af7d6c44b34e865786bbe4a89a3485c12e82b7a",
+					"text": "Moves: Wait for a stopped move's live requests before a fresh paid attempt"
+				},
+				{
+					"sha": "8fa43377c0695745eacfd60c9aae3ef7e3c470aa",
+					"text": "Queue: Track each record's latest write, keep unstored results out of cleanup, save locally while offline"
+				},
+				{
+					"sha": "c351f25cf9a73038e66116cfe7250cd2a07e29e7",
+					"text": "Moves: Hold a move review while a view still has a request at PixelLab"
+				},
+				{
+					"sha": "840736d956f36f9917c57f2079be4318e93c178b",
+					"text": "Queue: Show an outcome only once stored and save held results without a credential"
+				},
+				{
+					"sha": "072ed9e1c961902ad1a7de9f41ae5cee219015c5",
+					"text": "Items: Keep finished anchored batches and say truthfully what a retry redraws"
+				},
+				{
+					"sha": "93a8299490eb08aeac417afa794073dc4a5b9a9a",
+					"text": "Items: Say why a later repair batch stopped in the partial review"
+				},
+				{
+					"sha": "9c12c5abb34cf2c05f1ccf685283dbb2ccfe5516",
+					"text": "Items: Keep joint findings of frames a partial replacement leaves"
+				},
+				{
+					"sha": "8d98df93ecdd4617261ff56c932016622f002506",
+					"text": "Items: Keep storage read failures out of a frame's decode failure"
+				},
+				{
+					"sha": "4f14ec61db3cab5794552dbe22377dada2f82493",
+					"text": "Moves: Settle every frame check of a replay before pricing a free keep or spending"
+				},
+				{
+					"sha": "629075b333086c1f941f4f6f589a4939988f8a5e",
+					"text": "States: Refuse a stale partial State save after another tab finished more views"
+				},
+				{
+					"sha": "62a1325d03b6b3ff446c4d42b2e5eed47eee1e04",
+					"text": "Queue: Settle a waiter only on a stored outcome"
+				},
+				{
+					"sha": "074e94307e3c20b5ff6db0eaa7a75bcd695d4f7f",
+					"text": "Queue: Keep leading while holding unsaved paid results, prune stale held jobs and back off retries"
+				},
+				{
+					"sha": "603ae9fd4f5d2729e7178b2a1eba00712aa2bb5a",
+					"text": "Items: Keep a direction's finished pose batches when a later batch fails"
+				},
+				{
+					"sha": "045cf3f85753343189c65e75e1095221d04642fb",
+					"text": "Items: Disclose suspicious joints on the move quote and keep them in saved checks"
+				},
+				{
+					"sha": "37b22ff7e85708987c99737aa928813c7d94b19b",
+					"text": "Items: Show a free Try again when a review draft's frames cannot be read"
+				},
+				{
+					"sha": "abf87df2709deb05229ee1f5aa232930891ab922",
+					"text": "Items: Name an undecodable frame on its own instead of failing the whole draft"
+				},
+				{
+					"sha": "9ba068e9cdeb76570b49e519acc68da60f1f43eb",
+					"text": "Items: Classify stopped and lost item requests and wrong-size pose frames"
+				},
+				{
+					"sha": "e37b87ba6b4a06672d7491c034e8ac1fa5c6e251",
+					"text": "Items: Keep finished repair batches when the plan refuses a later one"
+				},
+				{
+					"sha": "b27fb405f99e7818c16bc3ec40c3719941547877",
+					"text": "Items: Remap a kept draft's receipts on fresh checks so a retried Keep stays correct"
+				},
+				{
+					"sha": "b0f23cdd35bce949b6181051d9e4b4e4f15c3f66",
+					"text": "Items: Check every design-call frame before buying any later call"
+				},
+				{
+					"sha": "6ab9815217fc0ea36e3121d60922c73379fd7171",
+					"text": "Queue: Hold a finished job's unsaved results in memory and retry a failed record save every tick"
+				},
+				{
+					"sha": "b302d93c4cca6bbf8ce12ef3b3c58ad24d0964d8",
+					"text": "States: Review the finished batches of a State run a stopped batch ended, and quote the unsent ones separately"
+				},
+				{
+					"sha": "91081bb5ab232b649d39f0408c6a1d22760b5579",
+					"text": "States: Keep State joint measurements when one facing's check fails or stopped"
+				},
+				{
+					"sha": "17cdf7926875d7c912d8d74834819f575e86a198",
+					"text": "States: Keep downloaded managed State views on Try again and fetch only the rest"
+				},
+				{
+					"sha": "61c618c9c2331f5b45a10e58479b0b149ca10361",
+					"text": "Setup: Treat a stored blank body row as a gap in the setup plan, as assembly does"
+				},
+				{
+					"sha": "0d679048e5d18111b3a4613fc86a09f2d588ff51",
+					"text": "Import: Leave out a PixelLab animation direction whose declared frame is missing from the ZIP"
+				},
+				{
+					"sha": "0c63a1d9be33003987201bf6af9b34e2a4dd1845",
+					"text": "Studio: Count reported charges of stopped requests in paid review spending"
+				},
+				{
+					"sha": "33424aa0944139fe1bd6f78399077d11b93cd09c",
+					"text": "Equipment: Keep standing references when the target has a view without poses"
+				},
+				{
+					"sha": "eefa31e8a6025a52c4a903e9020fbac467c7572e",
+					"text": "Moves: Keep redo entries with a move through delete and restore"
+				},
+				{
+					"sha": "af87b0649c2397a38b4a600f89917b0ddde4a388",
+					"text": "Moves: Narrow an explicit start frame to the finished views that are saved"
+				},
+				{
+					"sha": "f2b28958d12a839ed03ae4925c353da112a8ec0a",
+					"text": "Moves: Run free keeps from the cache only and keep a render whose joint check stopped"
+				},
+				{
+					"sha": "5bf86eaa88d55788d251bd7594f129f476e22693",
+					"text": "Items: Give item posing and repair provider glitches a plain next step"
+				},
+				{
+					"sha": "b8f971290722e2ed3eac7cc6c63903b70bf6d19d",
+					"text": "Items: Match colors on the frames a view has and name the missing ones"
+				},
+				{
+					"sha": "b92d68a97c1025c53bc0d7bdd537e8f8237d7c12",
+					"text": "Items: Disclose suspicious joints and failed re-fit checks instead of refusing"
+				},
+				{
+					"sha": "3bf0cb33147201232c9096b9174e1b9e2ce91885",
+					"text": "Items: Offer finished repair and redraw batches when a later batch fails"
+				},
+				{
+					"sha": "7e8545c65c6a1068420b6d7a61a3b0c77a961281",
+					"text": "Items: Offer a free Try again when an item's paid review cannot be read"
+				},
+				{
+					"sha": "c56e712dd45e1c0593ea38f6ac8a53d399a6e5b5",
+					"text": "Items: Keep verified frames from incomplete drafts"
+				},
+				{
+					"sha": "4812f1613b2308c4ebc5cc7f282b8416cecd159f",
+					"text": "Items: Buy no later call while the design call is malformed"
+				},
+				{
+					"sha": "d0ec4021a7db1ebfd02cb7601053a0be0db96f65",
+					"text": "Items: Ignore wrong-size padding outputs and stop only the calls a malformed dress chunk feeds"
+				},
+				{
+					"sha": "b146a49f0f9cd4df3e3bb3203a3554be7b2e8ab3",
+					"text": "States: Read the State review's blank views without a possibly null review"
+				},
+				{
+					"sha": "2f614430e7a05de3cc2ec6b06e8b7bdd48cb2059",
+					"text": "States: Name undownloaded and canceled State views apart and make saving without them an explicit choice"
+				},
+				{
+					"sha": "2da00d8d7a7c4d05bf4ccb6c7067e32632887d5a",
+					"text": "Items: Name the move and view to make again when equipment meets an unposed view"
+				},
+				{
+					"sha": "5d80f98f8c3b6330196810e4a07d27122a8a56e5",
+					"text": "Moves: Clear redo entries once the views have poses again"
+				},
+				{
+					"sha": "9e0e87c52f7883dd16a7bbc0ef714da60056d63e",
+					"text": "Moves: Carry a recovery receipt through a staged recovery result"
+				},
+				{
+					"sha": "e8278d190894ea299080a71a498c01814b020cfc",
+					"text": "Moves: Refuse a direct move run up front while its staged review waits"
+				},
+				{
+					"sha": "bad4ccb101337c29939705a68d1a113e02a3c5b6",
+					"text": "Import: Leave out a bad PixelLab animation or direction with a warning instead of failing the character"
+				},
+				{
+					"sha": "741581b4eb47b5966333a688a813329dca1a6aa0",
+					"text": "Setup: Skip a move with an empty frame or a later joint miss instead of stopping rig setup"
+				},
+				{
+					"sha": "bd725f43b1944d79bf99d00a4ae00c7b0ff1ab5c",
+					"text": "States: Keep a paid State's usable facings when one comes back blank, fails or cannot be read"
+				},
+				{
+					"sha": "67139204d92f95502bd89e879315afbc520ba785",
+					"text": "States: Save the State facings whose joints were measured and name the others"
+				},
+				{
+					"sha": "991596f9a4b499b0842ed380e22c095dcae584de",
+					"text": "States: Guard sourceless attempts, keep the placement switch and read a drawing child as unfinished"
+				},
+				{
+					"sha": "0d200d5b82cf6e76f86fb82e8bcb5dfe21f1c121",
+					"text": "Problems: Stop leading with a paid retry for missing joints"
+				},
+				{
+					"sha": "7c3158a5945ba4e13f8921509f231d9ca49555b0",
+					"text": "Moves: Keep views without poses per direction, free, and keep the rig ready"
+				},
+				{
+					"sha": "7611f4fb6b35314e95dd1e53c6b51251f3adc1b2",
+					"text": "Studio: Say when a create or move paid review's spent total is only a known part"
+				},
+				{
+					"sha": "fa1b87c52f914f4a1b970406e27ddfde95e2b93b",
+					"text": "Moves: Keep exactly N standalone PixMiniMax frames with a disclosed warning"
+				},
+				{
+					"sha": "b3a22e9d51a390247afd66e6f7e4821b0621117e",
+					"text": "Moves: Bridge one empty interior motion frame like a joint gap"
+				},
+				{
+					"sha": "881d18450bde5782b12d38b5fe0f56c954f182f3",
+					"text": "Moves: Bridge only completed joint misses and disclose every bridged frame"
+				},
+				{
+					"sha": "8b710cb74e6668be36d21d71ec1fd11e58950968",
+					"text": "Create: Estimate standing joints when a managed reference is incomplete"
+				},
+				{
+					"sha": "b04f15ee456a5a8015a07070a4eff566794b149e",
+					"text": "Moves: Stage a replacement that misses only numerical body checks for a free review"
+				},
+				{
+					"sha": "c483c2f3647a45c0845b8875398fc07219aa8e67",
+					"text": "Queue: Back off unsaved downloads, hold the storage notice until a result saves, and report an unconfirmed stop on retry"
+				},
+				{
+					"sha": "d10b9edf2e1b4a9947c8015f38c8e2c6aad1de55",
+					"text": "Queue: Keep paid results a device fails to save, prove storage before lifting its notice, confirm cross-tab stops"
+				},
+				{
+					"sha": "1b39b3be8819fd79d3d86eb4c4425895acd6682e",
+					"text": "Problems: Show a catalog message in its own words and restore review-again steps for changed codes"
+				},
+				{
+					"sha": "b4f371cfc0c84f5fa586a4a0eda534e479c78085",
+					"text": "Studio: Accept a dropped workspace ZIP anywhere on the open-copy page"
+				},
+				{
+					"sha": "2cf82f27be53d0549b30d0da0cdce116017d2acf",
+					"text": "Studio: Treat lost requests as unknown cost and keep paid retries second where they cannot help"
+				},
+				{
+					"sha": "73974e802f1e9aae01ca289a6b215c66170cf06d",
+					"text": "Studio: Keep paid retries secondary where they could charge twice or cannot help"
+				},
+				{
+					"sha": "950d75504e02da554a2a1a8173d8d01251942730",
+					"text": "Studio: Make failures, accepts and Activity read in plain, continuable words"
+				},
+				{
+					"sha": "46df877c4b708473721dd9c01145c4b732409dd6",
+					"text": "Activity: List a damaged saved request as unreadable instead of failing to open"
+				},
+				{
+					"sha": "2b16b68394abcf2653b5222fa960b791de60b53b",
+					"text": "Import: Drop undo history an editable character ZIP lacks images for"
+				},
+				{
+					"sha": "31ddbf0ef5526c26b4046bed8cfb4bd27d579c65",
+					"text": "I18n: Show every price as gens with a tilde for estimates"
+				},
+				{
+					"sha": "f074f355e5d6c9d591612ba2cf111f518913aa97",
+					"text": "Trash: Restore entries without undo history their artwork lacks"
+				},
+				{
+					"sha": "16ad73eb0a5381c2e9aa5a48d73636c3eafeaa07",
+					"text": "Library: Restore backups without undo history their artwork lacks"
+				},
+				{
+					"sha": "eaea78b3128594195fde1eefac1914464fca3ad3",
+					"text": "Items: Send a shifted repair batch to review with the rest it was approved for"
+				},
+				{
+					"sha": "a80ed53e85aad2d8175614c8516f79899d30b3da",
+					"text": "Moves: Drop the walk template's extra leading frame by position too"
+				},
+				{
+					"sha": "8e09fb19726d8ff5f4082fd454bbb186800bcfb3",
+					"text": "Problems: Give joint, unexpected and refused-request failures next steps that hold"
+				},
+				{
+					"sha": "7f101eea583bec19f11bc9936f8494366cbe5a91",
+					"text": "Items: Say why an item without complete moves cannot be kept"
+				},
+				{
+					"sha": "99723848a98c79559c14302ed04ad46b3c893e2e",
+					"text": "Activity: Drop a refusal's kind once PixelLab accepts the request"
+				},
+				{
+					"sha": "72e04058d6b6cbcda2ba3fd5cbcea3230cb18724",
+					"text": "I18n: Name moves in setup messages and keep a save conflict's second stop"
+				},
+				{
+					"sha": "b01cfbe0469475016b5af130ff8772f7ebd47d62",
+					"text": "Errors: Classify failures by an explicit code map only"
+				},
+				{
+					"sha": "6c8200df0ca16baf604021f3c63e9bb8f73c44ed",
+					"text": "Setup: Never skip the standing move or Default"
+				},
+				{
+					"sha": "e2f891d174c7d9c216561e4e5edb6ac0b31e5979",
+					"text": "Items: Keep without moves through retainItemMoves, never without the standing move"
+				},
+				{
+					"sha": "56788c65e5f1c72c7537b640bcbe94a94a2d2a18",
+					"text": "Moves: Explain why new moves wait behind a failed move"
+				},
+				{
+					"sha": "b5860280ce5ca7f8bcd2e2f6cab47f58d4165684",
+					"text": "Errors: Route recovery on error codes and drop internal request labels"
+				},
+				{
+					"sha": "3cbd86426a9c6cb20777d3edab6a4eabad7e8e7f",
+					"text": "Create: Say a larger frame may make later moves and items cost more"
+				},
+				{
+					"sha": "456c0c9742f281df6e3b8be90a4b397b7f3212cf",
+					"text": "Moves: Plan Make room without the start frame a motion sent back"
+				},
+				{
+					"sha": "735787730b0988015a8e06d6b3e994748b8c525e",
+					"text": "I18n: Keep partial-move reasons and item log errors translated"
+				},
+				{
+					"sha": "cc89b65077ab68142c72128800821ca1c95d8054",
+					"text": "Moves: Keep the Fix frames echo match on the walk template route"
+				},
+				{
+					"sha": "bcd0cd106838e5fc94ff1775055056fa2c4316d3",
+					"text": "I18n: Name the move and view in motion errors and keep errors translated"
+				},
+				{
+					"sha": "9c65ea5b99afbaf74ad3d8df91a2ea66c6d778e1",
+					"text": "Moves: Bridge one unmeasured interior motion frame from its neighbors"
+				},
+				{
+					"sha": "79f4ac5849ae4efac7cd1b4f4ae0194fe7b0985e",
+					"text": "Moves: Route a described move from a saved frame to standalone motion"
+				},
+				{
+					"sha": "5dcc284a71708202015259143d4f16a648565274",
+					"text": "Moves: Drop the managed motion echo frame by position"
+				},
+				{
+					"sha": "23e317a03f92946d5f5bf87cdde1eef934be2d68",
+					"text": "Settings: Scroll the sidebar and page separately and fit the dialog to the sidebar"
+				},
+				{
+					"sha": "3995cbc32436baecb8678dd1f585ef29b7bbe8d5",
+					"text": "Mount: Keep the worn outfit on a rider standing in for a riding pose"
+				},
+				{
+					"sha": "90d0b33f3e2e75be352433859b77f3fb6726b531",
+					"text": "Studio: Keep the startup page and update notice clear of problem reports"
+				},
+				{
+					"sha": "cf3f56157dba9ea776d3b4b6c6d30c22718022fc",
+					"text": "Studio: Keep body activation on notices that offer Report"
+				},
+				{
+					"sha": "13b113400ce8d0a92c0f4d42814b10b594470905",
+					"text": "Studio: Tighten problem reports after the live review"
+				},
+				{
+					"sha": "4898bbfc2f47b417415574e11464bae2a9615091",
+					"text": "States: Let a frame-edited State become a Move source by fitting its joints"
+				},
+				{
+					"sha": "f367a1cc981fe5e1bdde283deade40240e1ad963",
+					"text": "Moves: Accept the registered standing echo after Fix frames edits Standing"
+				},
+				{
+					"sha": "e0770035acacf736274f1a36479082418c9684cb",
+					"text": "Queue: Lift a storage pause once a tick succeeds and resave a stopped job as is"
+				},
+				{
+					"sha": "84adfe8de5ced64bd4989ac53e1962e7f087db5a",
+					"text": "Items: Flag unmeasurable bodies and report damaged storage and imports clearly"
+				},
+				{
+					"sha": "e12c064aa3e99f5cc5222dc6a3b2def7364171da",
+					"text": "Studio: Claim re-rolls at once and stop hiding failed reads"
+				},
+				{
+					"sha": "a43b5a75bc3d8f07295d5b0f7c07d5551b726ce8",
+					"text": "Queue: Stop from any tab, report failed cancels and storage, keep busy refusals reopenable"
+				},
+				{
+					"sha": "c8856714279cac337a42b60227493ca656417a52",
+					"text": "Queue: Release the submit scope when a plan hold adopts a finished record"
+				},
+				{
+					"sha": "8b40ebc9044188a64bb9e41c6f7c8d5303fa0935",
+					"text": "Queue: Never overwrite another tab's cancel with a plan hold"
+				},
+				{
+					"sha": "52914cdf16187e65866333b0321ab3620f0a3f94",
+					"text": "Studio: Fail resume when a saved move or setup cannot be read"
+				},
+				{
+					"sha": "812df20dbfa05a1cd69569aaffd8d6580bf82510",
+					"text": "Items: Keep dressed views when keeping finished moves"
+				},
+				{
+					"sha": "e2b1196f2f42c7541001a4e19d5f12c277f166de",
+					"text": "Export: Keep move-source frames in editable ZIPs"
+				},
+				{
+					"sha": "1f79bf5cdc7481a5eeecb7b448d571110fc4060c",
+					"text": "Studio: Print character facts measurement first"
+				},
+				{
+					"sha": "142d1e8a2ae951cd4c04ad277240bc4c69bc5adc",
+					"text": "Studio: Mark copied items with their own tile icon"
+				},
+				{
+					"sha": "daf12af56739901cad6d64da87d59e939b408a81",
+					"text": "Studio: Open the editor help only from its help icon"
+				},
+				{
+					"sha": "b16290f57c8793a88449ef7d5ff6565d8c5db6c8",
+					"text": "Studio: Name the item on queued item jobs for a move"
+				},
+				{
+					"sha": "214d2e852fd6a915f088e49c5862119cc283d235",
+					"text": "Studio: Finish State continuations in the background and close review gaps"
+				},
+				{
+					"sha": "7559f4dad3af519dd10e185c1681fc7591d5f766",
+					"text": "Studio: Name State jobs after the State, not its internal id"
+				},
+				{
+					"sha": "7a62a54607283aeb0d81731772b12142a4c30efe",
+					"text": "Studio: Let States use built-in move names and stop false source-changed errors"
+				},
+				{
+					"sha": "53c0a4d57b0244751899ee7fab2d54c99b3bd60f",
+					"text": "Studio: Say up to 30 days and cover the item-first move restore"
+				},
+				{
+					"sha": "35bd1df079a9cb1c5c9016447e2d8d711a352578",
+					"text": "Studio: Close the behaviour review findings"
+				},
+				{
+					"sha": "c4712590428adf0e6f48c63aa8445c2c1697dbff",
+					"text": "Studio: Repair the merge review findings"
+				},
+				{
+					"sha": "6d2124933dcef69e7446e0cb0c97d408104da4de",
+					"text": "Studio: Compare New character edits with its saved defaults"
+				},
+				{
+					"sha": "4b8abddc510e09120ce92688af6be34c6c75de7d",
+					"text": "Studio: Address final app bar reviews"
+				},
+				{
+					"sha": "7a53494f96a7a8518ece7ae869c19fce6af19b53",
+					"text": "Studio: Keep the Trash touch target and focus, and repair the stale specs"
+				},
+				{
+					"sha": "f2518e53e6dcf64411ab305e8afd84b509eb9885",
+					"text": "Studio: Finish the Move to Trash wording in every dialog"
+				},
+				{
+					"sha": "cafdf911bf266896b8470721b6ffffb059151921",
+					"text": "Studio: Make empty categories recoverable and finish the Trash pass"
+				},
+				{
+					"sha": "8be7b35e6531674f6e6e78a447c8b8e0a3ff9f7b",
+					"text": "Studio: Date Trash rows readably and drop the library privacy note"
+				},
+				{
+					"sha": "b42e4bd7ec52df0343b9b6814f678174e3fbd8f2",
+					"text": "Studio: Show a deleted entry date in the app language"
+				},
+				{
+					"sha": "0efb6a53ddd0d49b15cacca6c938ef3ff2226246",
+					"text": "Studio: Keep a deleted draft recoverable and close review gaps"
+				},
+				{
+					"sha": "82ddd4030acde51230085c3b8d34f4de4a1ea3fe",
+					"text": "Studio: Harden deletion recovery against copies, drafts and stale frames"
+				},
+				{
+					"sha": "80349b762d62015dba28309a82f1c7eab2031be9",
+					"text": "Studio: Make cost estimate remakes, setup and routes match the Studio"
+				},
+				{
+					"sha": "1fbe5823f21f64ee2aae37e5833f995d93dee9b6",
+					"text": "Studio: Price demo items without a standing design and use the account allowance"
+				},
+				{
+					"sha": "736909bd6ca3e75e910e0948451c78b012199a1a",
+					"text": "Studio: Price only changes for demo art and open the estimate from Settings"
+				},
+				{
+					"sha": "49ecdb3e1ac8a51ab546295de0fe2827689c0704",
+					"text": "Moves: Preserve template frame counts"
+				},
+				{
+					"sha": "ea9f67e429ed6146eec7ba4816771f79abf52c39",
+					"text": "Studio: Give suggestion titles room and retry only the field that failed to save"
+				},
+				{
+					"sha": "22ada7eb40abb9badfa5a3cd6eccfa9b5e522e5d",
+					"text": "Studio: Treat a customized opening template as picked and keep Loop on repick"
+				},
+				{
+					"sha": "20edde9233ff54dffcf29a2343b80b0c5d1e4ffa",
+					"text": "Studio: Honor customized move suggestions and keep unsaved edits"
+				},
+				{
+					"sha": "2b9b3b525d16f808fff40b75e04c170b45d6509e",
+					"text": "Studio: Never trim a pose sentence that only mentions the animation"
+				},
+				{
+					"sha": "1a32e70fe9b119f147a3922741593781e4e1c5ad",
+					"text": "Studio: Keep templates through Enhance and settle second review findings"
+				},
+				{
+					"sha": "353f4bc0f1bdbd774d520b9eb5c633c0af1b6355",
+					"text": "Studio: Address review of prompt suggestions and the slot picker"
+				},
+				{
+					"sha": "8079cc0d8ef9f173cd8418e8bfaa5d27467775cc",
+					"text": "Studio: Keep the Enhance wand and show Undo as its own button"
+				},
+				{
+					"sha": "f3d7f28ac434e8e9682229be2859b2246993149f",
+					"text": "Studio: Leave mount preferences unwritten when nothing changed"
+				},
+				{
+					"sha": "8e23f5f10b68c67d29fd5ab57d543a94162d7b2c",
+					"text": "Studio: Forget a Riding pose atomically and restart the preview clock per character"
+				},
+				{
+					"sha": "d30ca8e4df6f48946b7110ee6bf38de81878e0b7",
+					"text": "Studio: Address Sol review of mounted riding"
+				},
+				{
+					"sha": "4ad9eea73f77b8eecd3440c38502c2d14bd674e8",
+					"text": "Studio: Seat fitted States on their hips and refine the Riding template"
+				},
+				{
+					"sha": "f685301989be93d5d0f91bcbd4e5822973dd64f5",
+					"text": "Settings: Clarify frame defaults and verify persistence"
+				},
+				{
+					"sha": "e72c85b4f5635118b130b06180f64a06eb6d8f05",
+					"text": "Settings: Clarify creation defaults"
+				},
+				{
+					"sha": "035772280d0120e52469cda6edc16c42d5c51ebb",
+					"text": "Studio: Harden Mount settings after review"
+				},
+				{
+					"sha": "cadc2e32d95189ee946f3709480ce8f6fd971931",
+					"text": "Studio: Let State review frames fill their boxes again"
+				},
+				{
+					"sha": "fc89f54630ade6c06fd445c4b24eb3be9f1c674f",
+					"text": "Studio: Show rest art for Standing and keep arrow focus on short clips"
+				},
+				{
+					"sha": "0941d916bd075a6b83e05bf8003c049af6626c93",
+					"text": "Studio: Keep Standing reachable in Add a move's start picker"
+				},
+				{
+					"sha": "7b6e17519c583efd74089b0e8b8745ccb84f029f",
+					"text": "Studio: Align a State only when every detached piece agrees"
+				},
+				{
+					"sha": "465924038949c731596a17763e108fbd602a3a28",
+					"text": "Studio: Require the whole picture to agree before aligning a State"
+				},
+				{
+					"sha": "935e0b19a407810005239d535a3ec562cdea49ba",
+					"text": "Studio: Judge State alignment on the body, never a detached prop"
+				},
+				{
+					"sha": "27b8cd0643b71e7daa96bb6f0d35df9e599ce8f4",
+					"text": "Studio: Make move prompts and frame controls reliable"
+				},
+				{
+					"sha": "1a0c3c22c76102c75906d6024fdc66b5b51566d3",
+					"text": "Studio: Align generated States only on a certain foot match"
+				},
+				{
+					"sha": "c874e98e49758c6e9317752352f80cc6372c536f",
+					"text": "Studio: Let users keep PixelLab's placement for generated States"
+				},
+				{
+					"sha": "cd8e8d0fed8936357159f00bd1642ec9253814ab",
+					"text": "Studio: Ground generated States and make their review exact"
+				},
+				{
+					"sha": "19562c667f3e18d0d08b0dd84eb45f9819298900",
+					"text": "Queue: Make queued cancellation and submission exclusive"
+				},
+				{
+					"sha": "bb3fbec6bc78c61aa618416189028e5fda9a45ae",
+					"text": "Shorten the combined Share option"
+				},
+				{
+					"sha": "fa73580b9e42f8c66897f85065490f60d386f1f3",
+					"text": "Unify State capture dialog and preview controls"
+				},
+				{
+					"sha": "756a1c7e65c2902829737fd469ea52eff9e391bc",
+					"text": "Left-align the outfit save action"
+				},
+				{
+					"sha": "f6050409057734bfba44f83a5628f2ee363837b6",
+					"text": "Align the Create State dialog layout"
+				},
+				{
+					"sha": "21456e0a1c6654703e9aeb9b634e2486a59ad050",
+					"text": "Studio: Clarify state import and capture feedback"
+				},
+				{
+					"sha": "ba2b4382ae15f854752bfc3ece3f9629bc9d7d98",
+					"text": "Studio: Simplify state imports and playback controls"
+				},
+				{
+					"sha": "47d0d48a8ebbd317de0fbc60c6ae5587495bd858",
+					"text": "Studio: Separate State IDs from Move presets"
+				},
+				{
+					"sha": "df816991a1922a56c3a4e8cdfef6bdcc2a83e5b1",
+					"text": "Studio: Preserve spacing in reference help text"
+				},
+				{
+					"sha": "308f31e43bd59391af31b48a7754bc571df59b3c",
+					"text": "Studio: Keep every saved character's list row current"
+				},
+				{
+					"sha": "73811c632c9bbadef65e321a3a6bdb7652e75ad1",
+					"text": "Studio: Keep item menu focus and blocked-move actions"
+				},
+				{
+					"sha": "74702126d82875aff4c7d4e1354186d717bef854",
+					"text": "Studio: Refresh a saved character's listed summary"
+				},
+				{
+					"sha": "75f239826c2b3545abf114645a2fe6b9036f783a",
+					"text": "Create: Give new characters room below the feet for their moves"
+				},
+				{
+					"sha": "44e351b5d834fef41eb10a24849b723e8a09c8ae",
+					"text": "Studio: Restore spacing in optional reference labels"
+				},
+				{
+					"sha": "5011aa07b94a137188689dc170303215e23270de",
+					"text": "Studio: Clarify Skeleton move retry and recovery limits"
+				},
+				{
+					"sha": "7c7f8028ce2a8eb425cabc2956e5fbe238089f7a",
+					"text": "Studio: Polish move frame help and loop control"
+				},
+				{
+					"sha": "1f0864f4d10d067eab467f9401f60f1733747875",
+					"text": "Studio: Clarify start and end frame tabs"
+				},
+				{
+					"sha": "662509c6f18fb49fbb555f439535a7374d028c7a",
+					"text": "Studio: Clarify directional move frame controls"
+				},
+				{
+					"sha": "527e5df5b55d3ef8848357910a3dd82c7ec815ed",
+					"text": "Export: Retain catalog order in playback summary"
+				},
+				{
+					"sha": "64fa0ba999ece71565055c3fe0f1ef5e9191d72b",
+					"text": "Studio: Harden move frame and playback controls"
+				},
+				{
+					"sha": "66c5da28e84831d02b2eb7fe54269c1f7dd35a1d",
+					"text": "Studio: Turn the cast the clicked way with two characters"
+				},
+				{
+					"sha": "9b91389e5f3d70a601c10763139e747b0e0d18fe",
+					"text": "Moves: Keep in-flight checks, unsent siblings and batch retries in the paid review"
+				},
+				{
+					"sha": "61bf05c21557c0430794753eff753b8b8a74dd69",
+					"text": "Moves: Keep an accepted frame warning for the Skeleton V3 suggestion"
+				},
+				{
+					"sha": "67cd53206480c51eaeeb91de39b6719b8a68ea82",
+					"text": "Moves: Continue paid move reviews body-only into the staged review"
+				},
+				{
+					"sha": "c2dcb13dd747238b41686e33209895953f2c4b8f",
+					"text": "Studio: Hold paid review choices while requests run and quote equipment"
+				},
+				{
+					"sha": "fd810d8616b660dbdae5969abf65251869437432",
+					"text": "Studio: Save Adjust frame for characters without an export id"
+				},
+				{
+					"sha": "42d2daa7827bee461ac58aee9950ff3f0224d145",
+					"text": "Setup: Offer a new registration when one returned no character"
+				},
+				{
+					"sha": "7dc9ef9184e19cd4b70183adc9046afb20330389",
+					"text": "Settings: Clarify reset and preserve review navigation"
+				},
+				{
+					"sha": "79a83f18352ebcef7688ce46ce546fdae09757b6",
+					"text": "Settings: Improve compact navigation and pane layout"
+				},
+				{
+					"sha": "e5ab884cff5c9dfc930d7f7d0822f1da5dd515fb",
+					"text": "Settings: Address final audit findings"
+				},
+				{
+					"sha": "384832632f93aea2eb969eab80cfd193daf0d920",
+					"text": "Settings: Preserve export return and guard PixelLab reset"
+				},
+				{
+					"sha": "b3ab8a310e45e6c23c3c9dfa45519c04ec1c6290",
+					"text": "Settings: Reset wardrobe visibility within its scope"
+				},
+				{
+					"sha": "2b4d8d10fa02a5713aa174883e7d18de84bec69a",
+					"text": "Settings: Share wardrobe visibility controls across surfaces"
+				},
+				{
+					"sha": "51f201cffaafa4298f57c76f4ce0f1a1f53509f0",
+					"text": "Studio: Clarify PixelLab key setup"
+				},
+				{
+					"sha": "e4052fda11b5196dfda03a231b299ed2677b9d7e",
+					"text": "Studio: Simplify recovery action rows"
+				},
+				{
+					"sha": "1106af0ae3c272a0219b58fba6ac8c9283b2f615",
+					"text": "Studio: Clarify generation recovery actions"
+				},
+				{
+					"sha": "a4dabb38f7127d933ca0671c79cf37eb0e6136eb",
+					"text": "Studio: Make the frames Undo a separate toast button"
+				},
+				{
+					"sha": "a55b23a2fa81839291530510fc9a44468ba571ef",
+					"text": "Studio: Open move review on a redrawn direction"
+				},
+				{
+					"sha": "ce020e58a2d6a380ae177800817b1fa3bb5120b8",
+					"text": "Show all move review directions and allow saving visual warnings"
+				},
+				{
+					"sha": "47f76d2e35c7f2f316a2258544566af085dd1a4b",
+					"text": "Preserve move drafts and cancel pending item requests"
+				},
+				{
+					"sha": "c071fa4381470ec0d57d622782a44e5443d4aab2",
+					"text": "Studio: Preserve Skeleton V3 fallback consent after reconnect"
+				},
+				{
+					"sha": "8905730bb99b721871272e86efef7395fcef1812",
+					"text": "Settings: Unify backups and default to PNG exports"
+				},
+				{
+					"sha": "544aa8a76e166cbfe06b9a2cf479e5cd0ec92993",
+					"text": "Settings: Refine navigation, backups, and preference reset"
+				},
+				{
+					"sha": "af359be6d386f864cb150fb05acb6124fb5927f9",
+					"text": "Settings: Teach Developer tools with a live practice panel"
+				},
+				{
+					"sha": "721f0b4ef55e216d0700016a8dc7104b720b49ba",
+					"text": "Settings: Unify page actions and isolate activity layout"
+				},
+				{
+					"sha": "1db579a641527f8cdde21bcfc481d4471ca5cb02",
+					"text": "Settings: Demonstrate job selection in Developer preview"
+				},
+				{
+					"sha": "aa51cfa47e06fce1b26451a0da57d3a1af66944f",
+					"text": "Settings: Isolate the Developer sample and name where its tools appear"
+				},
+				{
+					"sha": "2bd69aed4afe61db433a7f5cfa817688b545a931",
+					"text": "Settings: Center page titles and clarify page actions"
+				},
+				{
+					"sha": "2efdb759284bbf9e9bd451a89d495f60862d63eb",
+					"text": "Settings: Preserve visible focus on compact pages"
+				},
+				{
+					"sha": "d4e4268a7ad6b5de7ad685de6a586883a4a108a2",
+					"text": "Settings: Align controls and accessibility across pages"
+				},
+				{
+					"sha": "d89723fdb86fabecb8384808cd047d0761197d07",
+					"text": "Studio: Simplify settings and More navigation"
+				},
+				{
+					"sha": "962854f33b9672ab2becea8e90f48310caaadc48",
+					"text": "Backup: Preserve and recover archived records safely"
+				},
+				{
+					"sha": "72789bd87634a398b2b32d99a716b03726de92d8",
+					"text": "I18n: Clarify library backup privacy"
+				},
+				{
+					"sha": "f2c5130c28e9488e2b54e255b6a1de9a5f08f4c4",
+					"text": "Studio: Isolate backup tools and verify restore review"
+				},
+				{
+					"sha": "495a034ccd4c4628c7e72322ac4a8e79ced84081",
+					"text": "Store: Preserve restorable archive downloads and copy identity"
+				},
+				{
+					"sha": "d4891ea9fd9023c4a554aa35159ed91b01cec3a7",
+					"text": "I18n: Update backup and developer copy"
+				},
+				{
+					"sha": "e5cc43032257094ad96c0239df47064333b2c06d",
+					"text": "Studio: Preserve creator header geometry for developer tools"
+				},
+				{
+					"sha": "957debc472ca4ac42a03306de79014f5164bc6ab",
+					"text": "Store: Handle cyclic records and skip unsupported drafts"
+				}
+			]
+		}
+	]
+}

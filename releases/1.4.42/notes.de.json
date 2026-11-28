@@ -1,0 +1,33 @@
+{
+	"headline": "Dein Spielordner bleibt auf dem neuesten Stand",
+	"intro": "Du kannst jetzt einen Spielordner verknüpfen und PixelDoll ihn aktuell halten lassen. Der Papierkorb fängt gelöschte Arbeit auf. Auch die Navigation in der App ist klarer.",
+	"highlights": [
+		{
+			"title": "Exporte in einen Projektordner veröffentlichen",
+			"text": "Verknüpfe einen Spielordner unter Exportieren, dann schreibt PixelDoll die Dateien deiner Figur hinein. Mit aktivem Automatisch aktualisieren wird er nach jeder Änderung erneuert, und Jetzt aktualisieren prüft den Ordner auf Wunsch."
+		},
+		{
+			"title": "Gelöschte Arbeit aus dem Papierkorb wiederherstellen",
+			"text": "Figuren, Gegenstände, Kategorien, Animationen und Outfits landen jetzt im Papierkorb statt zu verschwinden. Du kannst sie bis zu 30 Tage lang zurückholen oder Rückgängig nutzen."
+		},
+		{
+			"title": "Phaser-AE-Export",
+			"text": "Die Phaser-Karte lässt dich jetzt Phaser AE oder Phaser 3 und 4 wählen. Jeder Export enthält zudem Anleitungen für die gewählte Engine."
+		},
+		{
+			"title": "Optionale Musik und Soundeffekte",
+			"text": "Du kannst jetzt Musik und Soundeffekte einschalten. Sie sind aus, bis du sie wählst, und die Steuerung Audio sitzt in jeder oberen Leiste."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Die Symbole der Ausrüstungsplätze in der Garderobe zeigen keinen losen Griffpunkt mehr, wenn du nicht ziehst."
+		},
+		{
+			"text": "Mit der rechten Maustaste greifst du in Draufsicht und Seitenansicht an, statt ein Menü zu öffnen."
+		},
+		{
+			"text": "Die Karte Projektordner passt jetzt auf schmale Smartphone-Bildschirme."
+		}
+	]
+}

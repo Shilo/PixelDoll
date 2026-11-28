@@ -1,0 +1,33 @@
+{
+	"headline": "Folder game Anda tetap mutakhir",
+	"intro": "Anda kini dapat menautkan folder game dan membiarkan PixelDoll menjaganya tetap mutakhir, sementara Tempat sampah menjadi jaring pengaman untuk karya yang terhapus. Berpindah di dalam aplikasi juga terasa lebih jelas.",
+	"highlights": [
+		{
+			"title": "Terbitkan ekspor ke folder proyek",
+			"text": "Tautkan folder game dari Ekspor dan PixelDoll akan menulis file karakter Anda ke dalamnya. Dengan Perbarui otomatis aktif, folder disegarkan setelah setiap perubahan, dan Perbarui sekarang memeriksa folder kapan pun Anda membutuhkannya."
+		},
+		{
+			"title": "Pulihkan karya yang dihapus dari Tempat sampah",
+			"text": "Karakter, item, kategori, animasi, dan setelan kini masuk ke Tempat sampah alih-alih hilang. Anda dapat mengembalikannya hingga 30 hari, atau gunakan Urungkan."
+		},
+		{
+			"title": "Ekspor Phaser AE",
+			"text": "Kartu Phaser kini memungkinkan Anda memilih Phaser AE atau Phaser 3 dan 4. Setiap ekspor juga menyertakan panduan untuk mesin yang Anda pilih."
+		},
+		{
+			"title": "Musik dan efek suara opsional",
+			"text": "Anda kini dapat menyalakan musik dan efek suara. Keduanya mati sampai Anda memilihnya, dan kontrol Audio ada di setiap bilah atas."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Ikon slot lemari tidak lagi menampilkan titik pegangan yang tidak diperlukan saat Anda tidak sedang menyeret."
+		},
+		{
+			"text": "Klik kanan menyerang di Tampak atas dan Gulir samping, tanpa membuka menu."
+		},
+		{
+			"text": "Kartu Folder proyek kini pas di layar ponsel yang sempit."
+		}
+	]
+}

@@ -1,0 +1,33 @@
+{
+	"headline": "Votre dossier de jeu reste à jour",
+	"intro": "Vous pouvez désormais lier un dossier de jeu et laisser PixelDoll le tenir à jour, tandis que la Corbeille protège votre travail supprimé. La navigation dans l’application est aussi plus claire.",
+	"highlights": [
+		{
+			"title": "Publier les exports dans un dossier de projet",
+			"text": "Liez un dossier de jeu depuis Exporter et PixelDoll y écrit les fichiers de votre personnage. Avec Mettre à jour automatiquement activé, il se met à jour après chaque modification, et Mettre à jour vérifie le dossier à la demande."
+		},
+		{
+			"title": "Restaurer le travail supprimé depuis la Corbeille",
+			"text": "Les personnages, objets, catégories, animations et tenues vont désormais dans la Corbeille au lieu de disparaître. Vous pouvez les restaurer pendant 30 jours, ou utiliser Annuler."
+		},
+		{
+			"title": "Export Phaser AE",
+			"text": "La carte Phaser vous permet désormais de choisir Phaser AE ou Phaser 3 et 4. Chaque export inclut aussi des guides pour le moteur choisi."
+		},
+		{
+			"title": "Musique et effets sonores facultatifs",
+			"text": "Vous pouvez désormais activer la musique et les effets sonores. Ils restent désactivés tant que vous ne les choisissez pas, et le contrôle Audio figure dans chaque barre supérieure."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Les icônes des emplacements de la garde-robe n’affichent plus de point de poignée parasite lorsque vous ne faites pas glisser."
+		},
+		{
+			"text": "Le clic droit attaque en Vue de dessus et en Défilement horizontal au lieu d’ouvrir un menu."
+		},
+		{
+			"text": "La carte Dossier du projet s’adapte désormais aux petits écrans de téléphone."
+		}
+	]
+}

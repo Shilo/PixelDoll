@@ -1,0 +1,33 @@
+{
+	"headline": "Oyun klasörünüz güncel kalır",
+	"intro": "Artık bir oyun klasörü bağlayıp PixelDoll'un onu güncel tutmasını sağlayabilirsiniz. Çöp kutusu ise silinen çalışmalarınız için bir güvenlik ağı sunar. Uygulamada gezinmek de daha net hale geldi.",
+	"highlights": [
+		{
+			"title": "Dışa aktarımları bir proje klasörüne yayımlayın",
+			"text": "Dışa aktar bölümünden bir oyun klasörü bağlayın, PixelDoll karakterinizin dosyalarını oraya yazsın. Otomatik güncelle açıkken her değişiklikten sonra yenilenir, Şimdi güncelleyin ise klasörü istediğiniz zaman kontrol eder."
+		},
+		{
+			"title": "Silinen çalışmaları Çöp kutusundan geri yükleyin",
+			"text": "Karakterler, eşyalar, kategoriler, animasyonlar ve kıyafetler artık kaybolmak yerine Çöp kutusuna gider. Bunları 30 güne kadar geri yükleyebilir veya Geri alın seçeneğini kullanabilirsiniz."
+		},
+		{
+			"title": "Phaser AE dışa aktarımı",
+			"text": "Phaser kartı artık Phaser AE veya Phaser 3 ve 4 arasında seçim yapmanızı sağlar. Her dışa aktarım, seçtiğiniz motor için rehberleri de içerir."
+		},
+		{
+			"title": "İsteğe bağlı müzik ve ses efektleri",
+			"text": "Artık müzik ve ses efektlerini açabilirsiniz. Siz seçene kadar kapalıdırlar ve Ses denetimi her üst çubukta yer alır."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Gardırop ekipman yuvası simgeleri, sürüklemediğinizde artık yanlış bir tutma noktası göstermez."
+		},
+		{
+			"text": "Üstten görünüm ve Yandan kaydırmalı modlarda sağ tıklama artık menü açmak yerine saldırır."
+		},
+		{
+			"text": "Proje klasörü kartı dar telefon ekranlarına sığar."
+		}
+	]
+}

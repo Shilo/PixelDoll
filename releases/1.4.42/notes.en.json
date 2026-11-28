@@ -1,0 +1,33 @@
+{
+	"headline": "Your game folder stays up to date",
+	"intro": "You can now link a game folder and let PixelDoll keep it current, while Trash gives you a safety net for deleted work. Moving around the app feels clearer too.",
+	"highlights": [
+		{
+			"title": "Publish exports to a project folder",
+			"text": "Link a game folder from Export and PixelDoll writes your character's files into it. With Update automatically on, it refreshes after each change, and Update now checks the folder on demand."
+		},
+		{
+			"title": "Restore deleted work from Trash",
+			"text": "Characters, items, categories, moves and outfits now go to Trash instead of vanishing. You can bring them back for up to 30 days, or use Undo."
+		},
+		{
+			"title": "Phaser AE export",
+			"text": "The Phaser card now lets you choose Phaser AE or Phaser 3 and 4. Every export also includes guides for the engine you pick."
+		},
+		{
+			"title": "Optional music and sound effects",
+			"text": "You can now turn on music and sound effects. They are off until you choose them, and the Audio control sits on every top bar."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Wardrobe slot icons no longer show a stray grip dot when you are not dragging."
+		},
+		{
+			"text": "Right-click attacks in Top-down and Side-scroller instead of opening a menu."
+		},
+		{
+			"text": "The Project folder card now fits on narrow phone screens."
+		}
+	]
+}

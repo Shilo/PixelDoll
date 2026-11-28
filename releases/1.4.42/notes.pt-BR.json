@@ -1,0 +1,33 @@
+{
+	"headline": "Sua pasta do jogo continua atualizada",
+	"intro": "Agora você pode vincular uma pasta do jogo e deixar o PixelDoll mantê-la atualizada, enquanto a Lixeira oferece uma rede de segurança para trabalhos excluídos. Navegar pelo app também ficou mais claro.",
+	"highlights": [
+		{
+			"title": "Publicar exportações em uma pasta do projeto",
+			"text": "Vincule uma pasta do jogo em Exportar e o PixelDoll grava os arquivos do seu personagem nela. Com Atualizar automaticamente ativado, ela é atualizada após cada alteração, e Atualizar agora verifica a pasta sob demanda."
+		},
+		{
+			"title": "Restaurar trabalhos excluídos da Lixeira",
+			"text": "Personagens, itens, categorias, animações e trajes agora vão para a Lixeira em vez de desaparecer. Você pode recuperá-los por até 30 dias ou usar Desfazer."
+		},
+		{
+			"title": "Exportação para Phaser AE",
+			"text": "O cartão do Phaser agora permite escolher Phaser AE ou Phaser 3 e 4. Toda exportação também inclui guias para o motor que você escolher."
+		},
+		{
+			"title": "Músicas e efeitos sonoros opcionais",
+			"text": "Você pode ativar músicas e efeitos sonoros. Eles ficam desligados até você escolher, e o controle Áudio aparece em todas as barras superiores."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Os ícones dos espaços do Guarda-roupa não mostram mais um ponto de arraste indevido quando você não está arrastando."
+		},
+		{
+			"text": "Clique com o botão direito ataca na Vista de cima e na Rolagem lateral em vez de abrir um menu."
+		},
+		{
+			"text": "O cartão Pasta do projeto agora cabe em telas estreitas de celular."
+		}
+	]
+}
