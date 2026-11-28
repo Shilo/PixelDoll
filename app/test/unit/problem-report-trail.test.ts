@@ -1,9 +1,13 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { LoadError } from '../../src/lib/lazy.ts';
 import { message } from '../../src/lib/message.ts';
 import { englishMessage } from '../../src/lib/report/english.ts';
 import {
 	buildReport,
+	endpointPath,
+	PIXELLAB_ROUTES,
 	MAX_URL_LENGTH,
 	reportText,
 	reportUrl,
@@ -282,6 +286,24 @@ describe('error facts', () => {
 		expect(details).toContain('HTTP status: 422');
 		expect(details).toContain('Endpoint: POST /characters/{id}');
 		expect(details).not.toContain('Alice');
+	});
+
+	test('a path in thrown or stored text is reported only when it is a PixelLab route', () => {
+		const text = all({ error: 'POST /private/alice-secret-folder -> 500: boom', uncaught: true });
+		expect(text).not.toContain('alice');
+		expect(text).not.toContain('private');
+	});
+
+	test('the known routes cover every route PixelDoll calls', () => {
+		const source = readFileSync(
+			join(import.meta.dirname, '../../src/lib/pixellab/routes.ts'),
+			'utf8'
+		);
+		const paths = [...source.matchAll(/\b(?:get|post)\(\s*[`'](\/[^`'?]+)/g)].map(([, path]) =>
+			endpointPath(path.replace(/\$\{[^}]*\}/g, 'abc123def'))
+		);
+		expect(paths.length).toBeGreaterThan(15);
+		for (const path of paths) expect(PIXELLAB_ROUTES).toContain(path);
 	});
 
 	test('a plain error reports where PixelDoll threw it, from its own files only', () => {

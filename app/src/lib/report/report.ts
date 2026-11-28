@@ -412,17 +412,47 @@ function failedModule(message: unknown, base: string | undefined): string | unde
 		: undefined;
 }
 
-/** The method, endpoint and status of a "METHOD /path -> 422" request prefix inside stored error text. The method and path
- *  must lead the status, so a status-like phrase in provider text is not read as one. */
+/** Every PixelLab route PixelDoll calls (lib/pixellab/routes.ts and the queue), normalized by endpointPath. Text can hold
+ *  any path, so an endpoint read from text is reported only when it is one of these. */
+export const PIXELLAB_ROUTES: ReadonlySet<string> = new Set([
+	'/animate-pixminimax',
+	'/animate-with-skeleton-v3',
+	'/animate-with-text-v3',
+	'/background-jobs/{id}',
+	'/balance',
+	'/characters',
+	'/characters/animations',
+	'/characters/{id}',
+	'/create-character-pro',
+	'/create-character-pro-flash',
+	'/create-character-state',
+	'/create-character-v3',
+	'/create-character-with-8-directions',
+	'/edit-animation-v2',
+	'/edit-image-pixen',
+	'/edit-image-pro-flash',
+	'/edit-images-v2',
+	'/enhance-animation-v3-prompt',
+	'/enhance-character-v3-prompt',
+	'/enhance-pixen-prompt',
+	'/estimate-skeleton',
+	'/inpaint-v3',
+	'/pro-flash/capabilities',
+	'/transfer-outfit-v2'
+]);
+
+/** The method, endpoint and status of a "METHOD /path -> 422" request prefix inside stored or thrown text. The method and
+ *  path must lead the status, so a status-like phrase in provider text is not read as one, and the path must be a known
+ *  route. */
 function requestFacts(text: string): ErrorFacts {
 	const request = /\b(GET|POST|PUT|PATCH|DELETE) (\/\S*) -> (\d{3})\b/.exec(text);
-	return request
-		? {
-				method: request[1],
-				endpoint: endpointPath(request[2]),
-				status: count(Number(request[3]), 999) || undefined
-			}
-		: {};
+	if (!request) return {};
+	const endpoint = endpointPath(request[2]);
+	return {
+		method: request[1],
+		endpoint: endpoint && PIXELLAB_ROUTES.has(endpoint) ? endpoint : undefined,
+		status: count(Number(request[3]), 999) || undefined
+	};
 }
 
 /** What an error may contribute: its name, a localized message, and for a PixelLab error its status, kind and endpoint
