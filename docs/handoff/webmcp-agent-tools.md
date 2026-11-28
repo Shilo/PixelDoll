@@ -1,6 +1,6 @@
 # Handoff: WebMCP and agent tools (paused 2026-11-27)
 
-Branch `claude/pixeldoll-ai-agent-integration-ef0b01` holds a complete, tested agent integration that is **not merged**.
+Branch `feat/webmcp-agent-tools` holds a complete, tested agent integration that is **not merged**.
 Board card: "Add WebMCP support" (Later). Read this first, then [agent-integration.md](../agent-integration.md) (setup,
 tools, safety) and [the research record](../research/2026-11-22-agent-automation/README.md) (four iterations, tests,
 compatibility, final decision).
