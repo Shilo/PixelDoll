@@ -493,6 +493,7 @@
 		"cancelSaveError": "İptal kaydedilemedi. Bu sekmeyi açık tutun ve tekrar deneyin.",
 		"preparing": "Eşya hazırlanıyor",
 		"remake": "Bu karakter için kopya yap…",
+		"redraw": "Yeniden çiz…",
 		"makeForSlot": "{slot} yuvası için bir tane üretin…",
 		"demoDeleteLocked": "Demonun eşyaları çöp kutusuna taşınamaz",
 		"cancelItem": "Eşyayı iptal edin",
@@ -841,8 +842,7 @@
 		},
 		"makingMissingFrames": "Eksik ekipman kareleri üretiliyor",
 		"makeYourOwn": "Kendinizinkini oluşturun",
-		"labelMakeMissingEquipmentFrames": "Eksik ekipman karelerini üretin",
-		"makeItAgain": "Yeniden üretin…"
+		"labelMakeMissingEquipmentFrames": "Eksik ekipman karelerini üretin"
 	},
 	"studio": {
 		"workspaceCopyTabTitle": "Çalışma alanı kopyası · PixelDoll",
@@ -2982,6 +2982,7 @@
 		"defaultIdea": "deri şapka",
 		"shortcut": "Eşyayı üretmek için Ctrl+Enter veya Cmd+Enter kullanın.",
 		"useOffHand": "Diğer eli kullanın",
+		"replaces": "Saklandığında {name} öğesinin yerini alır. Eskisi Çöp kutusuna taşınır.",
 		"ideas": "Fikirler",
 		"colorHint": "Renk ipucu",
 		"anyColor": "Fark etmez",

@@ -484,6 +484,7 @@
 		"cancelSaveError": "キャンセル状態を保存できませんでした。このタブを開いたまま、もう一度お試しください。",
 		"preparing": "アイテムを準備中",
 		"remake": "このキャラ用にコピー…",
+		"redraw": "描き直す…",
 		"makeForSlot": "{slot}用に作成…",
 		"demoDeleteLocked": "デモのアイテムはゴミ箱に移動できません",
 		"cancelItem": "生成をキャンセル",
@@ -818,8 +819,7 @@
 		},
 		"makingMissingFrames": "不足している装備のフレームを作成中",
 		"makeYourOwn": "自分で作成",
-		"labelMakeMissingEquipmentFrames": "不足している装備のフレームを作成",
-		"makeItAgain": "もう一度作成…"
+		"labelMakeMissingEquipmentFrames": "不足している装備のフレームを作成"
 	},
 	"studio": {
 		"workspaceCopyTabTitle": "ワークスペースのコピー・PixelDoll",
@@ -2901,6 +2901,7 @@
 		"defaultIdea": "革の帽子",
 		"shortcut": "Ctrl+EnterまたはCmd+Enterでアイテムを作成します。",
 		"useOffHand": "オフハンドを使う",
+		"replaces": "保持すると{name}と置き換わり、古いものはゴミ箱に移動します。",
 		"ideas": "アイデア",
 		"colorHint": "色のヒント",
 		"anyColor": "指定なし",

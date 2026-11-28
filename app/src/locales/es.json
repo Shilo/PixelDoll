@@ -493,6 +493,7 @@
 		"cancelSaveError": "No se pudo guardar la cancelación. Mantén esta pestaña abierta e inténtalo de nuevo.",
 		"preparing": "Preparando tu objeto",
 		"remake": "Hacer copia para este personaje…",
+		"redraw": "Redibujar…",
 		"makeForSlot": "Crear uno para la ranura {slot}…",
 		"demoDeleteLocked": "Los objetos de la demo no se pueden mover a la papelera",
 		"cancelItem": "Cancelar generación",
@@ -841,8 +842,7 @@
 		},
 		"makingMissingFrames": "Creando los fotogramas de equipamiento que faltan",
 		"makeYourOwn": "Crea el tuyo",
-		"labelMakeMissingEquipmentFrames": "Crear los fotogramas de equipamiento que faltan",
-		"makeItAgain": "Volver a crearlo…"
+		"labelMakeMissingEquipmentFrames": "Crear los fotogramas de equipamiento que faltan"
 	},
 	"studio": {
 		"workspaceCopyTabTitle": "Copia del espacio de trabajo · PixelDoll",
@@ -2982,6 +2982,7 @@
 		"defaultIdea": "un sombrero de cuero",
 		"shortcut": "Ctrl+Enter o Cmd+Enter para crear el objeto.",
 		"useOffHand": "Usar mano secundaria",
+		"replaces": "Sustituye a {name} cuando lo conserves. El anterior va a la Papelera.",
 		"ideas": "Ideas",
 		"colorHint": "Pista de color",
 		"anyColor": "Cualquiera",

@@ -37,6 +37,8 @@ export interface NewItemInput {
 	prompt: string;
 	key?: Key;
 	method?: Method;
+	/** The item this one replaces once it is kept (Redraw: an item without a design to pose gets a new one). */
+	supersedes?: string;
 } // key: measured by a previous attempt (Try again); method: chosen in Advanced (absent = automatic)
 export interface ItemRoute {
 	label: string;

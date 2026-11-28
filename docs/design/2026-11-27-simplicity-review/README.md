@@ -142,3 +142,9 @@ An independent review of the whole branch (simplicity first, readable layouts, m
 | AGENTS.md repeats two rules from the usability principles. | Kept: the owner asked for the practices to be made permanent there. |
 | Create spends on an empty description; branch collision with t3/review-easy-github-tasks. | Left to that branch, which already blocks an empty description; merge it first, then merge main here. |
 | Tips cover the Connect header and the Head slot's buttons. | Existing open item on tip placement. |
+
+## Redraw for items without a design to pose
+
+The owner rejected a dead end: a missing item must always offer a way forward. An item made outside the app's pipeline (the demo's Wizard hat, older imports) has art but no saved design to pose, so no move can be drawn for it. Its row in a Move window now offers **Redraw…**: the priced New item form opens with the item's prompt, its current art as the reference and a line naming what it replaces. Keeping the result moves outfits to the new item and the old one to Trash (undoable), and the new item can then be drawn onto moves. The stage note's own-item remake uses the same path, so neither leaves a duplicate. Generate items stays visible and disabled until something is drawable.
+
+The PixelLab tip now opens beside Connect instead of over its title, and finds the key link in Connect's footer on later opens (it pointed at the form, where the link no longer is). The Wardrobe "Try on gear" tip still covers the Head header's buttons; every placement tried covers some control, so it stays the open tip-placement item.

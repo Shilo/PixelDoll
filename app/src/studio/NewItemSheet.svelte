@@ -106,6 +106,9 @@ ${name}` !== typedAtStart || reference !== openedReference
 	// Make copy for self opens with the item's first frame attached, read like a picked file so it is sized for this
 	// item's canvas.
 	const referenceFrom = untrack(() => (draft ? undefined : ui.newItem.referenceFrom));
+	/** Redraw: the item this one replaces once kept, while it stays in the same category. */
+	const supersedes = untrack(() => (draft ? undefined : ui.newItem.supersedes));
+	const supersedeSlot = untrack(() => ui.newItem.slot);
 	if (referenceFrom) {
 		referenceLoading = true;
 		void (async () => {
@@ -133,10 +136,12 @@ ${name}` !== typedAtStart || reference !== openedReference
 	const fullPrompt = $derived(`${prompt.trim()}${color ? `, ${color} colored` : ''}`);
 	const suggestedName = $derived(name.trim() || itemNameFrom(prompt));
 	const itemName = $derived(suggestedName || 'New item');
+	const replacing = $derived(supersedes && slot === supersedeSlot ? supersedes : undefined);
 	const input = $derived({
 		name: itemName,
 		slot,
 		prompt: fullPrompt,
+		...(replacing ? { supersedes: replacing.id } : {}),
 		...(reference
 			? {
 					reference: { base64: reference.base64, width: reference.width, height: reference.height }
@@ -395,6 +400,9 @@ ${name}` !== typedAtStart || reference !== openedReference
 			feature={t('newItem.feature')}
 		/>
 		<PoseIssues issues={plan?.poseIssues ?? []} />
+		{#if replacing}<p class="small bu-muted">
+				{t('newItem.replaces', { name: replacing.name })}
+			</p>{/if}
 		{#if rec && !rigReady(rec)}<p class="bu-notice" data-size="compact" data-tone="neutral">
 				<TriangleAlert size={16} /><span>{t('newItem.needsSetup')}</span><button
 					class="bu-action btn small"

@@ -493,6 +493,7 @@
 		"cancelSaveError": "Der Abbruch konnte nicht gespeichert werden. Lass diesen Tab offen und versuch es noch einmal.",
 		"preparing": "Dein Gegenstand wird vorbereitet",
 		"remake": "Kopie für diese Figur…",
+		"redraw": "Neu zeichnen…",
 		"makeForSlot": "Für {slot} erstellen…",
 		"demoDeleteLocked": "Die Gegenstände der Demo können nicht in den Papierkorb",
 		"cancelItem": "Gegenstand abbrechen",
@@ -841,8 +842,7 @@
 		},
 		"makingMissingFrames": "Fehlende Ausrüstungsframes werden erstellt",
 		"makeYourOwn": "Selbst erstellen",
-		"labelMakeMissingEquipmentFrames": "Fehlende Ausrüstungsframes erstellen",
-		"makeItAgain": "Neu erstellen…"
+		"labelMakeMissingEquipmentFrames": "Fehlende Ausrüstungsframes erstellen"
 	},
 	"studio": {
 		"workspaceCopyTabTitle": "Arbeitsbereichskopie · PixelDoll",
@@ -2982,6 +2982,7 @@
 		"defaultIdea": "ein Lederhut",
 		"shortcut": "Erstelle den Gegenstand mit Strg+Enter oder Cmd+Enter.",
 		"useOffHand": "Nebenhand verwenden",
+		"replaces": "Ersetzt {name}, sobald du es behältst. Das alte kommt in den Papierkorb.",
 		"ideas": "Ideen",
 		"colorHint": "Farbvorgabe",
 		"anyColor": "Beliebig",

@@ -484,6 +484,7 @@
 		"cancelSaveError": "无法保存取消状态。请保持此标签页打开并重试。",
 		"preparing": "正在准备你的装备",
 		"remake": "为此角色制作副本…",
+		"redraw": "重绘…",
 		"makeForSlot": "为{slot}制作一件…",
 		"demoDeleteLocked": "演示的物品无法移到回收站",
 		"cancelItem": "取消生成",
@@ -818,8 +819,7 @@
 		},
 		"makingMissingFrames": "正在制作缺失的装备帧",
 		"makeYourOwn": "自己制作",
-		"labelMakeMissingEquipmentFrames": "制作缺失的装备帧",
-		"makeItAgain": "重新制作…"
+		"labelMakeMissingEquipmentFrames": "制作缺失的装备帧"
 	},
 	"studio": {
 		"workspaceCopyTabTitle": "工作区副本 · PixelDoll",
@@ -2901,6 +2901,7 @@
 		"defaultIdea": "一顶皮帽",
 		"shortcut": "按 Ctrl+Enter 或 Cmd+Enter 制作装备。",
 		"useOffHand": "使用副手",
+		"replaces": "保留后将替换{name}，旧的会移到回收站。",
 		"ideas": "灵感",
 		"colorHint": "颜色提示",
 		"anyColor": "任意",

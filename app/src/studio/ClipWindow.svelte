@@ -37,6 +37,7 @@
 	import { clipKind } from '../lib/runtime/timeline.js';
 	import { clipItemCoverage, clipMissingItems } from './itemGeneration.ts';
 	import { savedClipItemGeneration } from './savedClipItemGeneration.ts';
+	import { redrawItem } from './redrawItem.ts';
 	import { moveDeletionBlocked, removeMove, stateCaptureSource } from './moveActions.svelte.ts';
 	import { setupRedoMoves, unposedView } from '../lib/rig/setup.ts';
 	import { moveExportId } from '../lib/store/identity.ts';
@@ -169,6 +170,16 @@
 						? [[item.id, t('clipWindow.needsStandingDesign')] as const]
 						: []
 			)
+		)
+	);
+	/** A missing item with no saved design to pose can be redrawn for this character (priced in New item, replacing it). */
+	const redrawable = $derived(
+		new Set(
+			isDemo()
+				? []
+				: (generation.rows ?? [])
+						.filter(({ item, pending }) => !pending && item.prompt && rowReasons.has(item.id))
+						.map(({ item }) => item.id)
 		)
 	);
 	/** Every missing row already says why it can't be drawn, so the disabled action does not repeat it. */
@@ -326,9 +337,18 @@
 												aria-hidden="true"
 											/>{:else}<TriangleAlert size={16} aria-hidden="true" />{/if}<span
 											>{row.item.name}</span
-										>{#if !row.drawn && rowReasons.has(row.item.id)}<span class="row-reason"
-												>{rowReasons.get(row.item.id)}</span
-											>{:else}<span class="sr"
+										>{#if !row.drawn && rowReasons.has(row.item.id)}<span
+												class="row-reason"
+												id="{id}-redraw-{row.item.id}">{rowReasons.get(row.item.id)}</span
+											>{#if redrawable.has(row.item.id)}<button
+													type="button"
+													class="bu-action btn sm row-redraw"
+													data-variant="outline"
+													data-trail="clipWindow.redrawItem"
+													aria-describedby="{id}-redraw-{row.item.id}"
+													onclick={() => tool('items', () => redrawItem(row.item))}
+													>{t('itemMenu.redraw')}</button
+												>{/if}{:else}<span class="sr"
 												>{row.drawn ? t('clipWindow.itemDrawn') : t('clipWindow.itemMissing')}</span
 											>{/if}
 									</li>{/each}
@@ -444,6 +464,10 @@
 	.clip-items li :global(svg) {
 		flex: none;
 		color: var(--ok);
+	}
+	.row-redraw {
+		flex: none;
+		min-height: 32px;
 	}
 	.clip-items .row-reason {
 		margin-inline-start: auto;

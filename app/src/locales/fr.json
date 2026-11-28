@@ -493,6 +493,7 @@
 		"cancelSaveError": "Impossible d’enregistrer l’annulation. Gardez cet onglet ouvert et réessayez.",
 		"preparing": "Préparation de votre objet",
 		"remake": "Faire une copie pour ce personnage…",
+		"redraw": "Redessiner…",
 		"makeForSlot": "En créer un pour l’emplacement {slot}…",
 		"demoDeleteLocked": "Les objets de la démo ne peuvent pas aller dans la corbeille",
 		"cancelItem": "Annuler la génération",
@@ -841,8 +842,7 @@
 		},
 		"makingMissingFrames": "Création des images d’équipement manquantes",
 		"makeYourOwn": "Créer le vôtre",
-		"labelMakeMissingEquipmentFrames": "Créer les images d’équipement manquantes",
-		"makeItAgain": "Le recréer…"
+		"labelMakeMissingEquipmentFrames": "Créer les images d’équipement manquantes"
 	},
 	"studio": {
 		"workspaceCopyTabTitle": "Copie de l’espace de travail · PixelDoll",
@@ -2982,6 +2982,7 @@
 		"defaultIdea": "un chapeau en cuir",
 		"shortcut": "Ctrl+Entrée ou Cmd+Entrée pour créer l’objet.",
 		"useOffHand": "Utiliser la main secondaire",
+		"replaces": "Remplace {name} une fois conservé. L’ancien va dans la Corbeille.",
 		"ideas": "Idées",
 		"colorHint": "Indication de couleur",
 		"anyColor": "Sans préférence",

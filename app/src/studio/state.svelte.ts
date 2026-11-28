@@ -63,6 +63,7 @@ import {
 	loadProject,
 	pngBlobs,
 	readStoredImage,
+	repointItem,
 	type BeforeWrite,
 	type DressedRecord,
 	type StoredProject
@@ -424,6 +425,8 @@ export const ui = $state({
 		method?: Method;
 		/** An image the sheet attaches as its reference when it opens (Make copy for self: the item's first frame). */
 		referenceFrom?: Img;
+		/** The item the new one replaces once kept, named in the form. */
+		supersedes?: { id: string; name: string };
 	},
 	anim: '',
 	dir: 'south' as DirectionName,
@@ -4835,6 +4838,12 @@ export async function acceptGen(
 				auto ? { quiet: true, ...(worn ? { wear: item.id } : {}) } : { wear: item.id }
 			);
 		} else if (!viewing(g.draft.rigId)) void syncStoredProject(g.draft.rigId);
+		// A redraw replaces the item it was made for: outfits move to the new one and the old one goes to Trash (undoable).
+		const old = g.input.supersedes;
+		if (old && old !== item.id && doc.id === g.draft.rigId && itemById(old)) {
+			await repointItem(g.draft.rigId, old, item.id);
+			await removeItem(old);
+		}
 		if (doc.id !== g.draft.rigId) {
 			drop(g);
 			void refreshShared(); // the new item is offered to the character in view
@@ -5047,6 +5056,7 @@ export function openNewItem(
 		name?: string;
 		route?: Item['route'];
 		referenceFrom?: Img;
+		supersedes?: { id: string; name: string };
 	}
 ) {
 	ui.newItem = {
@@ -5056,6 +5066,7 @@ export function openNewItem(
 		name: prefill?.name ?? '',
 		reuseMethod: prefill?.route !== undefined,
 		...(prefill?.referenceFrom ? { referenceFrom: prefill.referenceFrom } : {}),
+		...(prefill?.supersedes ? { supersedes: prefill.supersedes } : {}),
 		// Trying an item again keeps the animation method it was made with.
 		...(prefill?.route === 'ea2-anchor'
 			? { method: 'anchor' as const }

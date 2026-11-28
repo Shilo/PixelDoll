@@ -9168,13 +9168,13 @@ test('stage makes all missing item views while explicit repair stays on the curr
 	await expect(stageNote.getByRole('button', { name: /^Make missing views/ })).toContainText(
 		'~6 gens'
 	);
-	await expect(stageNote.getByRole('button', { name: /^Make it again/ })).toBeVisible();
+	await expect(stageNote.getByRole('button', { name: /^Redraw/ })).toBeVisible();
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
 		s.ui.dir = 'west';
 	});
-	await expect(stageNote.getByRole('button', { name: /^Make it again/ })).toHaveCount(0);
+	await expect(stageNote.getByRole('button', { name: /^Redraw/ })).toHaveCount(0);
 	const make = stageNote.getByRole('button', { name: /^Make missing views/ });
 	await expect(make).toContainText('~6 gens');
 	await expect(make).not.toContainText('…');
@@ -10612,10 +10612,10 @@ test('standing-first items quote standing and draw selected custom moves togethe
 	const walkWindow = page.locator('dialog.clip-window[open]');
 	const walkCoverage = await openItemSection(walkWindow, 'Wardrobe items');
 	await expect(walkCoverage).toContainText('5 of 6 items drawn');
-	// The missing row says why it can't be drawn; Generate items stays visible but disabled.
+	// The missing row says why it can't be drawn and offers a redraw; Generate items stays visible but disabled.
 	const wizardRow = walkCoverage.getByRole('listitem').filter({ hasText: 'Wizard hat' });
 	await expect(wizardRow).toContainText('No saved design to pose');
-	await expect(wizardRow.getByRole('button')).toHaveCount(0);
+	await expect(wizardRow.getByRole('button', { name: 'Redraw…', exact: true })).toBeVisible();
 	await expect(walkCoverage.getByRole('button', { name: /^Generate items/ })).toBeDisabled();
 	await page.keyboard.press('Escape');
 	await expect(walkWindow).toHaveCount(0);

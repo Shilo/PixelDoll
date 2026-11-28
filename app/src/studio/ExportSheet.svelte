@@ -727,13 +727,14 @@
 					: result?.kind === 'failed'
 						? t('export.sheet.noZip')
 						: hasNotes
-							? t('export.sheet.readyNotes')
+							? ''
 							: t(
 									'export.sheet.free'
-								)}{#if ready && !pendingExport && result?.kind !== 'recovery' && result?.kind !== 'failed' && hasNotes}<button
-				type="button"
-				class="btn link notes-link"
-				onclick={showNotes}>{t('export.sheet.seeNotes')}</button
+								)}{#if ready && !pendingExport && result?.kind !== 'recovery' && result?.kind !== 'failed' && hasNotes}<span
+				>{t('export.sheet.readyNotes')}
+				<button type="button" class="btn link notes-link" onclick={showNotes}
+					>{t('export.sheet.seeNotes')}</button
+				></span
 			>{/if}</span
 	>
 	{#if ready && !pendingExport && result?.kind === 'failed' && result.retryable}
@@ -1176,6 +1177,10 @@
 {/if}
 
 <style>
+	/* Reads as one sentence: the link sits after an ordinary space, not the footer's gap and button padding. */
+	.notes-link {
+		padding-inline: 0;
+	}
 	.export-page {
 		display: flex;
 		flex-direction: column;

@@ -493,6 +493,7 @@
 		"cancelSaveError": "Não foi possível salvar o cancelamento. Mantenha esta aba aberta e tente novamente.",
 		"preparing": "Preparando seu item",
 		"remake": "Fazer cópia para este personagem…",
+		"redraw": "Redesenhar…",
 		"makeForSlot": "Criar um item para o espaço {slot}…",
 		"demoDeleteLocked": "Os itens da demo não podem ir para a lixeira",
 		"cancelItem": "Cancelar item",
@@ -841,8 +842,7 @@
 		},
 		"makingMissingFrames": "Gerando os quadros de equipamento que faltam",
 		"makeYourOwn": "Criar o seu",
-		"labelMakeMissingEquipmentFrames": "Gerar quadros de equipamento que faltam",
-		"makeItAgain": "Gerar novamente…"
+		"labelMakeMissingEquipmentFrames": "Gerar quadros de equipamento que faltam"
 	},
 	"studio": {
 		"workspaceCopyTabTitle": "Cópia do espaço de trabalho · PixelDoll",
@@ -2991,6 +2991,7 @@
 		"defaultIdea": "um chapéu de couro",
 		"shortcut": "Use Ctrl+Enter ou Cmd+Enter para criar o item.",
 		"useOffHand": "Usar mão secundária",
+		"replaces": "Substitui {name} quando você mantiver. O antigo vai para a Lixeira.",
 		"ideas": "Ideias",
 		"colorHint": "Sugestão de cor",
 		"anyColor": "Qualquer cor",

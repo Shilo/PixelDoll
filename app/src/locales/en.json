@@ -493,6 +493,7 @@
 		"cancelSaveError": "Could not save cancellation. Keep this tab open and try again.",
 		"preparing": "Preparing your item",
 		"remake": "Make copy for self…",
+		"redraw": "Redraw…",
 		"makeForSlot": "Make one for the {slot}…",
 		"demoDeleteLocked": "The demo’s items can’t be moved to the Trash",
 		"cancelItem": "Cancel item",
@@ -841,8 +842,7 @@
 		},
 		"makingMissingFrames": "Making missing equipment frames",
 		"makeYourOwn": "Make your own",
-		"labelMakeMissingEquipmentFrames": "Make missing equipment frames",
-		"makeItAgain": "Make it again…"
+		"labelMakeMissingEquipmentFrames": "Make missing equipment frames"
 	},
 	"studio": {
 		"workspaceCopyTabTitle": "Workspace copy · PixelDoll",
@@ -2982,6 +2982,7 @@
 		"defaultIdea": "a leather hat",
 		"shortcut": "Ctrl+Enter or Cmd+Enter to make the item.",
 		"useOffHand": "Use off hand",
+		"replaces": "Replaces {name} once you keep it. The old one moves to Trash.",
 		"ideas": "Ideas",
 		"colorHint": "Color hint",
 		"anyColor": "Any",

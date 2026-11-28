@@ -484,6 +484,7 @@
 		"cancelSaveError": "Pembatalan tidak dapat disimpan. Biarkan tab ini terbuka dan coba lagi.",
 		"preparing": "Menyiapkan item Anda",
 		"remake": "Buat salinan untuk karakter ini…",
+		"redraw": "Gambar ulang…",
 		"makeForSlot": "Buat untuk slot {slot}…",
 		"demoDeleteLocked": "Item demo tidak bisa dipindahkan ke tempat sampah",
 		"cancelItem": "Batalkan item",
@@ -818,8 +819,7 @@
 		},
 		"makingMissingFrames": "Membuat frame perlengkapan yang belum ada",
 		"makeYourOwn": "Buat sendiri",
-		"labelMakeMissingEquipmentFrames": "Buat frame perlengkapan yang belum ada",
-		"makeItAgain": "Buat ulang…"
+		"labelMakeMissingEquipmentFrames": "Buat frame perlengkapan yang belum ada"
 	},
 	"studio": {
 		"workspaceCopyTabTitle": "Salinan ruang kerja · PixelDoll",
@@ -2901,6 +2901,7 @@
 		"defaultIdea": "topi kulit",
 		"shortcut": "Tekan Ctrl+Enter atau Cmd+Enter untuk membuat item.",
 		"useOffHand": "Gunakan tangan sekunder",
+		"replaces": "Menggantikan {name} setelah disimpan. Yang lama dipindahkan ke Tempat sampah.",
 		"ideas": "Ide",
 		"colorHint": "Petunjuk warna",
 		"anyColor": "Bebas",
