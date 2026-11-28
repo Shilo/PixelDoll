@@ -36,7 +36,8 @@ it('drops an unusable banner scene instead of the notes', () => {
 	).toBeUndefined();
 	expect(bannerProblem(' ')).toMatch(/no banner scene/);
 	expect(bannerProblem('A tailor works. A ranger waits.')).toMatch(/more than one sentence/);
-	expect(bannerProblem(Array(31).fill('cape').join(' '))).toMatch(/longer than 30 words/);
+	expect(bannerProblem(Array(15).fill('sandy-haired').join(' ') + '.')).toBeUndefined();
+	expect(bannerProblem(Array(41).fill('cape').join(' '))).toMatch(/longer than 40 words/);
 });
 
 it('ends the scene with exactly one period inside the fixed frame', () => {

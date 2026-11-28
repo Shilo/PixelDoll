@@ -171,8 +171,9 @@ function validate(
 export function bannerProblem(scene: string | undefined) {
 	const text = scene?.trim() ?? '';
 	if (!text) return 'Claude wrote no banner scene';
-	if ([...words.segment(text)].filter((part) => part.isWordLike).length > 30)
-		return 'the banner scene is longer than 30 words';
+	// The prompt asks for 30 words; the scene is never shown, so only a clearly runaway one is dropped. Counted by
+	// spaces, since a word counter splits "sandy-haired" in two.
+	if (text.split(/\s+/).length > 40) return 'the banner scene is longer than 40 words';
 	if (/[.!?]\s+\S/.test(text)) return 'the banner scene is more than one sentence';
 }
 
