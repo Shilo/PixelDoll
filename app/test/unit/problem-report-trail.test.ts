@@ -302,6 +302,9 @@ describe('error facts', () => {
 		});
 		expect(shaped).not.toContain('alice');
 		expect(shaped).not.toContain('Endpoint');
+		// Not one of the client's error kinds, so not reported as a PixelLab error with a status.
+		expect(shaped).not.toContain('ApiError');
+		expect(shaped).not.toContain('418');
 	});
 
 	test('a flow error wrapping a failed request keeps its status and endpoint', () => {

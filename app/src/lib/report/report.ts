@@ -480,7 +480,8 @@ function readErrorFacts(error: unknown, base?: string): ErrorFacts {
 		return { message: error as Message };
 	const out: ErrorFacts = {};
 	if (e.translation && typeof e.translation.key === 'string') out.message = e.translation;
-	const api = typeof e.status === 'number' && typeof e.kind === 'string';
+	// The client's errors carry one of its own kinds; any other object with a status is not a PixelLab error.
+	const api = typeof e.status === 'number' && oneOf(ERROR_KINDS, e.kind) !== undefined;
 	out.name = api
 		? 'ApiError'
 		: error instanceof Error || typeof e.name === 'string'
