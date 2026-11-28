@@ -1201,11 +1201,15 @@ for (const loading of ['stalled', 'failed'] as const) {
 			await expect(paused.getByRole('alert')).toHaveText(reason);
 			await paused.getByRole('button', { name: 'Close', exact: true }).click();
 			const more = page.getByRole('button', { name: 'More options', exact: true });
-			const update = page
-				.locator('#experience-options')
-				.getByRole('button', { name: 'Update to v9.3.2', exact: true });
+			const options = page.locator('#experience-options');
+			const update = options.getByRole('button', { name: 'Update to v9.3.2', exact: true });
 			await more.click();
-			await update.press('Enter');
+			// Opening the popover assigns initial focus on the next animation frame.
+			await expect(options.getByRole('button').first()).toBeFocused();
+			await expect(update).toBeEnabled();
+			await update.focus();
+			await expect(update).toBeFocused();
+			await page.keyboard.press('Enter');
 			await expect(paused.getByRole('alert')).toHaveText(reason);
 			await page.keyboard.press('Escape');
 			await expect(more).toBeFocused();

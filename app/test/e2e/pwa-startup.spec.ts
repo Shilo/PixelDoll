@@ -755,8 +755,10 @@ for (const startsOffline of [true, false]) {
 			await cachedApp(page, server.url, a);
 			await stage(page, server, b);
 			await pauseDownloadClock(page);
-			if (startsOffline) await context.setOffline(true);
-			else held = server.hold('release.json');
+			if (startsOffline) {
+				await context.setOffline(true);
+				await expect.poll(() => page.evaluate(() => navigator.onLine)).toBe(false);
+			} else held = server.hold('release.json');
 			await page.reload();
 			await expectControlledNavigation(page);
 			await expect(page.locator('.customize-action')).toBeEnabled();
@@ -788,8 +790,12 @@ for (const startsOffline of [true, false]) {
 				})
 			).rejects.toThrow(/Timeout/);
 			await loadedBuild(page, a);
-			await update.click();
-			await loadedBuild(page, b);
+			await test.step('Apply the ready update with the browser clock running', async () => {
+				// The paused clock only controls startup eligibility. Manual activation uses the real timers.
+				await page.clock.resume();
+				await update.click();
+				await loadedBuild(page, b);
+			});
 		} finally {
 			held?.release();
 			await context.setOffline(false);
@@ -804,15 +810,30 @@ test('an incomplete release cannot trigger a startup reload', async ({ page }) =
 		server = await pwaServer(a);
 	try {
 		await cachedApp(page, server.url, a);
-		server.failures.add('appearance.js');
-		server.deploy(b);
-		await page.reload();
-		await expect(page.locator('.customize-action')).toBeVisible();
-		await expect
-			.poll(() =>
-				server.requests.some((path) => path.includes('appearance.js?pd-build=' + b.release.build))
-			)
-			.toBe(true);
+		await pauseDownloadClock(page);
+		const blocked = server.hold('appearance.js');
+		try {
+			server.failures.add('appearance.js');
+			server.deploy(b);
+			await page.reload();
+			await expectControlledNavigation(page);
+			await expect(page.locator('.customize-action')).toBeVisible();
+			await expect
+				.poll(() =>
+					server.requests.some((path) => path.includes('appearance.js?pd-build=' + b.release.build))
+				)
+				.toBe(true);
+			// Retain the worker that actually requested the missing asset across its removal from the registration.
+			const installing = await page.evaluateHandle(
+				async () => (await navigator.serviceWorker.getRegistration())?.installing
+			);
+			await expect.poll(() => installing.evaluate((worker) => worker?.state)).toBe('installing');
+			blocked.release();
+			await expect.poll(() => installing.evaluate((worker) => worker?.state)).toBe('redundant');
+			await installing.dispose();
+		} finally {
+			blocked.release();
+		}
 		await expect
 			.poll(() =>
 				page.evaluate(
@@ -821,6 +842,7 @@ test('an incomplete release cannot trigger a startup reload', async ({ page }) =
 			)
 			.toBe('none');
 		await loadedBuild(page, a);
+		await page.clock.resume();
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		await expect(
 			page

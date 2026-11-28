@@ -12046,15 +12046,9 @@ async function expectAnchoredMenu(page: Page) {
 test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Escape returns to the ⋮', async ({
 	page
 }) => {
+	// Shared equipment tests exercise the settings switch. Seed the choice needed after deleting the own tile.
+	await page.addInitScript(() => localStorage.setItem('pixeldoll.wardrobe.showDemo', '1'));
 	await editableCopy(page);
-	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Settings…', exact: true }).click();
-	await page
-		.getByRole('dialog', { name: 'Settings' })
-		.getByRole('button', { name: 'Wardrobe', exact: true })
-		.click();
-	await page.getByRole('switch', { name: 'Hide shared items from demo character' }).uncheck();
-	await page.keyboard.press('Escape');
 	await equipmentGroup(page, 'Head');
 	const head = section(page, 'Head');
 	// The character's own tile: once it is deleted, the demo's own Wizard hat is offered from the demo instead, in the
@@ -12170,6 +12164,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	// The same ⋮ toggles it closed again.
 	await more.click();
 	await expect.poll(() => menuOpen(page)).toBe(true);
+	await expect(items.first()).toBeFocused();
 	await more.click();
 	await expect.poll(() => menuOpen(page)).toBe(false);
 	await expect(more).toHaveAttribute('aria-expanded', 'false');
@@ -12192,6 +12187,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	const helmetWorn = (await helmet.getAttribute('aria-pressed'))!;
 	await more.click();
 	await expect.poll(() => menuOpen(page)).toBe(true);
+	await expect(items.first()).toBeFocused();
 	await helmet.click();
 	await expect.poll(() => menuOpen(page)).toBe(false);
 	await expect(helmet).toHaveAttribute('aria-pressed', helmetWorn);
@@ -12253,6 +12249,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	// Scrolling the ⋮ out of view closes the menu; focus stays on that ⋮, without scrolling back or jumping to the header.
 	await helmetMore.click();
 	await expect.poll(() => menuOpen(page)).toBe(true);
+	await expect(items.first()).toBeFocused();
 	await page.locator('#wardrobe-list').evaluate((list) => (list.scrollTop += 2000));
 	await expect.poll(() => menuOpen(page)).toBe(false);
 	await expect(helmetMore).toBeFocused();
