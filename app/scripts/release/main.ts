@@ -153,7 +153,7 @@ function options() {
 // A test repository can read the real site's Pages history while publishing only to itself, without deploying.
 const pagesEnabled = process.env.RELEASE_PAGES !== 'off';
 
-async function deployIndex(github: GitHub, deployments: GitHub) {
+async function deployIndex(actions: GitHub, deployments: GitHub) {
 	if (!pagesEnabled)
 		return console.log('Pages deploys are off for this repository (RELEASE_PAGES=off).');
 	const head = fetchMain(cwd);
@@ -173,8 +173,8 @@ async function deployIndex(github: GitHub, deployments: GitHub) {
 				);
 		}
 	}
-	if (await github.pagesDeployPending(head)) return;
-	await github.dispatchPages();
+	if (await actions.pagesDeployPending(head)) return;
+	await actions.dispatchPages();
 	console.log('Requested a Pages deploy for the release index.');
 }
 
@@ -191,6 +191,8 @@ async function main() {
 		process.env.RELEASE_DEPLOYMENTS_REPOSITORY || github.repository,
 		token
 	);
+	// Pages deploys use the workflow token, which the workflow grants actions: write; RELEASE_TOKEN may not run workflows.
+	const actions = new GitHub(github.repository, token);
 	if (!dryRun) {
 		if (!token) throw new Error('Publishing requires GITHUB_TOKEN');
 		if (git(cwd, 'status', '--porcelain')) throw new Error('Publishing requires a clean checkout');
@@ -225,7 +227,7 @@ async function main() {
 			);
 		} finally {
 			if (done.length)
-				await deployIndex(github, deployments).catch((error: unknown) => {
+				await deployIndex(actions, deployments).catch((error: unknown) => {
 					if (!failed) throw error;
 					console.error(`Pages deploy request also failed: ${String(error)}`);
 				});
@@ -312,7 +314,7 @@ async function main() {
 	// A prior run can stop after the index push and before the Pages dispatch; this run's own dispatch covers it
 	// when it lists a release.
 	// An index pushed by an earlier run must reach the site even if this run's release later fails.
-	if (!dryRun && previous) await deployIndex(github, deployments);
+	if (!dryRun && previous) await deployIndex(actions, deployments);
 	let indexInRun = 0;
 	let listed = 0;
 	let failure: unknown;
@@ -402,7 +404,7 @@ async function main() {
 		// is reported without hiding the publish error that came first.
 		if (!dryRun && listed) {
 			try {
-				await deployIndex(github, deployments);
+				await deployIndex(actions, deployments);
 			} catch (error) {
 				if (failure === undefined) throw error;
 				console.error(`Pages deploy request also failed: ${String(error)}`);
