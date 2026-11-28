@@ -1,0 +1,33 @@
+{
+	"headline": "Teilen, exportieren und mehr von deiner Arbeit behalten",
+	"intro": "Diese Woche gibt es schnelle Wege, deinen Charakter zu zeigen, mehr Kontrolle beim Exportieren und einen ruhigeren Start für neue Charaktere und ihre Animationen.",
+	"highlights": [
+		{
+			"title": "Eine Vorschau deines Charakters schnell teilen",
+			"text": "Du kannst jetzt eine kurze Vorschau deines Charakters teilen, mit einfacheren Teilen-Optionen, die alle Blickrichtungen bündeln. Skalierte Exporte zum Teilen und eine PNG-Kopie, die erhalten bleibt, sind ebenfalls neu."
+		},
+		{
+			"title": "Exporteinstellungen, die du steuerst",
+			"text": "Exporteinstellungen werden jetzt sitzungsübergreifend gespeichert, und jede Animation kann eigene, explizite Exporteinstellungen haben. Ein nativer GDevelop-Projektexport und eine gruppierte Auswahl für den Export sind ebenfalls neu."
+		},
+		{
+			"title": "Neue Charaktere starten mit Default",
+			"text": "Beim Erstellen eines Charakters bekommst du zuerst eine dauerhafte Animation Default. Danach kannst du Leerlauf- und Gehanimationen mit Add idle + walk hinzufügen, und Animationen in der Warteschlange laufen nacheinander."
+		},
+		{
+			"title": "Sauberere Körper und besser passende Gegenstände",
+			"text": "Neue Grundkörper werden jetzt ohne Kleidung gezeichnet, sodass Oberkörper-Gegenstände kein graues Shirt mehr durchscheinen lassen. Gegenstände können außerdem die Körperpixel ausblenden, die sie verdecken, etwa Ohren unter einer Kapuze."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Nicht gespeicherte Outfit-Änderungen bleiben jetzt auch bei einem schnellen Neuladen oder Schließen des Tabs erhalten."
+		},
+		{
+			"text": "Geteilte Animationen wiederholen sich jetzt dauerhaft in einer Schleife."
+		},
+		{
+			"text": "Phaser- und Unity-Exporte behalten jetzt deine Animationszeiten bei."
+		}
+	]
+}

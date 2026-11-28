@@ -1,0 +1,33 @@
+{
+	"headline": "Paylaşın, dışa aktarın ve çalışmanızın daha fazlasını koruyun",
+	"intro": "Bu hafta karakterinizi göstermenin hızlı yolları, dışa aktarma üzerinde daha fazla denetim ve yeni karakterleri ile hareketlerini başlatmanın daha sakin bir yolu geliyor.",
+	"highlights": [
+		{
+			"title": "Karakter önizlemesini hızlıca paylaşın",
+			"text": "Karakterinizin hızlı bir önizlemesini, tüm yönleri içeren daha basit paylaşım denetimleriyle paylaşabilirsiniz. Ölçeklendirilmiş paylaşım dışa aktarımları ve kalıcı bir PNG kopyası da yeni."
+		},
+		{
+			"title": "Kontrol ettiğiniz dışa aktarma ayarları",
+			"text": "Dışa aktarma ayarları artık oturumlar arasında kaydediliyor ve her animasyonun kendi açık dışa aktarma ayarları olabiliyor. Yerel bir GDevelop proje dışa aktarımı ve gruplandırılmış bir dışa aktarma seçici de yeni."
+		},
+		{
+			"title": "Yeni karakterler Default ile başlar",
+			"text": "Karakter oluşturduğunuzda önce size sabit bir Default hareketi verilir. Ardından Add idle + walk ile boşta ve yürüme hareketleri ekleyebilirsiniz; sıradaki hareketler birer birer çalışır."
+		},
+		{
+			"title": "Daha temiz gövdeler ve daha iyi oturan eşyalar",
+			"text": "Yeni temel gövdeler çıplak çizildi, bu yüzden gövde eşyaları artık içinden gri bir tişört göstermiyor. Eşyalar ayrıca kapuşon altındaki kulaklar gibi kapattıkları gövde piksellerini gizleyebiliyor."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Kaydedilmemiş kıyafet düzenlemeleri hızlı yenilemede veya sekme kapatmada korunuyor."
+		},
+		{
+			"text": "Paylaşılan animasyonlar artık sürekli döngüde oynuyor."
+		},
+		{
+			"text": "Phaser ve Unity dışa aktarımları artık animasyon zamanlamanızı koruyor."
+		}
+	]
+}

@@ -1,0 +1,640 @@
+{
+	"total": 155,
+	"groups": [
+		{
+			"kind": "new",
+			"items": [
+				{
+					"sha": "a8feda8524fa87da3c812819ffd1e3774e945610",
+					"text": "Recover equipment consistency before manual review"
+				},
+				{
+					"sha": "1242daac7403a2bcb39fcb28c22cb22628916e19",
+					"text": "Persist global export settings and fix recovery loading"
+				},
+				{
+					"sha": "63cf5bef7fc267cf34018aba27aef3f7efffcf3c",
+					"text": "Add explicit per-animation export settings"
+				},
+				{
+					"sha": "16e310ace5837b0725645bde54e2aec807a47add",
+					"text": "Activity: Record each background job's final status and error"
+				},
+				{
+					"sha": "1ff13d88aee61bd606b63b4c49afb8c56b6455a0",
+					"text": "Studio: Hand the jobs to the tab where a click waits when the other tab is idle"
+				},
+				{
+					"sha": "3f0e57002023c8c47a6e33b5b698644e802d0a5a",
+					"text": "Add scaled share exports and persistent PNG copy"
+				},
+				{
+					"sha": "0bd2d13c68495e065288542051df6e460a3ad030",
+					"text": "Activate and dismiss toast notifications"
+				},
+				{
+					"sha": "f985efd2b4280eb82ec21f01e7ecedaae21a679e",
+					"text": "Show themed notifications at top center"
+				},
+				{
+					"sha": "37a0f148c21a27722744ff20ac66022a8bd214f5",
+					"text": "Show preview notice with app version"
+				},
+				{
+					"sha": "2cedb31be5b4b30941cf29dd605fef5fb4caf366",
+					"text": "Point remaining anchored studio overlays"
+				},
+				{
+					"sha": "6b835fdfc5e81954e6791e2af73a132873417f36",
+					"text": "Add adaptive pointed studio popovers"
+				},
+				{
+					"sha": "44b10d55a099c1f9dffa6228b9c8bc4e853babf5",
+					"text": "Studio: Simplify share controls and pack all facings"
+				},
+				{
+					"sha": "e95fb7e2f5f8eb3f640c90929c4545931bcaafbd",
+					"text": "Studio: Add quick character preview sharing"
+				},
+				{
+					"sha": "2c138061d7c63c5a9953bbc201999e08a107a543",
+					"text": "Items: Stream item previews, wear drafts while they load, save clean items"
+				},
+				{
+					"sha": "46376fff8301401ceb60484f9900264aedfe92cb",
+					"text": "Studio: Create characters with a Default move and queue idle + walk"
+				},
+				{
+					"sha": "87c72dda6fe29be437a8ef0cf263ea2304ec770e",
+					"text": "Studio: Draw new base bodies fully bare"
+				},
+				{
+					"sha": "4e77ef7d2cc5c7ec9c51ea83836b63c854afcf06",
+					"text": "Studio: Tap a worn item tile to take it off"
+				},
+				{
+					"sha": "4fdb6b863165b2593a7e7e3a4480b23d2eb32c9b",
+					"text": "Rig: Flag front and back body clips that turn side-on"
+				},
+				{
+					"sha": "122ee791e58bb1b2215e17ca4a08666c9f6d7e73",
+					"text": "Items: Let items hide the body pixels they cover"
+				},
+				{
+					"sha": "60311f5237d75744f8cf5e194067d31acc8c27c1",
+					"text": "Items: Add an azure key for green and purple items"
+				},
+				{
+					"sha": "aefefcb0a941f8f4c9b026a3e61a58ecd9e4751c",
+					"text": "Studio: Show the repository beside Source code"
+				},
+				{
+					"sha": "cf41d344ef7c243e912cbdfe014c550c1e65c527",
+					"text": "Studio: Group the More menu and name the version plainly"
+				},
+				{
+					"sha": "32bb6a4f925c4a735378bc4f97f0b19b9c5de807",
+					"text": "App: Version every shipped change automatically"
+				},
+				{
+					"sha": "788235ee584b4ac71158804ad40bce2e14a0989e",
+					"text": "Items: Add a blue chroma key and keep held pommels"
+				},
+				{
+					"sha": "172eedc0a382403889bd82c054d0e2910a471cb0",
+					"text": "Studio: Integrate immersive Bronze game experience"
+				},
+				{
+					"sha": "eaea55e3ca962fdcda47bc9a713f2b1347e50871",
+					"text": "Export: Use local monochrome brand icons"
+				},
+				{
+					"sha": "dc91766b27cd5327cce9fe62571e867ab66248e8",
+					"text": "Export: Add native GDevelop project and grouped picker"
+				},
+				{
+					"sha": "e2f2006445ceed69fc8ba225784310cd96035b15",
+					"text": "Design: Integrate published Bronze UI theme into prototype"
+				},
+				{
+					"sha": "c91ff469d1803dc1b06a71cdebf031eb2e537e77",
+					"text": "Studio: Add shared editor help and reorder actions"
+				},
+				{
+					"sha": "6157d26f84df41170d8a613cab03ac461486721d",
+					"text": "Pixellab: Centralize plan limits and guard paid-tier workflows"
+				},
+				{
+					"sha": "d859aaa35af3d963c6768e2416c1336a403f494e",
+					"text": "Studio: Compact character editor toolbar"
+				},
+				{
+					"sha": "fdf438d05ab5451806ca05f9b9b7120573f0a8de",
+					"text": "Studio: Implement linked V3 character creator"
+				},
+				{
+					"sha": "f9cecb955cd1e935bfc0ff4a8eccd6338a270dee",
+					"text": "Pixellab: Adapt concurrency to account plans and shared capacity"
+				},
+				{
+					"sha": "a75428934cfa4460452c488cceb2c71745bde903",
+					"text": "Studio: Add reviewed PixelLab API call peeks"
+				},
+				{
+					"sha": "dcf80ad2c75bdd96e8a28480d5deddbc2ae07b7f",
+					"text": "Wardrobe: Add compact category counts on desktop and mobile"
+				},
+				{
+					"sha": "088d67898e55a67eef782ae57da72261ff89340e",
+					"text": "Reuse verified equipment poses without paid fitting"
+				},
+				{
+					"sha": "17399a1e2af1792bc32b6d683070f9009e4b8c5f",
+					"text": "Studio: Add shared equipment library and fit reviews"
+				},
+				{
+					"sha": "49ef7700e8ab61f840d4d849c1244c7d649cff9a",
+					"text": "Add durable reviewed equipment fitting and missing-frame reuse"
+				},
+				{
+					"sha": "f43ae3f58ffb6231f0cd622d0f792fb6b0b53a4f",
+					"text": "Equipment: Add portable designs and verified fitting adapters"
+				},
+				{
+					"sha": "042d29b44d694d888a2b3dcaddd520c1f9856d05",
+					"text": "Add item-owned palettes and saved equipment colorways"
+				},
+				{
+					"sha": "873ccb5a81471626639ef7553b97d55c4837addd",
+					"text": "Preserve independent directions and harden PixelDoll workflows"
+				}
+			]
+		},
+		{
+			"kind": "improved",
+			"items": [
+				{
+					"sha": "aa9d86015afde6179f5649d14227d21007ecff82",
+					"text": "Studio: Load sheets and paid pipelines on demand"
+				},
+				{
+					"sha": "31dc7bb70f34f4f535969edd557e612bfacbe0d8",
+					"text": "Dress: Reuse recolored cells when the colors did not change"
+				},
+				{
+					"sha": "f931865d0fa5d2d23444efaf7e7411237f163260",
+					"text": "Experience: Lazy-load the top-down and side-scroller renderer"
+				},
+				{
+					"sha": "8b4969b42eb948f1130ad00765fe0d0023e7546e",
+					"text": "Items: Pose idle and walk in one call"
+				}
+			]
+		},
+		{
+			"kind": "fixed",
+			"items": [
+				{
+					"sha": "d4c5785f00b288505275a90a7a0f6d91047f30a8",
+					"text": "Studio: Bind equipment retries to reviewed scope and cost"
+				},
+				{
+					"sha": "0b7ede7bed2d2f6293e5637dfe05bd8e078413ca",
+					"text": "Require player consent for quality retries"
+				},
+				{
+					"sha": "12d463dcfb977329d0909c99c5047a9ef13d8dfe",
+					"text": "Avoid false smudge retries for tiny facial features"
+				},
+				{
+					"sha": "6c3a47fcc683d4b07d8907b24de679ca53bf04c2",
+					"text": "Preserve Unity export timing and replay completed clips"
+				},
+				{
+					"sha": "2e21f28e19a47d1ccc5e1e4f3e705e4243cdb124",
+					"text": "Preserve Phaser export animation timing"
+				},
+				{
+					"sha": "1c12e883a27dfc3ad0f15abd9c2ffeca86437714",
+					"text": "Save imports in the current format and skip unused tucked-hair copies"
+				},
+				{
+					"sha": "7c49772cefbb5924ec0c7cc6b48153cc17b58c60",
+					"text": "Preserve garment coverage and review imported poses"
+				},
+				{
+					"sha": "86befb7d486c2d79117f86c007638e9d832a1942",
+					"text": "Release generation leadership before tab teardown"
+				},
+				{
+					"sha": "fcab7f58e3fe882562adcf4917aee8e1fece79ca",
+					"text": "Renew recovery consent for exact cached measurements"
+				},
+				{
+					"sha": "264f1243f882ae2ba6b3739d59c17506a95fd1ed",
+					"text": "Bound export validation and verify engine archives"
+				},
+				{
+					"sha": "c4cb501f6cc5d2852a57c7cf4bb269d6da9fc613",
+					"text": "Reject sparse export preferences and animation catalogs"
+				},
+				{
+					"sha": "b79b8d63c0457a20aeb4523aa65d247b4b991d1c",
+					"text": "Recover export settings and completed move repairs"
+				},
+				{
+					"sha": "2ec555935fa2e1f5ea2d38d5ca40d8239a787448",
+					"text": "Preserve export choices across concurrent updates"
+				},
+				{
+					"sha": "b8bea65a3af5ae6e57fbc3efe483457e23fba013",
+					"text": "Studio: Keep refused clicks and item starts safe across a tab handoff"
+				},
+				{
+					"sha": "18333ffef2c6e97da6257476d0befa2086181924",
+					"text": "Studio: Resume before a waiting click and hand over only from a truly idle tab"
+				},
+				{
+					"sha": "4b164555b3049020ab7458d6b252e5a48b9bd9fd",
+					"text": "Loop shared animations continuously"
+				},
+				{
+					"sha": "e776cef533d9060742fd8342168d63db28b20ef1",
+					"text": "Studio: Run actions blocked by another tab once this tab takes over"
+				},
+				{
+					"sha": "607737e2a1a4b785f230101b659954b332c5e16f",
+					"text": "Studio: Queue moves from Add a move and time out failure messages"
+				},
+				{
+					"sha": "5801f68c6e429d3edc041561f88080b0479ce3d0",
+					"text": "Studio: Say when an unattended move or worn draft fails"
+				},
+				{
+					"sha": "a27720fcaff25f8bd6181573ac829a24416f15f3",
+					"text": "Preserve important toast feedback"
+				},
+				{
+					"sha": "6d7a0ac7083665f37e1134ab7b507e4d90b14707",
+					"text": "Fit toast width to its content"
+				},
+				{
+					"sha": "0f3a57bb4b43c44a000fb83cfbcb9ca913440d7e",
+					"text": "Clarify preview backup guidance"
+				},
+				{
+					"sha": "b417f13ba680e8b4e192e5df6a367e30d52f14ee",
+					"text": "Studio: Give Add idle + walk its own row in the phone creator footer"
+				},
+				{
+					"sha": "ef4bab899b482fcbf8258e956ef57ef482bfee83",
+					"text": "Studio: Keep Add idle + walk visible on phones; never offer to replace Default"
+				},
+				{
+					"sha": "cd00b0e745f842cf439df61987bd3fbd74e9e8e8",
+					"text": "Studio: Postpone the Default upgrade under unfinished equipment fits"
+				},
+				{
+					"sha": "2ba42fd4355a9424972d2285cce4688ddd06ca58",
+					"text": "Studio: Make Default the one standing move for every character"
+				},
+				{
+					"sha": "33124a24f4ce42e7712a980c9e5eb7bb1a5c1633",
+					"text": "Studio: Gate Make for moves on the plan and skip queued moves"
+				},
+				{
+					"sha": "ee2a06e8c97d79a74a853f45d7905d5367ee5bff",
+					"text": "Studio: Seed Add idle + walk with the creation seed"
+				},
+				{
+					"sha": "b2d543e312123975374367d6a839aec29f2c0903",
+					"text": "Items: Rebase an item saved after its body gained a move"
+				},
+				{
+					"sha": "3fca49c3cfda09da803a855e48c0ce90c68e62c0",
+					"text": "Studio: List only the failed character's queued moves in its sheet"
+				},
+				{
+					"sha": "38177e7694d43b5e7ded6b589c54e0964fba0d20",
+					"text": "Studio: Keep the move queue and character switches intact"
+				},
+				{
+					"sha": "990c243348aa3adefef77160ba5f1955a479fbec",
+					"text": "Studio: Consume Bronze UI disabled states"
+				},
+				{
+					"sha": "20203acb1fe121392297f1981c20098598bf7538",
+					"text": "Studio: Suppress hover on disabled controls"
+				},
+				{
+					"sha": "e9e90921ad6347bdcf3e2703a8bd7e33193a6058",
+					"text": "Studio: Fit share preview in short viewports"
+				},
+				{
+					"sha": "a533565c77c6b65e9495c2c8de24102d359da0e0",
+					"text": "Studio: Remove shortcut focus cue"
+				},
+				{
+					"sha": "becfc5ee73b7763357197df6a9361dc8f8a6a19d",
+					"text": "Keep popover keyboard focus visible"
+				},
+				{
+					"sha": "286c064562df312615f2a79a1f82872b4b5b7099",
+					"text": "Replace viewport focus ring with shortcut cue"
+				},
+				{
+					"sha": "8d88d7899f075ec3565acf8914c879398bb92753",
+					"text": "Studio: Fit Share notices in short viewports"
+				},
+				{
+					"sha": "3141300332ddec2759d09aa9ca4eff84bdd7b80d",
+					"text": "Studio: Keep Share choices and stable popover layout"
+				},
+				{
+					"sha": "b653d146a8ca43850196fcf4e4726dc69d678afe",
+					"text": "Studio: Disable GIF option for still selections"
+				},
+				{
+					"sha": "7359890b28c25d4c63d41df33fd748edb98712f1",
+					"text": "Studio: Enlarge multiview share previews"
+				},
+				{
+					"sha": "1f810e40c549b73be9213b4985524e010e88e245",
+					"text": "Studio: Share available views from aggregate selections"
+				},
+				{
+					"sha": "cf3e3282e5fd1cecc4c9777ad6e7edee562a931b",
+					"text": "Studio: Ask before posing items onto new moves; tidy review findings"
+				},
+				{
+					"sha": "fae47bbada6fe523c2a95151e9bd6810466d2021",
+					"text": "Studio: Pose items saved during Add idle + walk for the new moves"
+				},
+				{
+					"sha": "8bd32563c0dcfff39a1f824563ea33d55c2de9f4",
+					"text": "Studio: No wasted early poses, single-owner move queue, safe draft overlays"
+				},
+				{
+					"sha": "dfc36a3f7c5b0dfb9103f2321ef444546a4a3a24",
+					"text": "Studio: Keep saved outfits and drafts, and surface storage failures"
+				},
+				{
+					"sha": "0fac78a34c26f881477f23c7d28754857834135e",
+					"text": "Queue: Give up on downloads that keep failing and surface failed deletes"
+				},
+				{
+					"sha": "7c38ad45e0b06a72cafef1f7142bc239cf089cde",
+					"text": "Studio: Claim item draft ids and copy source before awaits"
+				},
+				{
+					"sha": "4af0241bd97f91086582896ad0478adcfb7e8d22",
+					"text": "Studio: Harden on-demand loading after review"
+				},
+				{
+					"sha": "60e2cbe88c77307ad06461575cb3499b8b371509",
+					"text": "Experience: Focus the first usable row when a menu opens"
+				},
+				{
+					"sha": "c7d69c18c25280b4f35e34ec49040a9b38c8d60e",
+					"text": "Experience: Show floor warnings only in the live views"
+				},
+				{
+					"sha": "a35b071dbd7c21aa86d595982de324d1272ca8af",
+					"text": "Rig: Describe side-on and reversed frames separately in the facing note"
+				},
+				{
+					"sha": "43bb6fa29db96882631b82c734d47cb7265c422f",
+					"text": "Items: Only back views may hide a small accessory"
+				},
+				{
+					"sha": "5ca7ef9e06e415ffffd8dcfc272f41f2940ed699",
+					"text": "Studio: Price the move preview's body render by its frame count"
+				},
+				{
+					"sha": "a1f6672f5d7a6bafa9926909a86a0e073c19fb27",
+					"text": "Rig: Skip the facing note on authored poses and name a reversed body"
+				},
+				{
+					"sha": "ba1ff599bbcb0f1363cd82db43f4656ec5dd2af9",
+					"text": "Items: Treat an empty view as hidden only when it really can be"
+				},
+				{
+					"sha": "b41a77afda6b5b1537e99e84fc33dfc5dc8923b6",
+					"text": "Items: Leave detached body effects out of the G2 body check"
+				},
+				{
+					"sha": "3591fb6273375d4056f703c9647b9cbd6d422996",
+					"text": "Items: Keep small accessories and review the views that hide them"
+				},
+				{
+					"sha": "d16d39794f08a7cc562b251c1199c07034add342",
+					"text": "Items: Use one measured pose price in every estimate"
+				},
+				{
+					"sha": "e8519fb848bc2d1cc8c4c24c44534d666915aec7",
+					"text": "Studio: Describe the prompt's own base clothes in body animations"
+				},
+				{
+					"sha": "93ddf1c2501420632bc0df020cfd44c427dbb085",
+					"text": "Compose: Tuck symmetrically and keep copied hidden-ear pixels"
+				},
+				{
+					"sha": "7d22fd9df8309761368b6e5577dfbe6a8d0277de",
+					"text": "Items: Check posed clips against the dressed design"
+				},
+				{
+					"sha": "e90ece61866d06749bf57bb4456e80220f482d0d",
+					"text": "Items: Switch keys on keyframe collisions, not on G2"
+				},
+				{
+					"sha": "3531a7376ee29f8e45f055621251347587d309a9",
+					"text": "Items: Keep steel gray when despilling the azure key"
+				},
+				{
+					"sha": "c9708aeb5f57f718c50e5c0f010eea99542759f7",
+					"text": "App: Keep the version in step with deploys and the build source"
+				},
+				{
+					"sha": "2d3a0ec9c1044a1c847d367229cacc00e850bb88",
+					"text": "Studio: Close the unload snapshot's load-window race and half-applies"
+				},
+				{
+					"sha": "4a84bd025e2e81696905ca6cec846b44b7f4a0d4",
+					"text": "Studio: Snapshot the full dress state on unload and replace, not merge"
+				},
+				{
+					"sha": "26ece2c9e06fe3466b594d6a1d086f1a2b384508",
+					"text": "Studio: Drop a deleted character's unsaved-outfit snapshot"
+				},
+				{
+					"sha": "7d81762403fc82bc5e9f9679f9c6c64678c8827d",
+					"text": "Studio: Keep unsaved outfits through a reload or close"
+				},
+				{
+					"sha": "9459dc54b94d7b1542493f86af263194100d3cbd",
+					"text": "Studio: Flush pending autosave when the tab is hidden or closed"
+				},
+				{
+					"sha": "00e1fc1420532330523b33116d1e7f7ff6b6439c",
+					"text": "Items: Keep joined head-item overflow the dressed keyframe has"
+				},
+				{
+					"sha": "04bc4624cf13f4a2934cedb278f31cd415b70cf6",
+					"text": "Resolve merge review findings"
+				},
+				{
+					"sha": "7fb0563911d01cabe5fb4dfa98995eca03dfb7dd",
+					"text": "Dress: Never block opening a project on a missing material label"
+				},
+				{
+					"sha": "dbb57b338c4ba120212e663cb0264182fad1da2f",
+					"text": "Stop \"colored\" hints blocking the magenta key and naming materials"
+				},
+				{
+					"sha": "3e207cd15dd4e3700758272f147eed2fe4927e22",
+					"text": "Studio: Correct interface copy and labels"
+				},
+				{
+					"sha": "e3650d7c9d1e79ea94206ba4076d1ee5a4f498de",
+					"text": "Studio: Resolve multi-reviewer findings in the experience UI"
+				},
+				{
+					"sha": "c2a7551fac87b7fa54936678649cb4cacc182e81",
+					"text": "Studio: Complete prototype parity review and repair remaining regressions"
+				},
+				{
+					"sha": "f7d8d72d6da0e85733706d28ccd5fd9cef0a91c1",
+					"text": "Studio: Restore prototype parity and hand off visual review"
+				},
+				{
+					"sha": "f3a37e62700cbf1a8d9a605d8e0f7064fb7c3679",
+					"text": "Auth: Harden shared token lifecycle without extra prompts"
+				},
+				{
+					"sha": "8f35a2ffc2a9814b39ac36fa97358f693206ab64",
+					"text": "Studio: Wrap creator actions around intrinsic tab widths"
+				},
+				{
+					"sha": "3edd12724b0216560f3fee8d228c4d34e30d7d4e",
+					"text": "Studio: Preserve creator tab labels in narrow layouts"
+				},
+				{
+					"sha": "794962a5b2d8631b60e342d7237652c84ae80ef0",
+					"text": "Resolve independently reproduced merge regressions"
+				},
+				{
+					"sha": "e92b3712ded75d35cbd5afe585572a7dba323e05",
+					"text": "Export: Simplify picker category labels"
+				},
+				{
+					"sha": "38318989f183208c85e8769649b64d9aa317055a",
+					"text": "Export: Enforce native contracts and preserve Godot depth order"
+				},
+				{
+					"sha": "2c5c1d5ba040f62891d34bc531a6c0b29947f643",
+					"text": "Studio: Surface move observations and review equipment framing"
+				},
+				{
+					"sha": "178db0c85e21f4c817693214781500dcac4e5f72",
+					"text": "Rig: Preserve body details and separate observations from redraw failures"
+				},
+				{
+					"sha": "5faef61a4db81d269f8e6067c37454c81e252d44",
+					"text": "Rig: Preserve sparse clips and retained-pivot alignment diagnostics"
+				},
+				{
+					"sha": "f20a2b6d877e5e642ac6f04b5b6b5d3905008102",
+					"text": "Rig: Distinguish direction baselines from foot drift"
+				},
+				{
+					"sha": "0a87efd6a99b3883f8ae3c3f06c95b3ca3debda3",
+					"text": "Studio: Preserve uncertain paid creator submissions on resume"
+				},
+				{
+					"sha": "269efc205763ee94a4b2c6962df2a3bc3d2a9840",
+					"text": "Studio: Validate V3 body sizes in four-pixel steps"
+				},
+				{
+					"sha": "eaa321556739f5a49fe51301aa7132ed781f7866",
+					"text": "Studio: Refine creator layout and expose all quality notes"
+				},
+				{
+					"sha": "12c5ebfeae791d3faff2695b44bd1f1b3336fa05",
+					"text": "Rig: Leave incomplete pose observations unscored"
+				},
+				{
+					"sha": "4ad5c71a0f1ab649f7af7cd52fb452c985d38c32",
+					"text": "Studio: Keep appearance hints intact through V3 enhancement"
+				},
+				{
+					"sha": "9aadc29d79000d15ff8832f2a7620d3668bd0e4e",
+					"text": "Studio: Preserve character identity and require complete rig measurements"
+				},
+				{
+					"sha": "b90a43f7417830d7012279431d22f85ccecd71dd",
+					"text": "Pixellab: Verify workflow eligibility before spending"
+				},
+				{
+					"sha": "d2c4c3e23c336d4ff562791cafd6a476076ae50b",
+					"text": "Studio: Stabilize character actions and compact preview labels"
+				},
+				{
+					"sha": "bbbdba843a976ba1fbcfda9260938ba08a78c897",
+					"text": "Studio: Resolve character creator review findings"
+				},
+				{
+					"sha": "fb9c3dfe6570c713358453137630e361c29b19c3",
+					"text": "Studio: Normalize new body moves before equipment fits"
+				},
+				{
+					"sha": "9056e212e9db566861e40d84a6dd38f4f69c4e96",
+					"text": "Studio: Preserve spacing before dollar charges"
+				},
+				{
+					"sha": "69810267145d518d4dbf52d6b650badf91971619",
+					"text": "Studio: Show dollar charges for equipment fits"
+				},
+				{
+					"sha": "0edaa011741c722186e16148dbad89f12ff75fa9",
+					"text": "Retain dollar charges in equipment fit usage"
+				},
+				{
+					"sha": "f083eccdc31355b9e019c55bbe3b548f248a496c",
+					"text": "Preserve outfit colors in standing fit review"
+				},
+				{
+					"sha": "c4f3268e6820cfb12960439bb1995a50a7f725ab",
+					"text": "Studio: Clarify unmeasured equipment checks and fit costs"
+				},
+				{
+					"sha": "617286382af91edb8cfffaa5ca8c0518896b21d4",
+					"text": "Remove deleted equipment references from stale outfit saves"
+				},
+				{
+					"sha": "df53647fb889816cd1d4360ed282caf79c676e7b",
+					"text": "Equipment: Generate and audit only missing fitted cells"
+				},
+				{
+					"sha": "f3faf84b4c1f515543cee41487c622f227b69fda",
+					"text": "Repair scoped item colours and price packed grids accurately"
+				},
+				{
+					"sha": "1f2ee6e6f304fd8ea4200efb33fae7f548907978",
+					"text": "Repair small body palette drift on cached frames"
+				},
+				{
+					"sha": "c101df5f5a498b485c7c70414259f1033fdc9d7d",
+					"text": "Add scoped artwork repair and safe joint recovery"
+				},
+				{
+					"sha": "cd1122add648006c64c5954e7979837b314dc1cc",
+					"text": "Retain better item poses and surface export review flags"
+				},
+				{
+					"sha": "4f954b6ac90cd5a4cfd0443a30748db34d5b20fa",
+					"text": "Preserve grip uncertainty and enforce queue limits"
+				}
+			]
+		}
+	]
+}

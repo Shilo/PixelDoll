@@ -1,0 +1,33 @@
+{
+	"headline": "Share, export and keep more of your work",
+	"intro": "This week brings quick ways to show off your character, more control over how you export, and a calmer way to get new characters and their moves started.",
+	"highlights": [
+		{
+			"title": "Share a character preview quickly",
+			"text": "You can now share a quick preview of your character, with simpler share controls that pack all facings. Scaled share exports and a PNG copy that sticks around are also new."
+		},
+		{
+			"title": "Export settings you control",
+			"text": "Export settings are now saved across sessions, and each animation can have its own explicit export settings. A native GDevelop project export and a grouped export picker are also new."
+		},
+		{
+			"title": "New characters start with Default",
+			"text": "Creating a character now gives you a standing Default move first. You can then add idle and walk moves with Add idle + walk, and queued moves run one at a time."
+		},
+		{
+			"title": "Cleaner bodies and better-fitting items",
+			"text": "New base bodies are now drawn bare, so torso items no longer show a gray shirt through them. Items can also hide the body pixels they cover, like ears under a hood."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Unsaved outfit edits now survive a quick reload or tab close."
+		},
+		{
+			"text": "Shared animations now loop continuously."
+		},
+		{
+			"text": "Phaser and Unity exports now keep your animation timing."
+		}
+	]
+}

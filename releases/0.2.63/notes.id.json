@@ -1,0 +1,33 @@
+{
+	"headline": "Bagikan, ekspor, dan simpan lebih banyak karya Anda",
+	"intro": "Minggu ini ada cara cepat untuk memamerkan karakter Anda, kontrol yang lebih besar atas cara ekspor, dan cara yang lebih tenang untuk memulai karakter baru serta animasinya.",
+	"highlights": [
+		{
+			"title": "Bagikan pratinjau karakter dengan cepat",
+			"text": "Anda sekarang bisa membagikan pratinjau karakter dengan cepat, dengan kontrol bagikan yang lebih sederhana dan memuat semua arah hadap. Ekspor bagikan berskala dan salinan PNG yang tetap tersimpan juga baru."
+		},
+		{
+			"title": "Pengaturan ekspor yang bisa Anda atur",
+			"text": "Pengaturan ekspor sekarang tersimpan di antara sesi, dan setiap animasi dapat memiliki pengaturan ekspor eksplisit sendiri. Ekspor proyek GDevelop asli dan pemilih ekspor berkelompok juga baru."
+		},
+		{
+			"title": "Karakter baru dimulai dengan Default",
+			"text": "Membuat karakter sekarang memberi Anda animasi Default berdiri terlebih dahulu. Anda kemudian dapat menambahkan animasi diam dan jalan dengan Tambah diam + jalan, dan animasi dalam antrean berjalan satu per satu."
+		},
+		{
+			"title": "Tubuh lebih bersih dan item lebih pas",
+			"text": "Tubuh dasar baru kini digambar tanpa pakaian, jadi item badan tidak lagi memperlihatkan kaus abu-abu di baliknya. Item juga dapat menyembunyikan piksel tubuh yang tertutupnya, seperti telinga di bawah tudung."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Edit setelan yang belum disimpan tetap ada setelah muat ulang cepat atau menutup tab."
+		},
+		{
+			"text": "Animasi yang dibagikan sekarang berulang terus-menerus."
+		},
+		{
+			"text": "Ekspor Phaser dan Unity sekarang tetap mempertahankan waktu animasi Anda."
+		}
+	]
+}

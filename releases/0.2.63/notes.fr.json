@@ -1,0 +1,33 @@
+{
+	"headline": "Partagez, exportez et conservez davantage de votre travail",
+	"intro": "Cette semaine apporte des moyens rapides de présenter votre personnage, davantage de contrôle sur la façon d'exporter, et une manière plus sereine de démarrer de nouveaux personnages et leurs animations.",
+	"highlights": [
+		{
+			"title": "Partager rapidement un aperçu du personnage",
+			"text": "Vous pouvez désormais partager un aperçu rapide de votre personnage, avec des contrôles de partage simplifiés qui regroupent toutes les orientations. Les exports de partage à l'échelle et une copie PNG conservée sont aussi nouveaux."
+		},
+		{
+			"title": "Des réglages d'export que vous maîtrisez",
+			"text": "Les réglages d'export sont désormais enregistrés d'une session à l'autre, et chaque animation peut avoir ses propres réglages d'export explicites. Un export natif de projet GDevelop et un sélecteur d'export groupé sont aussi nouveaux."
+		},
+		{
+			"title": "Les nouveaux personnages commencent avec Default",
+			"text": "La création d'un personnage vous donne d'abord une animation Default en position debout. Vous pouvez ensuite ajouter des animations idle et walk avec Add idle + walk, et les animations en file d'attente s'exécutent une à la fois."
+		},
+		{
+			"title": "Des corps plus propres et des objets mieux ajustés",
+			"text": "Les nouveaux corps de base sont désormais dessinés nus, si bien que les objets de torse n'affichent plus une chemise grise à travers eux. Les objets peuvent aussi masquer les pixels du corps qu'ils recouvrent, comme les oreilles sous une capuche."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Les modifications de tenue non enregistrées survivent désormais à un rechargement rapide ou à la fermeture d'un onglet."
+		},
+		{
+			"text": "Les animations partagées bouclent désormais en continu."
+		},
+		{
+			"text": "Les exports Phaser et Unity conservent désormais le timing de vos animations."
+		}
+	]
+}

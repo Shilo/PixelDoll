@@ -1,0 +1,33 @@
+{
+	"headline": "Comparte, exporta y conserva más de tu trabajo",
+	"intro": "Esta semana llegan formas rápidas de mostrar tu personaje, más control sobre cómo exportas y una manera más tranquila de empezar nuevos personajes y sus animaciones.",
+	"highlights": [
+		{
+			"title": "Comparte una vista previa del personaje rápidamente",
+			"text": "Ahora puedes compartir una vista previa rápida de tu personaje, con controles de compartir más sencillos que incluyen todas las orientaciones. También son nuevas las exportaciones compartidas a escala y una copia PNG que se mantiene disponible."
+		},
+		{
+			"title": "Ajustes de exportación bajo tu control",
+			"text": "Los ajustes de exportación ahora se guardan entre sesiones, y cada animación puede tener sus propios ajustes de exportación. También son nuevos una exportación nativa de proyecto para GDevelop y un selector de exportación agrupado."
+		},
+		{
+			"title": "Los personajes nuevos empiezan con Default",
+			"text": "Al crear un personaje, primero recibes una animación Default de pie. Luego puedes añadir animaciones de reposo y caminar con Añadir reposo + caminar, y las animaciones en cola se ejecutan una a una."
+		},
+		{
+			"title": "Cuerpos más limpios y objetos que encajan mejor",
+			"text": "Los nuevos cuerpos base se dibujan sin ropa, así que los objetos de torso ya no muestran una camiseta gris a través de ellos. Los objetos también pueden ocultar los píxeles del cuerpo que cubren, como las orejas bajo una capucha."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Los cambios no guardados en los atuendos se conservan tras una recarga rápida o al cerrar la pestaña."
+		},
+		{
+			"text": "Las animaciones compartidas ahora se repiten de forma continua."
+		},
+		{
+			"text": "Las exportaciones a Phaser y Unity ahora conservan la temporización de tus animaciones."
+		}
+	]
+}
