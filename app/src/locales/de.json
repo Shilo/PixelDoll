@@ -3524,7 +3524,7 @@
 		"actionLabel": "Dieses Problem melden",
 		"actionLabelFor": "Dieses Problem melden: {name}",
 		"title": "Dieses Problem melden",
-		"intro": "Öffnet ein öffentliches GitHub-Issue nur mit dem Text unten, einschließlich der PixelDoll-Bereiche und -Schaltflächen, die du kurz davor benutzt hast. Bilder, Prompts, Namen, Dateien und Schlüssel sind nicht enthalten. Du veröffentlichst es mit deinem GitHub-Konto.",
+		"intro": "Öffnet ein öffentliches GitHub-Issue mit dem Bericht unten, das du mit deinem GitHub-Konto veröffentlichst. Deine Bilder, Prompts, Namen, Dateien, Projektdaten und dein PixelLab-Schlüssel sind nie enthalten.",
 		"preview": "Vorschau der Meldung",
 		"copy": "Meldung kopieren",
 		"copied": "Kopiert",

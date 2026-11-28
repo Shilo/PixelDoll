@@ -3524,7 +3524,7 @@
 		"actionLabel": "Report this problem",
 		"actionLabelFor": "Report this problem: {name}",
 		"title": "Report this problem",
-		"intro": "This opens a public GitHub issue with only the text below, including the PixelDoll screens and buttons you used just before. No images, prompts, names, files or keys are included. You post it with your GitHub account.",
+		"intro": "This opens a public GitHub issue with the report below, posted from your GitHub account. It never includes your images, prompts, names, files, project data or PixelLab key.",
 		"preview": "Report preview",
 		"copy": "Copy report",
 		"copied": "Copied",

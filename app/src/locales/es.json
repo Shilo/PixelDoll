@@ -3524,7 +3524,7 @@
 		"actionLabel": "Informar de este problema",
 		"actionLabelFor": "Informar de este problema: {name}",
 		"title": "Informar de este problema",
-		"intro": "Se abre una incidencia pública en GitHub solo con el texto de abajo, que incluye las pantallas y botones de PixelDoll que usaste justo antes. No incluye imágenes, prompts, nombres, archivos ni claves. La publicas con tu cuenta de GitHub.",
+		"intro": "Se abre una incidencia pública en GitHub con el informe de abajo, que publicas con tu cuenta de GitHub. Nunca incluye tus imágenes, prompts, nombres, archivos, datos del proyecto ni tu clave de PixelLab.",
 		"preview": "Vista previa del informe",
 		"copy": "Copiar informe",
 		"copied": "Copiado",

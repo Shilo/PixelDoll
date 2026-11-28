@@ -3424,7 +3424,7 @@
 		"actionLabel": "Laporkan masalah ini",
 		"actionLabelFor": "Laporkan masalah ini: {name}",
 		"title": "Laporkan masalah ini",
-		"intro": "Ini membuka issue publik di GitHub yang hanya berisi teks di bawah, termasuk layar dan tombol PixelDoll yang baru saja Anda gunakan. Tidak ada gambar, prompt, nama, file, atau kunci yang disertakan. Anda mengirimkannya dengan akun GitHub Anda.",
+		"intro": "Ini membuka issue publik di GitHub berisi laporan di bawah, yang Anda kirim dengan akun GitHub Anda. Gambar, prompt, nama, file, data proyek, dan kunci PixelLab Anda tidak pernah disertakan.",
 		"preview": "Pratinjau laporan",
 		"copy": "Salin laporan",
 		"copied": "Disalin",

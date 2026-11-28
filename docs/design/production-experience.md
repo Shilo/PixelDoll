@@ -162,8 +162,8 @@ When a toast has a pressable surface, the surface takes its accessible name from
 Uncaught errors and unhandled rejections show one warning toast per distinct error when the notification area is free of
 pending or actionable work.
 Warning toasts offer Report when they carry an error or explicitly opt in. A notification that opens a failure view can leave
-reporting to that view. Report opens a centered preview of the exact public issue text with Close, Copy report and Open on GitHub
-(it stays open in case the new tab is blocked), which opens GitHub's issue form prefilled through `problem-report.yml` query
+reporting to that view. Report opens a centered sheet (the X in its header) previewing the exact public issue text, with Copy report and Open on
+GitHub in its footer (it stays open in case the new tab is blocked), which opens GitHub's issue form prefilled through `problem-report.yml` query
 parameters; the user posts it with their own account and writes the steps to reproduce if they know them. A report is built
 from an allow-list in `app/src/lib/report/report.ts` (version, build channel and commit, browser and OS families, device and
 screen class, language, the area, the key and English template of an app message with its variables hidden, the error and

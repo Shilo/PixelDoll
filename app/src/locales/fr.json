@@ -3524,7 +3524,7 @@
 		"actionLabel": "Signaler ce problème",
 		"actionLabelFor": "Signaler ce problème : {name}",
 		"title": "Signaler ce problème",
-		"intro": "Ouvre un ticket public sur GitHub contenant uniquement le texte ci-dessous, y compris les écrans et boutons de PixelDoll utilisés juste avant. Aucune image, aucun prompt, nom, fichier ou clé n’est inclus. Vous le publiez avec votre compte GitHub.",
+		"intro": "Ouvre un ticket public sur GitHub avec le rapport ci-dessous, que vous publiez avec votre compte GitHub. Il n’inclut jamais vos images, prompts, noms, fichiers, données de projet ni votre clé PixelLab.",
 		"preview": "Aperçu du signalement",
 		"copy": "Copier le signalement",
 		"copied": "Copié",
