@@ -21,9 +21,10 @@ export type { Problem } from '../lib/report/report.ts';
 
 export const reportDialog = $state({ report: null as ProblemReport | null });
 
-/** Opens the report preview. A problem not captured where it was shown is captured now, with the trail up to this press. */
+/** Opens the report preview. A problem not captured where it was shown (a stored failure) is captured now, without this
+ *  moment's page state: that describes the press, not the failure. */
 export function reportProblem(problem: Problem) {
-	reportDialog.report = buildReport(captureProblem(problem, problem.failedAt), {
+	reportDialog.report = buildReport(captureProblem(problem, problem.failedAt, false), {
 		env: browserEnvironment(getLocale() || 'en', PRE_RELEASE),
 		english: englishMessage,
 		// The folder of the page, so a copy served from a subpath still finds its own files.

@@ -264,6 +264,26 @@ describe('error facts', () => {
 		expect(details).not.toContain(ORIGIN);
 	});
 
+	test('a file is named only from a failed code load, never from other text shaped like one', () => {
+		const path = `${ORIGIN}/assets/alice-private-filename-AbCd_123.js`;
+		for (const error of [
+			new TypeError('x', { cause: new DOMException(`Could not read ${path}`, 'DataCloneError') }),
+			new LoadError(new TypeError(`Could not read ${path}`)),
+			new LoadError(new TypeError(`Failed to fetch dynamically imported module: ${path}?x`))
+		])
+			expect(all({ error })).not.toContain('alice');
+	});
+
+	test('stored error text gives only its request, status and endpoint', () => {
+		const details = buildReport(
+			{ error: `POST /characters/alice-7f3a2b -> 422: "${NAME} with a red cape" was refused` },
+			context
+		).details;
+		expect(details).toContain('HTTP status: 422');
+		expect(details).toContain('Endpoint: POST /characters/{id}');
+		expect(details).not.toContain('Alice');
+	});
+
 	test('a plain error reports where PixelDoll threw it, from its own files only', () => {
 		const error = new Error(`${NAME} ${ORIGIN}/assets/Forged-12345678.js:9:9`);
 		error.stack = [

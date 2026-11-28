@@ -120,6 +120,8 @@
 		listed = $state(false),
 		previewRevision = $state(0),
 		libraryError = $state<Message | string>('');
+	// The exception behind `libraryError`, for Report.
+	let libraryCause = $state.raw<unknown>();
 	// The error behind `error`, for Report. A wrong choice of file is the person's to fix, so it has none.
 	let cause = $state.raw<unknown>();
 	const FILE_CHOICE = new Set([
@@ -231,7 +233,10 @@
 			offset = next;
 			previewRevision++;
 		} catch (e) {
-			if (alive) libraryError = errorMessage(e);
+			if (alive) {
+				libraryError = errorMessage(e);
+				libraryCause = e;
+			}
 		} finally {
 			if (alive) loading = false;
 		}
@@ -597,7 +602,7 @@
 			{#if !app.key || app.keyRejected}
 				{#if libraryError}<p class="notice bad small" role="alert">
 						<TriangleAlert size={16} /><span>{displayMessage(libraryError)}</span><ReportButton
-							error={libraryError}
+							error={libraryCause ?? libraryError}
 						/>
 					</p>{/if}
 				<button
@@ -625,7 +630,7 @@
 				<div class="character-library" aria-label={t('import.libraryLabel')} aria-busy={loading}>
 					{#if libraryError}<p class="notice bad small" role="alert">
 							<TriangleAlert size={16} /><span>{displayMessage(libraryError)}</span><ReportButton
-								error={libraryError}
+								error={libraryCause ?? libraryError}
 							/>
 						</p>{/if}
 					{#if loading}<p class="muted" role="status">{t('import.loadingCharacters')}</p>

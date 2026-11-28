@@ -5,6 +5,7 @@
 	import { ui, toast } from './state.svelte.ts';
 	import { lazy } from '../lib/lazy.ts';
 	import { errorMessage } from '../lib/message.ts';
+	import { currentArea } from './problemCapture.svelte.ts';
 	type AnyComponent = Component<any>; // each component has its own props
 	let {
 		load,
@@ -26,9 +27,11 @@
 			},
 			(error: unknown) => {
 				if (!live) return;
+				// The sheet closes before the notice shows: name the area it was opening.
+				const area = sheet ? currentArea() : undefined;
 				if (onLoadError) onLoadError();
 				else if (sheet) ui.sheet = null;
-				toast(errorMessage(error), { tone: 'danger', error });
+				toast(errorMessage(error), { tone: 'danger', error, area });
 			}
 		);
 		return () => {

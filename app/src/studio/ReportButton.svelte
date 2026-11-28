@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { t } from 'svelte-whisper';
-	import { track, trailSnapshot, type TrailEntry } from '../lib/report/trail.ts';
+	import { track } from '../lib/report/trail.ts';
+	import { captureProblem } from './problemCapture.svelte.ts';
 	import { reportProblem, type Problem } from './report.svelte.ts';
 	// `name`: what failed, in the user's words, so each Report in a list has its own accessible name.
 	const {
@@ -18,20 +19,17 @@
 			(problem.error as { translation?: { key?: unknown } } | null | undefined)?.translation?.key
 	);
 	const error = $derived(problem.error);
-	let shownAt: number | undefined;
-	// Frozen when it shows, so actions after it cannot push the steps that led to it out of the trail.
-	let shownTrail: TrailEntry[] | undefined;
+	// The whole report is frozen when the problem shows (trail, character, connection, update state), so what happens before
+	// Report is pressed cannot change or push out what led to it.
+	let shown: Problem | undefined;
 	$effect(() => {
 		void error;
 		if (timed) return;
-		shownAt = performance.now();
-		if (typeof key === 'string')
-			track({
-				kind: 'notice',
-				key,
-				tone: untrack(() => problem.tone) === 'warning' ? 'warning' : 'error'
-			});
-		shownTrail = trailSnapshot();
+		untrack(() => {
+			if (typeof key === 'string')
+				track({ kind: 'notice', key, tone: problem.tone === 'warning' ? 'warning' : 'error' });
+			shown = captureProblem({ ...problem }, performance.now());
+		});
 	});
 </script>
 
@@ -41,8 +39,7 @@
 	data-variant={outlined ? 'outline' : 'quiet'}
 	data-trail-skip
 	aria-label={name ? t('report.actionLabelFor', { name }) : t('report.actionLabel')}
-	onclick={() =>
-		reportProblem(timed ? { ...problem } : { ...problem, failedAt: shownAt, trail: shownTrail })}
+	onclick={() => reportProblem(!timed && shown ? shown : { ...problem })}
 	>{t('report.action')}</button
 >
 

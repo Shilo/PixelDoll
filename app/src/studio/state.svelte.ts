@@ -588,6 +588,8 @@ export interface ToastOptions {
 	error?: unknown;
 	/** Additional allow-listed facts for the public report. */
 	facts?: Problem['facts'];
+	/** The report's area when the notice belongs to a sheet that is no longer open (one that failed to load). */
+	area?: Problem['area'];
 	/** Warnings get Report when they carry an error or explicitly opt in. Use false for expected guidance or if a
 	 *  linked failure view already offers Report. 'uncaught' identifies errors that reached the global handlers. */
 	report?: boolean | 'uncaught';
@@ -703,6 +705,7 @@ export function toast(
 						message: firstMessage(s) ?? firstMessage(o.title),
 						error: o.error,
 						facts: o.facts,
+						area: o.area,
 						tone: o.tone === 'danger' ? 'error' : 'warning',
 						uncaught: o.report === 'uncaught'
 					},
@@ -818,6 +821,8 @@ class DeletedList {
 	ready = false;
 	/** The last read failed: `entries` is the last list that loaded, which may be empty or out of date. */
 	loadFailed = $state(false);
+	/** Why the last read failed, for Report. */
+	loadCause = $state.raw<unknown>();
 }
 export const deleted = new DeletedList();
 /** An undo or redo step: the dress state to go back to, and the slot definitions (JSON) right after the step, so applying
@@ -2294,6 +2299,7 @@ export async function refreshRecentlyDeleted(): Promise<void> {
 	} catch (error) {
 		// Never show an empty list for a failed read: that reads as "nothing can be restored".
 		console.error('recently deleted', error);
+		deleted.loadCause = error;
 		deleted.loadFailed = true;
 	}
 }

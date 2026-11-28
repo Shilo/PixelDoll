@@ -230,6 +230,11 @@
 	let ready = $state(false);
 	let saveError = $state<Message | null>(null);
 	let loadError = $state<Message | null>(null);
+	/** For Report: the failures behind saveError and loadError, and the format a failed save tried to choose (the control
+	 *  then shows the previous one again). */
+	let saveCause = $state.raw<unknown>(),
+		loadCause = $state.raw<unknown>(),
+		saveFormat = $state.raw<Engine>();
 	let invalidPreferences = $state(false);
 	let content = $state<HTMLDivElement>();
 	// Settings' Reset buttons reuse this page's loaded preferences instead of reading them again.
@@ -407,6 +412,7 @@
 				ready = false;
 				invalidPreferences = error instanceof InvalidExportSettings;
 				console.warn('Could not load export settings', error);
+				loadCause = error;
 				loadError = invalidPreferences
 					? message('export.settings.loadInvalid')
 					: message('export.settings.loadFailed');
@@ -487,7 +493,11 @@
 		} catch (e) {
 			if (input && input.type !== 'radio') input.checked = !checked;
 			console.warn('Could not save export settings', e);
-			if (sequence === writeSequence) saveError = message('export.settings.saveFailed');
+			if (sequence === writeSequence) {
+				saveError = message('export.settings.saveFailed');
+				saveCause = e;
+				saveFormat = optimisticEngine;
+			}
 		} finally {
 			pendingWrites--;
 			onSaving?.(saving);
@@ -741,8 +751,9 @@
 					? displayMessage(loadError)
 					: ''}<ReportButton
 				area="Export"
-				error={saveError || loadError}
-				facts={{ exportFormat: engine }}
+				error={saveError ? (saveCause ?? saveError) : (loadCause ?? loadError)}
+				message={saveError || loadError || undefined}
+				facts={{ exportFormat: (saveError && saveFormat) || engine }}
 			/>
 		</p>{/if}
 	{#if invalidPreferences}

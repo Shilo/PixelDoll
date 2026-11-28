@@ -102,8 +102,13 @@ function savedMoveKind(anim: RigAnimation | undefined): 'built-in' | 'custom' | 
 /** Freezes what a report says about the moment of a problem: its area, the open character, the recent actions and the
  *  page state. Call it where the problem is shown (toast() does), so a Report pressed minutes later, on another sheet or
  *  character, still describes the failure. `failedAt` is when it happened (performance.now()), if known. Without an area, the
- *  problem belongs to the sheet that is open now. */
-export function captureProblem(problem: Problem, failedAt: number | undefined): Problem {
+ *  problem belongs to the sheet that is open now. `live` means this is the moment it happened, so the page's connection and
+ *  update state belong to it; capturing a stored failure later leaves them out. */
+export function captureProblem(
+	problem: Problem,
+	failedAt: number | undefined,
+	live = true
+): Problem {
 	if (problem.captured) return problem;
 	const area = problem.area ?? currentArea();
 	// A download can name a character other than the open one, and its failure says nothing about an in-flight move; a stored
@@ -127,8 +132,8 @@ export function captureProblem(problem: Problem, failedAt: number | undefined): 
 		facts: {
 			...problem.facts,
 			character,
-			offline: navigator.onLine === false || undefined,
-			updateWaiting: get(pwa).available ? true : undefined
+			offline: (live && navigator.onLine === false) || undefined,
+			updateWaiting: (live && !!get(pwa).available) || undefined
 		},
 		trail,
 		failedAt,

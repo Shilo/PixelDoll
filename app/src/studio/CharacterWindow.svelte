@@ -52,17 +52,27 @@
 		loaded = $state.raw<Project | null>(null),
 		error = $state<Message | string>(''),
 		previewError = $state<Message | string>('');
+	// The failures behind them, for Report. They only happen for a character other than the open one, so its report carries
+	// no character facts (an empty set) rather than the open character's.
+	let errorCause = $state.raw<unknown>(),
+		previewCause = $state.raw<unknown>();
+	const otherCharacter = { character: {} };
 	$effect(() => {
 		if (id === doc.id) return;
 		const controller = new AbortController();
 		manifestOf(id).then(
 			(manifest) => (saved = manifest),
-			(failure: unknown) => (error = errorMessage(failure))
+			(failure: unknown) => {
+				error = errorMessage(failure);
+				errorCause = failure;
+			}
 		);
 		openSource(id, controller.signal).then(
 			(source) => (loaded = source.project),
 			(failure: unknown) => {
-				if (!controller.signal.aborted) previewError = errorMessage(failure);
+				if (controller.signal.aborted) return;
+				previewError = errorMessage(failure);
+				previewCause = failure;
 			}
 		);
 		return () => controller.abort();
@@ -211,12 +221,20 @@
 	{/snippet}
 
 	{#if error}<p class="notice bad small" role="alert">
-			{displayMessage(error)}<ReportButton {error} />
+			{displayMessage(error)}<ReportButton
+				error={errorCause ?? error}
+				message={typeof error === 'object' ? error : undefined}
+				facts={otherCharacter}
+			/>
 		</p>
 	{:else if m}
 		<div class="character-body" bind:this={body}>
 			{#if previewError}<p class="notice bad small" role="alert">
-					{displayMessage(previewError)}<ReportButton error={previewError} />
+					{displayMessage(previewError)}<ReportButton
+						error={previewCause ?? previewError}
+						message={typeof previewError === 'object' ? previewError : undefined}
+						facts={otherCharacter}
+					/>
 				</p>{/if}
 			{#if project}<FacingStrip
 					label={t('itemPane.availableDirectionsFor', { name })}

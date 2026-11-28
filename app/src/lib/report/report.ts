@@ -396,20 +396,42 @@ function ownFrames(stack: unknown, message: unknown, base: string | undefined): 
 	return frames;
 }
 
-/** The built file a failed dynamic import named ("Failed to fetch dynamically imported module: <url>"), when it is one of
- *  PixelDoll's own. */
+/** The browsers' own words for a failed dynamic import (Chromium, Firefox). Only such a message is read for a file: other
+ *  text that happens to hold an own-file-shaped URL could carry a name the person wrote. */
+const IMPORT_FAILED =
+	/^(?:Failed to fetch dynamically imported module|error loading dynamically imported module): (\S+)$/;
+/** The built file a failed code load (a LoadError's direct cause) asked for, when it is one of PixelDoll's own. */
 function failedModule(message: unknown, base: string | undefined): string | undefined {
 	if (!base || typeof message !== 'string') return undefined;
-	const [match] = message.matchAll(ownFiles(base));
-	return match && !match[3] ? `${match[1]}.${match[2]}.js` : undefined;
+	const url = IMPORT_FAILED.exec(message.trim())?.[1];
+	if (!url) return undefined;
+	const [match] = url.matchAll(ownFiles(base));
+	// The whole URL must be the file, nothing before or after it.
+	return match && match.index === 0 && match[0] === url && !match[3]
+		? `${match[1]}.${match[2]}.js`
+		: undefined;
+}
+
+/** The method, endpoint and status of a "METHOD /path -> 422" request prefix inside stored error text. The method and path
+ *  must lead the status, so a status-like phrase in provider text is not read as one. */
+function requestFacts(text: string): ErrorFacts {
+	const request = /\b(GET|POST|PUT|PATCH|DELETE) (\/\S*) -> (\d{3})\b/.exec(text);
+	return request
+		? {
+				method: request[1],
+				endpoint: endpointPath(request[2]),
+				status: count(Number(request[3]), 999) || undefined
+			}
+		: {};
 }
 
 /** What an error may contribute: its name, a localized message, and for a PixelLab error its status, kind and endpoint
  *  path, read from the "METHOD /path -> status" prefix the client writes; the names of its causes; and where in
  *  PixelDoll's own code it was thrown. Never its message text. */
 function readErrorFacts(error: unknown, base?: string): ErrorFacts {
-	// Text is never reported: it may be anything, including what the user typed.
-	if (error === undefined || error === null || typeof error === 'string') return {};
+	if (error === undefined || error === null) return {};
+	// Stored failures keep only text. Its words are never reported, only the request prefix the client writes.
+	if (typeof error === 'string') return requestFacts(error);
 	if (typeof error !== 'object') return { name: NON_ERROR };
 	const e = error as {
 		name?: unknown;
@@ -449,7 +471,7 @@ function readErrorFacts(error: unknown, base?: string): ErrorFacts {
 	for (let depth = 0; depth < 3 && cause !== undefined && cause !== null; depth++) {
 		const c = cause as { name?: unknown; message?: unknown; stack?: unknown; cause?: unknown };
 		causes.push(typeof cause === 'object' ? errorName(c.name) : NON_ERROR);
-		out.module ??= failedModule(c.message, base);
+		if (depth === 0 && out.name === 'LoadError') out.module = failedModule(c.message, base);
 		if (!out.frames) {
 			const own = ownFrames(c.stack, c.message, base);
 			if (own.length) out.frames = own;
@@ -491,8 +513,7 @@ export function onceShown(show: (error: unknown) => boolean): (error: unknown) =
 /** The status in a saved "METHOD /path -> 422: ..." error. The method and path must lead, so a status-like phrase in
  *  provider text is not read as one. */
 export function statusIn(text: string | undefined): number | undefined {
-	const status = text && /\b(?:GET|POST|PUT|PATCH|DELETE) \/\S* -> (\d{3})\b/.exec(text);
-	return status ? Number(status[1]) : undefined;
+	return text ? requestFacts(text).status : undefined;
 }
 
 // ---------- environment ----------

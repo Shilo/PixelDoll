@@ -19,7 +19,8 @@
 			toast(message('demoCopyRow.openedYourEditableCopyOfTheDemo'));
 		} catch (error) {
 			toast(message('state.couldNotCopyTheDemoReason', { reason: (error as Error).message }), {
-				tone: 'danger'
+				tone: 'danger',
+				error
 			});
 		} finally {
 			busy = false;

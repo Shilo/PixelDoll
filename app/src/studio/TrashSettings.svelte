@@ -32,6 +32,8 @@
 	/** A row restores on its second press within a few seconds; the first only asks. */
 	const restoreConfirm = new TwoStepConfirm<string>({ expireMs: 4000 });
 	let failure = $state<Message | string>();
+	/** The exception behind `failure`, for Report. */
+	let failureCause = $state.raw<unknown>();
 	let section = $state<HTMLElement>();
 	let emptyNote = $state<HTMLElement>();
 
@@ -99,6 +101,7 @@
 		} catch (cause) {
 			// The dialog is still open: focus stays on its own controls.
 			failure = errorMessage(cause);
+			failureCause = cause;
 		} finally {
 			busy = '';
 		}
@@ -124,7 +127,7 @@
 				class="bu-action btn sm"
 				data-variant="outline"
 				onclick={() => void refreshRecentlyDeleted()}>{t('common.tryAgain')}</button
-			><ReportButton message={message('recentlyDeleted.loadFailed')} />
+			><ReportButton error={deleted.loadCause} message={message('recentlyDeleted.loadFailed')} />
 		</p>
 	{/if}
 	{#if !deleted.entries.length && !deleted.loadFailed}
@@ -207,7 +210,8 @@
 	{/if}
 	{#if failure}<p class="notice bad small" role="alert">
 			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(failure)}<ReportButton
-				error={failure}
+				error={failureCause ?? failure}
+				message={typeof failure === 'object' ? failure : undefined}
 			/>
 		</p>{/if}
 </div>

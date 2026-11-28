@@ -44,12 +44,12 @@
 			if (exiting) await document.exitFullscreen();
 			// Include the entire app, including native dialogs and popovers outside the scene.
 			else await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
-		} catch {
+		} catch (error) {
 			toast(
 				exiting
 					? message('fullscreenButton.couldNotExitFullScreenTryYour')
 					: message('fullscreenButton.couldNotEnterFullScreenTryAgain'),
-				{ tone: 'danger' }
+				{ tone: 'danger', error }
 			);
 		} finally {
 			pending = false;
