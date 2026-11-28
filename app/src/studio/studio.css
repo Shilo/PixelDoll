@@ -1186,6 +1186,14 @@ dialog.sheet.bottom {
 	border-radius: var(--r-sheet) var(--r-sheet) 0 0;
 	max-height: calc(100dvh - 32px);
 	padding-bottom: env(safe-area-inset-bottom);
+	/* It rests on the screen's bottom edge, so only its top and open sides need the rim. */
+	border-bottom: 0;
+}
+/* Full width, it touches the screen's sides too: no side rim taking width from its content. */
+@media (max-width: 640px) {
+	dialog.sheet.bottom {
+		border-inline: 0;
+	}
 }
 dialog.sheet.side {
 	width: min(62vw, 480px);
