@@ -1,6 +1,24 @@
 {
 	"releases": [
 		{
+			"version": "0.2.63",
+			"date": "2026-10-30",
+			"features": 41,
+			"banner": true,
+			"headline": {
+				"en": "Share, export and keep more of your work",
+				"de": "Teilen, exportieren und mehr von deiner Arbeit behalten",
+				"es": "Comparte, exporta y conserva más de tu trabajo",
+				"fr": "Partagez, exportez et conservez davantage de votre travail",
+				"id": "Bagikan, ekspor, dan simpan lebih banyak karya Anda",
+				"ja": "共有、エクスポート、作品の管理をもっと快適に",
+				"ko": "공유하고, 내보내고, 작업을 더 오래 보관하세요",
+				"pt-BR": "Compartilhe, exporte e guarde mais do seu trabalho",
+				"tr": "Paylaşın, dışa aktarın ve çalışmanızın daha fazlasını koruyun",
+				"zh-Hans": "分享、导出，并保留更多作品"
+			}
+		},
+		{
 			"version": "0.0.55",
 			"date": "2026-10-23",
 			"features": 9,
