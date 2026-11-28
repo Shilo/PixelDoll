@@ -3533,7 +3533,7 @@
 		"actionLabel": "Relatar este problema",
 		"actionLabelFor": "Relatar este problema: {name}",
 		"title": "Relatar este problema",
-		"intro": "Isso abre uma issue pública no GitHub com o relatório abaixo, publicada com sua conta do GitHub. Nunca inclui suas imagens, prompts, nomes, arquivos, dados do projeto nem sua chave do PixelLab.",
+		"intro": "Nunca inclui suas imagens, prompts, nomes, arquivos nem sua chave do PixelLab. Você revisa no GitHub antes de publicar.",
 		"preview": "Prévia do relatório",
 		"copy": "Copiar relatório",
 		"copied": "Copiado",

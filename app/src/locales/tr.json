@@ -3524,7 +3524,7 @@
 		"actionLabel": "Bu sorunu bildir",
 		"actionLabelFor": "Bu sorunu bildir: {name}",
 		"title": "Bu sorunu bildir",
-		"intro": "Aşağıdaki raporla herkese açık bir GitHub kaydı açar; kendi GitHub hesabınızla gönderirsiniz. Görselleriniz, istemleriniz, adlarınız, dosyalarınız, proje verileriniz ve PixelLab anahtarınız asla eklenmez.",
+		"intro": "Görsellerinizi, istemlerinizi, adlarınızı, dosyalarınızı veya PixelLab anahtarınızı asla içermez. Göndermeden önce GitHub’da gözden geçirirsiniz.",
 		"preview": "Bildirim önizlemesi",
 		"copy": "Bildirimi kopyala",
 		"copied": "Kopyalandı",

@@ -93,7 +93,6 @@
 			target="_blank"
 			rel="noreferrer"
 			><Github size={16} /><span>{t('report.open')}</span><ExternalLink
-				class="report-external"
 				size={16}
 				aria-hidden="true"
 			/><span class="bu-sr">{' ' + t('noticeLink.opensInANewTab')}</span></a
@@ -133,17 +132,10 @@
 	.notice {
 		margin: 0;
 	}
-	/* Icon and label at the start, the new-tab mark at the end; equal widths share the row, then wrap whole. */
+	/* The standard sheet footer: buttons as wide as their labels, at the end, primary last. */
 	.report-actions > * {
-		flex: 1 0 auto;
-		min-height: 44px;
-		height: auto;
-		justify-content: flex-start;
-		gap: 8px;
+		gap: 6px;
 		white-space: nowrap;
 		text-decoration: none;
-	}
-	.report-actions :global(.report-external) {
-		margin-inline-start: auto;
 	}
 </style>

@@ -3424,7 +3424,7 @@
 		"actionLabel": "이 문제 신고",
 		"actionLabelFor": "이 문제 신고: {name}",
 		"title": "이 문제 신고",
-		"intro": "아래 보고서로 공개 GitHub 이슈를 열고, 내 GitHub 계정으로 게시해요. 이미지, 프롬프트, 이름, 파일, 프로젝트 데이터, PixelLab 키는 절대 포함되지 않아요.",
+		"intro": "이미지, 프롬프트, 이름, 파일, PixelLab 키는 절대 포함되지 않아요. 게시하기 전에 GitHub에서 확인해요.",
 		"preview": "신고 미리보기",
 		"copy": "신고 내용 복사",
 		"copied": "복사했어요",

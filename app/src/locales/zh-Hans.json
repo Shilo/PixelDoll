@@ -3424,7 +3424,7 @@
 		"actionLabel": "报告此问题",
 		"actionLabelFor": "报告此问题：{name}",
 		"title": "报告此问题",
-		"intro": "这会用下方报告在 GitHub 上打开一个公开问题，由你用自己的 GitHub 账号发布。其中绝不包含你的图像、提示词、名称、文件、项目数据或 PixelLab 密钥。",
+		"intro": "绝不包含你的图像、提示词、名称、文件或 PixelLab 密钥。发布前你会在 GitHub 上查看。",
 		"preview": "报告预览",
 		"copy": "复制报告",
 		"copied": "已复制",

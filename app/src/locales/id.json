@@ -3424,7 +3424,7 @@
 		"actionLabel": "Laporkan masalah ini",
 		"actionLabelFor": "Laporkan masalah ini: {name}",
 		"title": "Laporkan masalah ini",
-		"intro": "Ini membuka issue publik di GitHub berisi laporan di bawah, yang Anda kirim dengan akun GitHub Anda. Gambar, prompt, nama, file, data proyek, dan kunci PixelLab Anda tidak pernah disertakan.",
+		"intro": "Tidak pernah menyertakan gambar, prompt, nama, file, atau kunci PixelLab Anda. Anda meninjaunya di GitHub sebelum mengirim.",
 		"preview": "Pratinjau laporan",
 		"copy": "Salin laporan",
 		"copied": "Disalin",

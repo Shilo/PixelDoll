@@ -14,7 +14,18 @@ export const settledAt = (id: string) => requests.settledAt(id);
 
 /** Controls a press can land on. A press elsewhere (text, the canvas, a dialog backdrop) is not an action. */
 const CONTROL =
-	'[data-trail],button,a[href],summary,[role="button"],[role="menuitem"],[role="menuitemradio"],[role="tab"],[role="option"],[role="switch"],[role="checkbox"],[role="radio"]';
+	'[data-trail],button,a[href],summary,[role="button"],[role="menuitem"],[role="menuitemradio"],[role="tab"],[role="option"],[role="switch"],[role="checkbox"],[role="radio"],input[type="radio"],input[type="checkbox"]';
+
+/** A press in Settings is named by the built-in ID its row already carries for Settings search (data-setting) or by its
+ *  section's ID, as settings.<id> in camelCase. Both are fixed app IDs, never text; report.ts checks the name again. */
+function settingName(control: Element): string | undefined {
+	const id =
+		control.getAttribute('data-setting-section') ??
+		control.closest('[data-setting]')?.getAttribute('data-setting');
+	return id
+		? `settings.${id.replace(/-(\w)/g, (_, letter: string) => letter.toUpperCase())}`
+		: undefined;
+}
 
 export function installTrail(): () => void {
 	const press = (event: MouseEvent) => {
@@ -22,7 +33,7 @@ export function installTrail(): () => void {
 		if (!event.isTrusted || !(event.target instanceof Element)) return;
 		const control = event.target.closest(CONTROL);
 		if (!control || control.closest('[data-trail-skip]')) return;
-		const name = control.getAttribute('data-trail') ?? undefined;
+		const name = control.getAttribute('data-trail') ?? settingName(control);
 		track({ kind: 'press', area: currentArea(), control: name });
 	};
 	// Files reach the app without a press on a named control: record that one arrived, never its name.

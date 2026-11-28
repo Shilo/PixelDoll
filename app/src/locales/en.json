@@ -3524,7 +3524,7 @@
 		"actionLabel": "Report this problem",
 		"actionLabelFor": "Report this problem: {name}",
 		"title": "Report this problem",
-		"intro": "This opens a public GitHub issue with the report below, posted from your GitHub account. It never includes your images, prompts, names, files, project data or PixelLab key.",
+		"intro": "Never includes your images, prompts, names, files or PixelLab key. You review it on GitHub before posting.",
 		"preview": "Report preview",
 		"copy": "Copy report",
 		"copied": "Copied",

@@ -532,6 +532,7 @@
 						<button
 							class="row bu-action"
 							data-variant="quiet"
+							data-setting-section={section.id}
 							data-active={active?.id === section.id}
 							aria-current={active?.id === section.id ? 'page' : undefined}
 							disabled={busy}
@@ -570,6 +571,7 @@
 			{#each matches as { section, entry } (entry.id)}
 				<button
 					class="row bu-action search-result"
+					data-trail="settings.searchResult"
 					data-variant="quiet"
 					disabled={busy || (entry.id === 'reset' && settingsAtDefaults('all'))}
 					onclick={() => show(section.id, entry.id)}
