@@ -1,0 +1,33 @@
+{
+	"headline": "Dress any character in any item",
+	"intro": "Your items now travel further. Share them across characters, shape your wardrobe your way, and set up characters and moves with more choices than before.",
+	"highlights": [
+		{
+			"title": "Every character can wear shared items",
+			"text": "Any shared item can now be worn by any character, the demo included. Tapping a shared item on the demo saves an editable copy and wears it there."
+		},
+		{
+			"title": "Manage wardrobe slots per character",
+			"text": "You can now organize wardrobe slots inline for each character, and move saved items between equipment slots. Slot setups carry into exports."
+		},
+		{
+			"title": "New models and references for creation",
+			"text": "New character now offers the Pro model and a Standard option with direction presets. You can also add optional character and item references to guide what gets made."
+		},
+		{
+			"title": "Keep walking while you click",
+			"text": "In Top-down and Side-scroller, a walk held on the movement keys now continues when you click wardrobe tiles, tabs or toolbar buttons."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Studio now opens on the standing move, so worn items no longer look lost."
+		},
+		{
+			"text": "Copying items between characters with one body no longer drops standing views."
+		},
+		{
+			"text": "Downloads stay available for incomplete characters."
+		}
+	]
+}

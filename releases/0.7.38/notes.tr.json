@@ -1,0 +1,33 @@
+{
+	"headline": "Her karaktere her eşyayı giydirin",
+	"intro": "Eşyalarınız artık daha uzağa gidiyor. Onları karakterler arasında paylaşın, dolabınızı kendi tarzınıza göre düzenleyin ve karakterlerinizi ve hareketlerinizi her zamankinden daha fazla seçenekle kurun.",
+	"highlights": [
+		{
+			"title": "Her karakter paylaşılan eşyaları giyebilir",
+			"text": "Paylaşılan her eşya artık demo dahil her karakter tarafından giyilebilir. Demodaki paylaşılan bir eşyaya dokunmak, düzenlenebilir bir kopyasını kaydeder ve orada giydirir."
+		},
+		{
+			"title": "Dolap yuvalarını karakter başına yönetin",
+			"text": "Artık her karakter için dolap yuvalarını satır içinde düzenleyebilir ve kayıtlı eşyaları ekipman yuvaları arasında taşıyabilirsiniz. Yuva düzenleri dışa aktarımlara taşınır."
+		},
+		{
+			"title": "Üretim için yeni modeller ve referanslar",
+			"text": "Yeni karakter artık Pro modelini ve yönelim ön ayarlı Standart seçeneğini sunar. Neyin üretileceğini yönlendirmek için isteğe bağlı karakter ve eşya referansları da ekleyebilirsiniz."
+		},
+		{
+			"title": "Tıklarken yürümeye devam edin",
+			"text": "Üstten görünüm ve Yandan kaydırmalı modlarda, hareket tuşlarında basılı tutulan bir yürüyüş, dolap karolarına, sekmelere veya araç çubuğu düğmelerine tıkladığınızda devam eder."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Studio artık durma hareketinde açılır, böylece giyilen eşyalar kaybolmuş görünmez."
+		},
+		{
+			"text": "Tek gövdeli karakterler arasında eşya kopyalanırken ayakta görünümler artık kaybolmaz."
+		},
+		{
+			"text": "İndirmeler, eksik karakterler için kullanılabilir kalır."
+		}
+	]
+}

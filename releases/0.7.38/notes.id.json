@@ -1,0 +1,33 @@
+{
+	"headline": "Pakai item apa pun pada karakter mana pun",
+	"intro": "Item kamu kini bisa dipakai lebih luas. Bagikan antarkarakter, atur lemari sesuai seleramu, dan siapkan karakter serta animasi dengan lebih banyak pilihan dari sebelumnya.",
+	"highlights": [
+		{
+			"title": "Setiap karakter bisa memakai item bersama",
+			"text": "Setiap item bersama kini bisa dipakai oleh karakter mana pun, termasuk demo. Mengetuk item bersama di demo akan menyimpan salinan yang bisa diedit dan langsung memakainya di sana."
+		},
+		{
+			"title": "Kelola slot lemari per karakter",
+			"text": "Kamu sekarang bisa mengatur slot lemari langsung untuk setiap karakter, dan memindahkan item tersimpan antar slot perlengkapan. Pengaturan slot ikut terbawa saat ekspor."
+		},
+		{
+			"title": "Model dan referensi baru untuk pembuatan",
+			"text": "Karakter baru kini menawarkan model Pro dan opsi Standar dengan preset arah. Kamu juga bisa menambahkan referensi karakter dan item opsional untuk memandu hasil yang dibuat."
+		},
+		{
+			"title": "Tetap berjalan sambil mengklik",
+			"text": "Di Tampak atas dan Gulir samping, gerakan berjalan yang ditahan lewat tombol gerak tetap berlanjut saat kamu mengklik ubin lemari, tab, atau tombol toolbar."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Studio kini dibuka pada animasi berdiri, sehingga item yang dikenakan tidak lagi terlihat hilang."
+		},
+		{
+			"text": "Menyalin item antarkarakter dengan satu tubuh dasar tidak lagi menghapus tampilan berdiri."
+		},
+		{
+			"text": "Unduhan tetap tersedia untuk karakter yang belum lengkap."
+		}
+	]
+}

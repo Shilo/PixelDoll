@@ -1,0 +1,33 @@
+{
+	"headline": "Vista qualquer personagem com qualquer item",
+	"intro": "Seus itens agora vão mais longe. Compartilhe-os entre personagens, monte seu guarda-roupa do seu jeito e crie personagens e animações com mais opções do que antes.",
+	"highlights": [
+		{
+			"title": "Todo personagem pode usar itens compartilhados",
+			"text": "Qualquer item compartilhado agora pode ser usado por qualquer personagem, inclusive o de demonstração. Ao tocar em um item compartilhado no personagem de demonstração, ele salva uma cópia editável e a veste ali."
+		},
+		{
+			"title": "Gerencie os espaços do guarda-roupa por personagem",
+			"text": "Agora você pode organizar os espaços do guarda-roupa diretamente em cada personagem e mover itens salvos entre os espaços de equipamento. As configurações de espaço são mantidas nas exportações."
+		},
+		{
+			"title": "Novos modelos e referências para criação",
+			"text": "Novo personagem agora oferece o modelo Pro e uma opção Padrão com predefinições de direção. Você também pode adicionar referências opcionais de personagem e item para orientar o que será criado."
+		},
+		{
+			"title": "Continue andando enquanto clica",
+			"text": "Em Vista de cima e Rolagem lateral, uma caminhada mantida nas teclas de movimento continua quando você clica em itens do guarda-roupa, abas ou botões da barra de ferramentas."
+		}
+	],
+	"fixes": [
+		{
+			"text": "O Studio agora abre na animação parado, então os itens vestidos não parecem mais perdidos."
+		},
+		{
+			"text": "Copiar itens entre personagens com um único corpo não remove mais as vistas paradas."
+		},
+		{
+			"text": "Os downloads continuam disponíveis para personagens incompletos."
+		}
+	]
+}

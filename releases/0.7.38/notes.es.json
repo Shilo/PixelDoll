@@ -1,0 +1,33 @@
+{
+	"headline": "Viste cualquier personaje con cualquier objeto",
+	"intro": "Tus objetos ahora llegan más lejos. Compártelos entre personajes, organiza tu armario a tu manera y crea personajes y animaciones con más opciones que antes.",
+	"highlights": [
+		{
+			"title": "Cualquier personaje puede llevar objetos compartidos",
+			"text": "Cualquier objeto compartido ahora puede llevarlo cualquier personaje, incluido el de demostración. Al tocar un objeto compartido en la demostración, se guarda una copia editable y se equipa allí."
+		},
+		{
+			"title": "Gestiona las ranuras del armario por personaje",
+			"text": "Ahora puedes organizar las ranuras del armario en línea para cada personaje y mover los objetos guardados entre ranuras de equipo. La configuración de las ranuras se mantiene en las exportaciones."
+		},
+		{
+			"title": "Nuevos modelos y referencias para crear",
+			"text": "Nuevo personaje ahora ofrece el modelo Pro y una opción Estándar con preajustes de dirección. También puedes añadir referencias opcionales de personaje y de objeto para guiar lo que se genera."
+		},
+		{
+			"title": "Sigue caminando mientras haces clic",
+			"text": "En Vista cenital y Vista lateral, un paseo mantenido con las teclas de movimiento continúa al hacer clic en casillas del armario, pestañas o botones de la barra de herramientas."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Studio ahora se abre en la animación de pie, así que los objetos equipados ya no parecen perdidos."
+		},
+		{
+			"text": "Copiar objetos entre personajes con un solo cuerpo ya no elimina las vistas de pie."
+		},
+		{
+			"text": "Las descargas siguen disponibles para personajes incompletos."
+		}
+	]
+}

@@ -1,0 +1,696 @@
+{
+	"total": 169,
+	"groups": [
+		{
+			"kind": "new",
+			"items": [
+				{
+					"sha": "986f8002948ef94b48ba8e816eb162edd239f3eb",
+					"text": "Studio: Refine move model and frame controls"
+				},
+				{
+					"sha": "036e4b81a980a35bbd97cc8274d13ab5dfcf1a01",
+					"text": "Studio: Offer animation models and frame counts"
+				},
+				{
+					"sha": "cd32c694c39b43ed557c6491d89158cbe79aaa4e",
+					"text": "Studio: Open the blocking work from busy and failure toasts"
+				},
+				{
+					"sha": "5122ec268b3521621bd166b5d4df4cc4b71517f6",
+					"text": "Studio: Accept a front-facing sprite with Standard"
+				},
+				{
+					"sha": "b9b91da89a5ec6b81068e3a111d500afd1a59ce6",
+					"text": "Studio: Make character direction mirroring reversible"
+				},
+				{
+					"sha": "23e470f9032665d4a46ed587e4750c5cbafbde1e",
+					"text": "Wardrobe: Move saved items between equipment slots"
+				},
+				{
+					"sha": "76c3e90de586ed2e1c658bbc6dadb6d47029ae66",
+					"text": "Studio: Add Standard creation and direction presets"
+				},
+				{
+					"sha": "3cd372fa73617f8be8d16c51fc43e89557647e97",
+					"text": "Studio: Replace the base clothing switch with segments"
+				},
+				{
+					"sha": "d3eb8b32b42f6fd194e9f286e57a4354baa50eab",
+					"text": "Studio: Run character creations independently"
+				},
+				{
+					"sha": "2d6d54dfbd24ee11a3bf52f342d69c4de91ad7e9",
+					"text": "Studio: Show character creation progress in the list"
+				},
+				{
+					"sha": "e63f4de81c3d961bebb05b7ad8f8dda261e771eb",
+					"text": "Studio: Customize character and item export identities"
+				},
+				{
+					"sha": "a0bcbce35bbd07eb2d33527bb8f3d288867b9fce",
+					"text": "Studio: Keep a keyboard walk going through clicks on controls in the game views"
+				},
+				{
+					"sha": "6fe7c2b0100b5c8c63f096bce73ab34f995b1103",
+					"text": "Studio: Merge PixelLab connection and usage"
+				},
+				{
+					"sha": "1246bc2d47f566f7c40a15ff4cd71bfd2c035947",
+					"text": "Studio: Show native and translated language names"
+				},
+				{
+					"sha": "9336c803d79a62912eba150e35f29438b0642086",
+					"text": "Studio: Use a Bronze UI language menu"
+				},
+				{
+					"sha": "2993e8b82097d5f630d034748af48ea0c60b0bd5",
+					"text": "Studio: Offer reviewed item redraw alongside masked repair"
+				},
+				{
+					"sha": "04dc8842a5e1dc827d492726807599611110a79a",
+					"text": "Studio: Group workspace actions in a submenu"
+				},
+				{
+					"sha": "b89b4f01d69eacd0d98bfb60cde740eb662c8208",
+					"text": "Studio: Make bundled demo wardrobe offers opt-in"
+				},
+				{
+					"sha": "34550e2bd9d4abf959fe68484c04f9700c871037",
+					"text": "Studio: Distinguish character body and frame sizes"
+				},
+				{
+					"sha": "a6559d99d5655efc9caac55fed6065c5391f947f",
+					"text": "Studio: Refine More menu icons and build actions"
+				},
+				{
+					"sha": "101e48a7e85f20b0a2b9b3d6aba7ba609d0ce998",
+					"text": "Studio: Add shared wardrobe visibility settings"
+				},
+				{
+					"sha": "80c2f95faf04987d8d221a48c486578685ea2045",
+					"text": "Studio: Use a compact compass for move redraws"
+				},
+				{
+					"sha": "459a695853f5d22297291d059e0de8897912aa22",
+					"text": "Studio: Let users review flagged item repairs"
+				},
+				{
+					"sha": "1127afe93f9962cbdb8f9be71ae8f81a862a72b6",
+					"text": "Studio: Support Tier 1 item repair batching"
+				},
+				{
+					"sha": "8057d7673b16c921b9422ce9a50f50d6a7c17399",
+					"text": "Refine character and item reference drop zones"
+				},
+				{
+					"sha": "35c4314f5b9cf1203f2d536d689d96814f3b17be",
+					"text": "Add optional character and item references"
+				},
+				{
+					"sha": "f4bf66bd34542b0c38800848273d1bd4427ddd27",
+					"text": "Studio: Localize PixelDoll in ten languages"
+				},
+				{
+					"sha": "6650a567d2f0130474c277318735cdb6f3859102",
+					"text": "Show aligned PixelLab usage in More and Activity"
+				},
+				{
+					"sha": "3fd82095ef382fc033966ed636d7950dfd33f704",
+					"text": "Studio: Use a shared compass for character directions"
+				},
+				{
+					"sha": "d5d787855994dd536c493705841f5f36c632200f",
+					"text": "Studio: Configure imported and saved character directions"
+				},
+				{
+					"sha": "939bad3f6ee7361ef901d59496345a4cfec9a84a",
+					"text": "Studio: Export and open isolated workspace copies"
+				},
+				{
+					"sha": "47bc7d89597daa164b5b5d615d6119c4afc755b7",
+					"text": "Add reusable linked notice presentation"
+				},
+				{
+					"sha": "2b5c44471830274f41c3631e2f5d856c7912d7b5",
+					"text": "Make Studio mount controls available by default"
+				},
+				{
+					"sha": "79d30a35828ba0dda4f4a5ae7acfa73b0634c695",
+					"text": "Manage wardrobe slots inline"
+				},
+				{
+					"sha": "b8f945b19a3d3a5f33715d2c015aa2f038bd29aa",
+					"text": "Restore slots at a chosen wardrobe position atomically"
+				},
+				{
+					"sha": "8dd533a5be488490bc8688a90b830c501cc4d43d",
+					"text": "Add intuitive per-character wardrobe slot management"
+				},
+				{
+					"sha": "5a93e8367aadb6324f6669f653b3d1ccdf905cc3",
+					"text": "Support per-character equipment slot profiles and exports"
+				},
+				{
+					"sha": "2d67f1afd75879b4f3487f5b2e158f4b65c36e8a",
+					"text": "Refine mount controls travel and experimental leg cutouts"
+				},
+				{
+					"sha": "67ed48a7ed285103be9f91f0430ca11741236c68",
+					"text": "Simplify test mount across Studio views"
+				},
+				{
+					"sha": "e66538a818f406587a56a725423b2c4d0d03b4dd",
+					"text": "Add mount preview and free move-result review"
+				},
+				{
+					"sha": "8dcaed20c4d5bbbc3fe8ef6670bb534ad2d89794",
+					"text": "Studio: Submit new items with Ctrl+Enter"
+				},
+				{
+					"sha": "4d2fc3743ac0d862e897dbb0a8ddbb3a4f3d5fb8",
+					"text": "Create: Drive New character controls from one table of model limits"
+				},
+				{
+					"sha": "c7a27015519236cd91f51bc8fc333a2ce8ad0cca",
+					"text": "Studio: Label the demo and offer an editable copy"
+				},
+				{
+					"sha": "5a6c43f2ee563a701d78d0ea5c0077e98495f3e1",
+					"text": "Create: Add the Pro model and fix the Advanced and Nude controls"
+				},
+				{
+					"sha": "c5be97a30b0ab206002d32f1d6d86c10c74b164b",
+					"text": "Studio: List shared items in one grid with stacked status icons"
+				},
+				{
+					"sha": "3261504c427f86d8d23fad6f3ffec062d3cb5e90",
+					"text": "Studio: Let every character wear every shared item, the demo included"
+				}
+			]
+		},
+		{
+			"kind": "improved",
+			"items": [
+				{
+					"sha": "35b8fc1faeae7751eb0a857b235648a83da426f9",
+					"text": "Reuse move thumbnails and trim outfit previews"
+				}
+			]
+		},
+		{
+			"kind": "fixed",
+			"items": [
+				{
+					"sha": "df7d50e6e62e805af3a5911bb81ce3b8b3ce79b1",
+					"text": "Studio: Preserve wardrobe scroll on item drop"
+				},
+				{
+					"sha": "785cc1024628a886812a72ab444d727b33ac57c9",
+					"text": "Studio: Snap frame choices when changing motion models"
+				},
+				{
+					"sha": "69b0ca58537e8be2dcd8f021a003c13c8138c2a2",
+					"text": "Studio: Quote described moves and preserve repair prompts"
+				},
+				{
+					"sha": "4e3166723fc28947441557937a2941205244d5cb",
+					"text": "Studio: Preserve equipped item and frames during slot moves"
+				},
+				{
+					"sha": "1d896b0b8bd23053331b73b48a2750c1b4c7cc2d",
+					"text": "Studio: Rotate the export ID chevron when expanded"
+				},
+				{
+					"sha": "d54a3bea9677568c447af0849af454079c003058",
+					"text": "Studio: Show Details before Rename in context menus"
+				},
+				{
+					"sha": "fbf94f29b139c48da2c4f0c0689def046e6efdf4",
+					"text": "Studio: Scope stopped generation work to its character and surface it"
+				},
+				{
+					"sha": "3ad9486a792935aaa610b93fd9e5e90ea1455f41",
+					"text": "Studio: Expect the reordered character model list"
+				},
+				{
+					"sha": "919b82febcf0c531643814daab219997faa33383",
+					"text": "Studio: Reorder character models in the dropdown"
+				},
+				{
+					"sha": "49aee04da6576c2ec6a52248c3f9b4325fd726b8",
+					"text": "Studio: Disable reference editing for Standard"
+				},
+				{
+					"sha": "eb3cb11e158ffbc26a67515a078acb4833c4943e",
+					"text": "Studio: Unblock failed character setup recovery"
+				},
+				{
+					"sha": "69f1e47b7a96227e85ee8845b49a33c835d1edfb",
+					"text": "Studio: Clamp creation cost estimates to the model body limits"
+				},
+				{
+					"sha": "fab10dbd0dbd63e2d9c0192e36c36f66f919565d",
+					"text": "Studio: Clear orphaned character setup work"
+				},
+				{
+					"sha": "b91d7510567ba951ddf28b4a53b321f26e610f8f",
+					"text": "Studio: Align base clothing selector height"
+				},
+				{
+					"sha": "9ea23cbfe727dc93f78592c8783cdff41e570dff",
+					"text": "Studio: Limit opener cues to labeled actions"
+				},
+				{
+					"sha": "b0187eb661c97eb7e85305d4fbbadaceeba2e98a",
+					"text": "Studio: Preserve character creation recovery flows"
+				},
+				{
+					"sha": "27f930e750f84462ce73197e13c6836cfdfe84f4",
+					"text": "Studio: Keep opener controls clear of view tabs"
+				},
+				{
+					"sha": "d44f876c2abdc793f504262e5179f916778358be",
+					"text": "Studio: Make the keyboard walk through clicks safe against leaked keys and stuck walks"
+				},
+				{
+					"sha": "3ebefc368ce54eacbf8dbea46f29d47d1d82f31e",
+					"text": "Studio: Mark controls that open secondary surfaces"
+				},
+				{
+					"sha": "0a25fe70908fa30c196b2b0d9a0953a9b6b81edb",
+					"text": "Ui: Keep character list columns aligned"
+				},
+				{
+					"sha": "d4ad9c669aa6a064bd289098942dca6ef0b52af7",
+					"text": "Share: Keep partial character artwork shareable"
+				},
+				{
+					"sha": "26214fd08b40009a21bba848c9ba344d118999d6",
+					"text": "Pwa: Separate install prompts from installation help"
+				},
+				{
+					"sha": "78a1354b6fc2d1ae316acf43a9360cb0648c6709",
+					"text": "Studio: Start on Default whenever the Studio is entered or the character changes"
+				},
+				{
+					"sha": "5686875787e761045c871384984cb2bcf25f19cd",
+					"text": "I18n: Preserve localized Studio recovery errors"
+				},
+				{
+					"sha": "7733448d141be13a30c7ef076b51e919ab7d41e2",
+					"text": "Studio: Emphasize the paid item repair only when it is the fix"
+				},
+				{
+					"sha": "12a9dde6ffc641c99521da8376aab73150f20d96",
+					"text": "Move the theme toggle below wardrobe settings"
+				},
+				{
+					"sha": "f9cfbd0e5c1a6bba85d9ee0f7978b244ad842dad",
+					"text": "Remember expanded menu sections until reload"
+				},
+				{
+					"sha": "076b2afcfd877dd8be082a6567409ac1c111481f",
+					"text": "Truncate the full wardrobe filter label"
+				},
+				{
+					"sha": "ccb7a9c9737a67a6e9349514645583332fa733b1",
+					"text": "Show pending work blocking character deletion"
+				},
+				{
+					"sha": "e2d108cad15fc4f6b3b0ffe731b324278bd48bfb",
+					"text": "Clarify shared wardrobe filters"
+				},
+				{
+					"sha": "06052e138ee1269cc0f0f5446fd6603d6a5e7264",
+					"text": "Studio: Restore standing frames for free and stop worn items reading as lost"
+				},
+				{
+					"sha": "88f4549c928acdcc9cac8b8ca9ec5854d5002690",
+					"text": "Equipment: Keep every view when copying items between characters with one body"
+				},
+				{
+					"sha": "e9c9e02996eec6c1323750d6cef0db0882fdd975",
+					"text": "I18n: Localize Studio recovery and keep notices visible"
+				},
+				{
+					"sha": "6fe286a76573d5ef54f617ea40b08e3639cf72bb",
+					"text": "Studio: Refine PixelLab usage on phones"
+				},
+				{
+					"sha": "ad9718e0e43f052a58e907e960f3ca46a79711ef",
+					"text": "Studio: Safeguard PixelLab key changes"
+				},
+				{
+					"sha": "37697ba9850a8166396d43f34cfa5c4e476f68ea",
+					"text": "Studio: Restore the PixelLab usage meter in More"
+				},
+				{
+					"sha": "d72f7c3698447f62b577f9ddb31aabfd184d791a",
+					"text": "Studio: Return to Default when selecting an outfit"
+				},
+				{
+					"sha": "9898bb88432810bb8b40ac6c82f6a8b60e30f23a",
+					"text": "Studio: Keep saved wardrobe switches from blocking startup updates"
+				},
+				{
+					"sha": "0e382b0a824c18f970b0e3eb100507a6e9c9529b",
+					"text": "Studio: Put current wardrobe visibility last"
+				},
+				{
+					"sha": "550b9722a832704809781d54bfbd43925549091d",
+					"text": "Studio: Keep wardrobe settings available across character views"
+				},
+				{
+					"sha": "61502fdb98d1eb5938dd28b4a005136ecfb504d0",
+					"text": "Studio: Align wardrobe character suffixes"
+				},
+				{
+					"sha": "8a60a39688992c615a1ba754dd54f0670827a6ab",
+					"text": "Studio: Keep current wardrobe label visible"
+				},
+				{
+					"sha": "2a823aca098041fa224d6a302b85be76b00f679a",
+					"text": "Studio: Clarify shared wardrobe visibility controls"
+				},
+				{
+					"sha": "566225c21acde6630e5944b9dcf2647482010085",
+					"text": "Studio: Synchronize character and move previews"
+				},
+				{
+					"sha": "0d46d9b7f47c3290f6f513567828187ce7644892",
+					"text": "Studio: Use sentence case for PixelLab usage"
+				},
+				{
+					"sha": "fec2ab23a6ed0e0930b20bfef213d540156bfbb8",
+					"text": "Studio: Highlight the selected character in the switcher"
+				},
+				{
+					"sha": "5f231d774526a87387294abe0b281e07cf8d8f3e",
+					"text": "Studio: Align usage meters and show credits inline"
+				},
+				{
+					"sha": "2b47d743b5b91b2cb7e82726422bcc285aa98bf0",
+					"text": "Studio: Reserve space for view tabs in the header"
+				},
+				{
+					"sha": "05c9c930674205b6d68a4dd092758cc7ceac8b41",
+					"text": "Studio: Clarify generation waiting for another tab"
+				},
+				{
+					"sha": "f56c035e273c7a2c8c0ab7a699dde43cecaca937",
+					"text": "Studio: Keep source link readable in narrow menus"
+				},
+				{
+					"sha": "862214c3c5dd5a7620bb354fdb4c3847ca8f2fa6",
+					"text": "Studio: Clarify repaired frame review labels"
+				},
+				{
+					"sha": "2f00c96bd907ff810ad51451005e86cb75d11482",
+					"text": "Studio: Ignore stale API clipboard feedback"
+				},
+				{
+					"sha": "c8fcb5e845982ffeaba909c1a33d2e59850a77ea",
+					"text": "Studio: Keep move redraw scope explicit"
+				},
+				{
+					"sha": "81ac52ee4466341491bb991a256217a4572c92a6",
+					"text": "Studio: Keep export help and API endpoints selectable"
+				},
+				{
+					"sha": "c370bd5b795c8363c802a7d95abacd7d90cee7ec",
+					"text": "Studio: Validate targeted move repairs before approval"
+				},
+				{
+					"sha": "0e9f7d061f9ee87d3d7fef40c34d94acbecc2200",
+					"text": "Studio: Make custom move input discoverable"
+				},
+				{
+					"sha": "418f9da2f41d9bc564a2492b2d7f829f7bd54554",
+					"text": "Studio: Simplify paid move creation"
+				},
+				{
+					"sha": "957efe7e3130fc9e18449b626e16f8b9597cd96b",
+					"text": "Studio: Prevent accidental control label selection"
+				},
+				{
+					"sha": "aebd5332bcea7b34f78c259df5846e7e7d1a34c3",
+					"text": "Detach reactive item slots before generation"
+				},
+				{
+					"sha": "8d706b1b98a1ced9508eb7ed26cf790134104e72",
+					"text": "Cap item reference preview height"
+				},
+				{
+					"sha": "f213647a510d63de806501a291a76cef883edbc6",
+					"text": "Refine reference spacing and empty item height"
+				},
+				{
+					"sha": "00a59579165401e5c96fa28ca4d36a6624ca1739",
+					"text": "Align reference picker heights and captions"
+				},
+				{
+					"sha": "f0cd532b42158768d6f13bacc9d55df7a6747f7a",
+					"text": "Give reference thumbnails room to fit"
+				},
+				{
+					"sha": "973b047536c98e77fbfc3e198a0a40428eb62b02",
+					"text": "Make reference uploads cancel-safe and resize to fit"
+				},
+				{
+					"sha": "f5db24eca1ddb96a7ad4d235b31005d515cef5a7",
+					"text": "Align the character size guide and reference picker"
+				},
+				{
+					"sha": "427686a4f2f0d4ebf3dbc065117a3833579d165d",
+					"text": "Studio: Align and simplify item context menus"
+				},
+				{
+					"sha": "d155c8c229cedabb4af37a5351e4c81b35a7e046",
+					"text": "Studio: Reorder character context menu actions"
+				},
+				{
+					"sha": "7865992c4e7352610ca3a9b13e1896832a2fb87f",
+					"text": "Studio: Keep pre-release export button visible"
+				},
+				{
+					"sha": "37548d41ab8991d2c6115a89ce702fb18cde0238",
+					"text": "Pwa: Resume verified offline downloads and preserve language intent"
+				},
+				{
+					"sha": "7ac1eede01943c652bbd41029d99f5db0509016f",
+					"text": "Pwa: Complete offline installs on slow connections"
+				},
+				{
+					"sha": "06362e3cd4899d9682836abb1093c9e0162b8c80",
+					"text": "Studio: Bound startup wait for slow locales"
+				},
+				{
+					"sha": "691e199ca552450a96991914d0d52ab4d242c490",
+					"text": "Studio: Recover workspace exports and accept dropped ZIPs"
+				},
+				{
+					"sha": "e64da19b546c1a4d306e6f0952dae121f8557a89",
+					"text": "Pwa: Prevent startup reloads from interrupting play"
+				},
+				{
+					"sha": "a1ccd311a8af4b5e12c0e4e959f9c679ed9d9f0e",
+					"text": "Store: Keep one archive entry limit after merge"
+				},
+				{
+					"sha": "72efa7fbdfd28d0dd7ac35bbb253ed3a02c508c7",
+					"text": "Export: Keep downloads available for incomplete characters"
+				},
+				{
+					"sha": "1b673109142c7808a6fae292fa5435faa7b72079",
+					"text": "Label the startup notice pre-release"
+				},
+				{
+					"sha": "556a1eb7c09c8707f1dc44ecb68e0100667e4112",
+					"text": "Keep the beta toast clear of touch interactions"
+				},
+				{
+					"sha": "6d337d44b318faac93f3f1d6b77b7f70a96887cb",
+					"text": "Clarify the startup beta notice"
+				},
+				{
+					"sha": "c209af776ab732b7734d7bb4ee7ff752fd5b2da5",
+					"text": "Clarify move progress and saved PixelLab failures"
+				},
+				{
+					"sha": "75e84e058ab7699221da140f2c1f86c09cd09a1f",
+					"text": "Rig: Preserve eight-view mirror registration"
+				},
+				{
+					"sha": "36a71e5d9fe79c25182a52469f4c30607e560c22",
+					"text": "Rig: Reconnect established horizontal mirrors"
+				},
+				{
+					"sha": "663e6b5d33e1345a68eac2b30d150b6f5d9b4833",
+					"text": "Studio: Separate mirror details from the direction label"
+				},
+				{
+					"sha": "8b9214ac6a41f2d8615aefc51429c13185a3755d",
+					"text": "Studio: Validate visible artwork before removing directions"
+				},
+				{
+					"sha": "db98813663efeb278915376bd2a515ad3ed8a2fc",
+					"text": "Explain item generation failures and move equipment costs"
+				},
+				{
+					"sha": "aa6279aa648df77356dee9fbbfb9287d345c9748",
+					"text": "Generate first items in unsaved slots"
+				},
+				{
+					"sha": "0062bab2ab15d4d15c63391c779bf847e840df9b",
+					"text": "Make contextual tier notices full-surface plan links"
+				},
+				{
+					"sha": "68d3c872cd721a41d6fe90ac0f6f906aa7e70529",
+					"text": "Enforce verified PixelLab tiers with reusable notices"
+				},
+				{
+					"sha": "3cae9c97b26065ad3c9c74d66e46d54cc664a884",
+					"text": "Clarify PixelLab branding with linked notices"
+				},
+				{
+					"sha": "4f8aef3340745b1593bc8b0796f4c8771d35263b",
+					"text": "Publish moves without rejecting untouched sparse views"
+				},
+				{
+					"sha": "1bab4edbffd6787b9a67e616d953b1c9922ff5a3",
+					"text": "Open slot menus from rail and hidden rows"
+				},
+				{
+					"sha": "daf8147b4989bd94424aa30997bb3a34c761a898",
+					"text": "Align slot label ink and accent active disclosure"
+				},
+				{
+					"sha": "cf2abb09f79a9965c1ce1da635dda5f004946476",
+					"text": "Track not-shown navigation and align slot labels"
+				},
+				{
+					"sha": "26051e9a72a010be002f92b07be63ff616498013",
+					"text": "Stabilize wardrobe slot organization"
+				},
+				{
+					"sha": "0769ef80f7190fa8aa82f19b83b547cd0d7c5943",
+					"text": "Preserve wardrobe position while organizing slots"
+				},
+				{
+					"sha": "9caaa0e4112b21c48d7ca13b32f662bb62b39145",
+					"text": "Require explicit activation for slot settings"
+				},
+				{
+					"sha": "f272dd1b753eaf4783710241e53f24b95ce379cb",
+					"text": "Protect slot drafts and concurrent category changes"
+				},
+				{
+					"sha": "58516d8418914d51c9f626eb385b0794adba66f7",
+					"text": "Raise the schematic north mount seat"
+				},
+				{
+					"sha": "6c8eef8318268bf12cec5d5b2dbd1fae233fa245",
+					"text": "Preserve standing geometry before mirrored mount fallback"
+				},
+				{
+					"sha": "0c9dbcc903452e901b687f3a974351d6a30377c1",
+					"text": "Refine mount presentation and resolve stored mirrored leg masks"
+				},
+				{
+					"sha": "ccf5447b7ec5b3d2303228912c4082cc14fd9e52",
+					"text": "Studio: Restore left-aligned character list rows"
+				},
+				{
+					"sha": "677e6458df2ee9fbfcd63b9a46f71bc1a3e6ceb5",
+					"text": "Ui: Restore compact control sizes and desktop creator fit"
+				},
+				{
+					"sha": "a14ce2b9e098ee3e1b4e5b2f419f8fa768ead7f7",
+					"text": "Studio: Restore item menu hitbox boundaries"
+				},
+				{
+					"sha": "ec342c86afad8c712eb3b3aff68e788eb901b940",
+					"text": "Studio: Let paid clicks in a second tab continue without Activity"
+				},
+				{
+					"sha": "afbbec85cfd695651a8bf14d854bb1b60376a112",
+					"text": "Ui: Preserve responsive layouts with 48px controls"
+				},
+				{
+					"sha": "610e573e954e6b93a70a980dc3abe9d9bb5e9842",
+					"text": "Ui: Standardize button targets at 48px"
+				},
+				{
+					"sha": "9971d824d972a8b9028d56e6a7c90f9749075caa",
+					"text": "Studio: Align outfit save controls and preserve focus ring"
+				},
+				{
+					"sha": "76fa73ffb4afb4337fb2d7766ea0caf0e940bea4",
+					"text": "Ui: Smooth shared loading and progress rings"
+				},
+				{
+					"sha": "d4e6ac9d1c0d386ed7fba1170b1f633c6e0e6243",
+					"text": "Studio: Refine character selection depth and transitions"
+				},
+				{
+					"sha": "0cdf2dd2b3337a739fa541ac585ca9ea5c97dd48",
+					"text": "Studio: Open New item from an item in any tab"
+				},
+				{
+					"sha": "f4ea060bfef434e4d89c7ac8058553e9394acf05",
+					"text": "Studio: Give character silhouettes proportional breathing room"
+				},
+				{
+					"sha": "367727fabdea1fc52dd415fb4f53662c9dd9857c",
+					"text": "Studio: Ground character selection and tighten silhouette gaps"
+				},
+				{
+					"sha": "7035d06c50ff37dbb3c45b18e63aec3dcd18fa22",
+					"text": "Studio: Address review of the shared grid and its status icons"
+				},
+				{
+					"sha": "57df2032bee61f764b342515e1e6d9ff4bec2a82",
+					"text": "Limit overhead reflection foreshortening"
+				},
+				{
+					"sha": "5473294cc83d861b9b18e4271ada670bbf137af7",
+					"text": "Studio: Put the worn and source icons first and fit four to a row"
+				},
+				{
+					"sha": "734a858f3d9d694500a713974e89514ef1533f50",
+					"text": "Studio: Rank shared item status icons by severity"
+				},
+				{
+					"sha": "18ad683e2e8ee76179800f10fc78f78e3ff6f576",
+					"text": "Studio: Show the no-entry glyph in the menu of a shared item that can't be worn"
+				},
+				{
+					"sha": "f552e8b16cdf0002cf1696ca769bed81a8e17123",
+					"text": "Studio: Hide shared items where they have no art and warn before wearing"
+				},
+				{
+					"sha": "a477843a35c5c12c1c4ed5904cc0c1a67acd6b04",
+					"text": "Studio: Soften character selection depth and fit the trio"
+				},
+				{
+					"sha": "9b48e08904af1e417ccf8cdd244c01b5c8ca8e56",
+					"text": "Toasts: Preserve original timeouts for pending indicators"
+				},
+				{
+					"sha": "e54d5694c4c26dc79cc54e3d505b61b2b2727382",
+					"text": "Pwa: Preserve update toast titles while downloading"
+				},
+				{
+					"sha": "f70a64d485eb237a18c4dd110e35122690198c07",
+					"text": "Pwa: Show truthful update phases and matching loading indicators"
+				},
+				{
+					"sha": "bee70fb09a591c49bec032a35b77bee8177461fa",
+					"text": "Strengthen shared sprite reflections"
+				}
+			]
+		}
+	]
+}

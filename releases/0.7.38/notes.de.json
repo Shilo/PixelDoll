@@ -1,0 +1,33 @@
+{
+	"headline": "Jede Figur mit jedem Gegenstand ausstatten",
+	"intro": "Deine Gegenstände reichen jetzt weiter. Teile sie zwischen Figuren, gestalte deinen Kleiderschrank nach deinem Geschmack und richte Figuren und Animationen mit mehr Auswahl ein als bisher.",
+	"highlights": [
+		{
+			"title": "Jede Figur kann geteilte Gegenstände tragen",
+			"text": "Jeder geteilte Gegenstand kann jetzt von jeder Figur getragen werden, auch von der Demo. Wenn du auf der Demo einen geteilten Gegenstand antippst, wird eine bearbeitbare Kopie gespeichert und dort angelegt."
+		},
+		{
+			"title": "Kleiderschrank-Plätze pro Figur verwalten",
+			"text": "Du kannst Kleiderschrank-Plätze jetzt für jede Figur direkt organisieren und gespeicherte Gegenstände zwischen Ausrüstungsplätzen verschieben. Die Ausrüstungsplätze bleiben beim Export erhalten."
+		},
+		{
+			"title": "Neue Modelle und Referenzen für die Erstellung",
+			"text": "Neue Figur bietet jetzt das Pro-Modell und eine Standard-Option mit Blickrichtungsvorgaben. Außerdem kannst du optionale Figur- und Gegenstandsreferenzen hinzufügen, um die Erstellung zu lenken."
+		},
+		{
+			"title": "Weiterlaufen beim Klicken",
+			"text": "In Draufsicht und Seitenansicht läuft eine gehaltene Bewegungstaste weiter, wenn du auf Kleiderschrank-Kacheln, Tabs oder Werkzeugleisten-Schaltflächen klickst."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Das Studio öffnet sich jetzt auf der Standard-Animation, sodass angelegte Gegenstände nicht mehr verloren wirken."
+		},
+		{
+			"text": "Das Kopieren von Gegenständen zwischen Figuren mit einem Körper entfernt keine Standardansichten mehr."
+		},
+		{
+			"text": "Downloads bleiben für unvollständige Figuren verfügbar."
+		}
+	]
+}

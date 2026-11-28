@@ -1,0 +1,33 @@
+{
+	"headline": "Habillez n'importe quel personnage avec n'importe quel objet",
+	"intro": "Vos objets voyagent désormais plus loin. Partagez-les entre personnages, composez votre garde-robe à votre façon et configurez personnages et animations avec plus de choix qu'avant.",
+	"highlights": [
+		{
+			"title": "Chaque personnage peut porter les objets partagés",
+			"text": "Tout objet partagé peut désormais être porté par n'importe quel personnage, y compris le mannequin de démonstration. Un appui sur un objet partagé du mannequin en enregistre une copie modifiable et l'équipe là."
+		},
+		{
+			"title": "Gérer les emplacements de garde-robe par personnage",
+			"text": "Vous pouvez désormais organiser les emplacements de garde-robe directement pour chaque personnage et déplacer les objets enregistrés entre les emplacements d'équipement. Les configurations d'emplacements sont reprises dans les exports."
+		},
+		{
+			"title": "Nouveaux modèles et références pour la création",
+			"text": "Nouveau personnage propose désormais le modèle Pro et une option Standard avec des préréglages de direction. Vous pouvez aussi ajouter des références facultatives de personnage et d'objet pour guider le résultat."
+		},
+		{
+			"title": "Continuer de marcher pendant les clics",
+			"text": "En Vue de dessus et Défilement horizontal, une marche maintenue sur les touches de déplacement se poursuit lorsque vous cliquez sur les vignettes de garde-robe, les onglets ou les boutons de la barre d'outils."
+		}
+	],
+	"fixes": [
+		{
+			"text": "Studio s'ouvre désormais sur l'animation debout, et les objets portés ne semblent plus perdus."
+		},
+		{
+			"text": "La copie d'objets entre personnages au corps unique conserve à nouveau les vues debout."
+		},
+		{
+			"text": "Les téléchargements restent disponibles pour les personnages incomplets."
+		}
+	]
+}
