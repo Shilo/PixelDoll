@@ -44,7 +44,6 @@
 		padding: 0;
 		display: grid;
 		place-items: center;
-		color: var(--bu-text);
 		touch-action: none;
 		user-select: none;
 		-webkit-user-select: none;
@@ -59,15 +58,18 @@
 		inline-size: 45%;
 		block-size: 45%;
 	}
-	/* Pressed and toggled on read like the joystick's thumb: an accent rim. */
-	.touch-action:global([data-pressed]),
-	.touch-action[aria-pressed='true'] {
+	/* Touchdown uses the joystick thumb material until the finger lifts. */
+	.touch-action:global([data-pressed]) {
 		border-color: var(--bu-accent);
 		color: var(--bu-accent);
-	}
-	.touch-action:global([data-pressed]) {
 		scale: 0.92;
 		background: var(--bu-gesture-thumb);
+	}
+	/* Here the thumb is solid accent, so an accent icon would vanish. */
+	@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+		.touch-action:global([data-pressed]) {
+			color: var(--bu-on-accent);
+		}
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.touch-action {

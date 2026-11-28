@@ -175,6 +175,7 @@ export function manifestShape(m: Manifest) {
 }
 
 /** Editable data travels alongside engine files; includes original cells, rest views and rig metadata. */
+const CELL_ENCODE_BATCH = 16;
 export async function projectEntries(
 	p: Project,
 	extra: ImportedCharacter['extra'] = {}
@@ -187,8 +188,18 @@ export async function projectEntries(
 			)
 		}
 	];
-	for (const [h, im] of p.images)
-		entries.push({ name: `cells/${h.slice(7)}.png`, data: await encodePngBytes(im) });
+	// Encoded a few at a time: the cells are independent, and one compression stream per cell at once costs more than
+	// these batches (measured 2.5x the batched time on a 341-cell character).
+	const cells = [...p.images];
+	for (let i = 0; i < cells.length; i += CELL_ENCODE_BATCH)
+		entries.push(
+			...(await Promise.all(
+				cells.slice(i, i + CELL_ENCODE_BATCH).map(async ([hash, im]) => ({
+					name: `cells/${hash.slice(7)}.png`,
+					data: await encodePngBytes(im)
+				}))
+			))
+		);
 	return entries;
 }
 

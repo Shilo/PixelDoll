@@ -362,6 +362,7 @@
 			<button
 				class="bu-action btn"
 				data-variant="outline"
+				data-trail="genCard.wear"
 				onclick={() => wearDraft(g.draft.spec.id)}
 				>{worn ? t('common.takeOff') : t('common.wear')}</button
 			>
@@ -415,11 +416,14 @@
 
 		{#if g.phase === 'review'}
 			{#if !res?.qa && store.resultsUnread[g.draft.spec.id]}
-				<p class="notice warn small">{t('paidReview.loadFailed')}</p>
+				<p class="bu-notice" data-size="compact" data-tone="warning">
+					{t('paidReview.loadFailed')}
+				</p>
 				<button
 					class="bu-action"
 					type="button"
 					data-variant="quiet"
+					data-trail="genCard.retryRead"
 					onclick={() => void readGenReview(g)}>{t('common.tryAgain')}</button
 				>
 			{:else if !res?.qa}
@@ -435,7 +439,7 @@
 			{:else}
 				<p class="muted small">{t('genCard.someChecks')}</p>
 			{/if}
-			{#if !clean}<p class="notice warn small">
+			{#if !clean}<p class="bu-notice" data-size="compact" data-tone="warning">
 					{t(
 						!keepBlocked
 							? 'genCard.noRetryStarted'
@@ -448,6 +452,7 @@
 				<button
 					class="bu-action btn primary"
 					data-variant="primary"
+					data-trail="genCard.keep"
 					onclick={accept}
 					disabled={busy || keepBlocked}>{t('genCard.keep')}</button
 				>
@@ -455,6 +460,7 @@
 						><button
 							class="bu-action btn"
 							data-variant="outline"
+							data-trail="genCard.generateAgain"
 							onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
 							disabled={busy || retryGens === null || retryBlocked}
 							aria-describedby={retryBlocked ? tierNoticeId : undefined}
@@ -469,15 +475,16 @@
 				<button
 					class="bu-action btn plain danger"
 					data-variant="quiet"
+					data-trail="genCard.discard"
 					onclick={() => discardGen(g)}
 					disabled={busy}>{t('common.discard')}</button
 				>
 			</div>
-			{#if incomplete}<p class="notice warn small">
+			{#if incomplete}<p class="bu-notice" data-size="compact" data-tone="warning">
 					{t(freeKeep ? 'genCard.incompleteFreeKeep' : 'genCard.incomplete')}
 				</p>{/if}
 		{:else if g.phase === 'failed'}
-			{#if g.canceled}<p class="notice bad small">
+			{#if g.canceled}<p class="bu-notice" data-size="compact" data-tone="danger">
 					<CircleAlert size={14} />{t('genCard.canceledDetail')}
 				</p>
 			{:else}<ProblemNotice
@@ -504,7 +511,9 @@
 						facts: {
 							...(outcome ? jobProblem(outcome.record).facts : {}),
 							phase: g.phase
-						}
+						},
+						// A request's failure time is known only when this tab saw it settle; otherwise its trail runs up to Report.
+						...(outcome && { failedAt: jobProblem(outcome.record).failedAt })
 					}}
 				/>{/if}
 			{#if providerFailed && !g.canceled}
@@ -522,8 +531,11 @@
 				</p>
 			{/if}
 			<div class="recovery-actions">
-				<button class="bu-action btn plain" data-variant="quiet" onclick={() => discardGen(g)}
-					>{t(g.canceled ? 'common.discard' : 'common.cancel')}</button
+				<button
+					class="bu-action btn plain"
+					data-variant="quiet"
+					data-trail="genCard.cancel"
+					onclick={() => discardGen(g)}>{t(g.canceled ? 'common.discard' : 'common.cancel')}</button
 				>
 				<div class="recovery-options">
 					{#if !sameRetry}<span class="api-action"
@@ -531,6 +543,7 @@
 								class="bu-action btn"
 								class:primary={retryLeads}
 								data-variant={retryLeads ? 'primary' : 'outline'}
+								data-trail="genCard.retry"
 								onclick={() =>
 									retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
 								disabled={busy || retryGens === null || retryBlocked}
@@ -554,7 +567,9 @@
 				blocked={retryBlocked}
 				onchoose={choosePaid}
 			/>{:else if paidUnread && (g.phase === 'review' || g.phase === 'failed')}<p
-				class="notice warn small"
+				class="bu-notice"
+				data-size="compact"
+				data-tone="warning"
 			>
 				{t('paidReview.loadFailed')}
 			</p>
@@ -562,6 +577,7 @@
 				class="bu-action"
 				type="button"
 				data-variant="quiet"
+				data-trail="genCard.retryPaidRead"
 				onclick={() => {
 					paidReads++;
 					if (!res) void readGenReview(g);
@@ -572,7 +588,11 @@
 				minimumTier={retryTier}
 				feature={t('genCard.retryFeature')}
 			/>{/if}
-		{#if g.phase !== 'running' && retryEstimateError}<p class="notice bad small">
+		{#if g.phase !== 'running' && retryEstimateError}<p
+				class="bu-notice"
+				data-size="compact"
+				data-tone="danger"
+			>
 				<CircleAlert size={14} />{t('genCard.estimateFailed')}<ReportButton
 					area="Item generation"
 					message={message('genCard.estimateFailed')}

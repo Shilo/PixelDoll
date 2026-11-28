@@ -114,6 +114,7 @@
 					data-variant="quiet"
 					role="menuitem"
 					disabled={offer?.gens == null || !!access.error || ui.waitingForTab}
+					data-trail="itemChoice.generate"
 					onclick={generate}
 					><Sparkles size={16} aria-hidden="true" />{t('itemGeneration.generateFor', {
 						move
@@ -127,6 +128,7 @@
 					class="row bu-action"
 					data-variant="quiet"
 					role="menuitem"
+					data-trail="itemChoice.wear"
 					onclick={() => {
 						close();
 						wear(it.id);
@@ -139,7 +141,12 @@
 							: t('common.wear')}{/if}</button
 				>
 			</div>
-			{#if access.error}<p class="notice warn small item-choice-note" role="status">
+			{#if access.error}<p
+					class="bu-notice item-choice-note"
+					data-size="compact"
+					data-tone="warning"
+					role="status"
+				>
 					{access.error}
 				</p>{/if}
 		</div>

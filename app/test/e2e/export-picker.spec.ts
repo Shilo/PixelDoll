@@ -6,12 +6,19 @@ import {
 } from './immersive-helpers.ts';
 import { createHash } from 'node:crypto';
 import {
+	changeFolder,
+	fakeProjectFolder,
+	folderText,
+	savedExport
+} from './project-folder-helpers.ts';
+import {
 	chromium,
 	expect,
 	test,
 	type BrowserContext,
 	type Locator,
-	type Page
+	type Page,
+	type Request
 } from '@playwright/test';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -534,7 +541,7 @@ test('a backup opened as a copy isolates the library and PixelLab connection', a
 	).toBeNull();
 	await expect(connect.getByLabel('Paste your Secret API key', { exact: true })).toBeEmpty();
 	expect(copyRequests).toEqual([]);
-	await expect(connect.getByRole('checkbox', { name: 'Remember on this device' })).toHaveCount(0);
+	await expect(connect.getByRole('switch', { name: 'Remember on this device' })).toHaveCount(0);
 	await connect.getByLabel('Paste your Secret API key', { exact: true }).fill(copyKey);
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(connect).toBeHidden();
@@ -734,73 +741,6 @@ test('a backup opened as a copy isolates the library and PixelLab connection', a
 		});
 	expect(requests).toEqual([]);
 });
-
-async function savedExport(page: Page, dev: string) {
-	await page.setViewportSize({ width: 800, height: 600 }); // Eight parallel settings runs do not need eight full-size animated worlds.
-	await page.addInitScript(() => {
-		localStorage.setItem('pixeldoll.agentKey', 'off');
-		localStorage.setItem(
-			'pixeldoll.tips',
-			'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
-		);
-		localStorage.setItem('pixeldoll.visited', '1');
-	});
-	await page.route('https://*.pixellab.ai/**', (route) => route.abort());
-	await openStudio(page, dev);
-	await page.evaluate(async () => {
-		const statePath = '/src/studio/state.svelte.ts',
-			createPath = '/src/studio/create.ts',
-			rigPath = '/src/lib/rig/rig.ts';
-		const state = await import(statePath),
-			{ saveCopy } = await import(createPath),
-			{ baseHashOf } = await import(rigPath);
-		const source = state.store.project,
-			manifest = structuredClone(source.manifest);
-		const body = manifest.items.find((item: { id: string }) => item.id === manifest.rig.baseItem);
-		// The real demo is covered by the existing export tests. Settings need only two small clips and saved outfits.
-		manifest.items = [body];
-		manifest.slots = manifest.slots.filter((slot: { id: string }) => slot.id === body.slot);
-		manifest.materials = manifest.materials.filter(
-			(material: { owner: string }) => material.owner === body.id
-		);
-		manifest.presets = manifest.presets.map((preset: object) => ({
-			...preset,
-			items: { body: body.id },
-			variants: {}
-		}));
-		manifest.rig.directions = [{ id: 'south' }];
-		delete manifest.rig.rest;
-		delete manifest.rig.anchors;
-		const hashes: Record<string, string> = {},
-			used = new Set<string>();
-		for (const animation of manifest.rig.animations) {
-			animation.cells = 2;
-			animation.loop = true;
-			animation.frames = [
-				{ cell: 0, ms: 100 },
-				{ cell: 1, ms: 100 }
-			];
-			delete animation.sources;
-			for (const layer of body.layers) {
-				layer.cells[animation.id] = { south: layer.cells[animation.id].south.slice(0, 2) };
-				layer.cells[animation.id].south.forEach((hash: string, index: number) => {
-					used.add(hash);
-					hashes[`${animation.id}/south/${index}`] = hash;
-				});
-			}
-		}
-		manifest.rig.baseHash = await baseHashOf(manifest.rig, hashes);
-		body.baseHash = manifest.rig.baseHash;
-		const images = new Map([...source.images].filter(([hash]) => used.has(hash)));
-		const id = await saveCopy({ manifest, images }, 'Export settings test');
-		await state.refreshProjects();
-		await state.openProject(id);
-	});
-	await page.getByRole('button', { name: 'Export', exact: true }).click();
-	await expect(
-		page.getByRole('dialog').getByRole('radio', { name: 'Godot', exact: true })
-	).toBeEnabled();
-}
 
 async function holdProjectTransaction(
 	page: Page,
@@ -2251,11 +2191,27 @@ for (const corruption of ['unsupported-format', 'sparse-array'] as const)
 					key,
 					corruption === 'sparse-array'
 						? { engine: 'godot', dressedCharacterSheets: true, playOnce: Array(1) }
-						: { engine: 'unsupported', dressedCharacterSheets: true, playOnce: [] }
+						: { engine: 'rpgmaker', dressedCharacterSheets: true, playOnce: [] }
 				);
 			},
 			{ key: EXPORT_SETTINGS_KEY, corruption }
 		);
+		const actions = page.locator('#project-menu').getByRole('button', {
+				name: 'More actions for Export settings test',
+				exact: true
+			}),
+			downloadZip = page.getByRole('menuitem', { name: 'Download ZIP', exact: true }),
+			// One variant covers the quick ZIP entry point; both share the same reader and error.
+			quick = corruption === 'unsupported-format';
+		if (quick) {
+			await page.locator('.project-btn').click();
+			await actions.click();
+			await downloadZip.click();
+			await expect(page.locator('.toast')).toContainText(
+				'Saved export settings could not be read. Open Export, then choose Reset export settings.'
+			);
+			await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click();
+		}
 		await page.getByRole('button', { name: 'Export', exact: true }).click();
 		const dialog = page.getByRole('dialog');
 		await expect(dialog.getByRole('alert')).toContainText('Saved export settings');
@@ -2299,6 +2255,12 @@ for (const corruption of ['unsupported-format', 'sparse-array'] as const)
 			})
 		).toEqual(before);
 		await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+		if (quick) {
+			await page.locator('.project-btn').click();
+			await actions.click();
+			const [download] = await Promise.all([page.waitForEvent('download'), downloadZip.click()]);
+			expect(download.suggestedFilename()).toMatch(/\.pixeldoll\.zip$/);
+		}
 		await page.evaluate(() => location.reload());
 		await enterStudio(page);
 		await page.getByRole('button', { name: 'Export', exact: true }).click();
@@ -2337,7 +2299,9 @@ for (const corruption of ['null-list', 'sparse-array'] as const)
 		);
 		await page.getByRole('button', { name: 'Export', exact: true }).click();
 		const dialog = page.getByRole('dialog');
-		await expect(dialog.locator('.notice.warn')).toContainText('Broken library character');
+		await expect(
+			dialog.locator('.bu-notice[data-size="compact"][data-tone="warning"]')
+		).toContainText('Broken library character');
 		await expect(dialog.getByRole('alert')).toHaveCount(0);
 		await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
 		const walk = dialog.getByRole('checkbox', { name: 'Walk', exact: true });
@@ -2400,14 +2364,16 @@ test('invalid move names still allow artwork recovery and storage outages do not
 	});
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	await expect(
-		dialog.locator('.notice.warn').filter({ hasText: 'Some moves from this character' })
+		dialog
+			.locator('.bu-notice[data-size="compact"][data-tone="warning"]')
+			.filter({ hasText: 'Some moves from this character' })
 	).toBeVisible();
 	await expect(dialog.getByRole('button', { name: 'Reset export settings' })).toHaveCount(0);
 	await expect(dialog.getByRole('button', { name: 'Download artwork ZIP' })).toBeEnabled();
 	await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 });
 
-test('quick download recovers working images from an unopened character with a missing image', async ({
+test('quick download reports a missing module, then recovers working images after reload', async ({
 	page
 }, info) => {
 	await savedExport(
@@ -2426,11 +2392,39 @@ test('quick download recovers working images from an unopened character with a m
 	});
 	await page.reload();
 	await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click();
-	await page
-		.getByRole('button', { name: 'More actions for Export settings test', exact: true })
-		.click();
+	const actions = page.getByRole('button', {
+		name: 'More actions for Export settings test',
+		exact: true
+	});
+	const downloadZip = page.getByRole('menuitem', { name: 'Download ZIP', exact: true });
+	const buildModule = '**/src/lib/export/build.ts*';
+	await page.route(buildModule, (route) => route.abort());
+	await actions.click();
+	await downloadZip.click();
+	const notice = page.locator('.toast');
+	await expect(notice).toContainText('Part of PixelDoll could not load. Reload to try again.');
+	await notice.getByRole('button', { name: 'Report this problem', exact: true }).click();
+	const report = page.getByRole('dialog', { name: 'Report this problem', exact: true });
+	const href = await report.getByRole('link', { name: 'Open on GitHub' }).getAttribute('href');
+	const fields = new URL(href!).searchParams;
+	expect(fields.get('details')).toContain('Download: Character ZIP');
+	expect(fields.get('details')).toContain('Message key: common.loadFailed');
+	expect(fields.get('details')).toContain('Service worker: not controlling page');
+	// The step, the import's own failure, and the presses that led there.
+	expect(fields.get('details')).toContain('Download step: builder');
+	expect(fields.get('details')).toContain('Error type: LoadError, caused by TypeError');
+	expect(fields.get('details')).toMatch(
+		/Recent actions \(newest first, time before the problem\):\n- \d+ s: press characterMenu\.download in Characters\n/
+	);
+	expect(fields.get('details')).not.toContain('Character:');
+	expect([...fields.values()].join('\n')).not.toContain('Export settings test');
+
+	await page.unroute(buildModule);
+	await page.reload();
+	await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click();
+	await actions.click();
 	const downloaded = page.waitForEvent('download');
-	await page.getByRole('menuitem', { name: 'Download ZIP', exact: true }).click();
+	await downloadZip.click();
 	const download = await downloaded;
 	expect(download.suggestedFilename()).toMatch(
 		/^export_settings_test_[a-f0-9]{12}-recovered-artwork\.zip$/
@@ -3664,8 +3658,8 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await selectShareClip(popover, 'Everything');
 	await fixedLayout(smallLayout);
 	await expect(page.getByRole('button', { name: 'Share character' })).toBeHidden();
-	// The audio control and the panel toggle leave no room for Export here, so it moves into More. The bar still fits.
-	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeHidden();
+	// Export keeps its place; Full screen and Audio move into More first. The bar still fits.
+	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
 	await headerFits();
 	await page.screenshot({ path: testInfo.outputPath('share-grid-320.png') });
 	await selectShareClip(popover, 'Walk');
@@ -3693,9 +3687,9 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('south');
 	await page.setViewportSize({ width: 320, height: 390 });
 	await expect(page.getByRole('button', { name: 'Share character' })).toBeHidden();
-	// The panel toggle and audio control leave no room for Export on a 320 px bar; Full screen stays.
-	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeHidden();
-	await expect(page.getByRole('button', { name: 'Enter full screen', exact: true })).toBeVisible();
+	// A 320 px bar keeps Export and moves Full screen into More.
+	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Enter full screen', exact: true })).toBeHidden();
 	await headerFits();
 	expect(
 		(await popover.boundingBox())!.y + (await popover.boundingBox())!.height
@@ -3799,7 +3793,7 @@ test('Share resets to Standing when switching characters', async ({ page, contex
 	await popover.getByRole('combobox', { name: 'Size' }).selectOption('4');
 	await page.keyboard.press('Escape');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
+	await page.getByRole('button', { name: 'Make editable copy', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const download = page.waitForEvent('download');
@@ -4159,4 +4153,285 @@ test('a sheet whose code fails to load closes, says so in French and can be trie
 	await exportButton.click();
 	await expect.poll(() => fetches).toBeGreaterThan(tried);
 	await expect(page.locator('dialog[open]')).toHaveCount(0);
+});
+
+test('a linked project folder publishes, updates after changes, pauses on game edits and reconnects', async ({
+	page
+}, info) => {
+	await fakeProjectFolder(page);
+	await savedExport(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('radio', { name: 'PNG + JSON', exact: true }).check();
+	// Export keeps one button; the folder is chosen and managed in Settings > Export.
+	const folderButton = dialog.getByRole('button', { name: 'Project folder', exact: true });
+	await expect(folderButton).toHaveAccessibleDescription(/^Not linked/);
+	await folderButton.click();
+	const row = dialog.locator('[data-setting="project-folder"]');
+	// Export's button opens Settings at the Project folder section: in view and focused, so Tab enters its controls.
+	await expect(row).toBeInViewport();
+	await expect(row.getByRole('heading', { name: 'Project folder' })).toBeFocused();
+	await row.getByRole('button', { name: 'Choose folder…' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+	await expect(row.getByRole('checkbox', { name: 'Update automatically' })).toBeChecked();
+	const sub = await page.evaluate(async () => {
+		const path = '/src/studio/projectFolder.svelte.ts';
+		return (await import(path)).projectFolder.link.subfolder as string;
+	});
+	// Where the files land, as the Export card shows it, and the format on its own line.
+	await expect(row).toContainText(`game/${sub}/`);
+	await expect(row).toContainText('PNG + JSON');
+	const manifestPath = `game/${sub}/manifest.json`;
+	const first = await folderText(page, manifestPath);
+	expect(JSON.parse(first!).name).toBe('Export settings test');
+	// PixelDoll keeps its record of what it wrote in its own storage: nothing else is added to the folder.
+	expect(await folderText(page, `game/${sub}/.pixeldoll-publish.json`)).toBeNull();
+
+	// Publishing again with nothing changed writes nothing, so the manifest keeps its timestamp.
+	await row.getByRole('button', { name: 'Update now' }).click();
+	await expect(row.getByRole('status')).toHaveText('Already up to date');
+	expect(await folderText(page, manifestPath)).toBe(first);
+
+	// A saved change republishes by itself.
+	await page.getByRole('button', { name: 'Close', exact: true }).click();
+	const material = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			dbPath = '/src/lib/store/db.ts',
+			state = await import(statePath),
+			db = await import(dbPath);
+		const material = state.store.project.manifest.materials[0].id as string;
+		await db.update(
+			'projects',
+			state.doc.id,
+			(record: {
+				manifest: {
+					materials: { id: string; ramp: string[]; variants: Record<string, string[]> }[];
+				};
+			}) => {
+				const mat = record.manifest.materials.find((m) => m.id === material)!;
+				mat.variants['folder-red'] = mat.ramp.map(() => '#ff0000');
+				return record;
+			}
+		);
+		await state.openProject(state.doc.id);
+		state.setVariant(material, 'folder-red');
+		await state.flushSave();
+		return material;
+	});
+	await expect
+		.poll(
+			async () => JSON.parse((await folderText(page, manifestPath))!).presets[0].variants[material]
+		)
+		.toBe('folder-red');
+
+	// A file edited in the game pauses publishing instead of being replaced.
+	await page.evaluate(async (path) => {
+		const parts = path.split('/');
+		let dir = await navigator.storage.getDirectory();
+		for (const part of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(part);
+		const out = await (await dir.getFileHandle(parts.at(-1)!)).createWritable();
+		await out.write('{"edited":"in the game"}');
+		await out.close();
+	}, manifestPath);
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(statePath);
+		state.setVariant(state.store.project.manifest.materials[0].id, null);
+		await state.flushSave();
+	});
+	const toast = page.locator('.toast');
+	await expect(toast).toContainText('Updates paused: files in the folder changed.');
+	expect(await folderText(page, manifestPath)).toBe('{"edited":"in the game"}');
+	await toast.getByRole('button', { name: 'Review' }).click();
+	await expect(row.getByRole('alert')).toContainText(
+		'PixelDoll won’t replace these files without your OK'
+	);
+	await expect(row.getByRole('alert')).toContainText('manifest.json');
+	await row.getByRole('button', { name: 'Replace listed files' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+	expect(JSON.parse((await folderText(page, manifestPath))!).name).toBe('Export settings test');
+
+	// Lost access asks to reconnect, and reconnecting publishes.
+	await page.evaluate(
+		() => ((window as unknown as Record<string, unknown>).__folderPermission = 'prompt')
+	);
+	await row.getByRole('button', { name: 'Update now' }).click();
+	await expect(row.getByRole('alert')).toContainText(
+		'PixelDoll needs access to this folder again.'
+	);
+	await row.getByRole('button', { name: 'Reconnect folder' }).click();
+	await expect(row.getByRole('status')).toHaveText(/^(Already up|Up) to date/);
+
+	// A moved or deleted folder says so; Unlink leaves the row ready to choose a folder again.
+	await page.evaluate(async () =>
+		(await navigator.storage.getDirectory()).removeEntry('game', { recursive: true })
+	);
+	await row.getByRole('button', { name: 'Update now' }).click();
+	await expect(row.getByRole('alert')).toContainText('Folder not found.');
+	await row.getByRole('button', { name: 'Unlink' }).click();
+	await expect(row.getByRole('button', { name: 'Choose folder…' })).toBeVisible();
+});
+
+test('project folders stay out of browsers that cannot write folders, with a Brave hint in Settings', async ({
+	page
+}, info) => {
+	const errors: string[] = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	await page.addInitScript(() => {
+		delete (window as unknown as Record<string, unknown>).showDirectoryPicker;
+		if (location.hash !== '#firefox')
+			Object.defineProperty(navigator, 'brave', { value: { isBrave: async () => true } });
+	});
+	await savedExport(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Project folder', exact: true }).click();
+	const row = dialog.locator('[data-setting="project-folder"]');
+	await expect(row).toContainText('brave://flags/#file-system-access-api');
+	await expect(row.getByRole('button', { name: 'Choose folder…' })).toHaveCount(0);
+	expect(errors).toEqual([]);
+});
+
+test('a project folder never replaces files changed outside PixelDoll without approval', async ({
+	page
+}, info) => {
+	await fakeProjectFolder(page);
+	await savedExport(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('radio', { name: 'PNG + JSON', exact: true }).check();
+	const sub = await page.evaluate(async () => {
+		const path = '/src/studio/download.svelte.ts',
+			statePath = '/src/studio/state.svelte.ts';
+		const { characterZipId } = await import(path),
+			state = await import(statePath);
+		return characterZipId(state.store.project.manifest) as string;
+	});
+	const at = (name: string) => `game/${sub}/${name}`;
+
+	// A copy the user extracted and edited earlier sits where PixelDoll would publish: nothing at all is written.
+	await changeFolder(page, at('manifest.json'), { text: 'my own manifest' });
+	await changeFolder(page, at('notes.txt'), { text: 'game notes' });
+	await changeFolder(page, at('manifest.json.import'), { text: 'engine sidecar' });
+	await dialog.getByRole('button', { name: 'Project folder', exact: true }).click();
+	const row = dialog.locator('[data-setting="project-folder"]');
+	await row.getByRole('button', { name: 'Choose folder…' }).click();
+	await expect(row.getByRole('alert')).toContainText(
+		'PixelDoll won’t replace these files without your OK'
+	);
+	expect(await folderText(page, at('manifest.json'))).toBe('my own manifest');
+	expect(await folderText(page, at('.pixeldoll-publish.json'))).toBeNull();
+	expect(await folderText(page, at('project.json'))).toBeNull();
+	// Every step below is a click, so a background update cannot land between a folder change and the next click.
+	await row.getByRole('checkbox', { name: 'Update automatically' }).uncheck();
+
+	// Edited again after the warning appeared: Replace files does not cover the newer bytes.
+	await changeFolder(page, at('manifest.json'), { text: 'my newer manifest' });
+	await row.getByRole('button', { name: 'Replace listed files' }).click();
+	await expect(row.getByRole('alert')).toContainText('Updates paused');
+	expect(await folderText(page, at('manifest.json'))).toBe('my newer manifest');
+	await row.getByRole('button', { name: 'Replace listed files' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+	expect(JSON.parse((await folderText(page, at('manifest.json')))!).name).toBe(
+		'Export settings test'
+	);
+
+	// A published file the user deleted is not quietly put back.
+	await changeFolder(page, at('project.json'), { remove: true });
+	await row.getByRole('button', { name: 'Update now' }).click();
+	await expect(row.getByRole('alert')).toContainText('Updates paused');
+	await expect(row.getByRole('alert')).toContainText('project.json');
+	expect(await folderText(page, at('project.json'))).toBeNull();
+	await row.getByRole('button', { name: 'Replace listed files' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+	expect(await folderText(page, at('project.json'))).not.toBeNull();
+
+	// A folder where a file belongs is never replaced: the user is asked to move it.
+	await changeFolder(page, at('project.json'), { folder: true });
+	await row.getByRole('button', { name: 'Update now' }).click();
+	await expect(row.getByRole('alert')).toContainText('A folder is in the way');
+	await expect(row.getByRole('button', { name: 'Replace listed files' })).toHaveCount(0);
+	await changeFolder(page, at('project.json'), { remove: true });
+	// After moving it away, Try again finds the file now missing, which is the user's change too.
+	await row.getByRole('button', { name: 'Try again' }).click();
+	await expect(row.getByRole('alert')).toContainText('Updates paused');
+	await row.getByRole('button', { name: 'Replace listed files' }).click();
+	await expect(row.getByRole('status')).toHaveText('Up to date');
+
+	// Keep mine: an intentional edit stays, PixelDoll keeps publishing the rest, and Update them asks again.
+	await changeFolder(page, at('manifest.json'), { text: 'my intentional manifest' });
+	await row.getByRole('button', { name: 'Update now' }).click();
+	await row.getByRole('button', { name: 'Keep existing files' }).click();
+	await expect(row.getByRole('status')).toHaveText(/^Already up to date · 1 file kept/);
+	await expect(row).toContainText('1 file kept');
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(statePath);
+		const material = state.store.project.manifest.materials[0];
+		state.setVariant(material.id, Object.keys(material.variants)[0] ?? null);
+		await state.flushSave();
+	});
+	await row.getByRole('button', { name: 'Update now' }).click();
+	await expect(row.getByRole('status')).toHaveText(/^(Already up|Up) to date/);
+	expect(await folderText(page, at('manifest.json'))).toBe('my intentional manifest');
+	await row.getByRole('button', { name: 'Review kept files' }).click();
+	await expect(row.getByRole('alert')).toContainText('Updates paused');
+	expect(await folderText(page, at('manifest.json'))).toBe('my intentional manifest');
+
+	// Files PixelDoll never exported, such as engine sidecars and the game's own notes, are never touched.
+	expect(await folderText(page, at('notes.txt'))).toBe('game notes');
+	expect(await folderText(page, at('manifest.json.import'))).toBe('engine sidecar');
+});
+
+test.describe('quick ZIP after a deploy', () => {
+	// A first visit has no service worker yet; only the startup prefetch keeps the on-demand code.
+	test.use({ serviceWorkers: 'block' });
+
+	test('the first quick ZIP still downloads when the build files disappear after startup', async ({
+		page,
+		context
+	}, testInfo) => {
+		const origin = new URL(testInfo.project.use.baseURL!).origin;
+		const isCode = (url: URL) => url.origin === origin && url.pathname.endsWith('.js');
+		await context.route('https://api.pixellab.ai/**', (route) => route.abort());
+		// ExportSheet starts in the same prefetch batch as the ZIP loader. Let that batch's code requests finish.
+		const open = new Set<Request>();
+		let exportSheet = false;
+		page.on('request', (request) => {
+			if (isCode(new URL(request.url()))) open.add(request);
+		});
+		page.on('requestfinished', (request) => {
+			open.delete(request);
+			if (/\/ExportSheet-[\w-]+\.js$/.test(request.url())) exportSheet = true;
+		});
+		page.on('requestfailed', (request) => open.delete(request));
+		await context.addInitScript(() => {
+			localStorage.setItem('pixeldoll.agentKey', 'off');
+			localStorage.setItem(
+				'pixeldoll.tips',
+				'["add-item","add-move","add-state","customize","export","gear","generate-items","new-character","pixellab"]'
+			);
+			localStorage.setItem('pixeldoll.visited', '1');
+		});
+		await page.goto(testInfo.project.use.baseURL! + '/#/');
+		await expect.poll(() => exportSheet && open.size === 0).toBe(true);
+		// The deploy replaced every code file, so anything not fetched yet is gone.
+		await context.route(isCode, (route) => route.abort());
+		await page.locator('.cast-library .character-row').first().click({ button: 'right' });
+		const downloaded = page.waitForEvent('download');
+		await page
+			.getByRole('menu')
+			.getByRole('menuitem', { name: 'Download ZIP', exact: true })
+			.click();
+		await expect(page.locator('.toast')).toContainText(/download started/i);
+		const entries = await unzip(new Uint8Array(await readFile((await (await downloaded).path())!)));
+		expect(entries.has('project.json')).toBe(true);
+		expect([...entries.keys()].some((name) => name.endsWith('.png'))).toBe(true);
+	});
 });

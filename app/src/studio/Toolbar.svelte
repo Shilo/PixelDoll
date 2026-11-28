@@ -6,6 +6,7 @@
 	import { app } from '../lib/app.svelte.ts';
 	import { navigateMenu, popoverFocus } from './experience/focus.ts';
 	import { tick } from 'svelte';
+	import { contextMenu } from '../lib/input/contextMenu.ts';
 	import { experience, characters, type WorldMode } from './experience/state.svelte.ts';
 	import type { PanelSide } from './experience/panelSettings.svelte.ts';
 	import CharacterThumb from './experience/CharacterThumb.svelte';
@@ -60,12 +61,14 @@
 		panelOpen,
 		panelSide,
 		onpanel,
-		onmode
+		onmode,
+		oncharacteractions
 	}: {
 		panelOpen: boolean;
 		panelSide: PanelSide | 'bottom';
 		onpanel: () => void;
 		onmode: (mode: WorldMode, pointer: string) => void;
+		oncharacteractions: (source: HTMLElement) => void;
 	} = $props();
 	// The icon shows what a press does: open toward the dock edge, or close into it.
 	const PANEL_ICONS = {
@@ -221,10 +224,8 @@
 			node.style.removeProperty('--view-shift');
 		};
 	}
-	/** Optional actions that move into More as the bar runs out of room, one at a time in their left-to-right order;
-	 *  Full screen goes only when nothing else is left to move. Phone portrait widths start with the first four already
-	 *  there (layout.css), so this order is the only priority. */
-	const OVERFLOW = ['undo', 'redo', 'random', 'share', 'export', 'fullscreen'] as const;
+	/** Keep Export reachable while there is room by moving presentation shortcuts first. */
+	const OVERFLOW = ['undo', 'redo', 'random', 'share', 'fullscreen', 'audio', 'export'] as const;
 	/** The narrowest a truncated character name may get before the next action moves into More. */
 	const MIN_NAME = 96;
 	let fitFrame = 0;
@@ -244,6 +245,8 @@
 		if (experience.screen === 'studio')
 			for (const action of OVERFLOW) {
 				if (!crowded()) break;
+				if (action === 'audio' && !header.querySelector('.header-audio')?.checkVisibility())
+					continue;
 				moved.push(action);
 				root.dataset.overflow = moved.join(' ');
 			}
@@ -297,6 +300,7 @@
 		data-variant="quiet"
 		aria-expanded={panelOpen}
 		aria-controls="customization-rail"
+		data-trail="toolbar.panel"
 		aria-label={t('experience.customization')}
 		title={t('experience.customization')}
 		onclick={onpanel}><PanelIcon size={20} aria-hidden="true" /></button
@@ -307,6 +311,7 @@
 	<div class="header-start">
 		{#if experience.screen === 'studio'}<button
 				class="bu-action header-back"
+				data-trail="toolbar.characters"
 				data-variant="quiet"
 				aria-label={t('common.characters')}
 				title={t('common.characters')}
@@ -316,8 +321,10 @@
 			<h1 class="sr">{name}</h1>
 			<button
 				class="name-menu project-btn"
+				{@attach contextMenu(oncharacteractions)}
 				popovertarget="project-menu"
 				aria-haspopup="menu"
+				data-trail="toolbar.characterMenu"
 				onclick={() => void refreshProjects()}
 				><span class="name-line"
 					><span class="name-text"><CharacterName id={doc.id} {name} /></span>
@@ -355,13 +362,14 @@
 					class="bu-action"
 					data-variant="tab"
 					aria-pressed={experience.mode === id}
+					data-trail="toolbar.viewMode"
 					aria-controls="world-stage"
 					aria-label={label}
 					title={label}
 					onpointerdown={(event) => (activationPointer = event.pointerType)}
 					onclick={(event) => changeMode(id, event)}
 					><span class="bu-tab-label"
-						><Icon size={18} aria-hidden="true" /><span
+						><Icon size={20} aria-hidden="true" /><span
 							class="view-label bu-tab-text"
 							data-text={label}>{label}</span
 						></span
@@ -379,34 +387,38 @@
 			<button
 				class="bu-action header-undo"
 				class:slot-gone={!undoText}
+				data-trail="toolbar.undo"
 				data-variant="quiet"
 				aria-label={undoText ?? t('common.undo')}
 				title={undoText ?? t('common.undo')}
 				disabled={!undoText}
 				bind:this={undoButton}
-				onclick={() => step(undo, redoButton)}><Undo2 size={18} /></button
+				onclick={() => step(undo, redoButton)}><Undo2 size={20} /></button
 			>
 			<button
 				class="bu-action header-redo"
 				class:slot-gone={!redoText}
+				data-trail="toolbar.redo"
 				data-variant="quiet"
 				aria-label={redoText ?? t('common.redo')}
 				title={redoText ?? t('common.redo')}
 				disabled={!redoText}
 				bind:this={redoButton}
-				onclick={() => step(redo, undoButton)}><Redo2 size={18} /></button
+				onclick={() => step(redo, undoButton)}><Redo2 size={20} /></button
 			>
 			<AudioSettingsButton />
 			<button
 				class="bu-action header-random"
+				data-trail="toolbar.randomLook"
 				data-variant="quiet"
 				aria-label={t('common.randomLook')}
 				title={t('toolbar.titleRandomLookItemsAndColors')}
 				disabled={!m}
-				onclick={randomize}><Dices size={18} /></button
+				onclick={randomize}><Dices size={20} /></button
 			>
 			<button
 				class="bu-action header-share"
+				data-trail="toolbar.share"
 				data-variant="outline"
 				aria-label={t('toolbar.shareCharacter')}
 				title={t('common.share')}
@@ -416,6 +428,7 @@
 			>
 			<button
 				class="bu-action header-export"
+				data-trail="toolbar.export"
 				data-variant="outline"
 				aria-label={t('toolbar.export')}
 				title={t('toolbar.export')}
@@ -455,8 +468,14 @@
 			<div class="menu-prompt">
 				<p class="menu-sec">{t('common.prompt')}</p>
 				<p class="menu-prompt-text">{prompt}</p>
-				<button class="row" role="menuitem" aria-label={copyMessage} onclick={copyPrompt}
-					><Copy size={16} /><span class="row-name">{copyMessage}</span></button
+				<button
+					class="row bu-action"
+					data-variant="quiet"
+					role="menuitem"
+					aria-label={copyMessage}
+					data-trail="characterPicker.copyPrompt"
+					onclick={copyPrompt}
+					><Copy size={18} aria-hidden="true" /><span class="row-name">{copyMessage}</span></button
 				>
 			</div>
 			<hr />
@@ -469,6 +488,7 @@
 					data-variant="row"
 					role="menuitemradio"
 					aria-checked={p.id === doc.id}
+					data-trail="characterPicker.pick"
 					aria-label={p.name}
 					onclick={() => pick(p.id)}
 				>
@@ -484,21 +504,25 @@
 		<NewCharacterButton row />
 		<!-- Each character's own ⋮ above has Rename, Make copy with new look and Move to Trash; Set up is the open one's. -->
 		{#if !isDemo()}<button
-				class="row"
+				class="row bu-action"
+				data-variant="quiet"
 				role="menuitem"
 				aria-label={t('toolbar.setUpCharacter')}
+				data-trail="characterPicker.setup"
 				onclick={() => sheet('setup')}
-				><PersonStanding size={16} /><span class="row-name"
+				><PersonStanding size={18} aria-hidden="true" /><span class="row-name"
 					>{openerLabel(t('toolbar.setUpCharacter'))}</span
 				><SurfaceChevron /></button
 			>{/if}
 		<hr />
 		<button
-			class="row"
+			class="row bu-action"
+			data-variant="quiet"
 			role="menuitem"
 			aria-label={app.key ? t('toolbar.pixelLabAccount') : t('toolbar.connectPixelLab2')}
+			data-trail="characterPicker.connect"
 			onclick={() => sheet('connect')}
-			><KeyRound size={16} /><span class="row-name"
+			><KeyRound size={18} aria-hidden="true" /><span class="row-name"
 				>{openerLabel(app.key ? t('toolbar.pixelLabAccount') : t('toolbar.connectPixelLab2'))}</span
 			>
 			{#if app.balance}<span class="faint small num"
@@ -509,27 +533,45 @@
 				>{/if}<SurfaceChevron /></button
 		>
 		<button
-			class="row"
+			class="row bu-action"
+			data-variant="quiet"
 			role="menuitem"
 			aria-label={t('activity.title')}
+			data-trail="characterPicker.activity"
 			onclick={() => sheet('activity')}
-			><Activity size={16} /><span class="row-name">{openerLabel(t('activity.title'))}</span
+			><Activity size={18} aria-hidden="true" /><span class="row-name"
+				>{openerLabel(t('activity.title'))}</span
 			>{#if active}<span class="badge accent">{formatNumber(active)}</span>{/if}<SurfaceChevron
 			/></button
 		>
 		<button
-			class="row"
+			class="row bu-action"
+			data-variant="quiet"
 			role="menuitem"
 			aria-label={t('toolbar.characterSelection')}
+			data-trail="characterPicker.allCharacters"
 			onclick={() => {
 				close();
 				characters();
-			}}><House size={16} /><span class="row-name">{t('toolbar.characterSelection')}</span></button
+			}}
+			><House size={18} aria-hidden="true" /><span class="row-name"
+				>{t('toolbar.characterSelection')}</span
+			></button
 		>
 	</div>
 </div>
 
 <style>
+	.row > :global(svg:first-child) {
+		flex: none;
+	}
+	/* Match the toolbar breakpoint where Share and Export hide their labels. */
+	@media (max-width: 1199px) {
+		:is(.header-share, .header-export) > :global(svg:first-child) {
+			width: 20px;
+			height: 20px;
+		}
+	}
 	.project-choices {
 		gap: 0;
 	}

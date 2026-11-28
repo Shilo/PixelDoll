@@ -32,6 +32,8 @@
 	/** A row restores on its second press within a few seconds; the first only asks. */
 	const restoreConfirm = new TwoStepConfirm<string>({ expireMs: 4000 });
 	let failure = $state<Message | string>();
+	/** The exception behind `failure`, for Report. */
+	let failureCause = $state.raw<unknown>();
 	let section = $state<HTMLElement>();
 	let emptyNote = $state<HTMLElement>();
 
@@ -99,6 +101,7 @@
 		} catch (cause) {
 			// The dialog is still open: focus stays on its own controls.
 			failure = errorMessage(cause);
+			failureCause = cause;
 		} finally {
 			busy = '';
 		}
@@ -118,13 +121,13 @@
 <div class="trash-settings" tabindex="-1" bind:this={section}>
 	<p class="bu-muted settings-description">{t('recentlyDeleted.kept')}</p>
 	{#if deleted.loadFailed}
-		<p class="notice bad small" role="alert">
+		<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			{t('recentlyDeleted.loadFailed')}
 			<button
 				class="bu-action btn sm"
 				data-variant="outline"
 				onclick={() => void refreshRecentlyDeleted()}>{t('common.tryAgain')}</button
-			><ReportButton message={message('recentlyDeleted.loadFailed')} />
+			><ReportButton error={deleted.loadCause} message={message('recentlyDeleted.loadFailed')} />
 		</p>
 	{/if}
 	{#if !deleted.entries.length && !deleted.loadFailed}
@@ -205,9 +208,10 @@
 			{#if armedEntry}{t('recentlyDeleted.confirmRestoreNamed', { name: armedEntry.name })}{/if}
 		</p>
 	{/if}
-	{#if failure}<p class="notice bad small" role="alert">
+	{#if failure}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(failure)}<ReportButton
-				error={failure}
+				error={failureCause ?? failure}
+				message={typeof failure === 'object' ? failure : undefined}
 			/>
 		</p>{/if}
 </div>
@@ -301,7 +305,7 @@
 		opacity: 0.65;
 	}
 	.trash-name {
-		font-size: 0.9375rem;
+		font-size: 14px;
 		font-weight: 500;
 		line-height: 1.35;
 		overflow: hidden;
@@ -310,7 +314,7 @@
 	}
 	.trash-meta,
 	.trash-date {
-		font-size: 0.8125rem;
+		font-size: 12px;
 		line-height: 1.35;
 		overflow: hidden;
 		text-overflow: ellipsis;

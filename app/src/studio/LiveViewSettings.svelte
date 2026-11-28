@@ -27,7 +27,7 @@
 
 	import { lookClipThumbnail } from './moveThumbnails.ts';
 
-	import { characterName, doc, store, toast, ui, view } from './state.svelte.ts';
+	import { doc, store, toast, ui, view } from './state.svelte.ts';
 
 	const moves = $derived(store.project?.manifest.rig.animations ?? []);
 
@@ -99,7 +99,7 @@
 </p>
 
 {#if doc.id}
-	<p class="bu-muted small character">{t('liveViews.forCharacter', { name: characterName() })}</p>
+	<p class="bu-muted small animation-help">{t('liveViews.animationHelp')}</p>
 
 	{#each roles as { role, label } (role)}
 		{#if role === 'attackUp'}
@@ -203,7 +203,7 @@
 		min-block-size: 44px;
 	}
 
-	.character {
+	.animation-help {
 		margin: 0;
 	}
 
@@ -221,5 +221,8 @@
 
 	.controls :is(h4, p) {
 		margin: 0;
+	}
+	h4 {
+		font-weight: 600;
 	}
 </style>

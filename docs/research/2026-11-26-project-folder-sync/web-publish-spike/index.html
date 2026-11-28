@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>PixelDoll publish probe</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <h1>PixelDoll publish probe</h1>
+    <p>
+      Link an empty scratch game folder once. Saved edits then publish to it
+      automatically.
+    </p>
+    <button id="link">Link project folder</button>
+    <button id="reconnect" disabled>Reconnect folder</button>
+    <p id="status">Loading</p>
+    <pre id="log" aria-live="polite"></pre>
+  </body>
+</html>

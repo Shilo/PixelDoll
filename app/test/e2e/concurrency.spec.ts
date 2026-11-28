@@ -186,7 +186,7 @@ test('Free/Trial is a valid connection, and equipment shows Tier 1 required with
 	await connect
 		.getByLabel('Paste your Secret API key', { exact: true })
 		.fill('offline-fixture-not-a-key');
-	await connect.getByRole('checkbox', { name: 'Remember on this device' }).check();
+	await connect.getByRole('switch', { name: 'Remember on this device' }).check();
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(connect.getByRole('status')).toContainText('Your key is valid');
 	await expect(connect.getByText('PixelLab Tier 1 required', { exact: true })).toBeVisible();

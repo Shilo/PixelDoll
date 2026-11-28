@@ -109,14 +109,20 @@ export function setupWarningNote(
 
 /** A character's shape at a glance: "64 px · 4 directions · 2 moves · 6 items". */
 export const pixelSize = ({ w, h }: { w: number; h: number }) => `${w}×${h} px`;
-export function characterFacts(m: Manifest): { frame: string; counts: Message[] } {
+/** States and moves counted apart, as the header shows them: "1 state · 2 moves". */
+export function clipCounts(m: Manifest): Message[] {
 	const states = m.rig.animations.filter((clip) => clipKind(clip) === 'state').length;
+	return [
+		...(states ? [message('import.count.states', { count: states })] : []),
+		message('export.count.moves', { count: m.rig.animations.length - states })
+	];
+}
+export function characterFacts(m: Manifest): { frame: string; counts: Message[] } {
 	return {
 		frame: pixelSize(m.rig.cell),
 		counts: [
 			message('export.count.directions', { count: m.rig.directions.length }),
-			...(states ? [message('import.count.states', { count: states })] : []),
-			message('export.count.moves', { count: m.rig.animations.length - states }),
+			...clipCounts(m),
 			message('export.count.items', {
 				count: m.items.filter((item) => item.id !== m.rig.baseItem).length
 			})

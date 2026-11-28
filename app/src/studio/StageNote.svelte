@@ -11,6 +11,7 @@
 	import { itemMoveOffer, missingItemMoves, moveMinimumTier, unposedItemMoves } from './create.ts';
 	import { setupRedoMoves } from '../lib/rig/setup.ts';
 	import { extendable } from './movePricing.ts';
+	import { redrawItem } from './redrawItem.ts';
 	import { seeded } from './itemGeneration.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
@@ -22,7 +23,6 @@
 		moving,
 		queueMoves,
 		withKey,
-		openNewItem,
 		openCopyForSelf,
 		shared,
 		copyFromSource
@@ -240,11 +240,8 @@
 						<button
 							class="bu-action btn sm"
 							data-variant="outline"
-							onclick={() =>
-								copyOnly
-									? openCopyForSelf(remake)
-									: openNewItem(remake.slot, { slot: remake.slot, prompt: remake.prompt })}
-							>{copyOnly ? t('itemMenu.remake') : t('stageNote.makeItAgain')}</button
+							onclick={() => (copyOnly ? openCopyForSelf(remake) : redrawItem(remake))}
+							>{copyOnly ? t('itemMenu.remake') : t('itemMenu.newVersion')}</button
 						>
 					{/if}
 				{/if}

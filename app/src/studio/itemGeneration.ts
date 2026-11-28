@@ -53,9 +53,15 @@ export function clipItemOffer(
 	// The accepted views are applied before the route is chosen and a sheet measured.
 	const spec =
 		item &&
-		missingItemMoves(m, itemId, drawing, options.seed ?? 0, options.images, options.dirs).find(
-			(s) => s.id === clipId
-		);
+		missingItemMoves(
+			m,
+			itemId,
+			drawing,
+			options.seed ?? 0,
+			options.images,
+			options.dirs,
+			clipId
+		)[0];
 	if (!spec?.dirs?.length) return null;
 	return itemMoveOffer(
 		m,

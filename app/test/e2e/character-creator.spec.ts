@@ -286,8 +286,12 @@ test.describe('creation safety', () => {
 			})
 		).toBeVisible();
 		await page.setViewportSize({ width: 390, height: 844 });
-		await expect(sheet.locator('.notice.warn')).toHaveCount(2);
-		for (const note of await sheet.locator('.notice.warn').all()) {
+		await expect(sheet.locator('.bu-notice[data-size="compact"][data-tone="warning"]')).toHaveCount(
+			2
+		);
+		for (const note of await sheet
+			.locator('.bu-notice[data-size="compact"][data-tone="warning"]')
+			.all()) {
 			await expect(note).toBeVisible();
 			const box = (await note.boundingBox())!;
 			expect(box.x).toBeGreaterThanOrEqual(0);
@@ -321,6 +325,13 @@ test.describe('creation safety', () => {
 		await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toBeVisible(
 			{ timeout: 120_000 }
 		);
+		await sheet
+			.getByRole('img', { name: /^Keep my outfit/ })
+			.first()
+			.click({ button: 'right' });
+		const actions = sheet.getByRole('menu', { name: 'Actions for Keep my outfit', exact: true });
+		await expect(actions.getByRole('menuitem', { name: 'Rename…', exact: true })).toBeVisible();
+		await page.keyboard.press('Escape');
 		await sheet.getByRole('button', { name: 'Start dressing up', exact: true }).click();
 		const first = await page.evaluate(async () => {
 			const modulePath = '/src/lib/store/db.ts';
@@ -740,7 +751,7 @@ test('linked prompt is lossless, copy is exact, and keyboard tabs work', async (
 	])
 		await expect(sheet.getByRole('combobox', { name, exact: true })).toHaveValue(value);
 	await sheet.getByRole('combobox', { name: 'Build', exact: true }).selectOption('Rounded');
-	await sheet.getByRole('button', { name: 'Edit exact prompt', exact: true }).click();
+	await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
 	await expect(prompt).toHaveValue(exact.replace('Build: Broad', 'Build: Rounded'));
 });
 
@@ -901,8 +912,16 @@ test('Appearance enhancement sends all selected hints and keeps them linked with
 		['Skin', 'Brown']
 	])
 		await sheet.getByRole('combobox', { name, exact: true }).selectOption(value);
-	await sheet.getByRole('button', { name: 'Copy exact prompt', exact: true }).click();
-	const before = await page.evaluate(() => sessionStorage.getItem('creator-copy'));
+	// The exact prompt lives in the Prompt tab. Leaving Appearance drops its Undo, so read it only between checks.
+	const exactPrompt = async () => {
+		await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
+		const value = await sheet
+			.getByRole('textbox', { name: 'Exact prompt', exact: true })
+			.inputValue();
+		await sheet.getByRole('tab', { name: 'Appearance', exact: true }).click();
+		return value;
+	};
+	const before = await exactPrompt();
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
 	await connect(page);
 	await expect(sheet.getByRole('button', { name: 'Undo', exact: true })).toBeVisible();
@@ -919,12 +938,11 @@ test('Appearance enhancement sends all selected hints and keeps them linked with
 	await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'Pointed ears\nSubtle freckles and expressive eyes.'
 	);
-	await sheet.getByRole('button', { name: 'Copy exact prompt', exact: true }).click();
-	const after = await page.evaluate(() => sessionStorage.getItem('creator-copy'));
-	expect(after?.match(/Kind: Elf/g)).toHaveLength(1);
 	await sheet.getByRole('button', { name: 'Undo', exact: true }).click();
-	await sheet.getByRole('button', { name: 'Copy exact prompt', exact: true }).click();
-	expect(await page.evaluate(() => sessionStorage.getItem('creator-copy'))).toBe(before);
+	expect(await exactPrompt()).toBe(before);
+	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
+	await expect(sheet.getByRole('button', { name: 'Undo', exact: true })).toBeVisible();
+	expect((await exactPrompt()).match(/Kind: Elf/g)).toHaveLength(1);
 });
 
 test('Appearance enhancement cannot clear selected hints with repeated clauses or erase details with an empty rewrite', async ({
@@ -1044,9 +1062,9 @@ test('Appearance enhancement preserves coverage and changing base clothing clear
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
 	await connect(page);
 	await expect(sheet.getByRole('button', { name: 'Undo', exact: true })).toBeVisible();
-	await expect(sheet.getByRole('button', { name: 'Edit exact prompt', exact: true })).toHaveText(
-		`A calm face\n${UNDERWEAR_BODY}`
-	);
+	const details = sheet.getByRole('textbox', { name: 'Details', exact: true });
+	await expect(details).toHaveValue('A calm face');
+	await expect(sheet.getByRole('radio', { name: 'Underwear', exact: true })).toBeChecked();
 	const nude = sheet.getByRole('radio', { name: 'Nothing worn', exact: true });
 	await expect(nude).not.toBeChecked();
 	await nude.check();
@@ -1056,11 +1074,12 @@ test('Appearance enhancement preserves coverage and changing base clothing clear
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
 	await expect(sheet.getByRole('button', { name: 'Undo', exact: true })).toBeVisible();
 	await expect(nude).toBeChecked();
-	await expect(sheet.getByRole('button', { name: 'Edit exact prompt', exact: true })).toHaveText(
-		`A calm face\n${BASE_BODY}`
-	);
+	await expect(details).toHaveValue('A calm face');
 	await sheet.getByRole('button', { name: 'Undo', exact: true }).click();
-	await expect(sheet.getByRole('button', { name: 'Edit exact prompt', exact: true })).toHaveText(
+	await expect(details).toHaveValue('Freckles');
+	await expect(nude).toBeChecked();
+	await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
+	await expect(sheet.getByRole('textbox', { name: 'Exact prompt', exact: true })).toHaveValue(
 		`Freckles\n${BASE_BODY}`
 	);
 });
@@ -1382,20 +1401,6 @@ for (const viewport of [
 		expect(arrowWidths.every((width) => width >= 44)).toBe(true);
 		// Approved compass: equal tiles with attached mirrors; the narrowest phones equalize arrows instead. One CSS pixel of border slack.
 		expect(Math.min(spread(tileWidths), spread(arrowWidths))).toBeLessThanOrEqual(1);
-		const copyRight = async () =>
-			sheet.locator('.prompt-note').evaluate((el) => ({
-				copy: el.querySelector('.copy')!.getBoundingClientRect().right,
-				row: el.getBoundingClientRect().right
-			}));
-		const shortCopy = await copyRight();
-		await sheet
-			.getByRole('textbox', { name: 'Details', exact: true })
-			.fill(
-				'A friendly dwarf with freckles and a broad nose, expressive eyebrows, small ears and a calm expression'
-			);
-		const longCopy = await copyRight();
-		expect(shortCopy.copy).toBeCloseTo(shortCopy.row, 0);
-		expect(longCopy.copy).toBeCloseTo(shortCopy.copy, 0);
 		const buttons = await sheet.locator('.direction, .mirror').evaluateAll((elements) =>
 			elements.map((el) => {
 				const r = el.getBoundingClientRect();
@@ -1418,10 +1423,23 @@ for (const viewport of [
 		expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width);
 		await page.keyboard.press('Escape');
 		await expect(sheet).toBeVisible();
-		const footer = await sheet
-			.getByRole('button', { name: 'Create character', exact: true })
-			.boundingBox();
+		const create = sheet.getByRole('button', { name: 'Create character', exact: true });
+		const footer = await create.boundingBox();
 		expect(footer!.y + footer!.height).toBeLessThanOrEqual(viewport.height);
+		// The price rides on the paid action: described, and shown in full inside the button.
+		await expect(create).toHaveAccessibleDescription(/^Estimated .+ gens$/);
+		expect(
+			await create.locator('.cost').evaluate((el) => {
+				const price = el.getBoundingClientRect(),
+					button = el.closest('button')!.getBoundingClientRect();
+				return (
+					price.left >= button.left &&
+					price.right <= button.right &&
+					price.bottom <= button.bottom &&
+					el.scrollWidth <= el.clientWidth + 1
+				);
+			})
+		).toBe(true);
 		const appearanceGap = await sheet
 			.getByRole('textbox', { name: 'Details', exact: true })
 			.evaluate(

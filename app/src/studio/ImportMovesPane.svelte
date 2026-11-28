@@ -123,7 +123,12 @@
 		<p class="faint small">{t('moveImport.editHint')}</p>
 	{:else}
 		{@const fit = review.plan.fit}
-		<p class={fit.same ? 'notice small' : 'notice warn small'} role="status">
+		<p
+			class="bu-notice"
+			data-size="compact"
+			data-tone={fit.same ? 'neutral' : 'warning'}
+			role="status"
+		>
 			{fit.same
 				? fit.differing
 					? t('moveImport.fit.near', { count: fit.differing })
@@ -188,15 +193,20 @@
 								>{t('moveImport.row.missing', { items: itemNames(missing(row)) })}</span
 							>{/if}
 						{#if offer}
-							{#if offer.error}<span class="notice warn small">{offer.error}</span>
+							{#if offer.error}<span class="bu-notice" data-size="compact" data-tone="warning"
+									>{offer.error}</span
+								>
 							{:else}
-								{#each offer.warnings ?? [] as warning (warning.id)}<span class="notice warn small"
-										>{displayError(warning)}</span
+								{#each offer.warnings ?? [] as warning (warning.id)}<span
+										class="bu-notice"
+										data-size="compact"
+										data-tone="warning">{displayError(warning)}</span
 									>{/each}
 								<button
 									class="bu-action btn motion"
 									data-variant="outline"
 									disabled={busy}
+									data-trail="importMoves.useMotion"
 									onclick={() => useMotion(row)}
 									>{offer.warnings?.length
 										? t('moveSheet.checkpoint.generateAnyway', {
@@ -215,11 +225,16 @@
 				</li>
 			{/each}
 		</ul>
-		{#if importer.blocked}<p class="notice warn small" role="status">
+		{#if importer.blocked}<p
+				class="bu-notice"
+				data-size="compact"
+				data-tone="warning"
+				role="status"
+			>
 				{displayError(importer.blocked)}
 			</p>{/if}
 	{/if}
-	{#if importer.error}<p class="notice bad small" role="alert">
+	{#if importer.error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			{displayNestedMessage(importer.error)}{#if importer.cause}<ReportButton
 					error={importer.cause}
 				/>{/if}

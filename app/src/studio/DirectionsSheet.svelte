@@ -182,14 +182,19 @@
 			ontoggle={(dir) => toggle(dir, 'direction')}
 			onmirror={(dir) => toggle(dir, 'mirror')}
 		/>
-		{#if problem || blocked}<p class="notice warn small" role="status">
+		{#if problem || blocked}<p
+				class="bu-notice"
+				data-size="compact"
+				data-tone="warning"
+				role="status"
+			>
 				{problem ? displayDirectionProblem(problem.translation) : displayError(blocked)}
 			</p>{/if}
 		{#if !problem && blockedByWork(blocked)}{@render viewPending()}{/if}
-		{#if error && !confirm}<p class="notice bad small" role="alert">
+		{#if error && !confirm}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 				{displayDirectionProblem(error)}<ReportButton {error} />
 			</p>{/if}
-	{:else if error}<p class="notice bad small" role="alert">
+	{:else if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			{displayDirectionProblem(error)}<ReportButton {error} />
 		</p>
 	{:else}<p class="muted" role="status">{t('directionsSheet.loadingDirections')}</p>{/if}
@@ -199,6 +204,7 @@
 				class="bu-action btn plain"
 				data-variant="quiet"
 				disabled={busy}
+				data-trail="directions.downloadBackup"
 				onclick={() => void downloadCharacterZip(id)}
 				><Download size={16} />{t('directionsSheet.downloadBackup')}</button
 			>
@@ -207,6 +213,7 @@
 			class="bu-action btn primary"
 			data-variant="primary"
 			disabled={!changed || !!problem || !!blocked || busy}
+			data-trail="directions.save"
 			onclick={() => {
 				error = '';
 				if (excluded.length || replaced.length) confirm = true;
@@ -224,6 +231,7 @@
 {#snippet viewPending()}
 	<button
 		class="bu-btn"
+		data-trail="directions.viewPendingWork"
 		onclick={() => {
 			confirm = false;
 			void openPendingWork({

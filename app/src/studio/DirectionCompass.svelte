@@ -168,7 +168,7 @@
 		flex: 1;
 		min-width: 0;
 		flex-direction: column;
-		font-size: 10px;
+		font-size: 12px;
 	}
 	.mirror {
 		flex: 0 0 var(--mirror-width);

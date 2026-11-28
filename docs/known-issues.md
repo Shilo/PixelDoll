@@ -240,6 +240,24 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 ## Exports
 
 - **GDevelop State playback was verified only in the exported web game**, not in the desktop editor UI or a desktop build.
+- **Project folder: one folder per Unity game.** Characters linked to one folder share one Unity runtime in
+  `pixeldoll-unity/`. Two different folders side by side in one Unity project would each install it, and Unity stops
+  compiling on the duplicate assembly. PixelDoll refuses Unity folders that nest, but a browser cannot see folders side by
+  side, so the Unity guide asks for one folder per game.
+- **Unity generated assets you edit stop updating.** With a project folder, the shared Unity importer leaves a generated
+  prefab, controller or clip, or a sheet's import settings, that you edited alone (it logs a warning) instead of rebuilding it, so that character no longer
+  picks up changes until you delete its `unity/Generated/` folder. Customize a prefab variant instead. The ZIP importer
+  still rebuilds `unity/Generated/` on every re-export. Use the generated prefab rather than sprites of the layer sheets: the
+  importer slices those sheets itself, so a reference to one of their sprites is lost without a warning.
+- **Project folder: GDevelop keeps its runtime per character.** GDevelop's controller lives in each character's
+  `game.json` events, so there is nothing to share on disk; merging the same character twice into one GDevelop project
+  still collides on object and resource names.
+- **Project folder: a runtime update is written file by file.** If one stops part way (a locked file, a crash), the
+  `pixeldoll-<engine>/` folder holds a mix of old and new files until the next publish finishes it; older tabs stop
+  meanwhile. Each file is replaced in one step, so no single file is ever half written.
+- **Project folder: an older tab stops instead of downgrading.** Once a newer PixelDoll tab has updated a folder's shared
+  runtime, older tabs pause that folder with a Reload message. Separate browser profiles do not share PixelDoll's records,
+  so another profile sees the runtime as files it did not write and asks before replacing them.
 - **Aseprite repeat metadata.** Play animation once exports tag repeat `1`; looping exports repeat `0`, which loops in the editor. Aseprite interprets `0` as unspecified for its own later export, so users must choose repetition there when exporting again. See [Aseprite tag repeats](https://www.aseprite.org/api/tag#tagrepeats).
 
 ## Imports

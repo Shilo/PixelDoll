@@ -234,3 +234,14 @@ test('two roles with equal rendered defaults keep distinct raw source ownership 
 	expect(rgba(im, 32, 22)).toEqual([0, 0, 255, 255]);
 	expect(validate(restored)).toEqual([]);
 });
+
+test('re-deriving an item keeps its materials in item order, so a character keeps one material order', async () => {
+	const p = await fixture();
+	const owners = () => p.manifest.materials.map((x) => x.owner);
+	const before = owners();
+	const base = p.manifest.items.find((it) => it.id === p.manifest.rig.baseItem)!;
+	// The demo's base is split, and its materials derived again, every time it opens.
+	base.materials = [];
+	deriveMaterials(p, [base]);
+	expect(owners()).toEqual(before);
+});

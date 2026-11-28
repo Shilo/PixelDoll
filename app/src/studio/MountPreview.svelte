@@ -54,7 +54,10 @@
 	} from './state.svelte.ts';
 	import SettingsItemButton from './SettingsItemButton.svelte';
 
-	let { visibility }: { visibility: Snippet } = $props();
+	let {
+		visibility,
+		poseControls
+	}: { visibility: Snippet; poseControls: Snippet<[string | null]> } = $props();
 	const TURN_MS = 1400;
 	const REPEAT_DELAY_MS = 350;
 	const REPEAT_EVERY_MS = 75;
@@ -544,7 +547,9 @@
 				{/each}
 			</div>
 		</div>
-		{#if failure}<p class="notice bad small" role="alert">{displayNestedMessage(failure)}</p>{/if}
+		{#if failure}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
+				{displayNestedMessage(failure)}
+			</p>{/if}
 		<div class="seat-footer">
 			<p class="seat-help">
 				<span>{t('settings.seatMarkerHelp')}</span><br />
@@ -571,6 +576,8 @@
 		</div>
 	</div>
 {/if}
+
+{@render poseControls(presentation?.clip ?? null)}
 
 <style>
 	.mount-preview {

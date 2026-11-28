@@ -52,6 +52,7 @@
 	} from './create.ts';
 	import { setupRedoMoves } from '../lib/rig/setup.ts';
 	import { extendable } from './movePricing.ts';
+	import { redrawItem } from './redrawItem.ts';
 	import { seeded, itemClipDrawn } from './itemGeneration.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { app } from '../lib/app.svelte.ts';
@@ -353,6 +354,16 @@
 	);
 	// A copy without its own standing design cannot be extended to more moves: only an item made for this character can.
 	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
+	// An own item without a saved design to pose has no way onto its missing moves: a new version for this character does.
+	const newVersion = $derived(
+		!!m &&
+			!!it &&
+			!isDemo() &&
+			!!incomplete &&
+			!!it.prompt &&
+			!it.copiedFrom &&
+			!extendable(m, it.id)
+	);
 
 	// ---------- quality and one-view fixes ----------
 	const repairSpec = $derived(
@@ -835,7 +846,6 @@
 		{#if m && it}<ItemActions
 				{m}
 				{it}
-				worn={on}
 				inDetails
 				label={t('itemPane.itemActions')}
 				bind:picking={pickingSlot}
@@ -855,6 +865,7 @@
 				class="bu-action btn item-wear"
 				data-variant={on ? 'outline' : 'primary'}
 				data-item-wear-toggle
+				data-trail="itemPane.wear"
 				onclick={() => wear(it!.id)}
 			>
 				{on ? t('common.takeOff') : t('common.wear')}
@@ -922,6 +933,7 @@
 					{#if hiddenNow}<button
 							class="bu-action btn plain"
 							data-variant="quiet"
+							data-trail="itemPane.stopHiding"
 							onclick={() => {
 								showHiddenItem(it.slot);
 								// The row goes away: keep the keyboard in the body, on where hiding is set.
@@ -935,24 +947,33 @@
 			{/if}
 
 			{#if callout}
-				<p class="notice small item-callout" class:warn={callout.tone === 'warn'} role="status">
-					<span>{callout.text}</span>
+				<p
+					class="bu-notice item-callout"
+					data-size="compact"
+					data-tone={callout.tone === 'warn' ? 'warning' : 'neutral'}
+					role="status"
+				>
+					{#if callout.tone === 'warn'}<TriangleAlert size={16} aria-hidden="true" />{/if}<span
+						>{callout.text}</span
+					>
 					{#if callout.action}
 						{@const action = callout.action}
 						<button
 							class="bu-action btn plain callout-link"
 							data-variant="quiet"
+							data-trail="itemPane.calloutAction"
 							onclick={() => action.run()}>{action.label}</button
 						>
 					{/if}
 				</p>
 			{/if}
 			{#if !isDemo() && pendingBlocks}
-				<p class="notice small" role="status">
+				<p class="bu-notice" data-size="compact" data-tone="neutral" role="status">
 					{t('itemPane.pendingWorkBusy')}
 					<button
 						class="bu-action btn plain callout-link"
 						data-variant="quiet"
+						data-trail="itemPane.viewPendingWork"
 						onclick={() => void openPendingWork({ flows: true })}
 						>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
 					>
@@ -979,8 +1000,19 @@
 						bind:open={open.moves}
 					>
 						<div class="window-body">
-							{#if restorable.length || copyOffer}
+							{#if restorable.length || copyOffer || newVersion}
 								<div class="tool-list">
+									{#if newVersion}<ToolRow
+											{...{
+												icon: RefreshCw,
+												label: t('itemMenu.newVersion'),
+												detail: t('itemPane.newVersionDetail', { name: it.name }),
+												aside: '',
+												opens: true,
+												trail: 'itemPane.newVersion',
+												onclick: () => redrawItem(it)
+											}}
+										/>{/if}
 									{#if restorable.length}<ToolRow
 											{...{
 												icon: RotateCcw,
@@ -991,6 +1023,7 @@
 												}),
 												aside: t('common.free'),
 												disabled: !!shared.adding,
+												trail: 'itemPane.restoreStanding',
 												onclick: () => restoreFromDesign(it.id)
 											}}
 										/>{/if}
@@ -1006,12 +1039,17 @@
 												}),
 												aside: t('common.free'),
 												disabled: !!shared.adding,
+												trail: 'itemPane.copyFromSource',
 												onclick: () => copyFromSource(it.id)
 											}}
 										/>{/if}
 								</div>
 							{/if}
-							{#each unposedMoves as { note }, i (i)}<p class="notice warn small">
+							{#each unposedMoves as { note }, i (i)}<p
+									class="bu-notice"
+									data-size="compact"
+									data-tone="warning"
+								>
 									{displayNestedMessage(note)}
 								</p>{/each}
 							<fieldset class="clip-list">
@@ -1022,6 +1060,7 @@
 										type="button"
 										class="bu-action btn plain select-all"
 										data-variant="quiet"
+										data-trail="itemPane.selectAllMoves"
 										onclick={() => (chosen = all ? [] : [...eligible])}
 										>{t(all ? 'itemPane.clearSelection' : 'itemPane.selectAllMoves')}</button
 									>
@@ -1093,11 +1132,12 @@
 							</fieldset>
 							{#if isDemo() && incomplete}
 								<!-- Why nothing here can be picked: the demo never spends; its copy can. -->
-								<p class="notice small demo-missing">
+								<p class="bu-notice demo-missing" data-size="compact" data-tone="neutral">
 									<span>{t('itemPane.demoMissing')}</span>
 									<button
 										class="bu-action btn plain callout-link"
 										data-variant="quiet"
+										data-trail="itemPane.editDemoCopy"
 										onclick={() => {
 											const itemId = id;
 											void copyDemo().then(
@@ -1113,11 +1153,18 @@
 								</p>
 							{/if}
 							{#if eligible.length && !copyOffer}
-								{#if missingOffer?.error}<p class="notice warn small" role="status">
+								{#if missingOffer?.error}<p
+										class="bu-notice"
+										data-size="compact"
+										data-tone="warning"
+										role="status"
+									>
 										{displayMessage(missingOffer.error)}
 									</p>{/if}
 								{#each missingOffer?.unposed ?? [] as note, i (i)}
-									<p class="notice warn small">{displayNestedMessage(note)}</p>
+									<p class="bu-notice" data-size="compact" data-tone="warning">
+										{displayNestedMessage(note)}
+									</p>
 								{/each}
 								<PoseIssues issues={missingOffer?.poseIssues ?? []} />
 								{#if missingTier}<TierNotice
@@ -1136,6 +1183,7 @@
 										aria-describedby={tierBlocked(missingTier)
 											? 'item-missing-tier'
 											: 'item-missing-help'}
+										data-trail="itemPane.generateMoves"
 										onclick={generateMoves}
 									>
 										{selected.length
@@ -1180,11 +1228,14 @@
 								</div>
 							{/if}
 							{#if findings}
-								<ul class="findings">
-									{#each reasons as reason (reason)}<li>
-											<TriangleAlert size={14} aria-hidden="true" />{reason}
-										</li>{/each}
-								</ul>
+								<div class="finding-group">
+									<h4>{t('itemPane.artworkFindings')}</h4>
+									<ul class="findings">
+										{#each reasons as reason (reason)}<li>
+												<TriangleAlert size={14} aria-hidden="true" />{reason}
+											</li>{/each}
+									</ul>
+								</div>
 							{/if}
 							{#if notes.length}
 								<div class="finding-group">
@@ -1199,6 +1250,7 @@
 													class="bu-action btn plain finding-link"
 													data-variant="quiet"
 													title={t('itemPane.titleShowThisFrame')}
+													data-trail="itemPane.showFitFrame"
 													onclick={() => {
 														// A fit is judged on the body: show the frame on the stage, which the sheet covers.
 														showFrame(note.anim, note.dir, note.frame);
@@ -1219,6 +1271,7 @@
 											detail: t('itemPane.remakeFits', { name: m.name }),
 											aside: '',
 											opens: true,
+											trail: 'itemPane.remake',
 											onclick: () => openCopyForSelf(it)
 										}}
 									/>
@@ -1233,6 +1286,7 @@
 											<button
 												class="bu-action btn plain callout-link"
 												data-variant="quiet"
+												data-trail="itemPane.reviewMissingMoves"
 												onclick={() => void reveal('moves')}
 												>{t('itemPane.reviewMissingMoves')}</button
 											>
@@ -1259,12 +1313,18 @@
 														: t('itemPane.acceptsTheCurrentArtworkWithoutSpendingCredits'),
 													aside: t('common.free'),
 													disabled: acceptingIssues || acceptWaits,
+													trail: 'itemPane.accept',
 													onclick: () => void acceptIssues(!!gaps.length)
 												}}
 											/>
 										</div>
 									{/if}
-									{#if acceptanceError}<p class="notice bad small" role="alert">
+									{#if acceptanceError}<p
+											class="bu-notice"
+											data-size="compact"
+											data-tone="danger"
+											role="alert"
+										>
 											{displayMessage(acceptanceError)}<ReportButton error={acceptanceError} />
 										</p>{/if}
 								</div>
@@ -1280,13 +1340,14 @@
 										detail: t('itemPane.fixFramesDetail', { move: moveName }),
 										aside: t('common.free'),
 										opens: true,
+										trail: 'itemPane.fixFrames',
 										onclick: () => leaveFor(() => openFrames(it.id, animId, 'item'))
 									}}
 								/>
 							</div>
 							{#if hasFixTools}<div class="fix-view">
 									<div class="fix-head">
-										<h4>{t('itemPane.fixOneView')}</h4>
+										<h4>{t('itemPane.fixOneView', { move: moveName })}</h4>
 										{#if !isDemo() && m.rig.directions.length > 1}
 											<label class="fix-facing">
 												<span>{t('itemPane.facing')}</span>
@@ -1331,6 +1392,7 @@
 													aside: t('common.free'),
 													disabled: colorBusy || repairBusy,
 													describedby: mirrored ? 'item-fix-scope' : undefined,
+													trail: 'itemPane.matchColors',
 													onclick: () => void matchColors()
 												}}
 											/>{/if}
@@ -1355,6 +1417,7 @@
 															: mirrored
 																? 'item-fix-scope'
 																: undefined,
+														trail: 'itemPane.fixView',
 														onclick: () => repairFrames(choice.offer, choice.tier)
 													}}
 												/>
@@ -1363,7 +1426,12 @@
 									</div>
 									{#if !isDemo() && repairSpec}
 										{#each fixChoices as choice (choice.id)}
-											{#if choice.offer?.error}<p class="notice warn small" role="status">
+											{#if choice.offer?.error}<p
+													class="bu-notice"
+													data-size="compact"
+													data-tone="warning"
+													role="status"
+												>
 													{displayMessage(choice.offer.error)}
 												</p>{/if}
 											{#if choice.tier}<TierNotice
@@ -1373,12 +1441,17 @@
 												/>{/if}
 										{/each}
 									{/if}
-									{#if colorError}<p class="notice bad small">
+									{#if colorError}<p class="bu-notice" data-size="compact" data-tone="danger">
 											<TriangleAlert size={14} />{displayMessage(colorError)}<ReportButton
 												error={colorError}
 											/>
 										</p>{/if}
-									{#if colorDone}<p class="notice small" role="status">
+									{#if colorDone}<p
+											class="bu-notice"
+											data-size="compact"
+											data-tone="neutral"
+											role="status"
+										>
 											{t('itemPane.colorsMatched', {
 												pixels: t('itemPane.pixels', {
 													count: colorDone.pixels,
@@ -1426,6 +1499,7 @@
 												detail: t('itemPane.makeForSlotDetail', { slot: slotName(otherHand) }),
 												aside: '',
 												opens: true,
+												trail: 'itemPane.makeForOtherHand',
 												onclick: () =>
 													openNewItem(otherHand, { slot: otherHand, prompt: it.prompt })
 											}}
@@ -1439,6 +1513,7 @@
 										type="checkbox"
 										role="switch"
 										checked={twoHanded(m, it)}
+										data-trail="itemPane.twoHanded"
 										onchange={() => toggleTwoHanded(it.id)}
 									/>
 								</label>
@@ -1454,6 +1529,7 @@
 									data-variant="quiet"
 									aria-haspopup="dialog"
 									aria-label={t('itemPane.openOutfit', { name: it.name })}
+									data-trail="itemPane.openOutfit"
 									disabled={!outfitCell}
 									onclick={() =>
 										(viewer = {
@@ -1487,6 +1563,7 @@
 											data-variant="quiet"
 											aria-label={t('itemPane.turnLeft')}
 											title={t('itemPane.turnLeft')}
+											data-trail="itemPane.turnLeft"
 											onclick={() => turnOutfit(-1)}
 											><ChevronLeft size={18} aria-hidden="true" /></button
 										>
@@ -1509,6 +1586,7 @@
 											data-variant="quiet"
 											aria-label={t('itemPane.turnRight')}
 											title={t('itemPane.turnRight')}
+											data-trail="itemPane.turnRight"
 											onclick={() => turnOutfit(1)}
 											><ChevronRight size={18} aria-hidden="true" /></button
 										>
@@ -1547,6 +1625,7 @@
 											data-variant="outline"
 											aria-label={t('itemPane.resetOrder')}
 											title={t('itemPane.resetOrder')}
+											data-trail="itemPane.resetOrder"
 											onclick={() => void resetOrder()}
 											><RotateCcw size={18} aria-hidden="true" /></button
 										>{/if}
@@ -1557,6 +1636,7 @@
 										aria-label={t('itemPane.sendBackward')}
 										title={t('itemPane.sendBackward')}
 										disabled={!neighbors?.behind || hiddenNow}
+										data-trail="itemPane.sendBackward"
 										onclick={() => void stepLayer(-1)}
 										><ArrowDown size={18} aria-hidden="true" /></button
 									>
@@ -1567,6 +1647,7 @@
 										aria-label={t('itemPane.bringForward')}
 										title={t('itemPane.bringForward')}
 										disabled={!neighbors?.ahead || hiddenNow}
+										data-trail="itemPane.bringForward"
 										onclick={() => void stepLayer(1)}
 										><ArrowUp size={18} aria-hidden="true" /></button
 									>
@@ -1836,7 +1917,7 @@
 	}
 	h4 {
 		margin: 0;
-		font-size: var(--fs-sm);
+		font-size: 14px;
 		font-weight: 600;
 	}
 
@@ -1844,7 +1925,7 @@
 	.tool-list {
 		display: grid;
 		border: 1px solid var(--bu-line);
-		border-radius: 10px;
+		border-radius: 8px;
 		overflow: hidden;
 	}
 	/* Moves & States */
@@ -1871,10 +1952,11 @@
 		margin: 0;
 		padding-block-end: 6px;
 		border-block-end: 1px solid var(--bu-line);
-		font-size: var(--fs-sm, 13px);
+		font-size: 14px;
 		font-weight: 600;
 	}
 	.clip-group-head small {
+		font-size: 12px;
 		font-weight: 400;
 		color: var(--text-2);
 	}

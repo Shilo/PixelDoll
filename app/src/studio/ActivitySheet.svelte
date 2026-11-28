@@ -43,7 +43,10 @@
 			n = await cleanUp();
 		} catch (e) {
 			console.error('clear finished', e);
-			toast(t('activity.clearFailed', { error: displayError(e) }), { tone: 'danger' });
+			toast(message('activity.clearFailed', { error: displayError(e) }), {
+				tone: 'danger',
+				error: e
+			});
 			return;
 		}
 		toast(
@@ -56,12 +59,12 @@
 		);
 	}
 	import { ChevronRight, CircleAlert, CircleCheck, RefreshCw } from './icons.ts';
-	import { LocalizedError } from '../lib/message.ts';
+	import { LocalizedError, message } from '../lib/message.ts';
 	/** A cancel whose save fails stays canceled in this tab (nothing is sent from here); say so and offer to save it again. */
 	function cancelRecord(id: string) {
 		queue.cancel(id).catch((error: unknown) => {
 			console.error('cancel', error);
-			if (error instanceof LocalizedError) toast(displayError(error), { tone: 'danger' });
+			if (error instanceof LocalizedError) toast(displayError(error), { tone: 'danger', error });
 			else cancelNotSaved(id);
 		});
 	}
@@ -73,7 +76,8 @@
 				queue.retryCancelSave(id).catch((error: unknown) => {
 					console.error('cancel', error);
 					// A stop PixelLab did not confirm is not a failed save: say so instead of offering to save it again.
-					if (error instanceof LocalizedError) toast(displayError(error), { tone: 'danger' });
+					if (error instanceof LocalizedError)
+						toast(displayError(error), { tone: 'danger', error });
 					else cancelNotSaved(id);
 				})
 		});
@@ -226,7 +230,7 @@
 	<div class="act-list">
 		{#if flowsPending}
 			<section class="act-group" aria-label={t('activity.pendingWork')}>
-				<span class="sec-title">{t('activity.pendingWork')}</span>
+				<span class="section-title">{t('activity.pendingWork')}</span>
 				<ul>
 					{#each creatingPending as run (run.id)}
 						{@render workRow(
@@ -278,22 +282,26 @@
 			</section>
 		{/if}
 		{#if ui.waitingForTab}
-			<div class="notice warn" role="status">
+			<div class="bu-notice" data-size="compact" data-tone="warning" role="status">
 				<CircleAlert size={18} />
 				<div class="waiting-copy">
-					<h3>{t('activity.waitingTitle')}</h3>
+					<h3 class="section-title">{t('activity.waitingTitle')}</h3>
 					<p>{t('activity.waitingBody')}</p>
 					<!-- Leaving Activity cancels the waiting click (Studio.svelte), so this leaves it the same way: back to
 					     New character when it waited there, so its draft stays. -->
 					<button
 						class="bu-action btn sm"
 						data-variant="outline"
+						data-trail="activity.cancelRequest"
 						onclick={() => (canReturnToCreator() ? returnToCreator() : (ui.sheet = null))}
 						>{t('activity.cancelRequest')}</button
 					>
 				</div>
 			</div>
 		{/if}
+		{#if !ui.waitingForTab && !running.length && !queued.length && !flowsPending}<p class="muted">
+				{t('activity.nothing')}
+			</p>{/if}
 		<PixelLabUsage>
 			{#snippet actions()}
 				{#if app.key}<span class="api-action"
@@ -301,6 +309,7 @@
 							class="bu-action btn icon plain"
 							data-variant="quiet"
 							aria-label={t('activity.refreshBalance')}
+							data-trail="activity.refreshBalance"
 							onclick={() =>
 								refreshBalance({
 									activityScope: balanceScope,
@@ -312,6 +321,7 @@
 					>{:else if !ui.waitingForTab}<button
 						class="bu-action btn sm"
 						data-variant="outline"
+						data-trail="activity.connect"
 						onclick={() => (ui.sheet = 'connect')}
 						>{openerLabel(t('connectSheet.connect'))}<SurfaceChevron /></button
 					>{/if}
@@ -321,19 +331,19 @@
 			{t('activity.capacity', { count: $queue.concurrency })}
 		</p>
 		{#if $queue.capacityRetryAt > now}
-			<p class="notice small" role="status">
+			<p class="bu-notice" data-size="compact" data-tone="neutral" role="status">
 				{t('activity.busy', {
 					seconds: formatNumber(Math.ceil(($queue.capacityRetryAt - now) / 1000))
 				})}
 			</p>
 		{/if}
 		{#if $queue.role === 'follower' && !ui.waitingForTab}
-			<p class="notice small">
+			<p class="bu-notice" data-size="compact" data-tone="neutral">
 				<CircleAlert size={14} />{t('activity.follower')}
 			</p>
 		{/if}
 		{#if $queue.paused}
-			<p class="notice warn small">
+			<p class="bu-notice" data-size="compact" data-tone="warning">
 				<CircleAlert size={14} />{$queue.paused === 'auth'
 					? t('activity.pausedAuth')
 					: $queue.paused === 'offline'
@@ -345,6 +355,7 @@
 						><button
 							class="bu-action btn sm"
 							data-variant="outline"
+							data-trail="activity.resume"
 							onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}
 							>{$queue.paused === 'auth'
 								? openerLabel(t('connectSheet.connect'))
@@ -353,12 +364,9 @@
 					>{/if}
 			</p>
 		{/if}
-		{#if !ui.waitingForTab && !running.length && !queued.length && !flowsPending}<p class="muted">
-				{t('activity.nothing')}
-			</p>{/if}
 		{#if running.length}
 			<section class="act-group">
-				<span class="sec-title">{t('activity.generating')}</span>
+				<span class="section-title">{t('activity.generating')}</span>
 				{#if running.some((r) => r.state === 'submitting')}<p
 						class="faint small"
 						id="activity-submitting-stop"
@@ -395,6 +403,7 @@
 											aria-describedby={r.state === 'submitting'
 												? 'activity-submitting-stop'
 												: undefined}
+											data-trail="activity.stop"
 											onclick={() => cancelRecord(r.id)}>{t('activity.stop')}</button
 										>{/if}</span
 								></span
@@ -406,7 +415,7 @@
 		{/if}
 		{#if queued.length}
 			<section class="act-group">
-				<span class="sec-title">{t('activity.waiting')}</span>
+				<span class="section-title">{t('activity.waiting')}</span>
 				<ul>
 					{#each queued as r (r.id)}
 						<li>
@@ -429,6 +438,7 @@
 								><button
 									class="bu-action btn link small"
 									data-variant="quiet"
+									data-trail="activity.cancelQueued"
 									onclick={() => cancelRecord(r.id)}>{t('common.cancel')}</button
 								></span
 							>
@@ -439,7 +449,7 @@
 		{/if}
 		{#if done.length}
 			<section class="act-group">
-				<span class="sec-title">{t('activity.recent')}</span>
+				<span class="section-title">{t('activity.recent')}</span>
 				<ul>
 					{#each done as r (r.id)}
 						<li>
@@ -477,9 +487,9 @@
 				</ul>
 			</section>
 		{/if}
-		<p class="faint small">
-			{t('activity.session', { cost: sessionCost })}
-		</p>
+		{#if $queue.sessionGens || $queue.sessionUsd || $queue.sessionUnknown}<p class="faint small">
+				{t('activity.session', { cost: sessionCost })}
+			</p>{/if}
 		<details class="disclosure">
 			<summary><ChevronRight size={14} />{t('common.details')}</summary>
 			<div>
@@ -487,6 +497,7 @@
 					<button
 						class="bu-action btn sm"
 						data-variant="outline"
+						data-trail="activity.clear"
 						onclick={clear}
 						disabled={$queue.role === 'follower'}
 						title={$queue.role === 'follower' ? t('activity.clearFollower') : undefined}
@@ -528,11 +539,13 @@
 				class="bu-action btn sm"
 				data-variant="outline"
 				disabled={doc.loading || $queue.role === 'follower'}
+				data-trail="activity.dismiss"
 				onclick={dismiss}>{t('setup.dismiss')}</button
 			>{:else if open}<button
 				class="bu-action btn sm"
 				data-variant="outline"
 				aria-label={t('activity.openWorkNamed', { label })}
+				data-trail="activity.openWork"
 				disabled={doc.loading || $queue.role === 'follower'}
 				onclick={open}>{openerLabel(t('activity.openWork'))}<SurfaceChevron /></button
 			>{/if}
@@ -546,8 +559,5 @@
 	.waiting-copy {
 		display: grid;
 		gap: 4px;
-	}
-	.waiting-copy h3 {
-		font-size: var(--fs-md);
 	}
 </style>

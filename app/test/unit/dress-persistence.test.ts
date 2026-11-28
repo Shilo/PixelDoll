@@ -1,7 +1,12 @@
 import { expect, test, vi } from 'vitest';
 import { CURRENT_FORMAT, type Manifest, type Slot } from '../../src/lib/store/manifest.ts';
 import { mergeSlotEdits, saveDress, saveSplit } from '../../src/lib/dress/project.ts';
-import { deleteItem, deleteItems, type StoredProject } from '../../src/lib/store/project.ts';
+import {
+	deleteItem,
+	deleteItems,
+	repointItem,
+	type StoredProject
+} from '../../src/lib/store/project.ts';
 import { rigArtworkVersion } from '../../src/lib/rig/rig.ts';
 
 const { records } = vi.hoisted(() => ({ records: new Map<string, unknown>() }));
@@ -122,6 +127,16 @@ test('deleting equipment cleans current and saved outfits, and stale autosaves c
 	expect(saved.dress.current.items.head).toBeNull();
 	expect(saved.manifest.materials.map((mat) => mat.id)).toEqual(['base_1']);
 	expect(saved.dress.current.variants).toEqual({});
+});
+
+test('a redraw keeps outfits dressed: they move to the new item before the old one is deleted', async () => {
+	const live = record();
+	records.set(live.id, live);
+	await repointItem(live.id, 'hat', 'hat_new');
+	await deleteItem(live.id, 'hat');
+	const saved = records.get(live.id) as ReturnType<typeof record>;
+	expect(saved.manifest.presets[0].items.head).toBe('hat_new');
+	expect(saved.dress.current.items.head).toBe('hat_new');
 });
 
 test('deleting several items is all or nothing: a missing item or a refused finish keeps every item', async () => {

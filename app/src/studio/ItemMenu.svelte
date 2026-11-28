@@ -21,7 +21,6 @@
 	import { queue } from '../lib/pixellab/queue.ts';
 	import {
 		ui,
-		doc,
 		store,
 		view,
 		openNewItem,
@@ -80,7 +79,6 @@
 	const m = $derived(store.project?.manifest);
 	const it = $derived(m?.items.find((i) => i.id === id));
 	let pickingSlot = $state(false);
-	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	// The header names the category; the lines below it explain each of the tile's icons (two hands among them).
 	const sentence = $derived(it ? displayMessage(slotLabelMessage(m, it.slot)) : '');
 	function close() {
@@ -164,6 +162,7 @@
 							data-variant="quiet"
 							role="menuitem"
 							disabled={cancelBusy}
+							data-trail="itemMenu.saveCancellation"
 							onclick={cancel}
 							><Check size={16} aria-hidden="true" />{t(
 								'generation.status.saveCancellation'
@@ -174,6 +173,7 @@
 							class="row bu-action"
 							data-variant="quiet"
 							role="menuitem"
+							data-trail="itemMenu.review"
 							onclick={() => act(() => void openGenerationReview(generation!.draft.spec.id))}
 							><Info size={16} />{openerLabel(t('itemMenu.reviewItem'))}<SurfaceChevron /></button
 						>
@@ -182,6 +182,7 @@
 						class="row bu-action"
 						data-variant="quiet"
 						role="menuitem"
+						data-trail="itemMenu.activity"
 						onclick={() => act(() => (ui.sheet = 'activity'))}
 						><Info size={16} />{openerLabel(t('itemMenu.activity'))}<SurfaceChevron /></button
 					>
@@ -191,6 +192,7 @@
 							class="row bu-action danger"
 							data-variant="quiet"
 							role="menuitem"
+							data-trail="itemMenu.cancelGeneration"
 							onclick={() => ask(() => (cancelling = true))}
 							><Trash size={16} />{openerLabel(t('itemMenu.cancelGeneration'))}<SurfaceChevron
 							/></button
@@ -200,7 +202,12 @@
 				{#if generation.phase === 'running' && $queue.role === 'follower'}<p class="small">
 						{t('itemMenu.cancelFromTheTabThatIsGenerating')}
 					</p>{/if}
-				{#if cancelError && !cancelling}<p class="notice bad small" role="alert">
+				{#if cancelError && !cancelling}<p
+						class="bu-notice"
+						data-size="compact"
+						data-tone="danger"
+						role="alert"
+					>
 						{displayMessage(cancelError)}<ReportButton error={cancelError} />
 					</p>{/if}
 			</div>
@@ -223,6 +230,7 @@
 					class="row bu-action"
 					data-variant="quiet"
 					role="menuitem"
+					data-trail="itemMenu.remakeShared"
 					onclick={() =>
 						act(() =>
 							openNewItem(entry.item.slot, {
@@ -252,7 +260,6 @@
 			<ItemActions
 				{m}
 				{it}
-				worn={on}
 				labelledby="item-menu-name"
 				bind:picking={pickingSlot}
 				{act}

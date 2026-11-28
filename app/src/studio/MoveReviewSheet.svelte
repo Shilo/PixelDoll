@@ -279,12 +279,14 @@
 					class="bu-action btn checkpoint-discard"
 					data-variant="quiet"
 					disabled={busy || !!blocked}
+					data-trail="moveReview.discard"
 					onclick={() => void decide(false)}>{t('moveSheet.checkpoint.discardDraft')}</button
 				>
 				<button
 					class={['bu-action btn', { 'primary checkpoint-primary': hardFailure }]}
 					data-variant={hardFailure ? 'primary' : 'outline'}
 					disabled={busy || !!blocked}
+					data-trail="moveReview.regenerate"
 					onclick={() => regenerate()}>{t('moveSheet.checkpoint.regenerate')}</button
 				>
 				{#if !hardFailure}
@@ -298,6 +300,7 @@
 						]
 							.filter(Boolean)
 							.join(' ') || undefined}
+						data-trail="moveReview.keep"
 						onclick={() => void decide(true)}
 						>{t(
 							candidate.spec.replace ? 'moveSheet.checkpoint.replace' : 'moveSheet.checkpoint.save'
@@ -318,7 +321,9 @@
 >
 	{#if error}<ProblemNotice {error} />{/if}
 	{#if changed}
-		<p class="notice small">{t('moveSheet.checkpoint.changed')}</p>
+		<p class="bu-notice" data-size="compact" data-tone="neutral">
+			{t('moveSheet.checkpoint.changed')}
+		</p>
 	{:else if itemsStep}
 		<p class="muted small checkpoint-note">{t('moveSheet.checkpoint.chooseFor', { move: name })}</p>
 		{#if project}<ItemGenerationList
@@ -330,14 +335,16 @@
 				label={t('moveSheet.checkpoint.titleItems')}
 			/>{/if}
 		<p class="muted small checkpoint-note">{t('moveSheet.checkpoint.later', { move: name })}</p>
-		{#if access.error}<p class="notice warn small" role="status">{access.error}</p>{/if}
-		{#each unposedNotes as note, i (i)}<p class="notice warn small">
+		{#if access.error}<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
+				{access.error}
+			</p>{/if}
+		{#each unposedNotes as note, i (i)}<p class="bu-notice" data-size="compact" data-tone="warning">
 				{displayNestedMessage(note)}
 			</p>{/each}
 		<PoseIssues issues={[...new Set(chosen.flatMap(({ offer }) => offer?.poseIssues ?? []))]} />
 	{:else if candidate}
 		{#if candidate.warnings.length}
-			<div class="notice warn small quality-notice">
+			<div class="bu-notice quality-notice" data-size="compact" data-tone="warning">
 				<details class="disclosure" open={hardFailure}>
 					<summary id="move-quality-notes"
 						><ChevronRight size={14} />{t('moveSheet.checkpoint.findings')}</summary
@@ -354,6 +361,7 @@
 						class="bu-action btn"
 						data-variant="outline"
 						disabled={busy || !!blocked}
+						data-trail="moveReview.skeleton"
 						onclick={() => regenerate(skeletonOffer)}
 					>
 						{t('moveSheet.skeleton.title')}
@@ -387,6 +395,7 @@
 							data-variant="quiet"
 							aria-label={t(playing ? 'common.pause' : 'common.play')}
 							title={t(playing ? 'common.pause' : 'common.play')}
+							data-trail="moveReview.play"
 							onclick={() => (playing = !playing)}
 							>{#if playing}<Pause size={16} />{:else}<Play size={16} />{/if}</button
 						>
@@ -395,6 +404,7 @@
 							data-variant="quiet"
 							aria-label={t('stage.previousFrame')}
 							title={t('stage.previousFrame')}
+							data-trail="moveReview.previousFrame"
 							onclick={() => step(-1)}><ChevronLeft size={16} /></button
 						>
 						<span class="small muted checkpoint-frame"
@@ -408,6 +418,7 @@
 							data-variant="quiet"
 							aria-label={t('stage.nextFrame')}
 							title={t('stage.nextFrame')}
+							data-trail="moveReview.nextFrame"
 							onclick={() => step(1)}><ChevronRight size={16} /></button
 						>
 					</div>
@@ -434,10 +445,21 @@
 				{t('moveSheet.checkpoint.reviewNote', { move: name })}
 			</p>
 		{/if}
-		{#if hardFailure}<p class="notice warn small">{t('moveSheet.checkpoint.hardFailure')}</p>{/if}
-		{#if blocked && !busy}<p class="notice small" role="status">{t(blocked)}</p>{/if}
+		{#if hardFailure}<p class="bu-notice" data-size="compact" data-tone="warning">
+				{t('moveSheet.checkpoint.hardFailure')}
+			</p>{/if}
+		{#if blocked && !busy}<p
+				class="bu-notice"
+				data-size="compact"
+				data-tone="neutral"
+				role="status"
+			>
+				{t(blocked)}
+			</p>{/if}
 	{:else}
-		<p class="notice small">{t('moveSheet.checkpoint.changed')}</p>
+		<p class="bu-notice" data-size="compact" data-tone="neutral">
+			{t('moveSheet.checkpoint.changed')}
+		</p>
 	{/if}
 </Sheet>
 

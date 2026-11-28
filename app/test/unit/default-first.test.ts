@@ -304,7 +304,7 @@ test('an item saved before idle and walk existed gets items-only poses for exact
 });
 
 test('Standing and its saved key are reserved move names', () => {
-	expect(reservedMove('default')?.message).toMatch(/Standing is a reserved State/);
-	expect(reservedMove('standing')?.message).toMatch(/Standing is a reserved State/);
+	expect(reservedMove('default')?.message).toMatch(/Standing is reserved for the standing state/);
+	expect(reservedMove('standing')?.message).toMatch(/Standing is reserved for the standing state/);
 	expect(reservedMove('dance')).toBeUndefined();
 });

@@ -83,6 +83,7 @@
 									class="row bu-action"
 									data-variant="tile"
 									aria-pressed={sameOutfit(p)}
+									data-trail="outfits.apply"
 									onclick={() => applyPreset(p)}
 									>{#if preview}<OutfitThumb {preview} preset={p} />{/if}<span class="row-name"
 										>{p.name}</span
@@ -115,14 +116,18 @@
 							aria-label={t('outfits.outfitName')}
 							autofocus
 						/>
-						<button class="bu-action btn primary" data-variant="primary" type="submit"
-							>{t('common.save')}</button
+						<button
+							class="bu-action btn primary"
+							data-variant="primary"
+							data-trail="outfits.save"
+							type="submit">{t('common.save')}</button
 						>
 						<button
 							class="bu-action btn icon plain"
 							data-variant="quiet"
 							type="button"
 							aria-label={t('common.cancel')}
+							data-trail="outfits.cancelSave"
 							onclick={closeForm}><X size={14} /></button
 						>
 					</form>
@@ -131,6 +136,7 @@
 						class="bu-action add-row"
 						data-variant="outline"
 						bind:this={addButton}
+						data-trail="outfits.saveCurrentLook"
 						onclick={() => (naming = true)}><Plus size={16} />{t('outfits.saveCurrentLook')}</button
 					>
 				{/if}

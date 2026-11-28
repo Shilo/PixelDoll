@@ -8,6 +8,7 @@
 	import { tabActivity, workTabs } from '../activityStatus.svelte.ts';
 	import { onMount, tick, untrack } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
+	import { contextMenu } from '../../lib/input/contextMenu.ts';
 	import Toolbar from '../Toolbar.svelte';
 	import { openSettings } from '../settingsNavigation.svelte.ts';
 	import CharacterActions from '../CharacterActions.svelte';
@@ -89,6 +90,14 @@
 	let search = $state('');
 	let rows = $state<HTMLDivElement>();
 	let castDirection = $state(1);
+	let characterActions: CharacterActions;
+	let actionCharacter = $state<{ id: string; name: string } | undefined>();
+	function showCharacterActions(source: HTMLElement, id = doc.id, at?: DOMRect) {
+		const project = store.projects.find((project) => project.id === id);
+		if (ui.sheet || !project) return;
+		actionCharacter = project;
+		characterActions.show(source, at);
+	}
 	let selection = $state<HTMLDivElement>();
 	let missing = $state.raw<{ clip: string; direction: DirectionName; items: Item[] } | null>(null);
 	let coveragePopover = $state<HTMLElement>();
@@ -808,7 +817,18 @@
 >
 	<div class="scene-backdrop" aria-hidden="true"></div>
 	<div class="scene-reading" aria-hidden="true"></div>
-	<Toolbar {panelOpen} panelSide={dockEdge} onpanel={togglePanel} onmode={changeMode} />
+	<Toolbar
+		{panelOpen}
+		panelSide={dockEdge}
+		onpanel={togglePanel}
+		onmode={changeMode}
+		oncharacteractions={showCharacterActions}
+	/>
+	<CharacterActions
+		id={actionCharacter?.id ?? ''}
+		name={actionCharacter?.name ?? ''}
+		bind:this={characterActions}
+	/>
 	{#if workspaceCopy}<div class="workspace-banner bu-floating" role="status">
 			{t(
 				app.key && !app.keyRejected
@@ -861,6 +881,7 @@
 				floorHorizon={baseWorld.eye - g.feet.y}
 				floorFocal={baseWorld.scale * worldArt(ui.theme).focal}
 				select={pick}
+				oncharacteractions={showCharacterActions}
 			/>
 			<div
 				class="selected-caption"
@@ -872,6 +893,8 @@
 					<h2 class="sr">{name}</h2>
 					<button
 						class="selected-name project-btn"
+						data-trail="characters.characterMenu"
+						{@attach contextMenu(showCharacterActions)}
 						popovertarget="project-menu"
 						onclick={() => void refreshProjects()}
 						><span class="selected-name-text"><CharacterName id={doc.id} {name} /></span>
@@ -882,11 +905,13 @@
 								class="bu-action"
 								data-variant="quiet"
 								aria-label={t('experience.previousCharacter')}
+								data-trail="characters.previous"
 								onclick={() => next(-1)}><ChevronLeft size={18} /></button
 							><span class="num">{Math.max(0, index) + 1} / {list.length}</span><button
 								class="bu-action"
 								data-variant="quiet"
 								aria-label={t('experience.nextCharacter')}
+								data-trail="characters.next"
 								onclick={() => next(1)}><ChevronRight size={18} /></button
 							>
 						</div>{/if}
@@ -944,6 +969,7 @@
 								<button
 									class="bu-action btn sm"
 									data-variant="quiet"
+									data-trail="characters.reviewFailedCreate"
 									onclick={() =>
 										run.running ? (ui.sheet = 'activity') : reviewFailedCreate(run.id)}
 								>
@@ -970,6 +996,7 @@
 							class="bu-action character-row"
 							data-variant="row"
 							aria-pressed={p.id === doc.id}
+							data-trail="characters.pick"
 							onclick={() => pick(p.id)}
 							><CharacterThumb id={p.id} name={p.name} trim /><span
 								><strong><CharacterName id={p.id} name={p.name} /></strong>{#if facts}
@@ -996,6 +1023,7 @@
 			</div>
 			<button
 				class="bu-action customize-action"
+				data-trail="characters.customize"
 				data-variant="primary"
 				onclick={customize}
 				aria-label={t('experience.customizeName', { name })}
@@ -1011,6 +1039,7 @@
 				place={g}
 				stageRoom={g.stage.r - g.stage.l - 2 * g.edge}
 				onmode={changeMode}
+				oncharacteractions={(source, at) => showCharacterActions(source, doc.id, at)}
 				bind:missing
 			/>
 		</div>
@@ -1031,6 +1060,7 @@
 							class="bu-action"
 							data-variant="quiet"
 							aria-label={ui.playing ? t('common.pause') : t('common.play')}
+							data-trail="playback.play"
 							onclick={() => (ui.playing = !ui.playing)}
 							>{#if ui.playing}<Pause size={18} />{:else}<Play size={18} />{/if}</button
 						>
@@ -1058,6 +1088,7 @@
 						{@const dirs = m.rig.directions.map((d) => d.id)}
 						<button
 							class="bu-action facing-cycle"
+							data-trail="playback.nextDirection"
 							data-variant="direction"
 							aria-label={t('experience.facing', { direction: displayDirection(ui.dir) })}
 							title={t('experience.nextDirection', { direction: displayDirection(ui.dir) })}
@@ -1070,6 +1101,7 @@
 									class="bu-action"
 									data-variant="direction"
 									aria-pressed={ui.dir === d.id}
+									data-trail="playback.direction"
 									aria-label={t('stage.faceId', { id: displayDirectionInSentence(d.id) })}
 									onclick={() => (ui.dir = d.id)}>{displayDirectionShort(d.id)}</button
 								>{/each}
@@ -1078,6 +1110,7 @@
 					<span class="playback-sep" aria-hidden="true"></span>
 					<button
 						class="bu-action playback-inspect"
+						data-trail="playback.inspect"
 						data-variant="quiet"
 						aria-label={t('experience.inspect')}
 						title={t('experience.inspect')}
@@ -1085,6 +1118,7 @@
 					>
 					<button
 						class="bu-action playback-mount test-mount-toggle"
+						data-trail="playback.mount"
 						data-variant="quiet"
 						aria-label={t('toolbar.mountSettings')}
 						aria-haspopup="dialog"
@@ -1109,6 +1143,7 @@
 							aria-label={coverageLabel}
 							title={coverageLabel}
 							popovertarget="preview-coverage"
+							data-trail="playback.problems"
 							><TriangleAlert size={16} /><span>{formatNumber(problems)}</span></button
 						>
 						<div
@@ -1133,6 +1168,7 @@
 										{#if saved}<button
 												class="row bu-action"
 												data-variant="quiet"
+												data-trail="playback.showMissingItem"
 												onclick={() => showMissingItem(saved)}
 												>{item.name}<ChevronRight size={16} aria-hidden="true" /></button
 											>
@@ -1146,6 +1182,7 @@
 										class="row bu-action"
 										data-variant="quiet"
 										disabled={matchingColors}
+										data-trail="playback.matchColors"
 										onclick={async () => {
 											coveragePopover?.hidePopover();
 											matchingColors = true;
@@ -1191,6 +1228,7 @@
 						data-variant="tab"
 						role="tab"
 						id="customization-tab-{id}"
+						data-trail="panel.tab"
 						aria-selected={ui.tab === id}
 						aria-controls="customization-panel"
 						aria-disabled={off || undefined}

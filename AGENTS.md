@@ -2,7 +2,7 @@
 
 Dress up your 2D game characters with pixel-perfect paper dolling. Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine.
 
-Tech stack: Node.js 24.22.1; npm 11.19.1; strict TypeScript 6.0.3; Svelte 5.57.3 (not SvelteKit); Vite 8.3.6; @sveltejs/vite-plugin-svelte 7.3.1; @shilo/bronze-ui 0.3.11 theme with custom CSS; Vitest 4.1.12; Playwright Test 1.65.0.
+Tech stack: Node.js 24.22.1; npm 11.19.1; strict TypeScript 6.0.3; Svelte 5.57.3 (not SvelteKit); Vite 8.3.6; @sveltejs/vite-plugin-svelte 7.3.1; @shilo/bronze-ui 0.3.16 theme with custom CSS; Vitest 4.1.12; Playwright Test 1.65.0.
 
 PixelDoll is a free, open-source (MIT), fully client-side web app (Svelte 5, not SvelteKit, with Vite and TypeScript), hosted on GitHub Pages at https://pixeldoll.app/. It is powered by PixelLab (https://pixellab.ai) through its REST v2 API, called directly from the browser with the user's own token.
 PixelLab returns one composited image per call and has no layers. PixelDoll turns that into traditional frame-based paper dolling: one frozen base body (4 or 8 directions, several moves) plus a separate transparent layer per item (hair, headgear, clothing, boots, capes, weapons) that lines up on every frame.
@@ -55,6 +55,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - `@shilo/bronze-ui` is the owner's theme and the only UI kit (source: C:/Programming_Files/Shilocity/bronze-ui).
 - Fix shared appearance there (colors, materials, states, focus, borders, radii), release a new version, then update the dependency and lockfile here; never patch node_modules or override that appearance locally.
 - Layout, geometry and spacing stay local.
+- Use the Impeccable design skill for UI design, polish and review, including delegated work, with `PRODUCT.md` and `DESIGN.md` as context.
 - Counter AI design convergence: challenge recurring layouts, palettes, typography and component styling instead of treating model defaults as design decisions. Base visual choices on PixelDoll's character-dressing workflow, simplicity-first usability and immersive experience, with clear visual hierarchy, affordance and readability. Preserve useful conventions; novelty or resemblance to AI-generated work alone is not a reason to change them.
 - Validate substantial visual changes against the current design in the browser using representative workflows, interaction states, dark/light and small screens; record meaningful tradeoffs and untested assumptions.
 - Ownership: docs/design/production-experience.md
@@ -101,6 +102,8 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - KISS and YAGNI: no feature, dependency, option or abstraction without a real need.
 - Goal-driven: before changing behavior, decide how you will prove it works (for a bug, a failing test or offline reproduction on stored frames first, never a paid generation), then iterate until that check passes.
 - Follow **simplicity-first design**: strong defaults, minimal necessary features/settings and no unnecessary setup for ordinary use. Keep frequent actions easy to reach; reveal necessary infrequent options through clear contextual access. Preserve accessibility, timely feedback/recovery and consequential disclosures, especially paid costs. Use concise, familiar labels. Read [Usability principles](docs/usability-principles.md) when changing features, settings, navigation or user-facing copy; its linked research is optional.
+- Put scope choices beside what they change and name the target at consequential actions. Show the estimate on the paid action and carry its scope and cost through any connection step that resumes it.
+- For material UI changes, capture before and after and exercise the real task in both layouts. Keep the whole visible target operable and check that tips, menus and notices leave nearby controls reachable.
 - No backward compatibility for data saved by earlier versions (no new migrations, upgrades or legacy shims): the app is in preview, so breaking changes are fine as long as old data cannot brick it (ignore it or fail with a clear message). Ask first if compatibility seems needed.
 - DRY in app/: before writing a helper, type or constant, search for one and reuse it (extend it only if existing callers keep their behavior); never copy logic. Extract shared code when a second caller needs it, not before.
 - Fix the root cause in the code all callers share, not only where the symptom shows.
@@ -121,6 +124,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 ## Agent testing
 
 - Agents that need PixelLab run npm run dev:agent (launch config app-dev-agent, port 5199). It reads PIXELLAB_API_KEY_AGENT_DEV from the repo-root .env server-side (a worktree without one uses the main checkout's), and the app connects by itself and shows an Agent mode badge.
+- For keyless manual browser checks, use `npm run dev` (`app-dev`). In the agent's preview tab on that origin, run `localStorage.setItem('pixeldoll.developerMode', '1')` and reload before the first click or keystroke in Studio. Agent mode and Developer mode both suppress Studio audio on the dev server.
 - Check GET /balance only unless the task needs generations.
 - Keyless scripts set localStorage pixeldoll.agentKey to off on the agent server so nothing can spend. The switch is read at page load and covers every tab of that origin, so keep it set for the whole run.
 - Never expose the agent server beyond localhost (no --host, tunnels or port forwards).

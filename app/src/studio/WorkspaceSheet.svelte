@@ -10,12 +10,12 @@
 <Sheet title={t('workspace.activityTitle')} onclose={close}>
 	<p class="muted">{t('workspace.activityIntro', { build: workspaceInfo?.build ?? '' })}</p>
 	{#if workspaceInfo?.missing.length}
-		<p class="notice warn">
+		<p class="bu-notice" data-size="compact" data-tone="warning">
 			{t('workspace.missing', { count: workspaceInfo.missing.length })}
 		</p>
 	{/if}
 	{#if workspaceInfo?.omitted}
-		<p class="notice warn">
+		<p class="bu-notice" data-size="compact" data-tone="warning">
 			{t('workspace.skippedCharacters', { count: workspaceInfo.omitted })}
 		</p>
 	{/if}

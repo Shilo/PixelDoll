@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { currentLiveClips, currentLiveLayering } from './experience/liveViews.ts';
+	import { exportActionLayering } from './exportLayering.ts';
 	import { MediaQuery } from 'svelte/reactivity';
 	import SettingsItemButton from './SettingsItemButton.svelte';
 	import { CURRENT_OUTFIT_ID } from '../lib/store/identity.ts';
@@ -38,7 +38,7 @@
 		type ExportSettings
 	} from '../lib/store/export-settings.ts';
 	import type { DirectionName, Engine } from '../lib/store/manifest.ts';
-	import { ui, doc, store, toast } from './state.svelte.ts';
+	import { ui, doc, store, toast, currentLook } from './state.svelte.ts';
 	import { displayMove } from './displayMove.ts';
 	import { ChevronRight, Download, Settings2, TriangleAlert } from './icons.ts';
 	import ExportVersionCard from './ExportVersionCard.svelte';
@@ -46,11 +46,14 @@
 	import ReportButton from './ReportButton.svelte';
 	import type { WhisperKey } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
+	import { clipCounts } from './model.ts';
 	import { message, type Message } from '../lib/message.ts';
 	import { ACTION_LAYER_ENGINES, type NoteTerm } from '../lib/export/export.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { slotLabelMessage } from './slots.ts';
 	import RichMessage from './RichMessage.svelte';
+	import ProjectFolderButton from './ProjectFolderButton.svelte';
+	import ProjectFolderSetting from './ProjectFolderSetting.svelte';
 	let {
 		embedded = false,
 		onSaving,
@@ -228,6 +231,11 @@
 	let ready = $state(false);
 	let saveError = $state<Message | null>(null);
 	let loadError = $state<Message | null>(null);
+	/** For Report: the failures behind saveError and loadError, and the format a failed save tried to choose (the control
+	 *  then shows the previous one again). */
+	let saveCause = $state.raw<unknown>(),
+		loadCause = $state.raw<unknown>(),
+		saveFormat = $state.raw<Engine>();
 	let invalidPreferences = $state(false);
 	let content = $state<HTMLDivElement>();
 	// Settings' Reset buttons reuse this page's loaded preferences instead of reading them again.
@@ -258,6 +266,8 @@
 		requestedWarnings?: (Message | string)[];
 		retryable?: boolean;
 		rigIssues: Message[];
+		/** The exception behind a failed preparation, for Report. */
+		cause?: unknown;
 	} | null>(null);
 	let busy = $state(false);
 	let attempt = $state(0);
@@ -403,6 +413,7 @@
 				ready = false;
 				invalidPreferences = error instanceof InvalidExportSettings;
 				console.warn('Could not load export settings', error);
+				loadCause = error;
 				loadError = invalidPreferences
 					? message('export.settings.loadInvalid')
 					: message('export.settings.loadFailed');
@@ -483,7 +494,11 @@
 		} catch (e) {
 			if (input && input.type !== 'radio') input.checked = !checked;
 			console.warn('Could not save export settings', e);
-			if (sequence === writeSequence) saveError = message('export.settings.saveFailed');
+			if (sequence === writeSequence) {
+				saveError = message('export.settings.saveFailed');
+				saveCause = e;
+				saveFormat = optimisticEngine;
+			}
 		} finally {
 			pendingWrites--;
 			onSaving?.(saving);
@@ -571,18 +586,13 @@
 		if (!p || !ready || saving) return;
 		busy = true;
 		result = null;
-		const look = { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) };
+		const look = currentLook(p.manifest);
 		const snapshot = { ...p, manifest: structuredClone(p.manifest) };
-		const layering = currentLiveLayering(doc.id);
-		const clips = currentLiveClips(doc.id, snapshot.manifest.rig.animations);
-		const actionLayering =
+		const actionLayering = exportActionLayering(
+			doc.id,
+			snapshot.manifest.rig.animations,
 			actionLayers && supportsActionLayers
-				? {
-						waist: layering.waist,
-						walk: clips.walk.slice(0, 1),
-						attacks: [...clips.attack, ...clips.attackUp, ...clips.attackDown]
-					}
-				: undefined;
+		);
 		let stale = false;
 		void (async () => {
 			const qa = rec?.rigQa as { clips?: Record<string, { fails?: unknown }> } | undefined;
@@ -651,7 +661,8 @@
 					problem: 'Could not prepare this export.',
 					problemMessage: message('export.problem.prepareFailed'),
 					retryable: true,
-					rigIssues: []
+					rigIssues: [],
+					cause: e
 				};
 				busy = false;
 			});
@@ -674,13 +685,32 @@
 			result.kind === 'recovery'
 				? `${name}-recovered-artwork.zip`
 				: `${name}-${engine}.pixeldoll.zip`;
-		saveZip(result.zip, filename);
+		try {
+			saveZip(result.zip, filename);
+		} catch (error) {
+			console.error('export save', error);
+			toast(message('download.failedRetry', { label: name }), {
+				tone: 'danger',
+				error,
+				facts: { exportFormat: engine, step: 'save' }
+			});
+			return;
+		}
 		toast(
 			result.kind === 'recovery'
 				? message('export.toast.artworkStarted')
 				: message('download.started')
 		);
 		if (result.kind === 'requested') ui.sheet = null;
+	}
+	let notesDetails = $state<HTMLDetailsElement>();
+	/** The footer's notes link opens the notes and brings them into view, so a warning is one press away. */
+	function showNotes() {
+		if (!notesDetails) return;
+		notesDetails.open = true;
+		const summary = notesDetails.querySelector('summary');
+		summary?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+		summary?.focus({ preventScroll: true });
 	}
 </script>
 
@@ -697,16 +727,27 @@
 					: result?.kind === 'failed'
 						? t('export.sheet.noZip')
 						: hasNotes
-							? t('export.sheet.readyNotes')
-							: t('export.sheet.free')}</span
+							? ''
+							: t(
+									'export.sheet.free'
+								)}{#if ready && !pendingExport && result?.kind !== 'recovery' && result?.kind !== 'failed' && hasNotes}<span
+				>{t('export.sheet.readyNotes')}
+				<button type="button" class="btn link notes-link" onclick={showNotes}
+					>{t('export.sheet.seeNotes')}</button
+				></span
+			>{/if}</span
 	>
 	{#if ready && !pendingExport && result?.kind === 'failed' && result.retryable}
-		<button class="bu-action btn primary lg" data-variant="primary" onclick={() => attempt++}
-			>{t('common.tryAgain')}</button
+		<button
+			class="bu-action btn primary lg"
+			data-variant="primary"
+			data-trail="export.retry"
+			onclick={() => attempt++}>{t('common.tryAgain')}</button
 		>
 	{:else}<button
 			class="bu-action btn primary lg"
 			data-variant="primary"
+			data-trail="export.download"
 			onclick={download}
 			disabled={pendingExport || !ready || !result?.zip}
 			><Download size={16} aria-hidden="true" />{(ready && busy) || refreshing
@@ -720,31 +761,50 @@
 {/snippet}
 
 {#snippet preferencesStatus(inSettings = false)}
-	{#if loadError || saveError}<p class="notice bad small" role="alert">
+	{#if loadError || saveError}<p
+			class="bu-notice"
+			data-size="compact"
+			data-tone="danger"
+			role="alert"
+		>
 			<TriangleAlert size={14} aria-hidden="true" />{saveError
 				? displayMessage(saveError)
 				: loadError
 					? displayMessage(loadError)
-					: ''}<ReportButton area="Export" error={saveError || loadError} />
+					: ''}<ReportButton
+				area="Export"
+				error={saveError ? (saveCause ?? saveError) : (loadCause ?? loadError)}
+				message={saveError || loadError || undefined}
+				facts={{ exportFormat: (saveError && saveFormat) || engine }}
+			/>
 		</p>{/if}
 	{#if invalidPreferences}
 		<p class="bu-muted settings-description">
 			{t('export.settings.resetHint')}
 		</p>
 		{#if inSettings}
-			<SettingsItemButton onclick={resetSettings} disabled={saving || refreshing}
-				>{t('export.settings.reset')}</SettingsItemButton
+			<SettingsItemButton
+				data-trail="export.resetSettings"
+				onclick={resetSettings}
+				disabled={saving || refreshing}>{t('export.settings.reset')}</SettingsItemButton
 			>
 		{:else}
-			<button class="bu-action btn" onclick={resetSettings} disabled={saving || refreshing}
-				>{t('export.settings.reset')}</button
+			<button
+				class="bu-action btn"
+				data-trail="export.resetSettings"
+				onclick={resetSettings}
+				disabled={saving || refreshing}>{t('export.settings.reset')}</button
 			>
 		{/if}
 	{/if}
 	{#if !ready && refreshing}<p class="bu-muted settings-description" role="status">
 			{t('export.settings.loading')}
 		</p>{/if}
-	{#each catalog.warningMessages as warning}<p class="notice warn small">
+	{#each catalog.warningMessages as warning}<p
+			class="bu-notice"
+			data-size="compact"
+			data-tone="warning"
+		>
 			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(warning)}
 		</p>{/each}
 {/snippet}
@@ -848,6 +908,7 @@
 				>{t('export.settings.defaultTargetHint')}</span
 			>
 		</div>
+		<ProjectFolderSetting {engine} disabled={!ready} />
 	</div>
 {/snippet}
 
@@ -856,7 +917,7 @@
 {:else}
 	<Sheet
 		title={t(settings ? 'export.sheet.settings' : 'export.sheet.title')}
-		className="export-sheet"
+		className="export-sheet settings-size"
 		onclose={() => (ui.sheet = null)}
 		locked={settingsBusy}
 		back={returningToExport
@@ -887,7 +948,7 @@
 					<fieldset class="export-picker" aria-label={t('export.settings.format')}>
 						{#each GROUPS as group (group.id)}
 							<section aria-labelledby={`export-${group.id}`}>
-								<h3 class="label" id={`export-${group.id}`}>{t(group.name)}</h3>
+								<h3 class="section-title" id={`export-${group.id}`}>{t(group.name)}</h3>
 								<div class="export-targets">
 									{#each group.targets as e (e.id)}
 										{#snippet target()}
@@ -960,9 +1021,13 @@
 									>{/each}</select
 							></label
 						>{/if}
+					<!-- Optional and separate from downloading: its own heading, after the formats it publishes. -->
+					<ProjectFolderButton onopen={() => openSettings('export', 'project-folder')} />
 					{#if ready && !pendingExport && (result?.kind === 'recovery' || result?.kind === 'failed')}
 						<p
-							class="notice {result.kind === 'recovery' ? 'warn' : 'bad'} small"
+							class="bu-notice"
+							data-size="compact"
+							data-tone={result.kind === 'recovery' ? 'warning' : 'danger'}
 							role={result.kind === 'recovery' ? 'status' : 'alert'}
 						>
 							<TriangleAlert size={14} aria-hidden="true" />
@@ -974,7 +1039,9 @@
 								{result.warnings.map(displayWarning).join(' ')}</span
 							>{#if result.kind === 'failed'}<ReportButton
 									area="Export"
-									error={result.problemMessage}
+									error={result.cause ?? result.problemMessage}
+									message={result.problemMessage}
+									facts={{ exportFormat: engine }}
 								/>{/if}
 						</p>
 					{/if}
@@ -993,7 +1060,7 @@
 										directions: t('export.count.directions', {
 											count: m.rig.directions.length
 										}),
-										moves: t('export.count.moves', { count: m.rig.animations.length }),
+										moves: clipCounts(m).map(displayMessage).join(' · '),
 										items: t('export.count.items', { count: items.length }),
 										outfits: t('export.count.outfits', {
 											count: outfits.length
@@ -1002,14 +1069,14 @@
 								)}
 							</p>{/if}
 						{#if reviewItems.length || result.rigIssues.length}
-							<p class="notice warn small">
+							<p class="bu-notice" data-size="compact" data-tone="warning">
 								<TriangleAlert size={14} aria-hidden="true" /><span
 									>{t('export.notes.artworkWarning')}</span
 								>
 							</p>
 						{/if}
 						{#if hasNotes}
-							<details class="disclosure">
+							<details class="disclosure" bind:this={notesDetails}>
 								<summary><ChevronRight size={14} />{t('export.notes.title')}</summary>
 								<div class="small">
 									{#if reviewItems.length}<p>
@@ -1056,7 +1123,7 @@
 					{/if}
 					{#if result?.kind !== 'recovery'}<hr class="bu-separator export-divider" />
 						<section aria-labelledby="export-settings-summary">
-							<h3 class="label" id="export-settings-summary">
+							<h3 class="section-title" id="export-settings-summary">
 								{t('export.notes.currentSettings')}
 							</h3>
 							<dl class="export-summary small">
@@ -1110,8 +1177,10 @@
 {/if}
 
 <style>
-	:global(dialog.export-sheet) {
-		height: min(680px, calc(100dvh - 32px));
+	/* Reads as one sentence: the link sits after an ordinary space, not the footer's gap and button padding. */
+	.notes-link {
+		min-height: 24px;
+		padding-inline: 0;
 	}
 	.export-page {
 		display: flex;

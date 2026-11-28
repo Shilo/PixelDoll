@@ -36,14 +36,15 @@
 	import { composeCell } from '../lib/compose/compose.ts';
 	import { clipKind } from '../lib/runtime/timeline.js';
 	import { clipItemCoverage, clipMissingItems } from './itemGeneration.ts';
+	import { savedClipItemGeneration } from './savedClipItemGeneration.ts';
+	import { redrawItem } from './redrawItem.ts';
 	import { moveDeletionBlocked, removeMove, stateCaptureSource } from './moveActions.svelte.ts';
 	import { setupRedoMoves, unposedView } from '../lib/rig/setup.ts';
 	import { moveExportId } from '../lib/store/identity.ts';
-	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { cropAll } from './model.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayDirection } from './displayDirection.ts';
-	import { displayError } from '../lib/i18n.ts';
+	import { displayError, displayNestedMessage } from '../lib/i18n.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import type { RigDirection } from '../lib/store/manifest.ts';
 	import {
@@ -75,12 +76,14 @@
 	resume = null;
 	const open = $state(resumed?.open ?? { frames: false, items: false, about: false });
 	let body = $state<HTMLElement>();
+	let itemSection = $state<HTMLDetailsElement>();
 	$effect(() => {
 		if (!resumed || !body) return;
-		(resumed.from === 'menu'
-			? body.closest('dialog')?.querySelector<HTMLElement>('.sheet-head [aria-haspopup="menu"]')
-			: body.querySelector<HTMLElement>(`[data-tool="${resumed.from}"] button`)
-		)?.focus();
+		const target =
+			resumed.from === 'menu'
+				? body.closest('dialog')?.querySelector<HTMLElement>('.sheet-head [aria-haspopup="menu"]')
+				: body.querySelector<HTMLElement>(`[data-tool="${resumed.from}"] button`);
+		(target ?? (resumed.from === 'items' ? itemSection?.querySelector('summary') : null))?.focus();
 	});
 	/** Remembers this window's place before something opens over it whose Back returns here. */
 	function remember(from: Tool | 'menu') {
@@ -156,9 +159,34 @@
 			.map((item) => ({ item, drawn: !missing.has(item.id) }))
 			.sort((a, b) => Number(b.drawn) - Number(a.drawn));
 	});
-	const canDrawItems = $derived(
-		!isDemo() && id !== DEFAULT_MOVE && !redo.includes(id) && !!items && items.drawn < items.total
+	const generation = $derived(savedClipItemGeneration(store.project, projectId, id));
+	/** Why a missing item can't be offered, said on its own row so the next step is clear without a summary. */
+	const rowReasons = $derived(
+		new Map(
+			(generation.rows ?? []).flatMap(({ item, pending }) =>
+				pending
+					? [[item.id, t('itemGeneration.inProgress')] as const]
+					: !Object.values(item.dressed ?? {}).some(Boolean)
+						? [[item.id, t('clipWindow.cantDrawOnMoves')] as const]
+						: []
+			)
+		)
 	);
+	/** A missing item with no saved design to pose can be redrawn for this character (priced in New item, replacing it). */
+	const redrawable = $derived(
+		new Set(
+			isDemo()
+				? []
+				: (generation.rows ?? [])
+						.filter(({ item, pending }) => !pending && item.prompt && rowReasons.has(item.id))
+						.map(({ item }) => item.id)
+		)
+	);
+	/** Every missing row already says why it can't be drawn, so the disabled action does not repeat it. */
+	const rowsExplain = $derived(
+		!!generation.rows?.length && generation.rows.every((row) => rowReasons.has(row.item.id))
+	);
+	const unavailableReason = $derived(generation.unavailableReason ?? generation.unposedNote);
 	const canCapture = $derived(!isDemo() && !!m && !!stateCaptureSource(m, id));
 	const length = $derived(clip?.frames.reduce((sum, frame) => sum + frame.ms, 0) ?? 0);
 
@@ -195,6 +223,7 @@
 	{#snippet footer()}
 		{#if clip}<button
 				class="bu-action btn on-stage"
+				data-trail="clipWindow.showOnStage"
 				data-variant="primary"
 				onclick={() => {
 					ui.anim = id;
@@ -243,6 +272,7 @@
 										detail: t('clipWindow.fixFramesDetail', { move: name }),
 										aside: t('common.free'),
 										opens: true,
+										trail: 'clipWindow.fixFrames',
 										onclick: () => tool('frames', () => openFrames('', id, 'clip'))
 									}}
 								/>
@@ -255,6 +285,7 @@
 											detail: t('clipWindow.redrawDetail', { move: name }),
 											aside: '',
 											opens: true,
+											trail: 'clipWindow.redraw',
 											onclick: () =>
 												tool('redraw', () => {
 													ui.redrawMove = id;
@@ -271,6 +302,7 @@
 											detail: t('clipWindow.captureDetail', { move: name }),
 											aside: '',
 											opens: true,
+											trail: 'clipWindow.addState',
 											onclick: () =>
 												tool('capture', () => {
 													ui.stateCaptureMove = id;
@@ -293,6 +325,7 @@
 							tone: items.drawn < items.total ? 'warn' : 'ok'
 						}}
 						bind:open={open.items}
+						bind:element={itemSection}
 					>
 						<div class="window-body">
 							<!-- Which items have frames for it: drawn ones, then the ones still missing, in Wardrobe order. -->
@@ -304,20 +337,39 @@
 												aria-hidden="true"
 											/>{:else}<TriangleAlert size={16} aria-hidden="true" />{/if}<span
 											>{row.item.name}</span
-										><span class="sr"
-											>{row.drawn ? t('clipWindow.itemDrawn') : t('clipWindow.itemMissing')}</span
-										>
+										>{#if !row.drawn && rowReasons.has(row.item.id)}<span class="row-fix"
+												><span class="row-reason" id="{id}-redraw-{row.item.id}"
+													>{rowReasons.get(row.item.id)}</span
+												>{#if redrawable.has(row.item.id)}<button
+														type="button"
+														class="bu-action btn sm row-redraw"
+														data-variant="outline"
+														data-trail="clipWindow.redrawItem"
+														aria-describedby="{id}-redraw-{row.item.id}"
+														onclick={() => tool('items', () => redrawItem(row.item))}
+														>{t('itemMenu.newVersion')}</button
+													>{/if}</span
+											>{:else}<span class="sr"
+												>{row.drawn ? t('clipWindow.itemDrawn') : t('clipWindow.itemMissing')}</span
+											>{/if}
 									</li>{/each}
 							</ul>
-							{#if canDrawItems}<div class="tool-list">
+							{#if items.drawn < items.total}<div class="tool-list">
 									<div class="tool-slot" data-tool="items">
 										<ToolRow
 											{...{
 												icon: Sparkles,
 												label: t('itemGeneration.open'),
-												detail: t('clipWindow.itemsDetail', { move: name }),
+												detail:
+													generation.available || rowsExplain
+														? t('clipWindow.itemsDetail', { move: name })
+														: unavailableReason
+															? displayNestedMessage(unavailableReason)
+															: t('clipWindow.itemsUnavailable'),
 												aside: '',
 												opens: true,
+												disabled: !generation.available,
+												trail: 'clipWindow.drawItems',
 												onclick: () =>
 													tool('items', () => {
 														ui.itemGeneration = id;
@@ -326,9 +378,7 @@
 											}}
 										/>
 									</div>
-								</div>{:else if items.drawn >= items.total}<p class="muted small">
-									{t('clipWindow.itemsComplete')}
-								</p>{:else}<p class="muted small">{t('clipWindow.itemsUnavailable')}</p>{/if}
+								</div>{:else}<p class="muted small">{t('clipWindow.itemsComplete')}</p>{/if}
 						</div>
 					</WindowSection>{/if}
 				<WindowSection label={t('itemPane.aboutSection')} bind:open={open.about}>
@@ -407,14 +457,32 @@
 	}
 	.clip-items li {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
-		gap: 10px;
+		gap: 4px 10px;
+		padding-block: 4px;
 		min-height: 36px;
 		border-block-end: 1px solid var(--bu-line);
 	}
 	.clip-items li :global(svg) {
 		flex: none;
 		color: var(--ok);
+	}
+	.row-redraw {
+		flex: none;
+		min-height: 32px;
+	}
+	/* The reason and its action stay together; on a narrow window they move under the name instead of squeezing it. */
+	.clip-items .row-fix {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-inline-start: auto;
+	}
+	.clip-items .row-reason {
+		color: var(--bu-muted);
+		font-size: var(--fs-sm);
+		text-align: end;
 	}
 	.clip-items li[data-missing] :global(svg) {
 		color: var(--warn);

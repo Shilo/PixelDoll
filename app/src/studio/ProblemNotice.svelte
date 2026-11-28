@@ -50,9 +50,11 @@
 </script>
 
 <div
-	class="small problem"
-	class:notice={!listed}
-	class:bad={!listed}
+	class="problem"
+	class:small={listed}
+	class:bu-notice={!listed}
+	data-size={listed ? undefined : 'compact'}
+	data-tone={listed ? undefined : 'danger'}
 	class:listed
 	role={listed ? undefined : 'alert'}
 >

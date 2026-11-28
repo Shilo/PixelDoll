@@ -282,6 +282,7 @@
 		class="bu-action btn primary"
 		data-variant="primary"
 		disabled={!!nameProblem || !!hintError || saving}
+		data-trail="slots.save"
 		onclick={() => void save()}>{t('common.save')}</button
 	>
 {/snippet}
@@ -400,7 +401,7 @@
 			<p class="faint small" id="slot-hint-note">
 				{hintError ? displayError(hintError) : t('slotsSheet.hintNote')}
 			</p>
-			{#if formError}<p class="notice bad small" role="alert">
+			{#if formError}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 					<TriangleAlert size={16} /><span>{displayMessage(formError)}</span><ReportButton
 						error={formError}
 					/>
@@ -408,6 +409,7 @@
 			<button
 				type="button"
 				class="row danger delete-slot"
+				data-trail="slots.delete"
 				onclick={() => {
 					deleteProblem = '';
 					deleting = edited.key;
@@ -420,7 +422,7 @@
 	</Sheet>
 {:else}
 	<Sheet title={t('slotsSheet.titleAddSlot')} onclose={close}>
-		{#if problem}<p class="notice warn small" role="alert">
+		{#if problem}<p class="bu-notice" data-size="compact" data-tone="warning" role="alert">
 				<TriangleAlert size={16} /><span>{displayMessage(problem)}</span>
 			</p>{/if}
 		<form
@@ -459,16 +461,22 @@
 					><ChevronDown size={12} /></span
 				>
 			</label>
-			{#if ownerHidden}<button class="bu-action btn primary" type="submit"
-					>{t('slotsSheet.showLabel', { label: labelOf(ownerHidden.key) })}</button
+			{#if ownerHidden}<button
+					class="bu-action btn primary"
+					data-trail="slots.showHidden"
+					type="submit">{t('slotsSheet.showLabel', { label: labelOf(ownerHidden.key) })}</button
 				>
-			{:else}<button class="bu-action btn primary" type="submit" disabled={!!addProblem}
+			{:else}<button
+					class="bu-action btn primary"
+					data-trail="slots.create"
+					type="submit"
+					disabled={!!addProblem}
 					><Plus size={16} aria-hidden="true" />{t('slotsSheet.createSlot')}</button
 				>{/if}
 		</form>
 		{#if builtins.length && !copying}
 			<hr class="bu-separator slot-divider" />
-			<h3 class="sec-title" id="slots-builtin">{t('slotsSheet.builtInSlots')}</h3>
+			<h3 class="section-title" id="slots-builtin">{t('slotsSheet.builtInSlots')}</h3>
 			<ul class="slot-list" aria-labelledby="slots-builtin">
 				{#each builtins as c (c.key)}
 					{@const sub = [
@@ -481,6 +489,7 @@
 						<button
 							class="bu-action slot-choice"
 							aria-label={t('slotsSheet.showLabel', { label: labelOf(c.key) })}
+							data-trail="slots.showBuiltIn"
 							onclick={() => show(c.key)}
 						>
 							<GroupIcon group={c.key} surface="inline" /><span class="row-name"

@@ -391,6 +391,7 @@
 		"categories": "色のカテゴリ"
 	},
 	"colorSections": {
+		"notWorn": "未装備",
 		"randomLowerColors": "{lower}の色をランダムに",
 		"randomCharacterColors": "キャラクターの色をランダムに",
 		"resetLowerColors": "{lower}の色をリセット",
@@ -423,6 +424,7 @@
 		"secretLabel": "Secret",
 		"copyKey": "コピー",
 		"demoNoAccount": "デモにアカウントは不要です。",
+		"resumePurchase": "接続すると「{name}」の生成が始まります。",
 		"sentOnlyToApiPixellabAi": "api.pixellab.aiにのみ送信されます。",
 		"forgetKey": "キーを削除",
 		"forgetTitle": "PixelLab のキーを削除しますか？",
@@ -498,6 +500,7 @@
 		"cancelSaveError": "キャンセル状態を保存できませんでした。このタブを開いたまま、もう一度お試しください。",
 		"preparing": "アイテムを準備中",
 		"remake": "このキャラ用にコピー…",
+		"newVersion": "新しいバージョンを作成…",
 		"makeForSlot": "{slot}用に作成…",
 		"demoDeleteLocked": "デモのアイテムはゴミ箱に移動できません",
 		"cancelItem": "生成をキャンセル",
@@ -508,6 +511,7 @@
 	},
 	"itemPane": {
 		"movesSection": "動きと状態",
+		"newVersionDetail": "{name}を描き直します（先に価格を表示）。新しいものが置き換わります。",
 		"outfitSection": "コーディネート",
 		"technicalDetails": "技術詳細",
 		"openSprite": "{title}を拡大",
@@ -545,7 +549,6 @@
 		"matchingColors": "色を合わせています…",
 		"matchItemColors": "アイテムの色を合わせる",
 		"recolor": "色を変更",
-		"recolorWearFirst": "色を変えるには装備してください",
 		"whenWornHide": "装備中は他のアイテムを非表示",
 		"iD": "ID",
 		"slot": "装備スロット",
@@ -611,7 +614,7 @@
 		"missingView": "なし",
 		"hiddenWhenWorn": "{names}を装備すると、このアイテムは非表示になります。",
 		"clipsIncomplete": {
-			"other": "{n}件の動きが未完成"
+			"other": "{n}件が未完成"
 		},
 		"complete": "完成",
 		"clipNoFrames": "フレームなし",
@@ -656,7 +659,8 @@
 		"turnRight": "右に回転",
 		"facingLabel": "{direction}向き",
 		"matchViewColors": "{direction}向きの色を合わせる",
-		"fixOneView": "1つの向きを修正",
+		"artworkFindings": "アイテム全体の確認結果",
+		"fixOneView": "「{move}」の向きを1つ修正",
 		"outfitPreviewUnworn": "装備したと仮定した{name}のコーディネート、{direction}向き",
 		"openOutfit": "{name}のコーディネートを全画面で開く",
 		"outfitTitle": "{name}のコーディネート",
@@ -690,8 +694,7 @@
 		"createFromScratch": "作成…",
 		"addCharacter": "キャラクターを追加",
 		"fromFile": "ファイルから…",
-		"fromPixelLab": "PixelLabから…",
-		"createNeedsKey": "PixelLabのキーが必要で、有料の生成を使います"
+		"fromPixelLab": "PixelLabから…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "（新しいタブで開きます）"
@@ -833,8 +836,7 @@
 		},
 		"makingMissingFrames": "不足している装備のフレームを作成中",
 		"makeYourOwn": "自分で作成",
-		"labelMakeMissingEquipmentFrames": "不足している装備のフレームを作成",
-		"makeItAgain": "もう一度作成…"
+		"labelMakeMissingEquipmentFrames": "不足している装備のフレームを作成"
 	},
 	"studio": {
 		"workspaceCopyTabTitle": "ワークスペースのコピー・PixelDoll",
@@ -974,7 +976,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "モーションはプレビューで選びます。騎乗中の移動は、乗り物の設定の騎乗ポーズに従います。",
-		"movesOffWalking": "モーションはプレビューで選びます。ここで再生されるものはライブビューの設定で選べます。",
+		"movesOffWalking": "モーションはプレビューで選びます。ここで再生されるモーションはプレイモードの設定で選べます。",
 		"tabWardrobe": "装備",
 		"tabColors": "カラー",
 		"tabOutfits": "コーデ一覧",
@@ -1216,7 +1218,8 @@
 			"unavailable": "エクスポートできません",
 			"sourceOnly": "元のPNGのみ",
 			"noZip": "利用できるZIPはありません",
-			"readyNotes": "準備完了・エクスポートの注意事項を確認してください",
+			"readyNotes": "準備完了・",
+			"seeNotes": "エクスポートの注意事項を確認してください",
 			"free": "無料・編集用のコピーを含みます",
 			"downloadArtwork": "アートワークのZIPをダウンロード",
 			"downloadSize": "ZIPをダウンロード・{size} KB",
@@ -1224,6 +1227,7 @@
 		},
 		"settings": {
 			"loadInvalid": "保存したエクスポートの設定を読み込めませんでした。",
+			"resetRequired": "保存したエクスポートの設定を読み込めませんでした。エクスポートを開き、「エクスポートの設定をリセット」を選んでください。",
 			"loadFailed": "エクスポートの設定を読み込めませんでした。エクスポートを開き直してください。",
 			"saveFailed": "エクスポートの設定を保存できませんでした。もう一度お試しください。",
 			"resetHint": "エクスポートの設定だけを初期値に戻します。キャラクターとコーディネートはそのままです。",
@@ -1235,7 +1239,7 @@
 			"dressed": "着せ替え済みキャラクターのシートを含める",
 			"dressedHint": "現在の見た目と保存済みの各コーディネートについて、素体と装備中のアイテムを合成したPNGスプライトシートを追加します。RPG Maker以外では個別のレイヤーも必ず含まれます。RPG Makerでは合成済みのシートのみ出力します。",
 			"actionLayers": "移動攻撃のレイヤー",
-			"actionLayersHint": "歩きながらの攻撃に使える体のパーツを ZIP に追加します。ライブで移動攻撃がオフでも、ライブの動作と腰位置の設定を使います。これらのレイヤーを使うのは Phaser、GDevelop、Godot、Unity のみです。",
+			"actionLayersHint": "歩きながらの攻撃に使える体のパーツを ZIP に追加します。プレイモードで「攻撃しながら歩く」がオフでも、そのモードの動作と腰位置の設定を使います。これらのレイヤーを使うのは Phaser、GDevelop、Godot、Unity のみです。",
 			"actionLayersOn": "オン",
 			"actionLayersOff": "オフ",
 			"format": "エクスポート形式",
@@ -2105,7 +2109,7 @@
 		"needsKey": "キーが必要です",
 		"recent": "最近のジョブ",
 		"tierHint": "このワークフローにはPixelLabのTier {tier}以上が必要です。再試行する前にプランと残高を確認してください。ジョブの失敗だけでは、プランの問題とは限りません。",
-		"session": "このセッション：{cost}。モーションによっては生成回数ではなくドル建てで請求されます。実際の合計は上の残高で確認してください。",
+		"session": "このセッション：{cost}。",
 		"clearFollower": "ジョブを実行しているPixelDollのタブで消去してください",
 		"clear": "完了したものを消去",
 		"ledger": {
@@ -2565,7 +2569,6 @@
 			"baseClothingHelp": "白い無地の下着は素体の一部で、前の開いた服から見える場合があります。プロンプトを直接編集すると、この指定より優先されることがあります。生成された露出の範囲を確認してください。",
 			"nothingWorn": "何も着ていない",
 			"underwear": "下着",
-			"editPrompt": "プロンプトを直接編集",
 			"exactPrompt": "送信されるプロンプト",
 			"sizeGuide": "サイズガイド",
 			"geometrySection": "キャラクターのサイズとカメラ",
@@ -2915,6 +2918,7 @@
 		"defaultIdea": "革の帽子",
 		"shortcut": "Ctrl+EnterまたはCmd+Enterでアイテムを作成します。",
 		"useOffHand": "オフハンドを使う",
+		"replaces": "保持すると{name}と置き換わり、古いものは色と設定ごとゴミ箱に移動します。",
 		"ideas": "アイデア",
 		"colorHint": "色のヒント",
 		"anyColor": "指定なし",
@@ -3439,7 +3443,7 @@
 		"actionLabel": "この問題を報告",
 		"actionLabelFor": "この問題を報告: {name}",
 		"title": "この問題を報告",
-		"intro": "下のテキストだけを含む公開の GitHub Issue を開きます。画像、プロンプト、名前、キーは含まれません。投稿はご自身の GitHub アカウントで行います。",
+		"intro": "画像、プロンプト、名前、ファイル、PixelLab のキーは一切含まれません。投稿前に GitHub で内容を確認できます。",
 		"preview": "レポートのプレビュー",
 		"copy": "レポートをコピー",
 		"copied": "コピーしました",
@@ -3499,6 +3503,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "先に立ちポーズのデザインが必要です。",
+		"allPending": "足りないアイテムは生成中です。進み具合はアクティビティで確認できます。",
 		"open": "アイテムを生成",
 		"title": "{move}用のアイテムを生成",
 		"inProgress": "処理中",
@@ -3574,7 +3580,7 @@
 		"side": "パネルの位置",
 		"left": "左",
 		"right": "右",
-		"autoHide": "ライブビューを開くときにパネルを隠す",
+		"autoHide": "見下ろし型と横スクロールでパネルを隠す",
 		"autoHideHelp": "小さなタッチ画面で適用されます。ツールバーからいつでも開けます。",
 		"notSaved": "パネルの設定を変更しましたが、ブラウザーに保存できませんでした。"
 	},
@@ -3587,8 +3593,8 @@
 		"lowerWaist": "ウエストを下げる",
 		"automaticStill": "自動：静止",
 		"controls": "操作",
-		"title": "ライブビュー",
-		"forCharacter": "{name} が見下ろし型と横スクロールで再生するモーションです。",
+		"title": "プレイモード",
+		"animationHelp": "見下ろし型と横スクロールでキャラクターが使うモーションです。",
 		"idle": "待機",
 		"walk": "歩行",
 		"run": "走る",
@@ -3604,13 +3610,13 @@
 		"automaticNone": "自動：なし",
 		"sameAsAttack": "攻撃と同じ",
 		"sideAttackHelp": "横スクロールでは、上または下を狙うと上攻撃または下攻撃を再生します。",
-		"notSaved": "ライブビューの設定を変更しましたが、このブラウザーに保存できませんでした。",
+		"notSaved": "プレイモードの設定を変更しましたが、このブラウザーに保存できませんでした。",
 		"openCharacter": "キャラクターを開くと、再生するモーションを選べます。",
 		"mount": "乗り物",
 		"actions": "ゲーム操作",
 		"withShortcut": "{action}（{key}）",
 		"spaceKey": "スペース",
-		"noAttack": "攻撃が未設定です。ライブビューの設定を開いてください。",
+		"noAttack": "攻撃が未設定です。プレイモードの設定を開いてください。",
 		"noAttackDirection": "{move}の{direction}フレームがありません。",
 		"hintTopDown": "WASDまたはクリック長押しで移動",
 		"hintSide": "A/Dまたはクリック長押しで移動",
@@ -3626,6 +3632,81 @@
 		"colors": "カラーを検索",
 		"clear": "検索をクリア",
 		"results": "{total} 件中 {count} 件"
+	},
+	"projectFolder": {
+		"title": "プロジェクトフォルダー",
+		"hint": "このキャラクターのエクスポートファイルをゲームプロジェクトに置いておきます。",
+		"choose": "フォルダーを選択…",
+		"change": "フォルダーを変更",
+		"stop": "リンク解除",
+		"publishNow": "今すぐ更新",
+		"auto": "自動で更新",
+		"reconnect": "フォルダーに再接続",
+		"replace": "表示中のファイルを置き換える",
+		"keep": "既存のファイルを残す",
+		"review": "確認",
+		"copy": "コピー",
+		"copied": "コピーしました",
+		"copyPath": "パスをコピー",
+		"pathCopied": "パスをコピーしました",
+		"brave": "Brave で使うには、このアドレスをアドレスバーに貼り付けて設定を有効にし、Brave を再起動してください：",
+		"kept": {
+			"other": "{count}個のファイルを残しています"
+		},
+		"updateKept": "残したファイルを確認",
+		"updated": "{time}に更新",
+		"tryAgain": "もう一度試す",
+		"state": {
+			"off": "未リンク · ゲームフォルダー内のこのキャラクターのファイルを自動で最新に保ちます",
+			"on": "自動更新オン",
+			"manual": "自動更新オフ",
+			"updating": "更新中…",
+			"attention": "要確認"
+		},
+		"status": {
+			"publishing": "更新中…",
+			"done": "最新です",
+			"already": "すでに最新です",
+			"reconnect": "PixelDoll がこのフォルダーに再びアクセスする必要があります。続けて使えるよう「アクセスするたびに許可する」を選んでください。",
+			"missing": "フォルダーが見つかりません。移動または削除された可能性があります。",
+			"blocked": "更新を一時停止しました。PixelDoll は許可なしにこれらのファイルを置き換えません:",
+			"unavailable": "このキャラクターは今はエクスポートできません。",
+			"locked": "ファイルが別のアプリで開かれているか、フォルダーのパスが長すぎます。ファイルを閉じるか、パスの短いフォルダーを選んでください。",
+			"space": "ディスクがいっぱいです。",
+			"permission": "そのフォルダーは使えません。別のフォルダーを選んでください。",
+			"failed": "フォルダーに書き込めませんでした。もう一度お試しください。",
+			"taken": "このフォルダーは別のキャラクターが使っています。別のフォルダーを選んでください。",
+			"outdated": "PixelDoll が別のタブで更新されました。このフォルダーの更新を続けるには、このタブを再読み込みしてください。",
+			"inside": "このフォルダーは PixelDoll が管理するフォルダーの中にあります。それを含むフォルダーを選んでください。",
+			"unityNested": "別の Unity キャラクターが、このフォルダーの中または外側のフォルダーを使っています。1 つのゲームの Unity キャラクターはすべて同じフォルダーにリンクしてください。"
+		},
+		"reason": {
+			"edited": "PixelDoll の外で編集",
+			"notOurs": "もともとフォルダーにあった",
+			"deleted": "削除済み",
+			"folder": "フォルダーが置かれている"
+		},
+		"toast": {
+			"reconnect": "更新を続けるには {folder} に再接続してください。",
+			"paused": "更新を一時停止しました：フォルダー内のファイルが変更されました。",
+			"missing": "{folder} が見つかりません。",
+			"failed": "{folder} を更新できませんでした。",
+			"outdated": "{folder} の更新を続けるには PixelDoll を再読み込みしてください。"
+		},
+		"justUpdated": "たった今更新",
+		"matching": {
+			"other": "このフォルダーの {count} 個のファイルは PixelDoll のエクスポートと同じです。今後も更新しますか？"
+		},
+		"adopt": "更新する",
+		"leave": "そのままにする",
+		"section": "ゲームプロジェクト",
+		"reload": "再読み込み",
+		"shared": "共有ランタイム：{path}",
+		"manualStep": {
+			"rpg": "{format} は専用のフォルダー（img/characters、XP、VX Ace、VX では Graphics/Characters）からキャラクターを読み込みます。更新後は、キャラクターの README.txt に従ってシートをそこへコピーしてください。",
+			"gdevelop": "このキャラクターを別の GDevelop プロジェクトに統合した場合は、キャラクターの gdevelop/README.txt に従って更新を反映してください。",
+			"phaserAe": "モーションやアイテムを追加したら、キャラクターの phaser-ae/README.txt に従って phaser-ae/assets.json の新しいパスを game/manifest.json に追加してください。"
+		}
 	},
 	"spriteViewer": {
 		"missing": "表示するフレームがありません",
@@ -3665,11 +3746,11 @@
 		"playOnStage": "ステージで再生",
 		"showOnStage": "ステージに表示",
 		"framesSection": "フレームと品質",
-		"itemsSection": "アイテム",
+		"itemsSection": "装備アイテム",
 		"fixFramesDetail": "{move}の全フレームを画像編集アプリで編集します。",
 		"redrawDetail": "選んだ向きで{move}を描き直します（先に価格を表示）。",
 		"captureDetail": "{move}の1フレームを新しい状態として保存します。",
-		"itemsDetail": "{move}にまだ足りない装備アイテムを描きます。",
+		"itemsDetail": "{move}用の絵がまだない装備アイテムを選びます。",
 		"itemsComplete": "すべてのアイテムが描かれています。",
 		"itemsUnavailable": "ここではアイテムを描けません。",
 		"frames": "フレーム",
@@ -3678,7 +3759,8 @@
 		"exportId": "エクスポートID",
 		"gone": "この動きはもう保存されていません。",
 		"itemDrawn": "描画済み",
-		"itemMissing": "未描画"
+		"itemMissing": "未描画",
+		"cantDrawOnMoves": "まだ動きに描けません"
 	},
 	"tips": {
 		"customizeTitle": "デモを着せ替える",

@@ -283,7 +283,7 @@
 				</div>
 			{:else}
 				{#if isBody && prepared.fitted.length && prepared.plan.changed.length}
-					<p class="notice warn small" role="status">
+					<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
 						<TriangleAlert size={16} /><span
 							>{t('fixFrames.notes.fitted', { names: formatList(prepared.fitted) })}</span
 						>
@@ -320,6 +320,7 @@
 								class="tile changed"
 								aria-pressed={selection?.dir === row.dir && selection.cell === c}
 								aria-label={t('fixFrames.changedFrame', frameName(row.dir, c))}
+								data-trail="frames.selectChanged"
 								onclick={() => (selected = key)}
 							>
 								<Sprite img={tile} {k} limit={tileLimit} checker label="" />
@@ -428,10 +429,15 @@
 				{/if}
 				{#if dragging}<p class="drop-note" aria-live="polite">{t('fixFrames.release')}</p>{/if}
 			{/if}
-			{#if blocked && !demo}<p class="notice warn small" role="status">
+			{#if blocked && !demo}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+					role="status"
+				>
 					{displayError(blocked)}
 				</p>{/if}
-			{#if error}<p class="notice bad small" role="alert">
+			{#if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 					{displayError(error)}<ReportButton {error} />
 				</p>{/if}
 		</div>
@@ -452,6 +458,7 @@
 						class="bu-action btn primary"
 						data-variant="primary"
 						disabled={busy || !!blocked}
+						data-trail="frames.replace"
 						onclick={() => void replace()}
 						>{t('fixFrames.replace', {
 							count: prepared.plan.changed.length,
@@ -464,6 +471,7 @@
 						class="bu-action btn plain"
 						data-variant="quiet"
 						disabled={busy || demo || !!blocked}
+						data-trail="frames.restore"
 						onclick={() => (confirmRestore = true)}
 						><RotateCcw size={16} />{working === 'restoring'
 							? t('fixFrames.restoring')
@@ -477,6 +485,7 @@
 					class="bu-action btn"
 					data-variant="outline"
 					disabled={busy}
+					data-trail="frames.download"
 					onclick={() => void downloadFrames(item.id, move.id)}
 					><Download size={16} />{t(
 						item.layers.length > 1 ? 'fixFrames.downloadZip' : 'fixFrames.downloadPng'
@@ -486,6 +495,7 @@
 					class="bu-action btn primary"
 					data-variant="primary"
 					disabled={busy || demo || !!blocked}
+					data-trail="frames.import"
 					onclick={() => fileInput?.click()}
 					><Upload size={16} />{working === 'reading'
 						? t('fixFrames.reading')
@@ -542,7 +552,7 @@
 	.num,
 	.dir,
 	.mirror-note {
-		font-size: 0.75rem;
+		font-size: 12px;
 		color: var(--text-2);
 		text-align: center;
 	}
@@ -556,7 +566,7 @@
 		place-items: center;
 		padding: 2px;
 		border: 1px solid transparent;
-		border-radius: 6px;
+		border-radius: 8px;
 		background: none;
 	}
 	.tile.mirror {
@@ -590,7 +600,7 @@
 		gap: 4px;
 	}
 	.compare figcaption {
-		font-size: 0.8rem;
+		font-size: 12px;
 	}
 	.notes {
 		list-style: none;

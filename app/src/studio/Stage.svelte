@@ -406,4 +406,10 @@
 		min-width: 100px;
 		max-width: 124px;
 	}
+	/* 16 px keeps phones from zooming into the field, like every other phone field. */
+	@media (pointer: coarse), (max-width: 760px) {
+		.canvas-bar select {
+			font-size: 16px;
+		}
+	}
 </style>

@@ -16,39 +16,46 @@
 		/** Finds the row again in its list (`data-rows`), for focus after it goes to the Trash. */
 		key?: string;
 		entry?: HTMLElement;
-		children: Snippet;
+		children?: Snippet;
 		actions: Snippet<[() => void]>;
 	} = $props();
 	const menuId = $props.id();
-	let more: HTMLButtonElement;
+	let more = $state<HTMLButtonElement>();
 	let menu: HTMLElement;
 	let expanded = $state(false);
+	let anchor: DOMRect | undefined;
+	export function show(source: HTMLElement, at?: DOMRect) {
+		if (menu.matches(':popover-open')) close();
+		anchor = at;
+		menu.showPopover({ source });
+	}
 	function open() {
-		if (!menu.matches(':popover-open')) more.click();
+		if (!menu.matches(':popover-open')) more?.click();
 	}
 	function close() {
 		menu.hidePopover();
 	}
 </script>
 
-<div
-	class="character-entry hover-actions"
-	data-row={key}
-	bind:this={entry}
-	{@attach contextMenu(open)}
->
-	{@render children()}
-	<button
-		bind:this={more}
-		class="bu-action character-more hover-actions-button"
-		data-variant="quiet"
-		aria-label={t('experience.moreActionsFor', { name })}
-		title={t('experience.moreActionsFor', { name })}
-		aria-haspopup="menu"
-		aria-expanded={expanded}
-		popovertarget={menuId}><EllipsisVertical size={18} /></button
+{#if children}<div
+		class="character-entry hover-actions"
+		data-row={key}
+		bind:this={entry}
+		{@attach contextMenu(open)}
 	>
-</div>
+		{@render children()}
+		<button
+			bind:this={more}
+			class="bu-action character-more hover-actions-button"
+			data-trail="rowActions.more"
+			data-variant="quiet"
+			aria-label={t('experience.moreActionsFor', { name })}
+			title={t('experience.moreActionsFor', { name })}
+			aria-haspopup="menu"
+			aria-expanded={expanded}
+			popovertarget={menuId}><EllipsisVertical size={18} /></button
+		>
+	</div>{/if}
 <div
 	id={menuId}
 	class="menu bu-popover-anchor"
@@ -69,7 +76,8 @@
 	aria-label={t('experience.actionsFor', { name })}
 	ontoggle={(event) => {
 		expanded = event.newState === 'open';
-		popoverFocus(event);
+		popoverFocus(event, true, anchor);
+		if (!expanded) anchor = undefined;
 	}}
 >
 	<PopoverArrow />

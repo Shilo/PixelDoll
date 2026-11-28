@@ -398,6 +398,7 @@
 		"categories": "Farbkategorien"
 	},
 	"colorSections": {
+		"notWorn": "Nicht getragen",
 		"randomLowerColors": "Zufallsfarben: {lower}",
 		"randomCharacterColors": "Zufällige Figurenfarben",
 		"resetLowerColors": "Farben zurücksetzen: {lower}",
@@ -430,6 +431,7 @@
 		"secretLabel": "Secret",
 		"copyKey": "Kopieren",
 		"demoNoAccount": "Für die Demo brauchst du kein Konto.",
+		"resumePurchase": "Beim Verbinden beginnt die Generierung für {name}.",
 		"sentOnlyToApiPixellabAi": "Der Schlüssel wird nur an api.pixellab.ai gesendet.",
 		"forgetKey": "Schlüssel entfernen",
 		"forgetTitle": "PixelLab-Schlüssel entfernen?",
@@ -508,6 +510,7 @@
 		"cancelSaveError": "Der Abbruch konnte nicht gespeichert werden. Lass diesen Tab offen und versuch es noch einmal.",
 		"preparing": "Dein Gegenstand wird vorbereitet",
 		"remake": "Kopie für diese Figur…",
+		"newVersion": "Neue Version erstellen…",
 		"makeForSlot": "Für {slot} erstellen…",
 		"demoDeleteLocked": "Die Gegenstände der Demo können nicht in den Papierkorb",
 		"cancelItem": "Gegenstand abbrechen",
@@ -518,6 +521,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Bewegungen und Zustände",
+		"newVersionDetail": "Zeichnet {name} neu, mit Preis vorab. Die neue Version ersetzt sie.",
 		"outfitSection": "Outfit",
 		"technicalDetails": "Technische Details",
 		"openSprite": "{title} vergrößern",
@@ -557,7 +561,6 @@
 		"matchingColors": "Farben werden abgeglichen…",
 		"matchItemColors": "Gegenstandsfarben abgleichen",
 		"recolor": "Umfärben",
-		"recolorWearFirst": "Zum Umfärben zuerst anziehen",
 		"whenWornHide": "Andere Gegenstände beim Tragen ausblenden",
 		"iD": "ID",
 		"slot": "Ausrüstungsplatz",
@@ -626,8 +629,8 @@
 		"missingView": "Fehlt",
 		"hiddenWhenWorn": "Beim Tragen von {names} ausgeblendet.",
 		"clipsIncomplete": {
-			"one": "{n} Bewegung unvollständig",
-			"other": "{n} Bewegungen unvollständig"
+			"one": "{n} unvollständig",
+			"other": "{n} unvollständig"
 		},
 		"complete": "Vollständig",
 		"clipNoFrames": "Noch keine Frames",
@@ -678,7 +681,8 @@
 		"turnRight": "Nach rechts drehen",
 		"facingLabel": "Blickrichtung {direction}",
 		"matchViewColors": "Farben der Ansicht {direction} abgleichen",
-		"fixOneView": "Eine Ansicht korrigieren",
+		"artworkFindings": "Befunde zum gesamten Gegenstand",
+		"fixOneView": "Eine Ansicht in {move} korrigieren",
 		"outfitPreviewUnworn": "{name} im Outfit, als ob getragen, Blickrichtung {direction}",
 		"openOutfit": "{name} im Outfit in voller Größe öffnen",
 		"outfitTitle": "{name} im Outfit",
@@ -713,8 +717,7 @@
 		"createFromScratch": "Erstellen…",
 		"addCharacter": "Figur hinzufügen",
 		"fromFile": "Aus Datei…",
-		"fromPixelLab": "Aus PixelLab…",
-		"createNeedsKey": "Braucht einen PixelLab-Schlüssel und kostenpflichtige Generierungen"
+		"fromPixelLab": "Aus PixelLab…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(öffnet in einem neuen Tab)"
@@ -857,8 +860,7 @@
 		},
 		"makingMissingFrames": "Fehlende Ausrüstungsframes werden erstellt",
 		"makeYourOwn": "Selbst erstellen",
-		"labelMakeMissingEquipmentFrames": "Fehlende Ausrüstungsframes erstellen",
-		"makeItAgain": "Neu erstellen…"
+		"labelMakeMissingEquipmentFrames": "Fehlende Ausrüstungsframes erstellen"
 	},
 	"studio": {
 		"workspaceCopyTabTitle": "Arbeitsbereichskopie · PixelDoll",
@@ -1001,7 +1003,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Wähle Animationen in der Vorschau. Beim Reiten gilt die Reitpose aus den Reittier-Einstellungen.",
-		"movesOffWalking": "Wähle Animationen in der Vorschau. Hier legen die Einstellungen der Live-Ansichten fest, was abgespielt wird.",
+		"movesOffWalking": "Wähle Animationen in der Vorschau. Was hier abgespielt wird, stellst du unter Spielmodus ein.",
 		"tabWardrobe": "Garderobe",
 		"tabColors": "Farben",
 		"tabOutfits": "Outfits",
@@ -1252,7 +1254,8 @@
 			"unavailable": "Export nicht verfügbar",
 			"sourceOnly": "Nur Quell-PNGs",
 			"noZip": "Kein ZIP verfügbar",
-			"readyNotes": "Bereit · siehe Exporthinweise",
+			"readyNotes": "Bereit ·",
+			"seeNotes": "siehe Exporthinweise",
 			"free": "Kostenlos · enthält eine bearbeitbare Kopie",
 			"downloadArtwork": "Grafiken als ZIP herunterladen",
 			"downloadSize": "ZIP herunterladen · {size} KB",
@@ -1260,6 +1263,7 @@
 		},
 		"settings": {
 			"loadInvalid": "Gespeicherte Exporteinstellungen konnten nicht gelesen werden.",
+			"resetRequired": "Gespeicherte Exporteinstellungen konnten nicht gelesen werden. Öffne „Exportieren“ und wähle „Exporteinstellungen zurücksetzen“.",
 			"loadFailed": "Die Exporteinstellungen konnten nicht geladen werden. Öffne den Export erneut.",
 			"saveFailed": "Die Exporteinstellungen konnten nicht gespeichert werden. Versuch es noch einmal.",
 			"resetHint": "Setzt nur die Exporteinstellungen auf die Standardwerte zurück. Deine Figuren und Outfits bleiben erhalten.",
@@ -1271,7 +1275,7 @@
 			"dressed": "Angezogene Figur als Spritesheets exportieren",
 			"dressedHint": "Fügt PNG-Spritesheets für deinen aktuellen Look und jedes gespeicherte Outfit hinzu, jeweils mit Grundkörper und angelegten Gegenständen in einem Bild. Separate Ebenen sind immer dabei, außer bei RPG Maker: Dort sind alle Ebenen zusammengefasst.",
 			"actionLayers": "Ebenen für Laufangriffe",
-			"actionLayersHint": "Fügt dem ZIP Körperteile für kompatible Laufangriffe hinzu. Verwendet die Live-Einstellungen für Bewegungen und Taille, auch wenn Laufangriffe dort aus sind. Nur Phaser, GDevelop, Godot und Unity verwenden diese Ebenen.",
+			"actionLayersHint": "Fügt dem ZIP Körperteile für kompatible Laufangriffe hinzu. Verwendet die Einstellungen für Bewegungen und Taille aus dem Spielmodus, auch wenn „Beim Angriff weiterlaufen“ dort aus ist. Nur Phaser, GDevelop, Godot und Unity verwenden diese Ebenen.",
 			"actionLayersOn": "An",
 			"actionLayersOff": "Aus",
 			"format": "Exportformat",
@@ -2171,7 +2175,7 @@
 		"needsKey": "braucht deinen Schlüssel",
 		"recent": "Letzte Aufträge",
 		"tierHint": "Dieser Ablauf braucht mindestens PixelLab Tier {tier}. Prüfe vor einem neuen Versuch Tarif und Kontostand. Ein fehlgeschlagener Auftrag allein bedeutet nicht, dass es am Tarif liegt.",
-		"session": "Diese Sitzung: {cost}. Einige Animationen werden in US-Dollar statt in Generierungen abgerechnet. Maßgeblich ist der Kontostand oben.",
+		"session": "Diese Sitzung: {cost}.",
 		"clearFollower": "Entferne die Einträge in dem PixelDoll-Tab, in dem die Aufträge laufen",
 		"clear": "Abgeschlossene entfernen",
 		"ledger": {
@@ -2638,7 +2642,6 @@
 			"baseClothingHelp": "Schlichte weiße Unterwäsche ist Teil des Grundkörpers und kann durch offene Kleidung sichtbar bleiben. Änderungen am exakten Prompt können diese Vorgabe überschreiben. Prüfe, welche Körperstellen das Ergebnis bedeckt.",
 			"nothingWorn": "Keine Kleidung",
 			"underwear": "Unterwäsche",
-			"editPrompt": "Exakten Prompt bearbeiten",
 			"exactPrompt": "Exakter Prompt",
 			"sizeGuide": "Größenübersicht",
 			"geometrySection": "Figurengröße und Perspektive",
@@ -2997,6 +3000,7 @@
 		"defaultIdea": "ein Lederhut",
 		"shortcut": "Erstelle den Gegenstand mit Strg+Enter oder Cmd+Enter.",
 		"useOffHand": "Nebenhand verwenden",
+		"replaces": "Ersetzt {name}, sobald du es behältst. Das alte kommt mit seinen Farben und Einstellungen in den Papierkorb.",
 		"ideas": "Ideen",
 		"colorHint": "Farbvorgabe",
 		"anyColor": "Beliebig",
@@ -3540,7 +3544,7 @@
 		"actionLabel": "Dieses Problem melden",
 		"actionLabelFor": "Dieses Problem melden: {name}",
 		"title": "Dieses Problem melden",
-		"intro": "Öffnet ein öffentliches GitHub-Issue nur mit dem Text unten. Bilder, Prompts, Namen und Schlüssel sind nicht enthalten. Du veröffentlichst es mit deinem GitHub-Konto.",
+		"intro": "Enthält nie deine Bilder, Prompts, Namen, Dateien oder deinen PixelLab-Schlüssel. Du prüfst ihn auf GitHub, bevor du ihn veröffentlichst.",
 		"preview": "Vorschau der Meldung",
 		"copy": "Meldung kopieren",
 		"copied": "Kopiert",
@@ -3600,6 +3604,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "Zuerst ist ein Design in der Standpose nötig.",
+		"allPending": "Die fehlenden Gegenstände sind bereits in Arbeit. Den Fortschritt findest du unter Aktivität.",
 		"open": "Gegenstände generieren",
 		"title": "Gegenstände für {move} generieren",
 		"inProgress": "Läuft",
@@ -3677,7 +3683,7 @@
 		"side": "Panelposition",
 		"left": "Links",
 		"right": "Rechts",
-		"autoHide": "Panel beim Start der Live-Ansichten ausblenden",
+		"autoHide": "Panel in Draufsicht und Seitenansicht ausblenden",
 		"autoHideHelp": "Auf kompakten Touchscreens. Jederzeit über die Symbolleiste wieder öffnen.",
 		"notSaved": "Die Panel-Einstellungen wurden geändert, konnten aber im Browser nicht gespeichert werden."
 	},
@@ -3690,8 +3696,8 @@
 		"lowerWaist": "Taille absenken",
 		"automaticStill": "Automatisch: steht still",
 		"controls": "Steuerung",
-		"title": "Live-Ansichten",
-		"forCharacter": "Animationen, die {name} in Draufsicht und Seitenansicht abspielt.",
+		"title": "Spielmodus",
+		"animationHelp": "Animationen deiner Figur in Draufsicht und Seitenansicht.",
 		"idle": "Ruhe",
 		"walk": "Gehen",
 		"run": "Rennen",
@@ -3707,13 +3713,13 @@
 		"automaticNone": "Automatisch: keine",
 		"sameAsAttack": "Wie Angriff",
 		"sideAttackHelp": "In der Seitenansicht spielt Angriff nach oben oder unten, wenn du nach oben oder unten zielst.",
-		"notSaved": "Die Einstellung der Live-Ansichten wurde geändert, aber dieser Browser konnte sie nicht speichern.",
+		"notSaved": "Die Einstellung für den Spielmodus wurde geändert, aber dieser Browser konnte sie nicht speichern.",
 		"openCharacter": "Öffne einen Charakter, um seine Animationen auszuwählen.",
 		"mount": "Reittier",
 		"actions": "Spielaktionen",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Leertaste",
-		"noAttack": "Kein Angriff gewählt. Öffne die Live-Ansicht-Einstellungen.",
+		"noAttack": "Kein Angriff gewählt. Öffne die Einstellungen für den Spielmodus.",
 		"noAttackDirection": "Keine {direction}-Frames für {move}.",
 		"hintTopDown": "Bewegen mit WASD oder gehaltener Maustaste",
 		"hintSide": "Bewegen mit A/D oder gehaltener Maustaste",
@@ -3729,6 +3735,83 @@
 		"colors": "Farben durchsuchen",
 		"clear": "Suche leeren",
 		"results": "{count} von {total}"
+	},
+	"projectFolder": {
+		"title": "Projektordner",
+		"hint": "Halte die Exportdateien dieser Figur in deinem Spielprojekt.",
+		"choose": "Ordner wählen…",
+		"change": "Ordner ändern",
+		"stop": "Trennen",
+		"publishNow": "Jetzt aktualisieren",
+		"auto": "Automatisch aktualisieren",
+		"reconnect": "Ordner neu verbinden",
+		"replace": "Aufgeführte Dateien ersetzen",
+		"keep": "Vorhandene Dateien behalten",
+		"review": "Ansehen",
+		"copy": "Kopieren",
+		"copied": "Kopiert",
+		"copyPath": "Pfad kopieren",
+		"pathCopied": "Pfad kopiert",
+		"brave": "Um das in Brave zu nutzen, füge diese Adresse in die Adressleiste ein, aktiviere die Einstellung und starte Brave neu:",
+		"kept": {
+			"one": "{count} Datei behalten",
+			"other": "{count} Dateien behalten"
+		},
+		"updateKept": "Behaltene Dateien prüfen",
+		"updated": "Aktualisiert {time}",
+		"tryAgain": "Erneut versuchen",
+		"state": {
+			"off": "Nicht verbunden · Hält die Dateien dieser Figur in deinem Spielordner automatisch aktuell",
+			"on": "Automatische Updates an",
+			"manual": "Automatische Updates aus",
+			"updating": "Wird aktualisiert…",
+			"attention": "Braucht Aufmerksamkeit"
+		},
+		"status": {
+			"publishing": "Wird aktualisiert…",
+			"done": "Aktuell",
+			"already": "Bereits aktuell",
+			"reconnect": "PixelDoll braucht wieder Zugriff auf diesen Ordner. Wähle „Bei jedem Besuch zulassen“, damit er bleibt.",
+			"missing": "Ordner nicht gefunden. Er wurde vielleicht verschoben oder gelöscht.",
+			"blocked": "Updates pausiert. PixelDoll ersetzt diese Dateien nicht ohne deine Zustimmung:",
+			"unavailable": "Diese Figur kann gerade nicht exportiert werden.",
+			"locked": "Eine Datei ist in einer anderen App geöffnet, oder der Pfad des Ordners ist zu lang. Schließe die Datei oder wähle einen Ordner mit kürzerem Pfad.",
+			"space": "Der Datenträger ist voll.",
+			"permission": "Dieser Ordner ist nicht erlaubt. Wähle einen anderen.",
+			"failed": "In den Ordner konnte nicht geschrieben werden. Versuche es erneut.",
+			"taken": "Eine andere Figur nutzt diesen Ordner bereits. Wähle einen anderen.",
+			"outdated": "PixelDoll wurde in einem anderen Tab aktualisiert. Lade diesen Tab neu, um diesen Ordner weiter zu aktualisieren.",
+			"inside": "Dieser Ordner liegt in einem Ordner, den PixelDoll verwaltet. Wähle stattdessen den Ordner, der ihn enthält.",
+			"unityNested": "Eine andere Unity-Figur nutzt einen Ordner in oder um diesen Ordner. Verknüpfe alle Unity-Figuren eines Spiels mit demselben Ordner."
+		},
+		"reason": {
+			"edited": "Außerhalb von PixelDoll bearbeitet",
+			"notOurs": "War schon im Ordner",
+			"deleted": "Gelöscht",
+			"folder": "Ein Ordner ist im Weg"
+		},
+		"toast": {
+			"reconnect": "Verbinde {folder} neu, um weiter zu aktualisieren.",
+			"paused": "Updates pausiert: Dateien im Ordner wurden geändert.",
+			"missing": "{folder} wurde nicht gefunden.",
+			"failed": "{folder} konnte nicht aktualisiert werden.",
+			"outdated": "Lade PixelDoll neu, um {folder} weiter zu aktualisieren."
+		},
+		"justUpdated": "Gerade aktualisiert",
+		"matching": {
+			"one": "{count} Datei in diesem Ordner entspricht bereits dem Export von PixelDoll. Weiter aktualisieren?",
+			"other": "{count} Dateien in diesem Ordner entsprechen bereits dem Export von PixelDoll. Weiter aktualisieren?"
+		},
+		"adopt": "Aktualisieren",
+		"leave": "So lassen",
+		"section": "Spielprojekt",
+		"reload": "Neu laden",
+		"shared": "Gemeinsame Laufzeit: {path}",
+		"manualStep": {
+			"rpg": "{format} lädt Figuren aus einem eigenen Ordner (img/characters, bei XP, VX Ace und VX Graphics/Characters). Kopiere die Sheets nach einer Aktualisierung dorthin, wie es die README.txt der Figur beschreibt.",
+			"gdevelop": "Wenn du diese Figur in ein anderes GDevelop-Projekt übernommen hast, übertrage Aktualisierungen so, wie es die gdevelop/README.txt der Figur beschreibt.",
+			"phaserAe": "Füge nach neuen Animationen oder Items die neuen Pfade aus phaser-ae/assets.json zu game/manifest.json hinzu, wie es die phaser-ae/README.txt der Figur beschreibt."
+		}
 	},
 	"spriteViewer": {
 		"missing": "Kein Frame zum Anzeigen",
@@ -3768,11 +3851,11 @@
 		"playOnStage": "Auf der Bühne abspielen",
 		"showOnStage": "Auf der Bühne zeigen",
 		"framesSection": "Frames & Qualität",
-		"itemsSection": "Gegenstände",
+		"itemsSection": "Gegenstände in der Garderobe",
 		"fixFramesDetail": "Jeden Frame von {move} in deinem Grafikprogramm bearbeiten.",
 		"redrawDetail": "{move} in den gewählten Blickrichtungen neu zeichnen, vorher mit Preis.",
 		"captureDetail": "Einen Frame von {move} als neuen Zustand speichern.",
-		"itemsDetail": "Die getragenen Gegenstände zeichnen, die {move} noch fehlen.",
+		"itemsDetail": "Wähle Gegenstände aus der Garderobe, die für {move} noch fehlen.",
 		"itemsComplete": "Jeder Gegenstand ist dafür gezeichnet.",
 		"itemsUnavailable": "Gegenstände lassen sich hier nicht dafür zeichnen.",
 		"frames": "Frames",
@@ -3781,7 +3864,8 @@
 		"exportId": "Export-ID",
 		"gone": "Diese Bewegung ist nicht mehr gespeichert.",
 		"itemDrawn": "Gezeichnet",
-		"itemMissing": "Fehlt"
+		"itemMissing": "Fehlt",
+		"cantDrawOnMoves": "Kann noch nicht in Bewegungen gezeichnet werden"
 	},
 	"tips": {
 		"customizeTitle": "Demo einkleiden",

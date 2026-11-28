@@ -386,7 +386,7 @@
 		"demoRenameLocked": "Faites une copie modifiable pour renommer la démo"
 	},
 	"characterName": {
-		"demo": "(Démo)"
+		"demo": "(démo)"
 	},
 	"colors": {
 		"follows": "Couleur liée : {name}",
@@ -398,6 +398,7 @@
 		"categories": "Catégories de couleurs"
 	},
 	"colorSections": {
+		"notWorn": "Non porté",
 		"randomLowerColors": "Choisir des couleurs au hasard : {lower}",
 		"randomCharacterColors": "Choisir les couleurs du personnage au hasard",
 		"resetLowerColors": "Réinitialiser les couleurs : {lower}",
@@ -430,6 +431,7 @@
 		"secretLabel": "Secret",
 		"copyKey": "Copier",
 		"demoNoAccount": "Aucun compte nécessaire pour la démo.",
+		"resumePurchase": "La connexion lance la génération de {name}.",
 		"sentOnlyToApiPixellabAi": "Envoyée uniquement à api.pixellab.ai.",
 		"forgetKey": "Oublier la clé",
 		"forgetTitle": "Oublier la clé PixelLab ?",
@@ -508,6 +510,7 @@
 		"cancelSaveError": "Impossible d’enregistrer l’annulation. Gardez cet onglet ouvert et réessayez.",
 		"preparing": "Préparation de votre objet",
 		"remake": "Faire une copie pour ce personnage…",
+		"newVersion": "Créer une nouvelle version…",
 		"makeForSlot": "En créer un pour l’emplacement {slot}…",
 		"demoDeleteLocked": "Les objets de la démo ne peuvent pas aller dans la corbeille",
 		"cancelItem": "Annuler la génération",
@@ -518,6 +521,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Mouvements et états",
+		"newVersionDetail": "Redessine {name}, prix affiché d’abord. La nouvelle version le remplace.",
 		"outfitSection": "Tenue",
 		"technicalDetails": "Détails techniques",
 		"openSprite": "Agrandir {title}",
@@ -557,7 +561,6 @@
 		"matchingColors": "Harmonisation des couleurs…",
 		"matchItemColors": "Harmoniser les couleurs de l’objet",
 		"recolor": "Recolorer",
-		"recolorWearFirst": "Portez-le pour changer ses couleurs",
 		"whenWornHide": "Masquer les autres objets quand il est porté",
 		"iD": "ID",
 		"slot": "Emplacement",
@@ -626,8 +629,8 @@
 		"missingView": "Manquant",
 		"hiddenWhenWorn": "Porter {names} masque cet objet.",
 		"clipsIncomplete": {
-			"one": "{n} mouvement incomplet",
-			"other": "{n} mouvements incomplets"
+			"one": "{n} incomplet",
+			"other": "{n} incomplets"
 		},
 		"complete": "Complet",
 		"clipNoFrames": "Pas encore d’images",
@@ -678,7 +681,8 @@
 		"turnRight": "Tourner à droite",
 		"facingLabel": "Orienté {direction}",
 		"matchViewColors": "Harmoniser les couleurs de la vue {direction}",
-		"fixOneView": "Corriger une vue",
+		"artworkFindings": "Constats sur l’ensemble de l’objet",
+		"fixOneView": "Corriger une vue de {move}",
 		"outfitPreviewUnworn": "{name} dans la tenue comme s’il était porté, orienté {direction}",
 		"openOutfit": "Ouvrir {name} dans la tenue en plein écran",
 		"outfitTitle": "{name} dans la tenue",
@@ -713,8 +717,7 @@
 		"createFromScratch": "Créer…",
 		"addCharacter": "Ajouter un personnage",
 		"fromFile": "Depuis un fichier…",
-		"fromPixelLab": "Depuis PixelLab…",
-		"createNeedsKey": "Nécessite une clé PixelLab et utilise des générations payantes"
+		"fromPixelLab": "Depuis PixelLab…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(s’ouvre dans un nouvel onglet)"
@@ -857,8 +860,7 @@
 		},
 		"makingMissingFrames": "Création des images d’équipement manquantes",
 		"makeYourOwn": "Créer le vôtre",
-		"labelMakeMissingEquipmentFrames": "Créer les images d’équipement manquantes",
-		"makeItAgain": "Le recréer…"
+		"labelMakeMissingEquipmentFrames": "Créer les images d’équipement manquantes"
 	},
 	"studio": {
 		"workspaceCopyTabTitle": "Copie de l’espace de travail · PixelDoll",
@@ -1001,7 +1003,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Choisissez les animations dans « Aperçu ». Le déplacement à dos de monture suit la pose du cavalier des réglages de la monture.",
-		"movesOffWalking": "Choisissez les animations dans « Aperçu ». Ici, les réglages des vues en direct choisissent ce qui est joué.",
+		"movesOffWalking": "Choisissez les animations dans Aperçu. Les réglages du mode jeu définissent les animations jouées ici.",
 		"tabWardrobe": "Garde-robe",
 		"tabColors": "Couleurs",
 		"tabOutfits": "Tenues",
@@ -1252,7 +1254,8 @@
 			"unavailable": "Export indisponible",
 			"sourceOnly": "PNG sources uniquement",
 			"noZip": "Aucun ZIP disponible",
-			"readyNotes": "Prêt · voir les notes d’export",
+			"readyNotes": "Prêt ·",
+			"seeNotes": "voir les notes d’export",
 			"free": "Gratuit · inclut une copie modifiable",
 			"downloadArtwork": "Télécharger le ZIP des visuels",
 			"downloadSize": "Télécharger le ZIP · {size} Ko",
@@ -1260,6 +1263,7 @@
 		},
 		"settings": {
 			"loadInvalid": "Impossible de lire les réglages d’export enregistrés.",
+			"resetRequired": "Impossible de lire les réglages d’export enregistrés. Ouvrez « Exporter », puis choisissez « Réinitialiser les réglages d’export ».",
 			"loadFailed": "Impossible de charger les réglages d’export. Essayez de rouvrir la fenêtre d’export.",
 			"saveFailed": "Impossible d’enregistrer les réglages d’export. Réessayez.",
 			"resetHint": "Rétablit uniquement les préférences d’export par défaut. Vos personnages et tenues sont conservés.",
@@ -1271,7 +1275,7 @@
 			"dressed": "Inclure les feuilles de sprites du personnage habillé",
 			"dressedHint": "Ajoute des feuilles de sprites PNG de votre look actuel et de chaque tenue enregistrée, avec le corps et les objets portés combinés. Les calques séparés sont toujours inclus, sauf dans les feuilles RPG Maker, qui sont toujours combinées.",
 			"actionLayers": "Calques d’attaque en mouvement",
-			"actionLayersHint": "Ajoute au ZIP des fragments du corps pour les attaques compatibles en marchant. Utilise les réglages de mouvement et de taille de la vue en direct, même si cette option y est désactivée. Seuls Phaser, GDevelop, Godot et Unity utilisent ces calques.",
+			"actionLayersHint": "Ajoute au ZIP des fragments du corps pour les attaques compatibles en marchant. Utilise les réglages de mouvement et de taille du mode jeu, même si « Marcher en attaquant » y est désactivé. Seuls Phaser, GDevelop, Godot et Unity utilisent ces calques.",
 			"actionLayersOn": "Activé",
 			"actionLayersOff": "Désactivé",
 			"format": "Format d’export",
@@ -2171,7 +2175,7 @@
 		"needsKey": "nécessite votre clé",
 		"recent": "Récent",
 		"tierHint": "Cette opération nécessite un forfait PixelLab Tier {tier} ou supérieur. Vérifiez votre forfait et votre solde avant de réessayer. Une tâche en échec ne suffit pas à établir un problème de forfait.",
-		"session": "Cette session : {cost}. Certaines animations sont facturées en dollars américains plutôt qu’en générations. Le solde affiché ci-dessus fait foi.",
+		"session": "Cette session : {cost}.",
 		"clearFollower": "Effacez-les dans l’onglet PixelDoll qui exécute les tâches",
 		"clear": "Effacer les tâches terminées",
 		"ledger": {
@@ -2638,7 +2642,6 @@
 			"baseClothingHelp": "Les sous-vêtements blancs unis font partie du corps de base et peuvent rester visibles sous des vêtements ouverts. Les modifications du prompt exact peuvent remplacer cette indication. Vérifiez ce que le personnage porte dans le résultat.",
 			"nothingWorn": "Aucun vêtement",
 			"underwear": "Sous-vêtements",
-			"editPrompt": "Modifier le prompt exact",
 			"exactPrompt": "Prompt exact",
 			"sizeGuide": "Guide des tailles",
 			"geometrySection": "Taille et caméra du personnage",
@@ -2745,9 +2748,9 @@
 		"customStartKeep": "Garder par défaut",
 		"customStartContinue": "Continuer",
 		"removeEndFrame": "Retirer l’image de fin",
-		"changeLoopTitle": "Modifier Boucle et réinitialiser les images de fin ?",
+		"changeLoopTitle": "Modifier la boucle et réinitialiser les images de fin ?",
 		"changeLoopWarning": "Cela remplace les images de fin personnalisées de cette animation par les réglages automatiques.",
-		"changeLoopAccept": "Modifier Boucle",
+		"changeLoopAccept": "Modifier la boucle",
 		"makeRoom": "Faire de la place",
 		"frameRoom": "Cette animation peut dépasser le cadre de {frame} px : le personnage a {below} px sous les pieds. Faites d’abord de la place gratuitement, ou générez l’animation quand même.",
 		"skeleton": {
@@ -2997,6 +3000,7 @@
 		"defaultIdea": "un chapeau en cuir",
 		"shortcut": "Ctrl+Entrée ou Cmd+Entrée pour créer l’objet.",
 		"useOffHand": "Utiliser la main secondaire",
+		"replaces": "Remplace {name} une fois conservé. L’ancien, avec ses couleurs et réglages, va dans la Corbeille.",
 		"ideas": "Idées",
 		"colorHint": "Indication de couleur",
 		"anyColor": "Sans préférence",
@@ -3540,7 +3544,7 @@
 		"actionLabel": "Signaler ce problème",
 		"actionLabelFor": "Signaler ce problème : {name}",
 		"title": "Signaler ce problème",
-		"intro": "Ouvre un ticket public sur GitHub contenant uniquement le texte ci-dessous. Aucune image, aucun prompt, nom ou clé n’est inclus. Vous le publiez avec votre compte GitHub.",
+		"intro": "N’inclut jamais vos images, prompts, noms, fichiers ni votre clé PixelLab. Vous le relisez sur GitHub avant de le publier.",
 		"preview": "Aperçu du signalement",
 		"copy": "Copier le signalement",
 		"copied": "Copié",
@@ -3600,6 +3604,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "Un modèle en pose debout est nécessaire au préalable.",
+		"allPending": "La création des objets manquants est déjà en cours. Suivez sa progression dans Activité.",
 		"open": "Générer des objets",
 		"title": "Générer des objets pour {move}",
 		"inProgress": "En cours",
@@ -3677,7 +3683,7 @@
 		"side": "Côté du panneau",
 		"left": "Gauche",
 		"right": "Droite",
-		"autoHide": "Masquer le panneau à l’ouverture des vues interactives",
+		"autoHide": "Masquer le panneau en Vue de dessus et en Défilement horizontal",
 		"autoHideHelp": "Sur les petits écrans tactiles. Tu peux le rouvrir à tout moment depuis la barre d’outils.",
 		"notSaved": "Les réglages du panneau ont changé, mais le navigateur n’a pas pu les enregistrer."
 	},
@@ -3690,8 +3696,8 @@
 		"lowerWaist": "Abaisser la taille",
 		"automaticStill": "Automatique : immobile",
 		"controls": "Commandes",
-		"title": "Vues en direct",
-		"forCharacter": "Animations que {name} joue en Vue de dessus et en Défilement horizontal.",
+		"title": "Mode jeu",
+		"animationHelp": "Animations de votre personnage en Vue de dessus et en Défilement horizontal.",
 		"idle": "Repos",
 		"walk": "Marche",
 		"run": "Course",
@@ -3707,13 +3713,13 @@
 		"automaticNone": "Automatique : aucune",
 		"sameAsAttack": "Comme Attaque",
 		"sideAttackHelp": "En Défilement horizontal, Attaque vers le haut ou vers le bas est jouée quand vous visez dans cette direction.",
-		"notSaved": "Le réglage des vues en direct a changé, mais ce navigateur n’a pas pu l’enregistrer.",
+		"notSaved": "Le réglage du mode jeu a changé, mais ce navigateur n’a pas pu l’enregistrer.",
 		"openCharacter": "Ouvrez un personnage pour choisir ses animations.",
 		"mount": "Monture",
 		"actions": "Actions de jeu",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Espace",
-		"noAttack": "Aucune attaque définie. Ouvrez les réglages des vues en direct.",
+		"noAttack": "Aucune attaque définie. Ouvrez les réglages du mode jeu.",
 		"noAttackDirection": "{move} manque d’images vers {direction}.",
 		"hintTopDown": "Déplacez-vous avec WASD ou un clic maintenu",
 		"hintSide": "Déplacez-vous avec A/D ou un clic maintenu",
@@ -3729,6 +3735,83 @@
 		"colors": "Rechercher des couleurs",
 		"clear": "Effacer la recherche",
 		"results": "{count} sur {total}"
+	},
+	"projectFolder": {
+		"title": "Dossier du projet",
+		"hint": "Gardez les fichiers exportés de ce personnage dans votre projet de jeu.",
+		"choose": "Choisir un dossier…",
+		"change": "Changer de dossier",
+		"stop": "Dissocier",
+		"publishNow": "Mettre à jour maintenant",
+		"auto": "Mettre à jour automatiquement",
+		"reconnect": "Reconnecter le dossier",
+		"replace": "Remplacer les fichiers listés",
+		"keep": "Garder les fichiers existants",
+		"review": "Voir",
+		"copy": "Copier",
+		"copied": "Copié",
+		"copyPath": "Copier le chemin",
+		"pathCopied": "Chemin copié",
+		"brave": "Pour l’utiliser dans Brave, collez cette adresse dans la barre d’adresse, activez le réglage, puis redémarrez Brave :",
+		"kept": {
+			"one": "{count} fichier gardé",
+			"other": "{count} fichiers gardés"
+		},
+		"updateKept": "Revoir les fichiers gardés",
+		"updated": "Mis à jour {time}",
+		"tryAgain": "Réessayer",
+		"state": {
+			"off": "Non lié · Garde automatiquement à jour les fichiers de ce personnage dans le dossier de votre jeu",
+			"on": "Mises à jour automatiques activées",
+			"manual": "Mises à jour automatiques désactivées",
+			"updating": "Mise à jour…",
+			"attention": "À vérifier"
+		},
+		"status": {
+			"publishing": "Mise à jour…",
+			"done": "À jour",
+			"already": "Déjà à jour",
+			"reconnect": "PixelDoll a de nouveau besoin d’accéder à ce dossier. Choisissez « Autoriser à chaque visite » pour que cela dure.",
+			"missing": "Dossier introuvable. Il a peut-être été déplacé ou supprimé.",
+			"blocked": "Mises à jour en pause. PixelDoll ne remplacera pas ces fichiers sans votre accord :",
+			"unavailable": "Ce personnage ne peut pas être exporté pour le moment.",
+			"locked": "Un fichier est ouvert dans une autre app, ou le chemin du dossier est trop long. Fermez le fichier ou choisissez un dossier au chemin plus court.",
+			"space": "Le disque est plein.",
+			"permission": "Ce dossier n’est pas autorisé. Choisissez-en un autre.",
+			"failed": "Impossible d’écrire dans le dossier. Réessayez.",
+			"taken": "Un autre personnage utilise déjà ce dossier. Choisissez-en un autre.",
+			"outdated": "PixelDoll a été mis à jour dans un autre onglet. Rechargez cet onglet pour continuer à mettre à jour ce dossier.",
+			"inside": "Ce dossier se trouve dans un dossier géré par PixelDoll. Choisissez plutôt le dossier qui le contient.",
+			"unityNested": "Un autre personnage Unity utilise un dossier dans ou autour de celui-ci. Liez tous les personnages Unity d’un jeu au même dossier."
+		},
+		"reason": {
+			"edited": "Modifié en dehors de PixelDoll",
+			"notOurs": "Déjà dans le dossier",
+			"deleted": "Supprimé",
+			"folder": "Un dossier est à sa place"
+		},
+		"toast": {
+			"reconnect": "Reconnectez {folder} pour continuer les mises à jour.",
+			"paused": "Mises à jour en pause : des fichiers du dossier ont changé.",
+			"missing": "{folder} est introuvable.",
+			"failed": "Impossible de mettre à jour {folder}.",
+			"outdated": "Rechargez PixelDoll pour continuer à mettre à jour {folder}."
+		},
+		"justUpdated": "Mis à jour à l’instant",
+		"matching": {
+			"one": "{count} fichier de ce dossier correspond déjà à l’export de PixelDoll. Le garder à jour ?",
+			"other": "{count} fichiers de ce dossier correspondent déjà à l’export de PixelDoll. Les garder à jour ?"
+		},
+		"adopt": "Garder à jour",
+		"leave": "Laisser tel quel",
+		"section": "Projet de jeu",
+		"reload": "Recharger",
+		"shared": "Runtime partagé : {path}",
+		"manualStep": {
+			"rpg": "{format} charge les personnages depuis son propre dossier (img/characters, ou Graphics/Characters pour XP, VX Ace et VX). Après une mise à jour, copiez-y les planches comme l’indique le README.txt du personnage.",
+			"gdevelop": "Si vous avez fusionné ce personnage dans un autre projet GDevelop, reportez-y les mises à jour comme l’indique le gdevelop/README.txt du personnage.",
+			"phaserAe": "Après avoir ajouté des mouvements ou des objets, ajoutez les nouveaux chemins de phaser-ae/assets.json à game/manifest.json, comme l’indique le phaser-ae/README.txt du personnage."
+		}
 	},
 	"spriteViewer": {
 		"missing": "Aucune image à afficher",
@@ -3768,11 +3851,11 @@
 		"playOnStage": "Jouer sur la scène",
 		"showOnStage": "Afficher sur la scène",
 		"framesSection": "Images et qualité",
-		"itemsSection": "Objets",
+		"itemsSection": "Objets de la garde-robe",
 		"fixFramesDetail": "Modifier chaque image de {move} dans votre logiciel de dessin.",
 		"redrawDetail": "Redessiner {move} dans les orientations choisies, prix indiqué avant.",
 		"captureDetail": "Enregistrer une image de {move} comme nouvel état.",
-		"itemsDetail": "Dessiner les objets portés qui manquent encore à {move}.",
+		"itemsDetail": "Choisissez les objets de la garde-robe qui manquent encore à {move}.",
 		"itemsComplete": "Chaque objet est dessiné pour lui.",
 		"itemsUnavailable": "Les objets ne peuvent pas être dessinés ici.",
 		"frames": "Images",
@@ -3781,7 +3864,8 @@
 		"exportId": "ID d’export",
 		"gone": "Ce mouvement n’est plus enregistré.",
 		"itemDrawn": "Dessiné",
-		"itemMissing": "Manquant"
+		"itemMissing": "Manquant",
+		"cantDrawOnMoves": "Ne peut pas encore être dessiné sur les mouvements"
 	},
 	"tips": {
 		"customizeTitle": "Habillez la démo",

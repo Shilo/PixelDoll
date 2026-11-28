@@ -11,6 +11,7 @@
 	import TierNotice from './TierNotice.svelte';
 	import PoseIssues from './PoseIssues.svelte';
 	import { app } from '../lib/app.svelte.ts';
+	import { message } from '../lib/message.ts';
 	import { tierDecision } from '../lib/pixellab/plans.ts';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { itemPlan } from './apiPlans.ts';
@@ -105,6 +106,9 @@ ${name}` !== typedAtStart || reference !== openedReference
 	// Make copy for self opens with the item's first frame attached, read like a picked file so it is sized for this
 	// item's canvas.
 	const referenceFrom = untrack(() => (draft ? undefined : ui.newItem.referenceFrom));
+	/** Redraw: the item this one replaces once kept, while it stays in the same category. */
+	const supersedes = untrack(() => (draft ? undefined : ui.newItem.supersedes));
+	const supersedeSlot = untrack(() => ui.newItem.slot);
 	if (referenceFrom) {
 		referenceLoading = true;
 		void (async () => {
@@ -132,10 +136,12 @@ ${name}` !== typedAtStart || reference !== openedReference
 	const fullPrompt = $derived(`${prompt.trim()}${color ? `, ${color} colored` : ''}`);
 	const suggestedName = $derived(name.trim() || itemNameFrom(prompt));
 	const itemName = $derived(suggestedName || 'New item');
+	const replacing = $derived(supersedes && slot === supersedeSlot ? supersedes : undefined);
 	const input = $derived({
 		name: itemName,
 		slot,
 		prompt: fullPrompt,
+		...(replacing ? { supersedes: replacing.id } : {}),
 		...(reference
 			? {
 					reference: { base64: reference.base64, width: reference.width, height: reference.height }
@@ -275,7 +281,7 @@ ${name}` !== typedAtStart || reference !== openedReference
 		}
 	}
 	function go() {
-		if (!canMake) return;
+		if (!canMake || !plan || !m) return;
 		busy = true;
 		formDrafts.item = {
 			projectId: doc.id,
@@ -289,10 +295,11 @@ ${name}` !== typedAtStart || reference !== openedReference
 			...(planned.method ? { method: planned.method } : {})
 		};
 		const i = $state.snapshot(plannedInput);
-		const consent = plan
-			? { projectId: doc.id, gens: plan.gens, rig: JSON.stringify(m!.rig) }
-			: undefined;
-		withKey(() => void make(i, consent), plan?.minimumTier ?? 0);
+		const consent = { projectId: doc.id, gens: plan.gens, rig: JSON.stringify(m.rig) };
+		withKey(() => void make(i, consent), plan.minimumTier, {
+			name: i.name,
+			estimate: message('generationDetails.gens', { value: formatNumber(plan.gens) })
+		});
 	}
 	function promptKeydown(event: KeyboardEvent) {
 		if (
@@ -320,6 +327,7 @@ ${name}` !== typedAtStart || reference !== openedReference
 			data-variant="primary"
 			disabled={!canMake}
 			aria-describedby={tierBlocked ? 'new-item-tier' : undefined}
+			data-trail="newItem.make"
 			onclick={go}
 			>{t('newItem.make')}
 			<span class="cost">{t('moves.estimate', { gens: plan ? formatNumber(plan.gens) : '–' })}</span
@@ -362,7 +370,7 @@ ${name}` !== typedAtStart || reference !== openedReference
 
 	{#if importing}<ImportItemsPane {importer} onmake={makeFrom} />{/if}
 	{#if isDemo()}
-		<div class="notice small">
+		<div class="bu-notice" data-size="compact" data-tone="neutral">
 			<Sparkles size={16} />
 			<span>{t('newItem.demo')}</span>
 		</div>
@@ -370,12 +378,14 @@ ${name}` !== typedAtStart || reference !== openedReference
 			<button
 				class="bu-action btn primary"
 				data-variant="primary"
+				data-trail="newItem.createCharacter"
 				onclick={() => (ui.sheet = 'create')}
 				>{openerLabel(t('welcome.createYourCharacter'))}<SurfaceChevron /></button
 			>
 			<button
 				class="bu-action btn copy-demo"
 				data-variant="outline"
+				data-trail="newItem.copyDemo"
 				onclick={useCopy}
 				disabled={busy}
 			>
@@ -390,23 +400,27 @@ ${name}` !== typedAtStart || reference !== openedReference
 			feature={t('newItem.feature')}
 		/>
 		<PoseIssues issues={plan?.poseIssues ?? []} />
-		{#if rec && !rigReady(rec)}<p class="notice small">
+		{#if replacing}<p class="small bu-muted">
+				{t('newItem.replaces', { name: replacing.name })}
+			</p>{/if}
+		{#if rec && !rigReady(rec)}<p class="bu-notice" data-size="compact" data-tone="neutral">
 				<TriangleAlert size={16} /><span>{t('newItem.needsSetup')}</span><button
 					class="bu-action btn small"
 					data-variant="outline"
+					data-trail="newItem.setup"
 					onclick={() => (ui.sheet = 'setup')}
 					>{openerLabel(t('setup.title'))}<SurfaceChevron /></button
 				>
 			</p>{/if}
 		{#if planned.fallback}
-			<p class="notice warn small" role="status">
+			<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
 				{t('creationSettings.fallback', {
 					setting: t('newItem.method'),
 					value: planned.method ? t(METHODS[planned.method].label) : t('creationSettings.automatic')
 				})}
 			</p>
 		{/if}
-		{#if planned.error}<p class="notice warn small" role="alert">
+		{#if planned.error}<p class="bu-notice" data-size="compact" data-tone="warning" role="alert">
 				<TriangleAlert size={16} /><span>{planned.error}</span>
 			</p>{/if}
 		<div class="form">
@@ -472,10 +486,11 @@ ${name}` !== typedAtStart || reference !== openedReference
 				hint={t('newItem.referenceHint')}
 				disabled={busy}
 			/>
-			{#if offHandHint}<p class="notice small">
+			{#if offHandHint}<p class="bu-notice" data-size="compact" data-tone="neutral">
 					<Info size={16} /><span>{t('newItem.offHandHint')}</span><button
 						class="bu-action btn sm"
 						data-variant="outline"
+						data-trail="newItem.useOffHand"
 						onclick={() => (group = 'off_hand')}>{t('newItem.useOffHand')}</button
 					>
 				</p>{/if}
@@ -489,6 +504,7 @@ ${name}` !== typedAtStart || reference !== openedReference
 						role="radio"
 						aria-checked={!color}
 						tabindex={!color ? 0 : -1}
+						data-trail="newItem.anyColor"
 						onclick={() => (color = '')}>{t('newItem.anyColor')}</button
 					>
 					{#each Object.entries(SWATCHES) as [n, hex] (n)}
@@ -500,6 +516,7 @@ ${name}` !== typedAtStart || reference !== openedReference
 							aria-label={displaySwatch(n)}
 							title={displaySwatch(n)}
 							style:background={hex}
+							data-trail="newItem.color"
 							onclick={() => (color = n)}
 						></button>
 					{/each}

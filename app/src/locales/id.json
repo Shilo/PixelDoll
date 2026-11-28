@@ -379,7 +379,7 @@
 		"demoRenameLocked": "Buat salinan yang bisa diedit untuk mengganti nama demo"
 	},
 	"characterName": {
-		"demo": "(Demo)"
+		"demo": "(demo)"
 	},
 	"colors": {
 		"follows": "Mengikuti {name}",
@@ -391,6 +391,7 @@
 		"categories": "Kategori warna"
 	},
 	"colorSections": {
+		"notWorn": "Tidak dipakai",
 		"randomLowerColors": "Acak warna {lower}",
 		"randomCharacterColors": "Acak warna karakter",
 		"resetLowerColors": "Atur ulang warna {lower}",
@@ -423,6 +424,7 @@
 		"secretLabel": "Secret",
 		"copyKey": "Salin",
 		"demoNoAccount": "Demo tidak memerlukan akun.",
+		"resumePurchase": "Menyambungkan akun akan mulai membuat {name}.",
 		"sentOnlyToApiPixellabAi": "Hanya dikirim ke api.pixellab.ai.",
 		"forgetKey": "Lupakan kunci",
 		"forgetTitle": "Lupakan kunci PixelLab?",
@@ -498,6 +500,7 @@
 		"cancelSaveError": "Pembatalan tidak dapat disimpan. Biarkan tab ini terbuka dan coba lagi.",
 		"preparing": "Menyiapkan item Anda",
 		"remake": "Buat salinan untuk karakter ini…",
+		"newVersion": "Buat versi baru…",
 		"makeForSlot": "Buat untuk slot {slot}…",
 		"demoDeleteLocked": "Item demo tidak bisa dipindahkan ke tempat sampah",
 		"cancelItem": "Batalkan item",
@@ -508,6 +511,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Gerakan dan keadaan",
+		"newVersionDetail": "Menggambar ulang {name}, harga ditampilkan dulu. Yang baru menggantikannya.",
 		"outfitSection": "Setelan",
 		"technicalDetails": "Detail teknis",
 		"openSprite": "Perbesar {title}",
@@ -545,7 +549,6 @@
 		"matchingColors": "Mencocokkan warna…",
 		"matchItemColors": "Cocokkan warna item",
 		"recolor": "Warnai ulang",
-		"recolorWearFirst": "Pakai dulu untuk mengubah warnanya",
 		"whenWornHide": "Sembunyikan item lain saat dipakai",
 		"iD": "ID",
 		"slot": "Slot perlengkapan",
@@ -611,7 +614,7 @@
 		"missingView": "Hilang",
 		"hiddenWhenWorn": "Memakai {names} menyembunyikan item ini.",
 		"clipsIncomplete": {
-			"other": "{n} gerakan belum lengkap"
+			"other": "{n} belum lengkap"
 		},
 		"complete": "Lengkap",
 		"clipNoFrames": "Belum ada frame",
@@ -656,7 +659,8 @@
 		"turnRight": "Putar ke kanan",
 		"facingLabel": "Menghadap {direction}",
 		"matchViewColors": "Cocokkan warna tampilan {direction}",
-		"fixOneView": "Perbaiki satu tampilan",
+		"artworkFindings": "Temuan untuk seluruh item",
+		"fixOneView": "Perbaiki satu tampilan dalam {move}",
 		"outfitPreviewUnworn": "{name} di pakaian seolah dipakai, menghadap {direction}",
 		"openOutfit": "Buka {name} di pakaian dalam ukuran penuh",
 		"outfitTitle": "{name} di pakaian",
@@ -690,8 +694,7 @@
 		"createFromScratch": "Buat…",
 		"addCharacter": "Tambahkan karakter",
 		"fromFile": "Dari file…",
-		"fromPixelLab": "Dari PixelLab…",
-		"createNeedsKey": "Perlu kunci PixelLab dan memakai generasi berbayar"
+		"fromPixelLab": "Dari PixelLab…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(terbuka di tab baru)"
@@ -833,8 +836,7 @@
 		},
 		"makingMissingFrames": "Membuat frame perlengkapan yang belum ada",
 		"makeYourOwn": "Buat sendiri",
-		"labelMakeMissingEquipmentFrames": "Buat frame perlengkapan yang belum ada",
-		"makeItAgain": "Buat ulang…"
+		"labelMakeMissingEquipmentFrames": "Buat frame perlengkapan yang belum ada"
 	},
 	"studio": {
 		"workspaceCopyTabTitle": "Salinan ruang kerja · PixelDoll",
@@ -974,7 +976,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Pilih animasi di Pratinjau. Saat menunggang, gerakan mengikuti Pose penunggang di pengaturan tunggangan.",
-		"movesOffWalking": "Pilih animasi di Pratinjau. Di sini, pengaturan Tampilan langsung menentukan apa yang diputar.",
+		"movesOffWalking": "Pilih animasi di Pratinjau. Pengaturan Mode bermain menentukan animasi yang diputar di sini.",
 		"tabWardrobe": "Lemari",
 		"tabColors": "Warna",
 		"tabOutfits": "Setelan",
@@ -1216,7 +1218,8 @@
 			"unavailable": "Ekspor tidak tersedia",
 			"sourceOnly": "Hanya PNG sumber",
 			"noZip": "ZIP tidak tersedia",
-			"readyNotes": "Siap · Lihat catatan ekspor",
+			"readyNotes": "Siap ·",
+			"seeNotes": "Lihat catatan ekspor",
 			"free": "Gratis · Menyertakan salinan yang bisa diedit",
 			"downloadArtwork": "Unduh ZIP gambar",
 			"downloadSize": "Unduh ZIP · {size} KB",
@@ -1224,6 +1227,7 @@
 		},
 		"settings": {
 			"loadInvalid": "Pengaturan ekspor tersimpan tidak dapat dibaca.",
+			"resetRequired": "Pengaturan ekspor tersimpan tidak dapat dibaca. Buka Ekspor, lalu pilih “Atur ulang pengaturan ekspor”.",
 			"loadFailed": "Pengaturan ekspor tidak dapat dimuat. Coba buka kembali Ekspor.",
 			"saveFailed": "Pengaturan ekspor tidak dapat disimpan. Coba lagi.",
 			"resetHint": "Hanya pengaturan Ekspor yang dikembalikan ke bawaan. Karakter dan setelan Anda tetap tersimpan.",
@@ -1235,7 +1239,7 @@
 			"dressed": "Sertakan sprite sheet karakter berperlengkapan",
 			"dressedHint": "Menambahkan sprite sheet PNG untuk penampilan saat ini dan setiap setelan tersimpan, dengan tubuh dan item yang dikenakan digabungkan. Lapisan terpisah selalu disertakan, kecuali pada sprite sheet RPG Maker yang selalu digabungkan.",
 			"actionLayers": "Lapisan serangan sambil berjalan",
-			"actionLayersHint": "Menambahkan bagian tubuh untuk serangan sambil berjalan yang kompatibel ke ZIP. Memakai pengaturan gerakan dan pinggang tampilan langsung, meski fitur ini dimatikan di sana. Hanya Phaser, GDevelop, Godot, dan Unity yang memakai lapisan ini.",
+			"actionLayersHint": "Menambahkan bagian tubuh untuk serangan sambil berjalan yang kompatibel ke ZIP. Memakai pengaturan gerakan dan pinggang dari mode bermain, meski \"Berjalan saat menyerang\" dimatikan di sana. Hanya Phaser, GDevelop, Godot, dan Unity yang memakai lapisan ini.",
 			"actionLayersOn": "Aktif",
 			"actionLayersOff": "Nonaktif",
 			"format": "Format ekspor",
@@ -2105,7 +2109,7 @@
 		"needsKey": "memerlukan kunci Anda",
 		"recent": "Terbaru",
 		"tierHint": "Alur kerja memerlukan PixelLab Tier {tier} atau lebih tinggi. Periksa paket dan saldo sebelum mencoba lagi. Satu pekerjaan yang gagal belum tentu berarti paket Anda bermasalah.",
-		"session": "Sesi ini: {cost}. Biaya sebagian animasi ditagih dalam dolar, bukan generasi. Saldo di atas mencerminkan total sebenarnya.",
+		"session": "Sesi ini: {cost}.",
 		"clearFollower": "Bersihkan di tab PixelDoll yang menjalankan pekerjaan",
 		"clear": "Bersihkan yang selesai",
 		"ledger": {
@@ -2565,7 +2569,6 @@
 			"baseClothingHelp": "Pakaian dalam putih polos adalah bagian dari tubuh dasar dan mungkin terlihat melalui pakaian yang terbuka. Mengedit prompt final dapat mengesampingkan petunjuk ini. Periksa bagian tubuh yang tertutup pada hasilnya.",
 			"nothingWorn": "Tanpa pakaian",
 			"underwear": "Pakaian dalam",
-			"editPrompt": "Edit prompt final",
 			"exactPrompt": "Prompt final",
 			"sizeGuide": "Panduan ukuran",
 			"geometrySection": "Ukuran karakter dan kamera",
@@ -2671,9 +2674,9 @@
 		"customStartKeep": "Pertahankan bawaan",
 		"customStartContinue": "Lanjutkan",
 		"removeEndFrame": "Hapus frame akhir",
-		"changeLoopTitle": "Ubah Ulangi dan atur ulang frame akhir?",
+		"changeLoopTitle": "Ubah pengulangan dan atur ulang frame akhir?",
 		"changeLoopWarning": "Ini mengganti frame akhir khusus animasi ini dengan pengaturan otomatis.",
-		"changeLoopAccept": "Ubah Ulangi",
+		"changeLoopAccept": "Ubah pengulangan",
 		"makeRoom": "Beri ruang",
 		"frameRoom": "Animasi ini bisa melewati frame {frame} px: karakter hanya punya {below} px di bawah kakinya. Beri ruang secara gratis dulu, atau tetap buat animasinya.",
 		"skeleton": {
@@ -2914,7 +2917,8 @@
 		"placeholder": "misalnya {idea}",
 		"defaultIdea": "topi kulit",
 		"shortcut": "Tekan Ctrl+Enter atau Cmd+Enter untuk membuat item.",
-		"useOffHand": "Gunakan Tangan sekunder",
+		"useOffHand": "Gunakan tangan sekunder",
+		"replaces": "Menggantikan {name} setelah disimpan. Yang lama, beserta warna dan pengaturannya, dipindahkan ke Tempat sampah.",
 		"ideas": "Ide",
 		"colorHint": "Petunjuk warna",
 		"anyColor": "Bebas",
@@ -3439,7 +3443,7 @@
 		"actionLabel": "Laporkan masalah ini",
 		"actionLabelFor": "Laporkan masalah ini: {name}",
 		"title": "Laporkan masalah ini",
-		"intro": "Ini membuka issue publik di GitHub yang hanya berisi teks di bawah. Tidak ada gambar, prompt, nama, atau kunci yang disertakan. Anda mengirimkannya dengan akun GitHub Anda.",
+		"intro": "Tidak pernah menyertakan gambar, prompt, nama, file, atau kunci PixelLab Anda. Anda meninjaunya di GitHub sebelum mengirim.",
 		"preview": "Pratinjau laporan",
 		"copy": "Salin laporan",
 		"copied": "Disalin",
@@ -3499,6 +3503,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "Desain dalam pose berdiri diperlukan terlebih dahulu.",
+		"allPending": "Item yang belum ada sedang diproses. Lihat perkembangannya di Aktivitas.",
 		"open": "Buat item",
 		"title": "Buat item untuk {move}",
 		"inProgress": "Sedang diproses",
@@ -3574,7 +3580,7 @@
 		"side": "Sisi panel",
 		"left": "Kiri",
 		"right": "Kanan",
-		"autoHide": "Sembunyikan panel saat membuka tampilan langsung",
+		"autoHide": "Sembunyikan panel di Tampak atas dan Gulir samping",
 		"autoHideHelp": "Untuk layar sentuh kecil. Buka lagi kapan saja dari bilah alat.",
 		"notSaved": "Pengaturan panel berubah, tetapi browser tidak bisa menyimpannya."
 	},
@@ -3587,8 +3593,8 @@
 		"lowerWaist": "Turunkan pinggang",
 		"automaticStill": "Otomatis: diam di tempat",
 		"controls": "Kontrol",
-		"title": "Tampilan langsung",
-		"forCharacter": "Animasi yang diputar {name} di Tampak atas dan Gulir samping.",
+		"title": "Mode bermain",
+		"animationHelp": "Animasi karaktermu di Tampak atas dan Gulir samping.",
 		"idle": "Diam",
 		"walk": "Berjalan",
 		"run": "Berlari",
@@ -3604,13 +3610,13 @@
 		"automaticNone": "Otomatis: tidak ada",
 		"sameAsAttack": "Sama seperti Serangan",
 		"sideAttackHelp": "Di Gulir samping, Serangan ke atas atau ke bawah diputar saat Anda membidik ke atas atau ke bawah.",
-		"notSaved": "Pengaturan tampilan langsung berubah, tetapi browser ini tidak dapat menyimpannya.",
+		"notSaved": "Pengaturan mode bermain berubah, tetapi browser ini tidak dapat menyimpannya.",
 		"openCharacter": "Buka karakter untuk memilih animasi yang diputarnya.",
 		"mount": "Tunggangan",
 		"actions": "Aksi permainan",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Spasi",
-		"noAttack": "Serangan belum diatur. Buka pengaturan tampilan langsung.",
+		"noAttack": "Serangan belum diatur. Buka pengaturan mode bermain.",
 		"noAttackDirection": "Tidak ada bingkai {direction} untuk {move}.",
 		"hintTopDown": "WASD atau tahan klik untuk bergerak",
 		"hintSide": "A/D atau tahan klik untuk bergerak",
@@ -3626,6 +3632,81 @@
 		"colors": "Cari warna",
 		"clear": "Hapus pencarian",
 		"results": "{count} dari {total}"
+	},
+	"projectFolder": {
+		"title": "Folder proyek",
+		"hint": "Simpan file ekspor karakter ini di proyek game Anda.",
+		"choose": "Pilih folder…",
+		"change": "Ganti folder",
+		"stop": "Putuskan",
+		"publishNow": "Perbarui sekarang",
+		"auto": "Perbarui otomatis",
+		"reconnect": "Hubungkan ulang folder",
+		"replace": "Timpa file yang tercantum",
+		"keep": "Pertahankan file yang ada",
+		"review": "Tinjau",
+		"copy": "Salin",
+		"copied": "Disalin",
+		"copyPath": "Salin jalur",
+		"pathCopied": "Jalur disalin",
+		"brave": "Untuk memakai ini di Brave, tempel alamat ini di bilah alamat, aktifkan pengaturannya, lalu mulai ulang Brave:",
+		"kept": {
+			"other": "{count} file dipertahankan"
+		},
+		"updateKept": "Tinjau file yang dipertahankan",
+		"updated": "Diperbarui {time}",
+		"tryAgain": "Coba lagi",
+		"state": {
+			"off": "Belum ditautkan · Menjaga file karakter ini di folder game Anda tetap terbaru secara otomatis",
+			"on": "Pembaruan otomatis aktif",
+			"manual": "Pembaruan otomatis mati",
+			"updating": "Memperbarui…",
+			"attention": "Perlu perhatian"
+		},
+		"status": {
+			"publishing": "Memperbarui…",
+			"done": "Terbaru",
+			"already": "Sudah terbaru",
+			"reconnect": "PixelDoll perlu akses ke folder ini lagi. Pilih “Izinkan di setiap kunjungan” agar tetap berlaku.",
+			"missing": "Folder tidak ditemukan. Mungkin telah dipindahkan atau dihapus.",
+			"blocked": "Pembaruan dijeda. PixelDoll tidak akan mengganti file ini tanpa persetujuanmu:",
+			"unavailable": "Karakter ini tidak dapat diekspor sekarang.",
+			"locked": "Sebuah file terbuka di aplikasi lain, atau jalur folder terlalu panjang. Tutup file, atau pilih folder dengan jalur yang lebih pendek.",
+			"space": "Disk penuh.",
+			"permission": "Folder itu tidak diizinkan. Pilih folder lain.",
+			"failed": "Tidak dapat menulis ke folder. Coba lagi.",
+			"taken": "Karakter lain sudah memakai folder ini. Pilih folder lain.",
+			"outdated": "PixelDoll diperbarui di tab lain. Muat ulang tab ini agar folder ini tetap diperbarui.",
+			"inside": "Folder ini ada di dalam folder yang dikelola PixelDoll. Pilih folder yang memuatnya.",
+			"unityNested": "Karakter Unity lain memakai folder di dalam atau di sekitar folder ini. Tautkan semua karakter Unity dalam satu game ke folder yang sama."
+		},
+		"reason": {
+			"edited": "Diedit di luar PixelDoll",
+			"notOurs": "Sudah ada di folder",
+			"deleted": "Dihapus",
+			"folder": "Ada folder di tempatnya"
+		},
+		"toast": {
+			"reconnect": "Hubungkan ulang {folder} untuk terus memperbarui.",
+			"paused": "Pembaruan dijeda: file di folder berubah.",
+			"missing": "{folder} tidak ditemukan.",
+			"failed": "Tidak dapat memperbarui {folder}.",
+			"outdated": "Muat ulang PixelDoll agar {folder} tetap diperbarui."
+		},
+		"justUpdated": "Baru saja diperbarui",
+		"matching": {
+			"other": "{count} file di folder ini sudah sama dengan ekspor PixelDoll. Tetap perbarui?"
+		},
+		"adopt": "Tetap perbarui",
+		"leave": "Biarkan",
+		"section": "Proyek game",
+		"reload": "Muat ulang",
+		"shared": "Runtime bersama: {path}",
+		"manualStep": {
+			"rpg": "{format} memuat karakter dari foldernya sendiri (img/characters, atau Graphics/Characters untuk XP, VX Ace, dan VX). Setelah pembaruan, salin sheet ke sana seperti yang dijelaskan README.txt karakter.",
+			"gdevelop": "Jika Anda menggabungkan karakter ini ke proyek GDevelop lain, bawa pembaruan ke sana seperti yang dijelaskan gdevelop/README.txt karakter.",
+			"phaserAe": "Setelah menambah gerakan atau item, tambahkan path baru dari phaser-ae/assets.json ke game/manifest.json, seperti yang dijelaskan phaser-ae/README.txt karakter."
+		}
 	},
 	"spriteViewer": {
 		"missing": "Tidak ada frame untuk ditampilkan",
@@ -3651,7 +3732,7 @@
 	"characterWindow": {
 		"actions": "Aksi karakter",
 		"open": "Buka karakter",
-		"frameSection": "Bingkai & Arah",
+		"frameSection": "Bingkai & arah",
 		"costSection": "Biaya",
 		"adjustFrameDetail": "Ubah ukuran bingkai atau posisi karakter di dalamnya.",
 		"directionsDetail": "Pilih arah mana yang digambar dan mana yang mencerminkan arah lain.",
@@ -3664,12 +3745,12 @@
 		"actions": "Aksi gerakan atau status",
 		"playOnStage": "Putar di panggung",
 		"showOnStage": "Tampilkan di panggung",
-		"framesSection": "Frame & Kualitas",
-		"itemsSection": "Item",
+		"framesSection": "Frame & kualitas",
+		"itemsSection": "Item di lemari",
 		"fixFramesDetail": "Edit setiap frame {move} di aplikasi gambarmu.",
 		"redrawDetail": "Gambar ulang {move} di arah yang kamu pilih, dengan harga lebih dulu.",
 		"captureDetail": "Simpan satu frame {move} sebagai status baru.",
-		"itemsDetail": "Gambar item yang dipakai dan masih hilang dari {move}.",
+		"itemsDetail": "Pilih item di lemari yang masih belum digambar untuk {move}.",
 		"itemsComplete": "Semua item sudah digambar.",
 		"itemsUnavailable": "Item tidak bisa digambar di sini.",
 		"frames": "Frame",
@@ -3678,7 +3759,8 @@
 		"exportId": "ID ekspor",
 		"gone": "Gerakan ini tidak lagi tersimpan.",
 		"itemDrawn": "Digambar",
-		"itemMissing": "Hilang"
+		"itemMissing": "Hilang",
+		"cantDrawOnMoves": "Belum bisa digambar pada gerakan"
 	},
 	"tips": {
 		"customizeTitle": "Dandani demo",

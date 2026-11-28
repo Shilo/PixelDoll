@@ -66,6 +66,8 @@
 	const hasArchives = $derived(archives.localCount > 0 || archives.retainedIds.length > 0);
 	let filename = $state('');
 	let error = $state<Message | string>();
+	/** The failure behind `error` when it was unexpected, for Report; guidance such as a too-large file has none. */
+	let reportCause = $state.raw<unknown>();
 	let status = $state<Message>();
 	const preview: RestorePreview | undefined = $derived(
 		plan && {
@@ -96,7 +98,10 @@
 	onMount(() => {
 		void listArchiveDownloads().then(
 			(downloads) => (archives = downloads),
-			(cause) => (error = errorMessage(cause))
+			(failure) => {
+				error = errorMessage(failure);
+				reportCause = failure;
+			}
 		);
 	});
 
@@ -104,11 +109,13 @@
 		if (busy) return;
 		busy = true;
 		error = undefined;
+		reportCause = undefined;
 		status = undefined;
 		try {
 			await action();
-		} catch (cause) {
-			error = errorMessage(cause);
+		} catch (failure) {
+			error = errorMessage(failure);
+			reportCause = failure;
 		} finally {
 			busy = false;
 		}
@@ -117,7 +124,10 @@
 	// Developer mode only: backups then carry a debug/ folder (lib/debug/bundle.ts) for whoever helps with a problem.
 	const debugging = $derived(developerModeEnabled() && !workspaceCopy);
 	function changeDebugDetails(on: boolean) {
-		if (!setDebugDetails(on)) error = message('librarySettings.debugNotSaved');
+		if (!setDebugDetails(on)) {
+			error = message('librarySettings.debugNotSaved');
+			reportCause = undefined;
+		}
 	}
 
 	function backup() {
@@ -191,10 +201,12 @@
 			const [file] = files;
 			if (files.length !== 1 || !file) {
 				error = message('openWorkspace.chooseOne');
+				reportCause = undefined;
 				return;
 			}
 			if (file.size > MAX_ZIP_BYTES) {
 				error = message('librarySettings.tooLarge');
+				reportCause = undefined;
 				return;
 			}
 			filename = file.name;
@@ -226,6 +238,7 @@
 					if (!(cause instanceof RestoreChangedError)) throw cause;
 					plan = cause.plan;
 					error = message('librarySettings.changed');
+					reportCause = undefined;
 				}
 			});
 		} else if (!save && !busy) {
@@ -278,16 +291,16 @@
 			{#if preview.edited}<p class="bu-muted settings-description">
 					{t('librarySettings.edited')}
 				</p>{/if}
-			{#if preview.warning}<p class="notice warn small">
+			{#if preview.warning}<p class="bu-notice" data-size="compact" data-tone="warning">
 					<TriangleAlert size={14} aria-hidden="true" />{displayMessage(preview.warning)}
 				</p>{/if}
-			{#if preview.blocked}<p class="notice bad small" role="alert">
+			{#if preview.blocked}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 					<TriangleAlert size={14} aria-hidden="true" />
 					{t('librarySettings.incomplete', { count: preview.blocked })}<ReportButton
 						message={message('librarySettings.incomplete', { count: preview.blocked })}
 					/>
 				</p>{/if}
-			{#if preview.trimmed}<p class="notice warn small">
+			{#if preview.trimmed}<p class="bu-notice" data-size="compact" data-tone="warning">
 					<TriangleAlert size={14} aria-hidden="true" />{t('librarySettings.trimmedHistory', {
 						count: preview.trimmed
 					})}
@@ -458,14 +471,20 @@
 			<p class="bu-muted">{t('librarySettings.deleteWork.kept')}</p>
 			<!-- While it runs, the dialog stays open and Delete waits, so the deletion never races its own backup. -->
 			<LibraryBackupButton disabled={busy} bind:pending={backingUp} onbackup={backupBeforeDelete} />
-			{#if deleteNote}<p class="notice warn small" role="status">
+			{#if deleteNote}<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
 					<TriangleAlert size={14} aria-hidden="true" />{displayMessage(deleteNote)}
 				</p>{/if}
 		</ConfirmDialog>
 	{/if}
 	{#if busy}<p class="bu-muted settings-description" role="status">{t('common.preparing')}</p>{/if}
-	{#if error}<p class="notice bad small" role="alert">
-			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(error)}
+	{#if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
+			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(
+				error
+			)}{#if reportCause !== undefined}<ReportButton
+					area="Settings"
+					error={reportCause}
+					message={typeof error === 'object' ? error : undefined}
+				/>{/if}
 		</p>{/if}
 	{#if status}<p class="settings-description" role="status">{displayMessage(status)}</p>{/if}
 </div>
@@ -484,7 +503,7 @@
 		display: grid;
 		gap: 6px;
 	}
-	.library-settings .notice {
+	.library-settings .bu-notice {
 		margin: 0;
 	}
 	.library-settings hr {

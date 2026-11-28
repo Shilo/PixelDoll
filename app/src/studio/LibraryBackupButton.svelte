@@ -47,6 +47,7 @@
 {#if settings}
 	<SettingsItemButton
 		data-setting="backup"
+		data-trail="settings.backup"
 		disabled={disabled || pending}
 		aria-busy={pending}
 		onclick={startBackup}
@@ -58,6 +59,7 @@
 		type="button"
 		class={menu ? 'row bu-action' : 'bu-action btn sm compact-backup'}
 		data-variant={menu ? 'quiet' : 'outline'}
+		data-trail="library.backup"
 		disabled={disabled || pending}
 		aria-busy={pending}
 		onclick={startBackup}

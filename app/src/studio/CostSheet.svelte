@@ -371,7 +371,7 @@
 			{/each}
 		</div>
 
-		{#if error}<p class="notice bad small" role="alert">
+		{#if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 				{displayMessage(errorMessage(error))}<ReportButton {error} />
 			</p>
 		{:else if !character && scope !== 'all'}<p class="muted" role="status">
@@ -380,7 +380,12 @@
 		{:else}
 			<!-- Reset keeps one place and stays mounted through a pricing error and its recovery. -->
 			<div class="headline">
-				{#if priced.failure}<p class="notice bad small" role="alert">
+				{#if priced.failure}<p
+						class="bu-notice"
+						data-size="compact"
+						data-tone="danger"
+						role="alert"
+					>
 						{priced.failure}<ReportButton error={priced.error} />
 					</p>
 				{:else}<p class="readout" role="status" aria-atomic="true">
@@ -401,6 +406,7 @@
 					class="bu-action btn plain icon reset"
 					data-variant="quiet"
 					aria-label={t('costSheet.resetEstimate')}
+					data-trail="cost.reset"
 					title={t('costSheet.resetEstimate')}
 					aria-disabled={!edited}
 					onclick={() => edited && reset()}><RotateCcw size={18} aria-hidden="true" /></button
@@ -773,10 +779,9 @@
 		margin: 0;
 	}
 	.amount {
-		font-size: 2.75rem;
-		line-height: 1.08;
+		font-size: var(--fs-title);
+		line-height: 1.1;
 		font-weight: 600;
-		letter-spacing: -0.03em;
 		overflow-wrap: anywhere;
 	}
 	.spent {

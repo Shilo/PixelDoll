@@ -10,6 +10,7 @@
 		"scripts/release/**/*.ts",
 		"src/version.d.ts",
 		"src/whisper.d.ts",
+		"src/file-system-access.d.ts",
 		"src/studio/gifenc.d.ts",
 		"vitest.config.ts",
 		"playwright.config.ts",

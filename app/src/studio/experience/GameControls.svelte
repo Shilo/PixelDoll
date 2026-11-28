@@ -102,6 +102,7 @@
 			class="bu-action"
 			data-variant="quiet"
 			aria-label={attack}
+			data-trail="game.attack"
 			aria-keyshortcuts="E"
 			title={t('liveViews.withShortcut', { action: attack, key: t('liveViews.attackKeys') })}
 			{@attach gameAction(
@@ -114,6 +115,7 @@
 			class="bu-action"
 			data-variant="quiet"
 			aria-label={jump}
+			data-trail="game.jump"
 			aria-keyshortcuts="Space"
 			title={t('liveViews.withShortcut', { action: jump, key: t('liveViews.spaceKey') })}
 			{@attach gameAction(
@@ -126,6 +128,7 @@
 			class="bu-action"
 			data-variant="quiet"
 			aria-label={sprint}
+			data-trail="game.sprint"
 			aria-pressed={sprinting}
 			aria-keyshortcuts="Shift"
 			title={t('liveViews.withShortcut', { action: sprint, key: t('liveViews.shiftKey') })}
@@ -136,6 +139,7 @@
 			class="bu-action"
 			data-variant="quiet"
 			aria-label={mount}
+			data-trail="game.mount"
 			aria-pressed={mounted}
 			aria-keyshortcuts="F"
 			title={t('liveViews.withShortcut', { action: mount, key: 'F' })}

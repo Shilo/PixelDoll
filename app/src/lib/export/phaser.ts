@@ -341,7 +341,15 @@ export class Paperdoll {
 }
 `;
 
-export function phaserFiles(m: Manifest): OutFile[] {
+export const phaserRuntime = {
+	revision: 1,
+	files: [
+		{ name: 'PaperdollContainer.js', data: PAPERDOLL_JS },
+		{ name: 'types.d.ts', data: runtimeTypes }
+	]
+};
+
+export function phaserFiles(m: Manifest, folder = false): OutFile[] {
 	const files: OutFile[] = [];
 	for (const it of m.items)
 		for (const l of it.layers)
@@ -358,18 +366,33 @@ export function phaserFiles(m: Manifest): OutFile[] {
 							data: JSON.stringify(atlasJson(m, it.id, l.id, a.id, part), null, 1) + '\n'
 						});
 			}
-	files.push({ name: 'phaser/PaperdollContainer.js', data: PAPERDOLL_JS });
-	files.push({ name: 'phaser/types.d.ts', data: runtimeTypes });
-	const dir = `assets/${m.exportId ?? m.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`;
+	if (!folder) files.push(...phaserRuntime.files.map((f) => ({ ...f, name: 'phaser/' + f.name })));
+	const dir = folder
+		? '<folder>/<character>/'
+		: `assets/${m.exportId ?? m.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`;
+	const runtime = folder ? '<folder>/pixeldoll-phaser/' : `${dir}phaser/`;
 	const initial = m.rig.animations.find((a) => (a.directions ?? m.rig.directions).length > 0);
 	files.push({
 		name: 'phaser/README.txt',
-		data: `1. Copy the whole export folder into your game's assets, e.g. ${dir}
+		data: `1. ${
+			folder
+				? `Keep the character at ${dir}, where <folder> is the path from the page (document.baseURI) to the
+   folder you picked in PixelDoll and <character> is this character's folder in it. If you picked the page's own
+   folder, leave out "<folder>/" everywhere below: '<character>/' and './pixeldoll-phaser/PaperdollContainer.js'.
+   The import in step 3 assumes the importing module sits beside the page; from another module, use its own relative
+   path to the same file (from src/main.js: '../<folder>/pixeldoll-phaser/PaperdollContainer.js').
+   In the import and the loadPaperdoll path, percent-encode folder names with spaces, #, ? or % (Characters #2
+   becomes Characters%20%232).
+   Its runtime is at ../pixeldoll-phaser/PaperdollContainer.js relative to this character folder. When copying the
+   character, copy pixeldoll-phaser too and keep them in the same parent folder.
+   Rebuild if you bundle the module, then reload a running game to pick up runtime changes.`
+				: `Copy the whole export folder into your game's assets, e.g. ${dir}`
+		}
 2. Game config: pixelArt: true, roundPixels: true (Phaser 4 defaults roundPixels to false).
    For exact Canvas pixels, position characters at integer coordinates and call scene.cameras.main.setRoundPixels(false).
    Phaser Canvas roundPixels expands each sprite by half a pixel; WebGL does not need this adjustment.
 3. In a scene (Phaser 3.80+ or 4):
-     import { loadPaperdoll, Paperdoll } from './${dir}phaser/PaperdollContainer.js'
+     import { loadPaperdoll, Paperdoll } from './${runtime}PaperdollContainer.js'
      async create() {
        const m = await loadPaperdoll(this, '${dir}')   // the folder with manifest.json
        const doll = new Paperdoll(this, 200, 150, m)
@@ -377,7 +400,7 @@ export function phaserFiles(m: Manifest): OutFile[] {
      }
 Switch outfits with doll.applyPreset(outfitId) (an id from manifest.json's presets, or a preset object); it replaces the equipped items and the color selections, so call setVariants after it to keep custom colors. Unknown outfit IDs throw without changing the doll.
 Phaser does not await an async create(): nothing may use the doll until loadPaperdoll resolves, so guard update() on it or create the doll in a scene that starts after loading. The loader path is relative to document.baseURI.
-Call setActionLayering(true) to enable moving attacks when the ZIP contains precut fragments (manifest.actionLayers). canLayerAction(move, direction) checks the whole action set and equipped gear. Invalid playAction calls throw without changing playback. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read actionPlaying for completion. Calling play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
+Call setActionLayering(true) to enable moving attacks when the ${folder ? 'character export' : 'ZIP'} contains precut fragments (manifest.actionLayers). canLayerAction(move, direction) checks the whole action set and equipped gear. Invalid playAction calls throw without changing playback. playAction(move, direction) returns "layered" or "full", plays once and leaves the gait clock running. Read actionPlaying for completion. Calling play cancels the action. An outfit that cannot be layered switches the action to full once; it stays full until the next action. A layered action holds the last gait cell in the action's direction when the gait faces away. Turning back resumes drawing the current gait cell. Both clocks keep running.
 
 play(anim, dir) preserves an active clip's progress, starts changed moves/directions at the beginning and replays a completed once-only clip. Pass true as the third argument to restart explicitly.
 doll.setDirection(dir) turns the active move (e.g. an aimed attack) while keeping its frame, time, loop position and completion; it emits no start or complete events. The current direction is a no-op; an unavailable direction or no active move throws before changing state.
@@ -387,7 +410,7 @@ setVariants replaces all explicit color selections. Omitted keys or null restore
 The loader decodes recolorable sheets from PNG bytes for exact source RGB matches, including translucent pixels. In Canvas and WebGL, the resulting palette textures preserve alpha and go through Phaser's normal texture upload.
 paletteMap returns only active source-RGB to target-RGB swaps; unselected colors are omitted.
 This module also exports the engine-neutral paper-doll API used inside PixelDoll itself, including composeCell, drawList, paletteMap and sampleTimeline.
-The adjacent types.d.ts supplies portable data types for checked JavaScript consumers; no TypeScript compilation is required.
+${folder ? 'types.d.ts, beside PaperdollContainer.js,' : 'The adjacent types.d.ts'} supplies portable data types for checked JavaScript consumers; no TypeScript compilation is required.
 Call doll.destroy() when removing a character. Palette textures are cached until Phaser game teardown.
 PaperdollContainer.js is an ES module and fetches manifest.json: serve the game over http (a dev server), not file://.
 Atlases: phaser/<length>-<item>_<length>-<layer>_<length>-<move>.json (TexturePacker hash), frames named <move>_<direction>_<frame>.

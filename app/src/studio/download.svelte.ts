@@ -1,15 +1,16 @@
 // Download ZIP in the ⋮ menus: one click, no format choice. PNG + JSON works in any engine with a little code, and its
 // editable copy imports back into PixelDoll; engine formats stay in Export.
 import type { Look } from '../lib/export/build.ts';
-import { lazy } from '../lib/lazy.ts';
+import { lazy, LoadError } from '../lib/lazy.ts';
 import { readExportSettings } from '../lib/store/export-settings.ts';
 import type { StoredProject } from '../lib/store/project.ts';
 import type { Manifest, Project } from '../lib/store/manifest.ts';
 import { itemExportId, moveExportId } from '../lib/store/identity.ts';
 import { retainMoveMetadata } from '../lib/rig/moves.ts';
 import { moveLabel } from './model.ts';
-import { doc, store, readCharacterForExport, toast } from './state.svelte.ts';
-import { errorMessage, LocalizedError, message } from '../lib/message.ts';
+import { currentLook, lookOf, doc, store, readCharacterForExport, toast } from './state.svelte.ts';
+import { errorTranslation, message, type Message } from '../lib/message.ts';
+import type { DownloadAction, DownloadStep } from '../lib/report/report.ts';
 import { playAudioCue } from './audio.svelte.ts';
 
 /** The saved record's rig data, so the ZIP imports back as an editable character (the demo has none). `build` names the app
@@ -59,32 +60,50 @@ export async function downloadFrames(itemId: string, anim: string) {
 		if (files.length === 1) saveFile(files[0].data, files[0].name, 'image/png');
 		else saveZip(await zip(files), `${stem}.zip`);
 	} catch (e) {
-		console.error('download frames', e);
-		toast(message('download.failedRetry', { label: item.name }), { tone: 'danger' });
+		downloadFailed('frames', item.name, e);
 	}
 }
 
-/** The open character as it looks now, or another one as it was last saved. */
-type DownloadSource = { project: Project; look: Look; record?: StoredProject };
+/** The open character as it looks now, or another one as it was last saved. Shared with project folder publishing. */
+export type DownloadSource = {
+	project: Project;
+	look: Look;
+	record?: StoredProject;
+	/** How many of a saved character's images could not be read. */
+	missingImages?: number;
+};
 
-async function source(projectId: string): Promise<DownloadSource> {
+export async function exportSource(projectId: string): Promise<DownloadSource> {
 	if (projectId === doc.id && store.project && !doc.loading)
 		return {
 			project: { ...store.project, manifest: structuredClone(store.project.manifest) },
 			record: store.exportRecord,
-			look: { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) }
+			look: currentLook(store.project.manifest)
 		};
 	const r = await readCharacterForExport(projectId);
 	const outfit = r.current ?? r.project.manifest.presets[0];
 	return {
 		project: r.project,
 		record: r.record,
-		look: { items: { ...outfit?.items }, variants: { ...outfit?.variants } }
+		look: lookOf(r.project.manifest, { ...outfit?.items }, { ...outfit?.variants }),
+		missingImages: 'missingImages' in r ? r.missingImages : undefined
 	};
 }
 
-async function zipOf({ project, look, record }: DownloadSource) {
-	const { buildExport } = await lazy(() => import('../lib/export/build.ts'));
+/** Every quick ZIP loads the export builder through this one import, and Studio prefetches it after startup: a dynamic import
+ *  of a module that ExportSheet also imports statically gets its own small chunk, which ExportSheet's prefetch does not fetch,
+ *  so a tab without the service worker would lose it when a deploy replaced the files. */
+export const loadExportBuild = () => lazy(() => import('../lib/export/build.ts'));
+
+/** Names the step a download is on, so its report can say where it failed. */
+type MarkStep = (step: DownloadStep) => void;
+
+async function zipOf({ project, look, record }: DownloadSource, mark: MarkStep) {
+	mark('builder');
+	const { buildExport } = await loadExportBuild();
+	mark('settings');
+	const settings = await readExportSettings();
+	mark('build');
 	const original = editableData(record);
 	const extra = original && {
 		...original,
@@ -94,7 +113,7 @@ async function zipOf({ project, look, record }: DownloadSource) {
 		engine: 'generic',
 		baked: false,
 		look,
-		settings: await readExportSettings(),
+		settings,
 		projectData: extra
 	});
 	return {
@@ -106,21 +125,53 @@ async function zipOf({ project, look, record }: DownloadSource) {
 }
 
 const pending = new Set<string>();
+
+function downloadFailed(
+	action: DownloadAction,
+	label: string | Message,
+	error: unknown,
+	step?: DownloadStep
+) {
+	console.error('download', action, step, error);
+	// Catch-site evidence distinguishes a stale tab from a failed request in a page the worker already controls.
+	let serviceWorkerControlled: boolean | undefined;
+	if (error instanceof LoadError) {
+		try {
+			const worker = navigator.serviceWorker;
+			if (worker) serviceWorkerControlled = worker.controller !== null;
+		} catch (diagnosticError) {
+			console.warn('Could not read service worker state for the download report.', diagnosticError);
+		}
+	}
+	toast(errorTranslation(error) ?? message('download.failedRetry', { label }), {
+		tone: 'danger',
+		error,
+		facts: { download: action, step, serviceWorkerControlled }
+	});
+}
+
 /** A second click while the same ZIP is being prepared does nothing. */
 async function download(
-	key: string,
+	action: DownloadAction,
+	id: string,
 	label: string,
-	build: () => Promise<Awaited<ReturnType<typeof zipOf>> & { name: string }>
+	build: (mark: MarkStep) => Promise<Awaited<ReturnType<typeof zipOf>> & { name: string }>
 ) {
+	const key = `${action}:${id}`;
 	if (pending.has(key)) return;
 	pending.add(key);
 	toast(message('download.preparing', { label }), { pending: true });
+	let step: DownloadStep = 'source';
 	try {
-		const { zip, name, recovery, hasNotes, problem } = await build();
+		const { zip, name, recovery, hasNotes, problem } = await build((next) => (step = next));
 		if (!zip) {
-			toast(problem ?? message('download.failed', { label }), { tone: 'danger' });
+			toast(problem ?? message('download.failed', { label }), {
+				tone: 'danger',
+				facts: { download: action, step }
+			});
 			return;
 		}
+		step = 'save';
 		saveZip(zip, recovery ? `${name}-recovered-artwork.zip` : `${name}.pixeldoll.zip`);
 		toast(
 			recovery
@@ -131,8 +182,7 @@ async function download(
 			{ tone: recovery || hasNotes ? 'warning' : 'info' }
 		);
 	} catch (e) {
-		console.error('download', e);
-		toast(message('download.failedRetry', { label }), { tone: 'danger' });
+		downloadFailed(action, label, e, step);
 	} finally {
 		pending.delete(key);
 	}
@@ -140,10 +190,10 @@ async function download(
 
 export function downloadCharacterZip(projectId: string) {
 	const name = store.projects.find((p) => p.id === projectId)?.name ?? 'Character';
-	return download(`character:${projectId}`, name, async () => {
-		const snapshot = await source(projectId);
+	return download('character', projectId, name, async (mark) => {
+		const snapshot = await exportSource(projectId);
 		return {
-			...(await zipOf(snapshot)),
+			...(await zipOf(snapshot, mark)),
 			name: characterZipId(snapshot.project.manifest)
 		};
 	});
@@ -154,13 +204,15 @@ export function downloadItemZip(itemId: string) {
 	const projectId = doc.id,
 		it = store.project?.manifest.items.find((i) => i.id === itemId);
 	if (!it) return Promise.resolve();
-	return download(`item:${projectId}/${itemId}`, it.name, async () => {
-		const { project, look, record } = await source(projectId);
-		const { itemProject } = await lazy(() => import('../lib/export/build.ts'));
+	return download('item', `${projectId}/${itemId}`, it.name, async (mark) => {
+		const { project, look, record } = await exportSource(projectId);
+		mark('builder');
+		const { itemProject } = await loadExportBuild();
+		mark('build');
 		const selected = itemProject(project, itemId, look);
 		const item = project.manifest.items.find((entry) => entry.id === itemId)!;
 		return {
-			...(await zipOf({ ...selected, record })),
+			...(await zipOf({ ...selected, record }, mark)),
 			name: `${characterZipId(project.manifest)}-${itemExportId(item)}`
 		};
 	});
@@ -172,10 +224,12 @@ export function downloadOutfitZip(outfitId: string) {
 	if (!outfit) return Promise.resolve();
 	const project = { ...store.project!, manifest: structuredClone(store.project!.manifest) };
 	const record = store.exportRecord;
-	return download(`outfit:${projectId}/${outfitId}`, outfit.name, async () => {
-		const { outfitProject } = await lazy(() => import('../lib/export/build.ts'));
+	return download('outfit', `${projectId}/${outfitId}`, outfit.name, async (mark) => {
+		mark('builder');
+		const { outfitProject } = await loadExportBuild();
+		mark('build');
 		return {
-			...(await zipOf({ ...outfitProject(project, outfitId), record })),
+			...(await zipOf({ ...outfitProject(project, outfitId), record }, mark)),
 			name: `${characterZipId(project.manifest)}-${fileSlug(outfit.name)}`
 		};
 	});
@@ -186,15 +240,20 @@ export function downloadMoveZip(moveId: string) {
 	const moves = store.project?.manifest.rig.animations ?? [];
 	const label = moveLabel(moveId, moves);
 	const move = moves.find((entry) => entry.id === moveId);
-	return download(`move:${projectId}/${moveId}`, label, async () => {
-		const { project, look, record } = await source(projectId);
-		const { moveProject } = await lazy(() => import('../lib/export/build.ts'));
+	return download('move', `${projectId}/${moveId}`, label, async (mark) => {
+		const { project, look, record } = await exportSource(projectId);
+		mark('builder');
+		const { moveProject } = await loadExportBuild();
+		mark('build');
 		return {
-			...(await zipOf({
-				project: await moveProject(project, moveId),
-				look,
-				record
-			})),
+			...(await zipOf(
+				{
+					project: await moveProject(project, moveId),
+					look,
+					record
+				},
+				mark
+			)),
 			name: `${characterZipId(project.manifest)}-${fileSlug(move ? moveExportId(move, moves) : moveId)}`
 		};
 	});
@@ -255,13 +314,7 @@ export async function downloadOriginalGenerations() {
 			});
 		else toast(message('librarySettings.originalsStarted'));
 	} catch (e) {
-		console.error('download original generations', e);
-		toast(
-			e instanceof LocalizedError
-				? errorMessage(e)
-				: message('download.failedRetry', { label: message('librarySettings.originalsName') }),
-			{ tone: 'danger', error: e }
-		);
+		downloadFailed('originals', message('librarySettings.originalsName'), e);
 	} finally {
 		pending.delete(key);
 	}
@@ -285,8 +338,7 @@ export async function downloadPaidResults(recordIds: readonly string[], label: s
 		saveZip(await zip(entries), `${fileSlug(label)}-paid-results.zip`);
 		toast(message('download.paidStarted'));
 	} catch (e) {
-		console.error('download paid results', e);
-		toast(message('download.failedRetry', { label }), { tone: 'danger' });
+		downloadFailed('paid', label, e);
 	} finally {
 		pending.delete(key);
 	}

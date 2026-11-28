@@ -226,6 +226,7 @@
 			class="bu-action"
 			data-variant="quiet"
 			aria-haspopup="dialog"
+			data-trail="setup.appearance"
 			onclick={() => {
 				formDrafts.setup = { projectId: doc.id, looks, restAnim };
 				openAppearance(doc.id, undefined, 'setup');
@@ -237,7 +238,7 @@
 		<div class="api-action">
 			<span class="small muted">{t('setup.rigSetup')}</span>
 		</div>
-		{#if settingUp.done}<p class="notice ok">
+		{#if settingUp.done}<p class="bu-notice" data-size="compact" data-tone="success">
 				<Check size={16} />{t('setup.ready')}
 			</p>
 		{:else}
@@ -258,7 +259,11 @@
 				error={settingUp.error}
 				report={{ area: 'Rig setup' }}
 			/>{/if}
-		{#each settingUp.warnings as warning (warning)}<p class="notice warn small">
+		{#each settingUp.warnings as warning (warning)}<p
+				class="bu-notice"
+				data-size="compact"
+				data-tone="warning"
+			>
 				<TriangleAlert size={14} /><span
 					>{setupWarningNote(warning, t, displayDirection, (move) =>
 						displayMove(move, moveRefs)
@@ -266,7 +271,7 @@
 				>
 			</p>{/each}
 	{:else}
-		{#if ready}<p class="notice ok small">
+		{#if ready}<p class="bu-notice" data-size="compact" data-tone="success">
 				<Check size={16} />{t('setup.alreadyRigged')}
 			</p>{/if}
 		<!-- A reconnect finds no joints: the rig it keeps is explained by the ready note above. -->
@@ -308,7 +313,7 @@
 				>{t(ready ? 'setup.appearanceSaveHelp' : 'setup.appearanceHelp')}</span
 			></label
 		>
-		{#if savedNote}<p class="notice ok small" role="status">
+		{#if savedNote}<p class="bu-notice" data-size="compact" data-tone="success" role="status">
 				<Check size={16} />{t('setup.descriptionSaved')}
 			</p>{/if}
 		{#if plan?.reconnect}<p class="faint small">
@@ -323,24 +328,28 @@
 					connection: formatNumber(0.25)
 				})}
 			</p>{/if}
-		{#if plan?.skipped.length}<p class="notice warn small">
+		{#if plan?.skipped.length}<p class="bu-notice" data-size="compact" data-tone="warning">
 				<TriangleAlert size={14} /><span
 					>{t('setup.willSkip', {
 						moves: formatList(plan.skipped.map((move) => displayMove(move, moveRefs)))
 					})}</span
 				>
 			</p>{/if}
-		{#each plan?.warnings ?? [] as warning (warning)}<p class="notice warn small">
+		{#each plan?.warnings ?? [] as warning (warning)}<p
+				class="bu-notice"
+				data-size="compact"
+				data-tone="warning"
+			>
 				<TriangleAlert size={14} /><span
 					>{setupWarningNote(warning, t, displayDirection, (move) =>
 						displayMove(move, moveRefs)
 					)}</span
 				>
 			</p>{/each}
-		{#if error}<p class="notice warn small" role="alert">
+		{#if error}<p class="bu-notice" data-size="compact" data-tone="warning" role="alert">
 				<TriangleAlert size={16} /><span>{displayNestedMessage(error)}</span>
 			</p>{/if}
-		{#if busyElsewhere}<p class="notice small">
+		{#if busyElsewhere}<p class="bu-notice" data-size="compact" data-tone="neutral">
 				{t('setup.busyElsewhere')}
 			</p>{/if}
 	{/if}
@@ -349,6 +358,7 @@
 		{#if mine && settingUp.done}<button
 				class="bu-action btn primary"
 				data-variant="primary"
+				data-trail="setup.startDressing"
 				onclick={async () => {
 					if (!(await dismissSetup())) return;
 					customize();
@@ -356,13 +366,19 @@
 				}}>{t('create.sheet.startDressing')}</button
 			>
 		{:else if mine && settingUp.error}
-			{#if resumePriceError && !stuck}<p class="notice warn small" role="status">
+			{#if resumePriceError && !stuck}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+					role="status"
+				>
 					{t('setup.resumePriceUnknown', { reason: displayMessage(resumePriceError) })}
 				</p>{/if}
 			<div class="recovery-actions">
 				<button
 					class="bu-action btn plain"
 					data-variant="quiet"
+					data-trail="setup.discard"
 					onclick={async () => {
 						if ((await dismissSetup()) && ui.sheet === 'setup') ui.sheet = null;
 					}}>{t('common.discard')}</button
@@ -373,6 +389,7 @@
 							class="bu-action btn"
 							class:primary={stuck || resumeGens !== null}
 							data-variant={stuck || resumeGens !== null ? 'primary' : 'outline'}
+							data-trail="setup.retry"
 							onclick={() =>
 								settingUp.spec &&
 								withKey(
@@ -398,12 +415,14 @@
 					class="bu-action btn"
 					data-variant="outline"
 					disabled={!looksChanged || saving}
+					data-trail="setup.saveDescription"
 					onclick={save}>{t('setup.saveDescription')}</button
 				>{/if}<span class="api-action"
 				><button
 					class="bu-action btn primary"
 					data-variant="primary"
 					disabled={!plan || !looks.trim() || busyElsewhere}
+					data-trail="setup.start"
 					onclick={go}
 					>{t('setup.setUp')}
 					<span class="cost"

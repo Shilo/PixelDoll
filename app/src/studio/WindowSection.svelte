@@ -58,7 +58,7 @@
 		padding: 0 4px;
 		cursor: pointer;
 		list-style: none;
-		border-radius: 6px;
+		border-radius: 8px;
 	}
 	summary::-webkit-details-marker {
 		display: none;

@@ -13,7 +13,7 @@
 	import { doc, isDemo, openRename, store, ui } from './state.svelte.ts';
 	import { downloadMoveZip } from './download.svelte.ts';
 	import { moveDeletionBlocked } from './moveActions.svelte.ts';
-	import { clipItemCoverage } from './itemGeneration.ts';
+	import { savedClipItemGeneration } from './savedClipItemGeneration.ts';
 
 	let {
 		id,
@@ -36,18 +36,17 @@
 		ontrash: () => void;
 	} = $props();
 	const trashLocked = $derived(displayError(moveDeletionBlocked(id)));
-	// A move missing some of the character's gear: its window draws it, so the Fit gear tip points here.
-	const fitsGear = $derived.by(() => {
-		const m = store.project?.manifest,
-			items = m && kind === 'move' && !isDemo() ? clipItemCoverage(m, id) : null;
-		return !!items && items.drawn < items.total;
-	});
+	// The Fit gear tip points here when View and edit actually offers a generation.
+	const fitsGear = $derived(
+		!inWindow && kind === 'move' && savedClipItemGeneration(store.project, doc.id, id).available
+	);
 </script>
 
 {#if !inWindow}<button
 		class="row"
 		role="menuitem"
 		data-tip-anchor={fitsGear ? 'generate-items' : undefined}
+		data-trail="clipMenu.details"
 		onclick={() => {
 			close();
 			ui.clip = id;
@@ -55,6 +54,7 @@
 		}}><Eye size={16} />{openerLabel(t('common.detailsMenu'))}<SurfaceChevron /></button
 	>{/if}
 <RenameRow
+	trail="clipMenu.rename"
 	locked={isDemo() ? t('savedActions.demoRenameLocked') : ''}
 	onclick={() => {
 		close();
@@ -65,6 +65,7 @@
 <button
 	class="row"
 	role="menuitem"
+	data-trail="clipMenu.download"
 	onclick={() => {
 		close();
 		void downloadMoveZip(id);
@@ -73,6 +74,7 @@
 <hr class="bu-separator" />
 <DeleteRow
 	opens
+	trail="clipMenu.delete"
 	label={kind === 'move' ? t('savedActions.labelDeleteMove') : t('savedActions.labelDeleteState')}
 	locked={trashLocked}
 	onclick={() => {

@@ -26,6 +26,11 @@ beside the explanation.
 The menu is the object's ⋮, right-click and press-and-hold: one shared menu wherever it opens, including the ⋮ in the
 object's window (which leaves out the row that opens that window).
 
+In Characters and Customize, right-clicking a sprite or character name opens actions for that character. This gives the
+character on the stage the same shortcuts as its library row. The New character review offers those actions on the saved
+result's sprites. On the Customize stage this works only in Preview; in Top-down and Side-scroller, right-click always
+attacks.
+
 **Name: View and edit…** (owner decision, 2026-11-26), with an eye icon; the window is titled with the object's name.
 "Details" read as text only, so players could skip the window that fixes their item, and "Inspect" promised a closer look
 but not changes. The stage's frame-by-frame window, formerly Inspect, is now **View frames**.
@@ -33,6 +38,11 @@ but not changes. The stage's frame-by-frame window, formerly Inspect, is now **V
 ## Applied
 
 Every menu ends with **Rename…, Download ZIP, Move to Trash…**, in that order.
+
+**Recolor** opens an item's Colors section from its menu. For an unworn item, Colors adds a temporary **Not worn**
+section and rail entry with an item-only preview. This makes every item with a palette reachable from Wardrobe
+without filling Colors with gear the current outfit does not use. Leaving Colors closes the temporary section.
+Color changes use the usual undo and save behavior and apply when the item is worn.
 
 Words: anything the Trash keeps (characters, items, categories, moves, states, outfits) is **moved to the Trash**,
 in every label, lock reason, history step and error. **Delete** means gone for good: Delete forever in the Trash and

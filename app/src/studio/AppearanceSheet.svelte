@@ -374,6 +374,7 @@
 				class="bu-action btn plain icon"
 				data-variant="quiet"
 				aria-label={t('paidReview.download')}
+				data-trail="appearance.downloadResults"
 				title={t('paidReview.download')}
 				disabled={saving}
 				onclick={() =>
@@ -386,7 +387,9 @@
 	{/snippet}
 	{#if failure}<ProblemNotice error={failure} />{/if}
 	{#if !loaded && !failure}<p role="status">{t('common.loading')}</p>{/if}
-	{#if loaded && !source && !attempt}<p class="notice">{t('appearance.unavailable')}</p>{/if}
+	{#if loaded && !source && !attempt}<p class="bu-notice" data-size="compact" data-tone="neutral">
+			{t('appearance.unavailable')}
+		</p>{/if}
 	{#if source || attempt}
 		{#if !attempt}<div class="appearance-context">
 				{#if source}<strong>{source.name}</strong>{/if}
@@ -405,7 +408,9 @@
 		{#if attempt}
 			{#if review?.views.length}
 				<div class="appearance-review-heading">
-					<h3 class="label" tabindex="-1" bind:this={reviewTitle}>{t('appearance.review')}</h3>
+					<h3 class="section-title" tabindex="-1" bind:this={reviewTitle}>
+						{t('appearance.review')}
+					</h3>
 					{#if directions.length > 1}
 						<select
 							aria-label={t('appearance.facing')}
@@ -431,18 +436,32 @@
 			{/if}
 			{#if running || !review}<p role="status">{t('appearance.running')}</p>
 				<p id={`${form}-running`} class="faint">{t('common.keepsRunning')}</p>
-			{:else if blocked}<p class="notice">{t('appearance.changed')}</p>
-			{:else if keptDirections.length}<p class="notice warn" role="status">
+			{:else if blocked}<p class="bu-notice" data-size="compact" data-tone="neutral">
+					{t('appearance.changed')}
+				</p>
+			{:else if keptDirections.length}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+					role="status"
+				>
 					{t('appearance.keptDirections', { directions: displayDirectionList(keptDirections) })}
 				</p>
-			{:else if !review.complete}<p class="notice">{t('appearance.incomplete')}</p>{/if}
+			{:else if !review.complete}<p class="bu-notice" data-size="compact" data-tone="neutral">
+					{t('appearance.incomplete')}
+				</p>{/if}
 			{#if !running && review && !review.complete}
-				<button class="bu-action" data-variant="quiet" onclick={() => (ui.sheet = 'activity')}
-					>{t('itemMenu.activity')}</button
+				<button
+					class="bu-action"
+					data-variant="quiet"
+					data-trail="appearance.activity"
+					onclick={() => (ui.sheet = 'activity')}>{t('itemMenu.activity')}</button
 				>
 			{/if}
 			{#if confirmDiscard}
-				<p class="notice warn" role="status">{t('appearance.discardNotice')}</p>
+				<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
+					{t('appearance.discardNotice')}
+				</p>
 			{/if}
 		{:else if source}
 			<form id={form} class="appearance-edit-form" onsubmit={generate}>
@@ -483,7 +502,7 @@
 								enhanceDisabled={referenceLoading}
 								onconnect={connect}
 							/>
-							{#if tooLong}<p class="notice">
+							{#if tooLong}<p class="bu-notice" data-size="compact" data-tone="neutral">
 									{t('studioSlots.tooLong', { count: maxPrompt })}
 								</p>{/if}
 							<ReferenceField
@@ -513,7 +532,11 @@
 					{t('stateGeneration.sheetWarning')}
 				</p>{/if}
 			{#if quoteFailure}<ProblemNotice error={quoteFailure} />
-			{:else if !quote && !quoting && (connected || draft.model !== 'pro-flash')}<p class="notice">
+			{:else if !quote && !quoting && (connected || draft.model !== 'pro-flash')}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="neutral"
+				>
 					{t('appearance.unsupported')}
 				</p>{/if}
 		{/if}
@@ -531,6 +554,7 @@
 							class="bu-action"
 							data-variant="outline"
 							disabled={saving}
+							data-trail="appearance.discard"
 							onclick={() => (confirmDiscard ? void discard() : (confirmDiscard = true))}
 							>{t(confirmDiscard ? 'stateGeneration.confirmDiscard' : 'common.discard')}</button
 						>
@@ -540,6 +564,7 @@
 								class="bu-action"
 								data-variant="primary"
 								disabled={saving}
+								data-trail="appearance.save"
 								onclick={() => void save()}
 								>{t(item ? 'appearance.saveItem' : 'appearance.saveCharacter')}</button
 							>
@@ -549,14 +574,18 @@
 			{/if}
 		{:else if source && !connected}
 			{#if quote}<span class="foot-note">{stateCostText(quote.cost)}</span>{/if}
-			<button class="bu-action appearance-primary" data-variant="primary" onclick={connect}
-				>{t('toolbar.connectPixelLab2')}</button
+			<button
+				class="bu-action appearance-primary"
+				data-variant="primary"
+				data-trail="appearance.connect"
+				onclick={connect}>{t('toolbar.connectPixelLab2')}</button
 			>
 		{:else if source}
 			<button
 				class="bu-action appearance-primary"
 				data-variant="primary"
 				type="submit"
+				data-trail="appearance.generate"
 				{form}
 				disabled={generating || enhancing || referenceLoading || !quote || !valid || tierBlocked}
 			>

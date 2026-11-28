@@ -266,6 +266,21 @@ function removeItems(rec: DressedRecord, itemIds: ReadonlySet<string>) {
 	rec.savedAt = new Date().toISOString();
 }
 
+/** Point outfits and the current look at a replacement item, so removing the old one keeps them dressed. */
+export async function repointItem(id: string, from: string, to: string) {
+	await db.update<DressedRecord>('projects', id, (rec) => {
+		if (!rec) throw new Error(`project ${id} not found`);
+		for (const preset of [
+			...rec.manifest.presets,
+			...(rec.dress?.current ? [rec.dress.current] : [])
+		])
+			for (const slot of Object.keys(preset.items))
+				if (preset.items[slot] === from) preset.items[slot] = to;
+		rec.savedAt = new Date().toISOString();
+		return rec;
+	});
+}
+
 /** What a deletion keeps for a restore: the entry, and any old entries it pushes past the cap. */
 export type KeptDeletion<T> = { key: string; entry: T; prune?: readonly string[] };
 

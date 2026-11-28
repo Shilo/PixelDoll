@@ -386,7 +386,7 @@
 		"demoRenameLocked": "Demoyu yeniden adlandırmak için düzenlenebilir bir kopya oluşturun"
 	},
 	"characterName": {
-		"demo": "(Demo)"
+		"demo": "(demo)"
 	},
 	"colors": {
 		"follows": "{name} rengini izler",
@@ -398,6 +398,7 @@
 		"categories": "Renk kategorileri"
 	},
 	"colorSections": {
+		"notWorn": "Takılı değil",
 		"randomLowerColors": "{lower} için rastgele renkler",
 		"randomCharacterColors": "Karakter için rastgele renkler",
 		"resetLowerColors": "{lower} renklerini sıfırlayın",
@@ -430,6 +431,7 @@
 		"secretLabel": "Secret",
 		"copyKey": "Kopyala",
 		"demoNoAccount": "Demo için hesap gerekmez.",
+		"resumePurchase": "Bağlandığınızda {name} için üretim başlar.",
 		"sentOnlyToApiPixellabAi": "Yalnızca api.pixellab.ai adresine gönderilir.",
 		"forgetKey": "Anahtarı unutun",
 		"forgetTitle": "PixelLab anahtarı unutulsun mu?",
@@ -508,6 +510,7 @@
 		"cancelSaveError": "İptal kaydedilemedi. Bu sekmeyi açık tutun ve tekrar deneyin.",
 		"preparing": "Eşya hazırlanıyor",
 		"remake": "Bu karakter için kopya yap…",
+		"newVersion": "Yeni sürüm oluştur…",
 		"makeForSlot": "{slot} yuvası için bir tane üretin…",
 		"demoDeleteLocked": "Demonun eşyaları çöp kutusuna taşınamaz",
 		"cancelItem": "Eşyayı iptal edin",
@@ -518,6 +521,7 @@
 	},
 	"itemPane": {
 		"movesSection": "Hareketler ve durumlar",
+		"newVersionDetail": "{name} öğesini yeniden çizer, önce fiyatı gösterir. Yenisi onun yerini alır.",
 		"outfitSection": "Kıyafet",
 		"technicalDetails": "Teknik ayrıntılar",
 		"openSprite": "{title} görselini büyüt",
@@ -557,7 +561,6 @@
 		"matchingColors": "Renkler eşleştiriliyor…",
 		"matchItemColors": "Eşya renklerini eşleştirin",
 		"recolor": "Renkleri değiştirin",
-		"recolorWearFirst": "Renklerini değiştirmek için önce giyin",
 		"whenWornHide": "Giyilirken diğer eşyaları gizle",
 		"iD": "ID",
 		"slot": "Ekipman yuvası",
@@ -626,8 +629,8 @@
 		"missingView": "Eksik",
 		"hiddenWhenWorn": "{names} giymek bu eşyayı gizler.",
 		"clipsIncomplete": {
-			"one": "{n} hareket eksik",
-			"other": "{n} hareket eksik"
+			"one": "{n} eksik",
+			"other": "{n} eksik"
 		},
 		"complete": "Tamam",
 		"clipNoFrames": "Henüz kare yok",
@@ -678,7 +681,8 @@
 		"turnRight": "Sağa döndür",
 		"facingLabel": "{direction} yönü",
 		"matchViewColors": "{direction} görünümünün renklerini eşleştir",
-		"fixOneView": "Tek görünümü düzelt",
+		"artworkFindings": "Eşyanın tamamına ilişkin bulgular",
+		"fixOneView": "{move} için tek görünümü düzelt",
 		"outfitPreviewUnworn": "Giyilmiş gibi kombinde {name}, {direction} yönü",
 		"openOutfit": "{name} kombinini tam boyutta aç",
 		"outfitTitle": "Kombinde {name}",
@@ -713,8 +717,7 @@
 		"createFromScratch": "Oluştur…",
 		"addCharacter": "Karakter ekle",
 		"fromFile": "Dosyadan…",
-		"fromPixelLab": "PixelLab'den…",
-		"createNeedsKey": "PixelLab anahtarı gerekir ve ücretli üretimler kullanır"
+		"fromPixelLab": "PixelLab'den…"
 	},
 	"noticeLink": {
 		"opensInANewTab": "(yeni sekmede açılır)"
@@ -857,8 +860,7 @@
 		},
 		"makingMissingFrames": "Eksik ekipman kareleri üretiliyor",
 		"makeYourOwn": "Kendinizinkini oluşturun",
-		"labelMakeMissingEquipmentFrames": "Eksik ekipman karelerini üretin",
-		"makeItAgain": "Yeniden üretin…"
+		"labelMakeMissingEquipmentFrames": "Eksik ekipman karelerini üretin"
 	},
 	"studio": {
 		"workspaceCopyTabTitle": "Çalışma alanı kopyası · PixelDoll",
@@ -1001,7 +1003,7 @@
 	},
 	"experience": {
 		"movesOffMounted": "Animasyonlar Önizleme'de seçilir. Binek üzerinde hareket, binek ayarlarındaki Binici pozunu izler.",
-		"movesOffWalking": "Animasyonlar Önizleme'de seçilir. Burada ne oynatılacağını Canlı görünüm ayarları belirler.",
+		"movesOffWalking": "Animasyonlar Önizleme'de seçilir. Burada ne oynatılacağını Oyun modu ayarları belirler.",
 		"tabWardrobe": "Gardırop",
 		"tabColors": "Renkler",
 		"tabOutfits": "Kıyafetler",
@@ -1252,7 +1254,8 @@
 			"unavailable": "Dışa aktarım kullanılamıyor",
 			"sourceOnly": "Yalnızca kaynak PNG dosyaları",
 			"noZip": "ZIP yok",
-			"readyNotes": "Hazır · Dışa aktarım notlarını okuyun",
+			"readyNotes": "Hazır ·",
+			"seeNotes": "Dışa aktarım notlarını okuyun",
 			"free": "Ücretsiz · Düzenlenebilir kopya dahil",
 			"downloadArtwork": "Görsellerin ZIP dosyasını indirin",
 			"downloadSize": "ZIP indirin · {size} KB",
@@ -1260,6 +1263,7 @@
 		},
 		"settings": {
 			"loadInvalid": "Kayıtlı dışa aktarım ayarları okunamadı.",
+			"resetRequired": "Kayıtlı dışa aktarım ayarları okunamadı. “Dışa aktarın” ekranını açın, ardından “Dışa aktarım ayarlarını sıfırlayın” seçeneğini seçin.",
 			"loadFailed": "Dışa aktarım ayarları yüklenemedi. Dışa aktarım ekranını yeniden açmayı deneyin.",
 			"saveFailed": "Dışa aktarım ayarları kaydedilemedi. Tekrar deneyin.",
 			"resetHint": "Yalnızca dışa aktarım tercihleri varsayılan değerlerine döner. Karakterleriniz ve kıyafetleriniz korunur.",
@@ -1271,7 +1275,7 @@
 			"dressed": "Giydirilmiş karakter sayfalarını dahil edin",
 			"dressedHint": "Gövdeyi ve giyili eşyaları birleştirerek mevcut görünümün ve her kayıtlı kıyafetin PNG sprite sayfasını ekler. Sayfaları her zaman birleşik olan RPG Maker dışında ayrı katmanlar da her zaman dahil edilir.",
 			"actionLayers": "Hareketli saldırı katmanları",
-			"actionLayersHint": "Uyumlu yürüyüş saldırıları için gövde parçalarını ZIP dosyasına ekler. Canlı görünümde hareketli saldırılar kapalı olsa bile oradaki hareket ve bel ayarlarını kullanır. Bu katmanları yalnızca Phaser, GDevelop, Godot ve Unity kullanır.",
+			"actionLayersHint": "Uyumlu yürüyüş saldırıları için gövde parçalarını ZIP dosyasına ekler. Oyun modunda \"Saldırırken yürü\" kapalı olsa bile oradaki hareket ve bel ayarlarını kullanır. Bu katmanları yalnızca Phaser, GDevelop, Godot ve Unity kullanır.",
 			"actionLayersOn": "Açık",
 			"actionLayersOff": "Kapalı",
 			"format": "Dışa aktarım biçimi",
@@ -2171,7 +2175,7 @@
 		"needsKey": "anahtarınız gerekiyor",
 		"recent": "Son işler",
 		"tierHint": "Bu iş akışı için PixelLab Tier {tier} veya üzeri gerekir. Tekrar denemeden önce planınızı ve bakiyenizi kontrol edin. Bir işin başarısız olması tek başına plan sorunu olduğunu göstermez.",
-		"session": "Bu oturum: {cost}. Bazı animasyonlar üretim hakkı yerine dolar olarak ücretlendirilir. Yukarıdaki bakiye gerçek toplamı gösterir.",
+		"session": "Bu oturum: {cost}.",
 		"clearFollower": "İşleri çalıştıran PixelDoll sekmesinden temizleyin",
 		"clear": "Tamamlananları temizleyin",
 		"ledger": {
@@ -2638,7 +2642,6 @@
 			"baseClothingHelp": "Düz beyaz iç çamaşırı temel gövdenin parçasıdır ve açık giysilerden görünebilir. İstemin tamamında yaptığınız düzenlemeler bu seçeneği geçersiz kılabilir. Üretilen görselde örtülen alanları kontrol edin.",
 			"nothingWorn": "Üzerinde giysi yok",
 			"underwear": "İç çamaşırı",
-			"editPrompt": "İstemin tamamını düzenleyin",
 			"exactPrompt": "İstemin tamamı",
 			"sizeGuide": "Boyut kılavuzu",
 			"geometrySection": "Karakter boyutu ve kamera",
@@ -2997,6 +3000,7 @@
 		"defaultIdea": "deri şapka",
 		"shortcut": "Eşyayı üretmek için Ctrl+Enter veya Cmd+Enter kullanın.",
 		"useOffHand": "Diğer eli kullanın",
+		"replaces": "Saklandığında {name} öğesinin yerini alır. Eskisi renkleri ve ayarlarıyla birlikte Çöp kutusuna taşınır.",
 		"ideas": "Fikirler",
 		"colorHint": "Renk ipucu",
 		"anyColor": "Fark etmez",
@@ -3540,7 +3544,7 @@
 		"actionLabel": "Bu sorunu bildir",
 		"actionLabelFor": "Bu sorunu bildir: {name}",
 		"title": "Bu sorunu bildir",
-		"intro": "Yalnızca aşağıdaki metni içeren herkese açık bir GitHub kaydı açar. Görsel, istem, ad veya anahtar eklenmez. Kendi GitHub hesabınızla gönderin.",
+		"intro": "Görsellerinizi, istemlerinizi, adlarınızı, dosyalarınızı veya PixelLab anahtarınızı asla içermez. Göndermeden önce GitHub’da gözden geçirirsiniz.",
 		"preview": "Bildirim önizlemesi",
 		"copy": "Bildirimi kopyala",
 		"copied": "Kopyalandı",
@@ -3600,6 +3604,8 @@
 		}
 	},
 	"itemGeneration": {
+		"standingDesignsNeeded": "Önce ayakta duruş tasarımı gerekiyor.",
+		"allPending": "Eksik eşyaların üretimi zaten sürüyor. İlerlemeyi Etkinlik bölümünden izleyin.",
 		"open": "Eşya üret",
 		"title": "Eşya üret: {move}",
 		"inProgress": "Sürüyor",
@@ -3677,7 +3683,7 @@
 		"side": "Panel konumu",
 		"left": "Sol",
 		"right": "Sağ",
-		"autoHide": "Canlı görünümleri açarken paneli gizle",
+		"autoHide": "Üstten görünüm ve Yandan kaydırmalı görünümde paneli gizle",
 		"autoHideHelp": "Küçük dokunmatik ekranlarda geçerli. İstediğin zaman araç çubuğundan yeniden aç.",
 		"notSaved": "Panel ayarları değişti ama tarayıcı bunları kaydedemedi."
 	},
@@ -3690,8 +3696,8 @@
 		"lowerWaist": "Beli alçalt",
 		"automaticStill": "Otomatik: hareketsiz durur",
 		"controls": "Kontroller",
-		"title": "Canlı görünümler",
-		"forCharacter": "{name} karakterinin Üstten görünüm ve Yandan kaydırmalı görünümde oynattığı animasyonlar.",
+		"title": "Oyun modu",
+		"animationHelp": "Karakterinizin Üstten görünüm ve Yandan kaydırmalı görünümlerde kullandığı animasyonlar.",
 		"idle": "Bekleme",
 		"walk": "Yürüme",
 		"run": "Koşma",
@@ -3707,13 +3713,13 @@
 		"automaticNone": "Otomatik: yok",
 		"sameAsAttack": "Saldırı ile aynı",
 		"sideAttackHelp": "Yandan kaydırmalı görünümde yukarı veya aşağı nişan aldığınızda Yukarı saldırı veya Aşağı saldırı oynatılır.",
-		"notSaved": "Canlı görünüm ayarı değişti ancak bu tarayıcı kaydedemedi.",
+		"notSaved": "Oyun modu ayarı değişti ancak bu tarayıcı değişikliği kaydedemedi.",
 		"openCharacter": "Oynatacağı animasyonları seçmek için bir karakter açın.",
 		"mount": "Binek",
 		"actions": "Oyun eylemleri",
 		"withShortcut": "{action} ({key})",
 		"spaceKey": "Boşluk",
-		"noAttack": "Saldırı seçilmedi. Canlı görünüm ayarlarını açın.",
+		"noAttack": "Saldırı seçilmedi. Oyun modu ayarlarını açın.",
 		"noAttackDirection": "{move} için {direction} karesi yok.",
 		"hintTopDown": "WASD ile veya tıklamayı basılı tutarak hareket edin",
 		"hintSide": "A/D ile veya tıklamayı basılı tutarak hareket edin",
@@ -3729,6 +3735,83 @@
 		"colors": "Renklerde ara",
 		"clear": "Aramayı temizle",
 		"results": "{total} içinden {count}"
+	},
+	"projectFolder": {
+		"title": "Proje klasörü",
+		"hint": "Bu karakterin dışa aktarılan dosyalarını oyun projenizde tutun.",
+		"choose": "Klasör seçin…",
+		"change": "Klasörü değiştir",
+		"stop": "Bağlantıyı kaldır",
+		"publishNow": "Şimdi güncelle",
+		"auto": "Otomatik güncelle",
+		"reconnect": "Klasöre yeniden bağlan",
+		"replace": "Listelenen dosyaların üzerine yaz",
+		"keep": "Mevcut dosyaları koru",
+		"review": "İncele",
+		"copy": "Kopyala",
+		"copied": "Kopyalandı",
+		"copyPath": "Yolu kopyala",
+		"pathCopied": "Yol kopyalandı",
+		"brave": "Bunu Brave'de kullanmak için bu adresi adres çubuğuna yapıştırın, ayarı açın ve Brave'i yeniden başlatın:",
+		"kept": {
+			"one": "{count} dosya korundu",
+			"other": "{count} dosya korundu"
+		},
+		"updateKept": "Korunan dosyaları incele",
+		"updated": "Güncellendi: {time}",
+		"tryAgain": "Yeniden dene",
+		"state": {
+			"off": "Bağlı değil · Bu karakterin oyun klasöründeki dosyalarını otomatik olarak güncel tutar",
+			"on": "Otomatik güncelleme açık",
+			"manual": "Otomatik güncelleme kapalı",
+			"updating": "Güncelleniyor…",
+			"attention": "İlgilenilmeli"
+		},
+		"status": {
+			"publishing": "Güncelleniyor…",
+			"done": "Güncel",
+			"already": "Zaten güncel",
+			"reconnect": "PixelDoll'un bu klasöre yeniden erişmesi gerekiyor. Kalıcı olması için “Her ziyarette izin ver” seçeneğini seçin.",
+			"missing": "Klasör bulunamadı. Taşınmış veya silinmiş olabilir.",
+			"blocked": "Güncellemeler duraklatıldı. PixelDoll bu dosyaları onayınız olmadan değiştirmez:",
+			"unavailable": "Bu karakter şu anda dışa aktarılamıyor.",
+			"locked": "Bir dosya başka bir uygulamada açık ya da klasörün yolu çok uzun. Dosyayı kapatın veya daha kısa yollu bir klasör seçin.",
+			"space": "Disk dolu.",
+			"permission": "Bu klasöre izin verilmiyor. Başka bir klasör seçin.",
+			"failed": "Klasöre yazılamadı. Yeniden deneyin.",
+			"taken": "Bu klasörü zaten başka bir karakter kullanıyor. Başka bir klasör seçin.",
+			"outdated": "PixelDoll başka bir sekmede güncellendi. Bu klasörü güncellemeye devam etmek için bu sekmeyi yeniden yükle.",
+			"inside": "Bu klasör, PixelDoll’un yönettiği bir klasörün içinde. Bunun yerine onu içeren klasörü seç.",
+			"unityNested": "Başka bir Unity karakteri bu klasörün içinde veya çevresinde bir klasör kullanıyor. Bir oyundaki tüm Unity karakterlerini aynı klasöre bağla."
+		},
+		"reason": {
+			"edited": "PixelDoll dışında düzenlendi",
+			"notOurs": "Zaten klasördeydi",
+			"deleted": "Silindi",
+			"folder": "Yerinde bir klasör var"
+		},
+		"toast": {
+			"reconnect": "Güncellemeye devam etmek için şu klasöre yeniden bağlanın: {folder}",
+			"paused": "Güncellemeler duraklatıldı: klasördeki dosyalar değişti.",
+			"missing": "Şu klasör bulunamadı: {folder}",
+			"failed": "Şu klasör güncellenemedi: {folder}",
+			"outdated": "{folder} klasörünü güncellemeye devam etmek için PixelDoll’u yeniden yükle."
+		},
+		"justUpdated": "Az önce güncellendi",
+		"matching": {
+			"one": "Bu klasördeki {count} dosya zaten PixelDoll dışa aktarımıyla aynı. Güncel tutulsun mu?",
+			"other": "Bu klasördeki {count} dosya zaten PixelDoll dışa aktarımıyla aynı. Güncel tutulsun mu?"
+		},
+		"adopt": "Güncel tut",
+		"leave": "Olduğu gibi bırak",
+		"section": "Oyun projesi",
+		"reload": "Yeniden yükle",
+		"shared": "Paylaşılan çalışma zamanı: {path}",
+		"manualStep": {
+			"rpg": "{format} karakterleri kendi klasöründen yükler (img/characters veya XP, VX Ace ve VX için Graphics/Characters). Bir güncellemeden sonra sayfaları karakterin README.txt dosyasında anlatıldığı gibi oraya kopyala.",
+			"gdevelop": "Bu karakteri başka bir GDevelop projesine birleştirdiysen, güncellemeleri karakterin gdevelop/README.txt dosyasında anlatıldığı gibi oraya aktar.",
+			"phaserAe": "Hareket veya eşya ekledikten sonra phaser-ae/assets.json içindeki yeni yolları, karakterin phaser-ae/README.txt dosyasında anlatıldığı gibi game/manifest.json dosyasına ekle."
+		}
 	},
 	"spriteViewer": {
 		"missing": "Gösterilecek kare yok",
@@ -3768,11 +3851,11 @@
 		"playOnStage": "Sahnede oynat",
 		"showOnStage": "Sahnede göster",
 		"framesSection": "Kareler ve kalite",
-		"itemsSection": "Eşyalar",
+		"itemsSection": "Gardıroptaki eşyalar",
 		"fixFramesDetail": "{move} karelerinin hepsini çizim uygulamanda düzenle.",
 		"redrawDetail": "{move} hareketini seçtiğin yönlerde yeniden çiz, önce fiyatı gör.",
 		"captureDetail": "{move} hareketinden bir kareyi yeni durum olarak kaydet.",
-		"itemsDetail": "{move} için hâlâ eksik olan giyilen eşyaları çiz.",
+		"itemsDetail": "{move} için çizimi henüz olmayan gardırop eşyalarını seçin.",
 		"itemsComplete": "Her eşya çizildi.",
 		"itemsUnavailable": "Burada eşya çizilemez.",
 		"frames": "Kareler",
@@ -3781,7 +3864,8 @@
 		"exportId": "Dışa aktarma kimliği",
 		"gone": "Bu hareket artık kayıtlı değil.",
 		"itemDrawn": "Çizildi",
-		"itemMissing": "Eksik"
+		"itemMissing": "Eksik",
+		"cantDrawOnMoves": "Henüz hareketlere çizilemiyor"
 	},
 	"tips": {
 		"customizeTitle": "Demoyu giydir",

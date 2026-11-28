@@ -5,6 +5,7 @@
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { displayDirectionInSentence } from './displayDirection.ts';
+	import { displayMove } from './displayMove.ts';
 	import { buildPresentation, itemsHiddenIn } from './experience/presentation.ts';
 	import { experience } from './experience/state.svelte.ts';
 	import {
@@ -85,27 +86,33 @@
 			<span class="row-name">{t('toolbar.showMount')}</span>
 		</SettingsItemToggle>
 	{/snippet}
+	{#snippet poseControls(resolvedClip: string | null)}
+		{#if doc.id}
+			<div class="riding-pose" data-setting="riding-pose" tabindex="-1">
+				<PlaybackPicker
+					settings
+					{clips}
+					moveRefs={moves}
+					selected={pose ?? ''}
+					label={t('toolbar.riderPose')}
+					automatic={t('toolbar.riderPoseRide')}
+					valueLabel={!pose && resolvedClip
+						? t('liveViews.automaticClip', { clip: displayMove(resolvedClip, moves) })
+						: undefined}
+					{unavailable}
+					thumbnail={(key) =>
+						view.project && lookClipThumbnail(view.project, view.items, key, ui.dir)}
+					onselect={choosePose}
+				/>
+				{#if hidden}<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
+						<TriangleAlert size={14} aria-hidden="true" />{t('toolbar.riderPoseHides', {
+							items: hidden
+						})}
+					</p>{/if}
+			</div>
+		{/if}
+	{/snippet}
 </MountPreview>
-{#if doc.id}
-	<div class="riding-pose" data-setting="riding-pose" tabindex="-1">
-		<PlaybackPicker
-			settings
-			{clips}
-			moveRefs={moves}
-			selected={pose ?? ''}
-			label={t('toolbar.riderPose')}
-			automatic={t('toolbar.riderPoseRide')}
-			{unavailable}
-			thumbnail={(key) => view.project && lookClipThumbnail(view.project, view.items, key, ui.dir)}
-			onselect={choosePose}
-		/>
-		{#if hidden}<p class="notice warn small" role="status">
-				<TriangleAlert size={14} aria-hidden="true" />{t('toolbar.riderPoseHides', {
-					items: hidden
-				})}
-			</p>{/if}
-	</div>
-{/if}
 <SettingsItemSegmented
 	label={t('toolbar.hideLegs')}
 	setting="hide-legs"
@@ -125,7 +132,7 @@
 		display: grid;
 		gap: 6px;
 	}
-	.riding-pose .notice {
+	.riding-pose .bu-notice {
 		margin: 0;
 	}
 </style>

@@ -99,7 +99,9 @@
 				>
 				<span>{t('openWorkspace.orChoose')}</span>
 			</button>
-			{#if error}<p class="notice warn" role="alert">{displayMessage(error)}</p>{/if}
+			{#if error}<p class="bu-notice" data-size="compact" data-tone="warning" role="alert">
+					{displayMessage(error)}
+				</p>{/if}
 		{:else}
 			<p>{t('workspaceCopy.developerRequired')}</p>
 		{/if}
@@ -127,6 +129,10 @@
 		padding: 20px 12px;
 		white-space: normal;
 		text-align: center;
+	}
+	h1 {
+		font-size: 18px;
+		font-weight: 600;
 	}
 	section {
 		width: min(100%, 30rem);

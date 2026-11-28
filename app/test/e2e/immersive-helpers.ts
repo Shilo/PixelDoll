@@ -144,12 +144,12 @@ export async function openItemSection(dialog: Locator, name: string) {
 }
 
 /** From an open move or State ⋮ menu, its View and edit window's tool: frame tools (Fix frames, Redraw, Create State
- *  from) under Frames & Quality, Generate items under Items. */
+ *  from) under Frames & quality, Generate items under Items. */
 export async function openClipTool(page: Page, tool: RegExp) {
 	await page.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
 	const window = page.locator('dialog.clip-window[open]');
 	await expect(window).toBeVisible();
-	await openItemSection(window, /Generate items/.test(tool.source) ? 'Items' : 'Frames & Quality');
+	await openItemSection(window, /Generate items/.test(tool.source) ? 'Items' : 'Frames & quality');
 	await window.getByRole('button', { name: tool }).click();
 	return window;
 }

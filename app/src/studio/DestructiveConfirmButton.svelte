@@ -18,6 +18,7 @@
 <button
 	type="button"
 	class="bu-btn destructive-confirm"
+	data-trail="destructive.confirm"
 	data-variant="danger"
 	{disabled}
 	onblur={() => confirm.disarm()}

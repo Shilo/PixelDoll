@@ -3,11 +3,13 @@
 	import { t, type WhisperKey } from 'svelte-whisper';
 	import ReportButton from './ReportButton.svelte';
 	import { message } from '../lib/message.ts';
+	import { displayMessage } from '../lib/i18n.ts';
 	import { balanceFacts } from './report.svelte.ts';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { app, setKey, replaceKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts';
 	import { ApiError } from '../lib/pixellab/client.ts';
 	import Sheet from './Sheet.svelte';
+	import SettingsItemToggle from './SettingsItemToggle.svelte';
 	import AffiliationNotice from './AffiliationNotice.svelte';
 	import PixelLabUsage from './PixelLabUsage.svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
@@ -17,7 +19,8 @@
 		claimPixelLabConnectOpen,
 		connected,
 		clearPendingConnection,
-		pendingConnectionMinimumTier
+		pendingConnectionMinimumTier,
+		pendingConnectionPurchase
 	} from './state.svelte.ts';
 	import { Copy, ExternalLink, RefreshCw, TriangleAlert } from './icons.ts';
 	import RichMessage from './RichMessage.svelte';
@@ -63,7 +66,21 @@
 	let closed = false;
 	const activityScope = crypto.randomUUID();
 	const externalHint = $props.id();
+	const purchaseHint = `${externalHint}-purchase`;
+	const formId = `${externalHint}-form`;
+	const purchaseCost = `${externalHint}-cost`;
+	const purchase = pendingConnectionPurchase();
+	const purchaseEstimate = $derived(purchase ? displayMessage(purchase.estimate) : '');
 	let minimumTier = $state(pendingConnectionMinimumTier() ?? 0);
+	const submitLabel = $derived(
+		t(
+			checking
+				? 'connectSheet.checking'
+				: replacing
+					? 'connectSheet.replaceKey'
+					: 'connectSheet.connect'
+		)
+	);
 	onMount(() => {
 		firstOpen = claimPixelLabConnectOpen() && showForm;
 		if (firstOpen) void tick().then(() => guideIntro?.focus());
@@ -192,6 +209,7 @@
 
 <Sheet
 	{title}
+	footer={showForm ? connectFooter : undefined}
 	back={settingsNavigation.accountOpen ? closeSettingsAccount : undefined}
 	backTo={t('export.sheet.settings')}
 	onclose={() => (ui.sheet = null)}
@@ -227,6 +245,7 @@
 						class="bu-action btn icon plain"
 						data-variant="quiet"
 						aria-label={refreshLabel}
+						data-trail="connect.refresh"
 						title={refreshLabel}
 						onclick={refresh}
 						aria-disabled={refreshing}><RefreshCw size={17} aria-hidden="true" /></button
@@ -235,7 +254,7 @@
 			{/snippet}
 		</PixelLabUsage>
 		{#if app.balanceError}
-			<p class="notice bad small" role="status">
+			<p class="bu-notice" data-size="compact" data-tone="danger" role="status">
 				{t('usage.loadFailed')}<ReportButton
 					message={message('usage.loadFailed')}
 					facts={balanceFacts()}
@@ -247,7 +266,9 @@
 		</p>
 		<TierNotice {minimumTier} feature={t('connectSheet.thisGeneration')} />
 		{#if accountTier(app.balance) === 0}
-			<p class="notice warn small" role="status">{t('connectSheet.freePlanNotice')}</p>
+			<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
+				{t('connectSheet.freePlanNotice')}
+			</p>
 			<div class="field-row">
 				<a
 					class="bu-action btn sm"
@@ -259,8 +280,11 @@
 					>{t('connectSheet.viewPixelLabPlans')} <ExternalLink size={16} aria-hidden="true" /></a
 				>
 				{#if limitedAccess}
-					<button class="bu-action btn sm" data-variant="outline" onclick={finishConnection}
-						>{t('connectSheet.continueWithLimitedAccess')}</button
+					<button
+						class="bu-action btn sm"
+						data-variant="outline"
+						data-trail="connect.continueLimited"
+						onclick={finishConnection}>{t('connectSheet.continueWithLimitedAccess')}</button
 					>
 				{/if}
 			</div>
@@ -271,19 +295,24 @@
 				data-variant="outline"
 				bind:this={replaceButton}
 				aria-label={t('connectSheet.replaceKey')}
+				data-trail="connect.replaceKey"
 				onclick={() => {
 					replacing = true;
 					remember = app.remembered;
 					void focusKey();
 				}}>{t('connectSheet.replaceKey')}</button
 			>
-			<button class="bu-action btn sm" data-variant="outline" onclick={forget}
-				>{t('connectSheet.forgetKey')}</button
+			<button
+				class="bu-action btn sm"
+				data-variant="outline"
+				data-trail="connect.forget"
+				onclick={forget}>{t('connectSheet.forgetKey')}</button
 			>
 		</div>
 		<a
 			class="small"
 			href={accountUrl}
+			data-trail="connect.openAccount"
 			target="_blank"
 			rel="noreferrer"
 			aria-describedby={externalHint}
@@ -332,7 +361,7 @@
 		<TierNotice {minimumTier} feature={t('connectSheet.thisGeneration')} />
 		{#if replacementError}
 			<!-- Only a failed check is a problem to report: a rejected key or a change from another tab is the person's to act on. -->
-			<p class="notice bad small" role="status">
+			<p class="bu-notice" data-size="compact" data-tone="danger" role="status">
 				{t(
 					replacementError
 				)}{#if replacementError === 'connectSheet.balanceError' || replacementError === 'connectSheet.replacementUnverified'}<ReportButton
@@ -341,11 +370,11 @@
 					/>{/if}
 			</p>
 		{:else if app.keyRejected}
-			<p class="notice bad small" role="status">
+			<p class="bu-notice" data-size="compact" data-tone="danger" role="status">
 				{t('connectSheet.keyRejected')}
 			</p>
 		{:else if connectionFailed}
-			<p class="notice bad small" role="status">
+			<p class="bu-notice" data-size="compact" data-tone="danger" role="status">
 				{t('connectSheet.balanceError')}<ReportButton
 					message={message('connectSheet.balanceError')}
 					facts={balanceFacts()}
@@ -353,6 +382,7 @@
 			</p>
 		{/if}
 		<form
+			id={formId}
 			class="form"
 			onsubmit={(e) => {
 				e.preventDefault();
@@ -379,68 +409,84 @@
 							class="bu-action btn sm"
 							data-variant="outline"
 							disabled={checking}
+							data-trail="connect.useSavedKey"
 							onclick={useSavedKey}>{t('workspaceCopy.useSavedKey')}</button
 						>
 					</div>{/if}
-			{:else}<label class="toggle-row"
-					><span>{t('connectSheet.rememberOnThisDevice')}</span><input
-						class="switch"
-						type="checkbox"
-						bind:checked={remember}
-					/></label
+			{:else}
+				<SettingsItemToggle
+					checked={remember}
+					onchange={(event) => (remember = event.currentTarget.checked)}
 				>
+					<span>{t('connectSheet.rememberOnThisDevice')}</span>
+				</SettingsItemToggle>
 			{/if}
-			{#if !workspaceCopy && remember && sharedOrigin}<p class="notice warn small">
+			{#if !workspaceCopy && remember && sharedOrigin}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+				>
 					{t('connectSheet.sharedOriginWarning', { host: location.host })}
 				</p>{/if}
 			<p class="small bu-muted">{t('connectSheet.sentOnlyToApiPixellabAi')}</p>
-			<p class="small bu-muted">{t('connectSheet.demoNoAccount')}</p>
+			{#if !purchase}<p class="small bu-muted">{t('connectSheet.demoNoAccount')}</p>{/if}
 			<AffiliationNotice multiline />
-			<div class="field-row">
-				<a
-					class="bu-action btn"
-					data-variant="outline"
-					href={accountUrl}
-					target="_blank"
-					rel="noreferrer"
-					aria-describedby={externalHint}
-					>{t('connectSheet.getSecretKey')}
-					<ExternalLink size={14} aria-hidden="true" /></a
-				>
-				<span class="actions">
-					{#if app.keyRejected && !checking}<button
-							type="button"
-							class="bu-action btn plain"
-							data-variant="quiet"
-							onclick={forget}>{t('connectSheet.forgetKey')}</button
-						>{/if}
-					{#if replacing && !checking}<button
-							type="button"
-							class="bu-action btn plain"
-							data-variant="quiet"
-							onclick={cancelReplace}>{t('connectSheet.keepKey')}</button
-						>{/if}
-					<span class="api-action"
-						><button
-							class="bu-action btn primary"
-							data-variant="primary"
-							type="submit"
-							disabled={!key.trim() || checking}
-							>{t(
-								checking
-									? 'connectSheet.checking'
-									: replacing
-										? 'connectSheet.replaceKey'
-										: 'connectSheet.connect'
-							)}</button
-						></span
-					>
-				</span>
-			</div>
 		</form>
 	{/if}
 	<span id={externalHint} hidden>{t('noticeLink.opensInANewTab')}</span>
 </Sheet>
+
+{#snippet connectFooter()}
+	{#if purchase && !replacing}
+		<span id={purchaseHint} class="foot-note connect-note">
+			{t('connectSheet.resumePurchase', { name: purchase.name })}
+		</span>
+	{/if}
+	<a
+		class="bu-action btn"
+		data-variant="outline"
+		href={accountUrl}
+		target="_blank"
+		rel="noreferrer"
+		aria-describedby={externalHint}
+		data-trail="connect.getKey"
+		>{t('connectSheet.getSecretKey')}
+		<ExternalLink size={14} aria-hidden="true" /></a
+	>
+
+	<span class="actions">
+		{#if app.keyRejected && !checking}<button
+				type="button"
+				class="bu-action btn plain"
+				data-variant="quiet"
+				data-trail="connect.forgetRejected"
+				onclick={forget}>{t('connectSheet.forgetKey')}</button
+			>{/if}
+		{#if replacing && !checking}<button
+				type="button"
+				class="bu-action btn plain"
+				data-variant="quiet"
+				data-trail="connect.keepKey"
+				onclick={cancelReplace}>{t('connectSheet.keepKey')}</button
+			>{/if}
+		<span class="api-action"
+			><button
+				class="bu-action btn primary"
+				data-variant="primary"
+				type="submit"
+				form={formId}
+				data-trail="connect.submit"
+				disabled={!key.trim() || checking}
+				aria-describedby={purchase && !replacing ? `${purchaseHint} ${purchaseCost}` : undefined}
+				>{submitLabel}
+				{#if purchase && !replacing}<span class="cost" aria-hidden="true">~{purchaseEstimate}</span
+					>{/if}</button
+			>{#if purchase && !replacing}<span id={purchaseCost} hidden
+					>{t('create.sheet.estimated', { gens: purchaseEstimate })}</span
+				>{/if}</span
+		>
+	</span>
+{/snippet}
 
 <style>
 	.trial-guide {
@@ -450,6 +496,10 @@
 		width: 100%;
 		justify-content: space-between;
 		text-align: start;
+	}
+	/* The purchase note takes its own row so the key link and Connect always stay together. */
+	.connect-note {
+		flex-basis: 100%;
 	}
 	.copy-label {
 		display: inline-flex;

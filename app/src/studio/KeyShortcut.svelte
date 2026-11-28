@@ -38,7 +38,7 @@
 		padding: 3px 5px 2px;
 		border: 1px solid var(--bu-line);
 		border-bottom-width: 2px;
-		border-radius: 5px;
+		border-radius: 8px;
 		background: var(--bu-field);
 		font: inherit;
 		/* Full-contrast, semibold monospace labels like printed keycaps: every key gets a full-width cell, so thin keys

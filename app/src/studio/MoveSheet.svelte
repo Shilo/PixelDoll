@@ -562,6 +562,8 @@
 		key: string;
 		source?: MoveSpec['motionSource'];
 		error?: string;
+		/** The probe's own failure, for Report. */
+		cause?: unknown;
 	}>();
 	let motionProbe = $state(0);
 	const managedMotionId = $derived(
@@ -604,7 +606,8 @@
 				if (!controller.signal.aborted) managedMotion = { id, key, source };
 			},
 			(error: unknown) => {
-				if (!controller.signal.aborted) managedMotion = { id, key, error: displayError(error) };
+				if (!controller.signal.aborted)
+					managedMotion = { id, key, error: displayError(error), cause: error };
 			}
 		);
 		return () => controller.abort();
@@ -1530,14 +1533,19 @@
 			{/each}
 		</select>
 	</label>
-	<button class="bu-action" data-variant="quiet" type="button" onclick={device}
-		>{t('moveSheet.fromDevice')}</button
+	<button
+		class="bu-action"
+		data-variant="quiet"
+		type="button"
+		data-trail="move.frameFromDevice"
+		onclick={device}>{t('moveSheet.fromDevice')}</button
 	>
 	{#if kind === 'end' ? frameReference?.start || standingImage : model !== 'skeleton-v3' && frameReference?.end}
 		<button
 			class="bu-action"
 			data-variant="quiet"
 			type="button"
+			data-trail="move.copyFrame"
 			onclick={() => {
 				close();
 				copyFrame(direction, kind);
@@ -1553,6 +1561,7 @@
 		<button
 			class="bu-action btn primary"
 			data-variant="primary"
+			data-trail="move.done"
 			onclick={() => {
 				void dismissMove();
 				ui.sheet = null;
@@ -1563,6 +1572,7 @@
 				class="bu-action btn"
 				data-variant="outline"
 				disabled={moving.resolvingRepair || queue.role === 'follower'}
+				data-trail="move.keepCurrent"
 				onclick={() => void resolveRepairReview(false)}>{t('moveSheet.review.keepCurrent')}</button
 			>{/if}
 		<button
@@ -1571,6 +1581,7 @@
 			disabled={moving.resolvingRepair ||
 				queue.role === 'follower' ||
 				(!moving.repairApplied && nothingChosen)}
+			data-trail="move.useRepairs"
 			onclick={() => void resolveRepairReview(true, keepFailed)}
 			>{moving.repairApplied
 				? t('moveSheet.review.finish')
@@ -1584,14 +1595,18 @@
 		>
 	{:else if progress && moving.error}
 		<div class="recovery-actions">
-			<button class="bu-action btn plain" data-variant="quiet" onclick={() => leaveFailedMove(true)}
-				>{t('common.discard')}</button
+			<button
+				class="bu-action btn plain"
+				data-variant="quiet"
+				data-trail="move.discard"
+				onclick={() => leaveFailedMove(true)}>{t('common.discard')}</button
 			>
 			<div class="recovery-options">
 				{#if !moving.spec?.itemsOnly && ok}
 					<button
 						class="bu-action btn"
 						data-variant="outline"
+						data-trail="move.newSetup"
 						onclick={() => leaveFailedMove(false)}>{t('moveSheet.newSetup')}</button
 					>
 				{/if}
@@ -1602,6 +1617,7 @@
 						data-variant={freeWayOn ? 'outline' : 'primary'}
 						disabled={!!retryAccess.error || tierBlocked(retryTier) || paidRunning}
 						aria-describedby={tierBlocked(retryTier) ? 'move-retry-tier' : undefined}
+						data-trail="move.retry"
 						onclick={() =>
 							moving.spec &&
 							withKey(() => {
@@ -1625,8 +1641,11 @@
 		<!-- new seed re-rolls body + item poses (R6 P2-7) -->
 	{:else if progress}
 		<span class="foot-note" id="sheet-exit-note">{t('common.keepsRunning')}</span>
-		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.moveFormOpen = true)}
-			>{t('moveSheet.queueAnother')}</button
+		<button
+			class="bu-action btn"
+			data-variant="outline"
+			data-trail="move.queueAnother"
+			onclick={() => (ui.moveFormOpen = true)}>{t('moveSheet.queueAnother')}</button
 		>
 	{:else if ok}
 		{@const review = skeletonReview?.review}
@@ -1653,6 +1672,7 @@
 					(!!settingUp.spec && !settingUp.done) ||
 					(!needsConnection && tierBlocked(requiredTier))}
 				aria-describedby={tierBlocked(requiredTier) ? 'move-action-tier' : undefined}
+				data-trail="move.generate"
 				onclick={go}
 				><span>
 					{t(
@@ -1725,7 +1745,13 @@
 				{/each}
 			</select>
 			{#if templateNote === 'error'}
-				<p class="notice warn small" id={`${advancedId}-template-note`} role="status">
+				<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+					id={`${advancedId}-template-note`}
+					role="status"
+				>
 					<CircleAlert size={14} />{templateAccess?.error}
 				</p>
 			{:else if templateNote === 'blocked'}
@@ -2014,7 +2040,7 @@
 				ui.moveFormOpen = false;
 			}}
 		/>{/if}
-	{#if holder}<p class="notice small">
+	{#if holder}<p class="bu-notice" data-size="compact" data-tone="neutral">
 			<CircleAlert size={14} /><span
 				>{moving.repairReview
 					? t('moveSheet.review.heldBy', { character: holder })
@@ -2022,12 +2048,17 @@
 			><button
 				class="bu-action btn sm"
 				data-variant="outline"
+				data-trail="move.openCharacter"
 				onclick={() => void openProject(moving.projectId)}
 				>{t('moveSheet.open', { character: holder })}</button
 			>
 		</p>{/if}
 	{#if mine && ui.moveFormOpen && moving.repairReview}
-		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.moveFormOpen = false)}
+		<button
+			class="bu-action btn"
+			data-variant="outline"
+			data-trail="move.backToReview"
+			onclick={() => (ui.moveFormOpen = false)}
 			>{redrawing ? t('moveSheet.review.redrawTitle') : t('moveSheet.review.repairTitle')}</button
 		>
 	{/if}
@@ -2048,7 +2079,11 @@
 						: t('moveSheet.review.repairIssues')}
 					{t('moveSheet.review.noCost')}
 				</p>{/if}
-			{#if repairReview.kept && !moving.repairApplied}<p class="notice warn small">
+			{#if repairReview.kept && !moving.repairApplied}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+				>
 					{displayNestedMessage(
 						message('moveSheet.review.stopped', {
 							frames: repairReview.kept.map((index) => formatNumber(index + 1)),
@@ -2058,7 +2093,11 @@
 					)}
 					{#if repairReview.stoppedBy}{displayNestedMessage(repairReview.stoppedBy)}{/if}
 				</p>{/if}
-			{#if repairReview.skipped?.length}<p class="small notice">
+			{#if repairReview.skipped?.length}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="neutral"
+				>
 					<CircleAlert size={14} /><span
 						>{t('moveSheet.review.skippedViews', {
 							views: repairReview.skipped.map(directionLabel).join(', ')
@@ -2113,7 +2152,7 @@
 					</ul>
 				</details>{/if}
 			{#if moving.error}<ProblemNotice error={moving.error} />{/if}
-			{#if queue.role === 'follower'}<p class="notice small">
+			{#if queue.role === 'follower'}<p class="bu-notice" data-size="compact" data-tone="neutral">
 					{redrawing
 						? t('moveSheet.review.redrawInManagingTab')
 						: t('moveSheet.review.repairInManagingTab')}
@@ -2137,7 +2176,7 @@
 			{#if review.approvedDirs?.some((dir) => moving.spec?.animation?.references?.[dir]?.end)}
 				<p class="small">{t('moveSheet.endFrame')}: {t('moveSheet.endUnavailable')}</p>
 			{/if}
-			{#if review.replace}<p class="notice small">
+			{#if review.replace}<p class="bu-notice" data-size="compact" data-tone="neutral">
 					{t('moveSheet.redrawHidesEquipment')}
 					{t('moveSheet.redrawOtherMoves')}
 				</p>{/if}
@@ -2178,7 +2217,12 @@
 			<!-- The paid review names each stopped view's reason under its frames; the summary shows only a reason it does not. -->
 			{#if moving.error && !errorInReview}<ProblemNotice error={moving.error} />{/if}
 			{#if moving.error}
-				{#if retryAccess.error || recoveryAccess.error}<p class="notice warn small" role="status">
+				{#if retryAccess.error || recoveryAccess.error}<p
+						class="bu-notice"
+						data-size="compact"
+						data-tone="warning"
+						role="status"
+					>
 						{retryAccess.error || recoveryAccess.error}
 					</p>{/if}
 				{#if retryTier || recoveryTier}<TierNotice
@@ -2192,6 +2236,7 @@
 				{#if moving.error && !moving.done && !recoveryAccess.error}<button
 						class="bu-action btn primary frame-recovery-action"
 						data-variant="primary"
+						data-trail="move.useSaved"
 						onclick={() =>
 							moving.spec &&
 							void startMove(moving.projectId, {
@@ -2208,7 +2253,7 @@
 					blocked={!!retryAccess.error || tierBlocked(retryTier)}
 					onchoose={choosePaid}
 				/>{/if}
-			{#if recoveryUnavailable.length}<p class="notice small">
+			{#if recoveryUnavailable.length}<p class="bu-notice" data-size="compact" data-tone="neutral">
 					{recoveryUnavailable.map(displayNestedMessage).join(' ')}
 				</p>{/if}
 			{#if ownQueued.length}<p class="muted small">
@@ -2242,7 +2287,11 @@
 										})}
 									/>{/each}
 							</div>
-							{#each view.warnings as warning (warning)}<p class="notice warn small">
+							{#each view.warnings as warning (warning)}<p
+									class="bu-notice"
+									data-size="compact"
+									data-tone="warning"
+								>
 									<CircleAlert size={14} />{bodyQualityNote(warning, t)}
 								</p>{/each}
 						</div>
@@ -2250,12 +2299,13 @@
 					{#if moving.error && !moving.done}<button
 							class="bu-action btn primary frame-recovery-action"
 							data-variant="primary"
+							data-trail="move.keepFrames"
 							onclick={keepBody}>{t('moveSheet.keepFrames')}</button
 						>{/if}
 				</section>
 			{/if}
 			{#if recovery}
-				<p class="notice warn small">
+				<p class="bu-notice" data-size="compact" data-tone="warning">
 					{[
 						t('moveSheet.recovery.reuse'),
 						recovery.checks
@@ -2279,12 +2329,13 @@
 						data-variant="primary"
 						disabled={!!recoveryAccess.error || tierBlocked(recoveryTier)}
 						aria-describedby={tierBlocked(recoveryTier) ? 'move-retry-tier' : undefined}
+						data-trail="move.retryChecks"
 						onclick={retryChecks}
 						>{recovery.checks ? t('moveSheet.retryChecks') : t('moveSheet.reuseCached')}</button
 					>{/if}
 			{/if}
 			{#if colorRepair}
-				<p class="notice warn small">
+				<p class="bu-notice" data-size="compact" data-tone="warning">
 					{[
 						t('moveSheet.color.match', {
 							pixels: t('moveSheet.color.pixels', { count: colorRepair.changedPixels }),
@@ -2313,23 +2364,35 @@
 						data-variant="primary"
 						disabled={!!recoveryAccess.error || tierBlocked(recoveryTier)}
 						aria-describedby={tierBlocked(recoveryTier) ? 'move-retry-tier' : undefined}
+						data-trail="move.matchColors"
 						onclick={matchColors}>{t('moveSheet.matchColors')}</button
 					>{/if}
 			{/if}
 			{#if recoveryError}<ProblemNotice error={recoveryError} />{/if}
-			{#if paidUnread}<p class="notice warn small">{t('paidReview.loadFailed')}</p>
-				<button class="bu-action" type="button" data-variant="quiet" onclick={() => paidReads++}
-					>{t('common.tryAgain')}</button
+			{#if paidUnread}<p class="bu-notice" data-size="compact" data-tone="warning">
+					{t('paidReview.loadFailed')}
+				</p>
+				<button
+					class="bu-action"
+					type="button"
+					data-variant="quiet"
+					data-trail="move.retryPaidRead"
+					onclick={() => paidReads++}>{t('common.tryAgain')}</button
 				>{/if}
-			{#each moving.warnings as warning (warning)}<p class="notice warn small">
+			{#each moving.warnings as warning (warning)}<p
+					class="bu-notice"
+					data-size="compact"
+					data-tone="warning"
+				>
 					<CircleAlert size={14} />{bodyQualityNote(warning, t)}
 				</p>{/each}
 			{#if skeletonOffer && !tierBlocked(skeletonOffer.tier)}
-				<p class="notice small">
+				<p class="bu-notice" data-size="compact" data-tone="neutral">
 					<span>{t('moveSheet.skeleton.hint')}</span>
 					<button
 						class="bu-action btn sm"
 						data-variant="outline"
+						data-trail="move.skeletonReview"
 						onclick={() => (reviewingSkeletonFor = moving.spec)}
 					>
 						{t('moveSheet.skeleton.title')}
@@ -2346,12 +2409,13 @@
 	{:else if !isDemo() && !ok && recFor !== doc.id}
 		<!-- Still reading the character: no setup notice flashes before readiness is known. -->
 	{:else if isDemo() || !ok}
-		<p class="notice small">
+		<p class="bu-notice" data-size="compact" data-tone="neutral">
 			<CircleAlert size={14} />{isDemo() ? t('moveSheet.demo') : t('moveSheet.needsSetup')}
 		</p>
 		{#if !isDemo()}<button
 				class="bu-action btn primary"
 				data-variant="primary"
+				data-trail="move.setup"
 				onclick={() => (ui.sheet = 'setup')}
 				>{openerLabel(t('setup.title'))}<SurfaceChevron /></button
 			>{/if}
@@ -2359,7 +2423,7 @@
 		<div class="form move-form" class:redraw-form={replacing} class:split={showAdvanced}>
 			<div class="move-main">
 				{#if frameFallback}
-					<p class="notice warn small" role="status">
+					<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
 						{t('creationSettings.fallback', {
 							setting: t('moveSheet.frames'),
 							value: t('creationSettings.autoFrames', { count: defaultFrames })
@@ -2427,12 +2491,22 @@
 										</div>
 									{/each}
 								</div>
-								{#if fitReview.unchecked.length}<p class="notice warn small" role="status">
+								{#if fitReview.unchecked.length}<p
+										class="bu-notice"
+										data-size="compact"
+										data-tone="warning"
+										role="status"
+									>
 										{t('stateJointFit.notChecked', {
 											directions: displayDirectionList(fitReview.unchecked)
 										})}
 									</p>{/if}
-								{#if fitReview.notFitted.length}<p class="notice warn small" role="status">
+								{#if fitReview.notFitted.length}<p
+										class="bu-notice"
+										data-size="compact"
+										data-tone="warning"
+										role="status"
+									>
 										{t('stateJointFit.notFitted', {
 											directions: displayDirectionList(fitReview.notFitted)
 										})}
@@ -2441,6 +2515,7 @@
 									class="bu-action"
 									data-variant="primary"
 									disabled={fitBusy}
+									data-trail="move.saveFit"
 									onclick={saveFit}
 								>
 									{t('stateJointFit.save')}
@@ -2449,7 +2524,12 @@
 									{t('moveSheet.skeleton.back')}
 								</button>
 							{:else if fitQuote}
-								<button class="bu-action" data-variant="primary" onclick={measureFit}>
+								<button
+									class="bu-action"
+									data-variant="primary"
+									data-trail="move.measureFit"
+									onclick={measureFit}
+								>
 									{t('stateJointFit.measure')}
 									<span class="cost"
 										>{fitQuote.generations
@@ -2462,6 +2542,7 @@
 									class="bu-action"
 									data-variant="outline"
 									disabled={fitBusy}
+									data-trail="move.checkFitCost"
 									onclick={checkFitCost}
 								>
 									{t(
@@ -2473,7 +2554,12 @@
 									)}
 								</button>
 							{/if}
-							{#if fitError}<p class="notice small" role="alert">
+							{#if fitError}<p
+									class="bu-notice"
+									data-size="compact"
+									data-tone="neutral"
+									role="alert"
+								>
 									{displayNestedMessage(fitError)}
 								</p>{/if}
 						</div>
@@ -2533,7 +2619,12 @@
 											? selectedDirs.filter((selected) => selected !== dir)
 											: [...selectedDirs, dir])}
 								/>
-								<p class="notice warn small" id="move-redraw-warning">
+								<p
+									class="bu-notice"
+									data-size="compact"
+									data-tone="warning"
+									id="move-redraw-warning"
+								>
 									{t('moveSheet.redrawHidesEquipment')}
 									{#if affectedMirrors}{t('moveSheet.redrawMirrors', {
 											directions: affectedMirrors
@@ -2614,6 +2705,7 @@
 								data-variant="quiet"
 								aria-expanded={advancedOpen}
 								aria-controls="{advancedId}-advanced"
+								data-trail="move.advanced"
 								onclick={() => void toggleAdvanced()}
 								><ChevronRight size={14} />{t('common.advanced')}{#if advancedNote}<span
 										class="faint advanced-note">{advancedNote}</span
@@ -2631,7 +2723,12 @@
 						{/if}
 					</div>
 					{#if motionAccess?.error}
-						<p class="notice warn small"><CircleAlert size={14} />{motionAccess.error}</p>
+						<p class="bu-notice" data-size="compact" data-tone="warning">
+							<CircleAlert size={14} />{motionAccess.error}<ReportButton
+								error={motionAccess.cause}
+								tone="warning"
+							/>
+						</p>
 						<button
 							class="bu-action"
 							type="button"
@@ -2639,12 +2736,18 @@
 							onclick={() => motionProbe++}>{t('common.tryAgain')}</button
 						>
 					{/if}
-					{#if reservedMove(id, replacing)}<p class="notice warn small">
+					{#if reservedMove(id, replacing)}<p
+							class="bu-notice"
+							data-size="compact"
+							data-tone="warning"
+						>
 							<CircleAlert size={14} />{displayError(reservedMove(id, replacing))}
-						</p>{:else if motionIssue}<p class="notice warn small">
+						</p>{:else if motionIssue}<p class="bu-notice" data-size="compact" data-tone="warning">
 							<CircleAlert size={14} />{displayError(motionIssue)}
 						</p>{:else if preflight.length}{#each preflight as warning (warning.id)}<p
-								class="notice warn small"
+								class="bu-notice"
+								data-size="compact"
+								data-tone="warning"
 							>
 								<CircleAlert size={14} />{displayError(warning)}
 							</p>
@@ -2653,17 +2756,32 @@
 									class="bu-action btn"
 									data-variant="outline"
 									disabled={enlarging || !!frameEditsBlocked(doc.id)}
+									data-trail="move.makeRoom"
 									onclick={() => void room()}>{t('moveSheet.makeRoom')}</button
 								>
-								{#if enlargeError}<p class="notice bad small" role="alert">
+								{#if enlargeError}<p
+										class="bu-notice"
+										data-size="compact"
+										data-tone="danger"
+										role="alert"
+									>
 										{displayError(enlargeError)}<ReportButton error={enlargeError} />
 									</p>{/if}
-							{/if}{/each}{:else if pendingIds.includes(id)}<p class="notice small">
+							{/if}{/each}{:else if pendingIds.includes(id)}<p
+							class="bu-notice"
+							data-size="compact"
+							data-tone="neutral"
+						>
 							<CircleAlert size={14} />{t('moveSheet.alreadyQueued', { move: nice(id) })}
 						</p>{:else if busy}<p class="faint small">
 							{t('moveSheet.waitsForCurrent')}
 						</p>{/if}
-					{#if addAccess.error}<p class="notice warn small" role="status">
+					{#if addAccess.error}<p
+							class="bu-notice"
+							data-size="compact"
+							data-tone="warning"
+							role="status"
+						>
 							{addAccess.error}
 						</p>{/if}
 					<TierNotice
@@ -2777,7 +2895,7 @@
 		align-items: center;
 		gap: 8px 12px;
 	}
-	.redraw-directions .notice {
+	.redraw-directions .bu-notice {
 		flex: 1 1 125px;
 	}
 	.move-cost-note {

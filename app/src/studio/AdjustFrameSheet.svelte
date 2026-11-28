@@ -211,12 +211,20 @@
 				<p class="faint small" id="adjust-frame-keys">{t('adjustFrame.keys')}</p>
 			</div>
 			<div class="controls">
-				<button class="bu-action btn room" data-variant="outline" disabled={busy} onclick={room}
-					><WandSparkles size={16} />{t('adjustFrame.makeRoom')}</button
+				<button
+					class="bu-action btn room"
+					data-variant="outline"
+					data-trail="adjustFrame.makeRoom"
+					disabled={busy}
+					onclick={room}><WandSparkles size={16} />{t('adjustFrame.makeRoom')}</button
 				>
 				<p class="muted small">{t('adjustFrame.makeRoomHelp')}</p>
-				{#if note}<p class="notice small" role="status">{displayMessage(note)}</p>{/if}
-				{#if short && !changed}<p class="notice warn small">{t('adjustFrame.short')}</p>{/if}
+				{#if note}<p class="bu-notice" data-size="compact" data-tone="neutral" role="status">
+						{displayMessage(note)}
+					</p>{/if}
+				{#if short && !changed}<p class="bu-notice" data-size="compact" data-tone="warning">
+						{t('adjustFrame.short')}
+					</p>{/if}
 				{#if directions.length > 1}
 					<label class="control-row direction">
 						<span class="label">{t('adjustFrame.direction')}</span>
@@ -234,12 +242,14 @@
 							class="bu-action btn"
 							data-variant="outline"
 							disabled={busy}
+							data-trail="adjustFrame.up"
 							onclick={() => nudge(-1)}><ArrowUp size={16} />{t('adjustFrame.up')}</button
 						>
 						<button
 							class="bu-action btn"
 							data-variant="outline"
 							disabled={busy}
+							data-trail="adjustFrame.down"
 							onclick={() => nudge(1)}><ArrowDown size={16} />{t('adjustFrame.down')}</button
 						>
 					</div>
@@ -261,24 +271,31 @@
 						onchange={() => (note = '')}
 					/>
 				</div>
-				{#if issue}<p class="notice warn small" role="status">{displayError(issue)}</p>
-				{:else if step}<p class="notice small">{t(STEP_TEXT[step])}</p>{/if}
+				{#if issue}<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
+						{displayError(issue)}
+					</p>
+				{:else if step}<p class="bu-notice" data-size="compact" data-tone="neutral">
+						{t(STEP_TEXT[step])}
+					</p>{/if}
 				{#if changed}<p class="muted small">{t('adjustFrame.consequences')}</p>{/if}
-				{#if blocked}<p class="notice warn small" role="status">{displayError(blocked)}</p>{/if}
+				{#if blocked}<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
+						{displayError(blocked)}
+					</p>{/if}
 				{#if blockedByWork(blocked)}<button
 						class="bu-btn"
+						data-trail="adjustFrame.viewPendingWork"
 						onclick={() =>
 							void openPendingWork({
 								projectId: id,
 								flows: !!blocked && blocked.translation.key !== 'adjustFrame.errors.resolveDrafts'
 							})}>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
 					>{/if}
-				{#if error}<p class="notice bad small" role="alert">
+				{#if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 						{displayNestedMessage(error)}<ReportButton {error} />
 					</p>{/if}
 			</div>
 		</div>
-	{:else if error}<p class="notice bad small" role="alert">
+	{:else if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			{displayNestedMessage(error)}<ReportButton {error} />
 		</p>
 	{:else}<p class="muted" role="status">{t('adjustFrame.loading')}</p>{/if}
@@ -287,6 +304,7 @@
 				class="bu-action btn plain"
 				data-variant="quiet"
 				disabled={busy}
+				data-trail="adjustFrame.downloadBackup"
 				onclick={() => void downloadCharacterZip(id)}
 				><Download size={16} />{t('directionsSheet.downloadBackup')}</button
 			>{/if}
@@ -294,6 +312,7 @@
 			class="bu-action btn primary"
 			data-variant="primary"
 			disabled={!changed || !!issue || !!blocked || busy}
+			data-trail="adjustFrame.save"
 			onclick={() => void save()}>{busy ? t('directionsSheet.saving') : t('common.save')}</button
 		>
 	{/snippet}

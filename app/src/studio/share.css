@@ -133,7 +133,9 @@
 	.share-controls {
 		gap: 4px;
 	}
-	.share-picker select.bu-select,
+	.share-picker select.bu-select {
+		font-size: 16px;
+	}
 	.share-animate.bu-check {
 		font-size: 12px;
 	}

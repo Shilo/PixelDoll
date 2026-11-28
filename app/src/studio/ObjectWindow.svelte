@@ -69,10 +69,11 @@
 	{#snippet tools()}
 		{#if menu}
 			<button
-				class="bu-action btn plain icon"
+				class="bu-action btn plain icon window-menu"
 				data-variant="quiet"
 				popovertarget={menuId}
 				aria-haspopup="menu"
+				data-trail="window.menu"
 				aria-label={menuLabel}
 				title={menuLabel}><EllipsisVertical size={20} aria-hidden="true" /></button
 			>
@@ -111,6 +112,11 @@
 </Sheet>
 
 <style>
+	.btn.icon.window-menu {
+		flex: none;
+		width: 44px;
+		height: 44px;
+	}
 	/* Header (only the window's own: a viewer opens inside this dialog): one line of type icon, name, one status and the
 	   scope picker. The name truncates first; its heading keeps the full name. It starts at the edge (an identity row,
 	   not a centered title) so the line has the room it needs. */

@@ -123,6 +123,7 @@
 		.mobile-share,
 		.mobile-export,
 		.mobile-fullscreen,
+		.mobile-audio,
 		.mobile-inspect,
 		.mobile-mount,
 		.mobile-sep
@@ -301,14 +302,14 @@
 		display: none;
 	}
 }
-/* Wherever the character name would get too narrow, the optional actions move into More one at a time from left to
-   right: Undo, Redo, Random look, Share, Export, and Full screen only as a last resort (Toolbar.svelte fitActions).
+/* To keep the character name readable, less essential actions move into More in Toolbar.svelte's priority order.
    Share's popover then points at More. */
 .experience[data-overflow~='undo'] .header-undo,
 .experience[data-overflow~='redo'] .header-redo,
 .experience[data-overflow~='random'] .header-random,
 .experience[data-overflow~='share'] .header-share,
 .experience[data-overflow~='export'] .header-export,
+.experience[data-overflow~='audio'] .header-audio,
 .experience[data-overflow~='fullscreen'] .experience-header .header-fullscreen {
 	display: none !important;
 }
@@ -317,6 +318,7 @@
 .experience[data-overflow~='random'] .mobile-random,
 .experience[data-overflow~='share'] .mobile-share,
 .experience[data-overflow~='export'] .mobile-export,
+.experience[data-overflow~='audio'] .mobile-audio,
 .experience[data-overflow~='fullscreen'] .mobile-fullscreen {
 	display: flex !important;
 }
@@ -1650,13 +1652,17 @@
 	display: grid;
 	align-items: center;
 }
+/* The rail's captions match the form's other field labels (.help-title): muted 14px semibold. */
 .studio-app .character-sheet .creator-guide h3 {
 	display: flex;
 	align-items: center;
 	min-height: 44px;
-	font-size: 16px;
-	font-weight: 400;
+	font-size: 14px;
+	font-weight: 600;
 	color: var(--bu-muted);
+}
+.studio-app .character-sheet .creator-rail .reference-label {
+	font-weight: 600;
 }
 .studio-app .character-sheet .creator-guide .size-guide {
 	height: auto;
@@ -1795,12 +1801,6 @@
 }
 .studio-app .character-sheet .direction-presets:lang(ko) .btn:nth-child(4) {
 	grid-column: span 4;
-}
-.studio-app .character-sheet .prompt-excerpt {
-	font-size: 14px;
-	height: 84px;
-	-webkit-line-clamp: 4;
-	line-clamp: 4;
 }
 @media (max-width: 1250px) {
 	.studio-app .character-sheet .creator-grid {

@@ -475,8 +475,8 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
 	);
 	await expect(page.locator('.customize-action')).toBeEnabled();
-	await expect(page.locator('.selected-name-text')).toHaveText('Adventurer (Demo)');
-	await expect(page.locator('.character-row strong .bu-muted')).toHaveText('(Demo)');
+	await expect(page.locator('.selected-name-text')).toHaveText('Adventurer (demo)');
+	await expect(page.locator('.character-row strong .bu-muted')).toHaveText('(demo)');
 	await page
 		.getByRole('button', { name: 'More actions for Adventurer (demo)', exact: true })
 		.click();
@@ -593,7 +593,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 		'4 directions · 1 state · 2 moves · 6 items'
 	]);
 	await page.locator('.customize-action').click();
-	await expect(page.locator('.name-text')).toHaveText('Adventurer (Demo)');
+	await expect(page.locator('.name-text')).toHaveText('Adventurer (demo)');
 	await expect(page.locator('.name-facts')).toHaveText(
 		'64×64 px frame · 4 directions · 2 moves · 6 items'
 	);
@@ -604,7 +604,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await expect(moveDetails.getByText(/^64×64 px, pivot /)).toBeVisible();
 	await expect(moveDetails.getByText(/^\d+×\d+ px$/)).toBeVisible();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
+	await page.getByRole('button', { name: 'Make editable copy', exact: true }).click();
 	await expect(page.locator('.name-text')).toHaveText('Saved hero');
 	const viewport = page.viewportSize()!;
 	await page.setViewportSize({ width: 320, height: 700 });
@@ -612,7 +612,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await expect(page.locator('.name-text')).toHaveText('Saved hero');
 	await page.setViewportSize(viewport);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await expect(page.getByRole('menuitem', { name: 'Make editable copy', exact: true })).toHaveCount(
+	await expect(page.getByRole('button', { name: 'Make editable copy', exact: true })).toHaveCount(
 		0
 	);
 });
@@ -664,6 +664,13 @@ test('character actions download and delete an unopened character without select
 	const menu = page.getByRole('menu', { name: 'Actions for Disposable hero', exact: true });
 	await expect(menu).toBeVisible();
 	await expect(selected).toContainText('Adventurer');
+	const actions = await menu.getByRole('menuitem').allTextContents();
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'Select Disposable hero', exact: true }).click({
+		button: 'right'
+	});
+	await expect(menu.getByRole('menuitem')).toHaveText(actions);
+	await expect(selected).toContainText('Adventurer');
 	const downloaded = page.waitForEvent('download');
 	await menu.getByRole('menuitem', { name: 'Download ZIP', exact: true }).click();
 	const download = await downloaded;
@@ -693,6 +700,38 @@ test('character actions download and delete an unopened character without select
 			return !!(await (await import(path)).get('projects', id));
 		}, target)
 	).toBe(false);
+
+	const demoMenu = page.getByRole('menu', { name: 'Actions for Adventurer (demo)', exact: true });
+	await page.locator('.selected-name').click({ button: 'right' });
+	await expect(demoMenu.getByRole('menuitem', { name: 'Make editable copy' })).toBeVisible();
+	const demoActions = await demoMenu.getByRole('menuitem').allTextContents();
+	await page.keyboard.press('Escape');
+	await page.locator('.customize-action').click();
+	await page.locator('.name-menu').click({ button: 'right' });
+	await expect(demoMenu.getByRole('menuitem')).toHaveText(demoActions);
+	await page.keyboard.press('Escape');
+	const stage = page.locator('.world-stage');
+	for (const view of ['Preview', 'Top-down', 'Side-scroller']) {
+		await page.getByRole('button', { name: view, exact: true }).click();
+		await expect(stage).toHaveAttribute('data-presentation', /still|animation/);
+		const hit = await stage.locator('.world-actors').evaluate((canvas: HTMLCanvasElement) => {
+			const { width, height } = canvas;
+			const pixels = canvas.getContext('2d')!.getImageData(0, 0, width, height).data;
+			for (let y = 0; y < height; y++) {
+				for (let x = 0; x < width; x++) {
+					if (pixels[(y * width + x) * 4 + 3] === 255)
+						return { x: (x + 0.5) / devicePixelRatio, y: (y + 0.5) / devicePixelRatio };
+				}
+			}
+			throw new Error('No character pixels on the stage');
+		});
+		await page.mouse.click(hit.x, hit.y, { button: 'right' });
+		// Only Preview offers the menu; the live views keep right-click for attacking.
+		if (view === 'Preview') {
+			await expect(demoMenu.getByRole('menuitem')).toHaveText(demoActions);
+			await page.keyboard.press('Escape');
+		} else await expect(demoMenu).toBeHidden();
+	}
 });
 
 test('character rows keep their ⋮ out of sight until hover or keyboard focus on desktop', async ({
@@ -795,7 +834,7 @@ test('the Add character header button offers separate import sources on desktop 
 			menu.locator('[role="menuitem"] > svg[data-surface-chevron][aria-hidden="true"]')
 		).toHaveCount(3);
 		await expect(menu.getByRole('menuitem')).toHaveText([
-			'Create…Needs a PixelLab key and uses paid generations',
+			'Create…',
 			'From file…',
 			'From PixelLab…'
 		]);
@@ -1293,7 +1332,7 @@ test('device import includes sibling moves and preserves explicit selections whe
 	const moves = dialog.getByRole('group', { name: 'Moves to import', exact: true }),
 		base = moves.getByRole('checkbox', { name: /^Base appearance/ }),
 		punch = moves.getByRole('checkbox', { name: /^Punch appearance/ });
-	const states = dialog.getByRole('group', { name: 'Also import as States', exact: true });
+	const states = dialog.getByRole('group', { name: 'Also import as states', exact: true });
 	const punchState = states.getByRole('checkbox', { name: 'Punch appearance', exact: true });
 	await expect(punchState).toBeChecked();
 	await expect(
@@ -1355,8 +1394,8 @@ test('device import includes sibling moves and preserves explicit selections whe
 	await page.keyboard.press('Escape');
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Right punch', exact: true }).click();
-	await openClipTool(page, /^Create State from/);
-	const capture = page.getByRole('dialog', { name: 'New State', exact: true });
+	await openClipTool(page, /^Create state from/);
+	const capture = page.getByRole('dialog', { name: 'New state', exact: true });
 	await expect(
 		capture.getByRole('button', { name: 'Source: Right punch', exact: true })
 	).toBeVisible();
@@ -1460,7 +1499,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 		]);
 		await menu.getByRole('menuitem', { name: 'View and edit…', exact: true }).click();
 		const window = page.locator('dialog.character-window[open]');
-		await openItemSection(window, 'Frame & Directions');
+		await openItemSection(window, 'Frame & directions');
 		await window.getByRole('button', { name: /^Directions/ }).click();
 	};
 	await openDirections();
@@ -1515,7 +1554,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 			.getByRole('menuitem', { name: 'View and edit…', exact: true })
 			.click();
 		const window = page.locator('dialog.character-window[open]');
-		await openItemSection(window, 'Frame & Directions');
+		await openItemSection(window, 'Frame & directions');
 		await window.getByRole('button', { name: /^Adjust frame/ }).click();
 		return page.getByRole('dialog', { name: 'Adjust frame', exact: true });
 	};
@@ -1801,7 +1840,7 @@ test('standing state updates retain the preview, optional moves, edited names an
 		.all())
 		await checkbox.uncheck();
 	for (const checkbox of await dialog
-		.getByRole('group', { name: 'Also import as States' })
+		.getByRole('group', { name: 'Also import as states' })
 		.getByRole('checkbox')
 		.all())
 		await checkbox.uncheck();
@@ -1906,7 +1945,7 @@ test('an incompatible sibling move can be unchecked after the initial import err
 	});
 	await expect(dialog.getByRole('alert')).toContainText('Uncheck that state to continue');
 	const incompatible = dialog
-		.getByRole('group', { name: 'Also import as States' })
+		.getByRole('group', { name: 'Also import as states' })
 		.getByRole('checkbox', { name: 'Punch appearance', exact: true });
 	await expect(incompatible).not.toBeChecked();
 	await expect(incompatible).toBeDisabled();
@@ -1981,7 +2020,7 @@ test('PixelLab link import initially selects all compatible states and sibling m
 		.getByRole('group', { name: 'Moves to import' })
 		.getByRole('checkbox', { name: /^Punch appearance/ });
 	const punchState = dialog
-		.getByRole('group', { name: 'Also import as States' })
+		.getByRole('group', { name: 'Also import as states' })
 		.getByRole('checkbox', { name: 'Punch appearance', exact: true });
 	await expect(punch).toBeChecked();
 	await expect(punchState).toBeChecked();
@@ -2214,7 +2253,7 @@ test('suspicious imported walking joints plan a priced frozen-frame alternative 
 	expect(planned.extension[0]).toMatchObject({ path: '/inpaint-v3', generations: 10 });
 	await pickItem(page, 'Leather vest');
 	const pane = await selectedItemDetails(page);
-	await openItemSection(pane, 'Moves & States');
+	await openItemSection(pane, 'Moves & states');
 	await expect(pane.getByRole('button', { name: /^Generate \d+ moves?/ })).toContainText(
 		'~10 gens'
 	);
@@ -2539,7 +2578,7 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 			.setInputFiles({ name: 'saved-character.zip', mimeType: 'application/zip', buffer: bytes });
 		await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
 		const appearanceNote = page
-			.locator('.notice')
+			.locator('.bu-notice[data-size="compact"]')
 			.filter({ hasText: 'Clothes drawn on the character' });
 		await expect(appearanceNote).toContainText('To remove or change them after import:');
 		await page.getByLabel('Character name', { exact: true }).fill(name);
@@ -2692,14 +2731,14 @@ test('Import pages bring moves and items back free from the character ZIP, by br
 	await sheet.getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentMode(page, 'States');
 	drop = await dragZip(panel);
-	await expect(hint).toHaveText('Drop to import States');
+	await expect(hint).toHaveText('Drop to import states');
 	await drop();
-	const stateSheet = page.getByRole('dialog', { name: 'Import States', exact: true });
+	const stateSheet = page.getByRole('dialog', { name: 'Import states', exact: true });
 	await expect(stateSheet.getByRole('status')).toHaveText(sameBody);
-	await stateSheet.getByRole('button', { name: 'Back to New State', exact: true }).click();
-	await expect(page.getByRole('dialog', { name: 'New State', exact: true })).toBeVisible();
+	await stateSheet.getByRole('button', { name: 'Back to New state', exact: true }).click();
+	await expect(page.getByRole('dialog', { name: 'New state', exact: true })).toBeVisible();
 	await page
-		.getByRole('dialog', { name: 'New State', exact: true })
+		.getByRole('dialog', { name: 'New state', exact: true })
 		.getByRole('button', { name: 'Close', exact: true })
 		.click();
 	// Items: trash one, then New item pages to Import, keeping its typed draft, and takes the ZIP dropped on the page.
@@ -2934,7 +2973,9 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await page.getByRole('button', { name: /Page two hero/ }).click();
 	await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible();
 	await expect(
-		dialog.locator('.notice').filter({ hasText: 'Clothes drawn on the character' })
+		dialog
+			.locator('.bu-notice[data-size="compact"]')
+			.filter({ hasText: 'Clothes drawn on the character' })
 	).toBeVisible();
 	// Back drops the staged review, so it asks first.
 	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
@@ -3196,8 +3237,8 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	expect(reconnected.skeletons).toEqual(rigged.skeletons);
 	expect(reconnected.rigQa).toEqual(rigged.rigQa);
 	await equipmentMode(page, 'States');
-	await page.getByRole('button', { name: 'New State…', exact: true }).click();
-	const emptyCapture = page.getByRole('dialog', { name: 'New State', exact: true });
+	await page.getByRole('button', { name: 'New state…', exact: true }).click();
+	const emptyCapture = page.getByRole('dialog', { name: 'New state', exact: true });
 	await emptyCapture.getByRole('button', { name: 'Source: Standing', exact: true }).click();
 	await expect(page.getByRole('menu', { name: 'Source' }).getByRole('menuitemradio')).toHaveText([
 		'Standing'
@@ -3208,7 +3249,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	).toBeFocused();
 	await expect(emptyCapture.getByText(/^Frame \d+ of \d+$/)).toHaveCount(0);
 	await expect(
-		emptyCapture.getByRole('button', { name: 'Create State', exact: true })
+		emptyCapture.getByRole('button', { name: 'Create state', exact: true })
 	).toBeEnabled();
 	await emptyCapture.getByRole('button', { name: 'Close', exact: true }).click();
 	expect(before.manifest.rig.rest?.west?.keypoints).toHaveLength(18);
@@ -3315,8 +3356,8 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 			release();
 		};
 	});
-	const createState = page.getByRole('dialog', { name: 'New State', exact: true });
-	await openClipTool(page, /^Create State from/);
+	const createState = page.getByRole('dialog', { name: 'New state', exact: true });
+	await openClipTool(page, /^Create state from/);
 	await createState.getByRole('button', { name: 'Close', exact: true }).click();
 	await expect(createState).not.toBeVisible();
 	await expect(
@@ -3324,7 +3365,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	).toBeFocused();
 	expect((await read()).manifest).toEqual(after.manifest);
 	await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
-	await openClipTool(page, /^Create State from/);
+	await openClipTool(page, /^Create state from/);
 	await expect(createState).toBeVisible();
 	idle.frames[0].ms += 1;
 	await page.evaluate(
@@ -3348,19 +3389,19 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 			}),
 		after
 	);
-	await createState.getByRole('button', { name: 'Create State', exact: true }).click();
+	await createState.getByRole('button', { name: 'Create state', exact: true }).click();
 	await expect(createState.getByText('The source changed.', { exact: false })).toBeVisible();
 	await expect(
-		createState.getByRole('button', { name: 'Create State', exact: true })
+		createState.getByRole('button', { name: 'Create state', exact: true })
 	).toBeDisabled();
 	expect((await read()).manifest).toEqual(after.manifest);
 	await createState.getByRole('button', { name: 'Reload source', exact: true }).click();
 	await expect(
-		createState.getByRole('button', { name: 'Create State', exact: true })
+		createState.getByRole('button', { name: 'Create state', exact: true })
 	).toBeEnabled();
 	await createState.getByRole('button', { name: 'Close', exact: true }).click();
 	await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
-	await openClipTool(page, /^Create State from/);
+	await openClipTool(page, /^Create state from/);
 	const nextFrame = createState.getByRole('button', { name: 'Next frame', exact: true });
 	await expect(
 		createState.getByRole('button', { name: 'Source: Idle', exact: true })
@@ -3385,7 +3426,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(previewFacing).not.toHaveAttribute('data-facing', pausedFacing!);
 	await expect(nextFrame).toBeEnabled();
 	await expect(createState.getByText('No credits used.', { exact: true })).toBeVisible();
-	const createButton = createState.getByRole('button', { name: 'Create State', exact: true });
+	const createButton = createState.getByRole('button', { name: 'Create state', exact: true });
 	await createState.getByLabel('State name', { exact: true }).fill('Standing');
 	await expect(createButton).toBeDisabled();
 	await createState.getByLabel('State name', { exact: true }).fill('Rest pose');
@@ -3422,7 +3463,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	for (const direction of ['south', 'east', 'north', 'west'] as const)
 		expect(cells['rest-pose'][direction]).toEqual([cells.idle[direction]![chosenCell]]);
 	const panel = page.getByRole('tabpanel', { name: 'States', exact: true });
-	const addState = panel.getByRole('button', { name: 'New State…', exact: true });
+	const addState = panel.getByRole('button', { name: 'New state…', exact: true });
 	await expect(panel.locator('.cta + details')).toBeVisible();
 	await addState.click();
 	await createState.getByRole('button', { name: 'Source: Standing', exact: true }).click();
@@ -3603,12 +3644,12 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		posts.filter(
 			({ path }) => path.endsWith('/edit-images-v2') || path.endsWith('/create-character-state')
 		);
-	// The price arrives by itself; the one Generate State button enables once it is shown.
-	const generateState = newState.getByRole('button', { name: 'Generate State', exact: true });
+	// The price arrives by itself; the one Generate state button enables once it is shown.
+	const generateState = newState.getByRole('button', { name: 'Generate state', exact: true });
 	await expect(generateState).toBeEnabled();
-	// Only the Generate State button approves a paid request, never Enter in a field.
+	// Only the Generate state button approves a paid request, never Enter in a field.
 	await newState.getByRole('textbox', { name: 'State name' }).press('Enter');
-	await expect(newState.getByText('This State will be saved in PixelDoll only.')).toBeVisible();
+	await expect(newState.getByText('This state will be saved in PixelDoll only.')).toBeVisible();
 	expect(statePosts()).toHaveLength(0);
 	await generateState.click();
 	// Like a Move, the State generates in the background: the sheet closes and the States list tracks it.
@@ -3691,7 +3732,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await equipmentMode(page, 'States');
 	await pendingRow.click();
 	await expect(
-		stateReview.getByText('The frame this State started from changed after generating.', {
+		stateReview.getByText('The frame this state started from changed after generating.', {
 			exact: false
 		})
 	).toBeVisible();
@@ -3786,7 +3827,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await ridingIdea.click();
 	await expect(newState.getByText('Skeleton V3', { exact: true })).toBeVisible();
 	const beforeRide = posts.length;
-	await newState.getByRole('button', { name: 'Generate State', exact: true }).click();
+	await newState.getByRole('button', { name: 'Generate state', exact: true }).click();
 	const ridingRow = panel.getByRole('button', { name: 'Riding Ready to review', exact: true });
 	await ridingRow.click();
 	const ridingReview = page.getByRole('dialog', { name: 'Riding', exact: true });
@@ -3920,9 +3961,9 @@ test('a managed State reloads its child without another submission', async ({
 	);
 	images = result.images;
 	await equipmentMode(page, 'States');
-	const addState = page.getByRole('button', { name: 'New State…', exact: true });
+	const addState = page.getByRole('button', { name: 'New state…', exact: true });
 	await addState.click();
-	const dialog = page.getByRole('dialog', { name: 'New State', exact: true });
+	const dialog = page.getByRole('dialog', { name: 'New state', exact: true });
 	const panel = dialog;
 	await panel.getByRole('switch', { name: 'Edit this pose' }).check();
 	// A built-in move's name the character lacks is accepted and kept as the label, under an id the Idle move never uses.
@@ -3932,7 +3973,7 @@ test('a managed State reloads its child without another submission', async ({
 		'false'
 	);
 	await panel.getByRole('textbox', { name: 'Instructions' }).fill('Hold a potion');
-	const generate = panel.getByRole('button', { name: 'Generate State', exact: true });
+	const generate = panel.getByRole('button', { name: 'Generate state', exact: true });
 	await expect(generate).toBeEnabled();
 	expect(posts).toHaveLength(0);
 	await generate.click();
@@ -4088,12 +4129,12 @@ test('a paid State review keeps its usable facings and names missing, undownload
 	);
 	images = result.images;
 	await equipmentMode(page, 'States');
-	await page.getByRole('button', { name: 'New State…', exact: true }).click();
-	const dialog = page.getByRole('dialog', { name: 'New State', exact: true });
+	await page.getByRole('button', { name: 'New state…', exact: true }).click();
+	const dialog = page.getByRole('dialog', { name: 'New state', exact: true });
 	await dialog.getByRole('switch', { name: 'Edit this pose' }).check();
 	await dialog.getByRole('textbox', { name: 'State name' }).fill('Potion');
 	await dialog.getByRole('textbox', { name: 'Instructions' }).fill('Hold a potion');
-	const generate = dialog.getByRole('button', { name: 'Generate State', exact: true });
+	const generate = dialog.getByRole('button', { name: 'Generate state', exact: true });
 	await expect(generate).toBeEnabled();
 	await generate.click();
 	await expect(dialog).toBeHidden();
@@ -4326,9 +4367,9 @@ test('a State interrupted after its first batch sends only the unqueued views af
 		}, projectId);
 	const flashPosts = () => posts.filter(({ path }) => path.endsWith('/edit-image-pro-flash'));
 	await equipmentMode(page, 'States');
-	const addState = page.getByRole('button', { name: 'New State…', exact: true });
+	const addState = page.getByRole('button', { name: 'New state…', exact: true });
 	await addState.click();
-	const dialog = page.getByRole('dialog', { name: 'New State', exact: true });
+	const dialog = page.getByRole('dialog', { name: 'New state', exact: true });
 	const panel = dialog;
 	await panel.getByRole('switch', { name: 'Edit this pose' }).check();
 	await panel.getByRole('textbox', { name: 'State name' }).fill('Torch ready');
@@ -4344,7 +4385,7 @@ test('a State interrupted after its first batch sends only the unqueued views af
 	await listed.click();
 	await expect(model).toHaveValue('pro-flash');
 	await expect(model.getByRole('button')).toHaveText('Pro Flash');
-	const generate = panel.getByRole('button', { name: 'Generate State', exact: true });
+	const generate = panel.getByRole('button', { name: 'Generate state', exact: true });
 	await expect(generate).toBeEnabled();
 	await expect(panel.locator('.state-footer strong')).toHaveText(price);
 	await generate.click();
@@ -4353,7 +4394,7 @@ test('a State interrupted after its first batch sends only the unqueued views af
 	const row = page
 		.getByRole('tabpanel', { name: 'States', exact: true })
 		.getByRole('button', { name: /^Torch ready/ });
-	await expect(row).toContainText('Generating State…');
+	await expect(row).toContainText('Generating state…');
 	// Nothing waits on it: another State can be started while this one runs.
 	await addState.click();
 	await expect(panel.getByRole('switch', { name: 'Edit this pose' })).toBeVisible();

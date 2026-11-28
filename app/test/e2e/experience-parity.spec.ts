@@ -165,6 +165,27 @@ async function landing(page: Page, url = '/') {
 	await expect(page.locator('.customize-action')).toBeEnabled();
 }
 
+test('browser Back returns from Customize to Characters before leaving PixelDoll', async ({
+	page
+}) => {
+	await page.route('**/before-pixeldoll', (route) =>
+		route.fulfill({ contentType: 'text/html', body: '<title>Previous page</title>' })
+	);
+	await page.goto('/before-pixeldoll');
+	await landing(page);
+	await page.locator('.customize-action').click();
+	await expect(modes(page)).toBeVisible();
+
+	await page.goBack();
+	await expect(selection(page)).toBeVisible();
+	await page.goForward();
+	await expect(modes(page)).toBeVisible();
+	await page.goBack();
+	await expect(selection(page)).toBeVisible();
+	await page.goBack();
+	await expect(page).toHaveTitle('Previous page');
+});
+
 /** The character search shows once the list overflows or holds six or more characters; short fixtures make it scroll. */
 async function revealCharacterSearch(page: Page) {
 	const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
@@ -189,7 +210,7 @@ test('rapid clicks operate controls without selecting their labels', async ({ pa
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Connect PixelLab…', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-	const remember = dialog.getByRole('checkbox', { name: 'Remember on this device' });
+	const remember = dialog.getByRole('switch', { name: 'Remember on this device' });
 	const label = dialog.getByText('Remember on this device', { exact: true });
 	const initial = await remember.isChecked();
 	await remember.evaluate((control: HTMLInputElement) => {
@@ -394,7 +415,7 @@ test('full screen includes the whole app and survives screen changes, dialogs an
 	await expect(enter).toBeEnabled();
 });
 
-test('full screen stays reachable beside More on narrow and landscape screens', async ({
+test('full screen stays reachable from the header or More on narrow and landscape screens', async ({
 	page
 }) => {
 	await landing(page);
@@ -417,6 +438,8 @@ test('full screen stays reachable beside More on narrow and landscape screens', 
 		for (const studio of [false, true]) {
 			if (studio) await page.locator('.customize-action').click();
 			const toggle = page.getByRole('button', { name: 'Enter full screen', exact: true });
+			const more = page.getByRole('button', { name: 'More options', exact: true });
+			if (!(await toggle.isVisible())) await more.click();
 			await expect(toggle).toBeInViewport();
 			const box = (await toggle.boundingBox())!;
 			expect(box.width).toBeGreaterThanOrEqual(44);
@@ -424,7 +447,12 @@ test('full screen stays reachable beside More on narrow and landscape screens', 
 			expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
 			// A real pointer activation also detects overlapping header controls or navigation tabs.
 			await toggle.click();
-			await page.getByRole('button', { name: 'Exit full screen', exact: true }).click();
+			await expect
+				.poll(() => page.evaluate(() => document.fullscreenElement === document.documentElement))
+				.toBe(true);
+			const exit = page.getByRole('button', { name: 'Exit full screen', exact: true });
+			if (!(await exit.isVisible())) await more.click();
+			await exit.click();
 			if (studio) await page.locator('.header-back').click();
 		}
 	}
@@ -504,8 +532,17 @@ test('full screen and view navigation stay separate while Activity is in the hea
 		await expect
 			.poll(overlap, { message: `View navigation overlaps header at ${width}px` })
 			.toBe(false);
-		await page.getByRole('button', { name: 'Enter full screen', exact: true }).click();
-		await page.getByRole('button', { name: 'Exit full screen', exact: true }).click();
+		// Narrow bars keep Export and move Full screen into More, where it still works.
+		if (await page.locator('.experience-header .header-fullscreen').isVisible()) {
+			await page.getByRole('button', { name: 'Enter full screen', exact: true }).click();
+			await page.getByRole('button', { name: 'Exit full screen', exact: true }).click();
+		} else {
+			await page.locator('.experience-header [popovertarget="experience-options"]').click();
+			await expect(
+				page.locator('#experience-options').getByRole('button', { name: 'Enter full screen' })
+			).toBeVisible();
+			await page.keyboard.press('Escape');
+		}
 	}
 });
 
@@ -867,6 +904,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 		// A one-cell State drawn from Walk's first column stands in for a saved riding stance.
 		fixture.rig.animations.push({
 			id: 'riding',
+			name: 'Sidesaddle',
 			kind: 'state',
 			cells: 1,
 			loop: false,
@@ -1135,7 +1173,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await page.setViewportSize({ width: 1920, height: 900 });
 	await toggle.click();
 	const riderPose = mountMenu.getByRole('button', { name: /^Riding pose:/ });
-	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic');
+	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic: Sidesaddle');
 	await riderPose.click();
 	const poseMenu = page.getByRole('menu', { name: 'Riding pose', exact: true });
 	await expect(poseMenu).toBeVisible();
@@ -1244,7 +1282,8 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await page.getByRole('alertdialog').getByRole('button', { name: 'Reset this page' }).click();
 	await expect(shown).not.toBeChecked();
 	await expect(legMode('Far leg')).toBeChecked();
-	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic');
+	// After reload the bundled demo can fall back to its Walk artwork without the injected State.
+	await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic: Walk');
 	expect(await savedMount()).toEqual({ show: false, legs: 'far', poses: {} });
 	// The bundled demo keeps its own seat edit even though its source artwork is read-only.
 	const facing = mountMenu.getByRole('combobox', { name: 'Seat direction', exact: true });
@@ -1291,6 +1330,12 @@ touchTest(
 				frames: [{ cell: 0, ms: 100 }]
 			});
 			const body = m.items.find(({ id }) => id === m.rig.baseItem)!.layers[0];
+			m.rig.animations.push({
+				...m.rig.animations.find(({ id }) => id === 'walk')!,
+				id: 'ride',
+				name: 'Saddle trot'
+			});
+			body.cells!.ride = { north: body.cells!.walk.north };
 			body.cells!.riding = Object.fromEntries(
 				Object.entries(body.cells!.walk).map(([dir, row]) => [dir, row!.slice(0, 1)])
 			);
@@ -1343,8 +1388,10 @@ touchTest(
 		await expect(marker).toBeVisible();
 		await expect(facing.locator('option')).toHaveText(['South', 'East', 'North', 'West']);
 		await facing.selectOption('north');
+		await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic: Saddle trot');
 		const wide = (await facing.boundingBox())!.width;
 		await facing.selectOption('east');
+		await expect(riderPose).toHaveAccessibleName('Riding pose: Automatic: Riding');
 		await expect.poll(async () => (await facing.boundingBox())!.width).toBe(wide);
 		await expect(canvas).toHaveAttribute('data-facing', 'east');
 		await expect(play).toBeEnabled();
@@ -3750,14 +3797,20 @@ test('translated State and Move tabs do not overlap on a 320px phone', async ({ 
 	}
 });
 
-test('a 320px bar keeps the panel toggle before More and moves actions into More left to right for a long name', async ({
+test('a 320px bar keeps Export and the panel toggle reachable for a long name', async ({
 	page
 }) => {
-	// Audio is a separate always-available control: mute it so this covers the panel toggle's fit alone.
+	// Keep the audio shortcut visible until the header needs its room.
 	await page.addInitScript(() =>
 		localStorage.setItem(
 			'pixeldoll.audio',
-			JSON.stringify({ muted: true, musicMuted: true, effectsMuted: true, music: 0, effects: 0 })
+			JSON.stringify({
+				muted: false,
+				musicMuted: false,
+				effectsMuted: false,
+				music: 20,
+				effects: 20
+			})
 		)
 	);
 	await page.setViewportSize({ width: 320, height: 568 });
@@ -3770,12 +3823,11 @@ test('a 320px bar keeps the panel toggle before More and moves actions into More
 	const barBox = (await bar.boundingBox())!;
 	expect(barBox.x).toBe(8);
 	expect(page.viewportSize()!.width - barBox.x - barBox.width).toBe(8);
-	// The demo's short name leaves room: nothing moves beyond what phones always keep in More.
-	await expect(page.locator('.experience')).not.toHaveAttribute('data-overflow');
+	await expect(bar.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
 	expect(await fits()).toBe(true);
 	await more.click();
-	await page.getByRole('menuitem', { name: 'Make editable copy', exact: true }).click();
-	await expect(page.locator('.name-text')).not.toContainText('(Demo)');
+	await page.getByRole('button', { name: 'Make editable copy', exact: true }).click();
+	await expect(page.locator('.name-text')).not.toContainText('(demo)');
 	await page.locator('.project-btn').click();
 	await currentCharacterAction(page, 'Rename…');
 	const rename = page.getByRole('dialog', { name: 'Rename character', exact: true });
@@ -3786,11 +3838,8 @@ test('a 320px bar keeps the panel toggle before More and moves actions into More
 	await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 	await expect(toggle).toHaveAttribute('aria-controls', 'customization-rail');
 	await expect(toggle.locator('svg')).toHaveClass(/lucide-panel-bottom-close/);
-	// Export moves into More first; whatever else moved is a prefix of the left-to-right order.
-	await expect(page.locator('.header-export')).toBeHidden();
-	const order = ['undo', 'redo', 'random', 'share', 'export', 'fullscreen'];
-	const moved = (await page.locator('.experience').getAttribute('data-overflow'))!.split(' ');
-	expect(moved).toEqual(order.slice(0, moved.length));
+	await expect(bar.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
+	await expect(bar.getByRole('button', { name: 'Enter full screen', exact: true })).toHaveCount(0);
 	expect(await fits()).toBe(true);
 	const placed = (await toggle.boundingBox())!;
 	const end = (await more.boundingBox())!;
@@ -3803,8 +3852,11 @@ test('a 320px bar keeps the panel toggle before More and moves actions into More
 	await expect(page.locator('#customization-rail')).toBeHidden();
 	expect(await toggle.boundingBox()).toEqual(placed);
 	await more.click();
-	await page.locator('#experience-options .mobile-export').click();
-	await expect(page.getByRole('dialog')).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Enter full screen', exact: true })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Audio settings', exact: true })).toBeVisible();
+	await page.keyboard.press('Escape');
+	await bar.getByRole('button', { name: 'Export', exact: true }).click();
+	await expect(page.getByRole('dialog', { name: 'Export', exact: true })).toBeVisible();
 });
 
 test('Moves stays in place, disabled with its reason, in the live views', async ({ page }) => {
@@ -4156,9 +4208,9 @@ test.describe('customization panel on compact touch screens', () => {
 		await toggle.tap();
 		await page.keyboard.press('Control+,');
 		const search = page.getByRole('searchbox', { name: 'Search settings' });
-		await search.fill('Hide panel when entering Live Views');
-		await page.getByRole('button', { name: /Hide panel when entering Live Views/ }).click();
-		const autoHide = page.getByRole('switch', { name: 'Hide panel when entering Live Views' });
+		await search.fill('Hide panel in Top-down and Side-scroller');
+		await page.getByRole('button', { name: /Hide panel in Top-down and Side-scroller/ }).click();
+		const autoHide = page.getByRole('switch', { name: 'Hide panel in Top-down and Side-scroller' });
 		await expect(autoHide).toBeChecked();
 		await autoHide.uncheck();
 		await page.keyboard.press('Escape');
@@ -5693,7 +5745,7 @@ test.describe('live views actions', () => {
 		}
 		await page.keyboard.press('Control+,');
 		const settings = page.getByRole('dialog', { name: 'Settings' });
-		await settings.getByRole('button', { name: 'Live views', exact: true }).click();
+		await settings.getByRole('button', { name: 'Play mode', exact: true }).click();
 		expect(
 			await settings
 				.locator('[data-setting^="live-"]')
@@ -5759,12 +5811,15 @@ test.describe('live views actions', () => {
 		await attackFrame('false', 'disabled');
 	});
 
-	test('Live views settings save the clip each action plays per character', async ({ page }) => {
+	test('Play mode settings save the clip each action plays per character', async ({ page }) => {
 		await customize(page);
 		await page.keyboard.press('Control+,');
 		const settings = page.getByRole('dialog', { name: 'Settings' });
-		const open = () => settings.getByRole('button', { name: 'Live views', exact: true }).click();
+		const open = () => settings.getByRole('button', { name: 'Play mode', exact: true }).click();
 		await open();
+		await expect(
+			settings.getByText('Animations your character uses in Top-down and Side-scroller.')
+		).toBeVisible();
 		const attack = settings.getByRole('button', { name: /^Attack: / });
 		await expect(attack).toHaveAccessibleName('Attack: Automatic: Cross punch');
 		await attack.click();
@@ -5858,6 +5913,30 @@ test.describe('live views actions', () => {
 			) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
 			const x = async () => Number((await host.getAttribute('data-position'))!.split(',')[0]);
 			try {
+				for (const name of ['Sprint', 'Mount']) {
+					const toggle = actions.getByRole('button', { name, exact: true });
+					const { x, y } = boxes[name];
+					const fill = () => toggle.evaluate((button) => getComputedStyle(button).backgroundColor);
+					await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+					const offFill = await fill();
+					const beforeToggle = await cueCount();
+					await touch('touchStart', [{ x: Math.round(x), y: Math.round(y), id: 3 }]);
+					await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+					await expect(toggle).toHaveCSS('scale', '0.92');
+					const heldFill = await fill();
+					expect(heldFill).not.toBe(offFill);
+					expect(await cueCount(), `${name} plays its cue on touchdown`).toBe(beforeToggle + 1);
+					await touch('touchEnd', []);
+					await expect(toggle).not.toHaveAttribute('data-pressed', '');
+					const onFill = await fill();
+					expect(onFill).not.toBe(heldFill);
+					expect(onFill).not.toBe(offFill);
+					expect(await cueCount()).toBe(beforeToggle + 1);
+					await toggle.tap();
+					await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+					await expect(toggle).toHaveCSS('background-color', offFill);
+				}
+
 				const beforeAttack = await cueCount();
 				await touch('touchStart', [move]);
 				await touch('touchMove', [{ ...move, x: move.x + 42 }]);

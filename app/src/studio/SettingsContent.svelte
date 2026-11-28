@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { onMount, tick, type Snippet } from 'svelte';
+	import { onMount, tick, untrack, type Snippet } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { getLocale, t, type WhisperKey } from 'svelte-whisper';
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
+	import { revealSetting } from './settingsReveal.ts';
 	import { pwa } from '../lib/pwa.ts';
 	import { getKeyRevision } from '../lib/app.svelte.ts';
 	import { isResettableSection, resetSettings, type ResetScope } from './resetSettings.ts';
@@ -94,6 +95,8 @@
 	function setPanelSide(side: PanelSide) {
 		if (!setPanelSettings({ side })) toast(message('studioPanel.notSaved'), { tone: 'warning' });
 	}
+	const mayLinkFolders =
+		!workspaceCopy && ('showDirectoryPicker' in globalThis || 'brave' in navigator);
 	const sections = [
 		{
 			id: 'pixellab',
@@ -289,7 +292,17 @@
 					label: 'export.settings.defaultTarget',
 					terms: ['export.settings.format', 'export.group.engines', 'export.settings.versionMenu'],
 					names: Object.values(exportFormatNames)
-				}
+				},
+				// Only where a folder can be linked, or in Brave, whose row explains how to allow it.
+				...(mayLinkFolders
+					? [
+							{
+								id: 'project-folder',
+								label: 'projectFolder.title' as WhisperKey,
+								terms: ['projectFolder.hint' as WhisperKey]
+							}
+						]
+					: [])
 			]
 		},
 		{
@@ -419,6 +432,27 @@
 		);
 	});
 
+	// openSettings(section, entry): bring that row into view once its page has rendered, then forget the request.
+	$effect(() => {
+		const request = settingsNavigation.reveal;
+		if (!request || !panel) return;
+		// Navigating elsewhere first cancels it, so it never pulls focus back later.
+		if (request.section !== settingsNavigation.section) {
+			settingsNavigation.reveal = null;
+			return;
+		}
+		const controller = new AbortController();
+		void revealSetting(panel, request.entry, controller.signal).then(() => {
+			if (settingsNavigation.reveal?.id === request.id) settingsNavigation.reveal = null;
+		});
+		// Leaving the page, closing Settings or a newer request stops this one before it can move focus.
+		return () => controller.abort();
+	});
+	// Typing a search is a new destination: forget a pending reveal.
+	$effect(() => {
+		if (query) untrack(() => (settingsNavigation.reveal = null));
+	});
+
 	async function show(section: SettingsSection | null, entry?: string) {
 		if (entry === 'reset') {
 			resetScope = 'all';
@@ -498,6 +532,7 @@
 						<button
 							class="row bu-action"
 							data-variant="quiet"
+							data-setting-section={section.id}
 							data-active={active?.id === section.id}
 							aria-current={active?.id === section.id ? 'page' : undefined}
 							disabled={busy}
@@ -536,6 +571,7 @@
 			{#each matches as { section, entry } (entry.id)}
 				<button
 					class="row bu-action search-result"
+					data-trail="settings.searchResult"
 					data-variant="quiet"
 					disabled={busy || (entry.id === 'reset' && settingsAtDefaults('all'))}
 					onclick={() => show(section.id, entry.id)}
@@ -647,7 +683,9 @@
 					>
 						<Download size={18} aria-hidden="true" />
 						<span class="export-character-label" aria-hidden="true"
-							>{beforeName}<bdi>{name}</bdi>{afterName}</span
+							><span class="export-character-words">{beforeName}</span><bdi>{name}</bdi><span
+								class="export-character-words">{afterName}</span
+							></span
 						>
 						<SurfaceChevron />
 					</SettingsItemButton>
@@ -734,18 +772,6 @@
 		display: grid;
 		gap: 8px;
 	}
-	:global(dialog.sheet.settings-sheet.center) {
-		width: min(640px, calc(100vw - 32px));
-		height: min(720px, calc(100dvh - 32px));
-	}
-	:global(dialog.settings-sheet.bottom) {
-		height: 100dvh;
-		max-height: 100dvh;
-	}
-	:global(dialog.settings-sheet.side) {
-		width: min(100%, 560px);
-		height: 100dvh;
-	}
 	.settings-content,
 	.settings-index,
 	.settings-panel {
@@ -764,7 +790,7 @@
 	}
 	.settings-heading {
 		margin: 0;
-		font-size: 1.125rem;
+		font-size: 18px;
 		font-weight: 600;
 	}
 	.settings-content :global(.row:not([popover] *)) {
@@ -781,6 +807,11 @@
 		min-inline-size: 0;
 		white-space: pre-wrap;
 	}
+	/* Only the character's name gives way (to an ellipsis); the words around it never break apart. */
+	.export-character-words {
+		flex: none;
+		white-space: pre;
+	}
 	.export-character-label bdi {
 		min-inline-size: 0;
 		overflow: hidden;
@@ -788,7 +819,7 @@
 		white-space: nowrap;
 	}
 	nav button[aria-current='page'] {
-		font-weight: 700;
+		font-weight: 600;
 	}
 	nav button :global(svg) {
 		flex: none;
@@ -822,12 +853,8 @@
 		}
 	}
 	@media (min-width: 660px) and (min-height: 520px) {
-		/* Two columns scroll on their own, so a long page never carries the index away. The page adds no height of its
-		   own, so the centered dialog grows to fit the whole index and stops at the window's sheet margin; a modal dialog is
-		   inset on every side, so auto would stretch it. */
-		:global(dialog.sheet.settings-sheet.center) {
-			height: fit-content;
-		}
+		/* Two columns scroll on their own, so a long page never carries the index away (the shared height is in
+		   studio.css, settings-size). */
 		:global(.sheet-body:has(> .settings-content)) {
 			padding: 0;
 			overflow: hidden;

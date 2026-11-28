@@ -74,19 +74,27 @@
 >
 	<h2 id="{id}-title">{title}</h2>
 	{#if children}<div id="{id}-body" class="confirm-body">{@render children()}</div>{/if}
-	{#if problem}<p class="notice warn small" role="alert">
+	{#if problem}<p class="bu-notice" data-size="compact" data-tone="warning" role="alert">
 			<TriangleAlert size={16} aria-hidden="true" /><span>{problem}</span>
 		</p>{/if}
 	{#if problemAction}<div class="problem-action">{@render problemAction()}</div>{/if}
 	<div class="confirm-actions">
-		<button bind:this={keep} class="bu-btn" disabled={busy} onclick={oncancel}
-			>{cancel ?? t('common.cancel')}</button
+		<button
+			bind:this={keep}
+			class="bu-btn"
+			data-trail="confirm.cancel"
+			disabled={busy}
+			onclick={oncancel}>{cancel ?? t('common.cancel')}</button
 		>
 		{#if actionButton}
 			{@render actionButton(busy ? busyAction : action, busy || blocked, onconfirm)}
 		{:else}
-			<button class="bu-btn" data-variant="danger" disabled={busy || blocked} onclick={onconfirm}
-				>{busy ? busyAction : action}</button
+			<button
+				class="bu-btn"
+				data-variant="danger"
+				data-trail="confirm.accept"
+				disabled={busy || blocked}
+				onclick={onconfirm}>{busy ? busyAction : action}</button
 			>
 		{/if}
 	</div>
@@ -106,7 +114,7 @@
 	}
 	h2 {
 		margin: 0 0 8px;
-		font-size: 17px;
+		font-size: 18px;
 		font-weight: 600;
 		overflow-wrap: anywhere;
 	}
@@ -117,7 +125,7 @@
 	.confirm-body :global(p) {
 		margin: 0;
 	}
-	.notice {
+	.bu-notice {
 		margin: 12px 0 0;
 		text-align: left;
 	}

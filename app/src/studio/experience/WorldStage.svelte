@@ -103,12 +103,14 @@
 		missing = $bindable(null),
 		place,
 		stageRoom,
-		onmode
+		onmode,
+		oncharacteractions
 	}: {
 		missing: { clip: string; direction: DirectionName; items: Item[] } | null;
 		place: Layout;
 		stageRoom: number;
 		onmode: (mode: WorldMode) => void;
+		oncharacteractions: (source: HTMLElement, at: DOMRect) => void;
 	} = $props();
 	let note = $state('');
 	let host: HTMLDivElement,
@@ -516,25 +518,29 @@
 			stepPreviewFrame(k === '.' ? 1 : -1);
 		}
 	}
-	// Where each Preview facing stands, so a click on a companion selects it.
-	let picks: { direction: DirectionName; l: number; r: number; t: number; b: number }[] = [];
+	type HitBox = { l: number; r: number; t: number; b: number };
+	// Preview facings also use these bounds for left-click selection.
+	let picks: (HitBox & { direction: DirectionName })[] = [];
 	let pendingTap: {
 		pointerId: number;
 		x: number;
 		y: number;
 		direction: DirectionName | undefined;
 	} | null = null;
-	const picked = (e: { clientX: number; clientY: number }) =>
+	type PointerLocation = { clientX: number; clientY: number };
+	const hits = (e: PointerLocation, box: HitBox) =>
+		e.clientX >= box.l && e.clientX <= box.r && e.clientY >= box.t && e.clientY <= box.b;
+	const picked = (e: PointerLocation) =>
 		experience.mode === 'preview' && !ui.sheet
-			? picks.find(
-					(p) =>
-						p.direction !== ui.dir &&
-						e.clientX >= p.l &&
-						e.clientX <= p.r &&
-						e.clientY >= p.t &&
-						e.clientY <= p.b
-				)?.direction
+			? picks.find((p) => p.direction !== ui.dir && hits(e, p))?.direction
 			: undefined;
+	// Only Preview offers the character menu; in the live views a right press always attacks.
+	function openActorMenu(e: MouseEvent) {
+		if (e.defaultPrevented || e.button !== 2 || ui.sheet || doc.loading) return;
+		if (experience.mode !== 'preview' || !picks.some((p) => hits(e, p))) return;
+		e.preventDefault();
+		oncharacteractions(host, new DOMRect(e.clientX, e.clientY, 1, 1));
+	}
 	function down(e: PointerEvent) {
 		const live = experience.mode !== 'preview';
 		if (ui.sheet || (e.button !== 0 && !(live && e.pointerType === 'mouse' && e.button === 2)))
@@ -734,7 +740,7 @@
 		if (e.pointerType === 'mouse' && e.button === 0 && !typing(e.target)) handoff = true;
 		else keys.clear();
 	}
-	/** The stage's own right press is an attack, not a menu; a menu opened any other way ends a keyboard walk. */
+	/** Suppress the browser menu for claimed attacks. A menu opened any other way ends a keyboard walk. */
 	function contextMenu(e: MouseEvent) {
 		// A keyboard-opened menu (Shift+F10, the Menu key) reports button 0 and always stays native.
 		if (
@@ -1876,6 +1882,7 @@
 		actions.releaseJump('key');
 	}}
 	onpointerdown={down}
+	oncontextmenu={openActorMenu}
 	onpointermove={drag}
 	onpointerup={up}
 	onpointercancel={up}

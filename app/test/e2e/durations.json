@@ -138,7 +138,7 @@
 	"[studio] › experience-parity.spec.ts › full screen failures surface without changing the action and allow retry": 1.4,
 	"[studio] › experience-parity.spec.ts › full screen hides when unsupported or prohibited": 1.1,
 	"[studio] › experience-parity.spec.ts › full screen includes the whole app and survives screen changes, dialogs and external exit": 4,
-	"[studio] › experience-parity.spec.ts › full screen stays reachable beside More on narrow and landscape screens": 7.4,
+	"[studio] › experience-parity.spec.ts › full screen stays reachable from the header or More on narrow and landscape screens": 7.4,
 	"[studio] › experience-parity.spec.ts › imported move names remain readable, distinct and contained in Preview and Inspect at every screen size": 3.8,
 	"[studio] › experience-parity.spec.ts › leaving a live view clears its sky so Preview never shows a stale one": 2.5,
 	"[studio] › experience-parity.spec.ts › movement warnings are combined and remain eligible while an error takes priority": 5.9,

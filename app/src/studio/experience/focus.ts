@@ -139,7 +139,8 @@ const placements = new WeakMap<HTMLElement, () => void>();
 const openers = new WeakMap<HTMLElement, HTMLElement>();
 export function popoverFocus(
 	event: { currentTarget: HTMLElement; newState: string; source?: Element | null },
-	focusFirst = true
+	focusFirst = true,
+	anchor?: DOMRect
 ) {
 	const menu = event.currentTarget;
 	const activated = openingTrigger();
@@ -164,11 +165,12 @@ export function popoverFocus(
 		const surface = menu.querySelector<HTMLElement>(':scope > .bu-popover-surface');
 		const pointer = menu.querySelector<HTMLElement>(':scope > .bu-popover-arrow');
 		if (opener && surface && pointer) {
+			const reference = anchor ? { getBoundingClientRect: () => anchor } : opener;
 			let active = true;
 			let sequence = 0;
 			const place = () => {
 				const current = ++sequence;
-				void computePosition(opener, menu, {
+				void computePosition(reference, menu, {
 					strategy: 'fixed',
 					placement: (menu.dataset.placement || 'bottom-end') as Placement,
 					middleware: [
@@ -204,7 +206,7 @@ export function popoverFocus(
 					menu.dataset.positioned = '';
 				});
 			};
-			const stop = autoUpdate(opener, menu, place);
+			const stop = autoUpdate(reference, menu, place);
 			placements.set(menu, () => {
 				active = false;
 				stop();

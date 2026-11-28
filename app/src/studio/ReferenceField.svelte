@@ -322,6 +322,9 @@
 	.reference-label {
 		color: var(--text);
 	}
+	.reference > small {
+		font-size: var(--fs-sm);
+	}
 	.move-frame {
 		align-content: start;
 		container-type: inline-size;

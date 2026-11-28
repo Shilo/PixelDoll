@@ -120,6 +120,8 @@
 		listed = $state(false),
 		previewRevision = $state(0),
 		libraryError = $state<Message | string>('');
+	// The exception behind `libraryError`, for Report.
+	let libraryCause = $state.raw<unknown>();
 	// The error behind `error`, for Report. A wrong choice of file is the person's to fix, so it has none.
 	let cause = $state.raw<unknown>();
 	const FILE_CHOICE = new Set([
@@ -231,7 +233,10 @@
 			offset = next;
 			previewRevision++;
 		} catch (e) {
-			if (alive) libraryError = errorMessage(e);
+			if (alive) {
+				libraryError = errorMessage(e);
+				libraryCause = e;
+			}
 		} finally {
 			if (alive) loading = false;
 		}
@@ -511,7 +516,7 @@
 			</p>
 		</div>
 		<section class="state-moves" role="group" aria-labelledby="import-poses-title">
-			<h3 class="label" id="import-poses-title">{t('import.posesTitle')}</h3>
+			<h3 class="section-title" id="import-poses-title">{t('import.posesTitle')}</h3>
 			<p class="faint small">{t('import.posesHint')}</p>
 			{#each states.filter((state) => state.id !== stateId) as state (state.id)}
 				<label class="check"
@@ -531,7 +536,7 @@
 	{/if}
 	{#if states.some((state) => state.animations !== 0)}
 		<section class="state-moves" role="group" aria-labelledby="import-moves-title">
-			<h3 class="label" id="import-moves-title">{t('import.movesTitle')}</h3>
+			<h3 class="section-title" id="import-moves-title">{t('import.movesTitle')}</h3>
 			<p class="faint small">
 				{t('import.movesHint')}
 			</p>
@@ -574,6 +579,7 @@
 					class="bu-action btn"
 					data-variant="outline"
 					disabled={busy}
+					data-trail="import.chooseZip"
 					onclick={() => fileInput?.click()}>{t('import.chooseZip')}</button
 				>
 				<input
@@ -594,15 +600,16 @@
 			</p>
 		{:else}
 			{#if !app.key || app.keyRejected}
-				{#if libraryError}<p class="notice bad small" role="alert">
+				{#if libraryError}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 						<TriangleAlert size={16} /><span>{displayMessage(libraryError)}</span><ReportButton
-							error={libraryError}
+							error={libraryCause ?? libraryError}
 						/>
 					</p>{/if}
 				<button
 					class="bu-action btn"
 					data-variant="outline"
 					disabled={busy}
+					data-trail="import.connect"
 					onclick={() =>
 						withKey(() => {
 							ui.sheet = 'importPixelLab';
@@ -615,14 +622,20 @@
 							class="bu-action btn plain small"
 							data-variant="quiet"
 							disabled={busy || loading}
+							data-trail="import.refresh"
 							onclick={() => load(offset)}>{t('import.refresh')}</button
 						></span
 					>
 				</div>
 				<div class="character-library" aria-label={t('import.libraryLabel')} aria-busy={loading}>
-					{#if libraryError}<p class="notice bad small" role="alert">
+					{#if libraryError}<p
+							class="bu-notice"
+							data-size="compact"
+							data-tone="danger"
+							role="alert"
+						>
 							<TriangleAlert size={16} /><span>{displayMessage(libraryError)}</span><ReportButton
-								error={libraryError}
+								error={libraryCause ?? libraryError}
 							/>
 						</p>{/if}
 					{#if loading}<p class="muted" role="status">{t('import.loadingCharacters')}</p>
@@ -634,6 +647,7 @@
 							<button
 								class="library-character"
 								disabled={busy || loading}
+								data-trail="import.pickCharacter"
 								onclick={() => fromPixelLab(ch.id)}
 							>
 								{#if ch.preview_url}{#key `${previewRevision}:${ch.preview_url}`}<ApiPreview
@@ -660,6 +674,7 @@
 							class="bu-action btn icon page-button"
 							data-variant="outline"
 							aria-label={t('import.previousPage')}
+							data-trail="import.previousPage"
 							disabled={busy || loading || offset === 0}
 							onclick={() => load(Math.max(0, offset - 20))}><ChevronLeft size={18} /></button
 						></span
@@ -680,6 +695,7 @@
 							class="bu-action btn icon page-button"
 							data-variant="outline"
 							aria-label={t('import.nextPage')}
+							data-trail="import.nextPage"
 							disabled={busy || loading || offset + characters.length >= total}
 							onclick={() => load(offset + 20)}><ChevronRight size={18} /></button
 						></span
@@ -709,6 +725,7 @@
 							data-variant="outline"
 							type="submit"
 							aria-label={t('import.previewCharacter')}
+							data-trail="import.preview"
 							disabled={busy || !id.trim()}>{t('import.preview')}</button
 						></span
 					>
@@ -745,7 +762,7 @@
 				</p>{/if}
 		</div>
 		{#if preview && previewValid}
-			<p class="notice small">
+			<p class="bu-notice" data-size="compact" data-tone="neutral">
 				<Info size={16} aria-hidden="true" />
 				<span>
 					{t('import.appearanceTip')}<br />
@@ -777,7 +794,12 @@
 				<p class="muted small">
 					{t('import.directionsHint')}
 				</p>
-				{#if replaced.length}<p class="notice warn small" role="status">
+				{#if replaced.length}<p
+						class="bu-notice"
+						data-size="compact"
+						data-tone="warning"
+						role="status"
+					>
 						{t('import.replaceDirectionArt', { directions: displayDirectionList(replaced) })}
 					</p>{/if}
 				<DirectionPresets
@@ -821,11 +843,15 @@
 					</label>{/if}
 			</details>
 		{/if}
-		{#if directionError}<p class="notice warn small" role="status">
+		{#if directionError}<p class="bu-notice" data-size="compact" data-tone="warning" role="status">
 				<TriangleAlert size={16} /><span>{displayDirectionProblem(directionError.translation)}</span
 				>
 			</p>{/if}
-		{#each prepared.warnings as warning, index (warning)}<p class="notice warn small">
+		{#each prepared.warnings as warning, index (warning)}<p
+				class="bu-notice"
+				data-size="compact"
+				data-tone="warning"
+			>
 				<TriangleAlert size={16} /><span
 					>{displayMessage(prepared.warningKeys?.[index] ?? warning)}</span
 				>
@@ -848,7 +874,7 @@
 	{#if busy && (!prepared || saving)}<p class="muted" role="status">
 			{saving ? t('import.saving') : t('import.preparing')}
 		</p>{/if}
-	{#if error}<p class="notice bad small" role="alert">
+	{#if error}<p class="bu-notice" data-size="compact" data-tone="danger" role="alert">
 			<TriangleAlert size={16} /><span>{displayDirectionProblem(error)}</span
 			>{#if cause !== undefined}<ReportButton error={cause} />{/if}
 		</p>{/if}
@@ -858,6 +884,7 @@
 			class="bu-action btn primary"
 			data-variant="primary"
 			disabled={!prepared || !previewValid || busy || !name.trim() || !!directionError}
+			data-trail="import.save"
 			onclick={save}
 			><Download size={16} />{busy ? t('import.working') : t('import.importCharacter')}</button
 		>

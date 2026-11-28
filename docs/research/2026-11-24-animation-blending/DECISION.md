@@ -53,9 +53,9 @@ While mounted, the mount follows travel only and never turns for an attack. The 
 
 No exported API operation is added for this. Mounts are editor-only today, and a rider is simply a second doll with its own `play(move, direction)`, so a host game can already compose a mount and a rider that face differently. If mounts become exportable, add a seat helper then, not now. Record the general rule in the architecture note.
 
-## Live view setting
+## Play mode setting
 
-In Settings, Live views, directly under the Attack picker, per character:
+In Settings → Play mode, directly under the Attack picker, per character:
 
 - **Walk while attacking** (switch, default on). Help: "Legs keep walking during a same-facing attack. Capes may look odd."
 - **Waist** (stepper, minus 4 to plus 4 px, default Automatic, shown only while the switch is on). Nudges the cut line for characters with long tops or low belts.

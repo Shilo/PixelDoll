@@ -60,7 +60,7 @@
 		width: 100%;
 		aspect-ratio: 1;
 		border: 1px solid var(--line-strong);
-		border-radius: 4px;
+		border-radius: 8px;
 		background: repeating-conic-gradient(var(--bg-hover) 0% 25%, var(--bg-side) 0% 50%) 50% / 16px
 			16px;
 	}

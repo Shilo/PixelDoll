@@ -24,6 +24,7 @@
 	aria-label={t('newCharacterButton.addCharacter')}
 	title={row ? undefined : t('newCharacterButton.addCharacter')}
 	aria-haspopup="menu"
+	data-trail="newCharacter.open"
 	popovertarget={id}
 >
 	<span class={{ 'new-character-icon': row }}><Plus size={row ? 24 : 16} aria-hidden="true" /></span
@@ -42,27 +43,45 @@
 >
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
-		<!-- Creating is the one paid path here: say so before the form, not after it is filled in. -->
 		<button
-			class="row"
+			class="row bu-action"
+			data-variant="quiet"
 			role="menuitem"
-			aria-labelledby="{id}-create"
-			aria-describedby="{id}-paid"
+			data-trail="newCharacter.create"
 			onclick={() => choose('create')}
-			><Sparkles size={16} /><span class="row-name"
-				><span id="{id}-create">{openerLabel(t('newCharacterButton.createFromScratch'))}</span><span
-					id="{id}-paid"
-					class="row-reason bu-muted">{t('newCharacterButton.createNeedsKey')}</span
-				></span
+			><Sparkles size={18} aria-hidden="true" /><span class="row-name"
+				>{openerLabel(t('newCharacterButton.createFromScratch'))}</span
 			><SurfaceChevron /></button
 		>
-		<button class="row" role="menuitem" onclick={() => choose('importZip')}
-			><FileArchive size={16} />{openerLabel(t('newCharacterButton.fromFile'))}<SurfaceChevron
-			/></button
+		<button
+			class="row bu-action"
+			data-variant="quiet"
+			role="menuitem"
+			data-trail="newCharacter.importZip"
+			onclick={() => choose('importZip')}
+			><FileArchive size={18} aria-hidden="true" /><span class="row-name"
+				>{openerLabel(t('newCharacterButton.fromFile'))}</span
+			><SurfaceChevron /></button
 		>
-		<button class="row" role="menuitem" onclick={() => choose('importPixelLab')}
-			><CloudDownload size={16} />{openerLabel(t('newCharacterButton.fromPixelLab'))}<SurfaceChevron
-			/></button
+		<button
+			class="row bu-action"
+			data-variant="quiet"
+			role="menuitem"
+			data-trail="newCharacter.importPixelLab"
+			onclick={() => choose('importPixelLab')}
+			><CloudDownload size={18} aria-hidden="true" /><span class="row-name"
+				>{openerLabel(t('newCharacterButton.fromPixelLab'))}</span
+			><SurfaceChevron /></button
 		>
 	</div>
 </div>
+
+<style>
+	.row > :global(svg:first-child) {
+		flex: none;
+	}
+	:global(.phone-layout) .selection-create > span:first-child :global(svg) {
+		width: 20px;
+		height: 20px;
+	}
+</style>

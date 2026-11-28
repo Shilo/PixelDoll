@@ -91,7 +91,7 @@
 			>
 		{/snippet}
 	</PixelLabUsage>
-	{#if app.balanceError}<p class="notice bad small" role="status">
+	{#if app.balanceError}<p class="bu-notice" data-size="compact" data-tone="danger" role="status">
 			{t('usage.loadFailed')}<ReportButton
 				message={message('usage.loadFailed')}
 				facts={balanceFacts()}

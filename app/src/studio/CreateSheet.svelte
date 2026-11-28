@@ -23,6 +23,8 @@
 	import { estimate } from './movePricing.ts';
 	import PaidReview from './PaidReview.svelte';
 	import CharacterForm from './CharacterForm.svelte';
+	import CharacterActions from './CharacterActions.svelte';
+	import { contextMenu } from '../lib/input/contextMenu.ts';
 	import {
 		CREATE_STEPS,
 		autoFrame,
@@ -67,6 +69,7 @@
 			formDrafts.character = $state.snapshot(d);
 	});
 	const creating = $derived(creates.find((run) => run.id === createPresentation.id));
+	let characterActions = $state<CharacterActions>();
 	let enhancing = $state(false);
 	let referenceLoading = $state(false);
 	const frameSize = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
@@ -199,11 +202,19 @@
 			seed: d.seed ? Number(d.seed) : freshSeed(),
 			...(accepted.length ? { acceptedWarnings: [...accepted] } : {})
 		};
-		withKey(() => {
-			formDrafts.character = undefined;
-			void startCreate(spec, true);
-		});
+		withKey(
+			() => {
+				formDrafts.character = undefined;
+				void startCreate(spec, true);
+			},
+			0,
+			{
+				name: spec.name,
+				estimate: message('create.sheet.gensRange', { lo: formatNumber(lo), hi: formatNumber(hi) })
+			}
+		);
 	}
+	const costId = $props.id();
 	const gensRange = $derived(
 		t('create.sheet.gensRange', { lo: formatNumber(lo), hi: formatNumber(hi) })
 	);
@@ -276,17 +287,19 @@
 				/></label
 			>{/if}{/snippet}
 	{#if creating?.projectId}
+		{@const name = result?.manifest.name ?? creating.spec.name}
 		<div class="create-review">
-			<h3 style="font-size:var(--fs-title)">
-				{t('create.sheet.ready', { name: creating.spec?.name ?? '' })}
+			<h3>
+				{t('create.sheet.ready', { name })}
 			</h3>
 			{#if result}
+				<CharacterActions id={creating.projectId} {name} bind:this={characterActions} />
 				{@const a =
 					result.manifest.rig.animations.find((x) => x.id === 'walk') ??
 					result.manifest.rig.animations[0]}
 				<div class="review-grid">
 					{#each result.manifest.rig.directions as d (d.id)}
-						<figure>
+						<figure tabindex="-1" {@attach contextMenu((source) => characterActions?.show(source))}>
 							<Sprite
 								img={composeCell(result, {}, a.id, d.id, a.frames[frame % a.frames.length].cell)}
 								w={result.manifest.rig.cell.w}
@@ -294,7 +307,7 @@
 								{k}
 								checker
 								label={t('create.sheet.resultFrame', {
-									name: creating.spec?.name ?? '',
+									name,
 									move: getLocale() === 'en' ? a.id : displayMove(a.id),
 									direction: displayDirectionInSentence(d.id)
 								})}
@@ -360,9 +373,15 @@
 						name={creating.spec?.name ?? ''}
 						busy={creating.running}
 						onchoose={choosePaid}
-					/>{:else if paidUnread}<p class="notice warn small">{t('paidReview.loadFailed')}</p>
-					<button class="bu-action" type="button" data-variant="quiet" onclick={() => paidReads++}
-						>{t('common.tryAgain')}</button
+					/>{:else if paidUnread}<p class="bu-notice" data-size="compact" data-tone="warning">
+						{t('paidReview.loadFailed')}
+					</p>
+					<button
+						class="bu-action"
+						type="button"
+						data-variant="quiet"
+						data-trail="create.retryPaidRead"
+						onclick={() => paidReads++}>{t('common.tryAgain')}</button
 					>{/if}
 			{:else}
 				<p class="muted small">
@@ -389,8 +408,11 @@
 	{#snippet footer()}
 		{#if creating?.projectId}
 			<span class="foot-note">{t('create.sheet.saved')}</span>
-			<button class="bu-action btn primary lg" data-variant="primary" onclick={open}
-				>{t('create.sheet.startDressing')}</button
+			<button
+				class="bu-action btn primary lg"
+				data-variant="primary"
+				data-trail="create.startDressing"
+				onclick={open}>{t('create.sheet.startDressing')}</button
 			>
 		{:else if creating?.error}
 			<div class="recovery-actions">
@@ -398,6 +420,7 @@
 					class="bu-action btn plain"
 					data-variant="quiet"
 					disabled={creating.running}
+					data-trail="create.discard"
 					onclick={async () => {
 						if (
 							creating &&
@@ -413,6 +436,7 @@
 						class="bu-action btn"
 						data-variant="outline"
 						disabled={creating.running}
+						data-trail="create.editSetup"
 						onclick={() => creating && discardCreate(creating.id)}
 						>{t('create.sheet.editSetup')}</button
 					>
@@ -421,6 +445,7 @@
 							class="bu-action btn primary"
 							data-variant="primary"
 							disabled={creating.running}
+							data-trail="create.generateAgain"
 							onclick={() => {
 								if (!creating) return;
 								const id = creating.id;
@@ -443,15 +468,19 @@
 				>{t('create.sheet.estimated', { gens: gensRange })} · {t('common.keepsRunning')}</span
 			>
 		{:else}
-			<span class="foot-note creator-cost" title={t('create.sheet.costTitle')}>~{gensRange}</span>
+			<!-- The price rides on the paid action; the name stays the action and the estimate is its description. -->
 			<span class="api-action"
 				><button
 					class="bu-action btn primary lg"
 					data-variant="primary"
+					title={t('create.sheet.costTitle')}
+					aria-describedby={costId}
 					disabled={!!errors.length || enhancing || referenceLoading}
+					data-trail="create.generate"
 					onclick={go}
-					>{accepted.length ? t('create.sheet.createAnyway') : t('create.sheet.create')}</button
-				></span
+					>{accepted.length ? t('create.sheet.createAnyway') : t('create.sheet.create')}
+					<span class="cost" aria-hidden="true">~{gensRange}</span></button
+				><span id={costId} hidden>{t('create.sheet.estimated', { gens: gensRange })}</span></span
 			>
 		{/if}
 	{/snippet}

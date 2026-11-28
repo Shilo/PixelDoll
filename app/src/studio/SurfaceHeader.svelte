@@ -71,7 +71,7 @@
 				data-variant="quiet"
 				disabled={locked}
 				onclick={opener.onclick}
-				><opener.icon size={18} aria-hidden="true" /><span class="surface-back-label"
+				><opener.icon size={16} aria-hidden="true" /><span class="surface-back-label"
 					>{opener.label}</span
 				></button
 			>{/if}

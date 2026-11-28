@@ -30,6 +30,7 @@
 	import { moveDirs } from '../lib/dress/dress.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { experience } from './experience/state.svelte.ts';
+	import { installTrail } from './trail.svelte.ts';
 	import {
 		ui,
 		doc,
@@ -64,6 +65,7 @@
 		stepPreviewFrame
 	} from './state.svelte.ts';
 	import { lazy } from '../lib/lazy.ts';
+	import { loadExportBuild } from './download.svelte.ts';
 	import { WifiOff } from './icons.ts';
 	import { PRE_RELEASE, PREVIEW_NOTICE } from './previewNotice.ts';
 	import Toast from './Toast.svelte';
@@ -102,7 +104,8 @@
 		frames: () => import('./FramesSheet.svelte'),
 		adjustFrame: () => import('./AdjustFrameSheet.svelte'),
 		cost: () => import('./CostSheet.svelte'),
-		workspace: () => import('./WorkspaceSheet.svelte')
+		workspace: () => import('./WorkspaceSheet.svelte'),
+		projectFolder: () => import('./ProjectFolderAuto.svelte')
 	};
 
 	$effect(() => {
@@ -135,6 +138,7 @@
 				loadGens
 			};
 		const off = initUi();
+		const stopTrail = installTrail();
 		const previewNotice = () =>
 			toast(previewNoticeDetails, { ...PREVIEW_NOTICE, action: downloadLibraryBackupWithFeedback });
 		// A first visit has no work at risk yet, so the warning waits for a later visit instead of greeting a newcomer
@@ -182,12 +186,14 @@
 			if (import.meta.env.PROD)
 				void Promise.allSettled([
 					...Object.values(parts).map((load) => lazy<unknown>(load)),
-					prefetchFlows()
+					prefetchFlows(),
+					loadExportBuild()
 				]);
 		})().catch(startupFailed);
 		return () => {
 			stopReleaseNews?.();
 			off();
+			stopTrail();
 			delete document.documentElement.dataset.app;
 		};
 	});
@@ -205,19 +211,38 @@
 		return () => clearTimeout(t);
 	});
 
-	// Back (browser button, Android gesture) closes an open sheet first: one history entry while any sheet is open.
-	// ponytail: not reactive on purpose (plain flag); a sheet -> sheet switch keeps the same entry.
-	let sheetEntry = false;
-	$effect(() => {
-		const open = !!ui.sheet || ui.settingsOverlay || ui.releaseOverlay;
-		if (open && !sheetEntry) {
-			history.pushState({ pixeldollSheet: 1 }, '');
-			sheetEntry = true;
-		} else if (!open && sheetEntry) {
-			sheetEntry = false;
-			history.back();
+	type ViewEntry = { studio: boolean; sheet: boolean };
+	const historySession = crypto.randomUUID();
+	const charactersEntry: ViewEntry = { studio: false, sheet: false };
+	let viewEntry = charactersEntry;
+	let returningToView = false;
+	const sheetOpen = () => !!ui.sheet || ui.settingsOverlay || ui.releaseOverlay;
+
+	function syncViewHistory() {
+		const studio = experience.screen === 'studio';
+		const sheet = sheetOpen();
+		if (returningToView) return;
+		if (studio && !viewEntry.studio && viewEntry.sheet) {
+			// A sheet on Characters can lead to Customize after an import or creation. Its entry becomes Customize.
+			viewEntry = { studio: true, sheet: false };
+			history.replaceState({ historySession, viewEntry }, '');
 		}
-	});
+		const leavingStudio = viewEntry.studio && !studio;
+		if (leavingStudio || (viewEntry.sheet && !sheet)) {
+			returningToView = true;
+			history.go(-Number(leavingStudio) - Number(viewEntry.sheet));
+			return;
+		}
+		if (studio && !viewEntry.studio) {
+			viewEntry = { studio: true, sheet: false };
+			history.pushState({ historySession, viewEntry }, '');
+		}
+		if (sheet && !viewEntry.sheet) {
+			viewEntry = { studio, sheet: true };
+			history.pushState({ historySession, viewEntry }, '');
+		}
+	}
+	$effect(syncViewHistory);
 	// Closing Connect cancels its spending action, also when the sheet closes before its code loaded (ConnectSheet never mounted).
 	$effect(() => {
 		if (ui.sheet !== 'connect') {
@@ -244,24 +269,18 @@
 			settingsNavigation.exportOpen = false;
 		sheetBefore = sheet;
 	});
-	const onpop = () => {
-		if (!sheetEntry) return;
+	function backThroughSheet() {
 		// An atomic local save/publish has the same disabled-close rule for browser Back as for its X and Escape.
-		if (ui.sheetBusy && !ui.settingsOverlay && !ui.releaseOverlay && !alertOnTop()) {
-			history.pushState({ pixeldollSheet: 1 }, '');
-			return;
-		}
+		if (ui.sheetBusy && !ui.settingsOverlay && !ui.releaseOverlay && !alertOnTop()) return;
 		// An open menu or picker answers Back first, as Escape does, before the sheet behind it.
 		const popup = [...document.querySelectorAll<HTMLElement>('[popover]:popover-open')]
 			.filter((element) => element.getAttribute('popover') !== 'manual')
 			.at(-1);
 		if (popup) {
 			popup.hidePopover();
-			history.pushState({ pixeldollSheet: 1 }, '');
 			return;
 		}
 		// Otherwise Back takes the sheet's own Back (an inner pane) or its close request, which may ask first.
-		sheetEntry = false;
 		// A sheet still loading (lazy) has not claimed its exits yet: a Settings child still steps back to Settings.
 		if (ui.releaseOverlay && !document.querySelector('dialog.release-news-sheet:modal'))
 			releaseNews.close();
@@ -277,11 +296,21 @@
 			)
 		)
 			ui.sheet = null;
-		if (ui.sheet || ui.settingsOverlay || ui.releaseOverlay) {
-			history.pushState({ pixeldollSheet: 1 }, '');
-			sheetEntry = true;
+	}
+
+	function onpop(event: PopStateEvent) {
+		const wasSheet = viewEntry.sheet;
+		viewEntry =
+			event.state?.historySession === historySession ? event.state.viewEntry : charactersEntry;
+		if (returningToView) {
+			// App controls already chose the next view. A second change may have happened during the traversal.
+			returningToView = false;
+		} else {
+			if (wasSheet && !viewEntry.sheet && sheetOpen()) backThroughSheet();
+			if (!sheetOpen()) experience.screen = viewEntry.studio ? 'studio' : 'characters';
 		}
-	};
+		syncViewHistory();
+	}
 
 	// balance after every settled job (like TopBar)
 	const settled = $derived($queue.counts.done + $queue.counts.failed);
@@ -431,6 +460,12 @@
 
 <div class="studio-app" onclickcapture={rememberActivation}>
 	{#if !workspaceCopy}<PwaRuntime />{/if}
+	<!-- Optional: keeps a linked game folder updated; absent where the browser cannot write folders. -->
+	{#if !workspaceCopy && 'showDirectoryPicker' in window}<Lazy
+			load={parts.projectFolder}
+			sheet={false}
+			onLoadError={() => {}}
+		/>{/if}
 	<Experience />
 	<TipsHost />
 	{#if !workspaceCopy && offline}<div class="offline-banner" role="status">
