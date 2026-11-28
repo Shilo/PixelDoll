@@ -11,7 +11,6 @@ type Publisher = Pick<
 	GitHub,
 	| 'repository'
 	| 'tagCommit'
-	| 'createTag'
 	| 'release'
 	| 'createDraft'
 	| 'assets'
@@ -48,13 +47,11 @@ export async function publishRelease(
 	latest: boolean
 ) {
 	const tag = 'v' + source.version;
-	const ensureTag = async (allowCreate: boolean) => {
-		let found = await github.tagCommit(tag);
-		if (!found && allowCreate) {
-			await github.createTag(tag, source.sha);
-			found = await github.tagCommit(tag);
-		}
-		if (found !== source.sha)
+	// Publishing the draft creates the tag on the build's commit. Creating it directly through the refs API is refused
+	// for the workflow token whenever that old commit's workflow files differ from today's.
+	const checkTag = async (required: boolean) => {
+		const found = await github.tagCommit(tag);
+		if (found ? found !== source.sha : required)
 			throw new Error(`Tag ${tag} points to ${found ?? 'nothing'}; expected ${source.sha}`);
 	};
 	const name = `PixelDoll ${source.version}: ${notes.headline}`;
@@ -70,7 +67,7 @@ export async function publishRelease(
 		);
 	// Detect oversize notes before creating a tag or a draft.
 	render(`https://github.com/${github.repository}/releases/download/${tag}/${assetName}`);
-	await ensureTag(true);
+	await checkTag(false);
 	const release = (await github.release(tag)) ?? (await github.createDraft(tag, source.sha, name));
 	let asset: Asset | undefined;
 	for await (const entry of github.assets(release.id)) {
@@ -100,5 +97,5 @@ export async function publishRelease(
 			),
 			latest
 		);
-	await ensureTag(false);
+	await checkTag(true);
 }

@@ -39,9 +39,6 @@ function fakeGitHub() {
 	return {
 		repository: 'Shilo/PixelDoll',
 		tagCommit: vi.fn(async () => tag),
-		createTag: vi.fn(async (_tag: string, sha: string) => {
-			tag = sha;
-		}),
 		release: vi.fn(async () => release),
 		createDraft: vi.fn(async () => {
 			release = draft;
@@ -58,17 +55,18 @@ function fakeGitHub() {
 			return asset;
 		}),
 		assetBytes: vi.fn(async () => Buffer.from(banner)),
+		// Publishing a draft creates its tag on the draft's target commit, as GitHub does.
 		publish: vi.fn(async (_id, _name, _body, _latest) => {
 			release = { ...draft, draft: false };
+			tag = source.sha;
 		})
 	};
 }
 
-it('creates and verifies a release once, resuming an already published release without mutations', async () => {
+it('creates the tag by publishing, once, resuming an already published release without mutations', async () => {
 	const github = fakeGitHub();
 	await publish(github);
 	await publish(github);
-	expect(github.createTag).toHaveBeenCalledExactlyOnceWith(draft.tag_name, source.sha);
 	expect(github.createDraft).toHaveBeenCalledTimes(1);
 	expect(github.uploadAsset).toHaveBeenCalledExactlyOnceWith(draft, 'banner@4x.png', banner);
 	expect(github.publish).toHaveBeenCalledExactlyOnceWith(
@@ -79,14 +77,13 @@ it('creates and verifies a release once, resuming an already published release w
 		),
 		true
 	);
-	expect(github.tagCommit).toHaveBeenCalledTimes(5);
+	expect(github.tagCommit).toHaveBeenCalledTimes(4);
 });
 
 it('fails before writing when the release tag points at a different build', async () => {
 	const github = fakeGitHub();
 	github.tagCommit.mockResolvedValue(source.previousSha);
 	await expect(publish(github)).rejects.toThrow(/expected/);
-	expect(github.createTag).not.toHaveBeenCalled();
 	expect(github.createDraft).not.toHaveBeenCalled();
 });
 

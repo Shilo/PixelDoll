@@ -101,10 +101,6 @@ export class GitHub {
 		return object.sha;
 	}
 
-	async createTag(tag: string, sha: string) {
-		await this.#json('/git/refs', 'POST', { ref: `refs/tags/${tag}`, sha });
-	}
-
 	async release(tag: string) {
 		const response = await this.#request(
 			`/releases/tags/${tag}`,
