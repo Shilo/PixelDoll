@@ -375,6 +375,7 @@
 		"categories": "颜色分类"
 	},
 	"colorSections": {
+		"notWorn": "未装备",
 		"randomLowerColors": "随机{lower}颜色",
 		"randomCharacterColors": "随机角色颜色",
 		"resetLowerColors": "重置{lower}颜色",
@@ -529,7 +530,6 @@
 		"matchingColors": "匹配颜色…",
 		"matchItemColors": "匹配装备颜色",
 		"recolor": "重新上色",
-		"recolorWearFirst": "穿上后才能更改颜色",
 		"whenWornHide": "穿戴时隐藏其他装备",
 		"iD": "ID",
 		"slot": "装备栏",

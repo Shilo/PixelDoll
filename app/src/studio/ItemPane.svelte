@@ -835,7 +835,6 @@
 		{#if m && it}<ItemActions
 				{m}
 				{it}
-				worn={on}
 				inDetails
 				label={t('itemPane.itemActions')}
 				bind:picking={pickingSlot}

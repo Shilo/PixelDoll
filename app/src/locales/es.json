@@ -381,6 +381,7 @@
 		"categories": "Categorías de color"
 	},
 	"colorSections": {
+		"notWorn": "Sin equipar",
 		"randomLowerColors": "Colores aleatorios de {lower}",
 		"randomCharacterColors": "Colores aleatorios del personaje",
 		"resetLowerColors": "Restablecer colores de {lower}",
@@ -540,7 +541,6 @@
 		"matchingColors": "Igualando colores…",
 		"matchItemColors": "Igualar colores del objeto",
 		"recolor": "Cambiar colores",
-		"recolorWearFirst": "Póntelo para cambiar sus colores",
 		"whenWornHide": "Ocultar otros objetos al llevarlo",
 		"iD": "ID",
 		"slot": "Ranura",

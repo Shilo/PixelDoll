@@ -8,7 +8,7 @@ import type { Manifest, Project } from '../lib/store/manifest.ts';
 import { itemExportId, moveExportId } from '../lib/store/identity.ts';
 import { retainMoveMetadata } from '../lib/rig/moves.ts';
 import { moveLabel } from './model.ts';
-import { doc, store, readCharacterForExport, toast } from './state.svelte.ts';
+import { currentLook, lookOf, doc, store, readCharacterForExport, toast } from './state.svelte.ts';
 import { errorTranslation, message, type Message } from '../lib/message.ts';
 import type { DownloadAction, DownloadStep } from '../lib/report/report.ts';
 import { playAudioCue } from './audio.svelte.ts';
@@ -78,14 +78,14 @@ export async function exportSource(projectId: string): Promise<DownloadSource> {
 		return {
 			project: { ...store.project, manifest: structuredClone(store.project.manifest) },
 			record: store.exportRecord,
-			look: { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) }
+			look: currentLook(store.project.manifest)
 		};
 	const r = await readCharacterForExport(projectId);
 	const outfit = r.current ?? r.project.manifest.presets[0];
 	return {
 		project: r.project,
 		record: r.record,
-		look: { items: { ...outfit?.items }, variants: { ...outfit?.variants } },
+		look: lookOf(r.project.manifest, { ...outfit?.items }, { ...outfit?.variants }),
 		missingImages: 'missingImages' in r ? r.missingImages : undefined
 	};
 }

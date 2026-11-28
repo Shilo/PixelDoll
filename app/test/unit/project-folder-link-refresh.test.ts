@@ -26,6 +26,12 @@ const studio = vi.hoisted(() => ({
 
 vi.mock('../../src/studio/state.svelte.ts', () => ({
 	...studio,
+	// A look's color filtering has its own tests; these follow which items reach the folder.
+	lookOf: (_m: unknown, items: Record<string, string>, variants: Record<string, string>) => ({
+		items,
+		variants
+	}),
+	currentLook: () => ({ items: { ...studio.doc.items }, variants: { ...studio.doc.variants } }),
 	dismissToast: () => (studio.ui.toast = null),
 	openingProjectId: () => '',
 	prepareWorkspaceExport: async () => {}

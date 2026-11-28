@@ -381,6 +381,7 @@
 		"categories": "Color categories"
 	},
 	"colorSections": {
+		"notWorn": "Not worn",
 		"randomLowerColors": "Random {lower} colors",
 		"randomCharacterColors": "Random character colors",
 		"resetLowerColors": "Reset {lower} colors",
@@ -540,7 +541,6 @@
 		"matchingColors": "Matching colors…",
 		"matchItemColors": "Match item colors",
 		"recolor": "Recolor",
-		"recolorWearFirst": "Wear it to change its colors",
 		"whenWornHide": "Hide other items while worn",
 		"iD": "ID",
 		"slot": "Slot",

@@ -375,6 +375,7 @@
 		"categories": "色のカテゴリ"
 	},
 	"colorSections": {
+		"notWorn": "未装備",
 		"randomLowerColors": "{lower}の色をランダムに",
 		"randomCharacterColors": "キャラクターの色をランダムに",
 		"resetLowerColors": "{lower}の色をリセット",
@@ -529,7 +530,6 @@
 		"matchingColors": "色を合わせています…",
 		"matchItemColors": "アイテムの色を合わせる",
 		"recolor": "色を変更",
-		"recolorWearFirst": "色を変えるには装備してください",
 		"whenWornHide": "装備中は他のアイテムを非表示",
 		"iD": "ID",
 		"slot": "装備スロット",
