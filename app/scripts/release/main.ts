@@ -56,14 +56,16 @@ function editedVersions(before: string | undefined) {
 		'--',
 		'releases'
 	).split('\n');
+	// Only listed releases can be updated: a deleted or still staged release folder is not an edit.
+	const listed = new Set(readJson<Index>(indexPath).releases.map((entry) => entry.version));
 	const versions = files.flatMap(
 		(file) =>
 			/^releases\/(\d+\.\d+\.\d+)\/(?:notes\.[\w-]+\.json|banner\.png)$/.exec(file)?.[1] ?? []
 	);
 	if (files.includes('releases/banner.png'))
-		for (const entry of readJson<Index>(indexPath).releases)
-			if (!existsSync(join(folder, entry.version, 'banner.png'))) versions.push(entry.version);
-	return [...new Set(versions)];
+		for (const version of listed)
+			if (!existsSync(join(folder, version, 'banner.png'))) versions.push(version);
+	return [...new Set(versions)].filter((version) => listed.has(version));
 }
 
 /** A problem that did not stop the run, shown in the log and on the run page. */

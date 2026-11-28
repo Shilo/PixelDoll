@@ -90,7 +90,7 @@ it('requires matching translation item counts and plain, non-empty prose', () =>
 	]);
 });
 
-it('passes the prompt verbatim and asks Claude for corrected JSON once', async () => {
+it('passes the prompt verbatim and asks Claude for corrected JSON at most twice', async () => {
 	expect(afterSeparator('# Header\r\n\r\n---\r\n\r\nLiteral copy\r\n')).toBe(
 		'\r\nLiteral copy\r\n'
 	);
@@ -122,7 +122,7 @@ it('passes the prompt verbatim and asks Claude for corrected JSON once', async (
 	await expect(writeNotes(claude, '0.0.1', '2026-11-27', commits, [])).rejects.toThrow(
 		/highlights must have/
 	);
-	expect(create).toHaveBeenCalledTimes(2);
+	expect(create).toHaveBeenCalledTimes(3);
 	create.mockReset().mockResolvedValue({ stop_reason: 'refusal', content: [] });
 	await expect(writeNotes(claude, '0.0.1', '2026-11-27', commits, [])).rejects.toThrow(/declined/);
 });

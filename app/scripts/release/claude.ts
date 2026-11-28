@@ -107,7 +107,9 @@ async function ask<T>(
 	validate: (value: unknown) => string[]
 ): Promise<T> {
 	const messages: Message[] = [{ role: 'user', content: JSON.stringify(input) }];
-	for (let attempt = 0; attempt < 2; attempt++) {
+	// Long releases can need more than one correction of word limits; each attempt is one paid request.
+	const corrections = 2;
+	for (let attempt = 0; attempt <= corrections; attempt++) {
 		// Streamed so a large reply budget never hits the request timeout; thinking counts toward max_tokens.
 		const response = await requestClaude(() =>
 			claude.beta.messages
@@ -145,7 +147,7 @@ async function ask<T>(
 			errors = [`Reply is not valid JSON: ${String(error)}`];
 		}
 		if (!errors.length) return value as T;
-		if (attempt === 1)
+		if (attempt === corrections)
 			throw new InvalidReply(`Claude returned invalid notes: ${errors.join('; ')}`);
 		// Send the whole reply back unchanged (thinking blocks included) and ask for a corrected one.
 		messages.push(
