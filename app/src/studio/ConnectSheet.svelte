@@ -438,7 +438,7 @@
 
 {#snippet connectFooter()}
 	{#if purchase && !replacing}
-		<span id={purchaseHint} class="foot-note">
+		<span id={purchaseHint} class="foot-note connect-note">
 			{t('connectSheet.resumePurchase', { name: purchase.name })}
 		</span>
 	{/if}
@@ -496,6 +496,10 @@
 		width: 100%;
 		justify-content: space-between;
 		text-align: start;
+	}
+	/* The purchase note takes its own row so the key link and Connect always stay together. */
+	.connect-note {
+		flex-basis: 100%;
 	}
 	.copy-label {
 		display: inline-flex;

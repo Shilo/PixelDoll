@@ -10,7 +10,7 @@
 	import { missingAt, moveDirs } from '../lib/dress/dress.ts';
 	import { itemMoveOffer, missingItemMoves, moveMinimumTier, unposedItemMoves } from './create.ts';
 	import { setupRedoMoves } from '../lib/rig/setup.ts';
-	import { extendable } from './movePricing.ts';
+	import { remakeAction } from './remakeItem.ts';
 	import { seeded } from './itemGeneration.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
@@ -22,8 +22,6 @@
 		moving,
 		queueMoves,
 		withKey,
-		openNewItem,
-		openCopyForSelf,
 		shared,
 		copyFromSource
 	} from './state.svelte.ts';
@@ -111,7 +109,8 @@
 	]);
 	const freeCopy = $derived(missing.find((i) => shared.free[i.id]));
 	const remake = $derived(otherMissing.find((i) => i.prompt));
-	const copyOnly = $derived(!!m && !!remake?.copiedFrom && !extendable(m, remake.id));
+	const remakeOffer = $derived(m && remake ? remakeAction(m, remake) : undefined);
+	const copyOnly = $derived(!!remakeOffer?.copyOnly);
 	const poseTier = $derived(
 		m ? Math.max(0, ...(poseOffer?.specs ?? []).map((s) => moveMinimumTier(m, s))) : 0
 	);
@@ -240,11 +239,7 @@
 						<button
 							class="bu-action btn sm"
 							data-variant="outline"
-							onclick={() =>
-								copyOnly
-									? openCopyForSelf(remake)
-									: openNewItem(remake.slot, { slot: remake.slot, prompt: remake.prompt })}
-							>{copyOnly ? t('itemMenu.remake') : t('stageNote.makeItAgain')}</button
+							onclick={() => remakeOffer?.open()}>{remakeOffer ? t(remakeOffer.label) : ''}</button
 						>
 					{/if}
 				{/if}

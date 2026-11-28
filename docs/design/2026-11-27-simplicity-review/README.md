@@ -121,3 +121,10 @@ An independent review of the whole branch (simplicity first, readable layouts, m
 | Export's footer said "see export notes" without a way to get there. | Fixed: the note is a link that opens the notes and moves focus to them. Download stays available for deliberate partial exports. |
 | A Move window explained a missing standing design only in a summary below the list. | Fixed: each missing row names its reason ("Needs a standing design" or "In progress"), and the summary is dropped when rows say it all. A link to item details was rejected for now: shared items have no details window. |
 | The Wardrobe tip says "Use + on a slot" and can overlap search in short landscape. | Kept: the tip anchors to a slot's +, so the copy matches; the overlap is the existing open item on tip placement. |
+
+## Owner follow-ups
+
+| Question | Decision |
+| --- | --- |
+| Why can't Walk generate the demo copy's Wizard hat, and should it be blocked? | Posing an item onto a move starts from its saved standing design (`dressed`). Items made in the app keep it; demo copies, older imports and some shared copies do not, so nothing can be posed. Generate items now stays visible and disabled with that reason, and the row offers Make it again…, the existing priced remake also used by the stage note (`remakeItem.ts`). Rejected for now: rebuilding the reference offline from the existing standing art (free, medium work, still no north view for the demo) and a prompt-only inpaint route (larger, more view drift). A combined "standing plus move" offer is the next step if it comes up outside demo copies. |
+| Where does Get Secret API key belong in Connect? | In the footer, right-aligned before Connect: secondary then primary, as in other sheets. A pending purchase's note takes its own row above both. |
