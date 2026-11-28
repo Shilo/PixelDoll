@@ -25,11 +25,21 @@ Releases are fully automatic: a scheduled workflow tags the build that was live 
 ## Setup (once)
 
 1. In the Anthropic Console, create a workspace for releases with a monthly spend limit, keep auto-reload off, and create an API key in it.
-2. In GitHub: Settings > Environments > New environment `release`, limited to the `main` branch, with secret `ANTHROPIC_API_KEY`.
+2. In GitHub: Settings > Environments > New environment `release`, limited to the `main` branch, with secrets `ANTHROPIC_API_KEY` and `RELEASE_TOKEN`. `RELEASE_TOKEN` is a fine-grained personal access token for this repository with Contents and Workflows read and write: GitHub refuses the built-in workflow token when it tags an old commit whose workflow files differ from today's (every backfilled release, and any week the workflows changed). It is used only for releases and tags; git pushes keep the workflow token, so the bot's commits never trigger workflows. Renew it before it expires.
 3. Settings > Secrets and variables > Actions > Variables: set `RELEASES_ENABLED` to `true`. Until then the workflow only dry-runs. Once it is `true`, a missing key fails the run instead of skipping publication.
-4. Backfill one release at a time: Actions > Release > Run workflow. After the first one, check the published release (banner visible signed out, Latest badge, All changes) and that What's new shows it on pixeldoll.app before running the next. About six runs reach the current week.
+4. Backfill one release at a time: Actions > Release > Run workflow (raise `max` to publish several). After the first one, check the published release (banner, Latest badge, All changes) and that What's new shows it on pixeldoll.app.
 
-The release workflow uses its built-in GitHub token to read deployments, publish tags and releases, push the generated commits to `main`, and dispatch Pages. The repository's rules for `main` must allow those generated commits.
+## When a run fails
+
+Nothing is published halfway. A run stops with a message on its summary page saying what to fix: an invalid, revoked or expired `ANTHROPIC_API_KEY`, no API credit, a reached spend limit, or a refused tag (`RELEASE_TOKEN`). Notes already written are kept in `releases/<version>/`, so after fixing the cause, Actions > Release > Run workflow resumes without paying for them again.
+
+## Editing a published release
+
+`releases/<version>/` is the single source for both the GitHub Release and What's new. Edit `notes.en.json` or replace `banner.png` (any size; up to 400px wide is treated as pixel art and scaled 4x for GitHub), commit and push to `main`. The release workflow then re-translates edited English notes, replaces the GitHub banner and body, updates `index.json`, and deploys the app. Editing only a translation (`notes.de.json`) keeps it as written. To redo it by hand: Run workflow with `update` set to the version.
+
+## Testing in a private repository
+
+A private copy can run everything for real without touching this repository: push the history (and `main`), set the `release` environment secrets and the variables `RELEASES_ENABLED=true`, `RELEASE_PAGES=off` (no deploys there) and `RELEASE_DEPLOYMENTS_REPOSITORY=Shilo/PixelDoll` (read the real site's Pages history), and disable the CI and Pages workflow there.
 
 ## Dry run
 
