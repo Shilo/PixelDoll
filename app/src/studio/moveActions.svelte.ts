@@ -158,7 +158,7 @@ async function captureStateUnlocked(
 		(await pendingStateName(projectId, id))
 	)
 		throw new LocalizedError(
-			'Choose a different State name.',
+			'Choose a different state name.',
 			nameIssue ?? 'stateCapture.takenName'
 		);
 	const captured: typeof sourceCells = {};

@@ -5135,13 +5135,13 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(model).toHaveValue('skeleton-v3');
 	await move.getByRole('button', { name: 'Close', exact: true }).click();
 	await equipmentMode(page, 'States');
-	await page.getByRole('button', { name: 'New State…', exact: true }).click();
-	const state = page.getByRole('dialog', { name: 'New State', exact: true });
+	await page.getByRole('button', { name: 'New state…', exact: true }).click();
+	const state = page.getByRole('dialog', { name: 'New state', exact: true });
 	await state.getByRole('switch', { name: 'Edit this pose' }).check();
 	await expect(state.getByRole('combobox', { name: 'Model', exact: true })).toHaveValue('pixen');
 	await state.getByRole('combobox', { name: 'Model', exact: true }).selectOption('pro');
 	await page.keyboard.press('Escape');
-	await page.getByRole('button', { name: 'New State…', exact: true }).click();
+	await page.getByRole('button', { name: 'New state…', exact: true }).click();
 	await state.getByRole('switch', { name: 'Edit this pose' }).check();
 	await expect(state.getByRole('combobox', { name: 'Model', exact: true })).toHaveValue('pixen');
 	await page.keyboard.press('Escape');
@@ -9687,7 +9687,7 @@ test('the item sheet offers one priced edit-images-v2 request and holds its resu
 				.walk;
 		}, projectId);
 	const pane = await selectedItemDetails(page);
-	await openItemSection(pane, 'Moves & States');
+	await openItemSection(pane, 'Moves & states');
 	const make = pane.getByRole('button', { name: /^Generate \d+ moves?/ });
 	await expect(make).toContainText(`~${gens} gens`);
 	await pane.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
@@ -9796,7 +9796,7 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 		.locator('.stage-note')
 		.getByRole('button', { name: /^Make missing views/ });
 	await expect(stageMake).toContainText('~10 gens');
-	await openItemSection(await selectedItemDetails(page), 'Moves & States');
+	await openItemSection(await selectedItemDetails(page), 'Moves & states');
 	await expect(page.getByRole('button', { name: /^Generate \d+ moves?/ })).toContainText(
 		'~10 gens'
 	);
@@ -9815,7 +9815,7 @@ test('unsafe imported equipment prices its frozen route and discloses suspicious
 	}, fixture.itemId);
 	// A held item cannot use the frozen grid. It used to be refused here; it is now priced on its measured joints with the
 	// suspicious frames named on the quote before anything is bought.
-	await openItemSection(page.locator('dialog.item-detail[open]'), 'Moves & States');
+	await openItemSection(page.locator('dialog.item-detail[open]'), 'Moves & states');
 	await expect(page.getByRole('button', { name: /^Generate \d+ moves?/ })).toBeEnabled();
 	await expect(page.getByRole('button', { name: /^Generate \d+ moves?/ })).toContainText('gens');
 	await expect(
@@ -10900,7 +10900,7 @@ test('standing-first items quote standing and draw selected custom moves togethe
 	await missingItem.click();
 	await page.setViewportSize({ width: 1440, height: 900 });
 	const pane = page.locator('dialog.item-detail[open]');
-	await openItemSection(pane, 'Moves & States');
+	await openItemSection(pane, 'Moves & states');
 	const walk = pane.getByRole('checkbox', { name: /^Custom walk/ });
 	const punch = pane.getByRole('checkbox', { name: /^Custom cross punch/ });
 	const draw = pane.getByRole('button', { name: /^Generate \d+ moves?/ });
@@ -10939,7 +10939,7 @@ test('standing-first items quote standing and draw selected custom moves togethe
 		await expect(api).not.toContainText(other);
 		await api.getByRole('button', { name: 'Close API calls', exact: true }).click();
 	};
-	await openItemSection(pane, 'Moves & States');
+	await openItemSection(pane, 'Moves & states');
 	await peekCalls('/animate-with-skeleton-v3', '/edit-animation-v2');
 	// Settings > Creation > Moves now draws items on the move's own frames: the open offer follows it.
 	await page.evaluate(async () => {
@@ -12550,10 +12550,10 @@ test('item details fill a phone screen and keep Wear pinned while the body scrol
 	expect(Math.round(bounds.height)).toBe(viewport.height);
 	const wear = details.getByRole('button', { name: 'Wear', exact: true });
 	await expect(wear).toBeInViewport();
-	await expect(details.locator('summary').filter({ hasText: 'Moves & States' })).toContainText(
+	await expect(details.locator('summary').filter({ hasText: 'Moves & states' })).toContainText(
 		/\d+ moves? incomplete/
 	);
-	for (const section of ['Moves & States', 'Quality', 'Outfit', 'About', 'Technical details'])
+	for (const section of ['Moves & states', 'Quality', 'Outfit', 'About', 'Technical details'])
 		await openItemSection(details, section);
 	await expect(details.getByRole('heading', { name: 'Quality', level: 3 })).toBeVisible();
 	await details.locator('.sheet-body').evaluate((body) => (body.scrollTop = body.scrollHeight));

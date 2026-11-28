@@ -1955,7 +1955,7 @@ export const moveLooks = (rec: Pick<StoredProject, 'manifest' | 'character'>) =>
 export const reservedMove = (id: string, existingMove = false) =>
 	id === DEFAULT_MOVE || (id === 'standing' && !existingMove)
 		? new LocalizedError(
-				'Standing is a reserved State. Name the move something else.',
+				'Standing is reserved for the standing state. Name the move something else.',
 				'create.errors.reservedMove'
 			)
 		: undefined;

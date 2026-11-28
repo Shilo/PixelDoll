@@ -1017,7 +1017,7 @@ test('a copy missing frames its source item has copies them for free into the sa
 	await expect(worn).not.toHaveAttribute('data-dim');
 	await expect(worn).not.toHaveAccessibleName(/not shown in this move/);
 	const details = await selectedItemDetails(page);
-	await openItemSection(details, 'Moves & States');
+	await openItemSection(details, 'Moves & states');
 	const copy = details.getByRole('button', { name: 'Copy from Twin', exact: true });
 	await expect(copy).toBeVisible();
 	await expect(details).toContainText(
