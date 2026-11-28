@@ -19,7 +19,9 @@ const notes = {
 };
 const german = { ...notes, headline: 'Ein neuer Look' };
 const index = {
-	releases: [{ version, date: '2026-11-27', headline: { en: notes.headline }, features: 2 }]
+	releases: [
+		{ version, date: '2026-11-27', headline: { en: notes.headline }, features: 2, banner: true }
+	]
 };
 const fetchMock = vi.fn<typeof fetch>();
 

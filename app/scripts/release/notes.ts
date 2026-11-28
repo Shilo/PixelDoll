@@ -7,6 +7,8 @@ export type Notes = Translation;
 export type CitedNotes = Omit<Notes, 'highlights' | 'fixes'> & {
 	highlights: (Highlight & { commits: string[] })[];
 	fixes: (Note & { commits: string[] })[];
+	/** The scene PixelLab draws for the release banner, in English only; the maintenance message has none. */
+	banner?: string;
 };
 
 const string = { type: 'string' };
@@ -28,7 +30,8 @@ export const releaseNotesSchema = article({
 	headline: string,
 	intro: string,
 	highlights: list(article({ title: string, text: string, commits }), 1, 4),
-	fixes: list(article({ text: string, commits }), 0, 3)
+	fixes: list(article({ text: string, commits }), 0, 3),
+	banner: string
 });
 
 export const translationSchema = (notes: Translation) =>
@@ -114,9 +117,18 @@ function validate(
 			}
 		}
 	};
-	const notes = object(value, 'notes', ['headline', 'intro', 'highlights', 'fixes']);
+	// Only Claude's own reply carries the banner scene; published and translated notes never do.
+	const written = english && !original;
+	const notes = object(value, 'notes', [
+		'headline',
+		'intro',
+		'highlights',
+		'fixes',
+		...(written ? ['banner'] : [])
+	]);
 	const headline = title(notes.headline, 'headline', 8);
 	const intro = prose(notes.intro, 'intro', 40);
+	if (written) prose(notes.banner, 'banner', 30);
 	if (english) {
 		if (headline && intro.toLowerCase().includes(headline.toLowerCase()))
 			errors.push('intro repeats the headline');

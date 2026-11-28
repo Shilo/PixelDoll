@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -28,6 +28,13 @@ afterEach(() => {
 	for (const folder of folders.splice(0)) rmSync(folder, { recursive: true, force: true });
 });
 
+const banner = (w: number, h: number, shade: number) =>
+	encodePngBytes({
+		w,
+		h,
+		data: Uint8ClampedArray.from({ length: w * h * 4 }, (_, i) => (i % 4 === 3 ? 255 : shade))
+	});
+
 async function setUp() {
 	const folder = mkdtempSync(join(tmpdir(), 'pixeldoll-update-'));
 	folders.push(folder);
@@ -42,21 +49,20 @@ async function setUp() {
 		previousSha: 'a'.repeat(40),
 		model: 'claude-sonnet-5-5',
 		commits: [],
-		notes: cited,
-		bannerHash: 'c'.repeat(64)
+		notes: cited
 	});
 	json(join(dir, 'notes.en.json'), publicNotes(cited));
 	json(join(dir, 'notes.de.json'), { ...publicNotes(cited), headline: 'Schneller anziehen' });
 	json(join(dir, 'changes.json'), { total: 0, groups: [] });
-	// Wider than 400 px: used as given, so the test needs no browser to scale it.
-	const pixels = new Uint8ClampedArray(401 * 2 * 4).fill(200);
-	writeFileSync(join(dir, 'banner.png'), await encodePngBytes({ w: 401, h: 2, data: pixels }));
+	writeFileSync(join(dir, 'banner.png'), await banner(320, 160, 200));
+	writeFileSync(join(folder, 'banner.png'), await banner(320, 160, 90));
 	json(join(folder, 'index.json'), {
 		releases: [
 			{
 				version,
 				date: '2026-11-27',
 				features: 1,
+				banner: true,
 				headline: { en: 'Dress faster', de: 'Schneller anziehen' }
 			}
 		]
@@ -140,5 +146,21 @@ it('rejects invalid edited notes before touching GitHub', async () => {
 		JSON.stringify({ ...publicNotes(cited), headline: '' })
 	);
 	await expect(updateRelease(github, folder, version, vi.fn())).rejects.toThrow(/not valid/);
+	expect(github.updateRelease).not.toHaveBeenCalled();
+});
+
+it('shows the default banner once a release drops its own, and refuses a banner of the wrong size', async () => {
+	const { folder, dir, github } = await setUp();
+	unlinkSync(join(dir, 'banner.png'));
+	await expect(updateRelease(github, folder, version, vi.fn())).resolves.toBe(true);
+	expect(JSON.parse(readFileSync(join(folder, 'index.json'), 'utf8')).releases[0].banner).toBe(
+		false
+	);
+	expect(github.uploadAsset).toHaveBeenCalledOnce();
+	writeFileSync(join(dir, 'banner.png'), await banner(640, 320, 200));
+	github.updateRelease.mockClear();
+	await expect(updateRelease(github, folder, version, vi.fn())).rejects.toThrow(
+		'releases/1.2.3/banner.png is 640x320; banners are 320x160'
+	);
 	expect(github.updateRelease).not.toHaveBeenCalled();
 });

@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
 import { expect, it, vi } from 'vitest';
-import { bannerChoices } from '../../scripts/release/banner.ts';
 import type { Source } from '../../scripts/release/data.ts';
 import type { Asset, Release } from '../../scripts/release/github.ts';
 import { emptyNotes } from '../../scripts/release/notes.ts';
@@ -14,8 +13,7 @@ const source = {
 	previousSha: 'b'.repeat(40),
 	model: null,
 	commits: [],
-	notes: emptyNotes,
-	bannerHash: 'f'.repeat(64)
+	notes: emptyNotes
 } satisfies Source;
 const draft = { id: 1, draft: true, tag_name: 'v1.2.3', upload_url: '' } satisfies Release;
 const banner = new Uint8Array([1, 2, 3]);
@@ -98,13 +96,4 @@ it('retries a draft with an interrupted upload, checking the uploaded asset befo
 	expect(github.deleteStarterAsset).toHaveBeenCalledExactlyOnceWith(asset.id);
 	expect(github.uploadAsset).toHaveBeenCalledTimes(1);
 	expect(github.publish).toHaveBeenCalledTimes(1);
-});
-
-it('walks a deterministic set of distinct banner choices, ready to try the next visual after a match', () => {
-	const first = bannerChoices('1.2.3');
-	expect(first).toEqual(bannerChoices('1.2.3'));
-	expect(bannerChoices('1.2.4')[0]).not.toEqual(first[0]);
-	expect(new Set(first.map((candidate) => JSON.stringify(candidate))).size).toBe(first.length);
-	expect(first.length).toBeGreaterThan(8);
-	expect(first.some(({ direction }) => direction === 'west')).toBe(true);
 });

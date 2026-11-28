@@ -21,13 +21,19 @@ export type Source = {
 	model: string | null;
 	commits: string[];
 	notes: CitedNotes;
-	bannerHash: string;
 	/** The English notes as last published, so an edit to notes.en.json can be told from an unchanged one. */
 	publishedEn?: Notes;
 };
 
 export type Index = {
-	releases: { version: string; date: string; headline: Record<string, string>; features: number }[];
+	releases: {
+		version: string;
+		date: string;
+		headline: Record<string, string>;
+		features: number;
+		/** Whether the release has its own banner.png; otherwise the app shows the shared releases/banner.png. */
+		banner: boolean;
+	}[];
 };
 
 /**
@@ -57,8 +63,7 @@ export function readSource(folder: string, version: string): Source {
 		!Number.isFinite(Date.parse(source.cutoff)) ||
 		source.date !== source.cutoff.slice(0, 10) ||
 		!/^([a-f\d]{40}|[a-f\d]{64})$/.test(source.sha) ||
-		!/^([a-f\d]{40}|[a-f\d]{64})$/.test(source.previousSha) ||
-		!/^([a-f\d]{64})$/.test(source.bannerHash)
+		!/^([a-f\d]{40}|[a-f\d]{64})$/.test(source.previousSha)
 	)
 		throw new Error(`Invalid source.json for release ${version}`);
 	return source;
@@ -84,8 +89,7 @@ export function readStagedAssets(folder: string, version: string) {
 	if (!notes.en) throw new Error(`Staged release ${version} lacks English notes`);
 	return {
 		notes,
-		changes: readJson<Changes>(join(dir, 'changes.json')),
-		native: readFileSync(join(dir, 'banner.png'))
+		changes: readJson<Changes>(join(dir, 'changes.json'))
 	};
 }
 
@@ -94,7 +98,8 @@ export function writeStage(
 	source: Source,
 	notes: Record<string, Notes>,
 	changes: Changes,
-	native: Uint8Array
+	/** The release's own banner; without one it shows the default banner. */
+	banner: Uint8Array | undefined
 ) {
 	mkdirSync(folder, { recursive: true });
 	const target = join(folder, source.version);
@@ -105,7 +110,7 @@ export function writeStage(
 			writeJson(join(temporary, `notes.${locale}.json`), copy);
 		writeJson(join(temporary, 'source.json'), source);
 		writeJson(join(temporary, 'changes.json'), changes);
-		writeFileSync(join(temporary, 'banner.png'), native);
+		if (banner) writeFileSync(join(temporary, 'banner.png'), banner);
 		renameSync(temporary, target);
 	} finally {
 		rmSync(temporary, { recursive: true, force: true });

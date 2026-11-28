@@ -166,7 +166,8 @@ export async function writeNotes(
 	claude: Claude,
 	version: string,
 	date: string,
-	commits: ReleaseCommit[]
+	commits: ReleaseCommit[],
+	recentBanners: string[]
 ) {
 	if (!commits.length) return emptyNotes;
 	return ask<CitedNotes>(
@@ -183,7 +184,8 @@ export async function writeNotes(
 				scope,
 				subject,
 				body
-			}))
+			})),
+			recentBanners
 		},
 		(reply) => validateNotes(reply, commits)
 	);

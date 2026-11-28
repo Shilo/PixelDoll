@@ -88,7 +88,7 @@
 				{@render retry(() => (bannerFailed = false))}
 			{:else}
 				<img
-					src={releaseUrl(`${entry.version}/banner.png`)}
+					src={releaseUrl(entry.banner ? `${entry.version}/banner.png` : 'banner.png')}
 					alt=""
 					bind:naturalWidth
 					width={bannerWidth}

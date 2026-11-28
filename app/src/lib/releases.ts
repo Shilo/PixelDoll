@@ -3,6 +3,8 @@ export interface ReleaseEntry {
 	date: string;
 	headline: Record<string, string>;
 	features: number;
+	/** Whether the release has its own banner; otherwise it shows the shared default banner. */
+	banner: boolean;
 }
 
 export interface ReleaseNotes {
@@ -84,7 +86,8 @@ function isReleaseEntry(value: unknown): value is ReleaseEntry {
 		record(value.headline) &&
 		string(value.headline.en) &&
 		Object.values(value.headline).every(string) &&
-		count(value.features)
+		count(value.features) &&
+		typeof value.banner === 'boolean'
 	);
 }
 

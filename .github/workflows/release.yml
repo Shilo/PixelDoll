@@ -5,10 +5,16 @@ on:
     # The release day and the day after (a backup if GitHub drops a scheduled run), just after releases/schedule.json's
     # hourUtc. Keep it in step with that file (release-history.test.ts checks); other days need no run.
     - cron: "17 15 * * 5,6"
-  # Editing a published release's notes or banner on main re-publishes it on GitHub and in the app.
+  # Editing a published release's notes or banner, or the default banner, on main re-publishes it on GitHub and in
+  # the app.
   push:
     branches: [main]
-    paths: ["releases/*/notes.*.json", "releases/*/banner.png"]
+    paths:
+      [
+        "releases/*/notes.*.json",
+        "releases/*/banner.png",
+        "releases/banner.png",
+      ]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -37,6 +43,8 @@ jobs:
   release:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
+    # A PixelLab banner may take up to 20 minutes on a busy account (app/scripts/release/banner.ts).
+    timeout-minutes: 60
     environment: release
     defaults:
       run:
@@ -53,8 +61,6 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
-      - run: npx playwright install chromium
-        timeout-minutes: 5
       - name: Set up release commits
         env:
           GH_TOKEN: ${{ github.token }}
@@ -76,4 +82,5 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PIXELLAB_API_KEY: ${{ secrets.PIXELLAB_API_KEY }}
           RELEASES_ENABLED: ${{ vars.RELEASES_ENABLED }}

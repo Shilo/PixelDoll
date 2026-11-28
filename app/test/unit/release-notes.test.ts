@@ -34,7 +34,8 @@ const notes = {
 	highlights: [
 		{ title: 'Save a sprite', text: 'Save your work as a PNG file.', commits: [feature.id] }
 	],
-	fixes: [{ text: 'Outfits no longer disappear when you open a character.', commits: [fix.id] }]
+	fixes: [{ text: 'Outfits no longer disappear when you open a character.', commits: [fix.id] }],
+	banner: 'A young ranger saves a painting of her outfit in a sunny attic studio'
 };
 
 afterEach(() => vi.unstubAllGlobals());
@@ -102,7 +103,7 @@ it('passes the prompt verbatim and asks Claude for corrected JSON once', async (
 	const claude = {
 		beta: { messages: { stream: (request: never) => ({ finalMessage: () => create(request) }) } }
 	} as unknown as Claude;
-	await expect(writeNotes(claude, '0.0.1', '2026-11-27', commits)).resolves.toEqual(notes);
+	await expect(writeNotes(claude, '0.0.1', '2026-11-27', commits, [])).resolves.toEqual(notes);
 	expect(create).toHaveBeenCalledTimes(2);
 	const request = create.mock.calls[1][0];
 	expect(request).toMatchObject({
@@ -118,12 +119,12 @@ it('passes the prompt verbatim and asks Claude for corrected JSON once', async (
 	expect(JSON.stringify(request.output_config)).not.toMatch(/minItems|maxItems|uniqueItems/);
 	expect(request.system).toMatch(/^\s*You write the release notes for PixelDoll/);
 	create.mockReset().mockImplementation(() => Promise.resolve(reply({ ...notes, highlights: [] })));
-	await expect(writeNotes(claude, '0.0.1', '2026-11-27', commits)).rejects.toThrow(
+	await expect(writeNotes(claude, '0.0.1', '2026-11-27', commits, [])).rejects.toThrow(
 		/highlights must have/
 	);
 	expect(create).toHaveBeenCalledTimes(2);
 	create.mockReset().mockResolvedValue({ stop_reason: 'refusal', content: [] });
-	await expect(writeNotes(claude, '0.0.1', '2026-11-27', commits)).rejects.toThrow(/declined/);
+	await expect(writeNotes(claude, '0.0.1', '2026-11-27', commits, [])).rejects.toThrow(/declined/);
 });
 
 it('maps app labels that appear in the notes to the target language', () => {

@@ -46,13 +46,15 @@ test.describe("What's new", () => {
 		version: '0.4.11',
 		date: '2026-11-13',
 		headline: { en: 'Dress the demo', de: 'Die Demo einkleiden' },
-		features: 1
+		features: 1,
+		banner: false
 	};
 	const latest = {
 		version: '0.4.12',
 		date: '2026-11-27',
 		headline: { en: 'A fresh look', de: 'Ein neuer Look' },
-		features: 2
+		features: 2,
+		banner: true
 	};
 	const sha = 'a'.repeat(40);
 	async function routeReleases(page: Page, entries: () => (typeof latest)[]) {
@@ -76,10 +78,13 @@ test.describe("What's new", () => {
 						: { version: null, features: 0 }
 				});
 			}
+			// The shared default banner of releases without their own.
+			if (path === 'banner.png')
+				return route.fulfill({ body: Buffer.from(banner), contentType: 'image/png' });
 			const [version, file] = path.split('/');
 			const entry = [latest, previous].find((release) => release.version === version);
 			if (!entry) return route.fulfill({ status: 404 });
-			if (file === 'banner.png')
+			if (file === 'banner.png' && entry.banner)
 				return route.fulfill({ body: Buffer.from(banner), contentType: 'image/png' });
 			if (file === 'changes.json')
 				return route.fulfill({
@@ -184,6 +189,9 @@ test.describe("What's new", () => {
 		await page.setViewportSize({ width: 844, height: 390 });
 		await sheet.locator('summary').filter({ hasText: 'Dress the demo' }).click();
 		await expect(sheet.getByRole('heading', { name: 'Dress the demo' })).toBeVisible();
+		await expect(sheet.locator('img[alt=""]').nth(1)).toHaveJSProperty('naturalWidth', 2);
+		expect(requests).toContain('banner.png');
+		expect(requests).not.toContain(`${previous.version}/banner.png`);
 		await sheet.getByRole('button', { name: 'Close', exact: true }).click();
 		await expect(settings.getByRole('button', { name: "What's new", exact: true })).toBeVisible();
 	});

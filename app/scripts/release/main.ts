@@ -1,10 +1,18 @@
 import { spawnSync } from 'node:child_process';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { appVersion } from '../../version.ts';
-import { composeBanner, upscaleBanner } from './banner.ts';
+import {
+	BannerError,
+	bannerPath,
+	bannerPrompt,
+	checkBanner,
+	enlargeBanner,
+	generateBanner,
+	readBanner
+} from './banner.ts';
 import { buildChanges, collectCommits } from './changes.ts';
 import { claudeClient, model, translations, writeNotes } from './claude.ts';
 import { compareVersions } from '../../src/lib/releases.ts';
@@ -31,7 +39,10 @@ const folder = join(cwd, 'releases');
 const indexPath = join(folder, 'index.json');
 const schedulePath = join(folder, 'schedule.json');
 
-/** Versions whose notes or banner changed in the pushed commits since `before` (a push of edited release files). */
+/**
+ * Versions whose notes or banner changed in the pushed commits since `before` (a push of edited release files). A new
+ * default banner changes every release that shows it.
+ */
 function editedVersions(before: string | undefined) {
 	if (!before || /^0+$/.test(before)) return [];
 	const files = git(cwd, 'diff', '--name-only', before, 'HEAD', '--', 'releases').split('\n');
@@ -39,7 +50,42 @@ function editedVersions(before: string | undefined) {
 		(file) =>
 			/^releases\/(\d+\.\d+\.\d+)\/(?:notes\.[\w-]+\.json|banner\.png)$/.exec(file)?.[1] ?? []
 	);
+	if (files.includes('releases/banner.png'))
+		for (const entry of readJson<Index>(indexPath).releases)
+			if (!existsSync(join(folder, entry.version, 'banner.png'))) versions.push(entry.version);
 	return [...new Set(versions)];
+}
+
+/** A problem that did not stop the run, shown in the log and on the run page. */
+function warn(message: string) {
+	console.warn(`Warning: ${message}`);
+	if (process.env.GITHUB_STEP_SUMMARY)
+		appendFileSync(process.env.GITHUB_STEP_SUMMARY, `> [!WARNING]\n> ${message}\n\n`);
+}
+
+/**
+ * The release's own PixelLab banner, or undefined for the default banner. A banner is never worth a failed or
+ * delayed release, and nothing paid is retried.
+ */
+async function drawBanner(scene: string | undefined, version: string) {
+	if (!scene) return undefined;
+	const key = process.env.PIXELLAB_API_KEY;
+	if (!key) {
+		warn(`v${version} uses the default banner: PIXELLAB_API_KEY is not set.`);
+		return undefined;
+	}
+	const started = Date.now();
+	try {
+		const banner = await generateBanner(scene, version, key);
+		console.log(`  Banner drawn by PixelLab in ${Math.round((Date.now() - started) / 1000)} s`);
+		return banner;
+	} catch (error) {
+		if (!(error instanceof BannerError)) throw error;
+		warn(
+			`v${version} uses the default banner because ${error.message}. To give it its own, add a 320x160 releases/${version}/banner.png and push.`
+		);
+		return undefined;
+	}
 }
 
 function options() {
@@ -148,6 +194,13 @@ async function main() {
 		return;
 	}
 	const index = readJson<Index>(indexPath);
+	// The default banner must be usable before anything is paid for.
+	await checkBanner(readBanner(join(folder, 'banner.png')), 'releases/banner.png');
+	// Recent scenes, so Claude picks a different character and setting each release.
+	const recentBanners = () =>
+		index.releases
+			.slice(0, 6)
+			.flatMap((entry) => readSource(folder, entry.version).notes.banner ?? []);
 	const previous = index.releases[0] && readSource(folder, index.releases[0].version);
 	const staged = readStaged(folder, index);
 	const stagedDate = staged && new Date(staged.cutoff);
@@ -242,46 +295,31 @@ async function main() {
 					console.log(`  ${kind}`);
 					for (const item of items) console.log(`    ${item.sha.slice(0, 7)}  ${item.text}`);
 				}
-				if (indexInRun === 1) {
-					const recent = new Set(
-						index.releases.slice(0, 8).map((entry) => readSource(folder, entry.version).bannerHash)
-					);
-					const banner = await composeBanner(version, recent);
-					console.log(
-						`  Banner smoke check passed (${banner.native.length} native bytes, ${banner.large.length} at 4x, ${banner.hash})`
-					);
+				if (showNotes && key) {
+					const written =
+						resumed?.notes ??
+						(await writeNotes(claudeClient(key), version, date, commits, recentBanners()));
+					console.log(JSON.stringify(written, null, 2));
+					if (written.banner) console.log(`  Banner prompt: ${bannerPrompt(written.banner)}`);
 				}
-				if (showNotes && key)
-					console.log(
-						JSON.stringify(
-							resumed?.notes ?? (await writeNotes(claudeClient(key), version, date, commits)),
-							null,
-							2
-						)
-					);
 				continue;
 			}
 			if (!key) throw new Error('Publishing requires ANTHROPIC_API_KEY');
 			let source;
 			let notes;
-			let banner;
 			if (resumed) {
-				const assets = readStagedAssets(folder, version);
+				// A staged release keeps the banner it was staged with: a rerun never pays PixelLab again.
 				source = resumed;
-				notes = assets.notes;
-				banner = await upscaleBanner(assets.native);
+				notes = readStagedAssets(folder, version).notes;
 			} else {
-				const recent = new Set(
-					index.releases.slice(0, 8).map((entry) => readSource(folder, entry.version).bannerHash)
-				);
 				const claude = claudeClient(key);
-				const english = await writeNotes(claude, version, date, commits);
+				const english = await writeNotes(claude, version, date, commits, recentBanners());
 				// The fixed maintenance message has no Claude-written content to translate.
 				notes =
 					english === emptyNotes
 						? { en: publicNotes(english) }
 						: await translations(claude, publicNotes(english));
-				const composed = await composeBanner(version, recent);
+				const banner = await drawBanner(english.banner, version);
 				source = {
 					version,
 					date,
@@ -290,19 +328,20 @@ async function main() {
 					previousSha: base,
 					model: commits.length ? model : null,
 					commits: commits.map((commit) => commit.sha),
-					notes: english,
-					bannerHash: composed.hash
+					notes: english
 				} satisfies Source;
-				banner = composed.large;
-				writeStage(folder, source, notes, changes, composed.native);
+				writeStage(folder, source, notes, changes, banner);
 				commitReleaseFiles(cwd, `chore(release): stage v${version}`, `releases/${version}`);
 			}
 			// Cutoffs publish oldest first, so each new release is the highest version so far and becomes Latest.
+			const own = existsSync(join(folder, version, 'banner.png'));
+			const banner = await enlargeBanner(readBanner(bannerPath(folder, version)));
 			await publishRelease(github, source, notes.en, changes, banner, true);
 			index.releases.unshift({
 				version,
 				date,
 				features,
+				banner: own,
 				headline: Object.fromEntries(
 					Object.entries(notes).map(([locale, copy]) => [locale, copy.headline])
 				)

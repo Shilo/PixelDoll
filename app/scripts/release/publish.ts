@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
 import { decodePngBytes } from '../../src/lib/runtime/png.js';
+import { bannerAssetName } from './banner.ts';
 import type { Changes } from './changes.ts';
 import type { Source } from './data.ts';
 import type { Asset, GitHub } from './github.ts';
 import { releaseMarkdown } from './markdown.ts';
 import type { Notes } from './notes.ts';
 
-const assetName = 'banner@4x.png';
 type Publisher = Pick<
 	GitHub,
 	| 'repository'
@@ -66,12 +66,12 @@ export async function publishRelease(
 			`https://github.com/${github.repository}/compare/${source.previousSha}...${source.sha}`
 		);
 	// Detect oversize notes before creating a tag or a draft.
-	render(`https://github.com/${github.repository}/releases/download/${tag}/${assetName}`);
+	render(`https://github.com/${github.repository}/releases/download/${tag}/${bannerAssetName}`);
 	await checkTag(false);
 	const release = (await github.release(tag)) ?? (await github.createDraft(tag, source.sha, name));
 	let asset: Asset | undefined;
 	for await (const entry of github.assets(release.id)) {
-		if (entry.name !== assetName && entry.label !== assetName) continue;
+		if (entry.name !== bannerAssetName && entry.label !== bannerAssetName) continue;
 		if (asset) throw new Error(`Release ${tag} has several banner assets`);
 		asset = entry;
 	}
@@ -81,9 +81,9 @@ export async function publishRelease(
 	}
 	if (!asset) {
 		if (!release.draft) throw new Error(`Published release ${tag} is missing its banner`);
-		await github.uploadAsset(release, assetName, banner);
+		await github.uploadAsset(release, bannerAssetName, banner);
 		for await (const entry of github.assets(release.id))
-			if (entry.name === assetName || entry.label === assetName) asset = entry;
+			if (entry.name === bannerAssetName || entry.label === bannerAssetName) asset = entry;
 		if (!asset) throw new Error(`Cannot verify banner upload for ${tag}`);
 	}
 	await verifyAsset(github, asset, banner);

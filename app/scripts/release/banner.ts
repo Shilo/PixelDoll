@@ -1,195 +1,154 @@
-import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-import { chromium, type Page } from '@playwright/test';
-import { composeCell, layerFrame } from '../../src/lib/runtime/paperdoll.js';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { deflateSync } from 'node:zlib';
 import { decodePngBytes } from '../../src/lib/runtime/png.js';
-import type {
-	DirectionName,
-	Img,
-	Manifest,
-	Project,
-	Sha256
-} from '../../src/lib/runtime/types.d.ts';
 
-const fixture = new URL('../../public/fixtures/s2/', import.meta.url);
-const width = 160;
-const height = 112;
-const leather = { torso_inner: 'vest_leather' };
-const caped = { ...leather, back: 'cape_red' };
-const fighter = { ...leather, main_hand: 'sword_steel', head: 'helmet_steel' };
-const outfits: Record<string, string>[] = [
-	caped,
-	{ ...caped, hair: 'hair_brown' },
-	fighter,
-	{ ...fighter, back: 'cape_red' },
-	{ ...caped, head: 'hat_wizard' }
-];
-const poses: { move: string; direction: DirectionName; cell: number; hats?: true }[] = [
-	{ move: 'walk', direction: 'south', cell: 0, hats: true },
-	{ move: 'walk', direction: 'south', cell: 4, hats: true },
-	{ move: 'walk', direction: 'east', cell: 2, hats: true },
-	{ move: 'walk', direction: 'west', cell: 5, hats: true },
-	{ move: 'walk', direction: 'north', cell: 6 },
-	{ move: 'cross-punch', direction: 'south', cell: 3 }
-];
-const colors = ['#252235', '#203843', '#3b2837', '#273a32', '#3d3029'];
-const candidates = outfits.flatMap((outfit) =>
-	poses
-		.filter((pose) => outfit.head !== 'hat_wizard' || pose.hats)
-		.flatMap((pose) => colors.map((color) => ({ outfit, ...pose, color })))
-);
+/** The banner's art pixels: a 2:1 PixelLab Pixen scene, scaled 4x by whole pixels for GitHub. */
+export const bannerSize = { width: 320, height: 160 };
+export const bannerAssetName = 'banner@4x.png';
+// Generous: Pixen usually answers in under a minute, but a busy account can take many times longer.
+const pixenTimeout = 20 * 60_000;
 
-export function bannerChoices(version: string) {
-	const first = createHash('sha256').update(version).digest().readUInt32BE() % candidates.length;
-	return [...candidates.slice(first), ...candidates.slice(0, first)];
+/** A banner could not be generated; the release goes ahead with the default banner and says why. */
+export class BannerError extends Error {}
+
+/**
+ * The exact request text: a fixed frame around Claude's one-sentence scene. Positive wording only: PixelLab's own
+ * research found that naming what to avoid (text, logos) can draw it in.
+ */
+export function bannerPrompt(scene: string) {
+	const sentence = scene.trim().replace(/[\s.!?]*$/, '.');
+	return `Wide, eye-level pixel-art scene in a cozy fantasy world. ${sentence} Crisp silhouettes and a clearly lit focal action. The setting fills the canvas to all four edges.`;
 }
 
-// The fixture sheets store columns by cell and rows by generated direction. The shared compositor handles
-// equipment, pivot, layer order and mirrored directions after we register the selected slice from each sheet.
-async function dollFrame(manifest: Manifest, choice: (typeof candidates)[number]) {
-	const { outfit, move, direction, cell } = choice;
-	const generated = manifest.rig.directions.filter((entry) => !entry.mirrorOf);
-	const source =
-		manifest.rig.directions.find((entry) => entry.id === direction)?.mirrorOf ?? direction;
-	const row = generated.findIndex((entry) => entry.id === source);
-	if (row < 0) throw new Error(`Unknown release banner fixture direction ${direction}`);
-	const items = manifest.items.filter(
-		(item) => item.id === manifest.rig.baseItem || outfit[item.slot] === item.id
-	);
-	if (
-		!items.some((item) => item.id === manifest.rig.baseItem) ||
-		Object.values(outfit).some((id) => !items.some((item) => item.id === id))
-	)
-		throw new Error('Release banner outfit is missing from the fixture');
-	const images = new Map<Sha256, Img>();
-	const project: Project = { manifest: { ...manifest, items: structuredClone(items) }, images };
-	for (const item of project.manifest.items) {
-		for (const layer of item.layers) {
-			const sheet = layer.sheets?.[move];
-			if (!sheet || (item.coverage && !item.coverage.includes(`${move}/${source}/${cell}`)))
-				throw new Error(
-					`Release banner fixture lacks ${item.id} artwork for ${move}/${source}/${cell}`
-				);
-			const image = await decodePngBytes(await readFile(new URL(sheet, fixture)));
-			const { w, h } = layerFrame(manifest.rig, layer);
-			const data = new Uint8ClampedArray(w * h * 4);
-			if (image.w < (cell + 1) * w || image.h < (row + 1) * h)
-				throw new Error(`Release banner frame is outside ${sheet}`);
-			for (let y = 0; y < h; y++) {
-				const offset = ((row * h + y) * image.w + cell * w) * 4;
-				data.set(image.data.subarray(offset, offset + w * 4), y * w * 4);
-			}
-			const id = `sha256:${createHash('sha256').update(data).digest('hex')}` as const;
-			const frames = new Array<Sha256 | null>(cell + 1).fill(null);
-			frames[cell] = id;
-			layer.cells = { [move]: { [source]: frames } };
-			images.set(id, { data, w, h });
-		}
-	}
-	return composeCell(project, outfit, move, direction, cell);
+/** The release's own banner when it has one, else the shared default `releases/banner.png`. */
+export function bannerPath(folder: string, version: string) {
+	const own = join(folder, version, 'banner.png');
+	if (existsSync(own)) return own;
+	const shared = join(folder, 'banner.png');
+	if (!existsSync(shared)) throw new Error('The default banner releases/banner.png is missing');
+	return shared;
 }
 
-async function scaleBanner(page: Page, native: Uint8Array) {
-	const png = await page.evaluate(
-		async ({ data }) => {
-			const image = new Image();
-			image.src = `data:image/png;base64,${data}`;
-			await image.decode();
-			// A replaced banner can have any size: scale what was given, 4x by whole pixels.
-			const canvas = document.createElement('canvas');
-			canvas.width = image.width * 4;
-			canvas.height = image.height * 4;
-			const context = canvas.getContext('2d');
-			if (!context) throw new Error('Cannot scale the release banner without a canvas');
-			context.imageSmoothingEnabled = false;
-			context.drawImage(image, 0, 0, canvas.width, canvas.height);
-			return canvas.toDataURL('image/png').split(',')[1];
-		},
-		{ data: Buffer.from(native).toString('base64') }
-	);
-	return Buffer.from(png, 'base64');
-}
+const seedOf = (version: string) =>
+	version.split('.').reduce((seed, part) => seed * 1000 + Number(part), 0) % 2_147_483_647;
 
-export async function upscaleBanner(native: Uint8Array) {
-	const browser = await chromium.launch();
+/** Generates one banner with PixelLab Pixen. Every failure is a BannerError; nothing paid is ever retried. */
+export async function generateBanner(scene: string, version: string, key: string) {
+	let response: Response;
 	try {
-		return await scaleBanner(await browser.newPage(), native);
-	} finally {
-		await browser.close();
+		response = await fetch('https://api.pixellab.ai/v2/create-image-pixen', {
+			method: 'POST',
+			headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				description: bannerPrompt(scene),
+				image_size: bannerSize,
+				view: 'side',
+				detail: 'highly detailed',
+				no_background: false,
+				enhance_prompt: false,
+				seed: seedOf(version)
+			}),
+			signal: AbortSignal.timeout(pixenTimeout)
+		});
+	} catch (error) {
+		throw new BannerError(`PixelLab did not answer: ${String(error)}`, { cause: error });
 	}
+	const text = await response.text();
+	if (!response.ok) {
+		const reason =
+			response.status === 401
+				? 'the PIXELLAB_API_KEY was rejected'
+				: response.status === 402
+					? 'the PixelLab account is out of credits'
+					: response.status === 429 || response.status === 529
+						? 'PixelLab is busy'
+						: /"code"\s*:\s*5000/.test(text)
+							? 'PixelLab declined the scene'
+							: `PixelLab answered ${response.status}`;
+		throw new BannerError(`${reason}: ${text.slice(0, 300)}`);
+	}
+	let base64: unknown;
+	try {
+		base64 = JSON.parse(text).image?.base64;
+	} catch (error) {
+		throw new BannerError(`PixelLab sent an unreadable reply: ${text.slice(0, 200)}`, {
+			cause: error
+		});
+	}
+	if (typeof base64 !== 'string') throw new BannerError('PixelLab sent no image');
+	const png = Buffer.from(base64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+	await checkBanner(png, 'PixelLab image');
+	return new Uint8Array(png);
 }
 
-export async function composeBanner(version: string, recent: ReadonlySet<string>) {
-	const manifest = JSON.parse(await readFile(new URL('fixture.json', fixture), 'utf8')) as Manifest;
-	const browser = await chromium.launch();
+/** A banner must be the banner size and fully opaque; anything else would show as a broken or framed picture. */
+export async function checkBanner(png: Uint8Array, what: string) {
+	let image;
 	try {
-		const page = await browser.newPage();
-		for (const choice of bannerChoices(version)) {
-			const doll = await dollFrame(manifest, choice);
-			const { color } = choice;
-			const drawn = await page.evaluate(
-				({ pixels, w, h, width, height, color }) => {
-					const sprite = document.createElement('canvas');
-					sprite.width = w;
-					sprite.height = h;
-					const spriteContext = sprite.getContext('2d');
-					const banner = document.createElement('canvas');
-					banner.width = width;
-					banner.height = height;
-					const context = banner.getContext('2d');
-					if (!spriteContext || !context)
-						throw new Error('Cannot compose the release banner without a canvas');
-					const data = new Uint8ClampedArray(pixels);
-					spriteContext.putImageData(new ImageData(data, w, h), 0, 0);
-					let left = w,
-						top = h,
-						right = -1,
-						bottom = -1;
-					for (let y = 0; y < h; y++) {
-						for (let x = 0; x < w; x++) {
-							if (!data[(y * w + x) * 4 + 3]) continue;
-							left = Math.min(left, x);
-							top = Math.min(top, y);
-							right = Math.max(right, x);
-							bottom = Math.max(bottom, y);
-						}
-					}
-					if (right < 0) throw new Error('Release banner fixture frame is transparent');
-					const cropW = right - left + 1;
-					const cropH = bottom - top + 1;
-					// Every banner draws the doll at 2x; a pose too wide or tall for that (a tall hat facing south) is skipped.
-					const scale = 2;
-					if (cropW * scale > width || cropH * scale > height) return null;
-					context.fillStyle = color;
-					context.fillRect(0, 0, width, height);
-					context.imageSmoothingEnabled = false;
-					context.drawImage(
-						sprite,
-						left,
-						top,
-						cropW,
-						cropH,
-						(width - cropW * scale) / 2,
-						(height - cropH * scale) / 2,
-						cropW * scale,
-						cropH * scale
-					);
-					return {
-						png: banner.toDataURL('image/png').split(',')[1],
-						rgba: Array.from(context.getImageData(0, 0, width, height).data)
-					};
-				},
-				{ pixels: Array.from(doll.data), w: doll.w, h: doll.h, width, height, color }
-			);
-			if (!drawn) continue;
-			const { png, rgba } = drawn;
-			const hash = createHash('sha256').update(Buffer.from(rgba)).digest('hex');
-			if (recent.has(hash)) continue;
-			const native = Buffer.from(png, 'base64');
-			return { native, large: await scaleBanner(page, native), hash };
-		}
-		throw new Error('No release banner differs from the last eight releases');
-	} finally {
-		await browser.close();
+		image = await decodePngBytes(png);
+	} catch (error) {
+		throw new BannerError(`${what} is not a readable PNG`, { cause: error });
 	}
+	if (image.w !== bannerSize.width || image.h !== bannerSize.height)
+		throw new BannerError(
+			`${what} is ${image.w}x${image.h}; banners are ${bannerSize.width}x${bannerSize.height}`
+		);
+	for (let i = 3; i < image.data.length; i += 4)
+		if (image.data[i] !== 255) throw new BannerError(`${what} has transparent pixels`);
+}
+
+/** The 4x copy GitHub shows: GitHub smooths scaled images, so it gets whole-pixel enlarged art. */
+export async function enlargeBanner(png: Uint8Array) {
+	const image = await decodePngBytes(png);
+	const w = image.w * 4,
+		h = image.h * 4,
+		data = new Uint8Array(w * h * 4);
+	for (let y = 0; y < h; y++)
+		for (let x = 0; x < w; x++) {
+			const from = ((y >> 2) * image.w + (x >> 2)) * 4;
+			data.set(image.data.subarray(from, from + 4), (y * w + x) * 4);
+		}
+	return encodePng(w, h, data);
+}
+
+export const readBanner = (path: string) => new Uint8Array(readFileSync(path));
+
+const crcTable = Array.from({ length: 256 }, (_, n) => {
+	let c = n;
+	for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+	return c >>> 0;
+});
+function crc(bytes: Uint8Array) {
+	let c = 0xffffffff;
+	for (const byte of bytes) c = crcTable[(c ^ byte) & 255] ^ (c >>> 8);
+	return (c ^ 0xffffffff) >>> 0;
+}
+function chunk(type: string, data: Uint8Array) {
+	const out = Buffer.alloc(12 + data.length);
+	out.writeUInt32BE(data.length, 0);
+	out.write(type, 4, 'latin1');
+	out.set(data, 8);
+	out.writeUInt32BE(crc(out.subarray(4, 8 + data.length)), 8 + data.length);
+	return out;
+}
+// The app's PNG encoder (src/lib/image/pngraw.ts) imports app modules Node cannot run, so the release script keeps
+// this minimal RGBA encoder.
+function encodePng(w: number, h: number, rgba: Uint8Array) {
+	const header = Buffer.alloc(13);
+	header.writeUInt32BE(w, 0);
+	header.writeUInt32BE(h, 4);
+	header[8] = 8;
+	header[9] = 6;
+	const raw = Buffer.alloc((w * 4 + 1) * h);
+	for (let y = 0; y < h; y++)
+		raw.set(rgba.subarray(y * w * 4, (y + 1) * w * 4), y * (w * 4 + 1) + 1);
+	return new Uint8Array(
+		Buffer.concat([
+			Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+			chunk('IHDR', header),
+			chunk('IDAT', deflateSync(raw)),
+			chunk('IEND', new Uint8Array())
+		])
+	);
 }
