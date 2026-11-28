@@ -54,13 +54,6 @@
 	const linkHint = $props.id();
 
 	let bannerFailed = $state(false);
-	let bannerRoom = $state(0);
-	let naturalWidth = $state(0);
-	const bannerWidth = $derived(
-		naturalWidth
-			? naturalWidth * Math.max(1, Math.min(4, Math.floor(bannerRoom / naturalWidth)))
-			: undefined
-	);
 </script>
 
 {#snippet loading()}<p class="bu-muted" role="status">{t('common.loading')}</p>{/snippet}
@@ -83,15 +76,15 @@
 				<time datetime={entry.date}>{date}</time> · <bdi>v{entry.version}</bdi>
 			</p>
 		</header>
-		<div bind:clientWidth={bannerRoom} class="banner">
+		<div class="banner">
 			{#if bannerFailed}
 				{@render retry(() => (bannerFailed = false))}
 			{:else}
 				<img
 					src={releaseUrl(entry.banner ? `${entry.version}/banner.png` : 'banner.png')}
 					alt=""
-					bind:naturalWidth
-					width={bannerWidth}
+					width="320"
+					height="160"
 					onerror={() => (bannerFailed = true)}
 				/>
 			{/if}
@@ -186,9 +179,10 @@
 		padding-inline-start: 1.25em;
 		list-style: disc;
 	}
+	/* Release banners are 320x160 pixel art (app/scripts/release/banner.ts): full width, hard pixel edges. */
 	.banner img {
 		display: block;
-		max-inline-size: 100%;
+		inline-size: 100%;
 		block-size: auto;
 		image-rendering: pixelated;
 	}
